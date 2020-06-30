@@ -166,7 +166,7 @@ class DependencyFinder(BaseApiInterface):
         """
         return self.tsurl + "/callosum/v1" + endpoint
 
-    def get_dependencies_for_all_tables(self, ignore_ts=False):
+    def get_dependencies_for_all_tables(self, ignore_ts=True):
         """
         Returns a list of dependencies for all tables.
         :param ignore_ts:  If true, then ignore tables that start with "TS:"
