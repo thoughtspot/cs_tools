@@ -11,7 +11,7 @@ the tools.
 ## Packages and scripts
 
 The tools can be split into two broad categories.  The first category contains the scripts that you can run to 
-directly do things.  For example, the `find_dependencies` script will let you find all of the tables and their
+directly do things.  For example, the `list_dependencies` script will let you find all of the tables and their
 dependencies in a cluster.
 
 The second category are the ThoughtSpot Web API Python wrappers.  These are all contained in the cst package and 
@@ -32,14 +32,14 @@ All of the pre-built tools are run using the general format:
 
 `python -m cstools.<tool-name>`
 
-Note there is no `.py` at the end and you *must* use `python -m`.  So for example to run `find_dependencies` and see the 
-options, you would enter `python -m cstools.find_dependencies --help`  Try it now and verify your environment is all set.
+Note there is no `.py` at the end and you *must* use `python -m`.  So for example to run `list_dependencies` and see the 
+options, you would enter `python -m cstools.list_dependencies --help`  Try it now and verify your environment is all set.
 
 The user tools currently consist of four scripts:
-1. `find_dependencies`, which gets all of the tables and dependencies and writes to stdout or Excel.
+1. `list_dependencies`, which gets all of the tables and dependencies and writes to stdout or Excel.
 
 ~~~
-usage: cstools.find_dependencies [-h] [--tsurl TSURL] [--username USERNAME]
+usage: cstools.list_dependencies [-h] [--tsurl TSURL] [--username USERNAME]
                                  [--password PASSWORD] [--disable_ssl]
                                  [--output_type OUTPUT_TYPE] [--filename FILENAME]
                                  [--ignore_ts]
