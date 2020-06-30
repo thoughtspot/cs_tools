@@ -178,7 +178,7 @@ class DependencyFinder(BaseApiInterface):
         self.ignore_ts = ignore_ts
 
         for table in all_tables:
-            if not (ignore_ts and (table.name.startswith("TS:"))):
+            if not self._should_ignore(table=table):
                 dt.add_table(table=table)
 
         table_ids = dt.get_table_ids()
@@ -250,13 +250,24 @@ class DependencyFinder(BaseApiInterface):
                 dependents = set()
                 for object_type in data[table_id].keys():
                     for object_data in data[table_id][object_type]:
-                        if not (self.ignore_ts and object_data.get("name", "").startswith("TS:")):
-                            dependent_id = object_data.get("id", None)
-                            dependent_table = dt.get_table(table_guid=dependent_id)
-                            if not dependent_table:
-                                dependent_table = Table(guid=dependent_id, json_obj=object_data)
+                        dependent_id = object_data.get("id", None)
+                        dependent_table = dt.get_table(table_guid=dependent_id)
+                        if not dependent_table:
+                            dependent_table = Table(guid=dependent_id, json_obj=object_data)
+                        if not self._should_ignore(table=dependent_table):
                             dt.add_table(table=dependent_table, depends_on=table_id)
                             dependents.add(dependent_id)
                 dt.add_table_dependencies(table_id, dependents=dependents)
 
         return dt
+
+    def _should_ignore(self, table):
+        """
+        Returns true if the table should be ignored.
+        :param table: The table to check.
+        :type table: Table
+        :return: True if the table should be ignored.
+        :rtype: bool
+        """
+        return self.ignore_ts and (table.name.startswith("TS:") or table.type == "CALENDAR_TABLE")
+
