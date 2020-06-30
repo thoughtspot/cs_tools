@@ -50,7 +50,7 @@ def get_args():
     parser = get_cluster_args()  # tsurl, username, password, disable_ssl
     parser.add_argument("--output_type", default="stdout", help="Where to write results: stdout, xls, excel.")
     parser.add_argument("--filename", default="stdout", help="Name of the file for Excel files.")
-    parser.add_argument("--ignore_ts", action="store_true", default=False, help="Ignore files that start with 'TS:'.")
+    parser.add_argument("--ignore_ts", action="store_true", default=True, help="Ignore files that start with 'TS:'.")
 
     return parser.parse_args()
 
