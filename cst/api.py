@@ -155,7 +155,7 @@ class DependencyFinder(BaseApiInterface):
         """
         super().__init__(tsurl, username, password, disable_ssl)
         self._checked_table_ids = set()
-        self.ignore_ts = False
+        self.ignore_ts = True
 
     def get_complete_endpoint(self, endpoint):
         """
