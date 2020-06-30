@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='py-tql',
+    name='cs_tools',
     version='1.0',
     python_requires='>3.6',
     description='This package contains tools and libraries for working with ThoughtSpot by CS users.',
@@ -14,6 +14,7 @@ setup(
     install_requires=[
         'requests',
         'unicodecsv',
-        'urllib3'
+        'urllib3',
+        'openpyxl'
     ]
 )

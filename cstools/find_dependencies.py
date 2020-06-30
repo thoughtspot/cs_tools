@@ -18,7 +18,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 import argparse
 
 from cst.api import get_cluster_args, DependencyFinder, DependencyTree
-from cst.io import DependencyTreeStdoutWriter
+from cst.io import DependencyTreeStdoutWriter, DependencyTreeXLSWriter
 from cst.util import eprint
 
 
@@ -34,11 +34,11 @@ def run_app():
         df = DependencyFinder(tsurl=args.tsurl, username=args.username,
                               password=args.password, disable_ssl=args.disable_ssl)
 
+        dt = df.get_dependencies_for_all_tables(ignore_ts=args.ignore_ts)
         if args.output_type == "stdout":
-            dt = df.get_dependencies_for_all_tables()
             DependencyTreeStdoutWriter().write_dependency_tree(dt=dt)
         elif args.output_type == "excel":
-            pass  # TODO add a call to the dependency XLS writer.
+            DependencyTreeXLSWriter.write_to_excel(dt=dt, filename=args.filename)
 
 
 def get_args():
@@ -48,7 +48,9 @@ def get_args():
     :rtype: argparse.Namespace
     """
     parser = get_cluster_args()  # tsurl, username, password, disable_ssl
-    parser.add_argument("--output_type", default="stdout", help="Where to write results: stdout, xls, excel")
+    parser.add_argument("--output_type", default="stdout", help="Where to write results: stdout, xls, excel.")
+    parser.add_argument("--filename", default="stdout", help="Name of the file for Excel files.")
+    parser.add_argument("--ignore_ts", action="store_true", default=False, help="Ignore files that start with 'TS:'.")
 
     return parser.parse_args()
 
@@ -62,6 +64,7 @@ def valid_args(args):
     :rtype: bool
     """
     valid = True
+    print(args)
 
     valid_output_types = ["stdout", "xls", "excel"]
 
@@ -71,6 +74,10 @@ def valid_args(args):
 
     if not args.output_type in valid_output_types:
         eprint(f'output_type must be one of {",".join(valid_output_types)}')
+        valid = False
+
+    if (args.output_type == "xls" or args.output_type == "excel") and not args.filename:
+        eprint(f'Excel output requires a filename.')
         valid = False
 
     # do minimal cleanup.

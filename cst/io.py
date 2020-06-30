@@ -12,6 +12,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from openpyxl import Workbook
+
 from .model import Table, DependencyTree
 
 
@@ -67,11 +69,55 @@ class DependencyTreeStdoutWriter:
         :return: Nothing
         """
         indent_size = 2  # number of spaces for indenting.
-        if table.databaseStripe:  # database table, so qualify.
-            table_name = f"{table.databaseStripe}.{table.schemaStripe}.{table.name}"
-        else:
-            table_name = table.name
 
-        table_str = f"{table_name} ({table.id}): [type='{table.type}', " \
+        table_str = f"{table.get_long_name()} ({table.id}): [type='{table.type}', " \
                     f"author='{table.authorDisplayName}]' "
         print(f'{" "*depth*indent_size}{">"*depth} {table_str}')
+
+
+class DependencyTreeXLSWriter:
+    """
+    Writes a dependency tree to Excel.
+    """
+
+    def __init__(self):
+        """
+        Creates a new writer.
+        """
+        pass
+
+    @staticmethod
+    def write_to_excel(dt, filename):
+        """
+        Writes the dependency tree to the given file.
+        :param dt: The dependency tree to write.
+        :type dt: DependencyTree
+        :param filename: The file to write to. .xlsx will be appended if it's not on the name.
+        :type filename: str
+        :return: Nothing
+        """
+        workbook = Workbook()
+        workbook.remove(workbook.active)
+
+        ws = workbook.create_sheet(title="Dependencies")
+        header = ["Name", "GUID", "Type", "Author", "Depends On", "Dependents"]
+        for ccnt in range(0, len(header)):
+            ws.cell(column=ccnt+1, row=1, value=header[ccnt])
+
+        rcnt = 2
+        for table in dt.get_all_tables():
+            dependents = dt.get_names_for_ids(dt.get_dependents(table_guid=table.id))
+            depends_on = dt.get_names_for_ids(dt.get_depends_on(table_guid=table.id))
+
+            ws.cell(column=1, row=rcnt, value=table.get_long_name())
+            ws.cell(column=2, row=rcnt, value=table.id)
+            ws.cell(column=3, row=rcnt, value=table.type)
+            ws.cell(column=4, row=rcnt, value=table.authorName)
+            ws.cell(column=5, row=rcnt, value=f"[{', '.join(depends_on)}]")
+            ws.cell(column=6, row=rcnt, value=f"[{', '.join(dependents)}]")
+
+            rcnt += 1
+
+        if not filename.endswith('xlsx'):
+            filename += ".xlsx"
+        workbook.save(filename=filename)

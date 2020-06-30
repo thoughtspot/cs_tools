@@ -43,3 +43,13 @@ class TestDependencyFinder(unittest.TestCase):
         df = DependencyFinder(tsurl=TS_URL, username=TS_USER, password=TS_PASSWORD, disable_ssl=True)
         dt = df.get_dependencies_for_all_tables()
         self.assertTrue(dt.number_tables() > 0)
+
+    def test_get_dependencies_except_ts(self):
+        """Tests getting dependencies with ignore_ts flag set to True."""
+        df = DependencyFinder(tsurl=TS_URL, username=TS_USER, password=TS_PASSWORD, disable_ssl=True)
+        dt = df.get_dependencies_for_all_tables(ignore_ts=True)
+        no_ts_tables = True
+        for table in dt.get_all_tables():
+            if table.name.startswith("TS:"):
+                no_ts_tables = False
+        self.assertTrue(no_ts_tables)

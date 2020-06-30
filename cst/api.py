@@ -155,6 +155,7 @@ class DependencyFinder(BaseApiInterface):
         """
         super().__init__(tsurl, username, password, disable_ssl)
         self._checked_table_ids = set()
+        self.ignore_ts = False
 
     def get_complete_endpoint(self, endpoint):
         """
@@ -165,16 +166,20 @@ class DependencyFinder(BaseApiInterface):
         """
         return self.tsurl + "/callosum/v1" + endpoint
 
-    def get_dependencies_for_all_tables(self):
+    def get_dependencies_for_all_tables(self, ignore_ts=False):
         """
         Returns a list of dependencies for all tables.
+        :param ignore_ts:  If true, then ignore tables that start with "TS:"
+        :type ignore_ts: bool
         :return: The dependencies for all tables.
         """
         dt = DependencyTree()
         all_tables = self.get_all_tables()
+        self.ignore_ts = ignore_ts
 
         for table in all_tables:
-            dt.add_table(table=table)
+            if not (ignore_ts and (table.name.startswith("TS:"))):
+                dt.add_table(table=table)
 
         table_ids = dt.get_table_ids()
         dependencies = self.get_dependents_for_tables(table_ids=table_ids)
@@ -245,12 +250,13 @@ class DependencyFinder(BaseApiInterface):
                 dependents = set()
                 for object_type in data[table_id].keys():
                     for object_data in data[table_id][object_type]:
-                        dependent_id = object_data.get("id", None)
-                        dependent_table = dt.get_table(table_guid=dependent_id)
-                        if not dependent_table:
-                            dependent_table = Table(guid=dependent_id, json_obj=object_data)
-                        dt.add_table(table=dependent_table, depends_on=table_id)
-                        dependents.add(dependent_id)
+                        if not (self.ignore_ts and object_data.get("name", "").startswith("TS:")):
+                            dependent_id = object_data.get("id", None)
+                            dependent_table = dt.get_table(table_guid=dependent_id)
+                            if not dependent_table:
+                                dependent_table = Table(guid=dependent_id, json_obj=object_data)
+                            dt.add_table(table=dependent_table, depends_on=table_id)
+                            dependents.add(dependent_id)
                 dt.add_table_dependencies(table_id, dependents=dependents)
 
         return dt

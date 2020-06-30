@@ -50,6 +50,16 @@ class Table:
         if json_obj:
             self.populate_from_json(json_obj)
 
+    def get_long_name(self):
+        """
+        Returns a longer name that will add database and schema for table names that have them.
+        :return: The longer name for the table.
+        :rtype: str
+        """
+        db = (self.databaseStripe + ".") if self.databaseStripe else ""
+        schema = (self.schemaStripe + ".") if self.databaseStripe else ""
+        return db + schema + self.name
+
     def populate_from_json(self, json_obj):
         """
         Populates the attributes from a JSON object.
@@ -230,6 +240,22 @@ class DependencyTree:
         :rtype: Table
         """
         return self._tables.get(table_guid, None)
+
+    def get_names_for_ids(self, ids):
+        """
+        Returns a list of names for the given IDs.  "None" might be returned if there isn't a table with the ID.
+        :param ids: The ids to get the table names for.
+        :type ids: Iterable
+        :return: list names
+        :rtype: list of str
+        """
+        names = []
+        for id in ids:
+            t = self.get_table(table_guid=id)
+            name = t.name if t else "None"
+            names.append(name)
+
+        return names
 
     def add_table_dependencies(self, table_guid, depends_on=None, dependents=None):
         """
