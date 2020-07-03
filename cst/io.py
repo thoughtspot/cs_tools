@@ -57,18 +57,18 @@ class DependencyTreeStdoutWriter:
 
         console = Console()
         header = ["Name", "GUID", "Type", "Author", "Depends On", "Dependents"]
-        table = rt.Table(show_header=True, style="bold")
+        table = rt.Table(show_header=True, style="bold", show_lines=True)
         for h in header:
             table.add_column(h)
 
         for t in dt.get_all_tables():
             dependents = dt.get_names_for_ids(dt.get_dependents(table_guid=t.id))
             dependents = [d if d else "" for d in dependents]  # Make sure not None
-            dependents = "" if not dependents else f"{', '.join(dependents)}"
+            dependents = "" if not dependents else '\n'.join(dependents)
 
             depends_on = dt.get_names_for_ids(dt.get_depends_on(table_guid=t.id))
             depends_on = [d if d else "" for d in depends_on]  # Make sure not None
-            depends_on = "" if not depends_on else f"{', '.join(depends_on)}"
+            depends_on = "" if not depends_on else '\n'.join(depends_on)
 
             table.add_row(
                 t.get_long_name(),

@@ -38,7 +38,7 @@ class TestDependencyTreeStdoutWriter(unittest.TestCase):
         dt.add_table(table=table3)
         dt.add_table(table=table4)
         dt.add_table_dependencies(table_guid="table1", depends_on="table3", dependents="table4")
-        dt.add_table_dependencies(table_guid="table2", depends_on="table4", dependents="table3")
+        dt.add_table_dependencies(table_guid="table2", depends_on="table4", dependents=["table3", "table4"])
 
         DependencyTreeStdoutWriter.write_dependency_tree(dt, rich_print=True)
 
