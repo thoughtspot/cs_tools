@@ -36,7 +36,7 @@ def run_app():
 
         dt = df.get_dependencies_for_all_tables(ignore_ts=args.ignore_ts)
         if args.output_type == "stdout":
-            DependencyTreeStdoutWriter().write_dependency_tree(dt=dt)
+            DependencyTreeStdoutWriter().write_dependency_tree(dt=dt, rich_print=args.rich_print)
         elif args.output_type == "excel":
             DependencyTreeXLSWriter.write_to_excel(dt=dt, filename=args.filename)
 
@@ -51,6 +51,7 @@ def get_args():
     parser.add_argument("--output_type", default="stdout", help="Where to write results: stdout, xls, excel.")
     parser.add_argument("--filename", default="stdout", help="Name of the file for Excel files.")
     parser.add_argument("--ignore_ts", action="store_true", default=True, help="Ignore files that start with 'TS:'.")
+    parser.add_argument("--rich_print", action="store_true", default=True, help="Write to stdout as a table.")
 
     return parser.parse_args()
 

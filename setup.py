@@ -12,9 +12,10 @@ setup(
     license='MIT',
     packages=find_packages(exclude=('tests', 'docs')),
     install_requires=[
+        'openpyxl',
         'requests',
+        'rich',
         'unicodecsv',
-        'urllib3',
-        'openpyxl'
+        'urllib3'
     ]
 )

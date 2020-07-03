@@ -13,6 +13,8 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 """
 
 from openpyxl import Workbook
+from rich.console import Console
+import rich.table as rt
 
 from .model import Table, DependencyTree
 
@@ -27,18 +29,57 @@ class DependencyTreeStdoutWriter:
         pass
 
     @staticmethod
-    def write_dependency_tree(dt):
+    def write_dependency_tree(dt, rich_print=True):
         """
         Writes the dependency tree to standard out.
         :param dt: The dependency tree to write.
         :type dt: DependencyTree
+        :param rich_print: If true, writes using tables and fonts.
+        :param rich_print: bool
         :return: Nothing
         """
-        root_tables = dt.get_root_tables()
-        for table in root_tables:
-            DependencyTreeStdoutWriter.__write_table_details(table=table, depth=0)
-            DependencyTreeStdoutWriter.__write_dependents(dt=dt, table=table, depth=1)
+        if rich_print:
+            DependencyTreeStdoutWriter.__write_rich_print(dt)
+        else:
+            root_tables = dt.get_root_tables()
+            for table in root_tables:
+                DependencyTreeStdoutWriter.__write_table_details(table=table, depth=0)
+                DependencyTreeStdoutWriter.__write_dependents(dt=dt, table=table, depth=1)
 
+    @staticmethod
+    def __write_rich_print(dt):
+        """
+        Writes the dependency tree as a table to stdout.
+        :param dt: The dependency tree to write.
+        :type dt: DependencyTree
+        :return: Nothing
+        """
+
+        console = Console()
+        header = ["Name", "GUID", "Type", "Author", "Depends On", "Dependents"]
+        table = rt.Table(show_header=True, style="bold")
+        for h in header:
+            table.add_column(h)
+
+        for t in dt.get_all_tables():
+            dependents = dt.get_names_for_ids(dt.get_dependents(table_guid=t.id))
+            dependents = [d if d else "" for d in dependents]  # Make sure not None
+            dependents = "" if not dependents else f"{', '.join(dependents)}"
+
+            depends_on = dt.get_names_for_ids(dt.get_depends_on(table_guid=t.id))
+            depends_on = [d if d else "" for d in depends_on]  # Make sure not None
+            depends_on = "" if not depends_on else f"{', '.join(depends_on)}"
+
+            table.add_row(
+                t.get_long_name(),
+                t.id,
+                t.type,
+                t.authorName,
+                depends_on,
+                dependents,
+            )
+
+        console.print(table)
 
     @staticmethod
     def __write_dependents(dt, table, depth):

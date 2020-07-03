@@ -58,7 +58,8 @@ class Table:
         """
         db = (self.databaseStripe + ".") if self.databaseStripe else ""
         schema = (self.schemaStripe + ".") if self.databaseStripe else ""
-        return db + schema + self.name
+        name = self.name if self.name else "unknown"
+        return db + schema + name
 
     def populate_from_json(self, json_obj):
         """
@@ -277,6 +278,11 @@ class DependencyTree:
         if not table_dependencies:  # Add if it doesn't already exist.
             table_dependencies = TableDependencies(table_guid=table_guid, depends_on=depends_on, dependents=dependents)
             self._table_dependencies[table_guid] = table_dependencies
+
+        if depends_on:
+            table_dependencies.add_depends_on(depends_on=depends_on)
+        if dependents:
+            table_dependencies.add_dependents(dependents=dependents)
 
         # for both directions, make sure links go both ways if the related table has been added.
         # recursion could have been used, but only need to go one level deep.
