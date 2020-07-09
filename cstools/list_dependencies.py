@@ -27,7 +27,8 @@ def run_app():
     Main application for finding dependencies.
     :return: Nothing
     """
-    args = get_args()
+    parser = get_parser()
+    args = parser.parse_args()
 
     if valid_args(args):
 
@@ -39,13 +40,15 @@ def run_app():
             DependencyTreeStdoutWriter().write_dependency_tree(dt=dt, rich_print=args.rich_print)
         elif args.output_type == "excel":
             DependencyTreeXLSWriter.write_to_excel(dt=dt, filename=args.filename)
+    else:
+        parser.print_help()
 
 
-def get_args():
+def get_parser():
     """
     Gets the arguments for the application.
     :return: The command arguments.
-    :rtype: argparse.Namespace
+    :rtype: argparse.ArgumentParser
     """
     parser = get_cluster_args()  # tsurl, username, password, disable_ssl
     parser.add_argument("--output_type", default="stdout", help="Where to write results: stdout, xls, excel.")
@@ -53,7 +56,7 @@ def get_args():
     parser.add_argument("--ignore_ts", action="store_true", default=True, help="Ignore files that start with 'TS:'.")
     parser.add_argument("--rich_print", action="store_true", default=True, help="Write to stdout as a table.")
 
-    return parser.parse_args()
+    return parser
 
 
 def valid_args(args):
@@ -90,7 +93,7 @@ def valid_args(args):
         if args.output_type == "xls":
             args.output_type = "excel"
 
-    return args
+    return valid
 
 
 if __name__ == "__main__":
