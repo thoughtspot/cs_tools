@@ -16,6 +16,7 @@ import argparse
 import json
 import logging
 import requests
+from typing import List, Dict, Any
 
 from .io import DependencyTreeStdoutWriter
 from .model import DependencyTree, Table, TableDependencies
@@ -271,3 +272,41 @@ class DependencyFinder(BaseApiInterface):
         """
         return self.ignore_ts and (table.name.startswith("TS:") or table.type == "CALENDAR_TABLE")
 
+
+class Metadata(BaseApiInterface):
+    """
+    Adapter for the Metadata Services endpoints.
+
+    {tsurl}/metadata/*
+
+    NOTE: barebones approach to this as I expect we will refactor!
+    """
+    ListOfDicts = List[Dict[str, Any]]
+
+    def get_list(self, type_: str='QUESTION_ANSWER_BOOK') -> ListOfDicts:
+        """
+        List of metadata objects in the repository
+
+        Endpoint:
+          {tsurl}/metadata/list
+
+        :type_ str: Type of metadata object. Defaults to QUESTION_ANSWER_BOOK
+        :returns list:
+        """
+        _accepted = ('QUESTION_ANSWER_BOOK', 'QUESTION_ANSWER_BOOK')
+
+        if type_ not in _accepted:
+            raise ValueError('currently accepted values: {_accepted}')
+
+        url = f'{self.tsurl}/callosum/v1/metadata/list'
+        params = {
+            'type': type_,
+            'category': 'ALL',
+            'sort': 'DEFAULT',
+            'offset': -1,
+            'showhidden': False
+        }
+
+        r = self.session.get(url, params=params)
+        r.raise_for_status()
+        return r['headers']
