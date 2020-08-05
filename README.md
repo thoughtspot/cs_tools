@@ -1,3 +1,9 @@
+# Changes
+
+- Restructured!
+
+---
+
 # Customer Success (Internal) Tools
 
 Customer Success Tools SHOULD NOT to be shared outside ThoughtSpot or our partners since they use
