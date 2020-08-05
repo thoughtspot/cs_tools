@@ -283,6 +283,7 @@ class Metadata(BaseApiInterface):
     """
     ListOfDicts = List[Dict[str, Any]]
 
+    @api_call
     def get_list(self, type_: str='QUESTION_ANSWER_BOOK') -> ListOfDicts:
         """
         List of metadata objects in the repository
@@ -293,7 +294,7 @@ class Metadata(BaseApiInterface):
         :type_ str: Type of metadata object. Defaults to QUESTION_ANSWER_BOOK
         :returns list:
         """
-        _accepted = ('QUESTION_ANSWER_BOOK', 'QUESTION_ANSWER_BOOK')
+        _accepted = ('QUESTION_ANSWER_BOOK', 'PINBOARD_ANSWER_BOOK')
 
         if type_ not in _accepted:
             raise ValueError('currently accepted values: {_accepted}')
@@ -310,4 +311,4 @@ class Metadata(BaseApiInterface):
 
         r = self.session.get(url, params=params)
         r.raise_for_status()
-        return r['headers']
+        return r.json()['headers']
