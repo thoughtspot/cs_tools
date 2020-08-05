@@ -1,6 +1,6 @@
 import requests
 
-from thoughtspot.models.metadata import Metadata
+from thoughtspot.models.metadata import PrivateMetadata, Metadata
 from thoughtspot.models.auth import Security
 
 
@@ -18,4 +18,5 @@ class ThoughtSpot:
 
         # add in all our model endpoints
         self._security = Security(self)
+        self._metadata = PrivateMetadata(self)
         self.metadata = Metadata(self)

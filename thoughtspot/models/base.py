@@ -55,19 +55,19 @@ class APIBase:
         # TODO: implement a sane rate limit?
         return self.http.request(*args, **kwargs)
 
-    def _get(self, url: str) -> requests.Response:
+    def get(self, url: str) -> requests.Response:
         """
         Make a GET request.
         """
         return self.http._request('GET', url, )
 
-    def _post(self, url: str, *, data: dict) -> requests.Response:
+    def post(self, url: str, *, data: dict) -> requests.Response:
         """
         Make a POST request.
         """
         return self.http._request('POST', url, data=data)
 
-    def _delete(self, url: str) -> requests.Response:
+    def delete(self, url: str) -> requests.Response:
         """
         Make a DELETE request.
         """
