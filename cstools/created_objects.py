@@ -14,6 +14,7 @@ TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONIN
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
+import datetime as dt
 import pathlib
 import csv
 
@@ -49,16 +50,19 @@ def run_app():
     with pathlib.Path(args.filename).open('w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow([
-            'object_id', 'type', 'author_display_name', 'created', 'modified'
+            'object_id', 'object_type', 'object_name', 'author_display_name', 'created',
+            'modified'
         ])
 
         for row in data:
             writer.writerow([
                 row['id'],
                 row['type'],
+                row['name'],
                 row['authorDisplayName'],
-                row['created'],
-                row['modified']
+                # timestamps are in milliseconds
+                dt.datetime.fromtimestamp(row['created'] / 1000.0).strftime('%Y%m%d %H:%M:%S'),
+                dt.datetime.fromtimestamp(row['modified'] / 1000.0).strftime('%Y%m%d %H:%M:%S')
             ])
 
 
