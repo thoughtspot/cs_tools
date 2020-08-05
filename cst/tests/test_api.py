@@ -17,7 +17,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 
 import unittest
 
-from cst.api import DependencyFinder
+from cst.api import DependencyFinder, Metadata
 from cst.io import DependencyTreeStdoutWriter
 
 TS_URL = "https://tstest"
@@ -53,3 +53,36 @@ class TestDependencyFinder(unittest.TestCase):
             if table.name.startswith("TS:"):
                 no_ts_tables = False
         self.assertTrue(no_ts_tables)
+
+
+class TestMetadata(unittest.TestCase):
+
+    def test_get_list(self):
+        """
+        TODO:
+        """
+        auth = {
+            'tsurl': TS_URL,
+            'username': TS_USER,
+            'password': TS_PASSWORD,
+            'disable_ssl': True
+        }
+
+        metadata = Metadata(**auth)
+
+        with self.subTest('pulls saved answer data'):
+            r = metadata.get_list('QUESTION_ANSWER_BOOK')
+            self.assertIsInstance(r, list)
+
+            for item in r:
+                for key in ('id', 'authorName', 'created'):
+                    self.assertTrue(key in item)
+
+        # yeah, I'm lazy. ;o
+        with self.subTest('pulls saved pinboard data'):
+            r = metadata.get_list('PINBOARD_ANSWER_BOOK')
+            self.assertIsInstance(r, list)
+
+            for item in r:
+                for key in ('id', 'authorName', 'created'):
+                    self.assertTrue(key in item)

@@ -304,7 +304,8 @@ class Metadata(BaseApiInterface):
             'category': 'ALL',
             'sort': 'DEFAULT',
             'offset': -1,
-            'showhidden': False
+            'showhidden': False,
+            'batchsize': -1  # no pagination - stranger danger for large clients
         }
 
         r = self.session.get(url, params=params)
