@@ -4,7 +4,7 @@ import enum
 
 import requests
 
-from thoughtspot.models.base import TSPublic
+from thoughtspot.models.base import APIBase, TSPublic
 from thoughtspot.settings import APIParameters
 
 
@@ -50,7 +50,7 @@ class SortOrder(enum.Enum):
 #
 
 
-class ListVizHeaders(APIParameters):
+class ListVizHeadersParameters(APIParameters):
     id: str
 
 
@@ -69,12 +69,35 @@ class ListObjectHeadersParameters(APIParameters):
     auto_created: bool = None
 
 
+class ListParameters(ListObjectHeadersParameters):
+    ownertypes: LogicalTableSubtype
+
+
 #
+
+class PrivateMetadata(APIBase):
+    """
+    Metadata Services.
+    """
+
+    def base_url(self):
+        """
+        Append to the base URL.
+        """
+        return f'{super().base_url}/metadata'
+
+    def list(self, **parameters) -> requests.Response:
+        """
+        List of metadata objects in the repository.
+        """
+        p = ListParameters(**parameters)
+        r = self.get(f'{self.base_url}/listobjectheaders', params=p.dict())
+        return r
 
 
 class Metadata(TSPublic):
     """
-    User Session Services.
+    Public Metadata Services.
     """
 
     def base_url(self):
@@ -87,7 +110,7 @@ class Metadata(TSPublic):
         """
         Get the visualization headers from the ThoughtSpot system.
         """
-        p = ListVizHeaders(**parameters)
+        p = ListVizHeadersParameters(**parameters)
         r = self.post(f'{self.base_url}/listvizheaders', params=p.dict())
         return r
 

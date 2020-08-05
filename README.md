@@ -1,6 +1,25 @@
 # Changes
 
-- Restructured!
+## Restructured Project
+1. top level directories
+    - `/tests` - toplevel tests per project industry standard
+    - `/thoughtspot` - this is our python layer to the swagger api, tql, etc
+    - `/tools` - this is where all non-technical customer interfacing scripts live
+2. models, models, models!
+    - high modularity and extendibility and for ease of testing
+    - private and public APIs represented well 
+3. logging & tsconfig-template
+    - simpler for debugging when a Cx runs into an issue
+      1. e.g. "send us the logs & your config" will allow PS to be more agile in resolving issues with our own scripts
+    - TOML vs YAML vs JSON
+      1. Looking for a friendly human-readable format.
+      2. YAML is great, but the syntax is very finnicky and there is little support for latest standard.
+      3. TOML is highly minimal and aimed at even more human readability.
+4. `pydantic` for validation
+5. soon: `httpx` over `requests`
+    - support for both HTTP/1.1 and HTTP/2.0
+    - nearly a drop-in replacement for `requests`
+    - future support for `async` is a matter of changing a few lines of code
 
 ---
 
