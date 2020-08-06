@@ -57,7 +57,7 @@ class ListVizHeadersParameters(APIParameters):
 class ListObjectHeadersParameters(APIParameters):
     type: MetadataObject = MetadataObject.PINBOARD_ANSWER_BOOK
     subtypes: LogicalTableSubtype
-    category: MetadataCategory = MetadataObject.ALL
+    category: MetadataCategory = MetadataCategory.ALL
     sort: SortOrder = SortOrder.DEFAULT
     sortascending: bool = None
     offset: int = -1
