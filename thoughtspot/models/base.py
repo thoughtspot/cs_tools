@@ -1,4 +1,5 @@
 import logging
+import json
 
 import requests
 
@@ -19,7 +20,15 @@ class APIBase:
         """
         Base API URl.
         """
-        return f'https://{self.config.host}:{self.config.port}/callosum/v1'
+        host = self.config.thoughtspot.host
+        port = self.config.thoughtspot.port
+
+        if port:
+            port = f':{port}'
+        else:
+            port = ''
+
+        return f'https://{host}{port}/callosum/v1'
 
     # TODO:
     #
@@ -48,30 +57,43 @@ class APIBase:
 
     #     return method
 
-    def _request(self, *args, **kwargs) -> requests.Response:
+    def _request(self, method, url, *args, **kwargs) -> requests.Response:
         """
         Make a generic request.
         """
-        # TODO: implement a sane rate limit?
-        return self.http.request(*args, **kwargs)
+        # sigh .... we are converting pydantic to json, but data and params
+        # kwargs expect dictionaries... so we resort to this hack. I'm sure I
+        # can find something more elegant later.
+        # - NC
+        if isinstance(kwargs.get('params'), str):
+            kwargs['params'] = json.loads(kwargs['params'])
+        if isinstance(kwargs.get('data'), str):
+            kwargs['data'] = json.loads(kwargs['data'])
+        # sigh/
 
-    def get(self, url: str) -> requests.Response:
+        # TODO: implement a sane rate limit?
+        _log.debug(f'>> {method} to {url}')
+        r = self.http.request(method, url, *args, **kwargs)
+        _log.debug(f'<< {r.status_code} from {url}')
+        return r
+
+    def get(self, url: str, *args, **kwargs) -> requests.Response:
         """
         Make a GET request.
         """
-        return self.http._request('GET', url, )
+        return self._request('GET', url, *args, **kwargs)
 
-    def post(self, url: str, *, data: dict) -> requests.Response:
+    def post(self, url: str, *args, **kwargs) -> requests.Response:
         """
         Make a POST request.
         """
-        return self.http._request('POST', url, data=data)
+        return self._request('POST', url, *args, **kwargs)
 
     def delete(self, url: str) -> requests.Response:
         """
         Make a DELETE request.
         """
-        return self.http._request('DELETE', url)
+        return self._request('DELETE', url)
 
 
 class TSPublic(APIBase):

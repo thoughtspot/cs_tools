@@ -1,3 +1,4 @@
+from typing import List
 import logging
 import enum
 
@@ -20,11 +21,10 @@ class MetadataObject(enum.Enum):
 
 #
 
-
 class ListDependentsParameters(APIParameters):
-    type: MetadataObject = MetadataObject.LOGICAL_COLUMN
-    id: str  # GUID
-    batchsize: int = 0
+    type: MetadataObject = MetadataObject.PHYSICAL_COLUMN
+    id: str  # GUIDs .. so technically this is an array of guids [<guid>, <guid>]
+    batchsize: int = -1
 
 
 #
@@ -34,6 +34,7 @@ class Dependency(APIBase):
     Dependency Services.
     """
 
+    @property
     def base_url(self):
         """
         Append to the base URL.
@@ -45,5 +46,5 @@ class Dependency(APIBase):
         Metadata objects referencing given object.
         """
         p = ListDependentsParameters(**parameters)
-        r = self.get(f'{self.base_url}/listdependents', params=p.dict())
+        r = self.post(f'{self.base_url}/listdependents', data=p.json())
         return r

@@ -56,21 +56,22 @@ class ListVizHeadersParameters(APIParameters):
 
 class ListObjectHeadersParameters(APIParameters):
     type: MetadataObject = MetadataObject.PINBOARD_ANSWER_BOOK
-    subtypes: LogicalTableSubtype
+    subtypes: LogicalTableSubtype = None
     category: MetadataCategory = MetadataCategory.ALL
     sort: SortOrder = SortOrder.DEFAULT
     sortascending: bool = None
     offset: int = -1
     batchsize: int = None
     tagname: List[str] = []
-    pattern: str
-    skipids: str
-    fetchids: str
+    pattern: str = None
+    showhidden: bool = False
+    skipids: str = None
+    fetchids: str = None
     auto_created: bool = None
 
 
 class ListParameters(ListObjectHeadersParameters):
-    ownertypes: LogicalTableSubtype
+    ownertypes: LogicalTableSubtype = None
 
 
 #
@@ -80,6 +81,7 @@ class PrivateMetadata(APIBase):
     Metadata Services.
     """
 
+    @property
     def base_url(self):
         """
         Append to the base URL.
@@ -91,7 +93,7 @@ class PrivateMetadata(APIBase):
         List of metadata objects in the repository.
         """
         p = ListParameters(**parameters)
-        r = self.get(f'{self.base_url}/listobjectheaders', params=p.dict())
+        r = self.get(f'{self.base_url}/list', params=p.json())
         return r
 
 
@@ -100,6 +102,7 @@ class Metadata(TSPublic):
     Public Metadata Services.
     """
 
+    @property
     def base_url(self):
         """
         Append to the base URL.
@@ -111,7 +114,7 @@ class Metadata(TSPublic):
         Get the visualization headers from the ThoughtSpot system.
         """
         p = ListVizHeadersParameters(**parameters)
-        r = self.post(f'{self.base_url}/listvizheaders', params=p.dict())
+        r = self.get(f'{self.base_url}/listvizheaders', params=p.json())
         return r
 
     def list_object_headers(self, **parameters) -> requests.Response:
@@ -119,5 +122,5 @@ class Metadata(TSPublic):
         List of metadata object headers in the repository.
         """
         p = ListObjectHeadersParameters(**parameters)
-        r = self.post(f'{self.base_url}/listobjectheaders', params=p.dict())
+        r = self.get(f'{self.base_url}/listobjectheaders', params=p.json())
         return r

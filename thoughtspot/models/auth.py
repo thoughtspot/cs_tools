@@ -13,6 +13,7 @@ class Session(APIBase):
     User Session Services.
     """
 
+    @property
     def base_url(self):
         """
         Append to the base URL.
@@ -24,8 +25,8 @@ class Session(APIBase):
         Authenticate and login a user.
         """
         data = {
-            'username': self.config.user,
-            'password': self.config.password,
+            'username': self.config.auth['frontend'].username,
+            'password': self.config.auth['frontend'].password,
             'rememberme': True
         }
         r = self.post(f'{self.base_url}/login', data=data)
@@ -45,7 +46,7 @@ class Session(APIBase):
         """
         Logout current user.
         """
-        r = self.post(f'{self.base_url}/logout', ...)
+        r = self.post(f'{self.base_url}/logout')
 
         try:
             r.raise_for_status()
