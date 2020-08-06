@@ -21,6 +21,14 @@
     - nearly a drop-in replacement for `requests`
     - future support for `async` is a matter of changing a few lines of code
 
+# TODO
+
+- unittests
+- formalize base `tsconfig.toml`
+- docstrings
+- fix tools to work with new api structure
+- impl `/periscope/*` ?
+
 ---
 
 # Customer Success (Internal) Tools
