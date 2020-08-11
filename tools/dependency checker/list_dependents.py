@@ -1,9 +1,13 @@
 from typing import List, Dict, Any
+import argparse
 import logging
 import csv
 
+from requests.exceptions import SSLError
+
 from thoughtspot.util.datetime import timestamp_to_datetime
 from thoughtspot.util.swagger import to_array
+from thoughtspot.util.ux import eprint
 from thoughtspot.const import FMT_TSLOAD_DATETIME
 
 
@@ -13,15 +17,16 @@ FLAT_API_RESPONSE = List[Dict[str, Any]]
 
 def _internal_name_lookup(name: str) -> str:
     """
+    Maps an object type to a business friendly name.
     """
     mapping = {
         'QUESTION_ANSWER_BOOK': 'saved answer',
         'PINBOARD_ANSWER_BOOK': 'pinboard',
         'USER_DEFINED': 'imported table',
-        'ONE_TO_ONE_LOGICAL': 'table',  # worksheet?
-        'AGGR_WORKSHEET': 'view',  # worksheet?
+        'ONE_TO_ONE_LOGICAL': 'table',
+        'AGGR_WORKSHEET': 'view',
 
-        # what's the difference here...
+        # what's the difference here...?
         'LOGICAL_TABLE': 'worksheet',
         'WORKSHEET': 'worksheet',
 
@@ -35,6 +40,7 @@ def _internal_name_lookup(name: str) -> str:
 
 def _url_lookup(name: str) -> str:
     """
+    Maps a business friendly name to its URL part.
     """
     mapping = {
         'imported table': 'data/tables',
@@ -52,6 +58,12 @@ def _url_lookup(name: str) -> str:
 
 def _get_worksheets(api) -> FLAT_API_RESPONSE:
     """
+    Get data for all the client's worksheets in a cluster.
+
+    Data returned each worksheet:
+        - name
+        - type
+        - guid
     """
     r = api._metadata.list(type='LOGICAL_TABLE', category='ALL', showHidden=True)
     worksheets = []
@@ -71,6 +83,21 @@ def _get_worksheets(api) -> FLAT_API_RESPONSE:
 
 def _get_dependents(api) -> FLAT_API_RESPONSE:
     """
+    Return a flat data structure of dependents.
+
+    Data returned about each dependent:
+        - parent_guid
+        - parent_type
+        - parent_name
+        - parent_url
+        - guid
+        - type
+        - name
+        - url
+        - author_name
+        - author_display_name
+        - created_at   [note: str in TS_DATETIME_FMT]
+        - modified_at  [note: str in TS_DATETIME_FMT]
     """
     TS_HOST = api.config.thoughtspot.host
 
@@ -136,8 +163,8 @@ def _get_dependents(api) -> FLAT_API_RESPONSE:
                     'url': url,
                     'author_name': dependent['authorName'],
                     'author_display_name': dependent['authorDisplayName'],
-                    'date_created': created.strftime(FMT_TSLOAD_DATETIME),
-                    'date_modified': modified.strftime(FMT_TSLOAD_DATETIME)
+                    'created_at': created.strftime(FMT_TSLOAD_DATETIME),
+                    'modified_at': modified.strftime(FMT_TSLOAD_DATETIME)
                 })\
 
         _log.debug(f'dependency tree:\n{_dependency_tree_msg}\n')
@@ -145,11 +172,24 @@ def _get_dependents(api) -> FLAT_API_RESPONSE:
     return dependencies
 
 
-def app(api, *, filename):
+def app(api: 'ThoughtSpot', *, filename: str) -> None:
     """
+    Main application logic.
+
+    This app will grab all the worksheet/view/table dependents from the
+    API and then save that data at <filename> in CSV format. This data
+    can be manually observed with a tool like Microsoft Excel, or
+    reimported back into ThoughtSpot and joined to the TS BI: Sever
+    table on the parent_guid.
     """
-    with api:
-        dependencies = _get_dependents(api)
+    try:
+        with api:
+            dependencies = _get_dependents(api)
+    except SSLError:
+        _log.error(
+            'SSL certificate verify failed, did you mean to use flag --disable_ssl?'
+        )
+        return
 
     with open(filename, mode='w', encoding='utf-8', newline='') as c:
         writer = csv.DictWriter(c, dependencies[0].keys())
@@ -159,16 +199,64 @@ def app(api, *, filename):
 
 def parse_arguments():
     """
+    CLI interface to this script.
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--filename', required=True, action='store', help='location of the CSV file to output dependents')
+    parser.add_argument('--toml', help='location of the tsconfig.toml configuration file')
+    parser.add_argument('--ts_url', help='the url to thoughtspot, https://my.thoughtspot.com')
+    parser.add_argument('--username', help='frontend user to authenticate to ThoughtSpot with')
+    parser.add_argument('--password', help='frontend password to authenticate to ThoughtSpot with')
+    parser.add_argument('--disable_ssl', action='store_true', help='whether or not to ignore SSL errors')
+    parser.add_argument('--log_level', default='INFO', metavar='INFO', help='verbosity of the logger (used for debugging)')
+
+    try:
+        args = parser.parse_args()
+        parse_failed = False
+    except Exception:
+        parser.print_usage()
+        raise SystemExit()
+
+    if not (args.toml or all(map(bool, [args.username, args.password, args.ts_url]))):
+        msg = (
+            '\n[ERROR] you must provide either tsconfig.toml file OR manually supply '
+            'all --username, --password, and --ts_url\n'
+        )
+        eprint(msg)  # TODO: logging
+        parse_failed = True
+
+    if parse_failed:
+        parser.print_help()
+        raise SystemExit()
+
+    return args
 
 
 if __name__ == '__main__':
-    import argparse
     from thoughtspot.settings import TSConfig
     from thoughtspot.api import ThoughtSpot
 
     args = parse_arguments()
-    config = TSConfig.from_toml('../../tsconfig.toml')
-    ts_api = ThoughtSpot(config)
 
+    if args.toml:
+        config = TSConfig.from_toml(args.toml)
+    else:
+        data = {
+            'thoughtspot': {
+                'host': args.ts_url,
+                'disable_ssl': args.disable_ssl
+            },
+            'auth': {
+                'frontend': {
+                    'username': args.username,
+                    'password': args.password
+                }
+            },
+            'logging': {
+                'level': args.log_level
+            }
+        }
+        config = TSConfig(**data)
+
+    ts_api = ThoughtSpot(config)
     app(ts_api, filename='./test.csv')
