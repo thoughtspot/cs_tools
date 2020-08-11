@@ -22,13 +22,13 @@ class ThoughtSpot:
 
         try:
             logging.config.dictConfig(ts_config.logging)
-            _log.info('set up provided logger at level DEBUG')
+            _log.info(f'set up provided logger at level {ts_config.logging}')
         except ValueError:
             logging.basicConfig(
                 format='[%(levelname)s - %(asctime)s] '
                        '[%(name)s - %(module)s.%(funcName)s %(lineno)d] '
                        '%(message)s',
-                level=logging.DEBUG
+                level=getattr(logging, ts_config.logging['level'])
             )
 
             level = logging.getLevelName(logging.getLogger('root').getEffectiveLevel())
