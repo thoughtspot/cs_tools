@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 import logging
 import enum
 
@@ -22,7 +22,7 @@ class MetadataObject(enum.Enum):
 #
 
 class ListDependentsParameters(APIParameters):
-    type: MetadataObject = MetadataObject.PHYSICAL_COLUMN
+    type: Union[MetadataObject, None] = MetadataObject.PHYSICAL_COLUMN
     id: str  # GUIDs .. so technically this is an array of guids [<guid>, <guid>]
     batchsize: int = -1
 

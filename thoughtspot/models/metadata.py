@@ -88,6 +88,12 @@ class PrivateMetadata(APIBase):
         """
         return f'{super().base_url}/metadata'
 
+    # def details(self, **parameters) -> requests.Response:
+    #     """
+    #     """
+    #     p = DetailsParameters(**parameters)
+    #     r = self.post(f'{self.base_url}/details', params=p.json())
+
     def list(self, **parameters) -> requests.Response:
         """
         List of metadata objects in the repository.
