@@ -46,3 +46,10 @@ class ThoughtSpot:
         self._metadata = PrivateMetadata(self)
         self._dependency = Dependency(self)
         self.metadata = Metadata(self)
+
+    def __enter__(self):
+        self._session.login()
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self._session.logout()
