@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://www.thoughtspot.com/">
-    <img width="350" height="208" src="docs/img/logo_black.jpg" alt='ThoughtSpot'>
+    <img width="350" height="208" src="https://raw.githubusercontent.com/thoughtspot/cs_tools/repo-refactor/docs/img/logo_black.svg?token=ADMI6NPEWE7ZDGUQMPFLGUC7HWK5E" alt='ThoughtSpot'>
   </a>
 </p>
 
