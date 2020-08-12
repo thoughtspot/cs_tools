@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://www.thoughtspot.com/">
-    <img width="350" height="208" src="https://raw.githubusercontent.com/thoughtspot/cstools/master/docs/img/logo_black.jpg" alt='ThoughtSpot'>
+    <img width="350" height="208" src="docs/img/logo_black.jpg" alt='ThoughtSpot'>
   </a>
 </p>
 
@@ -16,3 +16,5 @@ the highest level of consultancy that they’ve come to expect from the team.
 ---
 
 ## Rule #1: Everyone Can Participate!
+
+Lorem ipsum...
