@@ -24,8 +24,8 @@ the highest level of consultancy that they’ve come to expect from the team.
 [WIP]
 
 To clone and work this library, you'll need Git and Python 3.6 or greater installed on
-your computer. Then, create a virtual environment [Don't know 
-[how to do that][bp-venv]?] and activate it.
+your computer. Then, create a virtual environment and activate it. <sup>([Don't know 
+how to do that][bp-venv]?)</sup>
 
 From your command line:
 ```console
@@ -35,4 +35,4 @@ $ pip install git+https://github.com/thoughtspot/cs_tools.git
 
 That's it!
 
-[bp-venv][/best-practices/virtual-environment.md]
+[bp-venv]: /best-practices/virtual-environment.md
