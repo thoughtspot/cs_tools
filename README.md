@@ -17,4 +17,22 @@ the highest level of consultancy that they’ve come to expect from the team.
 
 ## Rule #1: Everyone Can Participate!
 
-Lorem ipsum...
+[WIP] Lorem ipsum...
+
+## Getting Started
+
+[WIP]
+
+To clone and work this library, you'll need Git and Python 3.6 or greater installed on
+your computer. Then, create a virtual environment [Don't know 
+[how to do that][bp-venv]?] and activate it.
+
+From your command line:
+```console
+# Clone this repository
+$ pip install git+https://github.com/thoughtspot/cs_tools.git
+```
+
+That's it!
+
+[bp-venv][/best-practices/virtual-environment.md]
