@@ -36,6 +36,7 @@ optional arguments:
   --username USERNAME  frontend user to authenticate to ThoughtSpot with
   --password PASSWORD  frontend password to authenticate to ThoughtSpot with
   --disable_ssl        whether or not to ignore SSL errors
+  --disable_sso        whether or not to disable SAML integration
   --log_level INFO     verbosity of the logger (used for debugging)
 ~~~ 
 

@@ -2,7 +2,7 @@
 
 **Thank you for contributing to CS Tools!**
 
-The purpose of this document is to help get newer developers get up and runnnig with a
+The purpose of this document is to help get newer developers get up and running with a
 clean python virtual environment.
 
 ## What is a Virtual Environment?
@@ -41,7 +41,7 @@ activate the environment again, we simply need to run the final `source` command
 For a more in-depth look at native support for virtual environments, happy yourself to
 reference [Real Python's primer guide][real-python-venv].
 
-## Poetry: Dependency Management for Python
+## Using Poetry: Dependency Management for Python
 
 Poetry is another tool useful in creating and managing Python virtual environments. This
 is one of the tasks Poetry sets out to resolve, among others. Specifically, Poetry

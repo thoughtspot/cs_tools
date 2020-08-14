@@ -29,8 +29,10 @@ how to do that][bp-venv]?)</sup>
 
 From your command line:
 ```console
-# Clone this repository
 $ pip install git+https://github.com/thoughtspot/cs_tools.git
+-or-
+$ poetry add git+https://github.com/thoughtspot/cs_tools.git
+$ poetry install
 ```
 
 That's it!
