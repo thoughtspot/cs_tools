@@ -1,11 +1,11 @@
 import datetime as dt
 
 
-def timestamp_to_datetime(timestamp: int, *, unit: str='s') -> dt.datetime:
+def to_datetime(timestamp: int, *, unit: str='s') -> dt.datetime:
     """
     Convert a timestamp to a python datetime.
 
-    Mostly offers a 
+    Mostly offers a nice API to the datetime library.
     """
     _units = {
         's': 1,

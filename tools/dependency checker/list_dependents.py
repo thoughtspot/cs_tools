@@ -1,13 +1,13 @@
 from typing import List, Dict, Any
-import argparse
 import logging
 import csv
 
 from requests.exceptions import SSLError
 
-from thoughtspot.util.datetime import timestamp_to_datetime
+from thoughtspot.models.metadata import MetadataObject
+from thoughtspot.util.datetime import to_datetime
 from thoughtspot.util.swagger import to_array
-from thoughtspot.util.ux import eprint
+from thoughtspot.util.ux import FrontendArgumentParser, eprint
 from thoughtspot.const import FMT_TSLOAD_DATETIME
 
 
@@ -15,73 +15,27 @@ _log = logging.getLogger(__name__)
 FLAT_API_RESPONSE = List[Dict[str, Any]]
 
 
-def _internal_name_lookup(name: str) -> str:
+def _get_metadata(api, *, metadata_type) -> FLAT_API_RESPONSE:
     """
-    Maps an object type to a business friendly name.
     """
-    mapping = {
-        'QUESTION_ANSWER_BOOK': 'saved answer',
-        'PINBOARD_ANSWER_BOOK': 'pinboard',
-        'USER_DEFINED': 'imported table',
-        'ONE_TO_ONE_LOGICAL': 'table',
-        'AGGR_WORKSHEET': 'view',
+    r = api._metadata.list(type=metadata_type, batchsize=-1, showhidden=True)
+    objects = []
 
-        # what's the difference here...?
-        'LOGICAL_TABLE': 'worksheet',
-        'WORKSHEET': 'worksheet',
-
-        # so far unsused from Tyler's script
-        'INSIGHT': 'spotiq insight',
-        'PINBOARD': 'pinboard',
-    }
-
-    return mapping[name]
-
-
-def _url_lookup(name: str) -> str:
-    """
-    Maps a business friendly name to its URL part.
-    """
-    mapping = {
-        'imported table': 'data/tables',
-        'worksheet': 'data/tables',
-        'table': 'data/tables',
-        'view': 'data/tables',
-        'spotiq insight': 'insight'
-    }
-
-    try:
-        return mapping[name]
-    except KeyError:
-        return name.replace(' ', '-')
-
-
-def _get_worksheets(api) -> FLAT_API_RESPONSE:
-    """
-    Get data for all the client's worksheets in a cluster.
-
-    Data returned each worksheet:
-        - name
-        - type
-        - guid
-    """
-    r = api._metadata.list(type='LOGICAL_TABLE', category='ALL', showHidden=True)
-    worksheets = []
-
-    for item in r.json()['headers']:
-        if item['type'] == 'CALENDAR_TABLE' or item['name'].startswith('TS:'):
-            continue
-
-        worksheets.append({
-            'name': item['name'],
-            'type': item['type'],
-            'guid': item['id']
+    for metadata_object in r.json()['headers']:
+        objects.append({
+            'name': metadata_object['name'],
+            'type': metadata_type,
+            'guid': metadata_object['id']
         })
 
-    return worksheets
+    return objects
 
 
-def _get_dependents(api) -> FLAT_API_RESPONSE:
+def _get_dependents(
+    api: 'ThoughtSpot',
+    *,
+    metadata_type='LOGICAL_TABLE'
+) -> FLAT_API_RESPONSE:
     """
     Return a flat data structure of dependents.
 
@@ -89,90 +43,46 @@ def _get_dependents(api) -> FLAT_API_RESPONSE:
         - parent_guid
         - parent_type
         - parent_name
-        - parent_url
+        TODO: - parent_url
         - guid
         - type
         - name
-        - url
+        TODO: - url
         - author_name
         - author_display_name
-        - created_at   [note: str in TS_DATETIME_FMT]
-        - modified_at  [note: str in TS_DATETIME_FMT]
+        - created_at
+        - modified_at
     """
-    TS_HOST = api.config.thoughtspot.host
+    objects = _get_metadata(api, metadata_type=metadata_type)
+    guids = map(lambda e: e['guid'], objects)
+    r = api._dependency.list_dependents(type=metadata_type, id=to_array(guids))
 
-    worksheets = _get_worksheets(api)
-    guids = map(lambda e: e['guid'], worksheets)
-
-    r = api._dependency.list_dependents(type=None, id=to_array(guids))
     dependencies = []
 
-    for parent_guid, info in r.json().items():
-        try:
-            parent = next((w for w in worksheets if w['guid'] == parent_guid))
-        except StopIteration:
-            _log.error(
-                '>>>>> ERROR <<<<<<',
-                f'\n{parent_guid}',
-                f'\n{info}'
-            )
-            return []
-        else:
-            parent_type = _internal_name_lookup(parent['type'])
-            parent_url = f"{TS_HOST}/#/{_url_lookup(parent_type)}/{parent['guid']}"
+    for parent_guid, dependents_info in r.json().items():
+        parent = next((m for m in objects if m['guid'] == parent_guid))
 
-        # NOTE:
-        #
-        # this dep tree will only go 1 level deep, we might be able to sort
-        # the list_dependents api response [note: r.json().items()] to allow
-        # us to print the entire dependency tree linearly.
-        _dependency_tree_msg = (
-            f"\n{parent['name']}  <-- ({parent['type']} aka '{parent_type}')"
-            f'\n  has the following dependents..'
-        )
-
-        for dependency_type, dependents in info.items():
-            dependent_type = _internal_name_lookup(dependency_type)
-
+        for dependent_type, dependents in dependents_info.items():
             for dependent in dependents:
-                # TODO: subclassify insights? (a type of pinboard, SpotIQ)
-                #
-                # if dependent_type == 'pinboard':
-                #     [snipped from tyler's old scripts]
-                #     if dependent['reportContent']['sheets'][0]['sheetContent']['sheetContentType'] == 'INSIGHT' ?
-                #     print(dependent)
-                #
-
-                url = f"{TS_HOST}/#/{_url_lookup(dependent_type)}/{dependent['id']}"
-                created = timestamp_to_datetime(dependent['created'], unit='ms')
-                modified = timestamp_to_datetime(dependent['modified'], unit='ms')
-
-                _dependency_tree_msg += (
-                    f"\n  - {dependent['name']}  <-- ({dependency_type} aka "
-                    f"{dependent_type})"
-                )
-
                 dependencies.append({
                     'parent_guid': parent['guid'],
-                    'parent_type': parent_type,
+                    'parent_type': parent['type'],
                     'parent_name': parent['name'],
-                    'parent_url': parent_url,
+                    # 'parent_url': ...,
                     'guid': dependent['id'],
-                    'type': dependent_type,
+                    'type': dependent.get('type', dependent_type),
                     'name': dependent['name'],
-                    'url': url,
+                    # 'url': ...,
                     'author_name': dependent['authorName'],
                     'author_display_name': dependent['authorDisplayName'],
-                    'created_at': created.strftime(FMT_TSLOAD_DATETIME),
-                    'modified_at': modified.strftime(FMT_TSLOAD_DATETIME)
-                })\
-
-        _log.debug(f'dependency tree:\n{_dependency_tree_msg}\n')
+                    'created_at': to_datetime(dependent['created'], unit='ms'),
+                    'modified_at': to_datetime(dependent['modified'], unit='ms')
+                })
 
     return dependencies
 
 
-def app(api: 'ThoughtSpot', *, filename: str) -> None:
+def app(api: 'ThoughtSpot', *, filename: str, metadata_type: str) -> None:
     """
     Main application logic.
 
@@ -184,7 +94,7 @@ def app(api: 'ThoughtSpot', *, filename: str) -> None:
     """
     try:
         with api:
-            dependencies = _get_dependents(api)
+            dependencies = _get_dependents(api, metadata_type=metadata_type)
     except SSLError:
         _log.error(
             'SSL certificate verify failed, did you mean to use flag --disable_ssl?'
@@ -192,6 +102,7 @@ def app(api: 'ThoughtSpot', *, filename: str) -> None:
         return
 
     with open(filename, mode='w', encoding='utf-8', newline='') as c:
+        # TODO: beautify the end-user output.
         writer = csv.DictWriter(c, dependencies[0].keys())
         writer.writeheader()
         writer.writerows(dependencies)
@@ -201,14 +112,11 @@ def parse_arguments():
     """
     CLI interface to this script.
     """
-    parser = argparse.ArgumentParser()
+    OBJECT_TYPES = list(map(lambda e: e.value, list(MetadataObject)))
+
+    parser = FrontendArgumentParser()
     parser.add_argument('--filename', required=True, action='store', help='location of the CSV file to output dependents')
-    parser.add_argument('--toml', help='location of the tsconfig.toml configuration file')
-    parser.add_argument('--ts_url', help='the url to thoughtspot, https://my.thoughtspot.com')
-    parser.add_argument('--username', help='frontend user to authenticate to ThoughtSpot with')
-    parser.add_argument('--password', help='frontend password to authenticate to ThoughtSpot with')
-    parser.add_argument('--disable_ssl', action='store_true', help='whether or not to ignore SSL errors')
-    parser.add_argument('--log_level', default='INFO', metavar='INFO', help='verbosity of the logger (used for debugging)')
+    parser.add_argument('--object_type', required=True, action='store', choices=OBJECT_TYPES, help='type of object to find dependents from')
 
     try:
         args = parser.parse_args()
@@ -244,7 +152,8 @@ if __name__ == '__main__':
         data = {
             'thoughtspot': {
                 'host': args.ts_url,
-                'disable_ssl': args.disable_ssl
+                'disable_ssl': args.disable_ssl,
+                'disable_sso': args.disable_sso
             },
             'auth': {
                 'frontend': {
@@ -259,4 +168,4 @@ if __name__ == '__main__':
         config = TSConfig(**data)
 
     ts_api = ThoughtSpot(config)
-    app(ts_api, filename='./test.csv')
+    app(ts_api, filename=args.filename, metadata_type=args.object_type)
