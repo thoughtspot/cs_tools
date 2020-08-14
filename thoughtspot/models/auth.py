@@ -29,7 +29,13 @@ class Session(APIBase):
             'password': self.config.auth['frontend'].password,
             'rememberme': True
         }
-        r = self.post(f'{self.base_url}/login', data=data)
+
+        url = f'{self.base_url}/login'
+
+        if self.config.thoughtspot.disable_sso:
+            url = f'{url}?disableSAMLAutoRedirect=true'
+
+        r = self.post(url, data=data)
 
         try:
             r.raise_for_status()

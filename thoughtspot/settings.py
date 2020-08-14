@@ -12,14 +12,21 @@ class Settings(BaseModel):
 
 
 class Auth(Settings):
+    """
+    Credentials to sign in with.
+    """
     username: str
     password: str
 
 
 class TSInstance(Settings):
+    """
+    Information about the ThoughtSpot instance.
+    """
     host: str
     port: int = None
     disable_ssl: bool = False
+    disable_sso: bool = False
 
 
 class TSConfig(Settings):

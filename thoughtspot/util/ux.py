@@ -1,19 +1,7 @@
 """
-Copyright 2020 ThoughtSpot
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in all copies or substantial portions
-of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Contains utilities to help interfacing directly with the folks running a
+script.
 """
-
-# Contains utility functions used by other parts of the system.
-
 import argparse
 import sys
 
@@ -40,43 +28,22 @@ def printif(condition, text):
         print(text)
 
 
-class BaseAPIArgParser:
+class DefaultArgumentParser(argparse.ArgumentParser):
     """
-    Base argument parser to be used in different apps.  Call get_parser to get the base parser and validate to do
-    validation.
     """
-    def __init__(self):
-        self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("-t", "--thoughtspot_host", required=True,
-                                 help="URL or IP, e.g. https:thoughtspot.mycompany.com or https://1.1.1.1")
-        self.parser.add_argument("-u", "--username", default="tsadmin", required=True,
-                                 help="username - must have administrative privileges")
-        self.parser.add_argument("-p", "--password", default="admin", required=True,
-                                 help="password - must have administrative privileges")
+    def __init__(self, *argparser_a, **argparser_kw):
+        super().__init__(*argparser_a, **argparser_kw)
+        self.add_argument('--toml', help='location of the tsconfig.toml configuration file')
+        self.add_argument('--ts_url', help='the url to thoughtspot, https://my.thoughtspot.com')
+        self.add_argument('--log_level', default='INFO', metavar='INFO', help='verbosity of the logger (used for debugging)')
 
-    def get_parser(self) -> argparse.ArgumentParser:
-        """
-        Returns the base arg parser.
-        :return: The base arg parser.  Note that this returns the original, which can be updated.
-        :rtype: argparse.ArgumentParser
-        """
-        return self.parser
 
-    def valid_args(self) -> bool:
-        """
-        Validates the base arguments.
-        :return: True if the base arguments are valid.
-        :rtype: bool
-        """
-        errors = []
-        dict_args = vars(self.parser)
-        for k in dict_args.keys():
-            if not dict_args[k]:
-                errors.append(f"Missing or empty argument {k}")
-
-        valid = not errors
-        if not valid:
-            eprint(errors)
-
-        return valid
-
+class FrontendArgumentParser(DefaultArgumentParser):
+    """
+    """
+    def __init__(self, *argparser_a, **argparser_kw):
+        super().__init__(*argparser_a, **argparser_kw)
+        self.add_argument('--username', help='frontend user to authenticate to ThoughtSpot with')
+        self.add_argument('--password', help='frontend password to authenticate to ThoughtSpot with')
+        self.add_argument('--disable_ssl', action='store_true', help='whether or not to ignore SSL errors')
+        self.add_argument('--disable_sso', action='store_true', help='whether or not to disable SAML login redirect')
