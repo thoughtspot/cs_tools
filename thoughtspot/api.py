@@ -47,6 +47,13 @@ class ThoughtSpot:
         self._dependency = Dependency(self)
         self.metadata = Metadata(self)
 
+    @property
+    def host(self):
+        """
+        URL of ThoughtSpot.
+        """
+        return self.config.thoughtspot.host
+
     def __enter__(self):
         self._session.login()
         return self

@@ -36,6 +36,23 @@ class DefaultArgumentParser(argparse.ArgumentParser):
         self.add_argument('--toml', help='location of the tsconfig.toml configuration file')
         self.add_argument('--ts_url', help='the url to thoughtspot, https://my.thoughtspot.com')
         self.add_argument('--log_level', default='INFO', metavar='INFO', help='verbosity of the logger (used for debugging)')
+        self.add_argument('--version', action='store_true', help='display the current version of this tool')
+
+    def errored(self, errors: list):
+        """
+        Prints all accumulated errors during parsing.
+        """
+        messages = '\n'.join([f'[ERROR] {e}' for e in errors])
+        eprint(f'\n{messages}\n')
+        self.print_help()
+        raise SystemExit('\n[ERROR] parsing arguments has failed, see the logs for details!')
+
+    def print_version(self, vers):
+        """
+        Prints the version number.
+        """
+        eprint(f'{self.prog} {vers}')
+        raise SystemExit(0)
 
 
 class FrontendArgumentParser(DefaultArgumentParser):
