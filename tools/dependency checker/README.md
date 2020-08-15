@@ -8,6 +8,7 @@ search on dependencies!
 ## Setup
 
 If you are setting this tool up on behalf of a client, please see [Best Practices: Client Install][bp-client-install]
+
 If you are setting this tool up for yourself, please see [Getting Started][cstools-getting-started]
 
 ## Running
