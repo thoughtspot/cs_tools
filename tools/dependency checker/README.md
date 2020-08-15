@@ -19,8 +19,8 @@ following the on-screen configuration. The configuration for this tool is below.
 Try it now and verify your environment is all set.
 
 ~~~
-usage: list_dependents.py [-h] [--toml TOML] [--ts_url TS_URL] [--log_level INFO] [--username USERNAME] [--password PASSWORD] [--disable_ssl] [--disable_sso]
-                          --filename FILENAME
+usage: list_dependents.py [-h] [--toml TOML] [--ts_url TS_URL] [--log_level INFO] [--version] [--username USERNAME]
+                          [--password PASSWORD] [--disable_ssl] [--disable_sso] [--filename FILENAME]
                           [--object_type {QUESTION_ANSWER_BOOK,PINBOARD_ANSWER_BOOK,QUESTION_ANSWER_SHEET,PINBOARD_ANSWER_SHEET,LOGICAL_COLUMN,LOGICAL_TABLE,LOGICAL_RELATIONSHIP,TAG,DATA_SOURCE}]
 
 Find all objects in your ThoughtSpot platform of a specified type, and return their dependents.
@@ -38,6 +38,8 @@ optional arguments:
   --filename FILENAME   location of the CSV file to output dependents
   --object_type {QUESTION_ANSWER_BOOK,PINBOARD_ANSWER_BOOK,QUESTION_ANSWER_SHEET,PINBOARD_ANSWER_SHEET,LOGICAL_COLUMN,LOGICAL_TABLE,LOGICAL_RELATIONSHIP,TAG,DATA_SOURCE}
                         type of object to find dependents from
+
+Additional help can be found at https://github.com/thoughtspot/cs_tools
 ~~~ 
 
 [bp-client-install]: https://github.com/thoughtspot/cs_tools/tools
