@@ -19,9 +19,9 @@ created using many command line tools.
 
 ### OSX / Linx
 ```console
-mkdir -p %HOME%/.venv
-python3 -m venv %HOME%/.venv/cs_tools
-source %HOME%/.venv/cs_tools/bin/activate
+mkdir -p $HOME/.venv
+python3 -m venv $HOME/.venv/cs_tools
+source $HOME/.venv/cs_tools/bin/activate
 pip install git+https://github.com/thoughtspot/cs_tools.git
 ```
 
