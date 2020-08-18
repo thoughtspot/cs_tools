@@ -12,7 +12,7 @@ from requests.exceptions import SSLError
 from thoughtspot.models.metadata import MetadataObject
 from thoughtspot.util.datetime import to_datetime
 from thoughtspot.util.swagger import to_array
-from thoughtspot.util.ux import FrontendArgumentParser, eprint
+from thoughtspot.util.ux import FrontendArgumentParser
 from thoughtspot.const import FMT_TSLOAD_DATETIME
 
 from _version import __version__
