@@ -1,57 +1,69 @@
-# Customer Success (Internal) Tools
+<p align="center">
+  <a href="https://www.thoughtspot.com/">
+    <img width="350" height="208" src="https://raw.githubusercontent.com/thoughtspot/cs_tools/repo-refactor/docs/img/logo_black.svg?token=ADMI6NPEWE7ZDGUQMPFLGUC7HWK5E" alt='ThoughtSpot'>
+  </a>
+</p>
 
-Customer Success Tools SHOULD NOT to be shared outside ThoughtSpot or our partners since they use
-internal APIs and databases that are not supported.  You have been warned!
+<p align="center"><strong>CS Tools</strong> <em>- field engineering tooling tuned for
+customer delight.</em></p>
 
-ThoughtSpot CS Tools are a collection of different tools that assist implementation and administration, but contain
-API usage that we normally wouldn't share with customers. The tools and Web APIs are all written in Python and 
-require a Python environment in which to run.  The remainder of this document will describe how to deploy and use 
-the tools.
+CS Tools is an initiative by the CS/PS team to collect, organize, analyze, improve, and
+streamline various field engineering tools existing today. This repository is introduced
+to form consistency in how we design, build, test, document, and distribute our tools.
+In doing so, we are able to streamline our work as well as provide our customers with
+the highest level of consultancy that they've come to expect from the team.
 
-## Packages and scripts
+---
 
-The tools can be split into two broad categories.  The first category contains the scripts that you can run to 
-directly do things.  For example, the `list_dependencies` script will let you find all of the tables and their
-dependencies in a cluster.
+## Rule #1: <font color="green">Everyone Can Participate!</font>
 
-The second category are the ThoughtSpot Web API Python wrappers.  These are all contained in the cst package and 
-categorized into modules based on functionality, such as API calls, data models, and reading and writing.
+We strongly believe everyone in CS/PS can participate, no matter what their technical
+proficiency is. Whether you want to act as part of the steering council that decides
+the direction of the overall project, be a field expert and liaise between developers
+and our customers, roll your sleeves up and git dirty developing new features or
+squashing bugs, or even help communicate the cool things the project has accomplished by
+writing snappy documentation - rest assured there will be plenty of tasks to participate
+in!
 
-## Setup
+Not sure where to start? Come chat with us in #cstools on [Slack][slack-channel]!
 
-CS Tools is installed with the same process as other TS Python tools.
+## Getting Started
 
-You can install using `pip install --upgrade git+https://github.com/thoughtspot/cs_tools`
+To clone and work this library, you'll want to have [Git][install-git] and
+[Python 3.6.1][install-python] or greater installed on your computer. Then, create a
+virtual environment and activate it. <sup>([Don't know how to do that][bp-venv]?)</sup>
 
-See the general [documentation](https://github.com/thoughtspot/community-tools/tree/master/python_tools) on setting 
-up your environment and installing using `pip`.
+From your command line:
+```console
+$ pip install git+https://github.com/thoughtspot/cs_tools.git
 
-## Running the pre-built tools
+-or-
 
-All of the pre-built tools are run using the general format: 
+$ poetry add git+https://github.com/thoughtspot/cs_tools.git
+$ poetry install
+```
 
-`python -m cstools.<tool-name>`
+That's it!
 
-Note there is no `.py` at the end and you *must* use `python -m`.  So for example to run `list_dependencies` and see the 
-options, you would enter `python -m cstools.list_dependencies --help`  Try it now and verify your environment is all set.
+P.S. - for extra credit, don't forget to check out our [best practices][bp-main]!
 
-The user tools currently consist of four scripts:
-1. `list_dependencies`, which gets all of the tables and dependencies and writes to stdout or Excel.
+## Our Tools
 
-~~~
-usage: cstools.list_dependencies [-h] [--tsurl TSURL] [--username USERNAME]
-                                 [--password PASSWORD] [--disable_ssl]
-                                 [--output_type OUTPUT_TYPE] [--filename FILENAME]
-                                 [--ignore_ts]
+Note: All tools currently live alongside the ThoughtSpot library as an implementation
+detail. Our current structure will aid us in separating off these tools at a later date.
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --tsurl TSURL         URL to ThoughtSpot, e.g. https://myserver
-  --username USERNAME   Name of the user to log in as.
-  --password PASSWORD   Password for login of the user to log in as.
-  --disable_ssl         Will ignore SSL errors.
-  --output_type OUTPUT_TYPE
-                        Where to write results: stdout, xls, excel.
-  --filename FILENAME   Name of the file for Excel files.
-  --ignore_ts           Ignore files that start with 'TS:'.
- ~~~ 
+All CS tools are installed as part of the Github CS Tools library. They do not live
+under the `/thoughtspot` directory so that they may be shared with clients directly.
+All tools do however, depend on the ThoughtSpot library in order to function properly,
+please see [Best Practices: Client Install][bp-client-install] for how to set up a
+client with the ThoughtSpot library.
+
+For further reading about tool structure, please see the [tools README][tools-readme].
+
+[slack-channel]: https://slack.com/app_redirect?channel=cstools
+[install-git]: https://git-scm.com/downloads
+[install-python]: https://www.python.org/downloads
+[bp-main]: ./best-practices/
+[bp-venv]: ./best-practices/virtual-environment.md
+[bp-client-install]: ./best-practices/client-install.md
+[tools-readme]: ./tools/README.md

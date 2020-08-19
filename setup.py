@@ -1,8 +1,13 @@
 from setuptools import setup, find_packages
 
+
+with open('./requirements.txt') as f:
+    required = f.readlines()
+
+
 setup(
-    name='cs_tools',
-    version='1.0',
+    name='thoughtspot',
+    version='0.1',
     python_requires='>3.6',
     description='This package contains tools and libraries for working with ThoughtSpot by CS users.',
     long_description_content_type="text/markdown",
@@ -11,11 +16,5 @@ setup(
     author_email='bill.back@thoughtspot.com',
     license='MIT',
     packages=find_packages(exclude=('tests', 'docs')),
-    install_requires=[
-        'openpyxl',
-        'requests',
-        'rich',
-        'unicodecsv',
-        'urllib3'
-    ]
+    install_requires=required
 )
