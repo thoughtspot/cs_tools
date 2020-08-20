@@ -31,5 +31,5 @@ TODO:
     - e.g. `"%USERPROFILE%/Downloads/cs_tools/tools/dependency checker/list_dependents.py"`
 
 [master-zip]: https://github.com/thoughtspot/cs_tools/archive/master.zip
-[bp-venv]: https://github.com/thoughtspot/cs_tools/best-practices/virtual-environment.md
-[tool-depchecker]: https://github.com/thoughtspot/cs_tools/tree/master/tools/dependency%20checker
+[bp-venv]: ./virtual-environment.md
+[tool-depchecker]: ../tools/dependency%20checker

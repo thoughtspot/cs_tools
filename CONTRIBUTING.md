@@ -31,6 +31,6 @@ it! We will appreciate it. Any significant improvement should be documented as i
 
 [slack-channel]: https://slack.com/app_redirect?channel=cstools
 [smart-sheet]: https://app.smartsheet.com/sheets/Hfvh6cCfVg8MQrFWmh3R4FgCqQfppXmV3mcW3v31
-[repo-master]: https://github.com/thoughtspot/cs_tools
+[repo-master]: https://github.com/thoughtspot/cs_tools/tree/master
 [repo-dev]: https://github.com/thoughtspot/cs_tools/tree/dev
-[repo-hack-venv]: /best-practices/virtual-environment.md
+[repo-hack-venv]: ./best-practices/virtual-environment.md

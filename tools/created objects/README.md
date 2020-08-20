@@ -41,5 +41,5 @@ optional arguments:
 Additional help can be found at https://github.com/thoughtspot/cs_tools
 ~~~ 
 
-[bp-client-install]: https://github.com/thoughtspot/cs_tools/tools
-[cstools-getting-started]: https://github.com/thoughtspot/cs_tools/README.md#getting-started
+[bp-client-install]: ../../best-practices/client-install.md
+[cstools-getting-started]: ../../README.md#getting-started
