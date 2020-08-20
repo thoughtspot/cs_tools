@@ -48,7 +48,6 @@ def _to_url(host: str, metadata: FLAT_API_RESPONSE) -> str:
 
     TODO: finalize and move to util.ux
     """
-    raise NotImplementedError('need to smoke test <mapping>')
     mapping = {
         'QUESTION_ANSWER_BOOK': 'saved-answer',
         'PINBOARD_ANSWER_BOOK': 'pinboard',
@@ -59,7 +58,12 @@ def _to_url(host: str, metadata: FLAT_API_RESPONSE) -> str:
         'INSIGHT': 'insight'
     }
 
-    guid  = metadata['guid']
+    try:
+        guid  = metadata['guid']
+    except KeyError:
+        _log.warning(f'metadata does not have a known guid:\n{metadata}')
+        return 'n/a'
+
     type_ = metadata['type']
 
     try:
