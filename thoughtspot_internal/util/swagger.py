@@ -3,7 +3,7 @@ Utilities for when working with the Swagger API.
 """
 from typing import Iterable
 
-from cs_tools.util.algo import dedupe
+from thoughtspot_internal.util.algo import dedupe
 
 
 def to_array(iterable: Iterable[str]) -> str:

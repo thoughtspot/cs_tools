@@ -3,8 +3,8 @@ import logging
 
 from thoughtspot.api import ThoughtSpot as ThoughtSpot_
 
-from cs_tools.models.dependency import Dependency
-from cs_tools.models.metadata import Metadata
+from thoughtspot_internal.models.dependency import Dependency
+from thoughtspot_internal.models.metadata import Metadata
 
 
 _log = logging.getLogger(__name__)

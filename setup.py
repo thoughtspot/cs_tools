@@ -18,7 +18,7 @@ setup(
     author_email='ps-na@thoughtspot.com',
     url='https://github.com/thoughtspot/ts_tools',
     license='MIT',
-    packages=('cs_tools', ),
+    packages=('thoughtspot_internal', ),
     install_requires=REQUIRED,
     python_requires='>=3.6'
 )

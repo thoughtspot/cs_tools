@@ -6,7 +6,7 @@ import requests
 
 from thoughtspot.settings import APIParameters
 
-from cs_tools.models import TSPrivate
+from thoughtspot_internal.models import TSPrivate
 
 
 _log = logging.getLogger(__name__)
