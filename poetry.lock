@@ -346,7 +346,7 @@ requests = "^2.24.0"
 toml = "^0.10.1"
 
 [package.source]
-reference = "9ad043fc34d3612a25cac46e05eb192059c6e5ac"
+reference = "a158023bac8d47e26d87e5a6ea7aa44c4c8cc951"
 type = "git"
 url = "https://github.com/thoughtspot/ts_tools.git"
 [[package]]
