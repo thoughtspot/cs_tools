@@ -1,16 +1,13 @@
 [tool.poetry]
-name = "thoughtspot"
+name = "thoughtspot_internal"
 version = "0.1.0"
 description = "Python interface for working with the ThoughtSpot API and platform"
-authors = ["Your Name <you@example.com>"]
+authors = ["Customer Success <ps-na@thoughtspot.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.6"
-requests = "^2.24.0"
-pydantic = "^1.6.1"
-toml = "^0.10.1"
-pandas = "==0.25.3"
+thoughtspot = {git = "https://github.com/thoughtspot/ts_tools.git"}
 
 [tool.poetry.dev-dependencies]
 ipykernel = "^5.2.0"

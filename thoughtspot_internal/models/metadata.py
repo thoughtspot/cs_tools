@@ -4,8 +4,9 @@ import enum
 
 import requests
 
-from thoughtspot.models.base import APIBase, TSPublic
 from thoughtspot.settings import APIParameters
+
+from thoughtspot_internal.models import TSPrivate
 
 
 _log = logging.getLogger(__name__)
@@ -106,7 +107,7 @@ class DetailParameters(APIParameters):
 #
 
 
-class PrivateMetadata(APIBase):
+class Metadata(TSPrivate):
     """
     Metadata Services.
     """
@@ -144,33 +145,4 @@ class PrivateMetadata(APIBase):
         """
         p = DetailParameters(id=guid, **parameters)
         r = self.get(f'{self.base_url}/detail/{guid}', params=p.json())
-        return r
-
-
-class Metadata(TSPublic):
-    """
-    Public Metadata Services.
-    """
-
-    @property
-    def base_url(self):
-        """
-        Append to the base URL.
-        """
-        return f'{super().base_url}/metadata'
-
-    def list_viz_headers(self, **parameters) -> requests.Response:
-        """
-        Get the visualization headers from the ThoughtSpot system.
-        """
-        p = ListVizHeadersParameters(**parameters)
-        r = self.get(f'{self.base_url}/listvizheaders', params=p.json())
-        return r
-
-    def list_object_headers(self, **parameters) -> requests.Response:
-        """
-        List of metadata object headers in the repository.
-        """
-        p = ListObjectHeadersParameters(**parameters)
-        r = self.get(f'{self.base_url}/listobjectheaders', params=p.json())
         return r

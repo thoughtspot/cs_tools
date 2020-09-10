@@ -1,20 +1,24 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 with open('./requirements.txt') as f:
-    required = f.readlines()
+    REQUIRED = [f'{req.strip()}' for req in f.readlines()]
+
+
+with open('./README.md') as f:
+    README = '\n'.join(f.readlines())
 
 
 setup(
-    name='thoughtspot',
-    version='0.1',
-    python_requires='>3.6',
-    description='This package contains tools and libraries for working with ThoughtSpot by CS users.',
-    long_description_content_type="text/markdown",
-    url='https://thoughtspot.com',
-    author='Bill Back',
-    author_email='bill.back@thoughtspot.com',
+    name='ThoughtSpot CS Tools',
+    version='0.1.0',
+    description='Python programming interface to the ThoughtSpot API and platform',
+    long_description=README,
+    author='Customer Success @ ThoughtSpot',
+    author_email='ps-na@thoughtspot.com',
+    url='https://github.com/thoughtspot/ts_tools',
     license='MIT',
-    packages=find_packages(exclude=('tests', 'docs')),
-    install_requires=required
+    packages=('thoughtspot_internal', ),
+    install_requires=REQUIRED,
+    python_requires='>=3.6'
 )
