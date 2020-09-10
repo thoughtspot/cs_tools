@@ -1,11 +1,12 @@
-from typing import List, Union
+from typing import Union
 import logging
 import enum
 
 import requests
 
-from thoughtspot.models.base import APIBase
 from thoughtspot.settings import APIParameters
+
+from thoughtspot_internal.models import TSPrivate
 
 
 _log = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class ListDependentsParameters(APIParameters):
 
 #
 
-class Dependency(APIBase):
+class Dependency(TSPrivate):
     """
     Dependency Services.
     """

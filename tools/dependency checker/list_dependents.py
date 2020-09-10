@@ -9,12 +9,12 @@ import pathlib
 import csv
 
 from requests.exceptions import SSLError
-
-from thoughtspot.models.metadata import MetadataObject
-from thoughtspot.util.datetime import to_datetime
-from thoughtspot.util.swagger import to_array
-from thoughtspot.util.ux import FrontendArgumentParser
 from thoughtspot.const import FMT_TSLOAD_DATETIME
+
+from thoughtspot_internal.models.metadata import MetadataObject
+from thoughtspot_internal.util.datetime import to_datetime
+from thoughtspot_internal.util.swagger import to_array
+from thoughtspot_internal.util.ux import FrontendArgumentParser
 
 from _version import __version__
 
@@ -228,7 +228,7 @@ def parse_arguments() -> argparse.Namespace:
 
 if __name__ == '__main__':
     from thoughtspot.settings import TSConfig
-    from thoughtspot.api import ThoughtSpot
+    from thoughtspot_internal.api import ThoughtSpot
 
     args = parse_arguments()
 
