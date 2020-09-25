@@ -15,28 +15,36 @@ class SageCombinedTableInfoParameters(APIParameters):
 
 class Periscope(TSPrivate):
     """
-    Metadata Services.
+    TODO
     """
 
     @property
     def base_url(self):
         """
-        Append to the base URL.
+        Periscope is a really internal API. ;)
         """
-        return f'{super().base_url}/periscope'
+        host = self.config.thoughtspot.host
+        port = self.config.thoughtspot.port
+
+        if port:
+            port = f':{port}'
+        else:
+            port = ''
+
+        return f'https://{host}{port}/periscope'
 
     def alert_getalerts(self) -> requests.Response:
         """
         TODO
         """
-        r = self.get(f'{self.base_url}/alerts/getalerts')
+        r = self.get(f'{self.base_url}/alert/getalerts')
         return r
 
     def alert_getevents(self) -> requests.Response:
         """
         TODO
         """
-        r = self.get(f'{self.base_url}/alerts/getevents')
+        r = self.get(f'{self.base_url}/alert/getevents')
         return r
 
     def sage_getsummary(self) -> requests.Response:
@@ -51,7 +59,7 @@ class Periscope(TSPrivate):
         TODO
         """
         p = SageCombinedTableInfoParameters(**parameters)
-        r = self.get(f'{self.base_url}/sage/sage_combinedtableinfo', params=p.json())
+        r = self.get(f'{self.base_url}/sage/combinedtableinfo', params=p.json())
         return r
 
     def falcon_getsummary(self) -> requests.Response:
