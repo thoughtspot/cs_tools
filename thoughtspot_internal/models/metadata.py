@@ -2,9 +2,8 @@ from typing import Union, List
 import logging
 import enum
 
-import requests
-
 from thoughtspot.settings import APIParameters
+import requests
 
 from thoughtspot_internal.models import TSPrivate
 
@@ -135,6 +134,7 @@ class Metadata(TSPrivate):
 
     def listas(self, **parameters) -> requests.Response:
         """
+        TODO
         """
         p = ListAsParameters(**parameters)
         r = self.get(f'{self.base_url}/listas', params=p.json())
@@ -142,6 +142,7 @@ class Metadata(TSPrivate):
 
     def detail(self, guid, **parameters) -> requests.Response:
         """
+        TODO
         """
         p = DetailParameters(id=guid, **parameters)
         r = self.get(f'{self.base_url}/detail/{guid}', params=p.json())
