@@ -118,6 +118,8 @@ git push
 ### Putting it all together, the workflow looks something like this.
 <sub>** this works only on OSX/Linux</sub>
 ```
+git clone https://github.com/thoughtspot/cs_tools.git
+cd cs_tools/
 git pull
 git checkout bp-example-contributions
 
@@ -128,7 +130,7 @@ export _GIT_CSTOOLS_USER_NAME=$(if [[ $(git config user.name | head -c1 | wc -c)
 echo "Hello, world! - $_GIT_CSTOOLS_USER_NAME" >> ./best-practices/static/workflow_contributors.csv
 
 git add *
-git commit -m "$_GIT_CSTOOLS_USER_NAME ran the example workflow!"
+git commit -m "$_GIT_CSTOOLS_USER_NAME ran the example workflow"
 git push
 ```
 <sub>[>> back to top <<][back-to-top]</sub>
