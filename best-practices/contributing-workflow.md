@@ -125,7 +125,7 @@ git checkout bp-example-contributions
 export _GIT_CSTOOLS_USER_NAME=$(if [[ $(git config user.name | head -c1 | wc -c) -ne 0 ]]; then echo $(git config user.name); else echo $USER; fi)
 
 # simulate some work being done...
-echo "\nHello, world! - $_GIT_CSTOOLS_USER_NAME" >> ./best-practices/static/workflow_contributors.csv
+echo "Hello, world! - $_GIT_CSTOOLS_USER_NAME" >> ./best-practices/static/workflow_contributors.csv
 
 git add *
 git commit -m "$_GIT_CSTOOLS_USER_NAME ran the example workflow!"
