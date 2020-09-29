@@ -2,9 +2,12 @@
 # Contributing Workflow
 
 **Thank you for contributing to CS Tools!**
+
 <sup>TL;DR? [>> jump: workflow <<][toc-workflow]</sup>
 
-*Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.*
+Want to help out the CS Tools project, but don't know how to get started? This Best Practices doc should help you get up and running with a copy of the project as well as arm you with the basics of how to contribute changes. No change is too small, so don't be discouraged even if you just see a typo and want to help make us sound like actual professionals. 😉
+
+Don't forget to put your newfound skills into action with the [example section][workable-example]!
 
 ---
 
@@ -19,14 +22,14 @@
 
 ## Git 101
 
-#### What Is Git?
+#### What is Git?
 > [Git][git] is a  _distributed version control system_  (DVCS). A _version control system_ (VCS) is a set of tools that track the history of a set of files. This means that you can tell your VCS to save the state of your files at any point. Then, you may continue to edit the files and store that state as well. Saving the state is similar to creating a backup copy of your working directory. When using Git, we refer to this saving of state as  _making a commit_.
 >
 > When you make a commit in Git, you add a commit message that explains at a high level what changes you made in this commit. Git can show you the history of all of the commits and their commit messages. This provides a useful history of what work you have done and can really help pinpoint when a bug crept into the system.
 >
 > In addition to showing you the log of changes you’ve made, Git also allows you to compare files between different commits. Git will also allow you to return any file (or all files) to an earlier commit with little effort.
 
-<sup> excerpt from [RealPython][real-python]</sub>
+<sup>excerpt from [RealPython][real-python]</sub>
 
 Projects are complex, and we're all busy people - sometimes we have to stop in the middle of what we're doing to answer an email or hop on a call with a client. Just like you used to do in Microsoft Excel, saving your place after every significant change in your document is an important task. Sometimes you want to copy the workbook and make a version to try out a different pivot or view of the data.
 
@@ -106,7 +109,9 @@ git push
 ```
  5. Once you've finalized your work on the branch, [open a pull request][cs-tools-pr].
 
-...fill in PR Request IMG here...
+<p align="center">
+  <img src="./static/example_pr.png" alt='example-pr'>
+</p>
 
 ---
 
@@ -120,7 +125,7 @@ git checkout bp-example-contributions
 export _GIT_CSTOOLS_USER_NAME=$(if [[ $(git config user.name | head -c1 | wc -c) -ne 0 ]]; then echo $(git config user.name); else echo $USER; fi)
 
 # simulate some work being done...
-echo "\nHello, world! - $_GIT_CSTOOLS_USER_NAME" >> ./best-practices/workflow_contributors.csv
+echo "\nHello, world! - $_GIT_CSTOOLS_USER_NAME" >> ./best-practices/static/workflow_contributors.csv
 
 git add *
 git commit -m "$_GIT_CSTOOLS_USER_NAME ran the example workflow!"
@@ -137,7 +142,9 @@ Now that you know the basics, there are some application-based tools out there t
 > 
 > Git provides a wealth of historical information that, too often, goes unexploited because it's cumbersome to explore with other tools. We believe that when you understand your history you'll make better choices today!
 
-
+<p align="center">
+  <img src="./static/gitahead.png" alt='git-ahead'>
+</p>
 
 ### [ungit][git-gui-recc-ungit]
 > The easiest way to use git. On any platform. Anywhere.
@@ -147,6 +154,10 @@ Now that you know the basics, there are some application-based tools out there t
 > -   Runs on any platform that node.js & git supports.
 > -   Web-based, meaning you can run it on your cloud/pure shell machine and use the ui from your browser (just browse to  [http://your-cloud-machine.com:8448](http://your-cloud-machine.com:8448/)).
 
+<p align="center">
+  <img src="./static/ungit.png" alt='ungit'>
+</p>
+
 <sub>[>> back to top <<][back-to-top]</sub>
 
 [toc-101]: #git-101
@@ -155,6 +166,7 @@ Now that you know the basics, there are some application-based tools out there t
 [toc-git-gui]: #guis-for-git
 [toc-workflow]: #contributions-workflow
 [back-to-top]: #contributing-workflow
+[workable-example]: #putting-it-all-together-the-workflow-looks-something-like-this
 [cs-tools-pr]: https://github.com/thoughtspot/cs_tools/compare
 [real-python]: https://realpython.com/python-git-github-intro/#what-is-git
 [git]: https://git-scm.com/
