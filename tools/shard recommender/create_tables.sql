@@ -8,7 +8,7 @@ CREATE TABLE alert (
     , msg  VARCHAR(255)
 );
 
-ALTER TABLE cs_tools.alert ADD CONSTRAINT PRIMARY KEY (at, type, msg);
+ALTER TABLE alert ADD CONSTRAINT PRIMARY KEY (at, type, msg);
 
 
 CREATE TABLE event (
@@ -17,7 +17,7 @@ CREATE TABLE event (
     , summary VARCHAR(255)
 );
 
-ALTER TABLE cs_tools.event ADD CONSTRAINT PRIMARY KEY (at, user, summary);
+ALTER TABLE event ADD CONSTRAINT PRIMARY KEY (at, user, summary);
 
 
 CREATE TABLE table_info (
@@ -44,4 +44,4 @@ CREATE TABLE table_info (
     , ip                VARCHAR(255)
 );
 
-ALTER TABLE cs_tools.table_info ADD CONSTRAINT PRIMARY KEY (table_guid, ip);
+ALTER TABLE table_info ADD CONSTRAINT PRIMARY KEY (table_guid, ip);

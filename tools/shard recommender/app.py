@@ -64,7 +64,7 @@ def _format_table_info_data(data: List[dict]) -> List[dict]:
             'last_build_time': e['lastBuildTime'],
             'is_known': e['isKnown'],
             'database_status': e['databaseStatus'],
-            'last_uploaded_at': dt.datetime.fromtimestamp(e['lastUploadedAt'] / 1_000_000).isoformat(),
+            'last_uploaded_at': dt.datetime.fromtimestamp(e['lastUploadedAt'] / 1_000_000).replace(microsecond=0).isoformat(),
             # 'last_uploaded_at': pd.to_datetime(e['lastUploadedAt'], unit='ms').isoformat(),
             'num_of_rows': e['numOfRows'],
             'approx_bytes_size': e['approxByteSize'],
@@ -80,28 +80,35 @@ def _format_table_info_data(data: List[dict]) -> List[dict]:
     return data
 
 
-def app(api: 'ThoughtSpot', directory: pathlib.Path, operation: str) -> None:
+def _to_csv(data: List[Dict[str, Any]], fp: pathlib.Path):
+    """
+    TODO
+    """
+    with fp.open(mode='w', encoding='utf-8', newline='') as c:
+        writer = csv.DictWriter(c, data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+
+
+def app(api: 'ThoughtSpot', directory: pathlib.Path) -> None:
     """
     Main application logic.
 
     """
     try:
         with api:
-            if operation == 'event':
-                data = _format_event_data(api._periscope.alert_getevents().json())
-            if operation == 'alert':
-                data = _format_alert_data(api._periscope.alert_getalerts().json())
-            if operation == 'table_info':
-                data = _format_table_info_data(api._periscope.sage_combinedtableinfo().json())
+            data = _format_event_data(api._periscope.alert_getevents().json())
+            _to_csv(data, fp=directory / 'event.csv')
+
+            data = _format_alert_data(api._periscope.alert_getalerts().json())
+            _to_csv(data, fp=directory / 'alert.csv')
+
+            data = _format_table_info_data(api._periscope.sage_combinedtableinfo().json())
+            _to_csv(data, fp=directory / 'table_info.csv')
     except SSLError:
         msg = 'SSL certificate verify failed, did you mean to use flag --disable_ssl?'
         _log.error(msg)
         return
-
-    with open(directory / f'{operation}.csv', mode='w', encoding='utf-8', newline='') as c:
-        writer = csv.DictWriter(c, data[0].keys())
-        writer.writeheader()
-        writer.writerows(data)
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -115,11 +122,6 @@ def parse_arguments() -> argparse.Namespace:
              )
 
     parser.add_argument('--directory', action='store', help='directory of where to save CSV output')
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--event', action='store_true', help='TBD')  # TODO-help
-    group.add_argument('--alert', action='store_true', help='TBD')  # TODO-help
-    group.add_argument('--table_info', action='store_true', help='TBD')  # TODO-help
-
     args = parser.parse_args()
 
     if args.version:
@@ -172,12 +174,4 @@ if __name__ == '__main__':
         config = TSConfig(**data)
 
     ts_api = ThoughtSpot(config)
-
-    op = next(
-        arg
-        for arg, value in vars(args).items()
-        if arg in ('event', 'alert', 'table_info')
-        if value
-    )
-
-    app(ts_api, directory=pathlib.Path(args.directory), operation=op)
+    app(ts_api, directory=pathlib.Path(args.directory))
