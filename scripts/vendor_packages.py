@@ -21,7 +21,7 @@ transfer the download to their ThoughtSpot instance into the /tmp directory.
 cd $HOME
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r /tmp/vendor/offline-install.txt --find-links=/tmp/vendor/ --no-index --no-cache-dir --no-deps
+pip install --upgrade -r /tmp/vendor/offline-install.txt --find-links=/tmp/vendor/ --no-index --no-cache-dir --no-deps
 
 The client can verify their install with the following command. Running the
 command below should result with the message EVIRONMENT SUCCESS.
