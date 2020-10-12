@@ -1,9 +1,9 @@
 """
 Freezes and downloads all necessary requirements.
 
-This script is to be run on a ThoughtSpot server by ThoughtSpot in order to
-ensure correct output. Upon running, all requirements will be downloaded to the
-../vendor/ directory.
+This script can be run on any machine that has a working virtual environment
+with cs_tools already set up. Upon running, all requirements will be downloaded
+to the ../vendor/ directory.
 
 -------------------------------------------------------------------------------
 
@@ -19,15 +19,14 @@ directory to Egynte, then share the link to the client. The client will need to
 transfer the download to their ThoughtSpot instance into the /tmp directory.
 
 cd $HOME
-mkdir .venv
 python3 -m venv .venv
-activate
-pip install -r /tmp/vendor/offline-install.txt --find-lines=/tmp/vendor/
+source .venv/bin/activate
+pip install -r /tmp/vendor/offline-install.txt --find-links=/tmp/vendor/ --no-index --no-cache-dir --no-deps
 
 The client can verify their install with the following command. Running the
 command below should result with the message EVIRONMENT SUCCESS.
 
-python -c "import thoughtspot_internal;print('EVIRONMENT SUCCESS!')"
+python -c "import thoughtspot_internal;print('EVIRONMENT SUCCESS')"
 """
 import subprocess as sp
 import pathlib
@@ -90,7 +89,7 @@ if __name__ == '__main__':
                 raise RuntimeError('thoughtspot or thoughtspot-internal not found in virtual environment')
 
         # download our pip-installed packages
-        sp.run(f'pip download {" ".join(lines)} --dest {VENDOR_DIR} --platform linux_x86_64 --no-deps')
+        sp.run(f'pip download {" ".join(all_but_ts)} --dest {VENDOR_DIR} --platform linux_x86_64 --no-deps')
 
         # cs_tools: clone, zip, clean up cloned
         sp.run('git clone https://github.com/thoughtspot/cs_tools.git')
