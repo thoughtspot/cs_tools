@@ -1,0 +1,194 @@
+pinboard:
+  name: Table Shard Analysis
+  visualizations:
+  - answer:
+      name: Shard Analysis
+      tables:
+      - id: '[BETA] Sharding Recommender'
+        name: '[BETA] Sharding Recommender'
+      search_query: '[table name] [ideal total shards] [recommended total shards] [total shards] [row count skew] [total row count] [rows per shard] [recommended rows per shard] [table name] not contains ''denorm'' [reshard required] [_GATE_CONDITION: reshard required] [environment size] [_GATE_CONDITION: environment size] [ideal rows per shard] sort by [table name]'
+      answer_columns:
+      - name: table name
+      - name: current row count skew
+        custom_name: current row count skew
+      - name: ideal total shards
+        custom_name: ideal total shards
+      - name: 'GATE: reshard required'
+        custom_name: 'GATE: reshard required'
+      - name: current total row count
+        custom_name: current total row count
+      - name: ideal rows per shard
+        custom_name: ideal rows per shard
+      - name: 'GATE: environment size'
+        custom_name: 'GATE: environment size'
+      - name: environment size
+      - name: recommended rows per shard
+        custom_name: recommended rows per shard
+      - name: current rows per shard
+        custom_name: current rows per shard
+      - name: current total shards
+        custom_name: current total shards
+      - name: reshard required
+      - name: recommended total shards
+        custom_name: recommended total shards
+      table:
+        table_columns:
+        - column_id: table name
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: reshard required
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: environment size
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: ideal total shards
+          headline_aggregation: TABLE_AGGR
+        - column_id: recommended total shards
+          headline_aggregation: TABLE_AGGR
+        - column_id: current total shards
+          headline_aggregation: SUM
+        - column_id: current row count skew
+          headline_aggregation: SUM
+        - column_id: current total row count
+          headline_aggregation: SUM
+        - column_id: current rows per shard
+          headline_aggregation: TABLE_AGGR
+        - column_id: recommended rows per shard
+          headline_aggregation: TABLE_AGGR
+        - column_id: 'GATE: reshard required'
+        - column_id: 'GATE: environment size'
+        - column_id: ideal rows per shard
+        ordered_column_ids:
+        - table name
+        - reshard required
+        - environment size
+        - ideal total shards
+        - recommended total shards
+        - current total shards
+        - current row count skew
+        - current total row count
+        - current rows per shard
+        - recommended rows per shard
+        - 'GATE: reshard required'
+        - 'GATE: environment size'
+        - ideal rows per shard
+        wrap_table_header: true
+        client_state: '{"widthState":{"table name":265.0,"current total shards":114.0,"reshard required":142.0,"environment size":137.0,"current total row count":117.0,"current row count skew":114.0,"ideal total shards":102.0,"ideal rows per shard":102.0,"recommended total shards":131.0,"recommended rows per shard":131.0},"wrapTableHeader":true,"ordered_column_ids":["table name","reshard required","environment size","current total row count","current total shards","current row count skew","current rows per shard","ideal total shards","ideal rows per shard","recommended total shards","recommended rows per shard","GATE: reshard required","GATE: environment size"],"widgetState":{"columns":[{"visibleIndex":0.0,"dataField":"table name","dataType":"string","width":265.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":1.0,"dataField":"reshard required","dataType":"string","width":112.11163330078125,"visible":true,"sortOrder":"undefined"},{"visibleIndex":2.0,"dataField":"environment size","dataType":"string","width":140.0885009765625,"visible":true,"sortOrder":"undefined"},{"visibleIndex":7.0,"dataField":"ideal total shards","dataType":"number","width":101.6634521484375,"visible":true,"sortOrder":"undefined"},{"visibleIndex":9.0,"dataField":"recommended total shards","dataType":"number","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":4.0,"dataField":"current total shards","dataType":"number","width":121.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":5.0,"dataField":"current row count skew","dataType":"number","width":94.97564697265625,"visible":true,"sortOrder":"undefined"},{"visibleIndex":3.0,"dataField":"current total row count","dataType":"number","width":137.97874450683594,"visible":true,"sortOrder":"undefined"},{"visibleIndex":6.0,"dataField":"current rows per shard","dataType":"number","width":117.44284057617188,"visible":true,"sortOrder":"undefined"},{"visibleIndex":10.0,"dataField":"recommended rows per shard","dataType":"number","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":11.0,"dataField":"GATE: reshard required","dataType":"number","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":12.0,"dataField":"GATE: environment size","dataType":"number","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":8.0,"dataField":"ideal rows per shard","dataType":"number","width":118.91842651367188,"visible":true,"sortOrder":"undefined"},{"visibleIndex":13.0,"width":"auto","visible":true}],"allowedPageSizes":[500.0,1000.0,2000.0],"filterPanel":{"filterEnabled":true},"searchText":"","pageIndex":0.0,"pageSize":1000.0}}'
+      chart:
+        type: COLUMN
+        chart_columns:
+        - column_id: table name
+        - column_id: reshard required
+        - column_id: environment size
+        - column_id: ideal total shards
+        - column_id: recommended total shards
+        - column_id: current total shards
+        - column_id: current row count skew
+        - column_id: current total row count
+        - column_id: current rows per shard
+        - column_id: recommended rows per shard
+        - column_id: 'GATE: reshard required'
+        - column_id: 'GATE: environment size'
+        - column_id: ideal rows per shard
+        axis_configs:
+        - x:
+          - table name
+          y:
+          - ideal total shards
+          - recommended total shards
+          - current total shards
+          - current row count skew
+        locked: true
+        client_state: '{"chartProperties":{"gridLines":{},"showRoundedNumbers":true,"chartSpecific":{},"responsiveLayoutPreference":3.0},"axisProperties":{"0cbb0f21-0168-4038-b7ad-ea75397341d5":{"linkedColumns":["ideal total shards"],"axisType":"Y","isOpposite":false},"e7d5da3f-042a-4c97-aaea-06cbc63d4ffe":{"linkedColumns":["recommended total shards"],"axisType":"Y","isOpposite":true},"07003358-f0d1-47da-8d57-9dbbba5fa0d2":{"linkedColumns":["current total shards"],"axisType":"Y","isOpposite":true},"d1438d87-d805-4fe5-bea4-743aa65c478f":{"linkedColumns":["current row count skew"],"axisType":"Y","isOpposite":true},"4ba1c264-1ade-435e-9ca2-f7b726b79870":{"linkedColumns":["table name"],"axisType":"X"}},"version":"V3","columnProperties":{"table name":{},"reshard required":{},"environment size":{},"ideal total shards":{},"recommended total shards":{},"current total shards":{},"current row count skew":{},"current total row count":{},"current rows per shard":{},"recommended rows per shard":{},"GATE: reshard required":{},"GATE: environment size":{},"ideal rows per shard":{}}}'
+      display_mode: TABLE_MODE
+    id: Viz_1
+  - answer:
+      name: Tables Requiring a Reshard
+      tables:
+      - id: '[BETA] Sharding Recommender'
+        name: '[BETA] Sharding Recommender'
+      search_query: '[_GATE_CONDITION: reshard required]'
+      answer_columns:
+      - name: 'Total _GATE_CONDITION: reshard required'
+      table:
+        table_columns:
+        - column_id: 'Total _GATE_CONDITION: reshard required'
+          headline_aggregation: TABLE_AGGR
+        ordered_column_ids:
+        - 'Total _GATE_CONDITION: reshard required'
+        wrap_table_header: true
+        client_state: '{"widthState":{},"wrapTableHeader":true}'
+      display_mode: TABLE_MODE
+    id: Viz_2
+    display_headline_column: 'Total _GATE_CONDITION: reshard required'
+  - answer:
+      name: Tables in Undersized Cluster
+      tables:
+      - id: '[BETA] Sharding Recommender'
+        name: '[BETA] Sharding Recommender'
+      search_query: '[_GATE_CONDITION: environment size]'
+      answer_columns:
+      - name: 'Total _GATE_CONDITION: environment size'
+      table:
+        table_columns:
+        - column_id: 'Total _GATE_CONDITION: environment size'
+          headline_aggregation: TABLE_AGGR
+        ordered_column_ids:
+        - 'Total _GATE_CONDITION: environment size'
+        wrap_table_header: true
+        client_state: '{"widthState":{},"wrapTableHeader":true}'
+      display_mode: TABLE_MODE
+    id: Viz_3
+    display_headline_column: 'Total _GATE_CONDITION: environment size'
+  - answer:
+      name: Total Number of Tables in Platform
+      tables:
+      - id: '[BETA] Sharding Recommender'
+        name: '[BETA] Sharding Recommender'
+      search_query: count [table name]
+      answer_columns:
+      - name: Number of table name
+      table:
+        table_columns:
+        - column_id: Number of table name
+          headline_aggregation: AVERAGE
+        ordered_column_ids:
+        - Number of table name
+        wrap_table_header: true
+        client_state: '{"widthState":{},"wrapTableHeader":true}'
+      display_mode: TABLE_MODE
+    id: Viz_4
+    display_headline_column: Number of table name
+  - answer:
+      name: '% of Platform Requiring Reshard'
+      tables:
+      - id: '[BETA] Sharding Recommender'
+        name: '[BETA] Sharding Recommender'
+      formulas:
+      - id: '% platform needs reshard'
+        name: '% platform needs reshard'
+        expr: 'sum( [_GATE_CONDITION: reshard required] ) / count ( [table name] ) '
+      search_query: '[% platform needs reshard]'
+      answer_columns:
+      - name: '% platform needs reshard'
+      table:
+        table_columns:
+        - column_id: '% platform needs reshard'
+          headline_aggregation: TABLE_AGGR
+        ordered_column_ids:
+        - '% platform needs reshard'
+        wrap_table_header: true
+        client_state: '{"widthState":{},"wrapTableHeader":true}'
+      display_mode: TABLE_MODE
+    id: Viz_5
+    display_headline_column: '% platform needs reshard'
+  layout:
+    tiles:
+    - visualization_id: Viz_5
+      size: EXTRA_SMALL
+    - visualization_id: Viz_4
+      size: EXTRA_SMALL
+    - visualization_id: Viz_2
+      size: EXTRA_SMALL
+    - visualization_id: Viz_3
+      size: EXTRA_SMALL
+    - visualization_id: Viz_1
+      size: LARGE
