@@ -2,8 +2,6 @@ certifi==2020.6.20
 chardet==3.0.4
 dataclasses==0.6; python_version < "3.7"
 idna==2.10
-numpy==1.19.1
-pandas==0.25.3
 pydantic==1.6.1
 python-dateutil==2.8.1
 pytz==2020.1
