@@ -10,7 +10,7 @@ with open('./README.md') as f:
 
 
 setup(
-    name='ThoughtSpot CS Tools',
+    name='thoughtspot-internal',
     version='0.1.0',
     description='Python programming interface to the ThoughtSpot API and platform',
     long_description=README,
