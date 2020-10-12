@@ -83,11 +83,14 @@ if __name__ == '__main__':
 
         # ensure we have thoughtspot packages installed
         with offline_install.open('r') as fp:
-            if not any('thoughtspot' in line for line in fp.readlines()):
+            lines = fp.readlines()
+            all_but_ts = [line for line in lines if 'thoughtspot' not in line]
+
+            if all_but_ts == lines:
                 raise RuntimeError('thoughtspot or thoughtspot-internal not found in virtual environment')
 
-        # download our pip-installed packages, remove tmp installed file
-        sp.run(f'pip download -r {offline_install} -d {VENDOR_DIR}')
+        # download our pip-installed packages
+        sp.run(f'pip download {" ".join(lines)} --dest {VENDOR_DIR} --platform linux_x86_64 --no-deps')
 
         # cs_tools: clone, zip, clean up cloned
         sp.run('git clone https://github.com/thoughtspot/cs_tools.git')
