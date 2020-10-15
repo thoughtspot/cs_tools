@@ -294,7 +294,7 @@ class Metadata(BaseApiInterface):
         :type_ str: Type of metadata object. Defaults to QUESTION_ANSWER_BOOK
         :returns list:
         """
-        _accepted = ('QUESTION_ANSWER_BOOK', 'PINBOARD_ANSWER_BOOK')
+        _accepted = ('PINBOARD_ANSWER_BOOK', 'QUESTION_ANSWER_BOOK', 'USER_GROUP')
 
         if type_ not in _accepted:
             raise ValueError('currently accepted values: {_accepted}')
