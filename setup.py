@@ -10,7 +10,7 @@ with open('./README.md') as f:
 
 
 setup(
-    name='ThoughtSpot CS Tools',
+    name='thoughtspot-internal',
     version='0.1.0',
     description='Python programming interface to the ThoughtSpot API and platform',
     long_description=README,
@@ -18,7 +18,9 @@ setup(
     author_email='ps-na@thoughtspot.com',
     url='https://github.com/thoughtspot/ts_tools',
     license='MIT',
-    packages=('thoughtspot_internal', ),
+    packages=(
+        'thoughtspot_internal', 'thoughtspot_internal.models', 'thoughtspot_internal.util'
+    ),
     install_requires=REQUIRED,
     python_requires='>=3.6'
 )
