@@ -33,6 +33,7 @@ class ShareParameters(APIParameters):
     notify: bool = True
     message: str = ""
 
+    # TODO is it possible to use util.to_array()?
     @pydantic.validator('id', pre=True)
     def _flatten_id_list(cls, v):
         if not isinstance(id, str):
