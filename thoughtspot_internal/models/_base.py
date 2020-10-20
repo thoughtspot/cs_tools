@@ -18,6 +18,6 @@ class TSPrivate(APIBase):
         Make a generic request.
         """
         _log.warning(
-            f'UNSUPPORTED API CALL\n\n{method} to {url} is utilizing a private and unsupported API!\n'
+            f'UNSUPPORTED API CALL\n\n{method} to {url} is using a private and unsupported API!\n'
         )
         return super()._request(method, url, *args, **kwargs)
