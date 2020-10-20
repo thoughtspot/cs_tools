@@ -8,6 +8,7 @@ import pathlib
 
 from requests.exceptions import SSLError
 
+from thoughtspot.models.auth import AuthenticationError
 from thoughtspot_internal.models.metadata import MetadataObject
 from thoughtspot_internal.models.security import ObjectType, SharePermission
 from thoughtspot_internal.util.ux import FrontendArgumentParser
@@ -18,7 +19,7 @@ from _version import __version__
 _log = logging.getLogger(__name__)
 
 
-def _get_group_id (api: 'ThoughtSpot', *, group_name: str) -> Union[str,None]:
+def _get_group_id(api: 'ThoughtSpot', *, group_name: str) -> Union[str, None]:
     """
     Returns the id for the group with the given name.
     :param group_name: Name of the group to get the ID for.
@@ -33,7 +34,11 @@ def _get_group_id (api: 'ThoughtSpot', *, group_name: str) -> Union[str,None]:
 
 
 def _get_table_ids(api: 'ThoughtSpot', *,
-                   database_name: str, schema_name: str = "falcon_default_schema", table_name: str = None) -> List[str]:
+                   database_name: str,
+                   schema_name: str = "falcon_default_schema",
+                   table_name:
+                   str = None
+                   ) -> List[str]:
     """
     Returns a list of table GUIDs.
     """
@@ -71,7 +76,7 @@ def _permission_param_to_permission(permission: str) -> SharePermission:
         "view": SharePermission.READ_ONLY,
         "edit": SharePermission.MODIFY,
         "remove": SharePermission.NO_ACCESS
-    }[args.permission]
+    }[permission]
 
 
 def _share_tables(api, *, group_id, table_ids, permission):
@@ -91,21 +96,27 @@ def app(api: 'ThoughtSpot', *, args: argparse.Namespace) -> None:
             if not group_id:
                 msg = f"Group {args.group} wasn't found.  Verify the name and try again."
                 _log.error(msg)
-            else:
-                table_ids = _get_table_ids(api,
-                                           database_name=args.database, schema_name=args.schema, table_name=args.table)
-                if not table_ids:
-                    print(f"No tables found for {args.database}.{args.schema}{f'.{args.table}' if args.table else ''}")
-                else:
-                    r = _share_tables(api, group_id=group_id, table_ids=table_ids,
-                                      permission=_permission_param_to_permission(args.permission))
-                    success = "succeeded" if r.status_code == 204 else "failed"
-                    print(f'Sharing with group "{args.group}" {success} - Status code: {r.status_code}')
-                    if success == "failed":
-                        print(r.content)
+                return  # because of error
+
+            table_ids = _get_table_ids(api, database_name=args.database, schema_name=args.schema, table_name=args.table)
+            if not table_ids:
+                _log.warning(f"No tables found for {args.database}.{args.schema}{f'.{args.table}' if args.table else ''}")
+                return  # because of error
+
+            r = _share_tables(api, group_id=group_id, table_ids=table_ids,
+                              permission=_permission_param_to_permission(args.permission))
+            success = "succeeded" if r.status_code == 204 else "failed"
+            print(f'Sharing with group "{args.group}" {success} - Status code: {r.status_code}')
+            if not r.ok:
+                _log.error(r.content)
 
     except SSLError:
         msg = "SSL certificate verify failed, did you mean to use flag --disable_ssl?"
+        _log.error(msg)
+
+    except AuthenticationError as ae:
+        msg = f"Error accessing {api.config.thoughtspot.host} with user {api.config.auth['frontend'].username}.  " \
+              f"Please verify credentials."
         _log.error(msg)
 
 
@@ -113,8 +124,6 @@ def parse_arguments() -> argparse.Namespace:
     """
     CLI interface to this script.
     """
-    METADATA_TYPES = list(map(lambda e: e.value, list(MetadataObject)))
-
     parser = FrontendArgumentParser(
                  prog=pathlib.Path(__file__).name,
                  description=__doc__,
@@ -122,7 +131,7 @@ def parse_arguments() -> argparse.Namespace:
              )
 
     parser.add_argument("--group", help="Group to share with.")
-    parser.add_argument("--permission", help="Type of permission to assign.", choices=['view','edit','remove'])
+    parser.add_argument("--permission", help="Type of permission to assign.", choices=['view', 'edit', 'remove'])
 
     parser.add_argument("--database", help="Database name of tables to share.")
     parser.add_argument("--schema",

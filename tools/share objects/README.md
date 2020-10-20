@@ -1,9 +1,7 @@
 # Dependency Checking Tool
 
-This tool reveals all the dependencies of a given type of metadata object within your
-ThoughtSpot platform. The output format is a CSV and includes both the parent and the
-child GUID. The output CSV can then be imported back into ThoughtSpot, allowing you to
-search on dependencies!
+This tool uses the ThoughtSpot APIs to share an object with a single group.  Currently only tables 
+can be shared, but additional object types (worksheets, answers, pinboards) will be added in the future.
 
 ## Setup
 
@@ -19,11 +17,14 @@ following the on-screen configuration. The configuration for this tool is below.
 Try it now and verify your environment is all set.
 
 ~~~
-usage: list_dependents.py [-h] [--toml TOML] [--ts_url TS_URL] [--log_level INFO] [--version] [--username USERNAME]
-                          [--password PASSWORD] [--disable_ssl] [--disable_sso] [--filename FILENAME]
-                          [--object_type {QUESTION_ANSWER_BOOK,PINBOARD_ANSWER_BOOK,QUESTION_ANSWER_SHEET,PINBOARD_ANSWER_SHEET,LOGICAL_COLUMN,LOGICAL_TABLE,LOGICAL_RELATIONSHIP,TAG,DATA_SOURCE}]
+usage: share_objects.py [-h] [--toml TOML] [--ts_url TS_URL]
+                        [--log_level INFO] [--version] [--username USERNAME]
+                        [--password PASSWORD] [--disable_ssl] [--disable_sso]
+                        [--group GROUP] [--permission {view,edit,remove}]
+                        [--database DATABASE] [--schema SCHEMA]
+                        [--table TABLE]
 
-Find all objects in your ThoughtSpot platform of a specified type, and return their dependents.
+Share objects with groups.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -35,9 +36,14 @@ optional arguments:
   --password PASSWORD   frontend password to authenticate to ThoughtSpot with
   --disable_ssl         whether or not to ignore SSL errors
   --disable_sso         whether or not to disable SAML login redirect
-  --filename FILENAME   location of the CSV file to output dependents
-  --object_type {QUESTION_ANSWER_BOOK,PINBOARD_ANSWER_BOOK,QUESTION_ANSWER_SHEET,PINBOARD_ANSWER_SHEET,LOGICAL_COLUMN,LOGICAL_TABLE,LOGICAL_RELATIONSHIP,TAG,DATA_SOURCE}
-                        type of object to find dependents from
+  --group GROUP         Group to share with.
+  --permission {view,edit,remove}
+                        Type of permission to assign.
+  --database DATABASE   Database name of tables to share.
+  --schema SCHEMA       Schema name of tables to share. Defaults to
+                        'falcon_default_schema'
+  --table TABLE         Name of table to share. If not provided, all tables in
+                        the database will be shared.
 
 Additional help can be found at https://github.com/thoughtspot/cs_tools
 ~~~ 
