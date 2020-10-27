@@ -79,7 +79,7 @@ pinboard:
         - 'gate: reshard required'
         - 'gate: environment size'
         wrap_table_header: true
-        client_state: '{"widthState":{},"wrapTableHeader":true,"ordered_column_ids":["table name","over/under sharding state","reshard required","environment size","row count","total shards","row count skew","rows per shard","ideal total shards","recommended total shards","recommended rows per shard","gate: reshard required","gate: environment size","database name","schema name","table guid"],"widgetState":{"columns":[{"visibleIndex":0.0,"dataField":"table name","dataType":"string","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":2.0,"dataField":"reshard required","dataType":"string","width":112.11163330078125,"visible":true,"sortOrder":"undefined"},{"visibleIndex":3.0,"dataField":"environment size","dataType":"string","width":140.0885009765625,"visible":true,"sortOrder":"undefined"},{"visibleIndex":1.0,"dataField":"over/under sharding state","dataType":"string","width":123.98782348632812,"visible":true,"sortOrder":"undefined"},{"visibleIndex":13.0,"dataField":"database name","dataType":"string","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":14.0,"dataField":"schema name","dataType":"string","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":15.0,"dataField":"table guid","dataType":"string","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":8.0,"dataField":"ideal total shards","dataType":"number","width":101.6634521484375,"visible":true,"sortOrder":"undefined"},{"visibleIndex":9.0,"dataField":"recommended total shards","dataType":"number","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":5.0,"dataField":"total shards","dataType":"number","width":101.6634521484375,"visible":true,"sortOrder":"undefined"},{"visibleIndex":6.0,"dataField":"row count skew","dataType":"number","width":96.80825805664062,"visible":true,"sortOrder":"undefined"},{"visibleIndex":4.0,"dataField":"row count","dataType":"number","width":116.94303894042969,"visible":true,"sortOrder":"undefined"},{"visibleIndex":7.0,"dataField":"rows per shard","dataType":"number","width":116.94303894042969,"visible":true,"sortOrder":"undefined"},{"visibleIndex":10.0,"dataField":"recommended rows per shard","dataType":"number","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":11.0,"dataField":"gate: reshard required","dataType":"number","width":112.11163330078125,"visible":true,"sortOrder":"undefined"},{"visibleIndex":12.0,"dataField":"gate: environment size","dataType":"number","width":135.8402099609375,"visible":true,"sortOrder":"undefined"},{"visibleIndex":16.0,"width":"auto","visible":true}],"allowedPageSizes":[500.0,1000.0,2000.0],"filterPanel":{"filterEnabled":true},"searchText":"","pageIndex":0.0,"pageSize":1000.0}}'
+        client_state: '{"widthState":{"table name":395.0},"wrapTableHeader":true,"ordered_column_ids":["table name","over/under sharding state","reshard required","environment size","row count","total shards","row count skew","rows per shard","ideal total shards","recommended total shards","recommended rows per shard","gate: reshard required","gate: environment size","database name","schema name","table guid"],"widgetState":{"columns":[{"visibleIndex":0.0,"dataField":"table name","dataType":"string","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":2.0,"dataField":"reshard required","dataType":"string","width":112.11163330078125,"visible":true,"sortOrder":"undefined"},{"visibleIndex":3.0,"dataField":"environment size","dataType":"string","width":140.0885009765625,"visible":true,"sortOrder":"undefined"},{"visibleIndex":1.0,"dataField":"over/under sharding state","dataType":"string","width":123.98782348632812,"visible":true,"sortOrder":"undefined"},{"visibleIndex":13.0,"dataField":"database name","dataType":"string","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":14.0,"dataField":"schema name","dataType":"string","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":15.0,"dataField":"table guid","dataType":"string","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":8.0,"dataField":"ideal total shards","dataType":"number","width":101.6634521484375,"visible":true,"sortOrder":"undefined"},{"visibleIndex":9.0,"dataField":"recommended total shards","dataType":"number","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":5.0,"dataField":"total shards","dataType":"number","width":101.6634521484375,"visible":true,"sortOrder":"undefined"},{"visibleIndex":6.0,"dataField":"row count skew","dataType":"number","width":96.80825805664062,"visible":true,"sortOrder":"undefined"},{"visibleIndex":4.0,"dataField":"row count","dataType":"number","width":116.94303894042969,"visible":true,"sortOrder":"undefined"},{"visibleIndex":7.0,"dataField":"rows per shard","dataType":"number","width":116.94303894042969,"visible":true,"sortOrder":"undefined"},{"visibleIndex":10.0,"dataField":"recommended rows per shard","dataType":"number","width":144.0,"visible":true,"sortOrder":"undefined"},{"visibleIndex":11.0,"dataField":"gate: reshard required","dataType":"number","width":112.11163330078125,"visible":true,"sortOrder":"undefined"},{"visibleIndex":12.0,"dataField":"gate: environment size","dataType":"number","width":135.8402099609375,"visible":true,"sortOrder":"undefined"},{"visibleIndex":16.0,"width":"auto","visible":true}],"allowedPageSizes":[500.0,1000.0,2000.0],"filterPanel":{"filterEnabled":true},"searchText":"","pageIndex":0.0,"pageSize":1000.0}}'
       chart:
         type: COLUMN
         chart_columns:
@@ -212,12 +212,6 @@ pinboard:
       tables:
       - id: Table Sharding Recommender
         name: Table Sharding Recommender
-      formulas:
-      - id: total nodes
-        name: total nodes
-        expr: 'to_integer ( [_PARAMETER total ts nodes] ) '
-        properties:
-          column_type: ATTRIBUTE
       search_query: max [_PARAMETER cpu per node] [ip]
       answer_columns:
       - name: ip
@@ -243,7 +237,7 @@ pinboard:
           - ip
           y:
           - Maximum _PARAMETER cpu per node
-        locked: false
+        locked: true
         client_state: '{"chartProperties":{"gridLines":{},"showRoundedNumbers":true,"responsiveLayoutPreference":3.0,"chartSpecific":{}},"axisProperties":{"6b94feee-d5d6-4093-b47f-c6e2e2f66672":{"linkedColumns":["Maximum _PARAMETER cpu per node"],"axisType":"Y","isOpposite":false},"1f4a7fd8-e707-4cac-8ea5-1c7959c2c473":{"linkedColumns":["ip"],"axisType":"X"}},"systemSeriesColors":{"Maximum _PARAMETER cpu per node":"#747E8C"},"version":"V3","columnProperties":{"ip":{},"Maximum _PARAMETER cpu per node":{}}}'
       display_mode: TABLE_MODE
     id: Viz_6
@@ -253,12 +247,6 @@ pinboard:
       tables:
       - id: Table Sharding Recommender
         name: Table Sharding Recommender
-      formulas:
-      - id: total nodes
-        name: total nodes
-        expr: 'to_integer ( [_PARAMETER total ts nodes] ) '
-        properties:
-          column_type: ATTRIBUTE
       search_query: max [_PARAMETER cpu per node] [ip] max [_PARAMETER ideal rows per shard] max [_PARAMETER max rows per shard] max [_PARAMETER min rows per shard] max [_PARAMETER total ts nodes] max [_PARAMETER unsharded table row threshold]
       answer_columns:
       - name: ip
@@ -312,7 +300,7 @@ pinboard:
           - Maximum _PARAMETER ideal rows per shard
           - Maximum _PARAMETER max rows per shard
           - Maximum _PARAMETER min rows per shard
-        locked: false
+        locked: true
         client_state: '{"chartProperties":{"gridLines":{},"showRoundedNumbers":true,"responsiveLayoutPreference":3.0,"chartSpecific":{}},"axisProperties":{"dfbf0918-67d1-492f-97ce-f8d4fef2a6b9":{"linkedColumns":["Maximum _PARAMETER cpu per node"],"axisType":"Y","isOpposite":false},"00fc022b-5161-4219-af3b-9d69a4e15666":{"linkedColumns":["Maximum _PARAMETER ideal rows per shard"],"axisType":"Y","isOpposite":true},"b4c490e6-d905-4242-adb1-8604f2ed9255":{"linkedColumns":["Maximum _PARAMETER max rows per shard"],"axisType":"Y","isOpposite":true},"4f91d365-9dab-414a-99ef-a4107b99b2b1":{"linkedColumns":["Maximum _PARAMETER min rows per shard"],"axisType":"Y","isOpposite":true},"c776438f-f26f-4495-88fc-4502623f55c4":{"linkedColumns":["ip"],"axisType":"X"}},"version":"V3","columnProperties":{"ip":{},"Maximum _PARAMETER cpu per node":{},"Maximum _PARAMETER ideal rows per shard":{},"Maximum _PARAMETER max rows per shard":{},"Maximum _PARAMETER min rows per shard":{},"Maximum _PARAMETER total ts nodes":{},"Maximum _PARAMETER unsharded table row threshold":{}}}'
       display_mode: TABLE_MODE
     id: Viz_7
@@ -322,12 +310,6 @@ pinboard:
       tables:
       - id: Table Sharding Recommender
         name: Table Sharding Recommender
-      formulas:
-      - id: total nodes
-        name: total nodes
-        expr: 'to_integer ( [_PARAMETER total ts nodes] ) '
-        properties:
-          column_type: ATTRIBUTE
       search_query: max [_PARAMETER cpu per node] [ip] max [_PARAMETER ideal rows per shard] max [_PARAMETER max rows per shard] max [_PARAMETER min rows per shard] max [_PARAMETER total ts nodes] max [_PARAMETER unsharded table row threshold]
       answer_columns:
       - name: ip
@@ -381,7 +363,7 @@ pinboard:
           - Maximum _PARAMETER ideal rows per shard
           - Maximum _PARAMETER max rows per shard
           - Maximum _PARAMETER min rows per shard
-        locked: false
+        locked: true
         client_state: '{"chartProperties":{"gridLines":{},"showRoundedNumbers":true,"responsiveLayoutPreference":3.0,"chartSpecific":{}},"axisProperties":{"dfbf0918-67d1-492f-97ce-f8d4fef2a6b9":{"linkedColumns":["Maximum _PARAMETER cpu per node"],"axisType":"Y","isOpposite":false},"00fc022b-5161-4219-af3b-9d69a4e15666":{"linkedColumns":["Maximum _PARAMETER ideal rows per shard"],"axisType":"Y","isOpposite":true},"b4c490e6-d905-4242-adb1-8604f2ed9255":{"linkedColumns":["Maximum _PARAMETER max rows per shard"],"axisType":"Y","isOpposite":true},"4f91d365-9dab-414a-99ef-a4107b99b2b1":{"linkedColumns":["Maximum _PARAMETER min rows per shard"],"axisType":"Y","isOpposite":true},"c776438f-f26f-4495-88fc-4502623f55c4":{"linkedColumns":["ip"],"axisType":"X"}},"version":"V3","columnProperties":{"ip":{},"Maximum _PARAMETER cpu per node":{},"Maximum _PARAMETER ideal rows per shard":{},"Maximum _PARAMETER max rows per shard":{},"Maximum _PARAMETER min rows per shard":{},"Maximum _PARAMETER total ts nodes":{},"Maximum _PARAMETER unsharded table row threshold":{}}}'
       display_mode: TABLE_MODE
     id: Viz_8
@@ -391,12 +373,6 @@ pinboard:
       tables:
       - id: Table Sharding Recommender
         name: Table Sharding Recommender
-      formulas:
-      - id: total nodes
-        name: total nodes
-        expr: 'to_integer ( [_PARAMETER total ts nodes] ) '
-        properties:
-          column_type: ATTRIBUTE
       search_query: count [fully qualified table name]
       answer_columns:
       - name: Number of fully qualified table name
