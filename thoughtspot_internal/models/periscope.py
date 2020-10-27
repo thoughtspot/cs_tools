@@ -72,5 +72,5 @@ class Periscope(TSPrivate):
         """
         TODO
         """
-        r = self.get(f'{self.base_url}/oriion/listsnapshots')
+        r = self.get(f'{self.base_url}/orion/listsnapshots')
         return r
