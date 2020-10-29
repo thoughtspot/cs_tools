@@ -59,7 +59,7 @@ class Periscope(TSPrivate):
         TODO
         """
         p = SageCombinedTableInfoParameters(**parameters)
-        r = self.get(f'{self.base_url}/sage/sage_combinedtableinfo', params=p.json())
+        r = self.get(f'{self.base_url}/sage/combinedtableinfo', params=p.json())
         return r
 
     def falcon_getsummary(self) -> requests.Response:
