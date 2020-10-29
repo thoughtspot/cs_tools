@@ -21,9 +21,17 @@ class Periscope(TSPrivate):
     @property
     def base_url(self):
         """
-        Append to the base URL.
+        Periscope is a really internal API. ;)
         """
-        return f'{super().base_url}/periscope'
+        host = self.config.thoughtspot.host
+        port = self.config.thoughtspot.port
+
+        if port:
+            port = f':{port}'
+        else:
+            port = ''
+
+        return f'https://{host}{port}/periscope'
 
     def alert_getalerts(self) -> requests.Response:
         """
