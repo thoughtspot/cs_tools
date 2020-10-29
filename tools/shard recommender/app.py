@@ -15,37 +15,6 @@ from _version import __version__
 _log = logging.getLogger(__name__)
 
 
-def _format_event_data(data: List[dict]) -> List[dict]:
-    """
-    TODO
-    """
-    data = [
-        {
-            'at': dt.datetime.fromtimestamp(e['system_info']['at']).isoformat(),
-            'user': e['user'].replace('\n', '').replace('"', ''),
-            'summary': e['summary'].replace('\n', '')
-        }
-        for e in data['event']
-        if e.get('user', None) is not None  # so uh, user can be blank?
-    ]
-    return data
-
-
-def _format_alert_data(data: List[dict]) -> List[dict]:
-    """
-    TODO
-    """
-    data = [
-        {
-            'at': dt.datetime.fromtimestamp(e['at']).isoformat(),
-            'type': e['id'],
-            'msg': e['system_info']['msg']
-        }
-        for e in data['alert']
-    ]
-    return data
-
-
 def _format_table_info_data(data: List[dict]) -> List[dict]:
     """
     TODO
@@ -73,7 +42,7 @@ def _format_table_info_data(data: List[dict]) -> List[dict]:
             'num_shards': e['numShards'],
             'csv_size_with_replication_mb': e['csvSizeWithReplicationMB'],
             'replicated': e['replicated'],
-            'ip': 'all' if e['ip'] == -1 else e['ip']
+            'ip': 'all' if str(e['ip']) == '-1' else e['ip']
         }
         for e in data['tables']
     ]
@@ -97,12 +66,6 @@ def app(api: 'ThoughtSpot', directory: pathlib.Path) -> None:
     """
     try:
         with api:
-            data = _format_event_data(api._periscope.alert_getevents().json())
-            _to_csv(data, fp=directory / 'event.csv')
-
-            data = _format_alert_data(api._periscope.alert_getalerts().json())
-            _to_csv(data, fp=directory / 'alert.csv')
-
             data = _format_table_info_data(api._periscope.sage_combinedtableinfo().json())
             _to_csv(data, fp=directory / 'table_info.csv')
     except SSLError:
