@@ -66,6 +66,9 @@ if __name__ == '__main__':
     HERE = pathlib.Path(__file__).parent
     VENDOR_DIR = HERE.parent / 'vendor'
 
+    if not VENDOR_DIR.exists():
+        VENDOR_DIR.mkdir()
+
     # remove all files from vendor/
     for fp in VENDOR_DIR.iterdir():
         fp.unlink()
@@ -92,7 +95,7 @@ if __name__ == '__main__':
         sp.run(f'pip download {" ".join(all_but_ts)} --dest {VENDOR_DIR} --platform linux_x86_64 --no-deps')
 
         # cs_tools: clone, zip, clean up cloned
-        sp.run('git clone https://github.com/thoughtspot/cs_tools.git')
+        sp.run('git clone -b shard-recommender https://github.com/thoughtspot/cs_tools.git')
         shutil.make_archive('thoughtspot-internal-0.1.0', 'zip', cs_tools)  # TODO grab version number dynamically
         shutil.rmtree(cs_tools, onerror=_rm_ro)
 
