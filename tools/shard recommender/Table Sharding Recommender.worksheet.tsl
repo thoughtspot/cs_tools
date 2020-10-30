@@ -10,27 +10,27 @@ worksheet:
     - {}
   formulas:
   - name: _GATE_CONDITION environment size
-    expr: 'if ( [environment size]= ''environment undersized'' ) then 1 else 0 '
+    expr: 'if ( [environment size] = ''environment undersized'' ) then 1 else 0 '
   - name: _GATE_CONDITION reshard required
-    expr: 'if ( [reshard required]= ''reshard required'' ) then 1 else 0 '
+    expr: 'if ( [reshard required] = ''reshard required'' ) then 1 else 0 '
   - name: environment size
-    expr: 'if ( [recommended total shards]= [ideal total shards]) then ''environment sized appropriately'' else ''environment undersized'' '
+    expr: 'if ( [recommended total shards] = [ideal total shards]) then ''environment sized appropriately'' else ''environment undersized'' '
   - name: estimated size (MB)
-    expr: '[table_info_1::approx_bytes_size]/ 1000000 '
+    expr: '[table_info_1::approx_bytes_size] / 1000000 '
   - name: fully qualified table name
     expr: 'concat ( [table_info_1::database_name], ''.'' , [table_info_1::schema_name], ''.'' , [table_info_1::table_name]) '
   - name: ideal rows per shard
     expr: 'if ( [table_info_1::num_of_rows] = 0 ) then 0 else round ( safe_divide ( [table_info_1::num_of_rows] , [ideal total shards] ) ) '
   - name: over/under sharding state
-    expr: 'if ( [table_info_1::num_shards]> 1 and [rows per shard]> [_PARAMETER max rows per shard]) then ''under sharded'' else if ( [table_info_1::num_shards]> 1 and [rows per shard]< [_PARAMETER min rows per shard]) then ''over sharded'' else if ( [table_info_1::num_shards]= 1 and [rows per shard]> [_PARAMETER unsharded table row threshold]) then ''under sharded'' else ''not applicable'' '
+    expr: 'if ( [table_info_1::num_shards]> 1 and [rows per shard]> [_PARAMETER max rows per shard]) then ''under sharded'' else if ( [table_info_1::num_shards]> 1 and [rows per shard]< [_PARAMETER min rows per shard]) then ''over sharded'' else if ( [table_info_1::num_shards] = 1 and [rows per shard]> [_PARAMETER unsharded table row threshold]) then ''under sharded'' else ''not applicable'' '
   - name: recommended rows per shard
-    expr: 'if ( [table_info_1::num_of_rows]= 0 ) then 0 else round ( safe_divide ( [table_info_1::num_of_rows], [table_info_1::num_shards]) ) '
+    expr: 'if ( [table_info_1::num_of_rows] = 0 ) then 0 else round ( safe_divide ( [table_info_1::num_of_rows], [table_info_1::num_shards]) ) '
   - name: reshard required
     expr: 'if ( [table_info_1::num_shards] = [recommended total shards] ) then ''reshard not required'' else ''reshard required'' '
   - name: recommended total shards
     expr: 'if ( [ideal total shards] = 1 ) then [ideal total shards] else if ( [ideal total shards] < [cpus available] ) then ( round ( [ideal total shards] / 2 ) * 2 ) else ( ceil ( [ideal total shards] / [cpus available] ) * [cpus available] ) '
   - name: cpus available
-    expr: 'round ( [_PARAMETER total ts nodes]* [_PARAMETER cpu per node]* 0.6 ) '
+    expr: 'round ( [_PARAMETER total ts nodes] * [_PARAMETER cpu per node] * 0.6 ) '
   - name: _PARAMETER cpu per node
     expr: '56 '
   - name: _PARAMETER total ts nodes
@@ -46,15 +46,15 @@ worksheet:
   - name: _PARAMETER unsharded table row threshold
     expr: '55000000 '
   - name: rows per shard
-    expr: 'if ( [table_info_1::num_of_rows]= 0 ) then 0 else ( round ( safe_divide ( [table_info_1::num_of_rows], [table_info_1::num_shards]) ) ) '
+    expr: 'if ( [table_info_1::num_of_rows] = 0 ) then 0 else ( round ( safe_divide ( [table_info_1::num_of_rows], [table_info_1::num_shards]) ) ) '
   - name: uncompressed size (MB)
-    expr: '[table_info_1::uncompressed_bytes_size]/ 1000000 '
+    expr: '[table_info_1::uncompressed_bytes_size] / 1000000 '
   filters:
   - column: ip
     oper: in
     values:
-    - all
-    - -1
+    - 'all'
+    - '-1'
   - column: database name
     oper: not in
     values:
