@@ -1,0 +1,308 @@
+worksheet:
+  name: Table Sharding Recommender
+  description: A worksheet to assist in understanding the ideal sharding state for all actionable Falcon tables in your ThoughtSpot platform.
+  tables:
+  - name: table_info
+  table_paths:
+  - id: table_info_1
+    table: table_info
+    join_path:
+    - {}
+  formulas:
+  - name: _GATE_CONDITION environment size
+    expr: 'if ( [environment size]= ''environment undersized'' ) then 1 else 0 '
+  - name: _GATE_CONDITION reshard required
+    expr: 'if ( [reshard required]= ''reshard required'' ) then 1 else 0 '
+  - name: environment size
+    expr: 'if ( [recommended total shards]= [ideal total shards]) then ''environment sized appropriately'' else ''environment undersized'' '
+  - name: estimated size (MB)
+    expr: '[table_info_1::approx_bytes_size]/ 1000000 '
+  - name: fully qualified table name
+    expr: 'concat ( [table_info_1::database_name], ''.'' , [table_info_1::schema_name], ''.'' , [table_info_1::table_name]) '
+  - name: ideal rows per shard
+    expr: 'if ( [table_info_1::num_of_rows] = 0 ) then 0 else round ( safe_divide ( [table_info_1::num_of_rows] , [ideal total shards] ) ) '
+  - name: over/under sharding state
+    expr: 'if ( [table_info_1::num_shards]> 1 and [rows per shard]> [_PARAMETER max rows per shard]) then ''under sharded'' else if ( [table_info_1::num_shards]> 1 and [rows per shard]< [_PARAMETER min rows per shard]) then ''over sharded'' else if ( [table_info_1::num_shards]= 1 and [rows per shard]> [_PARAMETER unsharded table row threshold]) then ''under sharded'' else ''not applicable'' '
+  - name: recommended rows per shard
+    expr: 'if ( [table_info_1::num_of_rows]= 0 ) then 0 else round ( safe_divide ( [table_info_1::num_of_rows], [table_info_1::num_shards]) ) '
+  - name: reshard required
+    expr: 'if ( [table_info_1::num_shards] = [recommended total shards] ) then ''reshard not required'' else ''reshard required'' '
+  - name: recommended total shards
+    expr: 'if ( [ideal total shards] = 1 ) then [ideal total shards] else if ( [ideal total shards] < [cpus available] ) then ( round ( [ideal total shards] / 2 ) * 2 ) else ( ceil ( [ideal total shards] / [cpus available] ) * [cpus available] ) '
+  - name: cpus available
+    expr: 'round ( [_PARAMETER total ts nodes]* [_PARAMETER cpu per node]* 0.6 ) '
+  - name: _PARAMETER cpu per node
+    expr: '56 '
+  - name: _PARAMETER total ts nodes
+    expr: '24 '
+  - name: ideal total shards
+    expr: 'if ( [table_info_1::num_of_rows] <= [_PARAMETER unsharded table row threshold] ) then 1 else if ( [table_info_1::num_shards] = 1 and [rows per shard] > [_PARAMETER max rows per shard] ) then round ( safe_divide ( [table_info_1::num_of_rows] , [_PARAMETER ideal rows per shard] ) ) else if ( [table_info_1::num_shards] > 1 and [rows per shard] > [_PARAMETER max rows per shard] ) then round ( safe_divide ( [table_info_1::num_of_rows] , [_PARAMETER ideal rows per shard] ) ) else if ( [table_info_1::num_shards] > 1 and [rows per shard] < [_PARAMETER min rows per shard] ) then round ( safe_divide ( [table_info_1::num_of_rows] , [_PARAMETER ideal rows per shard] ) ) else [table_info_1::num_shards] '
+  - name: _PARAMETER ideal rows per shard
+    expr: '20000000 '
+  - name: _PARAMETER max rows per shard
+    expr: '20000000 '
+  - name: _PARAMETER min rows per shard
+    expr: '15000000 '
+  - name: _PARAMETER unsharded table row threshold
+    expr: '55000000 '
+  - name: rows per shard
+    expr: 'if ( [table_info_1::num_of_rows]= 0 ) then 0 else ( round ( safe_divide ( [table_info_1::num_of_rows], [table_info_1::num_shards]) ) ) '
+  - name: uncompressed size (MB)
+    expr: '[table_info_1::uncompressed_bytes_size]/ 1000000 '
+  filters:
+  - column: ip
+    oper: in
+    values:
+    - all
+    - -1
+  - column: database name
+    oper: not in
+    values:
+    - FalconUserDataDataBase
+    - thoughtspot_internal_stats
+  - column: total row count
+    oper: '>'
+    values:
+    - "0"
+  worksheet_columns:
+  - name: database name
+    description: data where this table lives
+    column_id: table_info_1::database_name
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: schema name
+    description: schema where this table lives
+    column_id: table_info_1::schema_name
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: table name
+    description: name of the table to be considered for sharding
+    column_id: table_info_1::table_name
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: table guid
+    description: unique id of the table to be considered for sharding
+    column_id: table_info_1::table_guid
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: database status
+    description: whether or not the table is ready for search
+    column_id: table_info_1::database_status
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: total row count
+    description: number of rows in the table
+    column_id: table_info_1::num_of_rows
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: estimated size (B)
+    description: approximate compressed table size in bytes
+    column_id: table_info_1::approx_bytes_size
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: uncompressed size (B)
+    description: approximate uncompressed table size in bytes
+    column_id: table_info_1::uncompressed_bytes_size
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: row count skew
+    description: variance in distribution of records across all shards for a given table
+    column_id: table_info_1::row_skew
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: total shards
+    description: number of shards for a given table
+    column_id: table_info_1::num_shards
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: _PARAMETER cpu per node
+    description: an input for the number of CPUs in a single node for a cluster
+    formula_id: _PARAMETER cpu per node
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: _PARAMETER ideal rows per shard
+    description: an input for the ideal amount of records for a single shard
+    formula_id: _PARAMETER ideal rows per shard
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: _PARAMETER max rows per shard
+    description: an input for the maximum amount of records for a single shard
+    formula_id: _PARAMETER max rows per shard
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: _PARAMETER unsharded table row threshold
+    description: an input for the minimum number of total records in a given table to even begin considering whether or not to shard
+    formula_id: _PARAMETER unsharded table row threshold
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: _PARAMETER min rows per shard
+    description: an input for the minimum amount of records for a single shard
+    formula_id: _PARAMETER min rows per shard
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: _PARAMETER total ts nodes
+    description: an input for the number of nodes supporting the platform
+    formula_id: _PARAMETER total ts nodes
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: rows per shard
+    description: current amount of rows per shard for a given table
+    formula_id: rows per shard
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: over/under sharding state
+    description: a three-valued field showing the current sharding state of a given table
+    formula_id: over/under sharding state
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: ideal total shards
+    description: mathematically ideal number of shards, disregarding platform details
+    formula_id: ideal total shards
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: cpus available
+    description: amount of CPUs available to dedicate towards sharding tables
+    formula_id: cpus available
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: recommended total shards
+    description: recommended number of shards based on the ideal number of shards AND platform details
+    formula_id: recommended total shards
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: recommended rows per shard
+    description: number of records per shard based on recommended number of shards
+    formula_id: recommended rows per shard
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: reshard required
+    description: a two-valued field to determine if a table needs to be resharded
+    formula_id: reshard required
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: _GATE_CONDITION reshard required
+    description: used for notifying, counts the number of tables which require resharding
+    formula_id: _GATE_CONDITION reshard required
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: environment size
+    description: a two-valued field to determine if the environment needs tuning
+    formula_id: environment size
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: _GATE_CONDITION environment size
+    description: used for notifying, counts the number of tables which require more system resources
+    formula_id: _GATE_CONDITION environment size
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: ideal rows per shard
+    description: number of records per shard based on the mathematically ideal number of shards
+    formula_id: ideal rows per shard
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: estimated size (MB)
+    description: approximate compressed table size in megabytes
+    formula_id: estimated size (MB)
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: uncompressed size (MB)
+    description: approximate uncompressed table size in megabytes
+    formula_id: uncompressed size (MB)
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: ip
+    description: IP of the cluster supporting the table
+    column_id: table_info_1::ip
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  - name: fully qualified table name
+    description: concatenation of database.schema.table
+    formula_id: fully qualified table name
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      spotiq_preference: EXCLUDE
+  properties:
+    is_bypass_rls: false
+    join_progressive: true
