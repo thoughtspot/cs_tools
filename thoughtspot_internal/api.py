@@ -3,6 +3,7 @@ import logging
 from thoughtspot.api import ThoughtSpot as ThoughtSpot_
 
 from thoughtspot_internal.models.dependency import Dependency
+from thoughtspot_internal.models.periscope import Periscope
 from thoughtspot_internal.models.metadata import Metadata
 from thoughtspot_internal.models.security import Security
 
@@ -19,3 +20,4 @@ class ThoughtSpot(ThoughtSpot_):
         self._metadata = Metadata(self)
         self._dependency = Dependency(self)
         self._security = Security(self)
+        self._periscope = Periscope(self)
