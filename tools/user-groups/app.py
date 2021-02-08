@@ -5,8 +5,6 @@ import logging
 import pathlib
 import csv
 
-from requests.exceptions import SSLError
-
 from thoughtspot_internal.util.ux import FrontendArgumentParser
 
 from _version import __version__
@@ -15,8 +13,35 @@ from _version import __version__
 _log = logging.getLogger(__name__)
 
 
-def _user_groups_info():
-    pass
+def _user_groups_info(api):
+    """
+    """
+    r = api.user.list()
+    groups = []
+    users = []
+
+    for principal in r.json():
+        if 'GROUP' in principal['principalTypeEnum']:
+            groups.append({
+                'name': principal['name'],
+                'display_name': principal['displayName'],
+                'description': principal['description'],
+                'created': principal['created'],
+                'modiified': principal['modified']
+            })
+
+        if 'USER' in principal['principalTypeEnum']:
+            for group in principal['groupNames']:
+                users.append({
+                    'name': principal['name'],
+                    'display_name': principal['displayName'],
+                    'email': principal['mail'],
+                    'group': group,
+                    'created': principal['created'],
+                    'modified': principal['modified']
+                })
+
+    return users, groups
 
 
 def app(api: 'ThoughtSpot', filename: pathlib.Path) -> None:
@@ -25,12 +50,12 @@ def app(api: 'ThoughtSpot', filename: pathlib.Path) -> None:
 
     """
     with api:
-        data = _user_groups_info(api)
+        users, groups = _user_groups_info(api)
 
         with open(filename, mode='w', encoding='utf-8', newline='') as c:
-            writer = csv.DictWriter(c, data[0].keys())
+            writer = csv.DictWriter(c, users[0].keys())
             writer.writeheader()
-            writer.writerows(data)
+            writer.writerows(users)
 
 
 def parse_arguments() -> argparse.Namespace:
