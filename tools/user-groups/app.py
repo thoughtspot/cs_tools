@@ -25,9 +25,9 @@ def _user_groups_info(api):
             groups.append({
                 'name': principal['name'],
                 'display_name': principal['displayName'],
-                'description': principal['description'],
+                'description': principal.get('description', ''),
                 'created': principal['created'],
-                'modiified': principal['modified']
+                'modified': principal['modified']
             })
 
         if 'USER' in principal['principalTypeEnum']:
@@ -44,18 +44,39 @@ def _user_groups_info(api):
     return users, groups
 
 
-def app(api: 'ThoughtSpot', filename: pathlib.Path) -> None:
+def app(api: 'ThoughtSpot', dirname: pathlib.Path) -> None:
     """
     Main application logic.
 
     """
+    file_opts = {'mode': 'w', 'encoding': 'utf-8', 'newline': ''}
+
     with api:
         users, groups = _user_groups_info(api)
 
-        with open(filename, mode='w', encoding='utf-8', newline='') as c:
-            writer = csv.DictWriter(c, users[0].keys())
+        with open(dirname / 'users.csv', **file_opts) as c:
+            seen = []
+            u = []
+
+            for user in users:
+                if user['name'] not in seen:
+                    seen.append(user['name'])
+                    u.append({k: v for k, v in user.items() if k != 'group'})
+
+            writer = csv.DictWriter(c, u[0].keys())
             writer.writeheader()
-            writer.writerows(users)
+            writer.writerows(u)
+
+        with open(dirname / 'groups.csv', **file_opts) as c:
+            writer = csv.DictWriter(c, groups[0].keys())
+            writer.writeheader()
+            writer.writerows(groups)
+
+        with open(dirname / 'users_groups.csv', **file_opts) as c:
+            asso = [{'user_name': u['name'], 'group_name': u['group']} for u in users]
+            writer = csv.DictWriter(c, asso[0].keys())
+            writer.writeheader()
+            writer.writerows(asso)
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -68,7 +89,7 @@ def parse_arguments() -> argparse.Namespace:
                  epilog='Additional help can be found at https://github.com/thoughtspot/cs_tools',
              )
 
-    parser.add_argument('--filename', action='store', help='output file to save user data')
+    parser.add_argument('--dirname', action='store', help='output directory to save usergroup data')
     args = parser.parse_args()
 
     if args.version:
@@ -77,8 +98,8 @@ def parse_arguments() -> argparse.Namespace:
 
     errors = []
 
-    if not args.filename:
-        errors.append('--filename is a required argument that is missing')
+    if not args.dirname:
+        errors.append('--dirname is a required argument that is missing')
 
     if not (args.toml or all(map(bool, [args.username, args.password, args.ts_url]))):
         errors.append(
@@ -121,4 +142,4 @@ if __name__ == '__main__':
         config = TSConfig(**data)
 
     ts_api = ThoughtSpot(config)
-    app(ts_api, filename=pathlib.Path(args.filename))
+    app(ts_api, dirname=pathlib.Path(args.dirname))
