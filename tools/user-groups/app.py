@@ -5,6 +5,8 @@ import logging
 import pathlib
 import csv
 
+from thoughtspot.const import FMT_TSLOAD_DATETIME
+from thoughtspot_internal.util.datetime import to_datetime
 from thoughtspot_internal.util.ux import FrontendArgumentParser
 
 from _version import __version__
@@ -26,8 +28,8 @@ def _user_groups_info(api):
                 'name': principal['name'],
                 'display_name': principal['displayName'],
                 'description': principal.get('description', ''),
-                'created': principal['created'],
-                'modified': principal['modified']
+                'created': to_datetime(principal['created'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
+                'modified': to_datetime(principal['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME)
             })
 
         if 'USER' in principal['principalTypeEnum']:
@@ -37,8 +39,8 @@ def _user_groups_info(api):
                     'display_name': principal['displayName'],
                     'email': principal['mail'],
                     'group': group,
-                    'created': principal['created'],
-                    'modified': principal['modified']
+                    'created': to_datetime(principal['created'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
+                    'modified': to_datetime(principal['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME)
                 })
 
     return users, groups
