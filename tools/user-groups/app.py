@@ -56,7 +56,7 @@ def app(api: 'ThoughtSpot', dirname: pathlib.Path) -> None:
     with api:
         users, groups = _user_groups_info(api)
 
-        with open(dirname / 'users.csv', **file_opts) as c:
+        with open(dirname / 'introspect_user.csv', **file_opts) as c:
             seen = []
             u = []
 
@@ -69,12 +69,12 @@ def app(api: 'ThoughtSpot', dirname: pathlib.Path) -> None:
             writer.writeheader()
             writer.writerows(u)
 
-        with open(dirname / 'groups.csv', **file_opts) as c:
+        with open(dirname / 'introspect_group.csv', **file_opts) as c:
             writer = csv.DictWriter(c, groups[0].keys())
             writer.writeheader()
             writer.writerows(groups)
 
-        with open(dirname / 'users_groups.csv', **file_opts) as c:
+        with open(dirname / 'asso_introspect_user_group.csv', **file_opts) as c:
             asso = [{'user_name': u['name'], 'group_name': u['group']} for u in users]
             writer = csv.DictWriter(c, asso[0].keys())
             writer.writeheader()

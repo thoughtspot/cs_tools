@@ -1,4 +1,4 @@
-insert_data () {
+insert_data() {
     SOURCE_FILE=$1
     TARGET_TABLE=$2
 
@@ -10,7 +10,7 @@ insert_data () {
       --field_separator "," \
       --null_value "" \
       --boolean_representation True_False \
-      --date_time_format "%Y-%m-%dT%H:%M:%S"
+      --date_time_format "%Y%m%d %H:%M:%S" \
       --empty_target
 }
 
