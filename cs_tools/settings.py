@@ -7,7 +7,7 @@ from pydantic import BaseModel, AnyUrl, validator
 import typer
 import toml
 
-from .helpers.secrets import obscure
+from cs_tools.helpers.secrets import obscure
 
 
 class Settings(BaseModel):

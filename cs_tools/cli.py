@@ -5,11 +5,11 @@ import click
 import typer
 import toml
 
-from .helpers.pydantclick import _validate_args
-from .helpers.cli_ux import console
-from .helpers.loader import _gather_tools
-from .util.algo import deep_update
-from .settings import TSConfig
+from cs_tools.helpers.pydantclick import _validate_args
+from cs_tools.helpers.cli_ux import console
+from cs_tools.helpers.loader import _gather_tools
+from cs_tools.util.algo import deep_update
+from cs_tools.settings import TSConfig
 
 
 app = typer.Typer(
