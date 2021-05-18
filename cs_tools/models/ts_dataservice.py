@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import List, Iterator, BinaryIO
+from typing import Union, List, Iterator, BinaryIO
 import logging
 
 import httpx
@@ -73,7 +71,7 @@ class TSDataService(APIBase):
         r = self.get(f'{self.tql_base_url}/tokens/dynamic')
         return r
 
-    def query(self, data, *, stream: bool=False, timeout=5.0) -> httpx.Response | Iterator[httpx.Response]:
+    def query(self, data, *, stream: bool=False, timeout=5.0) -> Union[httpx.Response, Iterator[httpx.Response]]:
         """
         Run a TQL query.
 
@@ -86,7 +84,7 @@ class TSDataService(APIBase):
 
         return self.post(f'{self.tql_base_url}/query', **kw)
 
-    def script(self, data, *, stream: bool=False) -> httpx.Response | Iterator[httpx.Response]:
+    def script(self, data, *, stream: bool=False) -> Union[httpx.Response, Iterator[httpx.Response]]:
         """
         Execute a series of queries against TQL.
 

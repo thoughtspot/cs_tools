@@ -1,4 +1,3 @@
-from __future__ import annotations
 from ipaddress import IPv4Address
 from typing import Union, Dict, Any
 import pathlib
@@ -81,7 +80,7 @@ class TSConfig(Settings):
         validate=True,
         interactive=False,
         **kw
-    ) -> [TSConfig, dict]:
+    ) -> ['TSConfig', dict]:
         """
         Build TSConfig from command line arguments.
         """

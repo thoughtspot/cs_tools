@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 with open('./requirements.txt') as f:
@@ -16,9 +16,9 @@ setup(
     long_description=README,
     author='Customer Success @ ThoughtSpot',
     author_email='ps-na@thoughtspot.com',
-    url='https://github.com/thoughtspot/ts_tools',
+    url='https://github.com/thoughtspot/cs_tools',
     license='MIT',
-    packages=('cs_tools', ),
+    packages=find_packages(),
     install_requires=REQUIRED,
     python_requires='>=3.6',
     entry_points={
