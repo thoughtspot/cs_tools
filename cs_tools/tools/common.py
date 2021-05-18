@@ -1,5 +1,4 @@
-from __future__ import annotations
-from typing import List, Dict, Any
+from typing import Union, List, Dict, Any
 import pathlib
 import json
 import csv
@@ -119,7 +118,7 @@ def tsload(
     field_separator: str='|',
     empty_target: bool=True,
     verbose: bool=False
-) -> str | None:
+) -> Union[str, None]:
     """
 
     Defaults to tsload command of:
