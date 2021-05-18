@@ -50,7 +50,7 @@ class BSTool:
         return f'<{pvt}Tool: {self.name}>'
 
 
-def _gather_tools(app: typer.App):
+def _gather_tools(app: typer.Typer):
     """
     Find and register all the available tools.
     """
