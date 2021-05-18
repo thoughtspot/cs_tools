@@ -1,0 +1,27 @@
+table:
+  name: introspect_group
+  db: cs_tools
+  schema: falcon_default_schema
+  db_table: introspect_group
+  columns:
+  - name: Group Name
+    db_column_name: name
+    properties:
+      column_type: ATTRIBUTE
+  - name: Display Name
+    db_column_name: display_name
+    properties:
+      column_type: ATTRIBUTE
+  - name: Description
+    db_column_name: description
+    properties:
+      column_type: ATTRIBUTE
+  - name: Created
+    db_column_name: created
+    properties:
+      column_type: ATTRIBUTE
+  - name: Modified
+    db_column_name: modified
+    properties:
+      column_type: ATTRIBUTE
+guid: b61f4220-b6ba-455b-83b4-88755677eb2b

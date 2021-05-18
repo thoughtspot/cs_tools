@@ -64,7 +64,7 @@ if __name__ == '__main__':
         raise RuntimeError('no virtual environment detected!')
 
     HERE = pathlib.Path(__file__).resolve().parent
-    VENDOR_DIR = HERE.parent / 'vendor'
+    VENDOR_DIR = HERE.parent / 'dist'
 
     if not VENDOR_DIR.exists():
         VENDOR_DIR.mkdir()
