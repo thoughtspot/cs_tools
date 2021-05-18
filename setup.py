@@ -10,7 +10,7 @@ with open('./README.md') as f:
 
 
 setup(
-    name='thoughtspot-internal',
+    name='cs_tools',
     version='0.1.0',
     description='Python programming interface to the ThoughtSpot API and platform',
     long_description=README,
@@ -18,9 +18,12 @@ setup(
     author_email='ps-na@thoughtspot.com',
     url='https://github.com/thoughtspot/ts_tools',
     license='MIT',
-    packages=(
-        'thoughtspot_internal', 'thoughtspot_internal.models', 'thoughtspot_internal.util'
-    ),
+    packages=('cs_tools', ),
     install_requires=REQUIRED,
-    python_requires='>=3.6'
+    python_requires='>=3.6',
+    entry_points={
+        'console_scripts': [
+            'cs_tools = cs_tools.cli:run',
+        ]
+    }
 )

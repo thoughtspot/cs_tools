@@ -3,7 +3,7 @@ Freezes and downloads all necessary requirements.
 
 This script can be run on any machine that has a working virtual environment
 with cs_tools already set up. Upon running, all requirements will be downloaded
-to the ../vendor/ directory.
+to the cs_tools/vendor directory.
 
 -------------------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     if sys.prefix == sys.base_prefix:
         raise RuntimeError('no virtual environment detected!')
 
-    HERE = pathlib.Path(__file__).parent
+    HERE = pathlib.Path(__file__).resolve().parent
     VENDOR_DIR = HERE.parent / 'vendor'
 
     if not VENDOR_DIR.exists():
@@ -77,7 +77,6 @@ if __name__ == '__main__':
     with _cd(VENDOR_DIR):
         offline_install = pathlib.Path('offline-install.txt')
         cs_tools = pathlib.Path('cs_tools/')
-        ts_tools = pathlib.Path('ts_tools/')
 
         # pip freeze > offline-install.txt
         with offline_install.open('w') as fp:
@@ -86,20 +85,12 @@ if __name__ == '__main__':
         # ensure we have thoughtspot packages installed
         with offline_install.open('r') as fp:
             lines = fp.readlines()
-            all_but_ts = [line for line in lines if 'thoughtspot' not in line]
-
-            if all_but_ts == lines:
-                raise RuntimeError('thoughtspot or thoughtspot-internal not found in virtual environment')
+            all_but_ts = [line for line in lines if 'cs_tools' not in line]
 
         # download our pip-installed packages
         sp.run(f'pip download {" ".join(all_but_ts)} --dest {VENDOR_DIR} --platform linux_x86_64 --no-deps')
 
         # cs_tools: clone, zip, clean up cloned
-        sp.run('git clone -b dev https://github.com/thoughtspot/cs_tools.git')
-        shutil.make_archive('thoughtspot-internal-0.1.0', 'zip', cs_tools)  # TODO grab version number dynamically
+        sp.run('git clone -b redesign https://github.com/thoughtspot/cs_tools.git')
+        shutil.make_archive('cs_tools-0.1.0', 'zip', cs_tools)  # TODO grab version number dynamically
         shutil.rmtree(cs_tools, onerror=_rm_ro)
-
-        # ts_tools: clone, zip, clean up cloned
-        sp.run('git clone https://github.com/thoughtspot/ts_tools.git')
-        shutil.make_archive('thoughtspot-0.1.0', 'zip', ts_tools)  # TODO grab version number dynamically
-        shutil.rmtree(ts_tools, onerror=_rm_ro)
