@@ -135,6 +135,5 @@ dmypy.json
 # Sublime files
 *.sublime-project
 *.sublime-workspace
-
-# ignore tsconfig!
-tsconfig.*
+poetry.lock
+pyproject.toml
