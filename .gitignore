@@ -14,7 +14,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -137,3 +136,7 @@ dmypy.json
 *.sublime-workspace
 poetry.lock
 pyproject.toml
+!.gitdontignore
+dist/pkgs/*.whl
+dist/pkgs/*.zip
+dist/pkgs/*.tar.gz
