@@ -21,6 +21,11 @@ function error ($msg) {
     # Nothing special. There's a pause in here so the user knows where they
     # might've gone wrong.
     #
+    # Parameters
+    # ----------
+    # msg : str
+    #   message to emit in the warning
+    #
     write-warning $msg
     write-host    $NL
     pause
@@ -51,7 +56,7 @@ function check_python($major, $minor, $micro) {
     try   {
         $req_met = (&{python -c "import sys;print(sys.version_info >= ($major, $minor, $micro))"})
 
-        if ( $req_met -eq "True") { return }
+        if ( $req_met -eq "True" ) { return }
 
         $msg = "
         Python needs to be updated in order to run CS Tools!
@@ -105,7 +110,6 @@ function setup_venv ($install_type = 'local') {
     else {
         error 'no option like $install_type, type either "local" or "remote"'
     }
-
 }
 
 

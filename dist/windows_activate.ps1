@@ -69,7 +69,6 @@ function activate ($py_args = 'interactive') {
 }
 
 
-
 if (test-path "$APP_DIR\.cs_tools\Scripts\Activate.ps1" -pathtype Leaf) {
     activate
 }
