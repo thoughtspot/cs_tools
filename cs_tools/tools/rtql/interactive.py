@@ -271,7 +271,7 @@ class InteractiveTQL:
 
         This method is purely functional.
         """
-        with console.status('[bold green]starting remote TQL client..[/]'):
+        with console.status('[green]starting remote TQL client..[/]'):
             self._login()
             self.update_tokens('static')
             self.update_tokens('dynamic')
