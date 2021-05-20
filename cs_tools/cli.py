@@ -47,8 +47,6 @@ def _show_hidden_tool_options(
     """
     ctx = click.get_current_context()
 
-    print(f'hello world: {ctx.invoked_subcommand}')
-
     if ctx.invoked_subcommand:
         return
 

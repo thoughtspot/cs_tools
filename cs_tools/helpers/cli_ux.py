@@ -6,7 +6,7 @@ from typer import Argument as A_, Option as O_
 import typer
 import click
 
-from cs_tools.helpers.loader import BSTool
+from cs_tools.helpers.loader import CSTool
 from cs_tools.const import CONSOLE_THEME, PACKAGE_DIR
 
 
@@ -23,7 +23,7 @@ def show_version(show: bool):
 
     for path in (PACKAGE_DIR / 'tools').iterdir():
         if path.name.endswith(ctx.command.name):
-            tool = BSTool(path)
+            tool = CSTool(path)
             break
 
     print(f'bee-boop! ({tool.version})')
