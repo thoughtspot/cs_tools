@@ -105,4 +105,4 @@ setup_venv () {
 
 check_python 3 6 8
 setup_venv $INSTALL_TYPE
-# ./windows_activate.ps1
+source ./unix_activate.sh

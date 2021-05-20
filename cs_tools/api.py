@@ -27,7 +27,7 @@ class ThoughtSpot:
         self.http.headers.update({'X-Requested-By': 'ThoughtSpot'})
         self._logged_in_user_guid = None  # set in __enter__()
 
-        # add TQL service
+        # add remote TQL & tsload services
         self.ts_dataservice = TSDataService(self)
 
         # add public API endpoints
