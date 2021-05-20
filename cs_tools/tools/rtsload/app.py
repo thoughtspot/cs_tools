@@ -1,6 +1,4 @@
 import pathlib
-import json
-import sys
 
 from typer import Argument as A_, Option as O_
 import typer
@@ -15,12 +13,14 @@ app = typer.Typer(
     help="""
     Enable loading files to ThoughtSpot from a remote machine.
 
+    \b
     For further information on tsload, please refer to:
       https://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html
       https://docs.thoughtspot.com/latest/reference/tsload-service-api-ref.html
       https://docs.thoughtspot.com/latest/reference/data-importer-ref.html
     """,
-    callback=show_tool_options
+    callback=show_tool_options,
+    invoke_without_command=True
 )
 
 

@@ -18,11 +18,13 @@ app = typer.Typer(
     TQL is the ThoughtSpot language for entering SQL commands. You can use TQL
     to view and modify schemas and data in tables.
 
+    \b
     For further information on TQL, please refer to:
       https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """,
-    callback=show_tool_options
+    callback=show_tool_options,
+    invoke_without_command=True
 )
 
 
