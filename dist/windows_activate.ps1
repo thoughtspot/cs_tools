@@ -45,7 +45,7 @@ function setup_venv ($install_type = 'local') {
         pip install -r reqs/offline-install.txt --find-links=pkgs/ --no-cache-dir --no-index
     }
     elseif ( $install_type -eq 'remote' ) {
-        pip install -r reqs/requirements.txt --no-cache-dir --no-index   
+        pip install -r reqs/requirements.txt --no-cache-dir   
     }
     else {
         error 'no option like $install_type, type either "local" or "remote"'
