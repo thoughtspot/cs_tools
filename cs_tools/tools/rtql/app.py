@@ -41,8 +41,6 @@ def interactive(
     database administration.
 
     For a list of all commands, type "help" after invoking tql
-
-    For a list of all available flags, type tql --helpfull
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
     api = ThoughtSpot(cfg)
@@ -59,10 +57,12 @@ def file(
 ):
     """
     Run multiple commands within TQL on a remote server.
+    \f
+    DEV NOTE:
 
-    This command is akin to using the shell command cat with TQL.
+        This command is akin to using the shell command cat with TQL.
 
-        cat create-schema.sql | tql
+            cat create-schema.sql | tql
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
@@ -81,10 +81,12 @@ def command(
     Run a single TQL command on a remote server.
 
     By default, this command will accept input from a pipe.
+    \f
+    DEV NOTE:
 
-    This command is akin to using the shell command echo with TQL.
+        This command is akin to using the shell command echo with TQL.
 
-        echo SELECT * FROM db.schema.table | tql
+            echo SELECT * FROM db.schema.table | tql
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 

@@ -14,14 +14,22 @@ from cs_tools.settings import TSConfig
 
 app = typer.Typer(
     help="""
-    CS Tools.
+    Welcom to CS Tools!
 
-    Lorem ipsum.
+    These are scripts and utilities used to assist in the development,
+    implementation, and administration of your ThoughtSpot platform.
+
+    All tools and this library are provided as-is. While every effort
+    has been made to test and certify use of these tools in the various
+    supported ThoughtSpot deployments, each environment is different.
+
+    You should ALWAYS take a snapshot before you make any significant
+    changes to your environment!
 
     For additional help, please reach out to the ThoughtSpot Customer
     Success team.
 
-    ps-na@thoughtspot.com
+    email: ps-na@thoughtspot.com
     """,
     add_completion=False,
     context_settings={
@@ -39,6 +47,8 @@ def _show_hidden_tool_options(
     """
     ctx = click.get_current_context()
 
+    print(f'hello world: {ctx.invoked_subcommand}')
+
     if ctx.invoked_subcommand:
         return
 
@@ -46,6 +56,9 @@ def _show_hidden_tool_options(
         unhidden_cmds = {}
 
         for name, command in ctx.command.commands.items():
+            if name == '__example_app__':
+                continue
+
             command.hidden = False
             unhidden_cmds[name] = command
 

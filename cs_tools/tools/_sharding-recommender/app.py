@@ -18,7 +18,11 @@ HERE = pathlib.Path(__file__).parent
 
 def _format_table_info_data(data: List[dict]) -> List[dict]:
     """
-    TODO
+    Standardize data in an expected format.
+
+    This is a simple transformation layer, we are fitting our data to be
+    record-based and in the format that's expected for an eventual
+    tsload command.
     """
     data = [
         {
@@ -55,12 +59,13 @@ app = typer.Typer(
     Once tables grow sufficiently large within a Falcon deployment, cluster
     performance and data loading can be enhanced through the use of sharding.
     The choice of what column to shards and how many shards to use can vary
-    based on many factors. This tool helps expose key information.
+    based on many factors. This tool helps expose that key information.
 
     Before sharding, it can be helpful to implement this solution and consult
     with your ThoughtSpot contact for guidance on the best shard key and number
     of shards to use.
 
+    \b
     For further information on sharding, please refer to:
       https://docs.thoughtspot.com/latest/admin/loading/sharding.html
     """,
@@ -127,6 +132,9 @@ def gather(
         if save_path is not None:
             return
 
+        # TODO .. should we do a version check?
+        # rTQL released in 6.2.1+
+        # rTSLOAD released in 6.3+
         run_tql_script(api, fp=HERE / 'create_tables.tql')
         cycle_id = tsload(api, fp=fp, target_database='cs_tools', target_table='falcon_table_info')
         (dir_ / 'falcon_table_info.csv').unlink()
