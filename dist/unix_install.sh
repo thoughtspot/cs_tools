@@ -103,6 +103,22 @@ setup_venv () {
 }
 
 
+set_envt () {
+    #
+    #
+    #
+
+    # convert UTF-8 to en_US.
+    LC_ALL=en_US
+    export LC_ALL
+
+    #
+    PYTHONIOENCODING=utf-8
+    export PYTHONIOENCODING
+}
+
+
 check_python 3 6 8
 setup_venv $INSTALL_TYPE
+# set_locale
 source ./unix_activate.sh
