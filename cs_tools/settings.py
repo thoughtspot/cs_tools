@@ -120,7 +120,7 @@ class TSConfig(Settings):
                 'frontend': {
                     'username': username,
                     # NOTE: if we need real security, we can simply replace obscure()
-                    'password': kw.get('password', None) or obscure(kw['password'])
+                    'password': None if kw.get('password') is None else obscure(kw['password'])
                 }
             }
             # 'logging': {

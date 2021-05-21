@@ -162,7 +162,7 @@ def modify(
                host=host, port=port, username=username, password=password,
                disable_ssl=disable_ssl, disable_sso=disable_sso,
                validate=False
-           )
+           ).dict()
 
     new = deep_update(old, data, ignore_none=True)
     config = _validate_args(new, TSConfig)
