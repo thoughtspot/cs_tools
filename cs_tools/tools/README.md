@@ -5,9 +5,9 @@ administration, and may contain API calls that we normally wouldn't share with
 customers.
 
 The tools and Web APIs are all written in Python and require a Python environment in
-which to run. In the project root directory, you will find a [dist][dist/] subdirectory.
+which to run. In the project root directory, you will find a [dist/][dist] subdirectory.
 There are two sets of INSTALL and ACTIVATE scripts for Windows and \*nix based
-platforms. See [dist][that directory] for more information on deploying CS Tools.
+platforms. See [that directory][dist] for more information on deploying CS Tools.
 
 By convention, a tool which uses ANY private APIs will have their app directory prefixed
 with an underscore and **not** show up in the default cs_tools helptext. All tools are
