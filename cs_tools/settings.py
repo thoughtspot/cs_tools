@@ -78,11 +78,33 @@ class TSConfig(Settings):
         host,
         username,
         validate=True,
+        default=True,
         interactive=False,
         **kw
     ) -> ['TSConfig', dict]:
         """
         Build TSConfig from command line arguments.
+
+        Parameters
+        ----------
+        config : str
+          name of the config file to parse
+
+        host : str
+
+        port : int
+
+        validate : bool, default: True
+          whether or not to validate args
+
+        default : bool, default: True
+          whether or not to take default args if they're not provided
+
+        interactive : bool, default: False
+          wether or not to gather user input if required args not supplied
+
+        **kw
+          additional arguments to provide to TSConfig
         """
         if config is not None:
             app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
@@ -113,8 +135,8 @@ class TSConfig(Settings):
             'thoughtspot': {
                 'host': host,
                 'port': kw.get('port', None),
-                'disable_ssl': kw.get('disable_ssl') or False,
-                'disable_sso': kw.get('disable_sso') or False
+                'disable_ssl': kw.get('disable_ssl', False) if default else kw.get('disable_ssl'),
+                'disable_sso': kw.get('disable_sso', False) if default else kw.get('disable_sso'),
             },
             'auth': {
                 'frontend': {

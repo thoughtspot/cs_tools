@@ -14,7 +14,7 @@ from cs_tools.settings import TSConfig
 
 app = typer.Typer(
     help="""
-    Welcom to CS Tools!
+    Welcome to CS Tools!
 
     These are scripts and utilities used to assist in the development,
     implementation, and administration of your ThoughtSpot platform.
@@ -158,13 +158,14 @@ def modify(
     """
     file = pathlib.Path(typer.get_app_dir('cs_tools')) / f'cluster-cfg_{name}.toml'
     old  = TSConfig.from_toml(file).dict()
-    data = TSConfig.from_cli_args(
-               host=host, port=port, username=username, password=password,
-               disable_ssl=disable_ssl, disable_sso=disable_sso,
-               validate=False
-           ).dict()
 
-    new = deep_update(old, data, ignore_none=True)
+    data = TSConfig.from_cli_args(
+                host=host, port=port, username=username, password=password,
+                disable_ssl=disable_ssl, disable_sso=disable_sso,
+                validate=False, default=False
+            ).dict()
+
+    new = deep_update(old, data, ignore=None)
     config = _validate_args(new, TSConfig)
 
     with file.open('w') as t:

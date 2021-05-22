@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Any
 import collections.abc
 
 
@@ -12,7 +12,7 @@ def dedupe(iterable: Iterable) -> Iterable:
     return iter(dict.fromkeys(iterable))
 
 
-def deep_update(old: dict, new: dict, *, ignore_none: bool=False) -> dict:
+def deep_update(old: dict, new: dict, *, ignore: Any=None) -> dict:
     """
     Update existing dictionary with new data.
 
@@ -28,8 +28,8 @@ def deep_update(old: dict, new: dict, *, ignore_none: bool=False) -> dict:
     new : dict
       new dictionary to pull values from
 
-    ignore_none : bool [default: False]
-      whether or not to ignore None values
+    ignore : anything [default: None]
+      ignore values like <ignore>
 
     Returns
     -------
@@ -37,11 +37,11 @@ def deep_update(old: dict, new: dict, *, ignore_none: bool=False) -> dict:
       old dictionary updated with new's values
     """
     for k, v in new.items():
-        if v is None and ignore_none:
+        if v is ignore or str(v) == str(ignore):
             continue
 
         if isinstance(v, collections.abc.Mapping):
-            v = deep_update(old.get(k, {}), v, ignore_none=ignore_none)
+            v = deep_update(old.get(k, {}), v, ignore=ignore)
 
         old[k] = v
 
