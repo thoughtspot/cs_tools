@@ -8,6 +8,7 @@
 # v0.1.0 - INITIAL RELEASE
 #
 $NL = [Environment]::NewLine
+$SCRIPT_DIR = $PSScriptRoot
 $APP_DIR = "$env:APPDATA\cs_tools"
 $_ACTIVATE = "$APP_DIR\.cs_tools\Scripts\Activate"
 
@@ -42,10 +43,10 @@ function setup_venv ($install_type = 'local') {
     & "$_ACTIVATE.ps1"
 
     if ( $install_type -eq 'local' ) {
-        pip install -r reqs/offline-install.txt --find-links=pkgs/ --no-cache-dir --no-index
+        pip install -r $SCRIPT_DIR/reqs/offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-cache-dir --no-index
     }
     elseif ( $install_type -eq 'remote' ) {
-        pip install -r reqs/requirements.txt --no-cache-dir   
+        pip install -r $SCRIPT_DIR/reqs/requirements.txt --no-cache-dir
     }
     else {
         error 'no option like $install_type, type either "local" or "remote"'

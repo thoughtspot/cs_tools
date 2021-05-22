@@ -8,6 +8,7 @@
 # CHANGELOG
 # v0.1.0 - INITIAL RELEASE
 #
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 APP_DIR="${HOME}/.config/cs_tools"
 _ACTIVATE="${APP_DIR}/.cs_tools/bin/activate"
 
@@ -46,9 +47,9 @@ setup_venv () {
     source $_ACTIVATE
 
     if [[ $install_type == 'local' ]]; then
-        pip install -r reqs/offline-install.txt --find-links=pkgs/ --no-cache-dir --no-index
+        pip install -r $SCRIPT_DIR/reqs/offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-cache-dir --no-index
     elif [[ $install_type == 'remote' ]]; then
-        pip install -r reqs/requirements.txt --no-cache-dir
+        pip install -r $SCRIPT_DIR/reqs/requirements.txt --no-cache-dir
     else
         error "no option like ${install_type}, type either 'local' or 'remote'"
     fi

@@ -85,6 +85,7 @@ def generate_tml(
 
     Generates and saves multiple TML files.
 
+    \b
     TABLE ...... falcon_table_info
     WORKSHEET .. PS: Falcon Table Sharding Recommender
     PINBOARD ...
