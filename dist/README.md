@@ -10,7 +10,7 @@ to facilitate deploying the tools.
 
 After installation, to find a list of all the supported tools, please type...
 ```console
-(.venv) C:\work\thoughtspot\cs_tools>cs_tools tools
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
 ```
 
 ### Windows Install

@@ -15,7 +15,7 @@ Office Hours session and a CSA will be able to help guide them through the proce
 ## Pinboard preview
 
 <p align="center">
-  <img src="./static/pinboard.png" width="750" height="525" alt="pinboard">
+  <img src="./static/pinboard.png" width="1000" height="700" alt="pinboard">
 </p>
 
 
