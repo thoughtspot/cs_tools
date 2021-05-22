@@ -8,6 +8,42 @@ The tools and Web APIs are all written in Python and require a Python environmen
 which to run. This directory can be zipped and shared directly with customers in order
 to facilitate deploying the tools.
 
+After installation, to find a list of all the supported tools, please type...
+```console
+(.venv) C:\work\thoughtspot\cs_tools>cs_tools tools
+```
 
+### Windows Install
+```console
+# 1. Download dist.zip
+# 2. Unzip dist.zip
+# 3. Navigate to the folder dist/
+# 4. Right-click windows_install.ps1, select "Run with Powershell"
+
+# To activate the environment later (for interactive or automation needs)
+# the path to windows_activate.ps1 must be a valid relative or full path!
+powershell -file ./windows_activate.ps1
+
+  -or-
+
+# Right-click windows_activate.ps1, select "Run with Powershell"
+```
+
+
+### MacOS / Linux Install
+```console
+# 1. Download dist.zip
+# 2. Run the following commands
+
+unzip $HOME/downloads/dist.zip
+cd $HOME/downloads/dist
+source unix_install.sh
+
+
+# To activate the environment later (for interactive or automation needs)
+# the path to unix_activate.sh must be a valid relative or full path!
+
+    source unix_activate.sh
+```
 
 [dist]: ../../dist/
