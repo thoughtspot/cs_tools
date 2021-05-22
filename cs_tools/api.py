@@ -10,6 +10,7 @@ from cs_tools.models.metadata import Metadata, _Metadata
 from cs_tools.models.security import _Security
 from cs_tools.models.auth import Session
 from cs_tools.models.user import User
+from cs_tools.schema.user import User as UserSchema
 
 
 log = logging.getLogger(__name__)
@@ -25,7 +26,10 @@ class ThoughtSpot:
         # set up our session
         self.http = httpx.Client(timeout=10.0, verify=not ts_config.thoughtspot.disable_ssl)
         self.http.headers.update({'X-Requested-By': 'ThoughtSpot'})
-        self._logged_in_user_guid = None  # set in __enter__()
+
+        # set in __enter__()
+        self.logged_in_user = None
+        self.thoughtspot_version = None
 
         # add remote TQL & tsload services
         self.ts_dataservice = TSDataService(self)
@@ -81,8 +85,13 @@ class ThoughtSpot:
                 raise SystemExit(1)
 
         rj = r.json()
-        self._logged_in_user_guid = rj['userGUID']
-        self._thoughtspot_version = rj['releaseVersion']
+
+        self.logged_in_user = UserSchema(
+            guid=rj['userGUID'], name=rj['userName'], display_name=rj['userDisplayName'],
+            email=rj['userEmail'], privileges=rj['privileges']
+        )
+
+        self.thoughtspot_version = rj['releaseVersion']
         return self
 
     def __exit__(self, exc_type, exc_value, exc_tb):

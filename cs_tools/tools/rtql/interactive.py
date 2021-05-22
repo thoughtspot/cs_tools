@@ -6,6 +6,7 @@ import httpx
 import typer
 
 from cs_tools.helpers.cli_ux import console
+from cs_tools.schema.user import PrivilegeEnum
 from cs_tools.api import ThoughtSpot
 from .completer import TQLCompleter
 from .const import TQL_HELP
@@ -39,12 +40,6 @@ class InteractiveTQL:
 
     completer : TQLCompleter
       used to autocomplete tokens
-
-    logged_in_user : str
-      current user, set upon login
-
-    platform_version : str
-      thoughtspot version, set upon login
     """
     def __init__(
         self,
@@ -57,25 +52,19 @@ class InteractiveTQL:
         self.ctx = {'schema': schema, 'server_schema_version': -1}
         self.autocomplete = autocomplete
         self.completer = TQLCompleter()
-        self.logged_in_user = None
-        self.platform_version = None
         self._current_prompt = None
 
-    def _login(self) -> None:
-        """
-        Handle poorly constructed credentials in login.
-        """
-        try:
-            r = self.ts_api.auth.login()
-        except httpx.ConnectError as e:
-            if 'CERTIFICATE_VERIFY_FAILED' in str(e):
-                console.print('SSL verify failed, did you mean to use flag --disable_ssl?')
-                raise SystemExit(1)
-            raise e
+    def _check_privileges(self):
+        required = set([PrivilegeEnum.can_administer_thoughtspot, PrivilegeEnum.can_manage_data])
+        privileges = set(self.ts_api.logged_in_user.privileges)
 
-        rj = r.json()
-        self.logged_in_user = rj['userDisplayName']
-        self.platform_version = rj['releaseVersion']
+        if not set(privileges).intersection(required):
+            console.print(
+                '[red]You do not have the correct privileges to access the remote TQL '
+                'service!\n\nYou require at least the "Can Manage Data" privilege.'
+                '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+            )
+            raise typer.Exit()
 
     def _query(self, questions: List[dict]=None):
         """
@@ -272,7 +261,8 @@ class InteractiveTQL:
         This method is purely functional.
         """
         with console.status('[green]starting remote TQL client..[/]'):
-            self._login()
+            self.ts_api.__enter__()
+            self._check_privileges()
             self.update_tokens('static')
             self.update_tokens('dynamic')
 
@@ -280,7 +270,7 @@ class InteractiveTQL:
 
         console.print(
             '\nWelcome to the ThoughtSpot SQL command line interface, '
-            f'{self.logged_in_user}!'
+            f'{self.ts_api.logged_in_user.display_name}!'
             '\n\n[green]Controls:'
             '\n  Press Control-C to clear current command.'          # cmd-c ?
             '\n  Press Control-D or type "exit" or "quit" to exit.'  # doesn't work on Windows
@@ -288,7 +278,7 @@ class InteractiveTQL:
             '\n\n  [yellow]Remember to add a semicolon after each command![/]'
             '\n\nConnected to remote TQL service.'
             f'\nCluster address: {self.ts_api.host}'
-            f'\nCluster version: {self.platform_version}'
+            f'\nCluster version: {self.ts_api.thoughtspot_version}'
         )
 
         while True:
@@ -312,4 +302,4 @@ class InteractiveTQL:
             ctx = self._handle_query(r)
             self.reset_context(ctx)
 
-        self.ts_api.auth.logout()
+        self.ts_api.__exit__(None, None, None)

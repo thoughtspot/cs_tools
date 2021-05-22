@@ -52,7 +52,7 @@ class Session(APIBase):
         except httpx.HTTPStatusError as e:
             status = e.response.status_code
             log.error(f'login to ThoughtSpot was unsuccessful: {status}')
-            raise AuthenticationError(username=self.config.auth['frontend'].username)
+            raise AuthenticationError(username=data['username'])
         else:
             log.debug('login to ThoughtSpot was successful')
 

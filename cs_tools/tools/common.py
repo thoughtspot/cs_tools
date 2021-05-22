@@ -3,12 +3,21 @@ import pathlib
 import json
 import csv
 
+import typer
+
 from cs_tools.helpers.cli_ux import console
 from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 )
 from cs_tools.util.datetime import to_datetime
+from cs_tools.schema.user import PrivilegeEnum
 from cs_tools.api import ThoughtSpot
+
+
+REQUIRED_PRIVILEGES = set([
+    PrivilegeEnum.can_administer_thoughtspot,
+    PrivilegeEnum.can_manage_data
+])
 
 
 def run_tql_script(
@@ -28,6 +37,14 @@ def run_tql_script(
       https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """
+    if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
+        console.print(
+            '[red]You do not have the correct privileges to access the remote TQL '
+            'service!\n\nYou require at least the "Can Manage Data" privilege.'
+            '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+        )
+        raise typer.Exit()
+
     # TODO handle errors found in tql?
     # TODO handle forigveable errors [CREATE TABLE when it exists]
     with fp.open() as f:
@@ -78,6 +95,14 @@ def run_tql_command(
       https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """
+    if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
+        console.print(
+            '[red]You do not have the correct privileges to access the remote TQL '
+            'service!\n\nYou require at least the "Can Manage Data" privilege.'
+            '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+        )
+        raise typer.Exit()
+
     # TODO handle errors found in tql?
     # TODO handle forigveable errors [CREATE TABLE when it exists]
     data = {
@@ -120,6 +145,7 @@ def tsload(
     verbose: bool=False
 ) -> Union[str, None]:
     """
+    
 
     Defaults to tsload command of:
 
@@ -141,6 +167,14 @@ def tsload(
       https://docs.thoughtspot.com/latest/reference/tsload-service-api-ref.html
       https://docs.thoughtspot.com/latest/reference/data-importer-ref.html
     """
+    if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
+        console.print(
+            '[red]You do not have the correct privileges to access the remote tsload '
+            'service!\n\nYou require at least the "Can Manage Data" privilege.'
+            '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+        )
+        raise typer.Exit()
+
     flags = {
         'target': {
             'database': target_database,
