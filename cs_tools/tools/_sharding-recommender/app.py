@@ -100,8 +100,8 @@ def generate_tml(
     worksheet_tml = 'Table Sharding Recommender.worksheet.tsl'
     pinboard_tml  = 'Falcon Table Shard Analysis.pinboard.tsl'
 
-    for stem in (worksheet_tml, pinboard_tml):
-        shutil.copy(HERE / stem, save_path)
+    for stem in (table_tml, pinboard_tml):
+        shutil.copy(HERE / 'static' / stem, save_path)
 
 
 @app.command()
@@ -136,7 +136,7 @@ def gather(
         # TODO .. should we do a version check?
         # rTQL released in 6.2.1+
         # rTSLOAD released in 6.3+
-        run_tql_script(api, fp=HERE / 'create_tables.tql')
+        run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
         cycle_id = tsload(api, fp=fp, target_database='cs_tools', target_table='falcon_table_info')
         (dir_ / 'falcon_table_info.csv').unlink()
 

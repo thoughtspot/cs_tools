@@ -36,13 +36,8 @@ table:
     db_column_name: building_version
     properties:
       column_type: ATTRIBUTE
-  - name: Build Duration
-    db_column_name: build_duration
-    properties:
-      column_type: MEASURE
-      aggregation: SUM
-  - name: Last Built
-    db_column_name: last_build_time
+  - name: Build Duration (s)
+    db_column_name: build_duration_s
     properties:
       column_type: MEASURE
       aggregation: SUM
@@ -54,7 +49,7 @@ table:
     db_column_name: database_status
     properties:
       column_type: ATTRIBUTE
-  - name: Last Uploaded
+  - name: Uploaded At
     db_column_name: last_uploaded_at
     properties:
       column_type: ATTRIBUTE
@@ -63,7 +58,7 @@ table:
     properties:
       column_type: MEASURE
       aggregation: SUM
-  - name: Size (B)
+  - name: Estimated Size (B)
     db_column_name: approx_bytes_size
     properties:
       column_type: MEASURE
@@ -73,16 +68,14 @@ table:
     properties:
       column_type: MEASURE
       aggregation: SUM
-  - name: Skew
+  - name: Row Skew
     db_column_name: row_skew
     properties:
-      column_type: MEASURE
-      aggregation: SUM
-  - name: Shards
+      column_type: ATTRIBUTE
+  - name: Shard Amount
     db_column_name: num_shards
     properties:
-      column_type: MEASURE
-      aggregation: SUM
+      column_type: ATTRIBUTE
   - name: Replicated CSV Size (MB)
     db_column_name: csv_size_with_replication_mb
     properties:
@@ -96,4 +89,4 @@ table:
     db_column_name: ip
     properties:
       column_type: ATTRIBUTE
-guid: 66191d6f-f446-4357-a811-8f954e12f5d6
+guid: dccb1395-7b3a-4714-83ee-b2c31d62c0b5
