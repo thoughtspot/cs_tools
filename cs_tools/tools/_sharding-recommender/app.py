@@ -4,6 +4,7 @@ import shutil
 
 from typer import Option as O_
 import typer
+import yaml
 
 from cs_tools.helpers.cli_ux import console, show_tool_options, frontend
 from cs_tools.util.datetime import to_datetime
@@ -77,7 +78,9 @@ app = typer.Typer(
 @app.command()
 @frontend
 def generate_tml(
-    save_path: pathlib.Path=O_(..., help='filepath to save TML files to', prompt=True),
+    save_path: pathlib.Path=O_(..., help='directory to save TML files to', prompt=True),
+    nodes: int=O_(4, help='number of nodes in your ThoughtSpot cluster', prompt=True),
+    cpus_per_node: int=O_(56, help='number of CPUs per node in your cluster', prompt=True),
     **frontend_kw
 ):
     """
@@ -86,19 +89,36 @@ def generate_tml(
     Generates and saves multiple TML files.
 
     \b
-    TABLE ...... falcon_table_info
-    WORKSHEET .. PS: Falcon Table Sharding Recommender
-    PINBOARD ...
+    TABLE:
+      - falcon_table_info
+
+    WORKSHEET:
+      - PS: Falcon Table Sharding Recommender
+
+    PINBOARD:
+      - PS: Falcon Table Sharding Recommender
     """
-    # TODO: enforce parameters???
+    with (HERE / 'static' / 'PS_ Falcon Table Sharding.worksheet.tml').open() as in_:
+        data = yaml.full_load(in_)
+
+        # set the parameters
+        for formula in data['worksheet']['formulas']:
+            if formula['name'] == '❔ CPU per Node':
+                formula['expr'] = f'{cpus_per_node}'  # constant formulas in TS are str
+
+            if formula['name'] == '❔ Total ThoughtSpot Nodes':
+                formula['expr'] = f'{nodes}'  # constant formulas in TS are str
+
+        with (save_path / 'PS_ Falcon Table Sharding.worksheet.tml').open('w') as out:
+            yaml.dump(data, out)
 
     # TODO: use TML apis
     # end user shouldn't need to worry about this doesn't need to worry about this step)
 
     # TODO: check TS version
     # mostly because of feature parity in TML between 6.0, 6.2, 6.3, 7.0, 7.0.1
-    worksheet_tml = 'Table Sharding Recommender.worksheet.tsl'
-    pinboard_tml  = 'Falcon Table Shard Analysis.pinboard.tsl'
+    table_tml = 'falcon_table_info.table.tml'
+    pinboard_tml  = 'PS_ Falcon Table Sharding Analysis.pinboard.tml'
 
     for stem in (table_tml, pinboard_tml):
         shutil.copy(HERE / 'static' / stem, save_path)
