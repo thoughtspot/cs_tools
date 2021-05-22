@@ -56,6 +56,21 @@ setup_venv () {
 }
 
 
+set_envt_variables () {
+    #
+    #
+    #
+
+    # convert UTF-8 to en_US.
+    LC_ALL=en_US
+    export LC_ALL
+
+    # ensure proper encoding for python
+    PYTHONIOENCODING=utf-8
+    export PYTHONIOENCODING
+}
+
+
 activate () {
     # Activate the virtual environment.
     #
@@ -78,8 +93,10 @@ activate () {
 
 
 if [[ -f "${APP_DIR}/.cs_tools/bin/activate" ]]; then
+    set_envt_variables
     activate
 else
     setup_venv 'local'
+    set_envt_variables
     activate
 fi
