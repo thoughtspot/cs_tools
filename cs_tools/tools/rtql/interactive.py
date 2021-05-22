@@ -194,12 +194,13 @@ class InteractiveTQL:
         try:
             r = call_()
             r.raise_for_status()
-        except Exception:
-            log.exception()
+        except Exception as e:
+            log.debug(e)
             console.print(
                 f'[red]Autocomplete tokens could not be fetched. '
                 f'{r.status_code}: {r.text}[/]'
             )
+            raise typer.Exit() from None
         else:
             tokens = sorted(list(r.json()['tokens']))
             self.completer.update({key: tokens})
