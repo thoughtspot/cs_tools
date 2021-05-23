@@ -15,7 +15,7 @@ least the "Can Manage Data" privilege in ThoughtSpot.
 ## Interactive TQL preview
 
 <p align="center">
-  <img src="./static/interactive_rtql.png" width="1000" height="500" alt="pinboard">
+  <img src="./static/interactive_rtql.png" width="1000" height="500" alt="interactive-rtql">
 </p>
 
 ## CLI preview
