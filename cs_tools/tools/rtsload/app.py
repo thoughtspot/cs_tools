@@ -27,7 +27,7 @@ app = typer.Typer(
 @app.command()
 @frontend
 def status(
-    id: str=A_(..., help=''),
+    id: str=A_(..., help='data load cycle id'),
     **frontend_kw
 ):
     """
@@ -64,11 +64,17 @@ def file(
     **frontend_kw
 ):
     """
-    Supply a TQL file to run within TQL.
-
-    TODO: Long description.
+    Load a file using the remote tsload service.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+
+    # TODO: this loads files in a single chunk over to the server, there is no
+    #       parallelization. We can optimize this in the future if it's desired
+    #       and flag for parallel loads or not.
+    #
+    # DEV NOTE:
+    # Data loads can be called for multiple chunks of data for the same cycle ID. All of
+    # this data is uploaded to the ThoughtSpot cluster unless a commit load is issued.
 
     with ThoughtSpot(cfg) as api:
         tsload(
