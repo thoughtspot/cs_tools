@@ -1,0 +1,74 @@
+worksheet:
+  name: "PS: Dependents"
+  tables:
+  - name: introspect_metadata_dependent
+  - name: introspect_metadata_object
+  joins:
+  - name: FK_metadata_dependency
+    source: introspect_metadata_dependent
+    destination: introspect_metadata_object
+    type: INNER
+    is_one_to_one: false
+  table_paths:
+  - id: introspect_metadata_dependent_1
+    table: introspect_metadata_dependent
+    join_path:
+    - {}
+  - id: introspect_metadata_object_1
+    table: introspect_metadata_object
+    join_path:
+    - join:
+      - FK_metadata_dependency
+  worksheet_columns:
+  - name: Object
+    column_id: "introspect_metadata_object_1::Object"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Description
+    column_id: "introspect_metadata_object_1::Object Description"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Author
+    column_id: "introspect_metadata_object_1::Object Author Display Name"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Created
+    column_id: "introspect_metadata_object_1::Created"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Modified
+    column_id: "introspect_metadata_object_1::Modified"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Type
+    column_id: "introspect_metadata_object_1::Object Type"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Dependent
+    column_id: "introspect_metadata_dependent_1::Dependent"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Dependent Description
+    column_id: "introspect_metadata_dependent_1::Dependent Description"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Dependent Author
+    column_id: "introspect_metadata_dependent_1::Dependent Author Display Name"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Dependent Created
+    column_id: "introspect_metadata_dependent_1::Created"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Dependent Modified
+    column_id: "introspect_metadata_dependent_1::Modified"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Dependent Type
+    column_id: "introspect_metadata_dependent_1::Dependent Type"
+    properties:
+      column_type: ATTRIBUTE
+  properties:
+    is_bypass_rls: false
+    join_progressive: true
+guid: 2443bd8b-dcb8-49ff-a847-3ae2ad9ee771
