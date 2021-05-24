@@ -77,7 +77,7 @@ app = typer.Typer(
 
 @app.command()
 @frontend
-def generate_tml(
+def tml(
     save_path: pathlib.Path=O_(..., help='directory to save TML files to', prompt=True),
     nodes: int=O_(4, help='number of nodes in your ThoughtSpot cluster', prompt=True),
     cpus_per_node: int=O_(56, help='number of CPUs per node in your cluster', prompt=True),
