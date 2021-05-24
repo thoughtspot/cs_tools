@@ -9,7 +9,7 @@ to [Semantic Versioning][semver].
 
 ### Added
 - Sharing Visibility for each User & Group
-- Type (LOCAL_*, LDAP_*, SAML_*) for each User & Group
+- Type (`LOCAL_*`, `LDAP_*`, `SAML_*`) for each User & Group
 
 ### Changed
 - Migrated to new app structure
