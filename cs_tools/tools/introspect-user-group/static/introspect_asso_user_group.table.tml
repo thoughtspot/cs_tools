@@ -8,10 +8,8 @@ table:
     db_column_name: user_name
     properties:
       column_type: ATTRIBUTE
-      index_type: DONT_INDEX
   - name: group_name
     db_column_name: group_name
     properties:
       column_type: ATTRIBUTE
-      index_type: DONT_INDEX
-guid: 92bec4ac-79b7-45fc-a4bc-0e5ef9ab53a5
+guid: 6bf8496a-0464-4331-a76e-4b95f3ffb176

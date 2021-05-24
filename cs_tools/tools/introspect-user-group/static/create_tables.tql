@@ -34,5 +34,5 @@ CREATE TABLE introspect_asso_user_group (
 );
 
 ALTER TABLE introspect_asso_user_group ADD CONSTRAINT PRIMARY KEY (user_name, group_name);
-ALTER TABLE introspect_asso_user_group ADD CONSTRAINT "FK_user_name" FOREIGN KEY ("user_name") REFERENCES "introspect_user" ("name");
-ALTER TABLE introspect_asso_user_group ADD CONSTRAINT "FK_group_name" FOREIGN KEY ("group_name") REFERENCES "introspect_group" ("name");
+ALTER TABLE introspect_asso_user_group ADD CONSTRAINT FK_user_name FOREIGN KEY (user_name) REFERENCES introspect_user (name);
+ALTER TABLE introspect_asso_user_group ADD CONSTRAINT FK_group_name FOREIGN KEY (group_name) REFERENCES introspect_group (name);
