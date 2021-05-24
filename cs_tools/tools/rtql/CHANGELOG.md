@@ -5,6 +5,12 @@ All notable changes to this tool will be documented in this file.
 The format is based on [Keep a Changelog][keep-a-changelog], and this project adheres
 to [Semantic Versioning][semver].
 
+## [1.0.1] - 2020-05-24
+
+### Modified
+- Handle `clear` in the Interactive TQL shell
+
+
 ## [1.0.0] - 2020-05-22
 
 ### Added
