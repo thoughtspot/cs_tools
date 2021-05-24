@@ -1,4 +1,4 @@
-from typing import Union, List, Iterator, BinaryIO
+from typing import Union, Dict, List, Iterator, BinaryIO
 import logging
 
 import httpx
@@ -122,6 +122,8 @@ class TSDataService(APIBase):
     def load_init(self, data: dict, *, timeout: float=5.0) -> httpx.Response:
         """
         """
+        # TODO
+        #
         # tsload_params = {
         #     'target': {
         #         'database': None,
@@ -240,3 +242,23 @@ class TSDataService(APIBase):
             messages_.append(f'[{color}]{text}[/]')
 
         return '\n'.join(messages_)
+
+    @staticmethod
+    def _parse_tsload_status(status: Dict) -> str:
+        if status.get('status', {}).get('code', False) == 'LOAD_FAILED':
+            msg = (
+                f'\nCycle ID: {status["cycle_id"]}'
+                f'\nStage: {status["internal_stage"]}'
+                f'\nStatus: {status["status"]["code"]}'
+                f'\n[red]{status["status"]["message"]}[/]'
+                f'\n[red]{status["parsing_errors"]}[/]' if 'parsing_errors' in status else ''
+            )
+        else:
+            msg = (
+                f'\nCycle ID: {status["cycle_id"]}'
+                f'\nStage: [green]{status["internal_stage"]}[/]'
+                f'\nRows written: {status["rows_written"]}'
+                f'\nIgnored rows: {status["ignored_row_count"]}'
+            )
+
+        return msg
