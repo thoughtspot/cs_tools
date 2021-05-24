@@ -13,6 +13,8 @@ After installation, to find a list of all the supported tools, please type...
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
 ```
 
+You may also click [\[here\]][tools] to find a directory of all the tools.
+
 ### Windows Install
 ```console
 # 1. Download dist.zip
@@ -46,4 +48,4 @@ source unix_install.sh
     source unix_activate.sh
 ```
 
-[dist]: ../../dist/
+[tools]: ../cs_tools/tools

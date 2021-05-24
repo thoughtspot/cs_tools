@@ -20,9 +20,9 @@ The process is straight-forward.
 
 1. Fork the CS Tools [git repository][repo-master].
 2. Write the code for your feature.
-    - if you're writing Python code, [set up a virtual environment][repo-hack-venv].
+    - if you're writing Python code, set up a virtual environment
 3. Ensure basic tests work.
-4. Create a Pull Request against the [dev][repo-dev] branch of CS Tools.
+4. Create a Pull Request against the [dev][repo-dev] branch of CS Tools
 
 ## Pull requests are always welcome
 Not sure if that typo is worth a pull request? Found a bug and know how to fix it? Do
@@ -33,4 +33,3 @@ it! We will appreciate it. Any significant improvement should be documented as i
 [smart-sheet]: https://app.smartsheet.com/sheets/Hfvh6cCfVg8MQrFWmh3R4FgCqQfppXmV3mcW3v31
 [repo-master]: https://github.com/thoughtspot/cs_tools/tree/master
 [repo-dev]: https://github.com/thoughtspot/cs_tools/tree/dev
-[repo-hack-venv]: ./best-practices/virtual-environment.md
