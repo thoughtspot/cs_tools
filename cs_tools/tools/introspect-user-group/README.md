@@ -18,7 +18,7 @@ so that the information provided is not stale.
 ## Relationship preview
 
 <p align="center">
-  <img src="./static/relationship.png" width="1000" height="700" alt="user-group-relationship">
+  <img src="./static/relationship.png" width="1000" height="375" alt="user-group-relationship">
 </p>
 
 
