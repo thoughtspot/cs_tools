@@ -3,22 +3,26 @@ USE cs_tools;
 
 
 CREATE TABLE introspect_user (
-      name         VARCHAR(255)
-    , display_name VARCHAR(255)
-    , email        VARCHAR(255)
-    , created      DATETIME
-    , modified     DATETIME
+      name               VARCHAR(255)
+    , display_name       VARCHAR(255)
+    , email              VARCHAR(255)
+    , created            DATETIME
+    , modified           DATETIME
+    , sharing_visibility VARCHAR(255)
+    , type               VARCHAR(255)
 );
 
 ALTER TABLE introspect_user ADD CONSTRAINT PRIMARY KEY (name);
 
 
 CREATE TABLE introspect_group (
-      name         VARCHAR(255)
-    , display_name VARCHAR(255)
-    , description  VARCHAR(255)
-    , created      DATETIME
-    , modified     DATETIME
+      name               VARCHAR(255)
+    , display_name       VARCHAR(255)
+    , description        VARCHAR(255)
+    , created            DATETIME
+    , modified           DATETIME
+    , sharing_visibility VARCHAR(255)
+    , type               VARCHAR(255)
 );
 
 ALTER TABLE introspect_group ADD CONSTRAINT PRIMARY KEY (name);

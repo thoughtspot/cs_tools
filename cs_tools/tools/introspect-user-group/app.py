@@ -16,21 +16,28 @@ from cs_tools.api import ThoughtSpot
 HERE = pathlib.Path(__file__).parent
 
 
-def _user_groups_info(api: ThoughtSpot) -> Tuple[list, list]:
+def _users_groups(api: ThoughtSpot) -> Tuple[list, list]:
     """
+    Standardize data in an expected format.
+
+    This is a simple transformation layer, we are fitting our data to be
+    record-based and in the format that's expected for an eventual
+    tsload command.
     """
-    r = api.user.list()
+    r = api.user.list().json()
     groups = []
     users = []
 
-    for principal in r.json():
+    for principal in r:
         if 'GROUP' in principal['principalTypeEnum']:
             groups.append({
                 'name': principal['name'],
                 'display_name': principal['displayName'],
-                'description': principal.get('description', ''),
+                'description': principal.get('description'),
                 'created': to_datetime(principal['created'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
-                'modified': to_datetime(principal['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME)
+                'modified': to_datetime(principal['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
+                'sharing_visibility': 'sharable' if principal['visibility'] == 'DEFAULT' else 'not sharable',
+                'type': principal['principalTypeEnum'].split('_')[0]
             })
 
         if 'USER' in principal['principalTypeEnum']:
@@ -41,7 +48,9 @@ def _user_groups_info(api: ThoughtSpot) -> Tuple[list, list]:
                     'email': principal['mail'],
                     'group': group,
                     'created': to_datetime(principal['created'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
-                    'modified': to_datetime(principal['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME)
+                    'modified': to_datetime(principal['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
+                    'sharing_visibility': 'sharable' if principal['visibility'] == 'DEFAULT' else 'not sharable',
+                    'type': principal['principalTypeEnum'].split('_')[0]
                 })
 
     return users, groups
@@ -49,9 +58,19 @@ def _user_groups_info(api: ThoughtSpot) -> Tuple[list, list]:
 
 app = typer.Typer(
     help="""
-    Gather data on your existing Users and Groups.
+    Make your Users and Groups searchable.
 
-    Long description.
+    Return data on your users, groups, and each users' group membership.
+
+    \b
+    Users                       Groups
+    - email                     - description
+    - name                      - name
+    - display name              - display name
+    - created                   - created
+    - modified                  - modified
+    - sharing visibility        - sharing visibility
+    - user type                 - group type
     """,
     callback=show_tool_options,
     invoke_without_command=True
@@ -69,9 +88,13 @@ def tml(
 
     Generates and saves multiple TML files.
 
-    TABLE ...... introspect_user, introspect_group, introspect_asso_user_group
+    \b
+    TABLE:
+      - introspect_user
+      - introspect_group
+      - introspect_asso_user_group
     """
-    for file in pathlib.Path(HERE).glob('*.tml'):
+    for file in (HERE / 'static').glob('*.tml'):
         shutil.copy(file, save_path)
 
 
@@ -97,7 +120,7 @@ def gather(
     dir_ = save_path if save_path is not None else app_dir
 
     with ThoughtSpot(cfg) as api:
-        users_, groups = _user_groups_info(api)
+        users_, groups = _users_groups(api)
         seen_ = []
         users = []
 
@@ -115,7 +138,7 @@ def gather(
         if save_path is not None:
             return
 
-        run_tql_script(api, fp=HERE / 'create_tables.tql')
+        run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
 
         for stem in ('introspect_user', 'introspect_group', 'introspect_asso_user_group'):
             path = dir_ / f'{stem}.csv'
@@ -125,12 +148,11 @@ def gather(
             if cycle_id is None:
                 continue
 
-            r = api.ts_dataservice.load_status(cycle_id)
-            data = r.json()
+            r = api.ts_dataservice.load_status(cycle_id).json()
 
             console.print(
-                f'\nCycle ID: {data["cycle_id"]}'
-                f'\nStage: {data["internal_stage"]}'
-                f'\nRows written: {data["rows_written"]}'
-                f'\nIgnored rows: {data["ignored_row_count"]}'
+                f'\nCycle ID: {r["cycle_id"]}'
+                f'\nStage: {r["internal_stage"]}'
+                f'\nRows written: {r["rows_written"]}'
+                f'\nIgnored rows: {r["ignored_row_count"]}'
             )

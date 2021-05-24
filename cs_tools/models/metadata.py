@@ -21,7 +21,9 @@ class MetadataObject(enum.Enum):
     QUESTION_ANSWER_BOOK = 'QUESTION_ANSWER_BOOK'
     QUESTION_ANSWER_SHEET = 'QUESTION_ANSWER_SHEET'
     TAG = 'TAG'
-    USER_GROUP = 'USER_GROUP'  # not currently shown in the Swagger UI.
+    # not currently shown in the Swagger UI.
+    USER_GROUP = 'USER_GROUP'
+    USER = 'USER'
 
 
 class LogicalTableSubtype(enum.Enum):

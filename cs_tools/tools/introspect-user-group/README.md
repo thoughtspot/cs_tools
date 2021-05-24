@@ -1,36 +1,52 @@
-# Created Objects
+# Introspect Users & Groups
 
-This tool will return details about a given type of metadata object within your
-ThoughtSpot platform. The output format is a CSV can be imported back into the
-platform, allowing you to search on all your metadata objects!
+This solution allows the customer to extract User and Group data, and make that
+information searchable within the platform.
 
-## Setup
+A best practice in ThoughtSpot is to have users be part of a Content-based group. This
+Group will usually have a display name that is associated with a Use Case, or is a
+parent of many use cases (think: a Finance UC can have Worksheets for Invoices Paid on
+Time, Historicals, and Budget Forecast).
 
-If you are setting this tool up on behalf of a client, please see [Best Practices: Client Install][bp-client-install]
+The data produced from this tool can be matched to the two activity worksheets,
+TS: BI Server and TS: Embrace Stats Worksheet to get a better understanding of the
+activity at a group level - which may proxy activity to a Use Case.
 
-If you are setting this tool up for yourself, please see [Getting Started][cstools-getting-started]
+Ideally, make a plan with your customer for this solution to run on a regular interval
+so that the information provided is not stale.
 
-## Running
+## Relationship preview
 
-It's as simple as opening a command window, running the command in the usage, and
-following the on-screen configuration. The configuration for this tool is below.
+<p align="center">
+  <img src="./static/relationship.png" width="1000" height="700" alt="user-group-relationship">
+</p>
 
-Try it now and verify your environment is all set.
 
-~~~
-Usage: cs_tools tools created-objects [OPTIONS] COMMAND [ARGS]...
+## CLI preview
 
-  Get details about a given type of metadata object.
+```console
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group --help
+Usage: cs_tools tools introspect-user-group [OPTIONS] COMMAND [ARGS]...
 
-  Metadata objects are concepts in ThoughtSpot that store data. Things like worksheet, answers,
-  pinboards.
+  Make your Users and Groups searchable.
+
+  Return data on your users, groups, and each users' group membership.
+
+  Users                       Groups
+  - email                     - description
+  - name                      - name
+  - display name              - display name
+  - created                   - created
+  - modified                  - modified
+  - sharing visibility        - sharing visibility
+  - user type                 - group type
 
 Options:
+  --version   Show the tool's version and exit.
+  --helpfull  Show the full help message and exit.
   -h, --help  Show this message and exit.
 
 Commands:
-  gather-data  Gather and optionally, insert data into Falcon.
-~~~ 
-
-[bp-client-install]: ../../best-practices/client-install.md
-[cstools-getting-started]: ../../README.md#getting-started
+  gather  Gather and optionally, insert data into Falcon.
+  tml     Create TML files.
+```

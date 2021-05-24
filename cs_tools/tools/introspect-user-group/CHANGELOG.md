@@ -5,10 +5,15 @@ All notable changes to this tool will be documented in this file.
 The format is based on [Keep a Changelog][keep-a-changelog], and this project adheres
 to [Semantic Versioning][semver].
 
-## [1.1.0] - 2020-
+## [1.1.0] - 2020-05-23
+
+### Added
+- Sharing Visibility for each User & Group
+- Type (LOCAL_*, LDAP_*, SAML_*) for each User & Group
 
 ### Changed
 - Migrated to new app structure
+
 
 ## [1.0.0] - 2020-08-18
 
