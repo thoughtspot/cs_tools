@@ -1,5 +1,6 @@
 worksheet:
   name: "PS: Falcon Table Sharding"
+  description: A worksheet to assist in understanding the ideal sharding state for all actionable Falcon tables in your ThoughtSpot platform.
   tables:
   - name: falcon_table_info
   table_paths:
