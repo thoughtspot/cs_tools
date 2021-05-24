@@ -43,6 +43,6 @@ Options:
   -h, --help  Show this message and exit.
 
 Commands:
-  gather        Gather and optionally, insert data into Falcon.
-  generate-tml  Create TML files.
+  gather  Gather and optionally, insert data into Falcon.
+  tml     Create TML files.
 ```

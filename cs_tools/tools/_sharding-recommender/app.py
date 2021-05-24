@@ -160,12 +160,6 @@ def gather(
         cycle_id = tsload(api, fp=fp, target_database='cs_tools', target_table='falcon_table_info')
         (dir_ / 'falcon_table_info.csv').unlink()
 
-        r = api.ts_dataservice.load_status(cycle_id)
-        data = r.json()
-
-        console.print(
-            f'Cycle ID: {data["cycle_id"]}'
-            f'\nStage: {data["internal_stage"]}'
-            f'\nRows written: {data["rows_written"]}'
-            f'\nIgnored rows: {data["ignored_row_count"]}'
-        )
+        r = api.ts_dataservice.load_status(cycle_id).json()
+        m = api.ts_dataservice._parse_tsload_status(r)
+        console.print(m)
