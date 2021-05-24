@@ -220,7 +220,10 @@ class InteractiveTQL:
                     )
 
             while True:
-                if query[-1] == ';' or query.strip() in ['exit', 'quit', 'h', 'help']:
+                if (
+                    query[-1] == ';'
+                    or query.strip() in ['exit', 'quit', 'h', 'help', 'clear']
+                ):
                     break
 
                 line = typer.prompt(typer.style('>', fg='cyan'), prompt_suffix=' ')
