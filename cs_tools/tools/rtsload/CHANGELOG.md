@@ -8,7 +8,7 @@ to [Semantic Versioning][semver].
 ## [1.0.0] - 2020-05-22
 
 ### Added
-- Initial release from [@boonhapus][contrib-boonhapus].
+- Initial release [@boonhapus][contrib-boonhapus].
 
 
 [keep-a-changelog]: https://keepachangelog.com/en/1.0.0/

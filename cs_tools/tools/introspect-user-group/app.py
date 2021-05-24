@@ -149,10 +149,5 @@ def gather(
                 continue
 
             r = api.ts_dataservice.load_status(cycle_id).json()
-
-            console.print(
-                f'\nCycle ID: {r["cycle_id"]}'
-                f'\nStage: {r["internal_stage"]}'
-                f'\nRows written: {r["rows_written"]}'
-                f'\nIgnored rows: {r["ignored_row_count"]}'
-            )
+            m = api.ts_dataservice._parse_tsload_status(r)
+            console.print(m)
