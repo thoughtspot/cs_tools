@@ -19,6 +19,7 @@ setup(
     url='https://github.com/thoughtspot/cs_tools',
     license='MIT',
     packages=find_packages(),
+    include_package_data=True,
     install_requires=REQUIRED,
     python_requires='>=3.6',
     entry_points={
