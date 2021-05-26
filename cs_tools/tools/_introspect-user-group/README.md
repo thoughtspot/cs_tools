@@ -33,6 +33,7 @@ Usage: cs_tools tools introspect-user-group [OPTIONS] COMMAND [ARGS]...
   Return data on your users, groups, and each users' group membership.
 
   Users                       Groups
+  - guid                      - guid
   - email                     - description
   - name                      - name
   - display name              - display name
