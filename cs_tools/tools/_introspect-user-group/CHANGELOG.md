@@ -5,6 +5,15 @@ All notable changes to this tool will be documented in this file.
 The format is based on [Keep a Changelog][keep-a-changelog], and this project adheres
 to [Semantic Versioning][semver].
 
+## [1.2.0] - 2020-05-26
+
+### Added
+- GUID is now part of the data model [@boonhapus][contrib-boonhapus].
+
+### Changed
+- This tool is now private [@boonhapus][contrib-boonhapus].
+
+
 ## [1.1.0] - 2020-05-23
 
 ### Added
