@@ -12,7 +12,7 @@ content a User makes.
 ## Relationship preview
 
 <p align="center">
-  <img src="./static/relationship.png" width="1000" height="375" alt="user-group-relationship">
+  <img src="./static/relationship.png" width="1000" height="375" alt="dependency-relationship">
 </p>
 
 ## CLI preview
