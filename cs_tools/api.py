@@ -8,6 +8,7 @@ from cs_tools.models.dependency import _Dependency
 from cs_tools.models.periscope import _Periscope
 from cs_tools.models.metadata import Metadata, _Metadata
 from cs_tools.models.security import _Security
+from cs_tools.models.session import _Session
 from cs_tools.models.auth import Session
 from cs_tools.models.user import User
 from cs_tools.schema.user import User as UserSchema
@@ -35,8 +36,8 @@ class ThoughtSpot:
         self.ts_dataservice = TSDataService(self)
 
         # add public API endpoints
-        self.auth = Session(self)
         self.metadata = Metadata(self)
+        self.auth = Session(self)
         self.user = User(self)
 
         # add private API endpoints
@@ -44,6 +45,7 @@ class ThoughtSpot:
         self._metadata = _Metadata(self)
         self._periscope = _Periscope(self)
         self._security = _Security(self)
+        self._session = _Session(self)
 
     def _setup_logging(self):
         logging.getLogger('urllib3').setLevel(logging.ERROR)
