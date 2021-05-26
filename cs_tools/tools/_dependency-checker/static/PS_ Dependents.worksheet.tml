@@ -7,7 +7,7 @@ worksheet:
   - name: FK_metadata_dependency
     source: introspect_metadata_dependent
     destination: introspect_metadata_object
-    type: INNER
+    type: RIGHT_OUTER
     is_one_to_one: false
   table_paths:
   - id: introspect_metadata_dependent_1
