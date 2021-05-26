@@ -1,6 +1,7 @@
 from ipaddress import IPv4Address
 from typing import Union, Dict, Any
 import pathlib
+import re
 
 from pydantic import BaseModel, AnyUrl, validator
 import typer
@@ -21,8 +22,27 @@ class APIParameters(Settings):
     """
 
 
+class TSCloudURL(str):
+    """
+    Validator to match against a ThoughtSpot cloud URL.
+    """
+    REGEX = re.compile(r'(?:https:\/\/)?(.*\.thoughtspot\.cloud)(?:\/)?')
+
+    @classmethod
+    def validate(cls, v):
+        if not isinstance(v, str):
+            raise TypeError('string required')
+
+        m = cls.REGEX.fullmatch(v.lower())
+
+        if not m:
+            raise ValueError('invalid thoughtspot cloud url')
+
+        return cls(f'{m.group(1)}')
+
+
 class HostConfig(Settings):
-    host: Union[AnyUrl, IPv4Address]
+    host: Union[AnyUrl, IPv4Address, TSCloudURL]
     port: int = None
     disable_ssl: bool = False
     disable_sso: bool = False

@@ -86,6 +86,9 @@ class ThoughtSpot:
                 log.error('SSL verify failed, did you mean to use flag --disable_ssl?')
                 raise SystemExit(1)
 
+            log.exception('something went wrong.. :(')
+            raise SystemExit(1)
+
         rj = r.json()
 
         self.logged_in_user = UserSchema(
