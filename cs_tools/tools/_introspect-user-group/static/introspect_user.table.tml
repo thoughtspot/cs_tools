@@ -4,6 +4,10 @@ table:
   schema: falcon_default_schema
   db_table: introspect_user
   columns:
+  - name: GUID
+    db_column_name: guid_
+    properties:
+      column_type: ATTRIBUTE
   - name: Username
     db_column_name: name
     properties:
@@ -32,4 +36,4 @@ table:
     db_column_name: type
     properties:
       column_type: ATTRIBUTE
-guid: 559b5260-5982-4dc9-82d3-0370592b8cc7
+guid: 33696645-40f5-49b7-a64a-a3280c65abc5
