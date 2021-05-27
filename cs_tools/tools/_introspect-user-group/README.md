@@ -1,5 +1,7 @@
 # Introspect Users & Groups
 
+***This tool utilizes private API calls.***
+
 This solution allows the customer to extract User and Group data, and make that
 information searchable within the platform.
 
