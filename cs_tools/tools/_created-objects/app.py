@@ -9,7 +9,6 @@ import typer
 from cs_tools.helpers.cli_ux import console, show_tool_options, frontend
 from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import to_csv, run_tql_script, tsload
-from cs_tools.util.swagger import to_array
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.api import ThoughtSpot
@@ -135,6 +134,7 @@ def gather(
 
     if save_path is not None and (not save_path.exists() or save_path.is_file()):
         console.print(f'[red]"{save_path.resolve()}" should be a valid directory![/]')
+        raise typer.Exit()
 
     dir_ = save_path if save_path is not None else app_dir
 

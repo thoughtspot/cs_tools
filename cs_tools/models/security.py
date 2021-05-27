@@ -13,7 +13,7 @@ class ObjectType(enum.Enum):
     PINBOARD_ANSWER_BOOK = "PINBOARD_ANSWER_BOOK"  # pinboard
 
 
-class SharePermission(enum.Enum):
+class SharePermission(str, enum.Enum):
     MODIFY = "MODIFY"
     NO_ACCESS = "NO_ACCESS"
     READ_ONLY = "READ_ONLY"

@@ -2,7 +2,6 @@ from typing import List
 import logging
 import json
 
-import httpx
 import typer
 
 from cs_tools.helpers.cli_ux import console

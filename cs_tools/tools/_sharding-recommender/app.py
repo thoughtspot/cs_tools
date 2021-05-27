@@ -142,6 +142,7 @@ def gather(
 
     if save_path is not None and (not save_path.exists() or save_path.is_file()):
         console.print(f'[red]"{save_path.resolve()}" should be a valid directory![/]')
+        raise typer.Exit()
 
     dir_ = save_path if save_path is not None else app_dir
     fp = dir_ / 'falcon_table_info.csv'
