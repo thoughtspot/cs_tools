@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 
 from typer import Argument as A_, Option as O_
 import click
@@ -79,6 +80,31 @@ tools_app = typer.Typer(
     options_metavar='<tool-name>',
     callback=_show_hidden_tool_options
 )
+
+
+log_app = typer.Typer(
+    help="""
+    Export and view log files.
+
+    Something went wrong? Log files will help the ThoughtSpot team understand
+    how to debug and fix it.
+    """,
+    cls=RichGroup
+)
+
+
+@log_app.command(cls=RichCommand)
+def export(
+    save_path: pathlib.Path=A_(..., help='directory to save logs to'),
+):
+    """
+    Grab logs to share with ThoughtSpot
+    """
+    app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
+    log_dir = app_dir / 'logs'
+
+    for log in log_dir.glob('*.tml'):
+        shutil.copy(log, save_path)
 
 
 cfg_app = typer.Typer(
@@ -198,7 +224,10 @@ def run():
     """
     Entrypoint into cs_tools.
     """
+    # TODO setup default logging to file
+
     _gather_tools(tools_app)
     app.add_typer(tools_app, name='tools')
     app.add_typer(cfg_app, name='config')
+    app.add_typer(log_app, name='logs')
     app(prog_name='cs_tools')

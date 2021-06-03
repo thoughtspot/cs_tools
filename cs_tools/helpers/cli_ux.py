@@ -3,7 +3,6 @@ from typing import Optional, Callable, List
 import re
 
 from click.exceptions import UsageError
-from rich.theme import Theme
 from rich.console import Console
 from click.core import iter_params_for_processing
 from click import Parameter as Parameter_, Option, Context, HelpFormatter
@@ -337,6 +336,8 @@ class RichCommand(click.Command):
                 options = [*options, help_]
             elif ctx.info_name == ctx.command_path:
                 options = [*options, help_]
+            elif 'logs' in click.get_os_args() or 'config' in click.get_os_args():
+                options = [*options, help_]
             else:
                 options = [*options, help_full, help_]
 
@@ -381,7 +382,7 @@ class RichGroup(click.Group):
         version_option = self.get_version_option(ctx)
 
         # top-level commands
-        if ctx.command_path.endswith(('config', 'tools')):
+        if ctx.command_path.endswith(('config', 'tools', 'logs')):
             version_option.hidden = True
 
         if version_option is not None:
@@ -482,13 +483,14 @@ class RichGroup(click.Group):
                     options.append(r)
 
         if options:
-            *params, help_ = options
             *params, help_full, help_ = options
             options = prettify_params(params)
 
             if '--helpfull' in click.get_os_args():
                 options = [*options, help_]
             elif ctx.info_name == ctx.command_path:
+                options = [*options, help_]
+            elif 'logs' in click.get_os_args() or 'config' in click.get_os_args():
                 options = [*options, help_]
             else:
                 options = [*options, help_full, help_]
