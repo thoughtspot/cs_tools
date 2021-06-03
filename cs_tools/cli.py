@@ -231,9 +231,15 @@ def run():
     """
     Entrypoint into cs_tools.
     """
-    # TODO setup default logging to file
     _gather_tools(tools_app)
     app.add_typer(tools_app, name='tools')
     app.add_typer(cfg_app, name='config')
-    # app.add_typer(log_app, name='logs')
-    app(prog_name='cs_tools')
+    app.add_typer(log_app, name='logs')
+
+    try:
+        app(prog_name='cs_tools')
+    except Exception as e:
+        if hasattr(e, 'warning'):
+            e = e.warning
+
+        console.print(f'[error]{e}')

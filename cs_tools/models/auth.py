@@ -4,18 +4,10 @@ import httpx
 
 from cs_tools.helpers.secrets import reveal
 from cs_tools.models._base import APIBase
+from cs_tools.errors import AuthenticationError
 
 
 log = logging.getLogger(__name__)
-
-
-class AuthenticationError(Exception):
-
-    def __init__(self, *, username: str):
-        self.username = username
-
-    def __str__(self) -> str:
-        return f'Authentication failed for {self.username}.'
 
 
 class Session(APIBase):

@@ -84,8 +84,7 @@ class ThoughtSpot:
             r = self.auth.login()
         except httpx.ConnectError as e:
             if 'CERTIFICATE_VERIFY_FAILED' in str(e):
-                log.error('SSL verify failed, did you mean to use flag --disable_ssl?')
-                raise SystemExit(1)
+                raise CertificateVerifyFailure()
 
             log.exception('something went wrong.. :(')
             raise SystemExit(1)
