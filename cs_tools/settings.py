@@ -3,7 +3,7 @@ from typing import Union, Dict, Any
 import pathlib
 import re
 
-from pydantic import BaseModel, AnyUrl, validator
+from pydantic import BaseModel, AnyHttpUrl, HttpUrl, validator
 import typer
 import toml
 
@@ -26,14 +26,18 @@ class TSCloudURL(str):
     """
     Validator to match against a ThoughtSpot cloud URL.
     """
-    REGEX = re.compile(r'(?:https:\/\/)?(.*\.thoughtspot\.cloud)(?:\/)?')
+    REGEX = re.compile(r'(?:https:\/\/)?(.*\.thoughtspot\.cloud)(?:\/.*)?')
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
 
     @classmethod
     def validate(cls, v):
         if not isinstance(v, str):
             raise TypeError('string required')
 
-        m = cls.REGEX.fullmatch(v.lower())
+        m = cls.REGEX.fullmatch(v)
 
         if not m:
             raise ValueError('invalid thoughtspot cloud url')
@@ -41,8 +45,24 @@ class TSCloudURL(str):
         return cls(f'{m.group(1)}')
 
 
+class LocalHost(str):
+    """
+    Validator to match against localhost.
+    """
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if v != 'localhost':
+            raise ValueError('value is not localhost')
+
+        return cls(v)
+
+
 class HostConfig(Settings):
-    host: Union[AnyUrl, IPv4Address, TSCloudURL]
+    host: Union[AnyHttpUrl, IPv4Address, TSCloudURL, LocalHost]
     port: int = None
     disable_ssl: bool = False
     disable_sso: bool = False
@@ -52,6 +72,9 @@ class HostConfig(Settings):
         """
         Converts arguments to a string.
         """
+        if hasattr(v, 'host'):
+            return f'{v.scheme}://{v.host}'
+
         return str(v)
 
 

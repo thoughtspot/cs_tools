@@ -2,11 +2,11 @@ import pathlib
 import shutil
 
 from typer import Argument as A_, Option as O_
+import pydantic
 import click
 import typer
 import toml
 
-from cs_tools.helpers.pydantclick import _validate_args
 from cs_tools.helpers.cli_ux import console, RichGroup, RichCommand
 from cs_tools.helpers.loader import _gather_tools
 from cs_tools.util.algo import deep_update
@@ -48,6 +48,7 @@ def _show_hidden_tool_options(
     """
     Care for the hidden options.
     """
+    print('entering callback')
     ctx = click.get_current_context()
 
     if ctx.invoked_subcommand:
@@ -78,33 +79,34 @@ tools_app = typer.Typer(
     """,
     cls=RichGroup,
     options_metavar='<tool-name>',
-    callback=_show_hidden_tool_options
+    callback=_show_hidden_tool_options,
+    invoke_without_command=True
 )
 
 
-log_app = typer.Typer(
-    help="""
-    Export and view log files.
+# log_app = typer.Typer(
+#     help="""
+#     Export and view log files.
 
-    Something went wrong? Log files will help the ThoughtSpot team understand
-    how to debug and fix it.
-    """,
-    cls=RichGroup
-)
+#     Something went wrong? Log files will help the ThoughtSpot team understand
+#     how to debug and fix it.
+#     """,
+#     cls=RichGroup
+# )
 
 
-@log_app.command(cls=RichCommand)
-def export(
-    save_path: pathlib.Path=A_(..., help='directory to save logs to'),
-):
-    """
-    Grab logs to share with ThoughtSpot
-    """
-    app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
-    log_dir = app_dir / 'logs'
+# @log_app.command(cls=RichCommand)
+# def export(
+#     save_path: pathlib.Path=A_(..., help='directory to save logs to'),
+# ):
+#     """
+#     Grab logs to share with ThoughtSpot.
+#     """
+#     app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
+#     log_dir = app_dir / 'logs'
 
-    for log in log_dir.glob('*.tml'):
-        shutil.copy(log, save_path)
+#     for log in log_dir.glob('*.tml'):
+#         shutil.copy(log, save_path)
 
 
 cfg_app = typer.Typer(
@@ -195,7 +197,12 @@ def modify(
             ).dict()
 
     new = deep_update(old, data, ignore=None)
-    config = _validate_args(new, TSConfig)
+
+    try:
+        config = TSConfig(**new)
+    except pydantic.ValidationError as e:
+        console.print(f'[error]{e}')
+        raise typer.Exit(-1)
 
     with file.open('w') as t:
         toml.dump(config.dict(), t)
@@ -225,9 +232,8 @@ def run():
     Entrypoint into cs_tools.
     """
     # TODO setup default logging to file
-
     _gather_tools(tools_app)
     app.add_typer(tools_app, name='tools')
     app.add_typer(cfg_app, name='config')
-    app.add_typer(log_app, name='logs')
+    # app.add_typer(log_app, name='logs')
     app(prog_name='cs_tools')

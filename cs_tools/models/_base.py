@@ -28,7 +28,7 @@ class APIBase:
         else:
             port = ''
 
-        return f'https://{host}{port}'
+        return f'{host}{port}'
 
     def _request(self, method, url, *args, **kwargs) -> httpx.Response:
         """
