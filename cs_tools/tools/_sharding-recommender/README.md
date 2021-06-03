@@ -27,9 +27,13 @@ Office Hours session and a CSA will be able to help guide them through the proce
 
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools sharding-recommender --help
+
 Usage: cs_tools tools sharding-recommender [OPTIONS] COMMAND [ARGS]...
 
   Gather data on your existing Falcon tables for sharding.
+
+  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
+  break the tool.
 
   Once tables grow sufficiently large within a Falcon deployment, cluster performance and data loading can be enhanced
   through the use of sharding. The choice of what column to shards and how many shards to use can vary based on many

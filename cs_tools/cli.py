@@ -73,8 +73,9 @@ tools_app = typer.Typer(
     help="""
     Run an installed tool.
 
-    Tools are a collection of different scripts that provide advanced
-    functionality which aren't native to the ThoughtSpot platform.
+    Tools are a collection of different scripts to perform different function
+    which aren't native to the ThoughtSpot or advanced functionality for
+    clients who have a well-adopted platform.
     """,
     cls=RichGroup,
     options_metavar='<tool-name>',

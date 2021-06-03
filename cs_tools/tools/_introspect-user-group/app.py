@@ -121,7 +121,7 @@ def _get_users_in_group(api: ThoughtSpot, batchsize=500) -> Tuple[list, list, li
 
 app = typer.Typer(
     help="""
-    Make your Users and Groups searchable.
+    Make Users and Groups searchable in your platform.
 
     [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
     could change on any version update and break the tool.[/]

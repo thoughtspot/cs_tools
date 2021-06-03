@@ -2,18 +2,16 @@
 
 ThoughtSpot CS Tools are a collection of different tools that assist implementation and
 administration, and may contain API calls that we normally wouldn't share with
-customers.
+customers. The tools are all written in Python and require a Python environment in
+which to run.
 
-The tools and Web APIs are all written in Python and require a Python environment in
-which to run. This directory can be zipped and shared directly with customers in order
-to facilitate deploying the tools.
+## **Links**
 
-After installation, to find a list of all the supported tools, please type...
-```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
-```
+🗃 [`dist.zip`][distzip] (password: `th0ughtSp0t`)
 
-You may also click [\[here\]][tools] to find a directory of all the tools.
+🛠 [tools offered][tools]
+
+---
 
 ### Windows Install
 ```console
@@ -49,3 +47,4 @@ source unix_install.sh
 ```
 
 [tools]: ../cs_tools/tools
+[distzip]: https://thoughtspot.egnyte.com/dl/MyBRZT6leI/dist.zip_

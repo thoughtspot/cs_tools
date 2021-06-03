@@ -32,9 +32,13 @@ so that the information provided is not stale.
 
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group --help
+
 Usage: cs_tools tools introspect-user-group [OPTIONS] COMMAND [ARGS]...
 
-  Make your Users and Groups searchable.
+  Make Users and Groups searchable in your platform.
+
+  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
+  break the tool.
 
   Return data on your users, groups, and each users' group membership.
 

@@ -23,12 +23,16 @@ value to others in your platform.
 
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools created-objects --help
+
 Usage: cs_tools tools created-objects [OPTIONS] COMMAND [ARGS]...
 
   Make ThoughtSpot content searchable in your platform.
 
-  Metadata is created through normal ThoughtSpot activities. Tables, Worksheets, Answers, and Pinboards are all
-  examples of metadata.
+  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
+  break the tool.
+
+  Metadata is created through normal ThoughtSpot activities. Tables, Worksheets, Answers, and Pinboards are all examples
+  of metadata.
 
   Metadata Object
   - guid

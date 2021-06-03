@@ -135,7 +135,7 @@ def _get_recordset_metadata(api: ThoughtSpot) -> Dict[str, List]:
 
 app = typer.Typer(
     help="""
-    Make your dependencies searchable in your platform.
+    Make Dependencies searchable in your platform.
 
     [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
     could change on any version update and break the tool.[/]
@@ -161,8 +161,6 @@ app = typer.Typer(
     Also available, but not developed for..
 
     Table Column        -> LOGICAL_COLUMN
-    Table               -> LOGICAL_TABLE, ONE_TO_ONE_LOGICAL
-    Worksheet           -> LOGICAL_TABLE, WORKSHEET
     Tag / Stickers      -> TAG
     Embrace Connections -> DATA_SOURCE
     """,

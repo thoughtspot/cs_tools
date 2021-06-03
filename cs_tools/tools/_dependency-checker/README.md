@@ -23,9 +23,13 @@ content a User makes.
 
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker --help
+
 Usage: cs_tools tools dependency-checker [OPTIONS] COMMAND [ARGS]...
 
-  Make your dependencies searchable in your platform.
+  Make Dependencies searchable in your platform.
+
+  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
+  break the tool.
 
   Dependencies can be collected for various types of metadata. For example, many tables are used within a worksheet,
   while many worksheets will have answers and pinboards built on top of them.
