@@ -103,10 +103,10 @@ function setup_venv ($install_type = 'local') {
     & "$_ACTIVATE.ps1"
 
     if ( $install_type -eq 'local' ) {
-        pip install -r $SCRIPT_DIR/reqs/offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-cache-dir --no-index
+        pip install --upgrade -r $SCRIPT_DIR/reqs/offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-cache-dir --no-index
     }
     elseif ( $install_type -eq 'remote' ) {
-        pip install -r $SCRIPT_DIR/reqs/requirements.txt --no-cache-dir
+        pip install --upgrade -r $SCRIPT_DIR/reqs/requirements.txt --no-cache-dir
     }
     else {
         error 'no option like $install_type, type either "local" or "remote"'

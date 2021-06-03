@@ -47,9 +47,9 @@ setup_venv () {
     source $_ACTIVATE
 
     if [[ $install_type == 'local' ]]; then
-        pip install -r $SCRIPT_DIR/reqs/offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-cache-dir --no-index
+        pip install --upgrade -r $SCRIPT_DIR/reqs/offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-cache-dir --no-index
     elif [[ $install_type == 'remote' ]]; then
-        pip install -r $SCRIPT_DIR/reqs/requirements.txt --no-cache-dir
+        pip install --upgrade -r $SCRIPT_DIR/reqs/requirements.txt --no-cache-dir
     else
         error "no option like ${install_type}, type either 'local' or 'remote'"
     fi

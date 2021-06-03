@@ -1,4 +1,16 @@
 from setuptools import setup, find_packages
+import re
+
+
+def read_version():
+    """
+    Don't import from the package we're trying to install.
+    """
+    # excludes inline comments as well
+    RE_VERSION = re.compile(r'__version__\s*=\s*[\'"]([^\'"]*)[\'"]')
+
+    with open('cs_tools/_version.py') as py:
+        return RE_VERSION.search(py.read()).group(1)
 
 
 with open('./requirements.txt') as f:
@@ -11,7 +23,7 @@ with open('./README.md') as f:
 
 setup(
     name='cs_tools',
-    version='0.1.0',
+    version=read_version(),
     description='Python programming interface to the ThoughtSpot API and platform',
     long_description=README,
     author='Customer Success @ ThoughtSpot',
