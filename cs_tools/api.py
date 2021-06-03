@@ -25,6 +25,7 @@ class ThoughtSpot:
         self._setup_logging()
 
         # set up our session
+        # NOTE: base_url is a valid parameter for httpx.Client
         self.http = httpx.Client(timeout=10.0, verify=not ts_config.thoughtspot.disable_ssl)
         self.http.headers.update({'X-Requested-By': 'ThoughtSpot'})
 

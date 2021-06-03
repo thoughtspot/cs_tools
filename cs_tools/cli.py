@@ -34,7 +34,8 @@ app = typer.Typer(
     add_completion=False,
     context_settings={
         'help_option_names': ['--help', '-h'],
-        'max_content_width': 125
+        'max_content_width': 125,
+        'token_normalize_func': lambda x: x.lower()  # allow case-insensitive commands
     }
 )
 
