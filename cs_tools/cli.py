@@ -48,7 +48,6 @@ def _show_hidden_tool_options(
     """
     Care for the hidden options.
     """
-    print('entering callback')
     ctx = click.get_current_context()
 
     if ctx.invoked_subcommand:
@@ -84,29 +83,29 @@ tools_app = typer.Typer(
 )
 
 
-# log_app = typer.Typer(
-#     help="""
-#     Export and view log files.
+log_app = typer.Typer(
+    help="""
+    Export and view log files.
 
-#     Something went wrong? Log files will help the ThoughtSpot team understand
-#     how to debug and fix it.
-#     """,
-#     cls=RichGroup
-# )
+    Something went wrong? Log files will help the ThoughtSpot team understand
+    how to debug and fix it.
+    """,
+    cls=RichGroup
+)
 
 
-# @log_app.command(cls=RichCommand)
-# def export(
-#     save_path: pathlib.Path=A_(..., help='directory to save logs to'),
-# ):
-#     """
-#     Grab logs to share with ThoughtSpot.
-#     """
-#     app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
-#     log_dir = app_dir / 'logs'
+@log_app.command(cls=RichCommand)
+def export(
+    save_path: pathlib.Path=A_(..., help='directory to save logs to'),
+):
+    """
+    Grab logs to share with ThoughtSpot.
+    """
+    app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
+    log_dir = app_dir / 'logs'
 
-#     for log in log_dir.glob('*.tml'):
-#         shutil.copy(log, save_path)
+    for log in log_dir.glob('*.tml'):
+        shutil.copy(log, save_path)
 
 
 cfg_app = typer.Typer(
