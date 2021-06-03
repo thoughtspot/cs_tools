@@ -1,6 +1,10 @@
 # Created Objects
 
-***This tool utilizes private API calls.***
+**USE AT YOUR OWN RISK!**
+
+**This tool uses private API calls which could change on any version update and break the tool.**
+
+---
 
 This solution allows the customer to extract data on common ThoughtSpot metadta, and
 make that information searchable within the platform.

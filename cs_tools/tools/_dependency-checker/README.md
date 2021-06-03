@@ -1,6 +1,10 @@
 # Dependency Checker
 
-***This tool utilizes private API calls.***
+**USE AT YOUR OWN RISK!**
+
+**This tool uses private API calls which could change on any version update and break the tool.**
+
+---
 
 This solution allows the customer to Search all metadata that could produce a dependent.
 These metadata types include System Tables, Imported Data, Worksheets, and Views.

@@ -57,8 +57,8 @@ app = typer.Typer(
     help="""
     Gather data on your existing Falcon tables for sharding.
 
-    [b yellow]This tool uses private API calls. These could change on any version update
-     and break the tool. USE AT YOUR OWN RISK![/]
+    [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
+    could change on any version update and break the tool.[/]
 
     Once tables grow sufficiently large within a Falcon deployment, cluster
     performance and data loading can be enhanced through the use of sharding.

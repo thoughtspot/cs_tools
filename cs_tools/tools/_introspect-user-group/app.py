@@ -123,8 +123,8 @@ app = typer.Typer(
     help="""
     Make your Users and Groups searchable.
 
-    [b yellow]This tool uses private API calls. These could change on any version update
-     and break the tool. USE AT YOUR OWN RISK![/]
+    [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
+    could change on any version update and break the tool.[/]
 
     Return data on your users, groups, and each users' group membership.
 

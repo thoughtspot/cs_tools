@@ -137,8 +137,8 @@ app = typer.Typer(
     help="""
     Make your dependencies searchable in your platform.
 
-    [b yellow]This tool uses private API calls. These could change on any version update
-     and break the tool. USE AT YOUR OWN RISK![/]
+    [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
+    could change on any version update and break the tool.[/]
 
     Dependencies can be collected for various types of metadata. For example,
     many tables are used within a worksheet, while many worksheets will have

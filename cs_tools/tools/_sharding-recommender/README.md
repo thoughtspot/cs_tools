@@ -1,6 +1,10 @@
 # Sharding Recommender
 
-***This tool utilizes private API calls.***
+**USE AT YOUR OWN RISK!**
+
+**This tool uses private API calls which could change on any version update and break the tool.**
+
+---
 
 This solution allows the customer to extract key data about their Falcon tables to help
 guide on the optimal number of shards for each table. Ideally, the customer will

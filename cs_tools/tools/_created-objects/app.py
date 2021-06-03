@@ -76,8 +76,8 @@ app = typer.Typer(
     help="""
     Make ThoughtSpot content searchable in your platform.
 
-    [b yellow]This tool uses private API calls. These could change on any version update
-     and break the tool. USE AT YOUR OWN RISK![/]
+    [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
+    could change on any version update and break the tool.[/]
 
     Metadata is created through normal ThoughtSpot activities. Tables, Worksheets,
     Answers, and Pinboards are all examples of metadata.
