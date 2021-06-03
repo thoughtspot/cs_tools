@@ -52,7 +52,7 @@ class TSDataService(APIBase):
         """
         Handle the custom port for the ThoughtSpot tsload webserver.
         """
-        base = f'https://{self.tsload_saas_node}:{self.tsload_saas_port}'
+        base = f'{self.tsload_saas_node}:{self.tsload_saas_port}'
         return f'{base}/ts_dataservice/v1/public'
 
     def tokens_static(self):

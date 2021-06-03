@@ -19,7 +19,7 @@ from cs_tools import __version__
 #
 #   click dependent version (>=7.1.2, <8.0.0), does not yet support proper subclassing
 #   of Command and Group. There's a lot of duplication below, but it's necessary in
-#   order to achieve the affect we want.
+#   order to achieve the user experience we want.
 #
 #   In click >= 8.0.0, we can set the command and group subclass types like..
 #
