@@ -4,7 +4,7 @@ import sys
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, show_tool_options, frontend
+from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.tools.common import run_tql_script, run_tql_command
 from cs_tools.settings import TSConfig
 from cs_tools.api import ThoughtSpot
@@ -23,12 +23,11 @@ app = typer.Typer(
       https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """,
-    callback=show_tool_options,
-    invoke_without_command=True
+    cls=RichGroup
 )
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def interactive(
     autocomplete: bool=O_(True, '--autocomplete', help='toggle auto complete feature'),
@@ -50,7 +49,7 @@ def interactive(
     tql.run()
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def file(
     file: pathlib.Path=A_(..., help='path to file to execute, default to stdin'),
@@ -72,7 +71,7 @@ def file(
         run_tql_script(api, fp=file)
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def command(
     command: str=A_('-', help='TQL query to execute'),

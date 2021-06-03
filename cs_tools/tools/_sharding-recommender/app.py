@@ -6,7 +6,7 @@ from typer import Option as O_
 import typer
 import yaml
 
-from cs_tools.helpers.cli_ux import console, show_tool_options, frontend
+from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import to_csv, run_tql_script, tsload
 from cs_tools.settings import TSConfig
@@ -57,6 +57,9 @@ app = typer.Typer(
     help="""
     Gather data on your existing Falcon tables for sharding.
 
+    [b yellow]This tool uses private API calls. These could change on any version update
+     and break the tool. USE AT YOUR OWN RISK![/]
+
     Once tables grow sufficiently large within a Falcon deployment, cluster
     performance and data loading can be enhanced through the use of sharding.
     The choice of what column to shards and how many shards to use can vary
@@ -70,12 +73,11 @@ app = typer.Typer(
     For further information on sharding, please refer to:
       https://docs.thoughtspot.com/latest/admin/loading/sharding.html
     """,
-    callback=show_tool_options,
-    invoke_without_command=True
+    cls=RichGroup
 )
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def tml(
     save_path: pathlib.Path=O_(..., help='directory to save TML files to', prompt=True),
@@ -124,7 +126,7 @@ def tml(
         shutil.copy(HERE / 'static' / stem, save_path)
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def gather(
     save_path: pathlib.Path=O_(None, help='if specified, directory to save data to'),

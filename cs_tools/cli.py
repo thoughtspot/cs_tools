@@ -6,7 +6,7 @@ import typer
 import toml
 
 from cs_tools.helpers.pydantclick import _validate_args
-from cs_tools.helpers.cli_ux import console
+from cs_tools.helpers.cli_ux import console, RichGroup, RichCommand
 from cs_tools.helpers.loader import _gather_tools
 from cs_tools.util.algo import deep_update
 from cs_tools.settings import TSConfig
@@ -31,6 +31,7 @@ app = typer.Typer(
 
     email: ps-na@thoughtspot.com
     """,
+    cls=RichGroup,
     add_completion=False,
     context_settings={
         'help_option_names': ['--help', '-h'],
@@ -74,9 +75,9 @@ tools_app = typer.Typer(
     Tools are a collection of different scripts that provide advanced
     functionality which aren't native to the ThoughtSpot platform.
     """,
+    cls=RichGroup,
     options_metavar='<tool-name>',
-    callback=_show_hidden_tool_options,
-    invoke_without_command=True
+    callback=_show_hidden_tool_options
 )
 
 
@@ -86,11 +87,12 @@ cfg_app = typer.Typer(
 
     Configuration files can be set and saved on a machine in order to eliminate
     passing cluster details and credentials to every tool.
-    """
+    """,
+    cls=RichGroup
 )
 
 
-@cfg_app.command()
+@cfg_app.command(cls=RichCommand)
 def show():
     """
     Show the location of the currently saved config files.
@@ -111,7 +113,7 @@ def show():
         console.print(f"  - {file.stem[len('cluster-cfg_'):]}")
 
 
-@cfg_app.command()
+@cfg_app.command(cls=RichCommand)
 def create(
     name: str=O_(..., help='config file identifier', prompt=True),
     host: str=O_(..., help='thoughtspot server', prompt=True),
@@ -144,7 +146,7 @@ def create(
     console.print(f'saved cluster configuration file "{name}"')
 
 
-@cfg_app.command()
+@cfg_app.command(cls=RichCommand)
 def modify(
     name: str=O_(..., help='config file identifier', prompt=True),
     host: str=O_(None, help='thoughtspot server'),
@@ -175,7 +177,7 @@ def modify(
     console.print(f'saved cluster configuration file "{name}"')
 
 
-@cfg_app.command()
+@cfg_app.command(cls=RichCommand)
 def delete(
     name: str=O_(..., help='config file identifier', prompt=True)
 ):

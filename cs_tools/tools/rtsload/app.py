@@ -3,7 +3,7 @@ import pathlib
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, show_tool_options, frontend
+from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.tools.common import tsload
 from cs_tools.settings import TSConfig
 from cs_tools.api import ThoughtSpot
@@ -19,12 +19,11 @@ app = typer.Typer(
       https://docs.thoughtspot.com/latest/reference/tsload-service-api-ref.html
       https://docs.thoughtspot.com/latest/reference/data-importer-ref.html
     """,
-    callback=show_tool_options,
-    invoke_without_command=True
+    cls=RichGroup
 )
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def status(
     id: str=A_(..., help='data load cycle id'),
@@ -52,7 +51,7 @@ def status(
         console.print(f'\nErrors in dataload:\n{errors}')
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def file(
     file: pathlib.Path=A_(..., help='path to file to execute, default to stdin'),

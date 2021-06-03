@@ -5,7 +5,7 @@ import shutil
 from typer import Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, show_tool_options, frontend
+from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import to_csv, run_tql_script, tsload
 from cs_tools.settings import TSConfig
@@ -123,6 +123,9 @@ app = typer.Typer(
     help="""
     Make your Users and Groups searchable.
 
+    [b yellow]This tool uses private API calls. These could change on any version update
+     and break the tool. USE AT YOUR OWN RISK![/]
+
     Return data on your users, groups, and each users' group membership.
 
     \b
@@ -136,12 +139,11 @@ app = typer.Typer(
     - sharing visibility        - sharing visibility
     - user type                 - group type
     """,
-    callback=show_tool_options,
-    invoke_without_command=True
+    cls=RichGroup
 )
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def tml(
     save_path: pathlib.Path=O_(..., help='filepath to save TML files to', prompt=True),
@@ -162,7 +164,7 @@ def tml(
         shutil.copy(file, save_path)
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def gather(
     save_path: pathlib.Path=O_(None, help='if specified, directory to save data to'),

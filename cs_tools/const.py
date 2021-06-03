@@ -5,7 +5,12 @@ from rich.theme import Theme
 
 
 # remove colorization from repr styles
-CONSOLE_THEME = Theme({n: s.from_color() for n, s in DEFAULT_STYLES.items() if 'repr' in n})
+CONSOLE_THEME = Theme({
+    **{n: s.from_color() for n, s in DEFAULT_STYLES.items() if 'repr' in n},
+    'info'   : 'white',
+    'warning': 'yellow',
+    'error'  : 'bold red',
+})
 PACKAGE_DIR = pathlib.Path(__file__).parent
 
 # ISO datetime format

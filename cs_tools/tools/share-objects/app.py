@@ -5,7 +5,7 @@ import enum
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, show_tool_options, frontend
+from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.settings import TSConfig
 from cs_tools.api import ThoughtSpot
 from cs_tools.models.security import SharePermission
@@ -102,12 +102,11 @@ app = typer.Typer(
     help="""
     Share one or more tables from a database with a specified user group.
     """,
-    callback=show_tool_options,
-    invoke_without_command=True
+    cls=RichGroup
 )
 
 
-@app.command()
+@app.command(cls=RichCommand)
 @frontend
 def share(
     group: str=O_(..., help='group to share with'),
