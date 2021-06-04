@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import re
 
 
-def read_version():
+def read_version() -> str:
     """
     Don't import from the package we're trying to install.
     """
@@ -10,7 +10,9 @@ def read_version():
     RE_VERSION = re.compile(r'__version__\s*=\s*[\'"]([^\'"]*)[\'"]')
 
     with open('cs_tools/_version.py') as py:
-        return RE_VERSION.search(py.read()).group(1)
+        __version__ = RE_VERSION.search(py.read()).group(1)
+
+    return __version__
 
 
 with open('./requirements.txt') as f:
