@@ -55,5 +55,5 @@ For further reading about tool structure, please see the [tools README][tools-re
 [slack-channel]: https://slack.com/app_redirect?channel=cstools
 [install-git]: https://git-scm.com/downloads
 [install-python]: https://www.python.org/downloads
-[tools-readme]: ./cs_tools/tools/README.md
+[tools-readme]: ./cs_tools/tools/
 [dist]: ./dist/README.md
