@@ -23,4 +23,7 @@ class User(BaseModel):
     name: str
     display_name: str
     email: str
-    privileges: List[PrivilegeEnum]
+    # TODO: privilege checking.. necessary?
+    # privileges: List[PrivilegeEnum]
+    #
+    privileges: List[str]

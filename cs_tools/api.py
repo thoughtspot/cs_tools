@@ -97,7 +97,7 @@ class ThoughtSpot:
 
         self.logged_in_user = UserSchema(
             guid=rj['userGUID'], name=rj['userName'], display_name=rj['userDisplayName'],
-            email=rj['userEmail'], privileges=rj['privileges']
+            email=rj['userEmail'], privileges=rj.get('privileges', ['AUTHORING'])
         )
 
         self.thoughtspot_version = rj['releaseVersion']
