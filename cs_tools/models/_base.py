@@ -47,6 +47,13 @@ class APIBase:
         log.debug(f'>> {method} to {url} with data:\nargs={args}\nkwargs={kwargs}')
         r = self.http.request(method, url, *args, **kwargs)
         log.debug(f'<< {r.status_code} from {url}')
+
+        try:
+            r.raise_for_status()
+        except Exception as e:
+            log.exception('HTTP Error')
+            raise
+
         return r
 
     def get(self, url: str, *args, **kwargs) -> httpx.Response:
