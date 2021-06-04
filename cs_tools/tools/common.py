@@ -211,7 +211,7 @@ def tsload(
             f'\n\nHeres the tsload command for the file you tried to load:'
             f'\ntsload --source_file {fp} --target_database {target_database} '
             f'--target_schema {target_schema} --target_table {target_table} '
-            f'--field_seprator "{field_separator}" --boolean_representation True_False '
+            f'--field_separator "{field_separator}" --boolean_representation True_False '
             f'--null_value "" --time_format {FMT_TSLOAD_TIME} --date_format {FMT_TSLOAD_DATE} '
             f'--date_time_format {FMT_TSLOAD_DATETIME} '
             f'--has_header_row '
