@@ -146,26 +146,27 @@ def gather(
         metadata_types = list(SystemType)
 
     with ThoughtSpot(cfg) as api:
-        for metadata in metadata_types:
-            type_ = SystemType.to_metadata_type(metadata.value)
-            r = api._metadata.list(type=type_, batchsize=-1).json()['headers']
-            objects = _format_metadata_objects(r, metadata.value)
+        with console.status('getting top level metadata'):
+            for metadata in metadata_types:
+                type_ = SystemType.to_metadata_type(metadata.value)
+                r = api._metadata.list(type=type_, batchsize=-1).json()['headers']
+                objects = _format_metadata_objects(r, metadata.value)
 
-            # if we're only looking for a LOGICAL_TABLE subtype..
-            # system table, imported data, worksheet, view
-            if type_ == 'LOGICAL_TABLE':
-                objects = list(filter(lambda e: e['type'] == metadata.value, objects))
+                # if we're only looking for a LOGICAL_TABLE subtype..
+                # system table, imported data, worksheet, view
+                if type_ == 'LOGICAL_TABLE':
+                    objects = list(filter(lambda e: e['type'] == metadata.value, objects))
 
-            fp = dir_ / 'introspect_metadata_object.csv'
-            mode, header = ('a', False) if fp.exists() else ('w', True)
-            to_csv(objects, fp, mode=mode, header=header)
+                fp = dir_ / 'introspect_metadata_object.csv'
+                mode, header = ('a', False) if fp.exists() else ('w', True)
+                to_csv(objects, fp, mode=mode, header=header)
 
         if save_path is not None:
             return
 
         run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
 
-        path = dir_ / f'introspect_metadata_object.csv'
+        path = dir_ / 'introspect_metadata_object.csv'
         cycle_id = tsload(api, fp=path, target_database='cs_tools', target_table='introspect_metadata_object')
         path.unlink()
 

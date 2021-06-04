@@ -81,22 +81,31 @@ def _get_users_in_group(api: ThoughtSpot, batchsize=500) -> Tuple[list, list, li
     # or users, like, in the thousands, then we might run into a rate limit issue when
     # making the associations.
     #
-    users  = _get_users(api, batchsize=batchsize)
-    groups = _get_groups(api, batchsize=batchsize)
+    with console.status(f'getting USERS in batches of {batchsize}'):
+        users  = _get_users(api, batchsize=batchsize)
+
+    with console.status(f'getting GROUPS in batches of {batchsize}'):
+        groups = _get_groups(api, batchsize=batchsize)
+
     asso   = []
 
-    for group in groups:
-        r = api._session.group_list_user(group_id=group['guid_']).json()
+    with console.status('associating USERS to GROUPS'):
+        for group in groups:
+            r = api._session.group_list_user(group_id=group['guid_']).json()
 
-        for data in r:
-            asso.append({'group_guid': group['guid_'], 'user_guid': data['header']['id']})
+            for data in r:
+                asso.append({
+                    'group_guid': group['guid_'],
+                    'user_guid': data['header']['id']
+                })
 
     # HERE ALSO BE DRAGONS!
     #
     # If the platform has many tens of thousands of users or groups, it's possible that
     # this could lock up the platform.
     #
-    r = api.user.list().json()
+    with console.status('getting extra data on USERS and GROUPS'):
+        r = api.user.list().json()
 
     for principal in r:
         if 'GROUP' in principal['principalTypeEnum']:

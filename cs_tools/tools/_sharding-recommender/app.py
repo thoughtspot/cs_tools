@@ -150,7 +150,9 @@ def gather(
     fp = dir_ / 'falcon_table_info.csv'
 
     with ThoughtSpot(cfg) as api:
-        data = _format_table_info_data(api._periscope.sage_combinedtableinfo().json())
+        with console.status('getting falcon table info'):
+            data = _format_table_info_data(api._periscope.sage_combinedtableinfo().json())
+
         to_csv(data, fp=fp)
 
         if save_path is not None:

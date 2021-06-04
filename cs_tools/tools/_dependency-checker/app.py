@@ -217,21 +217,23 @@ def gather(
         parents = [parent]
 
     with ThoughtSpot(cfg) as api:
-        metadata   = _get_recordset_metadata(api)
+        with console.status('getting top level metadata'):
+            metadata   = _get_recordset_metadata(api)
 
-        for parent in parents:
-            dependents = _get_dependents(api, parent, metadata[parent])
-            parents  = _format_metadata_objects(metadata[parent])
-            children = _format_dependencies(dependents)
+        with console.status('getting dependents of metadata'):
+            for parent in parents:
+                dependents = _get_dependents(api, parent, metadata[parent])
+                parents  = _format_metadata_objects(metadata[parent])
+                children = _format_dependencies(dependents)
 
-            fp = dir_ / 'introspect_metadata_object.csv'
-            mode, header = ('a', False) if fp.exists() else ('w', True)
-            to_csv(parents, fp, mode=mode, header=header)
-
-            if children:
-                fp = dir_ / 'introspect_metadata_dependent.csv'
+                fp = dir_ / 'introspect_metadata_object.csv'
                 mode, header = ('a', False) if fp.exists() else ('w', True)
-                to_csv(children, fp, mode=mode, header=header)
+                to_csv(parents, fp, mode=mode, header=header)
+
+                if children:
+                    fp = dir_ / 'introspect_metadata_dependent.csv'
+                    mode, header = ('a', False) if fp.exists() else ('w', True)
+                    to_csv(children, fp, mode=mode, header=header)
 
         if save_path is not None:
             return
