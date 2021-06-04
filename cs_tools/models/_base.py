@@ -44,7 +44,11 @@ class APIBase:
             kwargs['data'] = json.loads(kwargs['data'])
         # sigh/
 
-        log.debug(f'>> {method} to {url} with data:\nargs={args}\nkwargs={kwargs}')
+        # don't log the password
+        secure = kwargs.copy()
+        secure.pop('password', None)
+        log.debug(f'>> {method} to {url} with data:\nargs={args}\nkwargs={secure}')
+
         r = self.http.request(method, url, *args, **kwargs)
         log.debug(f'<< {r.status_code} from {url}')
 
