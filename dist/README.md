@@ -13,6 +13,43 @@ which to run.
 
 ---
 
+Human-friendly instructions explanation!
+ - Download dist.zip from above
+ - Move it to a location on your machine you're happy to leave it at
+      (/Downloads is fine!)
+ - Unzip the file
+     - If you're on Mac, usually double-clicking the file works fine
+     - If you're on Windows, right-click and select "Extract All.."
+     - If you're on Linux/ThoughtSpot application, see the commands below
+ - Move into the /dist directory that was just created
+ - Run the appropriate install file!
+     - If you're on Mac
+         1. hold `control`
+         2. click on `unix_install.sh`
+         3. hold `option` and select `Copy "unix_install.sh" as Pathname`
+         4. open terminal (`command` and `spacebar`, search for terminal)
+         5. type `source ` and paste (`command` and `v`) and hit enter!
+     - If you're on Windows
+         1. hold `shift` and right-click on `windows_install.ps1`
+     - If you're on Linux ... see the commands below
+
+You'll know you've made it when the screen looks something like this
+
+```
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools
+
+Usage: cs_tools [OPTIONS] COMMAND [ARGS]...
+
+  Welcome to CS Tools!
+
+  These are scripts and utilities used to assist in the development, implementation, and administration of your
+  ThoughtSpot platform.
+
+  All tools and this library are provided as-is. While every effort...
+```
+
+---
+
 ### Windows Install
 ```console
 # 1. Download dist.zip
@@ -33,9 +70,9 @@ powershell -file ./windows_activate.ps1
 ### MacOS / Linux Install
 ```console
 # 1. Download dist.zip
-# 2. Run the following commands
+# 2. Open a Terminal and run the following commands
 
-unzip $HOME/downloads/dist.zip
+unzip -u $HOME/downloads/dist.zip -d $HOME/downloads
 cd $HOME/downloads/dist
 source unix_install.sh
 
