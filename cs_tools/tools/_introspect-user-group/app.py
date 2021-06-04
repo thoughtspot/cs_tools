@@ -22,7 +22,8 @@ def _get_users(api: ThoughtSpot, batchsize=-1):
     results = []
 
     while True:
-        r = api._metadata.list(type='USER', batchsize=batchsize).json()
+        n = len(results)
+        r = api._metadata.list(type='USER', batchsize=batchsize, offset=n).json()
         results.extend([
             {
                 'guid_': user['id'],
@@ -49,7 +50,8 @@ def _get_groups(api: ThoughtSpot, batchsize=-1):
     results = []
 
     while True:
-        r = api._metadata.list(type='USER_GROUP', batchsize=batchsize).json()
+        n = len(results)
+        r = api._metadata.list(type='USER_GROUP', batchsize=batchsize, offset=n).json()
         results.extend([
             {
                 'guid_': group['id'],
