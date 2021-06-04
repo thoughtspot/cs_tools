@@ -44,7 +44,7 @@ class APIBase:
             kwargs['data'] = json.loads(kwargs['data'])
         # sigh/
 
-        log.debug(f'>> {method} to {url}')
+        log.debug(f'>> {method} to {url} with data:\nargs={args}\nkwargs={kwargs}')
         r = self.http.request(method, url, *args, **kwargs)
         log.debug(f'<< {r.status_code} from {url}')
         return r
