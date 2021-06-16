@@ -179,8 +179,8 @@ class TSConfig(Settings):
             'thoughtspot': {
                 'host': host,
                 'port': kw.get('port', None),
-                'disable_ssl': kw.get('disable_ssl', False) if default else kw.get('disable_ssl'),
-                'disable_sso': kw.get('disable_sso', False) if default else kw.get('disable_sso'),
+                'disable_ssl': kw['disable_ssl'] if kw.get('disable_ssl') is not None else False,
+                'disable_sso': kw['disable_sso'] if kw.get('disable_sso') is not None else False,
             },
             'auth': {
                 'frontend': {

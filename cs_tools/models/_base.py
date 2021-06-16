@@ -54,7 +54,7 @@ class APIBase:
 
         try:
             r.raise_for_status()
-        except Exception as e:
+        except Exception:
             log.exception('HTTP Error')
             raise
 
