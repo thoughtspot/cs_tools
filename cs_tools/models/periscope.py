@@ -15,13 +15,12 @@ class SageCombinedTableInfoParameters(APIParameters):
 
 class _Periscope(TSPrivate):
     """
-    Metadata Services.
+    Periscope Services.
     """
 
     @property
     def base_url(self):
         """
-        Periscope is a really internal API. ;)
         """
         host = self.config.thoughtspot.host
         port = self.config.thoughtspot.port
@@ -31,7 +30,7 @@ class _Periscope(TSPrivate):
         else:
             port = ''
 
-        return f'https://{host}{port}/periscope'
+        return f'{host}{port}/periscope'
 
     def alert_getalerts(self) -> httpx.Response:
         """
