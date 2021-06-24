@@ -1,0 +1,90 @@
+worksheet:
+  name: "PS: User Groups"
+  description: A worksheet which maps users to groups in your ThoughtSpot platform.
+  tables:
+  - name: introspect_asso_user_group
+  - name: introspect_group
+  - name: introspect_user
+  joins:
+  - name: FK_group_guid
+    source: introspect_asso_user_group
+    destination: introspect_group
+    type: INNER
+    is_one_to_one: false
+  - name: FK_user_guid
+    source: introspect_asso_user_group
+    destination: introspect_user
+    type: INNER
+    is_one_to_one: false
+  table_paths:
+  - id: introspect_group_1
+    table: introspect_group
+    join_path:
+    - join:
+      - FK_group_guid
+  - id: introspect_user_1
+    table: introspect_user
+    join_path:
+    - join:
+      - FK_user_guid
+  worksheet_columns:
+  - name: User
+    column_id: "introspect_user_1::Username"
+    properties:
+      column_type: ATTRIBUTE
+  - name: User Display Name
+    column_id: "introspect_user_1::Display Name"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Email
+    column_id: "introspect_user_1::Email"
+    properties:
+      column_type: ATTRIBUTE
+  - name: User Created
+    column_id: "introspect_user_1::Created"
+    properties:
+      column_type: ATTRIBUTE
+  - name: User Modified
+    column_id: "introspect_user_1::Modified"
+    properties:
+      column_type: ATTRIBUTE
+  - name: User Sharing Visibility
+    column_id: "introspect_user_1::Sharing Visibility"
+    properties:
+      column_type: ATTRIBUTE
+  - name: User Type
+    column_id: "introspect_user_1::User Type"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group
+    column_id: "introspect_group_1::Group Name"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group Display Name
+    column_id: "introspect_group_1::Display Name"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Description
+    column_id: "introspect_group_1::Description"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group Created
+    column_id: "introspect_group_1::Created"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group Modified
+    column_id: "introspect_group_1::Modified"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group Sharing Visibility
+    column_id: "introspect_group_1::Sharing Visibility"
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group Type
+    column_id: "introspect_group_1::Group Type"
+    properties:
+      column_type: ATTRIBUTE
+  properties:
+    is_bypass_rls: false
+    join_progressive: true
+guid: 6db558ad-9319-45a6-a05f-3cbaf54dc843

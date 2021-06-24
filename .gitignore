@@ -14,7 +14,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -135,6 +134,9 @@ dmypy.json
 # Sublime files
 *.sublime-project
 *.sublime-workspace
-
-# ignore tsconfig!
-tsconfig.*
+poetry.lock
+pyproject.toml
+!.gitdontignore
+dist/pkgs/*.whl
+dist/pkgs/*.zip
+dist/pkgs/*.tar.gz

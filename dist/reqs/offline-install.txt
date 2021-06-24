@@ -4,6 +4,7 @@ click==7.1.2; python_version >= "3.6" and python_full_version < "3.0.0" or pytho
 colorama==0.4.4; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" or python_version >= "3.6" and python_version < "4.0" and python_full_version >= "3.5.0"
 commonmark==0.9.1; python_version >= "3.6" and python_version < "4.0"
 contextvars==2.4; python_version < "3.7" and python_version >= "3.6"
+cs_tools==1.0.3
 dataclasses==0.8; python_version >= "3.6" and python_version < "3.7" and python_full_version >= "3.6.1"
 dnspython==2.1.0; python_full_version >= "3.6.1" and python_version >= "3.6"
 email-validator==1.1.2; python_full_version >= "3.6.1"

@@ -1,0 +1,39 @@
+table:
+  name: introspect_group
+  db: cs_tools
+  schema: falcon_default_schema
+  db_table: introspect_group
+  columns:
+  - name: GUID
+    db_column_name: guid_
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group Name
+    db_column_name: name
+    properties:
+      column_type: ATTRIBUTE
+  - name: Display Name
+    db_column_name: display_name
+    properties:
+      column_type: ATTRIBUTE
+  - name: Description
+    db_column_name: description
+    properties:
+      column_type: ATTRIBUTE
+  - name: Created
+    db_column_name: created
+    properties:
+      column_type: ATTRIBUTE
+  - name: Modified
+    db_column_name: modified
+    properties:
+      column_type: ATTRIBUTE
+  - name: Sharing Visibility
+    db_column_name: sharing_visibility
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group Type
+    db_column_name: type
+    properties:
+      column_type: ATTRIBUTE
+guid: 4fff6f16-177b-4ede-ae97-c71a6d9d8b37

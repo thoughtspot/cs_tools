@@ -1,0 +1,15 @@
+table:
+  name: introspect_asso_user_group
+  db: cs_tools
+  schema: falcon_default_schema
+  db_table: introspect_asso_user_group
+  columns:
+  - name: user_guid
+    db_column_name: user_guid
+    properties:
+      column_type: ATTRIBUTE
+  - name: group_guid
+    db_column_name: group_guid
+    properties:
+      column_type: ATTRIBUTE
+guid: 0f18a510-b0d2-45f3-a2b9-846cd7376473

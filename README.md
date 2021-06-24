@@ -8,10 +8,8 @@
 customer delight.</em></p>
 
 CS Tools is an initiative by the CS/PS team to collect, organize, analyze, improve, and
-streamline various field engineering tools existing today. This repository is introduced
-to form consistency in how we design, build, test, document, and distribute our tools.
-In doing so, we are able to streamline our work as well as provide our customers with
-the highest level of consultancy that they've come to expect from the team.
+streamline various field engineering tools existing today. This repository was
+introduced to form consistency in how we design and distribute our tools.
 
 ---
 
@@ -30,40 +28,32 @@ Not sure where to start? Come chat with us in #cstools on [Slack][slack-channel]
 ## Getting Started
 
 To clone and work this library, you'll want to have [Git][install-git] and
-[Python 3.6.1][install-python] or greater installed on your computer. Then, create a
-virtual environment and activate it. <sup>([Don't know how to do that][bp-venv]?)</sup>
+[Python 3.6.8][install-python] or greater installed on your computer. The shortlist of
+instructions are below!
 
 From your command line:
 ```console
-$ pip install git+https://github.com/thoughtspot/cs_tools.git
-
--or-
-
-$ poetry add git+https://github.com/thoughtspot/cs_tools.git
-$ poetry install
+$ cd $HOME
+$ python3 -m venv .cs_tools-dev
+$ source .cs_tools-dev/bin/activate
+$ pip install -e git+https://github.com/thoughtspot/cs_tools.git
 ```
 
 That's it!
 
-P.S. - for extra credit, don't forget to check out our [best practices][bp-main]!
-
 ## Our Tools
 
-Note: All tools currently live alongside the ThoughtSpot library as an implementation
-detail. Our current structure will aid us in separating off these tools at a later date.
+All tools currently live within the ThoughtSpot library as a subpackage. This allows for
+ease of distribution and install at a customer site, or along with a customer.
 
-All CS tools are installed as part of the Github CS Tools library. They do not live
-under the `/thoughtspot` directory so that they may be shared with clients directly.
-All tools do however, depend on the ThoughtSpot library in order to function properly,
-please see [Best Practices: Client Install][bp-client-install] for how to set up a
-client with the ThoughtSpot library.
+Nearly all tools depend on the ThoughtSpot API directly in order to function properly,
+please see our [Install Instructions][dist] for how to set up a client with the CT Tools
+library and toolset.
 
 For further reading about tool structure, please see the [tools README][tools-readme].
 
 [slack-channel]: https://slack.com/app_redirect?channel=cstools
 [install-git]: https://git-scm.com/downloads
 [install-python]: https://www.python.org/downloads
-[bp-main]: ./best-practices/
-[bp-venv]: ./best-practices/virtual-environment.md
-[bp-client-install]: ./best-practices/client-install.md
-[tools-readme]: ./tools/README.md
+[tools-readme]: ./cs_tools/tools/
+[dist]: ./dist/README.md

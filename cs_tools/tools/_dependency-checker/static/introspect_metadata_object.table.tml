@@ -1,0 +1,43 @@
+table:
+  name: introspect_metadata_object
+  db: cs_tools
+  schema: falcon_default_schema
+  db_table: introspect_metadata_object
+  columns:
+  - name: Object GUID
+    db_column_name: guid_
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object
+    db_column_name: name
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Description
+    db_column_name: description
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Author GUID
+    db_column_name: author_guid
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Author
+    db_column_name: author_name
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Author Display Name
+    db_column_name: author_display_name
+    properties:
+      column_type: ATTRIBUTE
+  - name: Created
+    db_column_name: created
+    properties:
+      column_type: ATTRIBUTE
+  - name: Modified
+    db_column_name: modified
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Type
+    db_column_name: type
+    properties:
+      column_type: ATTRIBUTE
+guid: 068ded9b-b1a8-486f-9d39-49b0ea8d6b28
