@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ThoughSpot Table/Column Sharing</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link href="css/main.css" rel="stylesheet" media="all">
+  <link rel="stylesheet" href="css/jquery.multiselect.css">
+</head>
+
+<body>
+  <div>
+    <img src="images/ts-logo.png"/>
+    <h1>ThoughtSpot Table/Column Sharing</h1>
+  </div>
+  <div id="content">
+    <div id="progressLoader">
+      <div id="menuBar">
+        <div class="menuOption">
+          <label for "selUserGroups">Select user groups to include</label>
+          <select id="selUserGroups" name="example" multiple="multiple"></select>
+        </div>
+        <div class="menuOption">
+          <label for="tableName">Select a table</label>
+          <select name="tableName" id="tableName"></select>
+        </div>
+        <div class="menuOption">
+          <div id="getPermissions">Get Permissions</div>
+        </div>
+      </div>
+      <div id="securityMatrix">
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript"  src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script type="text/javascript"  src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script type="text/javascript"  src="js/jquery.multiselect.js"></script>
+  <script type="text/javascript"  src="js/interface_elems.js"></script>
+  <script type="text/javascript" src="js/application.js"></script>
+  <script type="text/javascript" src="js/thoughtspot.js"></script>
+  <script type="text/javascript"  src="js/loading-overlay.min.js"></script>
+</body>
