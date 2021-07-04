@@ -1,7 +1,13 @@
+import pathlib
+
+from starlette.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI
 from typer import Argument as A_, Option as O_  # noqa
+import uvicorn
 import typer
 
-from cs_tools.helpers.cli_ux import RichGroup
+from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 
 
 app = typer.Typer(
@@ -39,6 +45,25 @@ app = typer.Typer(
     cls=RichGroup
 )
 
+#
+
+HERE = pathlib.Path(__file__).parent
+web_app = FastAPI()
+web_app.mount('/static', StaticFiles(directory=f'{HERE}/static'), name='static')
+web_app.mount('/new', StaticFiles(directory=f'{HERE}/static2'), name='static2')
+
+
+@web_app.get('/')
+async def read_index():
+    return RedirectResponse(url='/static/index.html')
+
+
+@web_app.get('/new')
+async def read_index_new():
+    return RedirectResponse(url='/new/index.html')
+
+#
+
 
 # NOTE:
 #
@@ -51,3 +76,11 @@ app = typer.Typer(
 # documentation page, how-to guides on how to do those things -- all of these could be
 # a v2 release if desired).
 #
+
+@app.command(cls=RichCommand)
+def run(
+    # **frontend_kw
+):
+    """
+    """
+    uvicorn.run('cs_tools.tools._cls-sharing.app:web_app', host='127.0.0.1', port=5000, log_level='info')

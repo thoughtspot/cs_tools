@@ -1,0 +1,381 @@
+/*body {
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 20px;
+}
+
+fieldset {
+    border: 0;
+}
+
+label {
+    display: block;
+    margin: 30px 0 0 0;
+}
+
+.overflow {
+    height: 200px;
+}
+
+#content {
+    display: inline-block;
+}*/
+
+#updateSecurity,
+#getPermissions {
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: left 10px top 10px;
+    width: 130px;
+    height: 30px;
+    padding: 13px 0px 0px 50px;
+    border: 1px solid #c5c5c5;
+    border-radius: 3px;
+    background-color: #f6f6f6;
+    cursor: pointer;
+}
+
+#getPermissions {
+    background-image: url(../images/refresh.png);
+    margin: 35px 0px 0px 0px;
+}
+
+#updateSecurity {
+    background-image: url(../images/apply_security.png);
+    margin: 20px 0px 0px 205px;
+}
+
+#updateSecurity:hover,
+#getPermissions:hover {
+    background-color: #007fff;
+    color: white;
+}
+
+#getPermissions:hover {
+    background-image: url(../images/refresh-HL.png);
+}
+
+#updateSecurity:hover {
+    background-image: url(../images/apply_security-HL.png);
+}
+
+.ui-multiselect {
+    height: 34px;
+    margin: 0px 0px 0px 0px;
+}
+
+.ui-widget-header .ui-icon {
+    margin-top: 0px;
+}
+
+.ui-multiselect-header li {
+    margin: 0px 8px 0px 0px !important;
+}
+
+.ui-multiselect-checkboxes label {
+    margin-top: 0px;
+}
+
+#selUserGroups_ms {
+    width: 258px !important;
+}
+
+.ui-multiselect-menu {
+    width: 258px !important;
+}
+
+
+/* SPINNER */
+
+@font-face {
+    font-family: "demo";
+    src: url('fonts/icons.woff') format("woff"), url('fonts/icons.ttf') format("truetype");
+}
+
+@-moz-keyframes loadingStart {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@-webkit-keyframes loadingStart {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@-o-keyframes loadingStart {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes loadingStart {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@-moz-keyframes loading {
+    0% {
+        -moz-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    50% {
+        -moz-transform: rotate(180deg);
+        transform: rotate(180deg);
+    }
+    100% {
+        -moz-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+@-webkit-keyframes loading {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    50% {
+        -webkit-transform: rotate(180deg);
+        transform: rotate(180deg);
+    }
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+@-o-keyframes loading {
+    0% {
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    50% {
+        -o-transform: rotate(180deg);
+        transform: rotate(180deg);
+    }
+    100% {
+        -o-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes loading {
+    0% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(180deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+#progressloader {
+    height: 400px;
+    width: 800px;
+}
+
+.loading {
+    position: relative;
+}
+
+.loading .loading-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    -webkit-animation: loadingStart 3s 300ms linear 1 both;
+    -moz-animation: loadingStart 3s 300ms linear 1 both;
+    -o-animation: loadingStart 3s 300ms linear 1 both;
+    animation: loadingStart 3s 300ms linear 1 both;
+    background: rgba(255, 255, 255, 0.75);
+    text-align: center;
+    z-index: 1;
+}
+
+.loading .loading-text {
+    font-size: 0.875rem;
+    line-height: 1.3125rem;
+    text-shadow: white 0 0 1em, white 0 0 0.5em, white 0 0 0.25em;
+    position: relative;
+    display: block;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.loading .loading-text:after {
+    content: "...";
+}
+
+.loading .loading-spinner {
+    position: absolute;
+    top: 50%;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: -3.9375rem auto 0;
+    color: #007fff;
+    text-align: center;
+}
+
+.loading .loading-icon {
+    font-size: 4.8125rem;
+    line-height: 5.25rem;
+    text-shadow: rgba(255, 255, 255, 0.75) 0 0 0.5em;
+    -webkit-animation: loading 1s steps(4) infinite;
+    -moz-animation: loading 1s steps(4) infinite;
+    -o-animation: loading 1s steps(4) infinite;
+    animation: loading 1s steps(4) infinite;
+    display: block;
+    vertical-align: middle;
+}
+
+.loading .loading-icon:before {
+    vertical-align: middle;
+    content: "\e000";
+    font-family: "demo";
+}
+
+
+/* MENU */
+
+#menuBar .menuOption {
+    float: left;
+    display: block;
+    margin-right: 20px;
+}
+
+#menuBar::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+
+/* SECURITY MATRIX */
+
+#securityMatrix {
+    margin-top: 100px;
+}
+
+#securityMatrix .matrixRow.userGroupHeaders {
+    margin: 0px 0px 10px 0px;
+}
+
+#securityMatrix .matrixRow.userGroupHeaders .matrixCell {
+    writing-mode: tb-rl;
+    transform: rotate(-180deg);
+}
+
+#securityMatrix .matrixRow .matrixCell {
+    display: table-cell;
+    width: 90px;
+    height: 28px;
+}
+
+#securityMatrix .matrixRow .matrixCell:first-child {
+    width: 200px;
+    text-align: right;
+    padding: 6px 10px 0px 0px;
+}
+
+#securityMatrix .matrixRow::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+.accessSelectorGroup {
+    min-width: 90px;
+}
+
+.accessSelectorGroup button {
+    background-color: #f6f6f6;
+    border: 1px solid #c5c5c5;
+    color: black;
+    padding: 5px 12px;
+    cursor: pointer;
+    float: left;
+    height: 28px;
+    width: 28px;
+}
+
+.accessSelectorGroup button.NO_ACCESS {
+    background-image: url(../images/NO_ACCESS-NORM.png);
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: center;
+}
+
+.accessSelectorGroup button.READ_ONLY {
+    background-image: url(../images/READ_ONLY-NORM.png);
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: center;
+}
+
+.accessSelectorGroup button.MODIFY {
+    background-image: url(../images/MODIFY-NORM.png);
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: center;
+}
+
+.accessSelectorGroup button.NO_ACCESS.Active,
+.accessSelectorGroup button.NO_ACCESS:hover {
+    background-image: url(../images/NO_ACCESS-HL.png);
+    background-color: red;
+}
+
+.accessSelectorGroup button.READ_ONLY.Active,
+.accessSelectorGroup button.READ_ONLY:hover {
+    background-image: url(../images/READ_ONLY-HL.png);
+    background-color: green;
+}
+
+.accessSelectorGroup button.MODIFY.Active,
+.accessSelectorGroup button.MODIFY:hover {
+    background-color: blue;
+    color: white;
+    background-image: url(../images/MODIFY-HL.png);
+}
+
+.accessSelectorGroup button:not(:last-child) {
+    border-right: none;
+}
+
+.accessSelectorGroup:after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.error-message .ui-dialog-titlebar {
+    border: 1px solid black;
+    background: red;
+}
+
+.success-message .ui-dialog-titlebar {
+    border: 1px solid black;
+    background: green;
+    color: white;
+}
+
+.ui-dialog-titlebar .ui-button-icon-only .ui-icon {
+    top: 0%;
+}
