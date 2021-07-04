@@ -24,12 +24,11 @@
   <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
   <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
 
-  <link href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet">
+  <!-- <link href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet"> -->
 
   <!-- Template Main CSS File -->
   <link href="assets/css/style.css" rel="stylesheet">
-  <link href="assets/css/main.css" rel="stylesheet" media="all">
-  <link href="assets/css/jquery.multiselect.css" rel="stylesheet">
+  <!-- <link href="assets/css/jquery.multiselect.css" rel="stylesheet"> -->
 </head>
 
 <body>
@@ -65,9 +64,9 @@
   </header>
   <!-- End Header -->
 
-
   <main id="main">
 
+    <!-- ======= About Us Section ======= -->
     <section id="about" class="about">
       <div class="container">
         <div class="section-title" data-aos="fade-up">
@@ -76,72 +75,34 @@
         </div>
 
         <div class="row">
-          <div id="progressLoader">
-            <div id="menuBar">
 
-              <div class="menuOption">
-                <label for "selUserGroups">Select user groups to include</label>
-                <select id="selUserGroups" name="example" multiple="multiple"></select>
+          <div id="progress-loader">
+            <div id="security-menu">
+              <div class="security-menu-option">
+                <label class="option-title" for="select-user-groups">Select Groups to include</label>
+                <select id="select-user-groups" name="example" multiple="multiple"></select>
               </div>
 
-              <div class="menuOption">
-                <label for="tableName">Select a table</label>
-                <select name="tableName" id="tableName"></select>
+              <div class="security-menu-option">
+                <label class="option-title" for="select-tablename">Select a table</label>
+                <select id="select-tablename" name="table name"></select>
               </div>
 
-              <div class="menuOption">
-                <div id="getPermissions">Get Permissions</div>
+              <div class="security-menu-option">
+                <button type="button" class="btn btn-outline-dark" id="btn-get-permissions">
+                  <i class="bi bi-arrow-repeat"></i>
+                  Get Permissions
+                </button>
               </div>
             </div>
 
-            <div id="securityMatrix">
+            <div id="security-matrix">
             </div>
 
           </div>
         </div>
       </div>
     </section>
-
-    <!-- ======= About Us Section ======= -->
-    <!--
-    <section id="about" class="about">
-      <div class="container">
-
-        <div class="section-title" data-aos="fade-up">
-          <h2>About Us</h2>
-          <p>Magnam dolores commodi suscipit eius consequatur</p>
-        </div>
-
-        <div class="row">
-          <div class="col-lg-6" data-aos="fade-right">
-            <div class="image">
-              <img src="assets/img/about.jpg" class="img-fluid" alt="">
-            </div>
-          </div>
-          <div class="col-lg-6" data-aos="fade-left">
-            <div class="content pt-4 pt-lg-0 pl-0 pl-lg-3 ">
-              <h3>Voluptatem dignissimos provident quasi corporis</h3>
-              <p class="fst-italic">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-                magna aliqua.
-              </p>
-              <ul>
-                <li><i class="bx bx-check-double"></i> Ullamco laboris nisi ut aliquip ex ea commodo consequat.</li>
-                <li><i class="bx bx-check-double"></i> Duis aute irure dolor in reprehenderit in voluptate velit.</li>
-                <li><i class="bx bx-check-double"></i> Ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate trideta storacalaperda mastiro dolore eu fugiat nulla pariatur.</li>
-              </ul>
-              <p>
-                Ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-                velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-                culpa qui officia deserunt mollit anim id est laborum
-              </p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-    -->
     <!-- End About Us Section -->
 
   </main>
@@ -151,10 +112,11 @@
   <footer id="footer">
     <div class="container footer-bottom clearfix">
       <div class="copyright">
-        &copy; Copyright <strong><span>ThoughtSpot</span></strong>. All Rights Reserved
+        &copy;2020 <strong><span>ThoughtSpot Inc</span></strong>. All Rights Reserved
       </div>
     </div>
-  </footer><!-- End Footer -->
+  </footer>
+  <!-- End Footer -->
 
   <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
@@ -168,14 +130,13 @@
 
   <!-- Template Main JS File -->
   <script src="assets/js/main.js"></script>
-  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-  <script src="assets/js/jquery.multiselect.js"></script>
-  <script src="assets/js/interface_elems.js"></script>
-  <script src="assets/js/_new_application.js"></script>
-  <script src="assets/js/thoughtspot.js"></script>
-  <script src="assets/js/loading-overlay.min.js"></script>
+  <!-- <script src="https://code.jquery.com/jquery-1.12.4.js"></script> -->
+  <!-- <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script> -->
+  <!-- <script src="assets/js/jquery.multiselect.js"></script> -->
+  <!-- <script src="assets/js/interface_elems.js"></script> -->
+  <!-- <script src="assets/js/_new_application.js"></script> -->
+  <!-- <script src="assets/js/thoughtspot.js"></script> -->
+  <!-- <script src="assets/js/loading-overlay.min.js"></script> -->
 
 </body>
-
 </html>
