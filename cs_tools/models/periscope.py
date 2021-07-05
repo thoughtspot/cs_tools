@@ -25,6 +25,9 @@ class _Periscope(TSPrivate):
         host = self.config.thoughtspot.host
         port = self.config.thoughtspot.port
 
+        if not host.startswith('http'):
+            host = f'https://{host}'
+
         if port:
             port = f':{port}'
         else:
