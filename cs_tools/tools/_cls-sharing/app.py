@@ -1,8 +1,13 @@
+import threading
 import pathlib
+import time
+import os
 
 from starlette.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request
 from typer import Argument as A_, Option as O_  # noqa
 import uvicorn
 import typer
@@ -54,6 +59,7 @@ HERE = pathlib.Path(__file__).parent
 web_app = FastAPI()
 web_app.mount('/static', StaticFiles(directory=f'{HERE}/static'), name='static')
 web_app.mount('/new', StaticFiles(directory=f'{HERE}/static2'), name='static2')
+templates = Jinja2Templates(directory=f'{HERE}/static2')
 
 
 @web_app.get('/')
@@ -61,33 +67,14 @@ async def read_index():
     return RedirectResponse(url='/static/index.html')
 
 
-@web_app.get('/new')
-async def read_index_new():
-    return RedirectResponse(url='/new/index.html')
-
-
-# .../
-
-from fastapi import Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-import os
-
-templates = Jinja2Templates(directory=f'{HERE}/static2')
-
-
-@web_app.get('/tmpl', response_class=HTMLResponse)
-async def read_index_template(request: Request):
+@web_app.get('/new', response_class=HTMLResponse)
+async def read_index_new(request: Request):
     data = {
         'request': request,
         'host': os.environ['TS_HOST'],
         'user': os.environ['TS_USER']
     }
     return templates.TemplateResponse('index.html', data)
-
-# .../
-
-#
 
 
 # NOTE:
@@ -101,6 +88,14 @@ async def read_index_template(request: Request):
 # documentation page, how-to guides on how to do those things -- all of these could be
 # a v2 release if desired).
 #
+def _run_server():
+    uvicorn.run(
+        'cs_tools.tools._cls-sharing.app:web_app',
+        host='127.0.0.1',
+        port=5000,
+        log_level='info',
+    )
+
 
 @app.command(cls=RichCommand)
 @frontend
@@ -111,19 +106,24 @@ def run(
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
-    # Set some environment variables so we can reference them in the web app.
-    os.environ['TS_HOST'] = cfg.thoughtspot.host
-    os.environ['TS_USER'] = cfg.auth['frontend'].username
+    with ThoughtSpot(cfg) as api:
+        # Set some environment variables so we can reference them in the web app.
+        os.environ['TS_HOST'] = cfg.thoughtspot.host
+        os.environ['TS_USER'] = api.logged_in_user.display_name
 
-    #
-    # TODO .. fix linkrefs in index.html ... doesn't work with the templates rn
-    #
-
-    with ThoughtSpot(cfg):
         console.print('starting webserver...')
-        uvicorn.run(
-            'cs_tools.tools._cls-sharing.app:web_app',
-            host='127.0.0.1',
-            port=5000,
-            log_level='info'
-        )
+
+        t = threading.Thread(target=_run_server, daemon=True)
+        t.start()
+        time.sleep(0.5)
+
+        # had to set..
+        # 1. tscli --adv config get --key /config/nginx/corshosts
+        # 2. add "cs_tools.localho.st.*"
+        typer.launch('http://cs_tools.localho.st:5000/')
+
+        try:
+            while True:
+                time.sleep(0.1)
+        except KeyboardInterrupt:
+            pass
