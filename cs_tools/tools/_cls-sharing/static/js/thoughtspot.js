@@ -24,7 +24,7 @@ SHARED_INSTANCE = "https://13.56.2.129";
 HARRI = "https://harri.thoughtspot.cloud";
 SANDBOX = "https://18.185.153.97";
 
-TS_URL = SANDBOX;
+TS_URL = SHARED_INSTANCE;
 
 class TSAPIGET {
     constructor(onSuccess, onFailure) {
