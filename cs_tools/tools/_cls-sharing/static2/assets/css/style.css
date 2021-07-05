@@ -350,7 +350,13 @@ section {
 
 .section-title p {
   margin-bottom: 0;
+  font-size: 20px;
   color: #aeaeae;
+}
+
+.section-title span {
+  font-weight: bold;
+  color: var(--ts-color-dark-grey);
 }
 
 /*--------------------------------------------------------------

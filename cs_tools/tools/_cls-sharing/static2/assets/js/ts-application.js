@@ -13,9 +13,11 @@ function showMessage(success, title, message) {
 }
 
 
-class Application {
+class SecuritySettingsApp {
 
     constructor() {
+        this._host = null;
+
         this._tsTableSecurity = null;
         // this._userGroupSelector = new TSSelectUserGroups("selUserGroups");
         // this._tableSelector = new TSSelectTable("tableName");
@@ -24,11 +26,11 @@ class Application {
     init() {
         console.log('Initialising application....')
         var self = this;
-        $("#getPermissions").click(this._getPermissions.bind(this));
+        $("#btn-get-permissions").click(this._getPermissions.bind(this));
     }
 
     _getPermissions(event) {
-        $('#progressLoader').loadingOverlay({
+        $('#progress-loader').loadingOverlay({
             loadingText: 'Loading security...'
         });
 
@@ -43,10 +45,9 @@ class Application {
 }
 
 
-// ON_READY
+// when the page is done loading
 $(document).ready(
     function() {
-        console.log('DOM ready...');
-        const app = new Application().init()
+        const app = new SecuritySettingsApp().init()
     }
 );

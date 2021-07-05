@@ -8,6 +8,8 @@ import uvicorn
 import typer
 
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
+from cs_tools.settings import TSConfig
+from cs_tools.api import ThoughtSpot
 
 
 app = typer.Typer(
@@ -48,6 +50,7 @@ app = typer.Typer(
 #
 
 HERE = pathlib.Path(__file__).parent
+
 web_app = FastAPI()
 web_app.mount('/static', StaticFiles(directory=f'{HERE}/static'), name='static')
 web_app.mount('/new', StaticFiles(directory=f'{HERE}/static2'), name='static2')
@@ -61,6 +64,28 @@ async def read_index():
 @web_app.get('/new')
 async def read_index_new():
     return RedirectResponse(url='/new/index.html')
+
+
+# .../
+
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+import os
+
+templates = Jinja2Templates(directory=f'{HERE}/static2')
+
+
+@web_app.get('/tmpl', response_class=HTMLResponse)
+async def read_index_template(request: Request):
+    data = {
+        'request': request,
+        'host': os.environ['TS_HOST'],
+        'user': os.environ['TS_USER']
+    }
+    return templates.TemplateResponse('index.html', data)
+
+# .../
 
 #
 
@@ -78,15 +103,27 @@ async def read_index_new():
 #
 
 @app.command(cls=RichCommand)
+@frontend
 def run(
-    # **frontend_kw
+    **frontend_kw
 ):
     """
     """
-    uvicorn.run(
-        'cs_tools.tools._cls-sharing.app:web_app',
-        host='127.0.0.1',
-        port=5000,
-        reload=True,
-        log_level='info'
-    )
+    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+
+    # Set some environment variables so we can reference them in the web app.
+    os.environ['TS_HOST'] = cfg.thoughtspot.host
+    os.environ['TS_USER'] = cfg.auth['frontend'].username
+
+    #
+    # TODO .. fix linkrefs in index.html ... doesn't work with the templates rn
+    #
+
+    with ThoughtSpot(cfg):
+        console.print('starting webserver...')
+        uvicorn.run(
+            'cs_tools.tools._cls-sharing.app:web_app',
+            host='127.0.0.1',
+            port=5000,
+            log_level='info'
+        )

@@ -1,3 +1,8 @@
+// main.js
+//
+//   Strictly handles manipulation of the page elements used for navigation
+//
+
 (function() {
   "use strict";
 
