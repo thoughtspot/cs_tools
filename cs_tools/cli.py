@@ -1,4 +1,5 @@
 import pathlib
+import logging
 import shutil
 
 from typer import Argument as A_, Option as O_
@@ -11,6 +12,9 @@ from cs_tools.helpers.cli_ux import console, RichGroup, RichCommand
 from cs_tools.helpers.loader import _gather_tools
 from cs_tools.util.algo import deep_update
 from cs_tools.settings import TSConfig
+
+
+log = logging.getLogger(__name__)
 
 
 app = typer.Typer(
@@ -239,7 +243,11 @@ def run():
     try:
         app(prog_name='cs_tools')
     except Exception as e:
+        log.debug('whoopsie, something went wrong!', exc_info=True)
+
         if hasattr(e, 'warning'):
             e = e.warning
+        else:
+            e = f'{type(e).__name__}: {e}'
 
         console.print(f'[error]{e}')
