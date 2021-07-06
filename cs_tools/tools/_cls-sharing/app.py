@@ -1,13 +1,5 @@
-import threading
-import pathlib
-import time
 import os
 
-from starlette.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
-from fastapi import FastAPI, Request
 from typer import Argument as A_, Option as O_  # noqa
 import uvicorn
 import typer
@@ -15,6 +7,8 @@ import typer
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.settings import TSConfig
 from cs_tools.api import ThoughtSpot
+
+from .web_app import web_app
 
 
 app = typer.Typer(
@@ -54,28 +48,6 @@ app = typer.Typer(
 
 #
 
-HERE = pathlib.Path(__file__).parent
-
-web_app = FastAPI()
-web_app.mount('/static', StaticFiles(directory=f'{HERE}/static'), name='static')
-web_app.mount('/new', StaticFiles(directory=f'{HERE}/static2'), name='static2')
-templates = Jinja2Templates(directory=f'{HERE}/static2')
-
-
-@web_app.get('/')
-async def read_index():
-    return RedirectResponse(url='/static/index.html')
-
-
-@web_app.get('/new', response_class=HTMLResponse)
-async def read_index_new(request: Request):
-    data = {
-        'request': request,
-        'host': os.environ['TS_HOST'],
-        'user': os.environ['TS_USER']
-    }
-    return templates.TemplateResponse('index.html', data)
-
 
 # NOTE:
 #
@@ -88,13 +60,15 @@ async def read_index_new(request: Request):
 # documentation page, how-to guides on how to do those things -- all of these could be
 # a v2 release if desired).
 #
-def _run_server():
-    uvicorn.run(
-        'cs_tools.tools._cls-sharing.app:web_app',
-        host='127.0.0.1',
-        port=5000,
-        log_level='info',
-    )
+
+@web_app.on_event('startup')
+async def _():
+    typer.launch('http://cs_tools.localho.st:5000/new')
+
+
+# @web_app.on_event('shutdown')
+# async def _():
+#     typer.launch('http://cs_tools.localho.st:5000/new')
 
 
 @app.command(cls=RichCommand)
@@ -105,25 +79,21 @@ def run(
     """
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    api = ThoughtSpot(cfg)
+    api.auth.login()
 
-    with ThoughtSpot(cfg) as api:
-        # Set some environment variables so we can reference them in the web app.
-        os.environ['TS_HOST'] = cfg.thoughtspot.host
-        os.environ['TS_USER'] = api.logged_in_user.display_name
+    # Set some environment variables so we can reference them in the web app.
+    os.environ['TS_HOST'] = cfg.thoughtspot.host
+    os.environ['TS_USER'] = api.logged_in_user.display_name
 
-        console.print('starting webserver...')
+    console.print('starting webserver...')
+    uvicorn.run(
+        'cs_tools.tools._cls-sharing.app:web_app',
+        host='127.0.0.1',
+        port=5000,
+        log_level='info',
+    )
 
-        t = threading.Thread(target=_run_server, daemon=True)
-        t.start()
-        time.sleep(0.5)
-
-        # had to set..
-        # 1. tscli --adv config get --key /config/nginx/corshosts
-        # 2. add "cs_tools.localho.st.*"
-        typer.launch('http://cs_tools.localho.st:5000/')
-
-        try:
-            while True:
-                time.sleep(0.1)
-        except KeyboardInterrupt:
-            pass
+    # had to set..
+    # 1. tscli --adv config get --key /config/nginx/corshosts
+    # 2. add "cs_tools.localho.st.*"
