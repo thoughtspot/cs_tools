@@ -46,6 +46,11 @@ class ShareParameters(APIParameters):
         return str({'permissions': new_v})
 
 
+class DefinedPermissionParameters(APIParameters):
+    type: str
+    id: List[str]
+
+
 class _Security(TSPrivate):
     """
     Security services.
@@ -63,5 +68,13 @@ class _Security(TSPrivate):
         List of metadata objects in the repository.
         """
         p = ShareParameters(**parameters)
+        r = self.post(f'{self.base_url}/share', data=p.json())
+        return r
+
+    def defined_permission(self, **parameters) -> httpx.Response:
+        """
+        Get defined permissions information for a given list of objects
+        """
+        p = DefinedPermissionParameters(**parameters)
         r = self.post(f'{self.base_url}/share', data=p.json())
         return r
