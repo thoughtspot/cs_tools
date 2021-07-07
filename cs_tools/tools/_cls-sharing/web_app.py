@@ -20,11 +20,6 @@ web_app.mount('/new', StaticFiles(directory=f'{HERE}/static2'), name='static2')
 templates = Jinja2Templates(directory=f'{HERE}/static2')
 
 
-class PermissionSignature(BaseModel):
-    type: str
-    id: List[str]
-
-
 @web_app.on_event('startup')
 async def _():
     typer.launch('http://cs_tools.localho.st:5000/new')
@@ -33,16 +28,22 @@ async def _():
 
 
 @web_app.post('/api/defined_permission')
-async def _(request: Request):
+# async def _(request: Request):  # could also do it like this ... how lazy to be?
+async def _(type: str=Body(...), guids: List[str]=Body(...)):
     """
     TSGetTablePermissionsRequest
     """
-    r = await request.body()
-    print(r)
-    r = await request.json()
-    print(r)
-    # r = _scoped['api'].security.defined_permission(type=type, id=guids)
-    # return r.json()
+    r = _scoped['api']._security.defined_permission(type=type, id=guids)
+    return r.json()
+
+
+@web_app.get('/api/list_columns/{guid}')
+async def _(guid: str):
+    """
+    TSGetColumnsRequest
+    """
+    r = _scoped['api']._metadata.list_columns(guid=guid)
+    return r.json()
 
 
 @web_app.get('/api/user_groups')
