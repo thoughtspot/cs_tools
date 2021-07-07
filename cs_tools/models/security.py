@@ -3,6 +3,7 @@ import pydantic
 import httpx
 from typing import List
 
+from cs_tools.util.swagger import to_array
 from cs_tools.settings import APIParameters
 from cs_tools.models import TSPrivate
 
@@ -48,7 +49,11 @@ class ShareParameters(APIParameters):
 
 class DefinedPermissionParameters(APIParameters):
     type: str
-    id: List[str]
+    id: str
+
+    @pydantic.validator('id', pre=True)
+    def stringify_the_array(cls, v):
+        return to_array(v)
 
 
 class _Security(TSPrivate):
@@ -76,5 +81,5 @@ class _Security(TSPrivate):
         Get defined permissions information for a given list of objects
         """
         p = DefinedPermissionParameters(**parameters)
-        r = self.post(f'{self.base_url}/share', data=p.json())
+        r = self.post(f'{self.base_url}/definedpermission', data=p.json())
         return r
