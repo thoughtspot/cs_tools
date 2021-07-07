@@ -112,6 +112,11 @@ class DetailParameters(APIParameters):
     doUpdate: bool = True
 
 
+class ListColumnParameters(APIParameters):
+    id: str
+    showhidden: bool = False
+
+
 #
 
 class Metadata(TSPublic):
@@ -185,4 +190,12 @@ class _Metadata(TSPrivate):
         """
         p = DetailParameters(id=guid, **parameters)
         r = self.get(f'{self.base_url}/detail/{guid}', params=p.json())
+        return r
+
+    def list_columns(self, guid, **parameters) -> httpx.Response:
+        """
+        TODO
+        """
+        p = ListColumnParameters(id=guid, **parameters)
+        r = self.get(f'{self.base_url}/listcolumns/{guid}', params=p.json())
         return r
