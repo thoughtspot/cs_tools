@@ -2,8 +2,10 @@ from typing import Union, List
 import logging
 import enum
 
+import pydantic
 import httpx
 
+from cs_tools.util.swagger import to_array
 from cs_tools.settings import APIParameters
 from cs_tools.models import TSPrivate, TSPublic
 
@@ -70,7 +72,7 @@ class ListVizHeadersParameters(APIParameters):
 
 class ListObjectHeadersParameters(APIParameters):
     type: Union[MetadataObject, None] = MetadataObject.PINBOARD_ANSWER_BOOK
-    subtypes: LogicalTableSubtype = None
+    subtypes: List[LogicalTableSubtype] = None
     category: MetadataCategory = MetadataCategory.ALL
     sort: SortOrder = SortOrder.DEFAULT
     sortascending: bool = None
@@ -82,6 +84,10 @@ class ListObjectHeadersParameters(APIParameters):
     skipids: str = None
     fetchids: str = None
     auto_created: bool = None
+
+    @pydantic.validator('subtypes')
+    def stringify_the_array(cls, v):
+        return to_array([_.value for _ in v])
 
 
 class ListParameters(ListObjectHeadersParameters):
