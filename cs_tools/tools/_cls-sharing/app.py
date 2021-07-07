@@ -1,5 +1,3 @@
-import os
-
 from typer import Argument as A_, Option as O_  # noqa
 import uvicorn
 import typer
@@ -7,8 +5,6 @@ import typer
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.settings import TSConfig
 from cs_tools.api import ThoughtSpot
-
-from .web_app import web_app
 
 
 app = typer.Typer(
@@ -61,16 +57,6 @@ app = typer.Typer(
 # a v2 release if desired).
 #
 
-@web_app.on_event('startup')
-async def _():
-    typer.launch('http://cs_tools.localho.st:5000/new')
-
-
-# @web_app.on_event('shutdown')
-# async def _():
-#     typer.launch('http://cs_tools.localho.st:5000/new')
-
-
 @app.command(cls=RichCommand)
 @frontend
 def run(
@@ -78,21 +64,20 @@ def run(
 ):
     """
     """
+    from .web_app import _scoped
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-    api = ThoughtSpot(cfg)
-    api.auth.login()
-
-    # Set some environment variables so we can reference them in the web app.
-    os.environ['TS_HOST'] = cfg.thoughtspot.host
-    os.environ['TS_USER'] = api.logged_in_user.display_name
 
     console.print('starting webserver...')
-    uvicorn.run(
-        'cs_tools.tools._cls-sharing.app:web_app',
-        host='127.0.0.1',
-        port=5000,
-        log_level='info',
-    )
+
+    with ThoughtSpot(cfg) as api:
+        _scoped['api'] = api
+
+        uvicorn.run(
+            'cs_tools.tools._cls-sharing.web_app:web_app',
+            host='127.0.0.1',
+            port=5000,
+            log_level='debug',
+        )
 
     # had to set..
     # 1. tscli --adv config get --key /config/nginx/corshosts

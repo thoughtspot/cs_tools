@@ -79,30 +79,34 @@
 
         <div class="row">
 
-          <div id="progress-loader">
-            <div id="security-menu">
-              <div class="security-menu-option">
-                <label class="option-title" for="select-user-groups">Select Groups to include</label>
-                <select id="select-user-groups" name="example" multiple="multiple"></select>
+          <div id="security-container">
+            <div id="progress-loader">
+              <div id="security-menu">
+                <div class="security-menu-option">
+                  <label class="option-title" for="select-user-groups">Select Groups to include</label>
+                  <select id="select-user-groups" name="example" multiple="multiple"></select>
+                </div>
+
+                <div class="security-menu-option">
+                  <label class="option-title" for="select-tablename">Select a table</label>
+                  <select id="select-tablename" name="table name"></select>
+                </div>
+
+                <div class="security-menu-option">
+                  <button type="button" class="btn btn-outline-dark" id="btn-get-permissions">
+                    <i class="bi bi-arrow-repeat"></i>
+                    Get Permissions
+                  </button>
+                </div>
               </div>
 
-              <div class="security-menu-option">
-                <label class="option-title" for="select-tablename">Select a table</label>
-                <select id="select-tablename" name="table name"></select>
+              <div id="security-matrix">
               </div>
 
-              <div class="security-menu-option">
-                <button type="button" class="btn btn-outline-dark" id="btn-get-permissions">
-                  <i class="bi bi-arrow-repeat"></i>
-                  Get Permissions
-                </button>
-              </div>
-            </div>
-
-            <div id="security-matrix">
             </div>
 
           </div>
+
         </div>
       </div>
     </section>
@@ -138,9 +142,10 @@
 
   <!-- Template Main JS File -->
   <script src="{{ url_for('static2', path='assets/js/main.js') }}"></script>
-  <script src="{{ url_for('static2', path='assets/js/application.js') }}"></script>
-  <script src="{{ url_for('static2', path='assets/js/interface_elems.js') }}"></script>
-  <script src="{{ url_for('static2', path='assets/js/thoughtspot.js') }}"></script>
+  <script src="{{ url_for('static2', path='assets/js/app.js') }}"></script>
+  <!-- <script src="{{ url_for('static2', path='assets/js/application.js') }}"></script> -->
+  <!-- <script src="{{ url_for('static2', path='assets/js/interface_elems.js') }}"></script> -->
+  <!-- <script src="{{ url_for('static2', path='assets/js/thoughtspot.js') }}"></script> -->
 
 </body>
 </html>
