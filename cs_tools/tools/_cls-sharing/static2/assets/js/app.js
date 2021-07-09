@@ -155,50 +155,55 @@ class TableSecurityInfo {
         $.each(this.currentlySelectedUserGroups, function(userGroupGuid, userGroupName) {
             colNo++
 
-            new TSAccessSelector(
+            var checkAllColumnsHTMLId = $('#check-all-col' + userGroupGuid).data('colNo')
+
+            var clickColumn = function() {
+                $(this).children('.' + $(event.target).data('button-value')).trigger('click');
+            }
+
+            var onButtonClicked = function(event) {
+                $('.cls-selectors.col-' + checkAllColumnsHTMLId).each(clickColumn)
+            }
+
+            new SelectorTSSecurityAccess(
                 self.divId + ' .selector-all-headers',
-                'checkAll_' + userGroupGuid,
+                '#check-all-col' + userGroupGuid,
                 rowNo,
                 colNo,
                 [],
-                function(event) {
-                    jQuery('.clsSelectors.COL_' + $('#checkAll_' + userGroupGuid).data("colNo")).each(
-                        function() {
-                            $(this).children('.' + $(event.target).data('buttonValue')).trigger('click');
-                        });
-                    },
-                null);
+                onButtonClicked,
+                null
+            ).generateHTML();
         });
 
         //------------------------------
         // Add the cls entries
         //------------------------------
-        $.each(this._columnAccess, function(colGUID, clsData) {
-            rowNo++;
-            colNo = 0;
-            $(self.divId).append('<div class="matrixRow permissionRows ROW_' + rowNo + '"><div class="matrix-cell">' + clsData.columnName + '</div></div>');
-            $.each(clsData.permissions, function(ugGUID, userGroupName) {
-                colNo++;
-                new TSAccessSelector(self.divId + ' .permissionRows.ROW_' + rowNo, colGUID + '_' + ugGUID, rowNo, colNo, ['clsSelectors'], function(event) {
-                    event.preventDefault();
-                    self.setAccess(colGUID, ugGUID, $(event.target).data('buttonValue'));
-                }, self.getAccess(colGUID, ugGUID));
-            });
-        });
+        // $.each(this._columnAccess, function(colGUID, clsData) {
+        //     rowNo++;
+        //     colNo = 0;
+        //     $(self.divId).append('<div class="matrixRow permissionRows ROW_' + rowNo + '"><div class="matrix-cell">' + clsData.columnName + '</div></div>');
+        //     $.each(clsData.permissions, function(ugGUID, userGroupName) {
+        //         colNo++;
+        //         new TSAccessSelector(self.divId + ' .permissionRows.ROW_' + rowNo, colGUID + '_' + ugGUID, rowNo, colNo, ['clsSelectors'], function(event) {
+        //             event.preventDefault();
+        //             self.setAccess(colGUID, ugGUID, $(event.target).data('buttonValue'));
+        //         }, self.getAccess(colGUID, ugGUID));
+        //     });
+        // });
 
-        $('#progress-loader').loadingOverlay('remove');
+        // $('#progress-loader').loadingOverlay('remove');
 
         //------------------------------
         // Add the update button
         //------------------------------
-        $(self.divId).append('<div id="updateSecurity">Update Security</div>');
-        $('#updateSecurity').click(function() {
+        $(self.divId).append('<div id="update-security">Update Security</div>');
+        $('#update-security').click(function() {
             $('#progress-loader').loadingOverlay({
                 loadingText: 'Applying security...'
             });
-            // self._generateHTMLInterface();
-            // TODO
-            // self._updateTSSecurity();
+
+            // self.updateTSSecurity();
         });
     }
 }
@@ -316,62 +321,45 @@ class SelectorTSSecurityAccess {
     constructor(elementAttrs, divId, rowNo, colNo, extraClasses, onButtonClick, setValue) {
         this.elementAttrs = elementAttrs;
         this.divId = divId;
-        this._rowNo = rowNo;
-        this._colNo = colNo;
-        this._extraClasses = extraClasses;
-        this._onButtonClick = onButtonClick;
-        this._setValue = setValue;
-        this._generateHTML();
-    }
-}
-
-class TSAccessSelector {
-
-    constructor(elemSelector, selectorID, rowNo, colNo, extraClasses, onButtonClick, setValue) {
-        this._elemSelector = elemSelector;
-        this._selectorID = selectorID;
-        this._rowNo = rowNo;
-        this._colNo = colNo;
-        this._extraClasses = extraClasses;
-        this._onButtonClick = onButtonClick;
-        this._setValue = setValue;
-        this._generateHTML();
+        this.rowNo = rowNo;
+        this.colNo = colNo;
+        this.extraClasses = extraClasses;
+        this.onButtonClick = onButtonClick;
+        this.setValue = setValue;
     }
 
-    _addMainDiv() {
+    generateHTML() {
+        this.addMainDiv();
+        this.addButton('NO_ACCESS');
+        this.addButton('READ_ONLY');
+        this.addButton('MODIFY');
+    }
+
+    addMainDiv() {
         var self = this;
-        $(this._elemSelector).append('<div class="matrixCell"><div id="' + this._selectorID + '" class="accessSelectorGroup ROW_' + this._rowNo + ' COL_' + this._colNo + ' ' + this._extraClasses.join(' ') + '"></div></div>');
-        $('#' + this._selectorID).data({
-            "colNo": this._colNo,
-            "rowNo": this._rowNo
-        });
-        $('#' + this._selectorID).click(function(event) {
+        var justTheId = this.divId.substring(1);
+
+        $(this.elementAttrs).append('<div class="matrix-cell"><div id="' + justTheId + '" class="accessSelectorGroup ROW_' + this.rowNo + ' COL_' + this.colNo + ' ' + this.extraClasses.join(' ') + '"></div></div>');
+        $(this.divId).data({'colNo': this.colNo, 'rowNo': this.rowNo});
+        $(this.divId).click(function(event) {
             event.preventDefault();
-            self._accessSelectorClick(event);
+            self.accessSelectorClick(event);
         });
     }
 
-    _addButton(buttonClass) {
-        $('#' + this._selectorID).append('<button class="accessSelector ' + buttonClass + ((this._setValue == buttonClass) ? ' Active' : ' ') + '"></button>');
-        $('#' + this._selectorID + ' .' + buttonClass).data({
-            "buttonValue": buttonClass
-        });
+    addButton(buttonClass) {
+        $(this.divId).append('<button class="accessSelector ' + buttonClass + ((this.setValue == buttonClass) ? ' Active' : ' ') + '"></button>');
+        $(this.divId + ' .' + buttonClass).data({'buttonValue': buttonClass});
     }
 
-    _accessSelectorClick(event) {
+    accessSelectorClick(event) {
         event.preventDefault();
-        $(event.target).siblings().removeClass("Active");
-        $(event.target).addClass("Active");
-        this._onButtonClick(event);
-    }
-
-    _generateHTML() {
-        this._addMainDiv();
-        this._addButton('NO_ACCESS');
-        this._addButton('READ_ONLY');
-        this._addButton('MODIFY');
+        $(event.target).siblings().removeClass('Active');
+        $(event.target).addClass('Active');
+        this.onButtonClick(event);
     }
 }
+
 
 // MAIN APPLICATION
 
@@ -387,11 +375,10 @@ class Application {
         // setup the basic UI elements
         this.selectorUserGroups.generateHTML();
         this.selectorTables.generateHTML();
-        $("#btn-get-permissions").click(this._getPermissions.bind(this));
+        $("#btn-get-permissions").click(this.getPermissions.bind(this));
     }
 
-    _getPermissions() {
-        // TODO
+    getPermissions() {
         $('#progress-loader').loadingOverlay({
             loadingText: 'Loading security...'
         });

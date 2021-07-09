@@ -440,34 +440,34 @@ label {
   margin-top: 100px;
 }
 
-#security-matrix .matrixRow.userGroupHeaders {
+#security-matrix .matrix-row.user-group-header {
   margin: 0px 0px 10px 0px;
 }
 
-#security-matrix .matrixRow.userGroupHeaders .matrixCell {
+#security-matrix .matrix-row.user-group-header .matrix-cell {
   writing-mode: tb-rl;
   transform: rotate(-180deg);
 }
 
-#security-matrix .matrixRow .matrixCell {
+#security-matrix .matrix-row .matrix-cell {
   display: table-cell;
   width: 90px;
   height: 28px;
 }
 
-#security-matrix .matrixRow .matrixCell:first-child {
+#security-matrix .matrix-row .matrix-cell:first-child {
   width: 200px;
   text-align: right;
   padding: 6px 10px 0px 0px;
 }
 
-#security-matrix .matrixRow::after {
+#security-matrix .matrix-row::after {
   content: "";
   display: block;
   clear: both;
 }
 
-#updateSecurity {
+#update-security {
   background-repeat: no-repeat;
   background-size: 25px 25px;
   background-position: left 10px top 10px;
@@ -480,18 +480,18 @@ label {
   cursor: pointer;
 }
 
-#updateSecurity {
-  background-image: url(../images/apply_security.png);
+#update-security {
+  background-image: url(../img/apply_security.png);
   margin: 20px 0px 0px 205px;
 }
 
-#updateSecurity:hover {
+#update-security:hover {
   background-color: #007fff;
   color: white;
 }
 
-#updateSecurity:hover {
-  background-image: url(../images/apply_security-HL.png);
+#update-security:hover {
+  background-image: url(../img/apply_security-HL.png);
 }
 
 
