@@ -79,30 +79,27 @@
 
         <div class="row">
 
-          <div id="security-container">
-            <div id="progress-loader">
-              <div id="security-menu">
-                <div class="security-menu-option">
-                  <label class="option-title" for="select-user-groups">Select Groups to include</label>
-                  <select id="select-user-groups" name="example" multiple="multiple"></select>
-                </div>
-
-                <div class="security-menu-option">
-                  <label class="option-title" for="select-tablename">Select a table</label>
-                  <select id="select-tablename" name="table name"></select>
-                </div>
-
-                <div class="security-menu-option">
-                  <button type="button" class="btn btn-outline-dark" id="btn-get-permissions">
-                    <i class="bi bi-arrow-repeat"></i>
-                    Get Permissions
-                  </button>
-                </div>
+          <div id="progress-loader">
+            <div id="security-menu">
+              <div class="security-menu-option">
+                <label class="option-title" for="select-user-groups">Select Groups</label>
+                <select id="select-user-groups" name="example" multiple="multiple"></select>
               </div>
 
-              <div id="security-matrix">
+              <div class="security-menu-option">
+                <label class="option-title" for="select-tablename">Select a table</label>
+                <select id="select-tablename" name="table name"></select>
               </div>
 
+              <div class="security-menu-option">
+                <button type="button" class="btn btn-outline-dark" id="btn-get-permissions">
+                  <i class="bi bi-arrow-repeat"></i>
+                  Get Permissions
+                </button>
+              </div>
+            </div>
+
+            <div id="security-matrix">
             </div>
 
           </div>

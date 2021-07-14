@@ -401,6 +401,39 @@ label {
   margin: 30px 0 0 0;
 }
 
+/* ... */
+
+ul.ui-menu {
+  max-height: 258px
+}
+
+.ui-multiselect {
+  height: 34px;
+  margin: 0px 0px 0px 0px;
+}
+
+.ui-widget-header .ui-icon {
+  margin-top: 0px;
+}
+
+.ui-multiselect-header li {
+  margin: 0px 8px 0px 8px !important;
+}
+
+.ui-multiselect-checkboxes label {
+  margin-top: 0px;
+}
+
+.ui-multiselect-menu {
+  width: 258px !important;
+}
+
+#select-user-groups_ms {
+  width: 258px !important;
+}
+
+/* ... */
+
 #security-menu .security-menu-option {
   display: block;
   float: left;
@@ -494,6 +527,85 @@ label {
   background-image: url(../img/apply_security-HL.png);
 }
 
+.accessSelectorGroup {
+    min-width: 90px;
+}
+
+.accessSelectorGroup button {
+    background-color: #f6f6f6;
+    border: 1px solid #c5c5c5;
+    color: black;
+    padding: 5px 12px;
+    cursor: pointer;
+    float: left;
+    height: 28px;
+    width: 28px;
+}
+
+.accessSelectorGroup button.NO_ACCESS {
+    background-image: url(../img/NO_ACCESS-NORM.png);
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: center;
+}
+
+.accessSelectorGroup button.READ_ONLY {
+    background-image: url(../img/READ_ONLY-NORM.png);
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: center;
+}
+
+.accessSelectorGroup button.MODIFY {
+    background-image: url(../img/MODIFY-NORM.png);
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: center;
+}
+
+.accessSelectorGroup button.NO_ACCESS.Active,
+.accessSelectorGroup button.NO_ACCESS:hover {
+    background-image: url(../img/NO_ACCESS-HL.png);
+    background-color: red;
+}
+
+.accessSelectorGroup button.READ_ONLY.Active,
+.accessSelectorGroup button.READ_ONLY:hover {
+    background-image: url(../img/READ_ONLY-HL.png);
+    background-color: green;
+}
+
+.accessSelectorGroup button.MODIFY.Active,
+.accessSelectorGroup button.MODIFY:hover {
+    background-color: blue;
+    color: white;
+    background-image: url(../img/MODIFY-HL.png);
+}
+
+.accessSelectorGroup button:not(:last-child) {
+    border-right: none;
+}
+
+.accessSelectorGroup:after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.error-message .ui-dialog-titlebar {
+    border: 1px solid black;
+    background: red;
+}
+
+.success-message .ui-dialog-titlebar {
+    border: 1px solid black;
+    background: green;
+    color: white;
+}
+
+.ui-dialog-titlebar .ui-button-icon-only .ui-icon {
+    top: 0%;
+}
 
 
 /*--------------------------------------------------------------

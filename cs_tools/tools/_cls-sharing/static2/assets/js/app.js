@@ -348,7 +348,8 @@ class SelectorTSSecurityAccess {
     }
 
     addButton(buttonClass) {
-        $(this.divId).append('<button class="accessSelector ' + buttonClass + ((this.setValue == buttonClass) ? ' Active' : ' ') + '"></button>');
+        var isActive = ((this.setValue == buttonClass) ? ' Active' : ' ')
+        $(this.divId).append('<button class="accessSelector ' + buttonClass + isActive + '"></button>');        
         $(this.divId + ' .' + buttonClass).data({'buttonValue': buttonClass});
     }
 
