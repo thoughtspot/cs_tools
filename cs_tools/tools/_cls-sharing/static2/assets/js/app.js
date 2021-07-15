@@ -70,6 +70,8 @@ class TableSecurityInfo {
     }
 
     getCLS() {
+        var self = this;
+
         $.ajax({
             url: '/api/defined_permission',
             type: 'POST',
@@ -85,10 +87,9 @@ class TableSecurityInfo {
             async: false
         })
         .done(function(data, textStatus, xhr) {
-            var self = this;
             var clsData = {}
 
-            $.each(this._columnAccess, function(columnGuid, columnName) {
+            $.each(self._columnAccess, function(columnGuid, columnName) {
                 clsData[columnGuid] = {
                     'columnName': columnName,
                     'permissions': {}
@@ -122,7 +123,7 @@ class TableSecurityInfo {
                 });
             });
 
-            this._columnAccess = clsData;
+            self._columnAccess = clsData;
         })
         .fail(function(xhr, textStatus, errorThrown) {
             console.error(errorThrown)
@@ -143,31 +144,30 @@ class TableSecurityInfo {
         $(this.divId + ' .user-group-header').append('<div class="matrix-cell"></div>');
 
         $.each(this.currentlySelectedUserGroups, function(userGroupGuid, userGroupName) {
-            $(this.divId + ' .user-group-header').append('<div class="matrix-cell">' + userGroupName + '</div>');
+            $(self.divId + ' .user-group-header').append('<div class="matrix-cell">' + userGroupName + '</div>');
         });
 
         //------------------------------
         // Add the 'select all' headers
         //------------------------------
         $(this.divId).append('<div class="matrix-row selector-all-headers"></div>');
-        $(this.divId + ' .selector-all-headers').append('<div class="matrix-cell">Apply to all</div>');
+        $(this.divId + ' .selector-all-headers').append('<div class="matrix-cell"><b>Apply to all</b></div>');
 
         $.each(this.currentlySelectedUserGroups, function(userGroupGuid, userGroupName) {
             colNo++
 
-            var checkAllColumnsHTMLId = $('#check-all-col' + userGroupGuid).data('colNo')
-
-            var clickColumn = function() {
-                $(this).children('.' + $(event.target).data('button-value')).trigger('click');
-            }
-
             var onButtonClicked = function(event) {
-                $('.cls-selectors.col-' + checkAllColumnsHTMLId).each(clickColumn)
+                var checkAllColumnsHTMLId = $('#check-all-col-' + userGroupGuid).data('colNo');
+                var clickSameColumnButton = function() {
+                    $(this).children('.' + $(event.target).data('buttonValue')).trigger('click');
+                }
+
+                $('.cls-selectors.col-' + checkAllColumnsHTMLId).each(clickSameColumnButton);
             }
 
             new SelectorTSSecurityAccess(
                 self.divId + ' .selector-all-headers',
-                '#check-all-col' + userGroupGuid,
+                '#check-all-col-' + userGroupGuid,
                 rowNo,
                 colNo,
                 [],
@@ -179,20 +179,33 @@ class TableSecurityInfo {
         //------------------------------
         // Add the cls entries
         //------------------------------
-        // $.each(this._columnAccess, function(colGUID, clsData) {
-        //     rowNo++;
-        //     colNo = 0;
-        //     $(self.divId).append('<div class="matrixRow permissionRows ROW_' + rowNo + '"><div class="matrix-cell">' + clsData.columnName + '</div></div>');
-        //     $.each(clsData.permissions, function(ugGUID, userGroupName) {
-        //         colNo++;
-        //         new TSAccessSelector(self.divId + ' .permissionRows.ROW_' + rowNo, colGUID + '_' + ugGUID, rowNo, colNo, ['clsSelectors'], function(event) {
-        //             event.preventDefault();
-        //             self.setAccess(colGUID, ugGUID, $(event.target).data('buttonValue'));
-        //         }, self.getAccess(colGUID, ugGUID));
-        //     });
-        // });
+        $.each(this._columnAccess, function(columnGuid, clsData) {
+            rowNo++;
+            colNo = 0;
 
-        // $('#progress-loader').loadingOverlay('remove');
+            $(self.divId).append('<div class="matrix-row permission-rows row-' + rowNo + '"><div class="matrix-cell">' + clsData.columnName + '</div></div>');
+
+            $.each(clsData.permissions, function(userGroupGuid, _) {
+                colNo++;
+
+                var onButtonClicked = function(event) {
+                    event.preventDefault();
+                    self.setAccess(columnGuid, userGroupGuid, $(event.target).data('buttonValue'));    
+                }
+
+                new SelectorTSSecurityAccess(
+                    self.divId + ' .permission-rows.row-' + rowNo,
+                    '#' + columnGuid + '_' + userGroupGuid,
+                    rowNo,
+                    colNo,
+                    ['cls-selectors'],
+                    onButtonClicked,
+                    self.getAccess(columnGuid, userGroupGuid)
+                ).generateHTML();
+            });
+        });
+
+        $('#progress-loader').loadingOverlay('remove');
 
         //------------------------------
         // Add the update button
@@ -203,8 +216,193 @@ class TableSecurityInfo {
                 loadingText: 'Applying security...'
             });
 
-            // self.updateTSSecurity();
+            self.updateTSSecurity();
         });
+    }
+
+    updateTSSecurity() {
+        var self = this;
+        this.optimizeMatrix();
+
+        // Now update the TS Security
+        var clearPermissions = {}
+
+        // Build clearing permissions list
+        $.each(this.currentlySelectedUserGroups, function(userGroupGuid, userGroupName) {
+            clearPermissions[userGroupGuid] = {"shareMode": "NO_ACCESS"};
+        });
+
+        // NOTE: gotta find Bill's work and fix that too
+
+
+        // 1) clear all existing security
+        // a) clear all table level rules
+        $.ajax({
+            url: '/api/security/share',
+            type: 'POST',
+            dataType: 'JSON',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                type: "LOGICAL_TABLE",
+                guids: [this.guid],
+                permissions: clearPermissions,
+            }),
+            xhrFields: {
+                withCredentials: true
+            },
+            async: false
+        });
+
+        // b) clear all CLS rules
+        $.ajax({
+            url: '/api/security/share',
+            type: 'POST',
+            dataType: 'JSON',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                type: "LOGICAL_COLUMN",
+                guids: Object.keys(this._columnAccess),
+                permissions: clearPermissions,
+            }),
+            xhrFields: {
+                withCredentials: true
+            },
+            async: false
+        });
+
+        // 2) apply table level rules
+        var userGroupAccess = {};
+
+        $.each(this._tableAccess, function(userGroupGuid, permission) {
+            userGroupAccess[userGroupGuid] = {
+                "shareMode": permission
+            }
+        });
+
+        // if we have permissions to apply, do that first
+        if (!jQuery.isEmptyObject(userGroupAccess)) {
+            $.ajax({
+                url: '/api/security/share',
+                type: 'POST',
+                dataType: 'JSON',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    type: "LOGICAL_TABLE",
+                    guids: [this.guid],
+                    permissions: userGroupAccess,
+                }),
+                xhrFields: {
+                    withCredentials: true
+                },
+                async: false
+            });
+        }
+
+        // 3) Apply CLS rules
+        var uniqueSets = [];
+
+        $.each(self._columnAccess, function(columnGuid, columnData) {
+            if (($.inArray(columnData.columnMapping, uniqueSets) == -1) && (columnData.columnMapping != '')) {
+                uniqueSets.push(columnData.columnMapping);
+            }
+        });
+
+        $.each(uniqueSets, function(index, setName) {
+            var columnGuidsToApplyCLS = [];
+            var permissions = {};
+
+            $.each(self._columnAccess, function(columnGuid, columnData) {
+                if (columnData.cMap == setName) {
+                    columnGuidsToApplyCLS.push(columnGuid);
+
+                    $.each(columnData.permissions, function(userGroupGuid, userGroupData) {
+                        permissions[userGroupGuid] = {
+                            shareMode: userGroupData.access
+                        }
+                    })
+                }
+            });
+
+            $.ajax({
+                url: '/api/security/share',
+                type: 'POST',
+                dataType: 'JSON',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    type: "LOGICAL_COLUMN",
+                    id: columnGuidsToApplyCLS,
+                    permissions: permissions,
+                }),
+                xhrFields: {
+                    withCredentials: true
+                },
+                async: false
+            })
+        });
+
+        // Small tables are quite quick, so at least show the message for 2 seconds
+        setTimeout(
+            function() {
+                $('#progress-loader').loadingOverlay('remove');
+                // self._showMessage(true, 'Security has been updated!', 'All security has been successfully updated.');
+            },
+            2000
+        );
+    }
+
+    optimizeMatrix() {
+        var self = this;
+        var colNo = 1;
+
+        // Clear all table access rules
+        self._tableAccess = {};
+
+        // Set the new table access rules
+        $.each(this.currentlySelectedUserGroups, function(userGroupGuid, userGroupName) {
+            $.each(['NO_ACCESS', 'READ_ONLY', 'MODIFY'], function(index, accessType) {
+                if ($('.cls-selectors.col-' + colNo + ' .access-selector.' + accessType + '.Active').length == $('.cls-selectors.col-' + colNo).length) {
+                    self._tableAccess[userGroupGuid] = accessType;
+
+                    // Remove all cls rules for these columns
+                    $.each(self._columnAccess, function(columnGuid, columnData) {
+                        delete columnData.permissions[userGroupGuid];
+                    });
+
+                    return false;
+                }
+            });
+
+            if ($.inArray(userGroupGuid, Object.keys(self._tableAccess)) == -1) {
+                // remove table access rule
+                delete self._tableAccess[userGroupGuid];
+            }
+
+            colNo++;
+        });
+
+        // Create unique key to reduce API
+        $.each(self._columnAccess, function(columnGuid, columnData) {
+            var columnMapping = "";
+
+            $.each(columnData.permissions, function(userGroupGuid, accessData) {
+                columnMapping = columnMapping + '|' + accessData.access;
+            });
+
+            columnData['columnMapping'] = columnMapping;
+        });
+    }
+
+    getAccess(columnGuid, userGroupGuid) {
+        var access = this._columnAccess[columnGuid].permissions[userGroupGuid].access;
+        return (access == null) ? 'NO_ACCESS' : access;
+    }
+
+    setAccess(columnGuid, userGroupGuid, access) {
+        // NOTE: Error here ... probably in how we store the columnAccess data.
+        //
+        // console.log(columnGuid, userGroupGuid, access)
+        // console.log(this._columnAccess)
+        this._columnAccess[columnGuid].permissions[userGroupGuid].access = access;
     }
 }
 
@@ -339,21 +537,18 @@ class SelectorTSSecurityAccess {
         var self = this;
         var justTheId = this.divId.substring(1);
 
-        $(this.elementAttrs).append('<div class="matrix-cell"><div id="' + justTheId + '" class="accessSelectorGroup ROW_' + this.rowNo + ' COL_' + this.colNo + ' ' + this.extraClasses.join(' ') + '"></div></div>');
+        $(this.elementAttrs).append('<div class="matrix-cell"><div id="' + justTheId + '" class="access-selector-group row-' + this.rowNo + ' col-' + this.colNo + ' ' + this.extraClasses.join(' ') + '"></div></div>');
         $(this.divId).data({'colNo': this.colNo, 'rowNo': this.rowNo});
-        $(this.divId).click(function(event) {
-            event.preventDefault();
-            self.accessSelectorClick(event);
-        });
+        $(this.divId).click(function(event) { self.onlyOneSelected(event) });
     }
 
     addButton(buttonClass) {
-        var isActive = ((this.setValue == buttonClass) ? ' Active' : ' ')
-        $(this.divId).append('<button class="accessSelector ' + buttonClass + isActive + '"></button>');        
+        var isActive = ((this.setValue == buttonClass) ? ' Active' : '');
+        $(this.divId).append('<button class="access-selector ' + buttonClass + isActive + '"></button>');        
         $(this.divId + ' .' + buttonClass).data({'buttonValue': buttonClass});
     }
 
-    accessSelectorClick(event) {
+    onlyOneSelected(event) {
         event.preventDefault();
         $(event.target).siblings().removeClass('Active');
         $(event.target).addClass('Active');

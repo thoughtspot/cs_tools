@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Dict, Any
 import pathlib
+import json
 
-from pydantic import BaseModel
 from starlette.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -25,6 +25,19 @@ async def _():
     typer.launch('http://cs_tools.localho.st:5000/new')
 
 #
+
+
+@web_app.post('/api/security/share')
+async def _(type: str=Body(...), guids: List[str]=Body(...), permissions: Dict[str, Any]=Body(...)):
+    """
+    TSSetPermissionRequest
+    """
+    r = _scoped['api']._security.share(type=type, id=guids, permission={'permissions': permissions})
+
+    try:
+        return r.json()
+    except json.JSONDecodeError:
+        pass
 
 
 @web_app.post('/api/defined_permission')
