@@ -543,13 +543,11 @@ ul.ui-menu {
   transform: translate(50%, 90%);
 }
 
-
 #security-menu::after {
   content: "";
   display: block;
   clear: both;
 }
-
 
 #security-matrix {
   margin-top: 100px;
@@ -609,6 +607,91 @@ ul.ui-menu {
   background-image: url(../img/apply_security-HL.png);
 }
 
+/*--------------------------------------------------------------
+# Progress Popup
+--------------------------------------------------------------*/
+/*#progress-loader {
+    height: 400px;
+    width: 800px;
+}
+*/
+
+@keyframes loadingStart {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes loading {
+    0% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(180deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading {
+    position: relative;
+}
+
+.loading .loading-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    animation: loadingStart 3s 300ms linear 1 both;
+    background: rgba(255, 255, 255, 0.75);
+    text-align: center;
+    z-index: 1;
+}
+
+.loading .loading-text {
+    font-size: 0.875rem;
+    line-height: 1.3125rem;
+    text-shadow: white 0 0 1em, white 0 0 0.5em, white 0 0 0.25em;
+    position: relative;
+    display: block;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.loading .loading-text:after {
+    content: "...";
+}
+
+.loading .loading-spinner {
+    position: absolute;
+    top: 50%;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: -3.9375rem auto 0;
+    color: #007fff;
+    text-align: center;
+}
+
+.loading .loading-icon {
+    font-size: 4.8125rem;
+    line-height: 5.25rem;
+    text-shadow: rgba(255, 255, 255, 0.75) 0 0 0.5em;
+    animation: loading 1s steps(4) infinite;
+    display: block;
+    vertical-align: middle;
+}
+
+.loading .loading-icon:before {
+    vertical-align: middle;
+    content: "\e000";
+    /*font-family: "demo";*/
+}
 
 /*--------------------------------------------------------------
 # Footer
