@@ -1,12 +1,33 @@
 class TableSecurityInfo {
     //
-    constructor(guid, name, currentlySelectedUserGroups, divId) {
+    constructor(guid, name, currentlySelectedUserGroups, divId, showMessage) {
         this.divId = divId;
         this.guid = guid;
         this.name = name;
         this.currentlySelectedUserGroups = currentlySelectedUserGroups;
+        // looks like..
+        // {
+        //     <USER_GROUP_GUID>: <USER_GROUP_NAME>
+        // }
         this._tableAccess = {};
+        // looks like..
+        // {
+        //     <USER_GROUP_GUID>: <PERMISSION>
+        // }
         this._columnAccess = {};
+        // looks like..
+        // {
+        //     <COLUMN_GUID>: {
+        //         "columnName": <COLUMN_NAME>,
+        //         "permissions": {
+        //             <USER_GROUP_GUID>: {
+        //                 "userGroupName": <USER_GROUP_NAME>,
+        //                 "access": <SHARE_MODE>
+        //             }
+        //         }
+        //     }
+        // }
+        this._showMessage = showMessage;
     }
 
     refresh() {
@@ -61,7 +82,10 @@ class TableSecurityInfo {
         })
         .done(function(data, textStatus, xhr) {
             $.each(data.headers, function(index, columnData) {
-                self._columnAccess[columnData.id] = columnData.name;
+                self._columnAccess[columnData.id] = {
+                    'columnName': columnData.name,
+                    'permissions': {}  // set in getCLS()
+                }
             });
         })
         .fail(function(xhr, textStatus, errorThrown) {
@@ -89,9 +113,9 @@ class TableSecurityInfo {
         .done(function(data, textStatus, xhr) {
             var clsData = {}
 
-            $.each(self._columnAccess, function(columnGuid, columnName) {
+            $.each(self._columnAccess, function(columnGuid, columnData) {
                 clsData[columnGuid] = {
-                    'columnName': columnName,
+                    'columnName': columnData.columnName,
                     'permissions': {}
                 }
 
@@ -217,6 +241,7 @@ class TableSecurityInfo {
             });
 
             self.updateTSSecurity();
+            self.refresh();
         });
     }
 
@@ -224,7 +249,7 @@ class TableSecurityInfo {
         var self = this;
         this.optimizeMatrix();
 
-        // Now update the TS Security
+        // Update security below
         var clearPermissions = {}
 
         // Build clearing permissions list
@@ -275,7 +300,7 @@ class TableSecurityInfo {
 
         $.each(this._tableAccess, function(userGroupGuid, permission) {
             userGroupAccess[userGroupGuid] = {
-                "shareMode": permission
+                shareMode: permission
             }
         });
 
@@ -312,7 +337,7 @@ class TableSecurityInfo {
             var permissions = {};
 
             $.each(self._columnAccess, function(columnGuid, columnData) {
-                if (columnData.cMap == setName) {
+                if (columnData.columnMapping == setName) {
                     columnGuidsToApplyCLS.push(columnGuid);
 
                     $.each(columnData.permissions, function(userGroupGuid, userGroupData) {
@@ -330,7 +355,7 @@ class TableSecurityInfo {
                 contentType: 'application/json',
                 data: JSON.stringify({
                     type: "LOGICAL_COLUMN",
-                    id: columnGuidsToApplyCLS,
+                    guids: columnGuidsToApplyCLS,
                     permissions: permissions,
                 }),
                 xhrFields: {
@@ -341,13 +366,10 @@ class TableSecurityInfo {
         });
 
         // Small tables are quite quick, so at least show the message for 2 seconds
-        setTimeout(
-            function() {
-                $('#progress-loader').loadingOverlay('remove');
-                // self._showMessage(true, 'Security has been updated!', 'All security has been successfully updated.');
-            },
-            2000
-        );
+        setTimeout(function() {
+            $('#progress-loader').loadingOverlay('remove');
+            self._showMessage(true, 'Security has been updated!', 'All security has been successfully updated.');
+        }, 2000);
     }
 
     optimizeMatrix() {
@@ -380,7 +402,7 @@ class TableSecurityInfo {
             colNo++;
         });
 
-        // Create unique key to reduce API
+        // Create unique key to reduce API usage
         $.each(self._columnAccess, function(columnGuid, columnData) {
             var columnMapping = "";
 
@@ -398,10 +420,6 @@ class TableSecurityInfo {
     }
 
     setAccess(columnGuid, userGroupGuid, access) {
-        // NOTE: Error here ... probably in how we store the columnAccess data.
-        //
-        // console.log(columnGuid, userGroupGuid, access)
-        // console.log(this._columnAccess)
         this._columnAccess[columnGuid].permissions[userGroupGuid].access = access;
     }
 }
@@ -411,7 +429,7 @@ class TableSecurityInfo {
 $.widget("ts.messageDialog", $.ui.dialog, {
     //
     options: {
-        position: { my: "center", at: "center", of: "#security-container" },
+        position: { my: "center", at: "center", of: "#content" },
         modal: true,
         buttons: {
             OK: function() {
@@ -584,9 +602,20 @@ class Application {
             $("#select-tablename option:selected").text(),
             this.selectorUserGroups.getSelectedUserGroups(),
             '#security-matrix',
+            this._showMessage
         );
 
         this.tableSecurityInfo.refresh();
+    }
+
+    _showMessage(success, title, message) {
+        var successMessage = '<div id="success-message" title="' + title + '"><p><span class="ui-icon ui-icon-circle-check" style="float:left; margin:0 7px 50px 0;"></span>' + message + '</p></div>';
+        var errorMessage = '<div id="error-message" title="' + title + '"><p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 50px 0;"></span>' + message + '</p></div>';
+        if (success) {
+            $(successMessage).messageDialog({ dialogClass: 'success-message' });
+        } else {
+            $(errorMessage).messageDialog({ dialogClass: 'error-message' });
+        }
     }
 }
 
