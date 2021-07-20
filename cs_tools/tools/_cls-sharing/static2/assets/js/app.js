@@ -1,6 +1,6 @@
 class TableSecurityInfo {
     //
-    constructor(guid, name, currentlySelectedUserGroups, divId, showMessage) {
+    constructor(divId, guid, name, currentlySelectedUserGroups, showMessage) {
         this.divId = divId;
         this.guid = guid;
         this.name = name;
@@ -37,7 +37,8 @@ class TableSecurityInfo {
         this.getCLS();
 
         if (this.divId != "") {
-            this.generateHTML();
+            // this.generateHTML();
+            this.generateNewHTML();
         }
     }
 
@@ -154,6 +155,54 @@ class TableSecurityInfo {
         });
     }
 
+    generateNewHTML() {
+        var self = this;
+        var rowNo = 0;
+        var matrixDiv = $(this.divId)
+
+        // Clear our security matrix
+        matrixDiv.empty();
+
+        // Add the "Update Security" & "Row Headers" column first
+        matrixDiv.append(
+            '<div class="row-header">' +
+            '  <div id="update-security">Update Security</div>' +
+            '  <div id="select-all-columns">Select All Columns</div>' +
+            '</div>'
+        );
+
+        $.each(
+            this._columnAccess,
+            function(columnGuid, clsData) {
+                $('.row-header').append('<div>' + clsData.columnName + '</div>')
+            }
+        );
+
+        // Add UserGroup Columns, one by one
+        $.each(
+            this.currentlySelectedUserGroups,
+            function(userGroupGuid, userGroupName) {
+                new SelectorSecurityAccess(
+                    self.divId,
+                    userGroupGuid,
+                    userGroupName,
+                    self._columnAccess
+                ).generateHTML();
+            }
+        );
+
+        $('#progress-loader').loadingOverlay('remove');
+
+        $('#update-security').click(function() {
+            $('#progress-loader').loadingOverlay({
+                loadingText: 'Applying security...'
+            });
+
+            self.updateTSSecurity();
+            self.refresh();
+        });
+    }
+
     generateHTML() {
         var self = this;
         var rowNo = 0;
@@ -247,14 +296,15 @@ class TableSecurityInfo {
 
     updateTSSecurity() {
         var self = this;
-        this.optimizeMatrix();
+        this.newOptimizeMatrix();
+        // this.optimizeMatrix();
 
         // Update security below
         var clearPermissions = {}
 
         // Build clearing permissions list
         $.each(this.currentlySelectedUserGroups, function(userGroupGuid, userGroupName) {
-            clearPermissions[userGroupGuid] = {"shareMode": "NO_ACCESS"};
+            clearPermissions[userGroupGuid] = {'shareMode': 'NO_ACCESS'};
         });
 
         // NOTE: gotta find Bill's work and fix that too
@@ -268,7 +318,7 @@ class TableSecurityInfo {
             dataType: 'JSON',
             contentType: 'application/json',
             data: JSON.stringify({
-                type: "LOGICAL_TABLE",
+                type: 'LOGICAL_TABLE',
                 guids: [this.guid],
                 permissions: clearPermissions,
             }),
@@ -285,7 +335,7 @@ class TableSecurityInfo {
             dataType: 'JSON',
             contentType: 'application/json',
             data: JSON.stringify({
-                type: "LOGICAL_COLUMN",
+                type: 'LOGICAL_COLUMN',
                 guids: Object.keys(this._columnAccess),
                 permissions: clearPermissions,
             }),
@@ -312,7 +362,7 @@ class TableSecurityInfo {
                 dataType: 'JSON',
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    type: "LOGICAL_TABLE",
+                    type: 'LOGICAL_TABLE',
                     guids: [this.guid],
                     permissions: userGroupAccess,
                 }),
@@ -354,7 +404,7 @@ class TableSecurityInfo {
                 dataType: 'JSON',
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    type: "LOGICAL_COLUMN",
+                    type: 'LOGICAL_COLUMN',
                     guids: columnGuidsToApplyCLS,
                     permissions: permissions,
                 }),
@@ -372,12 +422,71 @@ class TableSecurityInfo {
         }, 2000);
     }
 
+    newOptimizeMatrix() {
+        var self = this;
+        var n_columns = Object.keys(this._columnAccess).length
+
+        this._tableAccess = {};
+
+        // loop through each column and access-level button sub-columns
+        $(this.divId + ' .column').each(function () {
+            var thisColumn = $(this);
+            var userGroupGuid = $(this).attr('id');
+
+            $.each(['NO_ACCESS', 'READ_ONLY', 'MODIFY'], function(_, accessLevel) {
+                var n_active_columns = thisColumn.children('.column-data').children().filter('.' + accessLevel + '.active').length;
+
+                // if we find that the length of a single access-level actives equals
+                // the total number of columns, then the whole table should be shared
+                if ( n_active_columns == n_columns ) {
+                    self._tableAccess[userGroupGuid] = accessLevel;
+
+                    // for good measure, remove the cls rules for these columns as well
+                    $.each(self._columnAccess, function(columnGuid, columnData) {
+                        delete columnData.permissions[userGroupGuid];
+                    });
+
+                    // terminate accessLevel inner loop early
+                    return false;
+                }
+            })
+        });
+
+        // Create unique key to reduce API usage
+        $.each(self._columnAccess, function(columnGuid, columnData) {
+            var columnMapping = '';
+
+            $.each(columnData.permissions, function(userGroupGuid, accessData) {
+                columnMapping = columnMapping + '|' + accessData.access;
+            });
+
+            columnData['columnMapping'] = columnMapping;
+        });
+    }
+
     optimizeMatrix() {
         var self = this;
         var colNo = 1;
 
+        // Clear the table access rules
+        // Set the new table access rules
+                // Remove all cls rules for these columns
+                // remove table access rule
+        // Create unique key to reduce API usage
+
         // Clear all table access rules
         self._tableAccess = {};
+
+        // for guid, group in currently_select_user_groups.items():
+        //     for i, access_type in enumerate([NO_ACCESS, READ_ONLY, MODIFY]):
+        //         if len(...) == len(...`):
+        //             set table access (for group)
+        //             remove column level access (for same group)
+        //             break
+        //
+        //     if guid not in currently_select_user_groups.keys():
+        //         delete table access (for group)
+        //
 
         // Set the new table access rules
         $.each(this.currentlySelectedUserGroups, function(userGroupGuid, userGroupName) {
@@ -423,6 +532,8 @@ class TableSecurityInfo {
         this._columnAccess[columnGuid].permissions[userGroupGuid].access = access;
     }
 }
+
+
 
 // INTERACTIVE ELEMENTS
 
@@ -532,6 +643,123 @@ class SelectorTables {
     }
 }
 
+class SelectorSecurityAccess {
+
+    constructor (matrixDiv, userGroupGuid, userGroupName, clsData) {
+        this._matrixDiv = matrixDiv;
+        this._userGroupGuid = userGroupGuid;
+        this._userGroupName = userGroupName;
+        this._clsData = clsData;
+        this.divId = userGroupGuid;
+    }
+
+    generateHTML () {
+
+        // build up the basic structure
+        $(this._matrixDiv).append(
+            '<div class="column" id="' + this.divId + '">' +
+            '  <div class="column-header">' + this._userGroupName + '</div>' +
+            '  <div class="select-all-columns"></div>' +
+            '  <div class="column-data"></div>' +
+            '</div>'
+        );
+
+        var self = this;
+        var row = 0;
+        var buttons = {'NO_ACCESS': 'lock', 'READ_ONLY': 'eye', 'MODIFY': 'pencil-square'};
+
+        // add select-all-columns buttons
+        $.each(buttons, function(accessLevel, icon) {
+            self.addButton(
+                $('#' + self.divId + ' .select-all-columns'),
+                row,
+                accessLevel,
+                icon,
+                '',  // active flag is never on
+                ''
+            );
+        });
+
+        // add individual row buttons
+        $.each(this._clsData, function(columnGuid, columnAccessData) {
+            row++;
+            var selector = '#' + self.divId + ' .column-data';
+
+            $.each(buttons, function(accessLevel, icon) {
+                self.addButton(
+                    selector,
+                    row,
+                    accessLevel,
+                    icon,
+                    (columnAccessData.permissions[self._userGroupGuid].access == accessLevel) ? ' active' : '',
+                    columnGuid
+                );
+            });
+        });
+
+        // set up click handling
+        $('#' + self.divId + ' .column-data > .matrix-cell').click(function(e) { self.onlyOneSelected(e) });
+        $('#' + self.divId + ' .select-all-columns > .matrix-cell').click(function(e) { self.selectWholeColumn(e) });
+    }
+
+    addButton (selectorPattern, rowNo, accessLevel, icon, active, columnGuid) {
+        //
+        $(selectorPattern).append(
+            '<div class="matrix-cell row-' + rowNo + ' ' + accessLevel + active + '">' +
+            '  <i class="bi bi-' + icon + '"></i>' +
+            '</div>'
+         );
+
+        // attach column GUID information to each button if it's not a select-all-button
+        $(selectorPattern).children().each(function () {
+            if ( rowNo > 0 && $(this).hasClass('row-' + rowNo) ) {
+                $(this).attr('data-column-guid', columnGuid)
+            }
+         });
+    }
+
+    selectWholeColumn (event) {
+      //
+      event.preventDefault();
+      var thisDiv = $(event.target).closest('div');
+      var accessLevel = thisDiv.attr('class').split(' ').slice(-1)[0];
+      
+      thisDiv.parent().next().children().each(function() {
+        if ( $(this).hasClass(accessLevel) ) {
+          this.click();
+        }
+      })
+    }
+
+    onlyOneSelected (event) {
+      //
+      //
+      //
+      var thisDiv = $(event.target).closest('div');
+
+      // .active will allow the element to be highlighted, but let's allow the
+      thisDiv.addClass('active');
+
+      var thisDivClasses = thisDiv.attr('class').split(' ');
+      var thisDivAccessLevel = thisDivClasses[2];  // NO_ACCESS, READ_ONLY, MODIFY
+      var thisRowClass = thisDivClasses[1];        // row-1, row-2, ...
+      var columnGuid = thisDiv.attr('data-column-guid');
+      
+      // Great, now that we've made our selection, de-select anything
+      // else in this column's row.
+      $(thisDiv).siblings().each(
+        function() {
+          if ( $(this).hasClass(thisRowClass) ) {
+            $(this).removeClass('active');
+          }
+        }
+      );
+
+      // set the column access level
+      this._clsData[columnGuid].permissions[this._userGroupGuid].access = thisDivAccessLevel;
+    }
+}
+
 class SelectorTSSecurityAccess {
 
     constructor(elementAttrs, divId, rowNo, colNo, extraClasses, onButtonClick, setValue) {
@@ -598,10 +826,10 @@ class Application {
         });
 
         this.tableSecurityInfo = new TableSecurityInfo(
+            '#security-matrix',
             $('#select-tablename').val(),
             $("#select-tablename option:selected").text(),
             this.selectorUserGroups.getSelectedUserGroups(),
-            '#security-matrix',
             this._showMessage
         );
 
