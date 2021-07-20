@@ -2,12 +2,24 @@
 # ThoughtSpot Brand Theme
 --------------------------------------------------------------*/
 :root {
-  --ts-color-red: #FF595A;
-  --ts-color-blue: #5060FF;
-  --ts-color-green: #01BD80;
-  --ts-color-dark-grey: #151314;
+  /* PRIMARY COLORS */
   --ts-color-black: #000000;
   --ts-color-white: #FFFFFF;
+
+  /* SECONDARY COLORS */
+  --ts-color-blue: #4E55FD;
+
+  /* TERTIARY COLORS */
+  --ts-color-cyan: #00AEEF;
+  --ts-color-mint: #06BF7F;
+  --ts-color-yellow: #FEC943;
+  --ts-color-coral: #FF595A;
+  --ts-color-purple: #A35DFF;
+
+  --ts-color-dark-grey: #191919;   /* TS BLACK 10% WHITE */
+  --ts-color-light-grey: #666666;  /* TS BLACK 10% WHITE */
+
+  --min-cell-height: 29px;
 }
 
 /*--------------------------------------------------------------
@@ -49,7 +61,7 @@ h1, h2, h3, h4, h5, h6 {
   right: 15px;
   bottom: 15px;
   z-index: 996;
-  background: var(--ts-color-green);
+  background: var(--ts-color-mint);
   width: 40px;
   height: 40px;
   border-radius: 4px;
@@ -170,7 +182,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .navbar a:hover, .navbar .active, .navbar .active:focus, .navbar li:hover > a {
-  color: var(--ts-color-green);
+  color: var(--ts-color-mint);
 }
 
 /**
@@ -236,7 +248,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .navbar-mobile a:hover, .navbar-mobile .active, .navbar-mobile li:hover > a {
-  color: var(--ts-color-green);
+  color: var(--ts-color-mint);
 }
 
 .navbar-mobile .getstarted {
@@ -299,7 +311,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 3px;
   margin: 10px;
   color: #fff;
-  background: var(--ts-color-green);
+  background: var(--ts-color-mint);
 }
 
 #hero .btn-get-started:hover {
@@ -473,19 +485,19 @@ ul.ui-menu {
 .access-selector-group button.NO_ACCESS.Active,
 .access-selector-group button.NO_ACCESS:hover {
     background-image: url(../img/NO_ACCESS-HL.png);
-    background-color: var(--ts-color-red);
+    background-color: var(--ts-color-coral);
 }
 
 .access-selector-group button.READ_ONLY.Active,
 .access-selector-group button.READ_ONLY:hover {
     background-image: url(../img/READ_ONLY-HL.png);
-    background-color: var(--ts-color-green);
+    background-color: var(--ts-color-mint);
 }
 
 .access-selector-group button.MODIFY.Active,
 .access-selector-group button.MODIFY:hover {
     background-image: url(../img/MODIFY-HL.png);
-    background-color: var(--ts-color-blue);
+    background-color: var(--ts-color-cyan);
     color: white;
 }
 
@@ -521,7 +533,6 @@ ul.ui-menu {
   float: left;
   width: 31%;
   margin: 1%;
-  /*border: 2px solid red;*/
 }
 
 #security-menu .option-title {
@@ -553,13 +564,13 @@ ul.ui-menu {
   margin-top: 100px;
 }
 
+/*
 #security-matrix .matrix-row.user-group-header {
   margin: 0px 0px 10px 0px;
 }
 
 #security-matrix .matrix-row.user-group-header .matrix-cell {
-  writing-mode: tb-rl;
-  transform: rotate(-180deg);
+  transform: translate(0%, -50%) rotate(315deg);
 }
 
 #security-matrix .matrix-row .matrix-cell {
@@ -606,6 +617,7 @@ ul.ui-menu {
 #update-security:hover {
   background-image: url(../img/apply_security-HL.png);
 }
+*/
 
 /*--------------------------------------------------------------
 # Progress Popup
@@ -724,4 +736,128 @@ ul.ui-menu {
 
 #footer .copyright {
   text-align: center;
+}
+
+/*
+
+TEST CSS v2
+
+*/
+
+#security-matrix {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: 250px repeat(auto-fill, 150px);
+  grid-gap: 0.25rem;
+  overflow-x: auto;
+  padding: 6rem 2rem 2rem 2rem;
+  margin-top: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+#select-all-columns {
+  font-weight: bold;
+}
+
+#security-matrix > .column > div:nth-child(2) {
+  border-bottom: 1px solid var(--ts-color-black);
+  min-width: 150px;
+}
+
+#security-matrix .row-header {
+  position: relative;
+  direction: rtl;
+  white-space: nowrap;
+  padding-right: 5px;
+}
+
+#security-matrix .row-header #update-security {
+  position: absolute;
+  background-color: #f6f6f6;
+  background-image: url(../img/apply_security.png);
+  background-repeat: no-repeat;
+  background-position: top 50% left 10%;
+  background-size: 25px 25px;
+  padding: 10px;
+  width: 65%;
+  transform: translate(-25%, -150%);
+  border: 1px solid #c5c5c5;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: .75rem;
+}
+
+#security-matrix .row-header #update-security:hover {
+  background-image: url(../img/apply_security-HL.png);
+  background-color: var(--ts-color-cyan);
+  color: white;
+}
+
+#security-matrix .row-header > div:nth-child(n + 2) {
+  border-bottom: 1px solid var(--ts-color-white);
+  line-height: calc(var(--min-cell-height) - 1px);  /* remove border height, do not want box-sizing: content-border; */
+}
+
+#security-matrix .row-header > div:nth-child(n + 3) {
+  border-bottom: 1px solid var(--ts-color-dark-grey);
+}
+
+#security-matrix .column {
+  position: relative;
+}
+
+#security-matrix .column-header {
+  color: var(--ts-color-black);
+  font-weight: bold;
+  text-align: center;
+  padding-bottom: 5px;
+  position: absolute;
+  width: 101%;
+  overflow-wrap: break-word;
+  transform:
+    translate(0%, -101%);
+}
+
+#security-matrix .column:nth-child(odd) .column-header {
+  color: var(--ts-color-light-grey);
+}
+
+#security-matrix .column-data,
+#security-matrix .select-all-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  text-align: center;
+}
+
+#security-matrix .matrix-cell {
+  position: relative;
+  background-color: #f6f6f6;
+  border: 1px solid #c5c5c5;
+  color: black;
+  cursor: pointer;
+  min-height: var(--min-cell-height);
+}
+
+#security-matrix .matrix-cell i {
+  font-size: 1.40em;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%)
+}
+
+#security-matrix .matrix-cell.NO_ACCESS.active,
+#security-matrix .matrix-cell.NO_ACCESS:hover {
+  background-color: var(--ts-color-coral); 
+}
+
+#security-matrix .matrix-cell.READ_ONLY.active,
+#security-matrix .matrix-cell.READ_ONLY:hover {
+  background-color: var(--ts-color-mint); 
+}
+
+#security-matrix .matrix-cell.MODIFY.active,
+#security-matrix .matrix-cell.MODIFY:hover {
+  background-color: var(--ts-color-cyan); 
 }
