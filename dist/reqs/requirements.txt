@@ -1,3 +1,4 @@
+aiofiles==0.7.0; python_version >= "3.6"
 anyio==3.2.1; python_version >= "3.6"
 asgiref==3.4.1; python_version >= "3.6"
 async-generator==1.10; python_version < "3.7" and python_version >= "3.6"
