@@ -109,7 +109,7 @@ def export(
     app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
     log_dir = app_dir / 'logs'
 
-    for log in log_dir.glob('*.tml'):
+    for log in log_dir.iterdir():
         shutil.copy(log, save_path)
 
 
