@@ -2,8 +2,10 @@ from typing import Union, List
 import logging
 import enum
 
+import pydantic
 import httpx
 
+from cs_tools.util.swagger import to_array
 from cs_tools.settings import APIParameters
 from cs_tools.models import TSPrivate, TSPublic
 
@@ -106,6 +108,16 @@ class DetailParameters(APIParameters):
     doUpdate: bool = True
 
 
+class DeleteParameters(APIParameters):
+    type: MetadataObject = None
+    id: str
+    includedisabled: bool = False
+
+    @pydantic.validator('id', pre=True)
+    def stringify_the_array(cls, v) -> str:
+        return to_array(v)
+
+
 #
 
 class Metadata(TSPublic):
@@ -179,4 +191,12 @@ class _Metadata(TSPrivate):
         """
         p = DetailParameters(id=guid, **parameters)
         r = self.get(f'{self.base_url}/detail/{guid}', params=p.json())
+        return r
+
+    def delete(self, **parameters) -> httpx.Response:
+        """
+        TODO
+        """
+        p = DeleteParameters(**parameters)
+        r = self.post(f'{self.base_url}/delete', params=p.json())
         return r
