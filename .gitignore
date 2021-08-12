@@ -112,6 +112,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+cs_tools-venv/
 
 # Spyder project settings
 .spyderproject
@@ -140,3 +141,5 @@ pyproject.toml
 dist/pkgs/*.whl
 dist/pkgs/*.zip
 dist/pkgs/*.tar.gz
+
+
