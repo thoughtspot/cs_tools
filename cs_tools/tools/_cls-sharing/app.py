@@ -6,6 +6,8 @@ from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.settings import TSConfig
 from cs_tools.api import ThoughtSpot
 
+from .web_app import _scoped
+
 
 app = typer.Typer(
     help="""
@@ -42,20 +44,6 @@ app = typer.Typer(
     cls=RichGroup
 )
 
-#
-
-
-# NOTE:
-#
-# We will probably use Flask or simply host the JS using the built-in HTTP webserver
-# library. Need to see Misha's code impl first to better understand what's the best
-# option here.
-#
-# It also might be relevant to have a welcome-page describing requirements of how to get
-# the app running (eg. enabling CORS appropriately, link-through to CLS settings
-# documentation page, how-to guides on how to do those things -- all of these could be
-# a v2 release if desired).
-#
 
 @app.command(cls=RichCommand)
 @frontend
@@ -64,7 +52,6 @@ def run(
 ):
     """
     """
-    from .web_app import _scoped
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
     console.print('starting webserver...')
@@ -77,8 +64,5 @@ def run(
             host='127.0.0.1',
             port=5000,
             log_level='debug',
+            log_config=None
         )
-
-    # had to set..
-    # 1. tscli --adv config get --key /config/nginx/corshosts
-    # 2. add "cs_tools.localho.st.*"
