@@ -446,7 +446,7 @@ class SelectorUserGroups {
             });
 
             $(self.divId).append(HTML);
-            $(self.divId).multiselect();
+            $(self.divId).select2({multiple: true, placeholder: 'select groups'});
         })
         .fail(function(xhr, textStatus, errorThrown) {
             $(self.divId).parent('.menu-option').hide();
@@ -477,11 +477,13 @@ class SelectorTables {
         })
         .done(function(data, textStatus, xhr) {
             var HTML = '';
+
             $.each(data, function(k, table) {
                 HTML += '<option value="' + table.id + '">' + table.name + '</option>'
             })
+
             $(self.divId).append(HTML);
-            $(self.divId).selectmenu();
+            $(self.divId).select2({placeholder: 'select a table'});
         })
         .fail(function(xhr, textStatus, errorThrown) {
             $(self.divId).parent('.menu-option').hide();
