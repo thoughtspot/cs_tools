@@ -261,7 +261,6 @@ h1, h2, h3, h4, h5, h6 {
 #hero {
   width: 100%;
   height: 100vh;
-  /*background: #151314 url("/img/hero-bg.jpeg") no-repeat 100% 100%;*/
   background: var(--ts-color-dark-grey) url("../img/hero-bg.webp") no-repeat 100% 105%;
   position: relative;
 }
@@ -286,16 +285,16 @@ h1, h2, h3, h4, h5, h6 {
 
 #hero h1 {
   margin: 0 0 30px 0;
-  font-size: 48px;
+  font-size: clamp(28px, 3vw, 48px);
   font-weight: 500;
-  line-height: 56px;
+  line-height: clamp(36px, 3vw, 56px);
   color: #fff;
 }
 
 #hero h2 {
   color: #aeaeae;
   margin-bottom: 30px;
-  font-size: 14px;
+  font-size: clamp(12px, 3vw, 18px);
   font-weight: 400;
   text-transform: uppercase;
 }
@@ -326,15 +325,6 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-@media (max-width: 768px) {
-  #hero h1 {
-    font-size: 28px;
-    line-height: 36px;
-  }
-  #hero h2 {
-    line-height: 22px;
-  }
-}
 
 /*--------------------------------------------------------------
 # Sections General
@@ -344,28 +334,21 @@ section {
   overflow: hidden;
 }
 
-.section-bg {
-  background-color: whitesmoke;
-}
-
 .section-title {
   text-align: center;
   padding-bottom: 40px;
 }
 
 .section-title h2 {
-  font-size: 32px;
+  font-size: clamp(32px, 3vw, 36px);
   font-weight: bold;
   text-transform: uppercase;
-  margin-bottom: 15px;
-  padding-bottom: 0;
-  color: #151515;
+  color: var(--ts-color-black);
 }
 
 .section-title p {
-  margin-bottom: 0;
-  font-size: 20px;
-  color: #aeaeae;
+  margin-bottom: 0px;
+  font-size: 1.25rem;
 }
 
 .section-title span {
@@ -374,76 +357,10 @@ section {
 }
 
 /*--------------------------------------------------------------
-# About Us
---------------------------------------------------------------*/
-.about .image {
-  padding: 20px;
-  box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.1);
-}
-
-.about .content h3 {
-  font-weight: 600;
-  font-size: 26px;
-}
-
-.about .content ul {
-  list-style: none;
-  padding: 0;
-}
-
-.about .content ul li {
-  padding-bottom: 10px;
-  display: flex;
-  align-items: flex-start;
-}
-
-.about .content ul i {
-  font-size: 24px;
-  padding: 2px 6px 0 0;
-  color: #7cc576;
-}
-
-.about .content p:last-child {
-  margin-bottom: 0;
-}
-
-/*--------------------------------------------------------------
 # Security Menu
 --------------------------------------------------------------*/
 label {
   display: block;
-  margin: 30px 0 0 0;
-}
-
-/* ... */
-
-ul.ui-menu {
-  max-height: 258px
-}
-
-.ui-multiselect {
-  height: 34px;
-  margin: 0px 0px 0px 0px;
-}
-
-.ui-widget-header .ui-icon {
-  margin-top: 0px;
-}
-
-.ui-multiselect-header li {
-  margin: 0px 8px 0px 8px !important;
-}
-
-.ui-multiselect-checkboxes label {
-  margin-top: 0px;
-}
-
-.ui-multiselect-menu {
-  width: 258px !important;
-}
-
-#select-user-groups_ms {
-  width: 258px !important;
 }
 
 .access-selector-group {
@@ -549,75 +466,15 @@ ul.ui-menu {
 }
 
 #btn-get-permissions {
-  top: 50%;
-  left: 50%;
-  transform: translate(50%, 90%);
+  transform: translate(50%, 50%);
 }
 
 #security-menu::after {
-  content: "";
+  content: '';
   display: block;
   clear: both;
 }
 
-#security-matrix {
-  margin-top: 100px;
-}
-
-/*
-#security-matrix .matrix-row.user-group-header {
-  margin: 0px 0px 10px 0px;
-}
-
-#security-matrix .matrix-row.user-group-header .matrix-cell {
-  transform: translate(0%, -50%) rotate(315deg);
-}
-
-#security-matrix .matrix-row .matrix-cell {
-  display: table-cell;
-  width: 90px;
-  height: 28px;
-}
-
-#security-matrix .matrix-row .matrix-cell:first-child {
-  width: 200px;
-  text-align: right;
-  padding: 6px 10px 0px 0px;
-}
-
-#security-matrix .matrix-row::after {
-  content: "";
-  display: block;
-  clear: both;
-}
-
-#update-security {
-  background-repeat: no-repeat;
-  background-size: 25px 25px;
-  background-position: left 10px top 10px;
-  width: 130px;
-  height: 30px;
-  padding: 13px 0px 0px 50px;
-  border: 1px solid #c5c5c5;
-  border-radius: 3px;
-  background-color: #f6f6f6;
-  cursor: pointer;
-}
-
-#update-security {
-  background-image: url(../img/apply_security.png);
-  margin: 20px 0px 0px 205px;
-}
-
-#update-security:hover {
-  background-color: #007fff;
-  color: white;
-}
-
-#update-security:hover {
-  background-image: url(../img/apply_security-HL.png);
-}
-*/
 
 /*--------------------------------------------------------------
 # Progress Popup
@@ -744,6 +601,23 @@ TEST CSS v2
 
 */
 
+.security-menu-option > .select2-container {
+    /*    select2 allows you to set the width ala the inline style tag, which overrides
+     *    any sort of CSS styling options. I'd rather keep all styles with the css, so
+     *    we'll prefer the icky !important over the ickier style tag. :~)
+     */
+    width: 100% !important;
+}
+
+.select2-container--default .select2-selection {
+    background-color: #f6f6f6;
+    height: 2em;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin-top: 2px;
+}
+
 #security-matrix {
   display: grid;
   grid-auto-flow: column;
@@ -772,7 +646,7 @@ TEST CSS v2
   padding-right: 5px;
 }
 
-#security-matrix .row-header #update-security {
+#update-security {
   position: absolute;
   background-color: #f6f6f6;
   background-image: url(../img/apply_security.png);
@@ -789,7 +663,7 @@ TEST CSS v2
   font-size: .75rem;
 }
 
-#security-matrix .row-header #update-security:hover {
+#update-security:hover {
   background-image: url(../img/apply_security-HL.png);
   background-color: var(--ts-color-cyan);
   color: white;

@@ -190,12 +190,12 @@ class TableSecurityInfo {
             }
         );
 
-        $('#progress-loader').loadingOverlay('remove');
+        // $('#progress-loader').loadingOverlay('remove');
 
         $('#update-security').click(function() {
-            $('#progress-loader').loadingOverlay({
-                loadingText: 'Applying security...'
-            });
+            // $('#progress-loader').loadingOverlay({
+            //     loadingText: 'Applying security...'
+            // });
 
             self.updateTSSecurity();
             self.refresh();
@@ -324,7 +324,7 @@ class TableSecurityInfo {
 
         // Small tables are quite quick, so at least show the message for 2 seconds
         setTimeout(function() {
-            $('#progress-loader').loadingOverlay('remove');
+            // $('#progress-loader').loadingOverlay('remove');
             self._showMessage(true, 'Security has been updated!', 'All security has been successfully updated.');
         }, 2000);
     }
@@ -671,9 +671,9 @@ class Application {
     }
 
     getPermissions() {
-        $('#progress-loader').loadingOverlay({
-            loadingText: 'Loading security...'
-        });
+        // $('#progress-loader').loadingOverlay({
+        //     loadingText: 'Loading security...'
+        // });
 
         this.tableSecurityInfo = new TableSecurityInfo(
             '#security-matrix',
