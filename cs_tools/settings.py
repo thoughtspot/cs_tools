@@ -1,10 +1,9 @@
 from ipaddress import IPv4Address
 from typing import Union, Dict, Any
 import pathlib
-import enum
 import re
 
-from pydantic import BaseModel, AnyHttpUrl, HttpUrl, validator
+from pydantic import BaseModel, AnyHttpUrl, validator
 import typer
 import toml
 
@@ -84,25 +83,9 @@ class AuthConfig(Settings):
     password: str = None
 
 
-class LogLevel(str, enum.Enum):
-    debug = 'DEBUG'
-    info = 'INFO'
-    warn = 'WARN'
-    error = 'ERROR'
-    critical = 'CRITICAL'
-
-
-class LoggerConfig(Settings):
-    level: LogLevel = LogLevel.debug
-
-    class Config:
-        use_enum_values = True
-
-
 class TSConfig(Settings):
     thoughtspot: HostConfig
     auth: Dict[str, AuthConfig]
-    logging: LoggerConfig
 
     @classmethod
     def from_toml(cls, fp: pathlib.Path):
@@ -188,9 +171,6 @@ class TSConfig(Settings):
                     # NOTE: if we need real security, we can simply replace obscure()
                     'password': None if kw.get('password') is None else obscure(kw['password'])
                 }
-            },
-            'logging': {
-                'level': kw.get('logger', None) or 'INFO'
             }
         }
 

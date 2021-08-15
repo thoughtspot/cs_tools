@@ -1,8 +1,10 @@
+import datetime as dt
 import pathlib
 import logging
 import shutil
 
 from typer import Argument as A_, Option as O_
+from rich.logging import RichHandler
 import pydantic
 import click
 import typer
@@ -12,6 +14,7 @@ from cs_tools.helpers.cli_ux import console, RichGroup, RichCommand
 from cs_tools.helpers.loader import _gather_tools
 from cs_tools.util.algo import deep_update
 from cs_tools.settings import TSConfig
+from cs_tools.const import APP_DIR
 
 
 log = logging.getLogger(__name__)
@@ -231,6 +234,18 @@ def delete(
     console.print(f'removed cluster configuration file "{name}"')
 
 
+def _clean_logs(now):
+    logs_dir = APP_DIR / 'logs'
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    # keep only the last 25 logfiles
+    lifo = sorted(logs_dir.iterdir(), reverse=True)
+
+    for idx, log in enumerate(lifo):
+        if idx > 25:
+            log.unlink()
+
+
 def run():
     """
     Entrypoint into cs_tools.
@@ -239,6 +254,20 @@ def run():
     app.add_typer(tools_app, name='tools')
     app.add_typer(cfg_app, name='config')
     app.add_typer(log_app, name='logs')
+
+    # SETUP LOGGING
+    logging.getLogger('urllib3').setLevel(logging.ERROR)
+
+    now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
+    _clean_logs(now)
+
+    logging.basicConfig(
+        filename=f'{APP_DIR}/logs/{now}.log',
+        format='[%(levelname)s - %(asctime)s] '
+               '[%(name)s - %(module)s.%(funcName)s %(lineno)d] '
+               '%(message)s',
+        level='DEBUG'
+    )
 
     try:
         app(prog_name='cs_tools')
