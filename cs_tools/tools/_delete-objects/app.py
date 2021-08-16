@@ -1,6 +1,7 @@
 # DEV NOTE:
 #
 import pathlib
+import csv
 
 from typer import Argument as A_, Option as O_  # noqa
 import typer
@@ -25,6 +26,14 @@ app = typer.Typer(
     LOGICAL_RELATIONSHIP (Not Supported)
     TAG (Not Supported)
     DATA_SOURCE (Not Supported)
+
+
+    csv file format:
+    type,guid
+    QUESTION_ANSWER_SHEET,guid1
+    PINBOARD_ANSWER_SHEET,guid2
+
+
     """,
     cls=RichGroup
 )
@@ -58,8 +67,9 @@ def object(
 @frontend
 def from_file(
     # file: pathlib.Path=A_(..., help='lorem ipsum'),
-    file: pathlib.Path=O_(..., help='path to xlsx file with columns type and guid'),
+    file: pathlib.Path=O_(..., help='path to file with columns: type and guid'),
     **frontend_kw
+    # ToDo: Need to add error handling if file is not found
 ):
     """
     Removes a list of objects from ThoughtSpot metadata given an input xlxs file with headers type, guid
@@ -71,19 +81,45 @@ def from_file(
     # Read info from command line input
     # Open Excel input (or read single from command line)
     # Loop through lines of excel
+    # print_str = f'Trying to Open  file {file}'
+    # console.print(print_str) 
 
-    data = [  # data gotten from XLSX
-        {'type': 'answer', 'guid': 'guid1'},
-        {'type': 'answer', 'guid': 'guid2'},
-        {'type': 'pinboard', 'guid': 'guid6'},
-        {'type': 'pinboard', 'guid': 'guid7'},
-        {'type': 'answer', 'guid': 'guid3'},
-        {'type': 'answer', 'guid': 'guid4'},
-        {'type': 'pinboard', 'guid': 'guid5'}
-    ]
+    with open(file, newline='') as TsObjectCsv:
+        TsObjectData = csv.DictReader(TsObjectCsv) 
+        
+        
+        # data = [  # data gotten from XLSX
+        #     {
+        #         'type': 'answer',
+        #         'guid': 'guid1'
+        #     },
+        #     {'type': 'answer', 'guid': 'guid2'},
+        #     {'type': 'pinboard', 'guid': 'guid6'},
+        #     {'type': 'pinboard', 'guid': 'guid7'},
+        #     {'type': 'answer', 'guid': 'guid3'},
+        #     {'type': 'answer', 'guid': 'guid4'},
+        #     {'type': 'pinboard', 'guid': 'guid5'}
+        # ]
 
-    with ThoughtSpot(cfg) as api:
-        ...
+        with ThoughtSpot(cfg) as api:
+            
+        # iterate over the list (aka array) #=> data
+            for ts_object in TsObjectData:
+                console.print(ts_object)
 
+                # grab key or value from each dictionary (aka hash-map)
+                # ts_object['type']     #=> 'answer'
+                # ts_object.get('type') #=> 'answer'
+
+                type_ = ts_object['type']
+                guid = ts_object['guid']
+                print_str = f'deleting guid {guid} of type {type_}'
+
+                console.print(print_str)
+
+                r = api._metadata.delete(type=type_, id=[guid])
+
+                ##console.print(r)
+                ##console.print(r.json())
 
 
