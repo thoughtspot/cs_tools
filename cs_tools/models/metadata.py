@@ -198,5 +198,5 @@ class _Metadata(TSPrivate):
         TODO
         """
         p = DeleteParameters(**parameters)
-        r = self.post(f'{self.base_url}/delete', params=p.json())
+        r = self.post(f'{self.base_url}/delete', data=p.json())
         return r
