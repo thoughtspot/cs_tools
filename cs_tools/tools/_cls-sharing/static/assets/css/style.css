@@ -292,7 +292,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 #hero h2 {
-  color: #aeaeae;
+  /* if this is ever used, swap the font-color
+   *
+   * color: #aeaeae;
+  */
+  color: var(--ts-color-dark-grey);
   margin-bottom: 30px;
   font-size: clamp(12px, 3vw, 18px);
   font-weight: 400;

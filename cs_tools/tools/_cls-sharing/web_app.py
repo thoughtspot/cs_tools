@@ -16,8 +16,7 @@ _scoped = {}
 
 web_app = FastAPI()
 web_app.mount('/static', StaticFiles(directory=f'{HERE}/static'), name='static')
-web_app.mount('/new', StaticFiles(directory=f'{HERE}/static2'), name='static2')
-templates = Jinja2Templates(directory=f'{HERE}/static2')
+templates = Jinja2Templates(directory=f'{HERE}/static')
 
 
 #
@@ -27,7 +26,7 @@ templates = Jinja2Templates(directory=f'{HERE}/static2')
 
 @web_app.on_event('startup')
 async def _():
-    typer.launch('http://cs_tools.localho.st:5000/new')
+    typer.launch('http://cs_tools.localho.st:5000/')
 
 
 #
@@ -35,13 +34,13 @@ async def _():
 #
 
 
-@web_app.get('/')
-async def read_index():
-    return RedirectResponse(url='/static/index.html')
+# @web_app.get('/')
+# async def static():
+#     return RedirectResponse(url='/static/index.html')
 
 
-@web_app.get('/new', response_class=HTMLResponse)
-async def read_index_new(request: Request):
+@web_app.get('/', response_class=HTMLResponse)
+async def read_index(request: Request):
     data = {
         'request': request,
         'host': _scoped['api'].config.thoughtspot.host,
