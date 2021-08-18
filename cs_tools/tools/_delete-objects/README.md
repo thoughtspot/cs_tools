@@ -1,36 +1,55 @@
-# Example App
+# Delete Objects
 
-This document explains how the tool functions. Minimally, it should show the command
-line documentation when invoke your tool's helptext.
+**USE AT YOUR OWN RISK!**
 
-Look at this file as giving your Customer Success peers a preview into what solution
-your tool offers. If there's a wicked slick pinboard, include an image! If there's an
-advanced use case it enables, provide those details. This sort of documentation helps us
-all so don't be shy here.
+**This tool uses private API calls which could change on any version update and break the tool.**
 
-Mostly anything goes since this a Github flavored Markdown file! This file will not be
-customer-forward facing, but savvy customers would be able to find and read this text
-if they fought hard enough for it.
+---
+
+This tool allows the customer to delete common ThoughtSpot metadata from command line args or file input. 
+
+Over the life of a ThoughtSpot cluster objects in the system grow. With changes in employee 
+roles and business problems you may find that tens of thousands of objects can be left behind.
+This tool allows you to remove objects from the metadata enmasse. 
+
+The tool separates deletes objects in batches that can be specified in the args to speed up the delete process, but gives less visibility should an issue occur. A summary of what has been removed is saved in the logs directory of cs-tools. 
+
 
 ```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools __example_app__
-Usage: cs_tools tools __example_app__ [OPTIONS] COMMAND [ARGS]...
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects --help
 
-  One-liner describing the tool.
+Usage: cs_tools tools delete-objects [OPTIONS] COMMAND [ARGS]...
 
-  Further explanation explaining the tool's usage or purpose. This can be as long as is necessary, but be mindful of
-  much content you type here as the full text will display in the console when the user types...
+  Bulk delete metadata objects from your ThoughtSpot platform.
 
-    cs_tools tools my-cool-app --help
+  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
+  break the tool.
 
-  If more ideas need to be conveyed, use separate paragraphs. Content will be wrapped to the console spec (default:
-  125 characters) unless you use a control character.
+  Leverages the /metadata/delete private API endpoint.
 
-  Many tools augment a ThoughtSpot service. If they do, a relevant documentation link should be provided.
+  Tool takes an input file and or a specific object and deletes it from the metadata.
 
-  For further information on <idea expressed in doc>, please refer to:
-    https://docs.thoughtspot.com/path/to/documenation-link.html
+  Valid metadata object type values are:
+      - saved answer
+      - pinboard
+
+  CSV/XLSX file format should look like..
+      +----------+-------+
+      |  type    | guid  |
+      +----------+-------+
+      | answer   | guid1 |
+      | pinboard | guid2 |
+      | ...      | ...   |
+      | answer   | guid3 |
+      +----------+-------+
 
 Options:
+  --version   Show the tool's version and exit.
+  --helpfull  Show the full help message and exit.
   -h, --help  Show this message and exit.
+
+Commands:
+  from-file      Remove many objects from ThoughtSpot.
+  generate-file  Generates example file in Excel or CSV format
+  single         Removes a specific object from ThoughtSpot.
 ```

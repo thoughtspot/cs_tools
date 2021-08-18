@@ -84,15 +84,14 @@ app = typer.Typer(
 
     \b
     CSV/XLSX file format should look like..
-
-        +----------+-------+
-        |  type    | guid  |
-        +----------+-------+
-        | answer   | guid1 |
-        | pinboard | guid2 |
-        | ...      | ...   |
-        | answer   | guid3 |
-        +----------+-------+
+        +----------------+-------+
+        | type           | guid  |
+        +----------------+-------+
+        | saved answer   | guid1 |
+        | pinboard       | guid2 |
+        | ...            | ...   |
+        | saved answer   | guid3 |
+        +----------------+-------+
     """,
     cls=RichGroup
 )
@@ -109,7 +108,7 @@ def generate_file(
     **frontend_kw
 ):
     """
-    Lorem ipsum...
+    Generates example file in Excel or CSV format
     """
     if save_path.suffix == '.xlsx':
         shutil.copy(HERE / 'static' / 'template.xlsx', save_path)
@@ -161,15 +160,14 @@ def from_file(
 
     \b
     CSV/XLSX file format should look like..
-
-        +----------+-------+
-        |  type    | guid  |
-        +----------+-------+
-        | answer   | guid1 |
-        | pinboard | guid2 |
-        | ...      | ...   |
-        | answer   | guid3 |
-        +----------+-------+
+        +----------------+-------+
+        | type           | guid  |
+        +----------------+-------+
+        | saved answer   | guid1 |
+        | pinboard       | guid2 |
+        | ...            | ...   |
+        | saved answer   | guid3 |
+        +----------------+-------+
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
@@ -186,6 +184,10 @@ def from_file(
         #
         # Delete Pinboards
         #
+
+        #Debug
+        console.print(f'{data}')
+
         guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'pinboard']
 
         if guids:
