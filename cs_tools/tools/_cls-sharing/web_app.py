@@ -23,19 +23,14 @@ templates = Jinja2Templates(directory=f'{HERE}/static')
 #
 
 
-@web_app.on_event('startup')
-async def _():
-    typer.launch('http://cs_tools.localho.st:5000/')
+# @web_app.on_event('startup')
+# async def _():
+#     typer.launch('http://cs_tools.localho.st:5000/')
 
 
 #
 # MAIN WEB APPLICATION
 #
-
-
-# @web_app.get('/')
-# async def static():
-#     return RedirectResponse(url='/static/index.html')
 
 
 @web_app.get('/', response_class=HTMLResponse)
