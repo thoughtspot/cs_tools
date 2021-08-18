@@ -1,104 +1,216 @@
-# DEV NOTE:
-#
+from typing import Dict
+import logging
 import pathlib
+import shutil
+import enum
 import csv
 
 from typer import Argument as A_, Option as O_  # noqa
+from openpyxl import load_workbook
 import typer
 
 from cs_tools.helpers.cli_ux import RichGroup, RichCommand, frontend, console
+from cs_tools.util.algo import chunks
 from cs_tools.settings import TSConfig
 from cs_tools.api import ThoughtSpot
 
 
+log = logging.getLogger(__name__)
+HERE = pathlib.Path(__file__).parent
+
+
+class ReversibleSystemType(str, enum.Enum):
+    """
+    Reversible mapping of system to friendly names.
+    """
+    PINBOARD_ANSWER_BOOK = 'pinboard'
+    pinboard = 'PINBOARD_ANSWER_BOOK'
+    QUESTION_ANSWER_BOOK = 'saved answer'
+    saved_answer = 'QUESTION_ANSWER_BOOK'
+
+    @classmethod
+    def to_friendly(cls, value) -> str:
+        if '_' not in value:
+            return value
+
+        return getattr(cls, value).value
+
+    @classmethod
+    def to_system(cls, value) -> str:
+        if '_' in value:
+            return value
+
+        return getattr(cls, value.replace(' ', '_')).value
+
+
+def _from_csv(fp: pathlib.Path) -> Dict[str, str]:
+    """
+    Read data from a CSV.
+    """
+    with fp.open() as f:
+        reader = csv.DictReader(f)
+        data = [row for row in reader]
+
+    return data
+
+
+def _from_excel(fp: pathlib.Path) -> Dict[str, str]:
+    """
+    Read data from an Excel file.
+
+    This will read data only from the first tab of the workbook.
+    """
+    wb = load_workbook(filename=fp.as_posix())
+    rows = wb.active.rows
+    headers = [c.value for c in next(rows)]
+    return [dict(zip(headers, [column.value for column in row])) for row in rows]
+
+
 app = typer.Typer(
     help="""
-    Tool takes an input file and or a specific obejct and deletes it from the meta data.
-    This tool leverages the /metadata/delete private API endpoint
+    Bulk delete metadata objects from your ThoughtSpot platform.
 
+    [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
+    could change on any version update and break the tool.[/]
+
+    Leverages the /metadata/delete private API endpoint.
+
+    Tool takes an input file and or a specific object and deletes it from the metadata.
+
+    \b
     Valid metadata object type values are:
+        - saved answer
+        - pinboard
 
-    QUESTION_ANSWER_BOOK, 
-    PINBOARD_ANSWER_BOOK, 
-    QUESTION_ANSWER_SHEET, 
-    PINBOARD_ANSWER_SHEET, 
-    LOGICAL_COLUMN (Not Supported),
-    LOGICAL_TABLE (Not Supported),
-    LOGICAL_RELATIONSHIP (Not Supported),
-    TAG (Not Supported),
-    DATA_SOURCE (Not Supported)
+    \b
+    CSV/XLSX file format should look like..
 
-
-    csv file format:
-
-    type,guid
-
-    QUESTION_ANSWER_BOOK,guid1
-
-    PINBOARD_ANSWER_BOOK,guid2
-
-
+        +----------+-------+
+        |  type    | guid  |
+        +----------+-------+
+        | answer   | guid1 |
+        | pinboard | guid2 |
+        | ...      | ...   |
+        | answer   | guid3 |
+        +----------+-------+
     """,
     cls=RichGroup
 )
 
 
+# DEV NOTE: change name of cmd if you want (prefer single word cmds)
+# DEV NOTE: write docstring on command
+# DEV NOTE: devin to provide an example file for CSV and Excel
+# DEV NOTE: devin to provide template file for CSV and Excel (place in /static directory)
 @app.command(cls=RichCommand)
 @frontend
-def object(
-    type: str=A_(..., help='string, metadata type'),
-    guid: str=A_(..., help='string, guid to delete'),
+def generate_file(
+    save_path: pathlib.Path=O_(..., help='filepath to save generated file to', prompt=True),
     **frontend_kw
 ):
     """
-    Removes a specific object from ThoughtSpot metadata given the type and guid
+    Lorem ipsum...
+    """
+    if save_path.suffix == '.xlsx':
+        shutil.copy(HERE / 'static' / 'template.xlsx', save_path)
+    elif save_path.suffix == '.csv':
+        shutil.copy(HERE / 'static' / 'template.csv', save_path)
+    else:
+        log.error('appropriate file not supplied, must be either Excel or CSV')
+        console.print(f'[red]must provide an Excel (.xlsx) or CSV (.csv) file, got {save_path}[/]')
+        return
 
-    extra info here
+
+@app.command(cls=RichCommand)
+@frontend
+def single(
+    type: ReversibleSystemType=O_(..., help='type of the metadata to delete'),
+    guid: str=O_(..., help='guid to delete'),
+    **frontend_kw
+):
+    """
+    Removes a specific object from ThoughtSpot.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    type = ReversibleSystemType.to_system(type.value)
 
     with ThoughtSpot(cfg) as api:
+        # DEV NOTE: replace "deleting object .. {type} .. {guid}"" with whatever you want that feels more appropriate
+        # log.debug(f'') will send this data to the log file, but not to the screen
+        # console.log(f'') will send this data to both the log file and to the screen
+        # console.print(f'') will send this ONLY to the screen
         console.print(f'deleting object .. {type} ... {guid} ... ')
-        r = api._metadata.delete(type=type, id=[guid])
 
-        #console.print(r)
-        #console.print(r.json())
+        # NOTE: /metadata/delete WILL NOT error if content does not exist, or if the
+        # wrong type & guid are passed. This is a ThoughtSpot API limitation.
+        r = api._metadata.delete(type=type, id=[guid])
+        log.debug(f'{r} - {r.content}')
+
 
 @app.command(cls=RichCommand)
 @frontend
 def from_file(
-    file: pathlib.Path=O_(..., help='path to file with columns: type and guid'),
+    file: pathlib.Path=A_(..., help='path to a file with columns "type" and "guid"'),
+    batchsize: int=O_(1, help='maximum amount of objects to delete simultaneously'),
     **frontend_kw
-    # ToDo: Need to add error handling if file is not found
 ):
     """
-    Removes a list of objects from ThoughtSpot metadata given an input .csv file with headers type, guid
+    Remove many objects from ThoughtSpot.
 
+    Accepts an Excel (.xlsx) file or CSV (.csv) file.
+
+    \b
+    CSV/XLSX file format should look like..
+
+        +----------+-------+
+        |  type    | guid  |
+        +----------+-------+
+        | answer   | guid1 |
+        | pinboard | guid2 |
+        | ...      | ...   |
+        | answer   | guid3 |
+        +----------+-------+
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
-    
-    #ToDo: Add handling to Open Excel input (or read single from command line)
+    if file.suffix == '.xlsx':
+        data = _from_excel(file)
+    elif file.suffix == '.csv':
+        data = _from_csv(file)
+    else:
+        log.error('appropriate file type not supplied, must be either Excel or CSV')
+        console.print(f'[red]must provide an Excel (.xlsx) or CSV (.csv) file, got {file}[/]')
+        return
 
-    with open(file, newline='') as TsObjectCsv:
-        TsObjectData = csv.DictReader(TsObjectCsv) 
-        
-        
+    with ThoughtSpot(cfg) as api:
+        #
+        # Delete Pinboards
+        #
+        guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'pinboard']
 
-        with ThoughtSpot(cfg) as api:
-            
-        # iterate over the list (aka array) #=> data
-            for ts_object in TsObjectData:
-                # console.print(ts_object)
+        if guids:
+            console.print(f'deleting {len(guids)} pinboards')
 
-                type_ = ts_object['type']
-                guid = ts_object['guid']
+        for chunk in chunks(guids, n=batchsize):
+            if batchsize > 1:
+                console.print(f'    deleting {len(chunk)} pinboards')
+                log.debug(f'    guids: {chunk}')
 
-                console.print(f'deleting object .. {type_} ... {guid} ... ')
+            r = api._metadata.delete(type='PINBOARD_ANSWER_BOOK', id=list(chunk))
+            log.debug(f'{r} - {r.content}')
 
-                r = api._metadata.delete(type=type_, id=[guid])
+        #
+        # Delete Answers
+        #
+        guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'saved answer']
 
-                ##console.print(r)
-                ##console.print(r.json())
+        if guids:
+            console.print(f'deleting {len(guids)} answers')
 
+        for chunk in chunks(guids, n=batchsize):
+            if batchsize > 1:
+                console.print(f'    deleting {len(chunk)} answers')
+                log.debug(f'    guids: {chunk}')
 
+            r = api._metadata.delete(type='QUESTION_ANSWER_BOOK', id=list(chunk))
+            log.debug(f'{r} - {r.content}')
