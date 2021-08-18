@@ -1,5 +1,6 @@
 import pathlib
 import shutil
+import logging
 
 from typer import Argument as A_, Option as O_
 import pydantic
@@ -11,6 +12,9 @@ from cs_tools.helpers.cli_ux import console, RichGroup, RichCommand
 from cs_tools.helpers.loader import _gather_tools
 from cs_tools.util.algo import deep_update
 from cs_tools.settings import TSConfig
+
+
+log = logging.getLogger(__name__)
 
 
 app = typer.Typer(
@@ -242,4 +246,4 @@ def run():
         if hasattr(e, 'warning'):
             e = e.warning
 
-        console.print(f'[error]{e}')
+        log.exception(f'[error]{e}')
