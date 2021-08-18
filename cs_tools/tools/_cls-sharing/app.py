@@ -11,35 +11,16 @@ from .web_app import _scoped
 
 app = typer.Typer(
     help="""
-    One-liner describing the tool.
+    Scalably manage your table- and column-level security right in the browser.
 
-    Further explanation explaining the tool's usage or purpose. This can
-    be as long as is necessary, but be mindful of much content you type
-    here as the full text will display in the console when the user
-    types...
+    [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
+    could change on any version update and break the tool.[/]
 
-      cs_tools tools my-cool-app --help
-
-    If more ideas need to be conveyed, use separate paragraphs. Content
-    will be wrapped to the console spec (default: 125 characters) unless
-    you use a control character.
-
-    Many tools augment a ThoughtSpot service. If they do, a relevant
-    documentation link should be provided.
-
-    \b
-    For further information on <idea expressed in doc>, please refer to:
-      https://docs.thoughtspot.com/path/to/documenation-link.html
-
-    \f
-    DEV NOTE:
-
-      Two control characters are offered in order to help with
-      docstrings in typer App helptext and command helptext
-      (docstrings).
-
-      \b - Preserve Whitespace / formatting.
-      \f - EOF, don't include anything after this character in helptext.
+    Setting up Column Level Security (especially on larger tables) can be time-consuming
+    when done directly in the ThoughtSpot user interface. The web interface provided by
+    this tool will allow you to quickly understand the current security settings for a
+    given table across all columns, and as many groups as are in your platform. You may
+    then set the appropriate security settings for those group-table combinations.
     """,
     cls=RichGroup
 )
@@ -51,12 +32,17 @@ def run(
     **frontend_kw
 ):
     """
+    Start the built-in webserver which runs the security management interface.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-    console.print('starting webserver...')
 
     with ThoughtSpot(cfg) as api:
         _scoped['api'] = api
+
+        console.print(
+            'starting webserver...'
+            '\nplease visit http://cs_tools.localho.st:5000/ in your browser'
+        )
 
         uvicorn.run(
             'cs_tools.tools._cls-sharing.web_app:web_app',
