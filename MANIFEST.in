@@ -1,2 +1,1 @@
 recursive-include cs_tools/tools/**/static *
-recursive-include cs_tools/tools/**/static2 *
