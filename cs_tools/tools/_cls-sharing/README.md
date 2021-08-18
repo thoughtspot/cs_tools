@@ -18,7 +18,7 @@ the appropriate security settings for those group-table combinations.
 ## User Interface preview
 
 <p align="center">
-  <img src="./static/application.gif" width="1000" height="700" alt="user-interface">
+  <img src="./static/application.gif" width="1000" height="563" alt="user-interface">
 </p>
 
 ## CLI preview
