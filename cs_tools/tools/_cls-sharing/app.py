@@ -1,3 +1,5 @@
+import socket
+
 from typer import Argument as A_, Option as O_  # noqa
 import uvicorn
 import typer
@@ -7,6 +9,21 @@ from cs_tools.settings import TSConfig
 from cs_tools.api import ThoughtSpot
 
 from .web_app import _scoped
+
+
+def _find_my_local_ip() -> str:
+    """
+    Gets the local ip, or loopback address if not found.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.connect(('10.255.255.255', 1))  # does not need to be a valid addr
+
+        try:
+            ip = sock.getsockname()[0]
+        except IndexError:
+            ip = '127.0.0.1'
+
+    return ip
 
 
 app = typer.Typer(
@@ -35,18 +52,19 @@ def run(
     Start the built-in webserver which runs the security management interface.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    visit_ip = _find_my_local_ip()
 
     with ThoughtSpot(cfg) as api:
         _scoped['api'] = api
 
         console.print(
             'starting webserver...'
-            '\nplease visit http://cs_tools.localho.st:5000/ in your browser'
+            f'\nplease visit [green]http://{visit_ip}:5000/[/] in your browser'
         )
 
         uvicorn.run(
             'cs_tools.tools._cls-sharing.web_app:web_app',
             host='0.0.0.0',
             port=5000,
-            # log_config=None
+            # log_config=None   # TODO log to file instead of console (less confusing for user)
         )
