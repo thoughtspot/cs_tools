@@ -30,6 +30,8 @@ class ReversibleSystemType(str, enum.Enum):
 
     @classmethod
     def to_friendly(cls, value) -> str:
+        value = value.strip()
+
         if '_' not in value:
             return value
 
@@ -37,6 +39,8 @@ class ReversibleSystemType(str, enum.Enum):
 
     @classmethod
     def to_system(cls, value) -> str:
+        value = value.strip()
+
         if '_' in value:
             return value
 
@@ -184,10 +188,6 @@ def from_file(
         #
         # Delete Pinboards
         #
-
-        #Debug
-        console.print(f'{data}')
-
         guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'pinboard']
 
         if guids:
