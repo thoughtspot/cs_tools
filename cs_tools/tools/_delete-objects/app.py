@@ -101,10 +101,6 @@ app = typer.Typer(
 )
 
 
-# DEV NOTE: change name of cmd if you want (prefer single word cmds)
-# DEV NOTE: write docstring on command
-# DEV NOTE: devin to provide an example file for CSV and Excel
-# DEV NOTE: devin to provide template file for CSV and Excel (place in /static directory)
 @app.command(cls=RichCommand)
 @frontend
 def generate_file(
@@ -138,10 +134,7 @@ def single(
     type = ReversibleSystemType.to_system(type.value)
 
     with ThoughtSpot(cfg) as api:
-        # DEV NOTE: replace "deleting object .. {type} .. {guid}"" with whatever you want that feels more appropriate
-        # log.debug(f'') will send this data to the log file, but not to the screen
-        # console.log(f'') will send this data to both the log file and to the screen
-        # console.print(f'') will send this ONLY to the screen
+ 
         console.print(f'deleting object .. {type} ... {guid} ... ')
 
         # NOTE: /metadata/delete WILL NOT error if content does not exist, or if the
