@@ -72,7 +72,7 @@ class ListVizHeadersParameters(APIParameters):
 
 class ListObjectHeadersParameters(APIParameters):
     type: Union[MetadataObject, None] = MetadataObject.PINBOARD_ANSWER_BOOK
-    subtypes: List[LogicalTableSubtype] = None
+    subtypes: LogicalTableSubtype = None
     category: MetadataCategory = MetadataCategory.ALL
     sort: SortOrder = SortOrder.DEFAULT
     sortascending: bool = None
@@ -84,10 +84,6 @@ class ListObjectHeadersParameters(APIParameters):
     skipids: str = None
     fetchids: str = None
     auto_created: bool = None
-
-    @pydantic.validator('subtypes')
-    def stringify_the_array(cls, v):
-        return to_array([_.value for _ in v])
 
 
 class ListParameters(ListObjectHeadersParameters):
@@ -112,9 +108,14 @@ class DetailParameters(APIParameters):
     doUpdate: bool = True
 
 
-class ListColumnParameters(APIParameters):
+class DeleteParameters(APIParameters):
+    type: MetadataObject = None
     id: str
-    showhidden: bool = False
+    includedisabled: bool = False
+
+    @pydantic.validator('id', pre=True)
+    def stringify_the_array(cls, v) -> str:
+        return to_array(v)
 
 
 #
@@ -178,7 +179,7 @@ class _Metadata(TSPrivate):
 
     def listas(self, **parameters) -> httpx.Response:
         """
-        List of metadata objects in the repository as seen by a User/Group.
+        TODO
         """
         p = ListAsParameters(**parameters)
         r = self.get(f'{self.base_url}/listas', params=p.json())
@@ -186,16 +187,16 @@ class _Metadata(TSPrivate):
 
     def detail(self, guid, **parameters) -> httpx.Response:
         """
-        Detail of a metadata object in the repository.
+        TODO
         """
         p = DetailParameters(id=guid, **parameters)
         r = self.get(f'{self.base_url}/detail/{guid}', params=p.json())
         return r
 
-    def list_columns(self, guid, **parameters) -> httpx.Response:
+    def delete(self, **parameters) -> httpx.Response:
         """
-        Get list of all logical columns of a given logical table.
+        TODO
         """
-        p = ListColumnParameters(id=guid, **parameters)
-        r = self.get(f'{self.base_url}/listcolumns/{guid}', params=p.json())
+        p = DeleteParameters(**parameters)
+        r = self.post(f'{self.base_url}/delete', data=p.json())
         return r

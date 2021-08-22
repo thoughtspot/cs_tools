@@ -6,7 +6,7 @@
 
 ---
 
-This solution allows the customer to extract data on common ThoughtSpot metadta, and
+This solution allows the customer to extract data on common ThoughtSpot metadata, and
 make that information searchable within the platform.
 
 As your platform grows, it can oftentimes be useful to keep track of how much content

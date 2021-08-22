@@ -2,6 +2,7 @@ import datetime as dt
 import pathlib
 import logging
 import shutil
+import logging
 
 from typer import Argument as A_, Option as O_
 from rich.logging import RichHandler
@@ -15,6 +16,9 @@ from cs_tools.helpers.loader import _gather_tools
 from cs_tools.util.algo import deep_update
 from cs_tools.settings import TSConfig
 from cs_tools.const import APP_DIR
+
+
+log = logging.getLogger(__name__)
 
 
 log = logging.getLogger(__name__)
@@ -279,4 +283,4 @@ def run():
         else:
             e = f'{type(e).__name__}: {e}'
 
-        console.print(f'[error]{e}')
+        log.exception(f'[error]{e}')

@@ -2,6 +2,14 @@ from typing import Iterable, Any
 import collections.abc
 
 
+def chunks(iter_, *, n: int) -> iter:
+    """
+    Yield successive n-sized chunks from lst.
+    """
+    for i in range(0, len(iter_), n):
+        yield iter_[i:i + n]
+
+
 def dedupe(iterable: Iterable) -> Iterable:
     """
     Removes duplicates.
