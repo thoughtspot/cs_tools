@@ -178,7 +178,7 @@ class _Metadata(TSPrivate):
 
     def listas(self, **parameters) -> httpx.Response:
         """
-        TODO
+        List of metadata objects in the repository as seen by a User/Group.
         """
         p = ListAsParameters(**parameters)
         r = self.get(f'{self.base_url}/listas', params=p.json())
@@ -186,7 +186,7 @@ class _Metadata(TSPrivate):
 
     def detail(self, guid, **parameters) -> httpx.Response:
         """
-        TODO
+        Detail of a metadata object in the repository.
         """
         p = DetailParameters(id=guid, **parameters)
         r = self.get(f'{self.base_url}/detail/{guid}', params=p.json())
@@ -194,7 +194,7 @@ class _Metadata(TSPrivate):
 
     def list_columns(self, guid, **parameters) -> httpx.Response:
         """
-        TODO
+        Get list of all logical columns of a given logical table.
         """
         p = ListColumnParameters(id=guid, **parameters)
         r = self.get(f'{self.base_url}/listcolumns/{guid}', params=p.json())

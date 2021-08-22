@@ -46,6 +46,7 @@ app = typer.Typer(
 @app.command(cls=RichCommand)
 @frontend
 def run(
+    webserver_port: int=O_(5000, help='port to host the webserver on'),
     **frontend_kw
 ):
     """
@@ -65,6 +66,6 @@ def run(
         uvicorn.run(
             'cs_tools.tools._cls-sharing.web_app:web_app',
             host='0.0.0.0',
-            port=5000,
+            port=webserver_port,
             # log_config=None   # TODO log to file instead of console (less confusing for user)
         )
