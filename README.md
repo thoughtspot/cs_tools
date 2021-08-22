@@ -36,7 +36,7 @@ From your command line:
 $ cd $HOME
 $ python3 -m venv .cs_tools-dev
 $ source .cs_tools-dev/bin/activate
-$ pip install -e git+https://github.com/thoughtspot/cs_tools.git
+$ pip install -e .
 ```
 
 That's it!

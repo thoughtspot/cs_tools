@@ -1,6 +1,10 @@
 from typing import Union, Dict, List, Iterator, BinaryIO
+import datetime as dt
 import logging
+import pathlib
+import json
 
+import typer
 import httpx
 
 from cs_tools.helpers.secrets import reveal
@@ -37,6 +41,7 @@ class TSDataService(APIBase):
     @property
     def logged_in(self) -> bool:
         """
+        Determine whether or not the user is logged into the dataservice api.
         """
         return self._tsload_logged_in
 
@@ -165,6 +170,16 @@ class TSDataService(APIBase):
             self._load_auth()
 
         r = self.post(f'{self.tsload_base_url}/loads', json=data, timeout=timeout)
+
+        try:
+            data = r.json()
+            self._cache_target_node_ip_for_cycle_id(
+                mode='w', cycle_id=data['cycle_id'], node=data['node_address']['host'],
+                port=data['node_address']['port']
+            )
+        except KeyError:
+            pass
+
         return r
 
     def load_start(
@@ -200,12 +215,66 @@ class TSDataService(APIBase):
         if not self.logged_in:
             self._load_auth()
 
+        try:
+            cache = self._cache_target_node_ip_for_cycle_id(mode='r')
+            self.tsload_saas_node = cache[cycle_id]['node']
+            self.tsload_saas_port = cache[cycle_id]['port']
+        except KeyError:
+            pass
+
         r = self.get(f'{self.tsload_base_url}/loads/{cycle_id}')
         return r
 
     # Not sure where to put these.. they're attached to the ts data service
     # API, but only in the sense that the api produces predictable output, and
     # not part of the model itself.
+
+    @staticmethod
+    def _cache_target_node_ip_for_cycle_id(
+        *,
+        mode: str='w',
+        cycle_id: str=None,
+        node: str=None,
+        port: int=None
+    ):
+        """
+        Small local filestore for managing the load balancer re-route.
+
+        Further reading:
+        https://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html#api-workflow
+        https://docs.thoughtspot.com/latest/reference/tsload-service-api-ref.html#response-1
+        """
+        cache = {}
+        app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
+        (app_dir / '.cache').mkdir(parents=True, exist_ok=True)
+        FILE_CACHE = app_dir / '.cache/cycle-id-nodes.json'
+
+        if mode == 'w' and (cycle_id is None or node is None):
+            raise ValueError(
+                f'cycle_id and node must be valid values, got: {cycle_id}, {node}'
+            )
+
+        if FILE_CACHE.exists():
+            with FILE_CACHE.open(mode='r') as j:
+                cache = json.load(j)
+
+        if mode == 'r':
+            return cache
+
+        now = dt.datetime.utcnow().timestamp()
+        cache[cycle_id] = {'node': node, 'port': port, 'load_datetime': now}
+
+        # keep only recent data
+        cache = {
+            cycle: details
+            for cycle, details in cache.items()
+            if (now - details['load_datetime']) <= (10 * 86400)  # 10 days
+        }
+
+        with FILE_CACHE.open(mode='w') as j:
+            json.dump(cache, j, indent=4, sort_keys=True)
+
+        return cache
 
     @staticmethod
     def _parse_tql_query(table: dict) -> str:

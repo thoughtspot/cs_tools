@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+  <title>ThoughtSpot Sharing</title>
+  <meta content="" name="description">
+  <meta content="" name="keywords">
+
+  <!-- Favicons -->
+  <link href="{{ url_for('static', path='assets/img/favicon.ico') }}') }}" rel="icon">
+  <link href="{{ url_for('static', path='assets/img/favicon.ico') }}" rel="icon">
+  <link href="{{ url_for('static', path='assets/img/favicon.ico') }}" rel="apple-touch-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Montserrat:300,300i,400,400i,500,500i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="{{ url_for('static', path='assets/vendor/aos/aos.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', path='assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', path='assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', path='assets/vendor/boxicons/css/boxicons.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', path='assets/vendor/glightbox/css/glightbox.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', path='assets/vendor/swiper/swiper-bundle.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', path='assets/vendor/jquery-ui/jquery-ui.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', path='assets/vendor/select2/select2.min.css') }}" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
+  <link href="{{ url_for('static', path='assets/css/style.css') }}" rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- ======= Hero Section ======= -->
+  <section id="hero">
+    <div class="hero-container">
+      <a href="/" class="hero-logo" data-aos="zoom-in"><img src="{{ url_for('static', path='assets/img/hero-logo.png') }}" alt=""></a>
+      <h1 data-aos="zoom-in">Column Level Security & Table Sharing</h1>
+      <h2 data-aos="fade-up">I'm hiding. :)</h2>
+      <a data-aos="fade-up" data-aos-delay="200" href="#main-app" class="btn-get-started scrollto">Get Started</a>
+    </div>
+  </section>
+  <!-- End Hero -->
+
+  <!-- ======= Header ======= -->
+  <header id="header" class="d-flex align-items-center">
+    <div class="container d-flex align-items-center justify-content-between">
+
+      <div class="logo">
+        <a href="/"><img src="{{ url_for('static', path='assets/img/logo.png') }}" alt="" class="img-fluid"></a>
+      </div>
+
+      <nav id="navbar" class="navbar">
+        <!-- NOTE: if we grow this app, a navbar would be handy... for now we can leave it out though.
+        <ul>
+          <li><a class="nav-link scrollto active" href="#hero">Home</a></li>
+          <li><a class="nav-link scrollto" href="#main-app">Sharing</a></li>
+        </ul>
+        <i class="bi bi-list mobile-nav-toggle"></i>
+        -->
+      </nav>
+
+    </div>
+  </header>
+  <!-- End Header -->
+
+  <main id="main">
+
+    <!-- ======= MainApp Section ======= -->
+    <section class="main-app" id="main-app">
+      <div class="container">
+        <div class="section-title" data-aos="fade-up">
+          <h2>CLS & Table Sharing</h2>
+          <p>Connected to ThoughtSpot at <span>{{ host }}</span></p>
+          <p>as user <span>{{ user }}</span></p>
+        </div>
+
+        <div class="row" id="content">
+
+          <div id="progress-loader">
+            <div id="security-menu">
+              <div class="security-menu-option">
+                <label class="option-title" for="select-user-groups">Select Groups</label>
+                <select id="select-user-groups" multiple="multiple"></select>
+              </div>
+
+              <div class="security-menu-option">
+                <label class="option-title" for="select-tablename">Select a Table</label>
+                <select id="select-tablename"></select>
+              </div>
+
+              <div class="security-menu-option">
+                <button type="button" class="btn btn-outline-dark" id="btn-get-permissions">
+                  <i class="bi bi-arrow-repeat"></i>
+                  Get Permissions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="security-matrix">
+      </div>
+
+    </section>
+    <!-- End MainApp Section -->
+
+  </main>
+  <!-- End #main -->
+
+  <!-- ======= Footer ======= -->
+  <footer id="footer">
+    <div class="container footer-bottom clearfix">
+      <div class="copyright">
+        &copy;2021 <strong><span>ThoughtSpot Inc</span></strong>. All Rights Reserved
+      </div>
+    </div>
+  </footer>
+  <!-- End Footer -->
+
+  <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Vendor JS Files -->
+  <script src="{{ url_for('static', path='assets/vendor/aos/aos.js') }}"></script>
+  <script src="{{ url_for('static', path='assets/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', path='assets/vendor/glightbox/js/glightbox.min.js') }}"></script>
+  <script src="{{ url_for('static', path='assets/vendor/isotope-layout/isotope.pkgd.min.js') }}"></script>
+  <script src="{{ url_for('static', path='assets/vendor/swiper/swiper-bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', path='assets/vendor/jquery/jquery-1.12.4.js') }}"></script>
+  <script src="{{ url_for('static', path='assets/vendor/jquery-ui/jquery-ui.js') }}"></script>
+  <script src="{{ url_for('static', path='assets/vendor/select2/select2.min.js') }}"></script>
+
+  <!-- Template Main JS File -->
+  <script src="{{ url_for('static', path='assets/js/main.js') }}"></script>
+  <script src="{{ url_for('static', path='assets/js/app.js') }}"></script>
+
+</body>
+</html>

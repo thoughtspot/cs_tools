@@ -1,4 +1,5 @@
 import logging
+import copy
 import json
 
 import httpx
@@ -23,6 +24,9 @@ class APIBase:
         host = self.config.thoughtspot.host
         port = self.config.thoughtspot.port
 
+        if not host.startswith('http'):
+            host = f'https://{host}'
+
         if port:
             port = f':{port}'
         else:
@@ -45,9 +49,13 @@ class APIBase:
         # sigh/
 
         # don't log the password
-        secure = kwargs.copy()
-        secure.pop('password', None)
-        log.debug(f'>> {method} to {url} with data:\nargs={args}\nkwargs={secure}')
+        try:
+            secure = copy.deepcopy(kwargs)
+        except TypeError:
+            secure = copy.deepcopy({k: v for k, v in kwargs.items() if k not in ('file', 'files')})
+
+        secure.get('data', {}).pop('password', None)
+        log.debug(f'>> {method} to {url} with data:\n\targs={args}\n\tkwargs={secure}')
 
         r = self.http.request(method, url, *args, **kwargs)
         log.debug(f'<< {r.status_code} from {url}')

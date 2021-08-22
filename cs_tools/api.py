@@ -14,7 +14,6 @@ from cs_tools.models.auth import Session
 from cs_tools.models.user import User
 from cs_tools.schema.user import User as UserSchema
 from cs_tools.errors import CertificateVerifyFailure
-from cs_tools.const import APP_DIR
 
 
 log = logging.getLogger(__name__)
@@ -25,7 +24,6 @@ class ThoughtSpot:
     """
     def __init__(self, ts_config):
         self.config = ts_config
-        self._setup_logging()
 
         # set up our session
         # NOTE: base_url is a valid parameter for httpx.Client
@@ -50,31 +48,6 @@ class ThoughtSpot:
         self._periscope = _Periscope(self)
         self._security = _Security(self)
         self._session = _Session(self)
-
-    def _clean_logs(self, now):
-        logs_dir = APP_DIR / 'logs'
-        logs_dir.mkdir(parents=True, exist_ok=True)
-
-        # keep only the last 25 logfiles
-        lifo = sorted(logs_dir.iterdir(), reverse=True)
-
-        for idx, log in enumerate(lifo):
-            if idx > 25:
-                log.unlink()
-
-    def _setup_logging(self):
-        logging.getLogger('urllib3').setLevel(logging.ERROR)
-
-        now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
-        self._clean_logs(now)
-
-        logging.basicConfig(
-            filename=f'{APP_DIR}/logs/{now}.log',
-            format='[%(levelname)s - %(asctime)s] '
-                   '[%(name)s - %(module)s.%(funcName)s %(lineno)d] '
-                   '%(message)s',
-            level=self.config.logging.level
-        )
 
     @property
     def host(self):
