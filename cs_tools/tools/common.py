@@ -153,12 +153,10 @@ def tsload(
                --target_database <target_database>
                --target_schema 'falcon_default_schema'
                --target_table <target_table>
-               --field_seprator |
-               --boolean_representation true_false
+               --field_separator '|'
+               --boolean_representation True_False
                --null_value ''
-               --time_format %H:%M:%S
-               --date_format %Y%m%d
-               --date_time_format %Y-%m-%d %H:%M:%S
+               --date_time_format '%Y-%m-%d %H:%M:%S'
                --has_header_row
                --empty_target
 

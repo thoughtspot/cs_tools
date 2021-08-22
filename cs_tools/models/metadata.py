@@ -2,8 +2,10 @@ from typing import Union, List
 import logging
 import enum
 
+import pydantic
 import httpx
 
+from cs_tools.util.swagger import to_array
 from cs_tools.settings import APIParameters
 from cs_tools.models import TSPrivate, TSPublic
 
@@ -70,7 +72,7 @@ class ListVizHeadersParameters(APIParameters):
 
 class ListObjectHeadersParameters(APIParameters):
     type: Union[MetadataObject, None] = MetadataObject.PINBOARD_ANSWER_BOOK
-    subtypes: LogicalTableSubtype = None
+    subtypes: List[LogicalTableSubtype] = None
     category: MetadataCategory = MetadataCategory.ALL
     sort: SortOrder = SortOrder.DEFAULT
     sortascending: bool = None
@@ -82,6 +84,10 @@ class ListObjectHeadersParameters(APIParameters):
     skipids: str = None
     fetchids: str = None
     auto_created: bool = None
+
+    @pydantic.validator('subtypes')
+    def stringify_the_array(cls, v):
+        return to_array([_.value for _ in v])
 
 
 class ListParameters(ListObjectHeadersParameters):
@@ -104,6 +110,11 @@ class DetailParameters(APIParameters):
     dropquestiondetails: bool = False
     inboundrequesttype: int = 10000
     doUpdate: bool = True
+
+
+class ListColumnParameters(APIParameters):
+    id: str
+    showhidden: bool = False
 
 
 #
@@ -167,7 +178,7 @@ class _Metadata(TSPrivate):
 
     def listas(self, **parameters) -> httpx.Response:
         """
-        TODO
+        List of metadata objects in the repository as seen by a User/Group.
         """
         p = ListAsParameters(**parameters)
         r = self.get(f'{self.base_url}/listas', params=p.json())
@@ -175,8 +186,16 @@ class _Metadata(TSPrivate):
 
     def detail(self, guid, **parameters) -> httpx.Response:
         """
-        TODO
+        Detail of a metadata object in the repository.
         """
         p = DetailParameters(id=guid, **parameters)
         r = self.get(f'{self.base_url}/detail/{guid}', params=p.json())
+        return r
+
+    def list_columns(self, guid, **parameters) -> httpx.Response:
+        """
+        Get list of all logical columns of a given logical table.
+        """
+        p = ListColumnParameters(id=guid, **parameters)
+        r = self.get(f'{self.base_url}/listcolumns/{guid}', params=p.json())
         return r

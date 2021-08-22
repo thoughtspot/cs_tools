@@ -1,0 +1,741 @@
+/*--------------------------------------------------------------
+# ThoughtSpot Brand Theme
+--------------------------------------------------------------*/
+:root {
+  /* PRIMARY COLORS */
+  --ts-color-black: #000000;
+  --ts-color-white: #FFFFFF;
+
+  /* SECONDARY COLORS */
+  --ts-color-blue: #4E55FD;
+
+  /* TERTIARY COLORS */
+  --ts-color-cyan: #00AEEF;
+  --ts-color-mint: #06BF7F;
+  --ts-color-yellow: #FEC943;
+  --ts-color-coral: #FF595A;
+  --ts-color-purple: #A35DFF;
+
+  --ts-color-dark-grey: #191919;   /* TS BLACK 10% WHITE */
+  --ts-color-light-grey: #666666;  /* TS BLACK 10% WHITE */
+
+  --min-cell-height: 29px;
+}
+
+/*--------------------------------------------------------------
+# General
+--------------------------------------------------------------*/
+@font-face {
+  font-family: "Optimo-Plain";
+  src: url("../fonts/Optimo-Plain/Plain-Light.otf") format("otf"),
+  src: url("../fonts/Optimo-Plain/Plain-Medium.otf") format("otf"),
+       url("../fonts/Optimo-Plain/Plain-Regular.otf") format("otf");
+}
+
+body {
+  font-family: "Optimo-Plain", sans-serif;
+  color: #555555;
+}
+
+a {
+  text-decoration: none;
+  color: #7cc576;
+}
+
+a:hover {
+  color: #9ed49a;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Optimo-Plain", sans-serif;
+}
+
+/*--------------------------------------------------------------
+# Back to top button
+--------------------------------------------------------------*/
+.back-to-top {
+  position: fixed;
+  visibility: hidden;
+  opacity: 0;
+  right: 15px;
+  bottom: 15px;
+  z-index: 996;
+  background: var(--ts-color-mint);
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  transition: all 0.4s;
+}
+
+.back-to-top i {
+  font-size: 28px;
+  color: #fff;
+  line-height: 0;
+}
+
+.back-to-top:hover {
+  background: #97d193;
+  color: #fff;
+}
+
+.back-to-top.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+/*--------------------------------------------------------------
+# Disable AOS delay on mobile
+--------------------------------------------------------------*/
+@media screen and (max-width: 768px) {
+  [data-aos-delay] {
+    transition-delay: 0 !important;
+  }
+}
+
+/*--------------------------------------------------------------
+# Header
+--------------------------------------------------------------*/
+#header {
+  height: 90px;
+  transition: all 0.5s;
+  z-index: 997;
+  transition: all 0.5s;
+  background: #fff;
+  box-shadow: 0 4px 10px -3px rgba(191, 191, 191, 0.5);
+}
+
+#header .logo h1 {
+  font-size: 28px;
+  margin: 0;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+#header .logo h1 a, #header .logo h1 a:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
+#header .logo img {
+  padding: 0;
+  margin: 0;
+  max-height: 60px;
+}
+
+@media (max-width: 992px) {
+  #header {
+    height: 70px;
+  }
+}
+
+.scrolled-offset {
+  margin-top: 90px;
+}
+
+@media (max-width: 992px) {
+  .scrolled-offset {
+    margin-top: 90px;
+  }
+}
+
+/*--------------------------------------------------------------
+# Navigation Menu
+--------------------------------------------------------------*/
+/**
+* Desktop Navigation 
+*/
+.navbar {
+  padding: 0;
+}
+
+.navbar ul {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  list-style: none;
+  align-items: center;
+}
+
+.navbar li {
+  position: relative;
+}
+
+.navbar a, .navbar a:focus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0 10px 30px;
+  font-size: 15px;
+  color: #151515;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: 0.3s;
+}
+
+.navbar a i, .navbar a:focus i {
+  font-size: 12px;
+  line-height: 0;
+  margin-left: 5px;
+}
+
+.navbar a:hover, .navbar .active, .navbar .active:focus, .navbar li:hover > a {
+  color: var(--ts-color-mint);
+}
+
+/**
+* Mobile Navigation 
+*/
+.mobile-nav-toggle {
+  color: #151515;
+  font-size: 28px;
+  cursor: pointer;
+  display: none;
+  line-height: 0;
+  transition: 0.5s;
+}
+
+.mobile-nav-toggle.bi-x {
+  color: #fff;
+}
+
+@media (max-width: 991px) {
+  .mobile-nav-toggle {
+    display: block;
+  }
+  .navbar ul {
+    display: none;
+  }
+}
+
+.navbar-mobile {
+  position: fixed;
+  overflow: hidden;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  transition: 0.3s;
+  z-index: 999;
+}
+
+.navbar-mobile .mobile-nav-toggle {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+}
+
+.navbar-mobile ul {
+  display: block;
+  position: absolute;
+  top: 55px;
+  right: 15px;
+  bottom: 15px;
+  left: 15px;
+  padding: 10px 0;
+  background-color: #fff;
+  overflow-y: auto;
+  transition: 0.3s;
+}
+
+.navbar-mobile a {
+  padding: 10px 20px;
+  font-size: 15px;
+  color: #151515;
+}
+
+.navbar-mobile a:hover, .navbar-mobile .active, .navbar-mobile li:hover > a {
+  color: var(--ts-color-mint);
+}
+
+.navbar-mobile .getstarted {
+  margin: 15px;
+}
+
+/*--------------------------------------------------------------
+# Hero Section
+--------------------------------------------------------------*/
+#hero {
+  width: 100%;
+  height: 100vh;
+  background: var(--ts-color-dark-grey) url("../img/hero-bg.webp") no-repeat 100% 105%;
+  position: relative;
+}
+
+#hero .hero-container {
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 0 15px;
+}
+
+#hero .hero-logo {
+  margin-bottom: 30px;
+}
+
+#hero h1 {
+  margin: 0 0 30px 0;
+  font-size: clamp(28px, 3vw, 48px);
+  font-weight: 500;
+  line-height: clamp(36px, 3vw, 56px);
+  color: #fff;
+}
+
+#hero h2 {
+  /* if this is ever used, swap the font-color
+   *
+   * color: #aeaeae;
+  */
+  color: var(--ts-color-dark-grey);
+  margin-bottom: 30px;
+  font-size: clamp(12px, 3vw, 18px);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+#hero .btn-get-started {
+  font-family: "Optimo-Plain", sans-serif;
+  text-transform: uppercase;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 1px;
+  display: inline-block;
+  padding: 14px 30px;
+  border-radius: 3px;
+  margin: 10px;
+  color: #fff;
+  background: var(--ts-color-mint);
+}
+
+#hero .btn-get-started:hover {
+  transition: 0.5s;
+  background: #fff;
+  color: var(--ts-color-dark-grey);
+}
+
+@media (min-width: 1024px) {
+  #hero {
+    background-attachment: fixed;
+  }
+}
+
+
+/*--------------------------------------------------------------
+# Sections General
+--------------------------------------------------------------*/
+section {
+  padding: 60px 0;
+  overflow: hidden;
+}
+
+.section-title {
+  text-align: center;
+  padding-bottom: 40px;
+}
+
+.section-title h2 {
+  font-size: clamp(32px, 3vw, 36px);
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--ts-color-black);
+}
+
+.section-title p {
+  margin-bottom: 0px;
+  font-size: 1.25rem;
+}
+
+.section-title span {
+  font-weight: bold;
+  color: var(--ts-color-dark-grey);
+}
+
+/*--------------------------------------------------------------
+# Security Menu
+--------------------------------------------------------------*/
+label {
+  display: block;
+}
+
+.access-selector-group {
+    min-width: 90px;
+}
+
+.access-selector-group button {
+    background-color: #f6f6f6;
+    border: 1px solid #c5c5c5;
+    color: black;
+    padding: 5px 12px;
+    cursor: pointer;
+    float: left;
+    height: 28px;
+    width: 28px;
+}
+
+.access-selector-group button.NO_ACCESS {
+    background-image: url(../img/NO_ACCESS-NORM.png);
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: center;
+}
+
+.access-selector-group button.READ_ONLY {
+    background-image: url(../img/READ_ONLY-NORM.png);
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: center;
+}
+
+.access-selector-group button.MODIFY {
+    background-image: url(../img/MODIFY-NORM.png);
+    background-repeat: no-repeat;
+    background-size: 25px 25px;
+    background-position: center;
+}
+
+.access-selector-group button.NO_ACCESS.Active,
+.access-selector-group button.NO_ACCESS:hover {
+    background-image: url(../img/NO_ACCESS-HL.png);
+    background-color: var(--ts-color-coral);
+}
+
+.access-selector-group button.READ_ONLY.Active,
+.access-selector-group button.READ_ONLY:hover {
+    background-image: url(../img/READ_ONLY-HL.png);
+    background-color: var(--ts-color-mint);
+}
+
+.access-selector-group button.MODIFY.Active,
+.access-selector-group button.MODIFY:hover {
+    background-image: url(../img/MODIFY-HL.png);
+    background-color: var(--ts-color-cyan);
+    color: white;
+}
+
+.access-selector-group button:not(:last-child) {
+    border-right: none;
+}
+
+.access-selector-group:after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.error-message .ui-dialog-titlebar {
+    border: 1px solid black;
+    background: red;
+}
+
+.success-message .ui-dialog-titlebar {
+    border: 1px solid black;
+    background: green;
+    color: white;
+}
+
+.ui-dialog-titlebar .ui-button-icon-only .ui-icon {
+    top: 0%;
+}
+
+/* ... */
+
+#security-menu .security-menu-option {
+  display: block;
+  float: left;
+  width: 31%;
+  margin: 1%;
+}
+
+#security-menu .option-title {
+  font-size: 22px;
+  text-align: center;
+}
+
+/* When the screen is less than 600px wide, make the three columns stack on top of each
+   other instead of next to each other */
+@media screen and (max-width: 600px) {
+  #security-menu .security-menu-option {
+    width: 100%;
+  }
+}
+
+#btn-get-permissions {
+  transform: translate(50%, 50%);
+}
+
+#security-menu::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+
+/*--------------------------------------------------------------
+# Progress Popup
+--------------------------------------------------------------*/
+/*#progress-loader {
+    height: 400px;
+    width: 800px;
+}
+*/
+
+@keyframes loadingStart {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes loading {
+    0% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(180deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading {
+    position: relative;
+}
+
+.loading .loading-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    animation: loadingStart 3s 300ms linear 1 both;
+    background: rgba(255, 255, 255, 0.75);
+    text-align: center;
+    z-index: 1;
+}
+
+.loading .loading-text {
+    font-size: 0.875rem;
+    line-height: 1.3125rem;
+    text-shadow: white 0 0 1em, white 0 0 0.5em, white 0 0 0.25em;
+    position: relative;
+    display: block;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.loading .loading-text:after {
+    content: "...";
+}
+
+.loading .loading-spinner {
+    position: absolute;
+    top: 50%;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: -3.9375rem auto 0;
+    color: #007fff;
+    text-align: center;
+}
+
+.loading .loading-icon {
+    font-size: 4.8125rem;
+    line-height: 5.25rem;
+    text-shadow: rgba(255, 255, 255, 0.75) 0 0 0.5em;
+    animation: loading 1s steps(4) infinite;
+    display: block;
+    vertical-align: middle;
+}
+
+.loading .loading-icon:before {
+    vertical-align: middle;
+    content: "\e000";
+    /*font-family: "demo";*/
+}
+
+/*--------------------------------------------------------------
+# Footer
+--------------------------------------------------------------*/
+#footer {
+  background: var(--ts-color-black);
+  color: #fff;
+  font-size: 14px;
+  position: relative;
+}
+
+#footer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1;
+}
+
+#footer .footer-bottom {
+  border-top: 1px solid #222222;
+  z-index: 2;
+  position: relative;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+#footer .copyright {
+  text-align: center;
+}
+
+/*
+
+TEST CSS v2
+
+*/
+
+.security-menu-option > .select2-container {
+    /*    select2 allows you to set the width ala the inline style tag, which overrides
+     *    any sort of CSS styling options. I'd rather keep all styles with the css, so
+     *    we'll prefer the icky !important over the ickier style tag. :~)
+     */
+    width: 100% !important;
+}
+
+.select2-container--default .select2-selection {
+    background-color: #f6f6f6;
+    height: 2em;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin-top: 2px;
+}
+
+#security-matrix {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: 250px repeat(auto-fill, 150px);
+  grid-gap: 0.25rem;
+  overflow-x: auto;
+  padding: 6rem 2rem 2rem 2rem;
+  margin-top: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+#select-all-columns {
+  font-weight: bold;
+}
+
+#security-matrix > .column > div:nth-child(2) {
+  border-bottom: 1px solid var(--ts-color-black);
+  min-width: 150px;
+}
+
+#security-matrix .row-header {
+  position: relative;
+  direction: rtl;
+  white-space: nowrap;
+  padding-right: 5px;
+}
+
+#update-security {
+  position: absolute;
+  background-color: #f6f6f6;
+  background-image: url(../img/apply_security.png);
+  background-repeat: no-repeat;
+  background-position: top 50% left 10%;
+  background-size: 25px 25px;
+  padding: 10px;
+  width: 65%;
+  transform: translate(-25%, -150%);
+  border: 1px solid #c5c5c5;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: .75rem;
+}
+
+#update-security:hover {
+  background-image: url(../img/apply_security-HL.png);
+  background-color: var(--ts-color-cyan);
+  color: white;
+}
+
+#security-matrix .row-header > div:nth-child(n + 2) {
+  border-bottom: 1px solid var(--ts-color-white);
+  line-height: calc(var(--min-cell-height) - 1px);  /* remove border height, do not want box-sizing: content-border; */
+}
+
+#security-matrix .row-header > div:nth-child(n + 3) {
+  border-bottom: 1px solid var(--ts-color-dark-grey);
+}
+
+#security-matrix .column {
+  position: relative;
+}
+
+#security-matrix .column-header {
+  color: var(--ts-color-black);
+  font-weight: bold;
+  text-align: center;
+  padding-bottom: 5px;
+  position: absolute;
+  width: 101%;
+  overflow-wrap: break-word;
+  transform:
+    translate(0%, -101%);
+}
+
+#security-matrix .column:nth-child(odd) .column-header {
+  color: var(--ts-color-light-grey);
+}
+
+#security-matrix .column-data,
+#security-matrix .select-all-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  text-align: center;
+}
+
+#security-matrix .matrix-cell {
+  position: relative;
+  background-color: #f6f6f6;
+  border: 1px solid #c5c5c5;
+  color: black;
+  cursor: pointer;
+  min-height: var(--min-cell-height);
+}
+
+#security-matrix .matrix-cell i {
+  font-size: 1.40em;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%)
+}
+
+#security-matrix .matrix-cell.NO_ACCESS.active,
+#security-matrix .matrix-cell.NO_ACCESS:hover {
+  background-color: var(--ts-color-coral); 
+}
+
+#security-matrix .matrix-cell.READ_ONLY.active,
+#security-matrix .matrix-cell.READ_ONLY:hover {
+  background-color: var(--ts-color-mint); 
+}
+
+#security-matrix .matrix-cell.MODIFY.active,
+#security-matrix .matrix-cell.MODIFY:hover {
+  background-color: var(--ts-color-cyan); 
+}
