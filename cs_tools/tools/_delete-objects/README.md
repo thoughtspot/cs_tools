@@ -34,6 +34,7 @@ Usage: cs_tools tools delete-objects [OPTIONS] COMMAND [ARGS]...
       - pinboard
 
   CSV/XLSX file format should look like..
+
       +----------+-------+
       |  type    | guid  |
       +----------+-------+

@@ -134,7 +134,6 @@ def single(
     type = ReversibleSystemType.to_system(type.value)
 
     with ThoughtSpot(cfg) as api:
- 
         console.print(f'deleting object .. {type} ... {guid} ... ')
 
         # NOTE: /metadata/delete WILL NOT error if content does not exist, or if the
@@ -157,6 +156,8 @@ def from_file(
 
     \b
     CSV/XLSX file format should look like..
+
+    \b
         +----------------+-------+
         | type           | guid  |
         +----------------+-------+
