@@ -1,4 +1,5 @@
 import datetime as dt
+import traceback
 import pathlib
 import logging
 import shutil
@@ -284,3 +285,4 @@ def run():
             e = f'{type(e).__name__}: {e}'
 
         log.exception(f'[error]{e}')
+        console.print(f'[red]{traceback.format_exc()}[/]')
