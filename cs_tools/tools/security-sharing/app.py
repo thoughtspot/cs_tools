@@ -152,7 +152,7 @@ def run(
         )
 
         uvicorn.run(
-            'cs_tools.tools._cls-sharing.web_app:web_app',
+            'cs_tools.tools.security-sharing.web_app:web_app',
             host='0.0.0.0',
             port=webserver_port,
             # log_config=None   # TODO log to file instead of console (less confusing for user)
