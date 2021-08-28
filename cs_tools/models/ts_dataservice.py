@@ -126,6 +126,7 @@ class TSDataService(APIBase):
 
     def load_init(self, data: dict, *, timeout: float=5.0) -> httpx.Response:
         """
+        Initialize a tsload session, with options data.
         """
         # TODO
         #
@@ -186,13 +187,23 @@ class TSDataService(APIBase):
         self,
         cycle_id: str,
         *,
-        fd: BinaryIO,
-        host: str=None,
-        port: int=None
+        fd: BinaryIO
     ) -> httpx.Response:
         """
+        Begin loading data in this session.
 
-        Unique identifier of a load cycle.
+        This endpoint will return immediately once the file has loaded to the remote
+        network. Processing of the dataload may happen concurrently, and thus, this
+        function may be called multiple times to paralellize the full data load across
+        multiple files.
+
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
+
+        fd : BinaryIO
+          a file-like object to load to Falcon
         """
         if not self.logged_in:
             self._load_auth()
@@ -202,6 +213,14 @@ class TSDataService(APIBase):
 
     def load_commit(self, cycle_id: str) -> httpx.Response:
         """
+        Commits currently ingested data to Falcon in this session.
+
+        The commit will happen asynchronously, this method returns immediately.
+
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
         """
         if not self.logged_in:
             self._load_auth()
@@ -211,6 +230,12 @@ class TSDataService(APIBase):
 
     def load_status(self, cycle_id: str) -> httpx.Response:
         """
+        Return the status of the dataload for a particular session.
+
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
         """
         if not self.logged_in:
             self._load_auth()

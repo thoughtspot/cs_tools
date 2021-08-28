@@ -265,11 +265,3 @@ def to_csv(
             writer.writeheader()
 
         writer.writerows(data)
-
-
-# BILL DO U WANT ? :)
-#
-# def to_excel():
-#     """
-#     """
-#     pass
