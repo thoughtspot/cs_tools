@@ -5,6 +5,13 @@ All notable changes to this tool will be documented in this file.
 The format is based on [Keep a Changelog][keep-a-changelog], and this project adheres
 to [Semantic Versioning][semver].
 
+
+## [1.0.2] - 2020-08-28
+
+### Fixed
+- tqlservice response uncaught error [@boonhapus][contrib-boonhapus].
+
+
 ## [1.0.1] - 2020-05-24
 
 ### Modified

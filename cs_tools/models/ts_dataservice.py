@@ -55,10 +55,15 @@ class TSDataService(APIBase):
     @property
     def tsload_base_url(self):
         """
-        Handle the custom port for the ThoughtSpot tsload webserver.
+        Handle location of the ThoughtSpot tsload webserver.
         """
-        base = f'{self.tsload_saas_node}:{self.tsload_saas_port}'
-        return f'{base}/ts_dataservice/v1/public'
+        host = self.tsload_saas_node
+        port = self.tsload_saas_port
+
+        if not host.startswith('http'):
+            host = f'https://{host}'
+
+        return f'{host}:{port}/ts_dataservice/v1/public'
 
     def tokens_static(self):
         """
@@ -117,15 +122,17 @@ class TSDataService(APIBase):
 
         r = self.http.post(f'{self.tsload_base_url}/session', data=auth)
 
-        if r.status_code == httpx.codes.OK:
-            self._tsload_logged_in = True
-        else:
-            log.warning('login did not succeed!')
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            raise RuntimeError('login failed.') from e
 
+        self._tsload_logged_in = True
         return r
 
     def load_init(self, data: dict, *, timeout: float=5.0) -> httpx.Response:
         """
+        Initialize a tsload session, with options data.
         """
         # TODO
         #
@@ -177,6 +184,7 @@ class TSDataService(APIBase):
                 mode='w', cycle_id=data['cycle_id'], node=data['node_address']['host'],
                 port=data['node_address']['port']
             )
+            self._tsload_logged_in = False
         except KeyError:
             pass
 
@@ -186,14 +194,35 @@ class TSDataService(APIBase):
         self,
         cycle_id: str,
         *,
-        fd: BinaryIO,
-        host: str=None,
-        port: int=None
+        fd: BinaryIO
     ) -> httpx.Response:
         """
+        Begin loading data in this session.
 
-        Unique identifier of a load cycle.
+        This endpoint will return immediately once the file has loaded to the remote
+        network. Processing of the dataload may happen concurrently, and thus, this
+        function may be called multiple times to paralellize the full data load across
+        multiple files.
+
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
+
+        fd : BinaryIO
+          a file-like object to load to Falcon
         """
+        try:
+            cache = self._cache_target_node_ip_for_cycle_id(mode='r')
+            self.tsload_saas_node = cache[cycle_id]['node']
+            self.tsload_saas_port = cache[cycle_id]['port']
+        except KeyError:
+            # if the etl_http_server loadbalancer is not running, we'll hit a KeyError
+            #
+            # aka:
+            #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_enable_load_balancer false
+            pass
+
         if not self.logged_in:
             self._load_auth()
 
@@ -202,7 +231,22 @@ class TSDataService(APIBase):
 
     def load_commit(self, cycle_id: str) -> httpx.Response:
         """
+        Commits currently ingested data to Falcon in this session.
+
+        The commit will happen asynchronously, this method returns immediately.
+
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
         """
+        try:
+            cache = self._cache_target_node_ip_for_cycle_id(mode='r')
+            self.tsload_saas_node = cache[cycle_id]['node']
+            self.tsload_saas_port = cache[cycle_id]['port']
+        except KeyError:
+            pass
+
         if not self.logged_in:
             self._load_auth()
 
@@ -211,16 +255,22 @@ class TSDataService(APIBase):
 
     def load_status(self, cycle_id: str) -> httpx.Response:
         """
-        """
-        if not self.logged_in:
-            self._load_auth()
+        Return the status of the dataload for a particular session.
 
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
+        """
         try:
             cache = self._cache_target_node_ip_for_cycle_id(mode='r')
             self.tsload_saas_node = cache[cycle_id]['node']
             self.tsload_saas_port = cache[cycle_id]['port']
         except KeyError:
             pass
+
+        if not self.logged_in:
+            self._load_auth()
 
         r = self.get(f'{self.tsload_base_url}/loads/{cycle_id}')
         return r
