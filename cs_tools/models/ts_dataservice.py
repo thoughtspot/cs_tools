@@ -55,10 +55,15 @@ class TSDataService(APIBase):
     @property
     def tsload_base_url(self):
         """
-        Handle the custom port for the ThoughtSpot tsload webserver.
+        Handle location of the ThoughtSpot tsload webserver.
         """
-        base = f'{self.tsload_saas_node}:{self.tsload_saas_port}'
-        return f'{base}/ts_dataservice/v1/public'
+        host = self.tsload_saas_node
+        port = self.tsload_saas_port
+
+        if not host.startswith('http'):
+            host = f'https://{host}'
+
+        return f'{host}:{port}/ts_dataservice/v1/public'
 
     def tokens_static(self):
         """
@@ -245,6 +250,10 @@ class TSDataService(APIBase):
             self.tsload_saas_node = cache[cycle_id]['node']
             self.tsload_saas_port = cache[cycle_id]['port']
         except KeyError:
+            # if the etl_http_server loadbalancer is not running, we'll hit a KeyError
+            #
+            # aka:
+            #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_enable_load_balancer false
             pass
 
         r = self.get(f'{self.tsload_base_url}/loads/{cycle_id}')
