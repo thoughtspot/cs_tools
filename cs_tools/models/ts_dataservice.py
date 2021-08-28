@@ -122,11 +122,12 @@ class TSDataService(APIBase):
 
         r = self.http.post(f'{self.tsload_base_url}/session', data=auth)
 
-        if r.status_code == httpx.codes.OK:
-            self._tsload_logged_in = True
-        else:
-            log.warning('login did not succeed!')
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            raise RuntimeError('login failed.') from e
 
+        self._tsload_logged_in = True
         return r
 
     def load_init(self, data: dict, *, timeout: float=5.0) -> httpx.Response:
@@ -183,6 +184,7 @@ class TSDataService(APIBase):
                 mode='w', cycle_id=data['cycle_id'], node=data['node_address']['host'],
                 port=data['node_address']['port']
             )
+            self._tsload_logged_in = False
         except KeyError:
             pass
 
@@ -210,6 +212,17 @@ class TSDataService(APIBase):
         fd : BinaryIO
           a file-like object to load to Falcon
         """
+        try:
+            cache = self._cache_target_node_ip_for_cycle_id(mode='r')
+            self.tsload_saas_node = cache[cycle_id]['node']
+            self.tsload_saas_port = cache[cycle_id]['port']
+        except KeyError:
+            # if the etl_http_server loadbalancer is not running, we'll hit a KeyError
+            #
+            # aka:
+            #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_enable_load_balancer false
+            pass
+
         if not self.logged_in:
             self._load_auth()
 
@@ -227,6 +240,13 @@ class TSDataService(APIBase):
         cycle_id : str
           unique identifier of a load cycle
         """
+        try:
+            cache = self._cache_target_node_ip_for_cycle_id(mode='r')
+            self.tsload_saas_node = cache[cycle_id]['node']
+            self.tsload_saas_port = cache[cycle_id]['port']
+        except KeyError:
+            pass
+
         if not self.logged_in:
             self._load_auth()
 
@@ -242,19 +262,15 @@ class TSDataService(APIBase):
         cycle_id : str
           unique identifier of a load cycle
         """
-        if not self.logged_in:
-            self._load_auth()
-
         try:
             cache = self._cache_target_node_ip_for_cycle_id(mode='r')
             self.tsload_saas_node = cache[cycle_id]['node']
             self.tsload_saas_port = cache[cycle_id]['port']
         except KeyError:
-            # if the etl_http_server loadbalancer is not running, we'll hit a KeyError
-            #
-            # aka:
-            #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_enable_load_balancer false
             pass
+
+        if not self.logged_in:
+            self._load_auth()
 
         r = self.get(f'{self.tsload_base_url}/loads/{cycle_id}')
         return r
