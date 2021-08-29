@@ -6,13 +6,43 @@
 }
 
 @font-face {
-  font-family: "BB Roller Mono TX";
-  src: url("assets/fonts/BB Roller Mono TX/bbrollermonoprotx-medium.otf") format("otf"),
-       url("assets/fonts/BB Roller Mono TX/bbrollermonoprotx-regular.otf") format("otf");
+  font-family: "BB Roller Mono";
+  src: url("assets/fonts/BB Roller Mono/bbrollermonoprotx-medium.otf") format("otf"),
+       url("assets/fonts/BB Roller Mono/bbrollermonoprotx-regular.otf") format("otf");
 }
-
 
 :root {
-  --md-text-font-family: "Optimo-Plain";
-  --md-code-font-family: "BB Roller Mono TX";
+  /* Primary Colors */
+  --ts-color-black: #000000;
+  --ts-color-white: #FFFFFF;
+
+  /* Secondary Colors */
+  --ts-color-blue: #4E55FD;
+  
+  /* Tertiary Colors */
+  --ts-color-cyan:   #00AEEF;
+  --ts-color-mint:   #06BF7F;
+  --ts-color-yellow: #FEC943;
+  --ts-color-coral:  #FF595A;
+  --ts-color-purple: #A35DFF;
+
+  /*--md-text-font-family: "Optimo-Plain";*/
+  /*--md-code-font-family: "BB Roller Mono";*/
 }
+
+.md-grid {
+  max-width: 75%;
+}
+
+/*
+[data-md-color-scheme="thoughtspot-light"] {
+  --md-default-fg-color: var(--ts-color-black);
+  --md-default-bg-color: var(--ts-color-white);
+}
+
+
+[data-md-color-scheme="thoughtspot-dark"] {
+  --md-default-fg-color: var(--ts-color-blue);
+  --md-default-bg-color: #191919; // TS BLACK 10% WHITE
+}
+*/

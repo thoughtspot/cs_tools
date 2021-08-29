@@ -1,40 +1,93 @@
 site_name: CS Tools
+# site_url: https://cs_tools.thoughtspot.com/
+# site_description: >-
+#   Lorem ipsum..
 
-repo_url: https://github.com/thoughtspot/cs_tools
 repo_name: thoughtspot/cs_tools
-edit_uri: master/docs/
+repo_url: https://github.com/thoughtspot/cs_tools
+edit_uri: tree/docs/docs/
 
 copyright: Copyright &copy; 2021 ThoughtSpot Inc. All Rights Reserved
 
 theme:
   features:
     - header.autohide
+    - navigation.instant
+    - navigation.tabs
 
-  font: false
+  font:
+    # text: Optimo-Plain
+    text: Roboto
+    # code: BB Roller Mono
+    code: Roboto Mono
   icon:
     repo: fontawesome/brands/github
   logo: assets/logo_white.png
   name: material
 
   palette:
-    - scheme: default
+    - media: "(prefers-color-scheme: light)"
+      primary: indigo
+      accent: blue
+      scheme: default
+      # scheme: thoughtspot-light
       toggle:
-        icon: material/toggle-switch-off-outline
+        icon: material/lightbulb-outline
         name: switch to dark mode
-    - scheme: slate
+    - media: "(prefers-color-scheme: dark)"
+      primary: blue
+      accent: indigo
+      scheme: slate
+      # scheme: thoughtspot-dark
       toggle:
-        icon: material/toggle-switch
+        icon: material/lightbulb
         name: switch to light mode
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.keys
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - toc:
+      permalink: true
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/thoughtspot/cs_tools
-      name: CS Tools Github Project
+      name: find us on github
 
     - icon: fontawesome/solid/paper-plane
       link: mailto:ps-na@thoughtspot.com
-      name: Email CS Tools team
+      name: email the team
 
 extra_css:
   - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Install: how-to/install.md
+  - Tools:
+    - tools/overview.md
+    - Remote TQL:
+      - tools/rtql/README.md
+      - tools/rtql/CHANGELOG.md
+    - Remote tsload:
+      - tools/rtsload/README.md
+      - tools/rtsload/CHANGELOG.md
+    - ❗ Sharding Recommender:
+      - tools/sharding-recommender/README.md
+      - tools/sharding-recommender/CHANGELOG.md
+  - Changelog:
+    - v1.2.0: changelog/1.2.0.md
+    - v1.1.0: changelog/1.1.0.md
+    - v1.0.0: changelog/1.0.0.md
+  - '':
+    - for-developers/contributing.md
+    - for-developers/installation.md
+    - for-developers/documentation.md
