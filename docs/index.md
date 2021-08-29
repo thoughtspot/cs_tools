@@ -50,7 +50,7 @@ up and running in less than 5 minutes!
     ```bash
     python3 -m venv $HOME/.cs_tools-dev
     source $HOME/.cs_tools-dev/bin/activate.bat
-    pip install -e .
+    pip install -r dev-requirements.txt
     ```
 
 === ":fontawesome-brands-linux: Linux"
@@ -58,7 +58,7 @@ up and running in less than 5 minutes!
     ```bash
     python3 -m venv $HOME/.cs_tools-dev
     source $HOME/.cs_tools-dev/bin/activate.bat
-    pip install -e .
+    pip install -r dev-requirements.txt
     ```
 
 === ":fontawesome-brands-windows: Windows"
@@ -67,7 +67,7 @@ up and running in less than 5 minutes!
     ```powershell
     python -m venv %USERPROFILE%\.cs_tools-dev
     %USERPROFILE%\.cs_tools-dev\Scripts\activate.bat
-    pip install -e .
+    pip install -r dev-requirements.txt
     ```
 
 Should you find anything about the docs or `cs_tools` itself lacking, [please submit an
