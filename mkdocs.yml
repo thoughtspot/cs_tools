@@ -1,0 +1,40 @@
+site_name: CS Tools
+
+repo_url: https://github.com/thoughtspot/cs_tools
+repo_name: thoughtspot/cs_tools
+edit_uri: master/docs/
+
+copyright: Copyright &copy; 2021 ThoughtSpot Inc. All Rights Reserved
+
+theme:
+  features:
+    - header.autohide
+
+  font: false
+  icon:
+    repo: fontawesome/brands/github
+  logo: assets/logo_white.png
+  name: material
+
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: switch to light mode
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/thoughtspot/cs_tools
+      name: CS Tools Github Project
+
+    - icon: fontawesome/solid/paper-plane
+      link: mailto:ps-na@thoughtspot.com
+      name: Email CS Tools team
+
+extra_css:
+  - stylesheets/extra.css
