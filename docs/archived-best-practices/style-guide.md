@@ -1,3 +1,0 @@
-# Style Guide
-
-Lorem ipsum...

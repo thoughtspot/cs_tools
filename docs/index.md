@@ -55,6 +55,7 @@ up and running in less than 5 minutes!
 
 === ":fontawesome-brands-linux: Linux"
 
+    *if in a GUI environment*, &nbsp; ++ctrl+shift+t++
     ```bash
     python3 -m venv $HOME/.cs_tools-dev
     source $HOME/.cs_tools-dev/bin/activate.bat
@@ -74,7 +75,7 @@ Should you find anything about the docs or `cs_tools` itself lacking, [please su
 issue][gh-issue]!
 
 [this]: https://cs_tools.thoughtspot.com/
-[docs-tools]: tools/overview.md
+[docs-tools]: cs-tools/overview.md
 [docs-install]: how-to/install.md
 [docs-howto-config]: how-to/configuration_file.md
 [gh-main]: https://github.com/thoughtspot/cs_tools/
