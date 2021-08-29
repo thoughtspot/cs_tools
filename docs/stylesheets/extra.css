@@ -1,0 +1,18 @@
+@font-face {
+  font-family: "Optimo-Plain";
+  src: url("assets/fonts/Optimo-Plain/Plain-Light.otf") format("otf"),
+       url("assets/fonts/Optimo-Plain/Plain-Medium.otf") format("otf"),
+       url("assets/fonts/Optimo-Plain/Plain-Regular.otf") format("otf");
+}
+
+@font-face {
+  font-family: "BB Roller Mono TX";
+  src: url("assets/fonts/BB Roller Mono TX/bbrollermonoprotx-medium.otf") format("otf"),
+       url("assets/fonts/BB Roller Mono TX/bbrollermonoprotx-regular.otf") format("otf");
+}
+
+
+:root {
+  --md-text-font-family: "Optimo-Plain";
+  --md-code-font-family: "BB Roller Mono TX";
+}
