@@ -1,5 +1,8 @@
 # Tools
 
+ThoughtSpot CS Tools are a collection of different tools that assist implementation and
+administration, and may contain API calls that we normally wouldn't share with customers.
+
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
 
