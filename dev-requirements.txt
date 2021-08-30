@@ -1,4 +1,4 @@
 -r requirements.txt
 
--e git+https://github.com/thoughtspot/cs_tools.git#egg=cs_tools
 mkdocs-material==7.2.5
+-e .
