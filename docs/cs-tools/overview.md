@@ -24,6 +24,9 @@ version or release__==^^. You should not rely on them for production-critical wo
 
     :material-github: &nbsp; __[Found a problem? Submit an issue.][gh-issue]{ target='secondary' .external-link }__</a>
 
+ThoughtSpot CS Tools are a collection of different tools that assist implementation and
+administration, and may contain API calls that we normally wouldn't share with customers.
+
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
 
