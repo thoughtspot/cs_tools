@@ -14,9 +14,11 @@ introduced to form consistency in how we design and distribute our tools.
 ---
 
 <center>
-__Documentation__: [https://cs_tools.thoughtspot.com/][this]
 
-__Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
+  __Documentation__: [https://cs_tools.thoughtspot.com/][this]
+
+  __Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
+
 </center>
 
 ---
