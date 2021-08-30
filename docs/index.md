@@ -4,10 +4,9 @@ hide:
 ---
 
 <style>
+  .md-grid { max-width: 75%; }
   .md-typeset h1,
-  .md-content__button {
-    display: none;
-  }
+  .md-content__button { display: none; }
 </style>
 
 <figure>
