@@ -76,13 +76,14 @@ nav:
   - Tools:
     - cs-tools/overview.md
     - Remote TQL:
-      - cs-tools/rtql/README.md
+      - rtql: cs-tools/rtql/README.md
       - cs-tools/rtql/CHANGELOG.md
     - Remote tsload:
-      - cs-tools/rtsload/README.md
+      - rtsload: cs-tools/rtsload/README.md
       - cs-tools/rtsload/CHANGELOG.md
-    - ❗ Sharding Recommender:
-      - cs-tools/sharding-recommender/README.md
+    - 🙈 Sharding Recommender:
+      - sharding-recommender: cs-tools/sharding-recommender/README.md
+      - How-To Guide: cs-tools/sharding-recommender/RUNBOOK.md
       - cs-tools/sharding-recommender/CHANGELOG.md
   - Changelog:
     - v1.2.0: changelog/1.2.0.md

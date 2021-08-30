@@ -1,27 +1,31 @@
 # Changelog
 
-All notable changes to this tool will be documented in this file.
+!!! info "Notable Changes"
 
-The format is based on [Keep a Changelog][keep-a-changelog], and this project adheres
-to [Semantic Versioning][semver].
+    All notable changes to this tool will be documented in this file.
 
+    The format is based on [Keep a Changelog][keep-a-changelog], and this project
+    adheres to [Semantic Versioning][semver].
 
-## [1.0.2] - 2020-08-28
+:octicons-tag-16: v1.0.2 &nbsp; &nbsp; :material-calendar-text: 2021-08-28
 
-### Fixed
-- tqlservice response uncaught error [@boonhapus][contrib-boonhapus].
+=== ":bug: &nbsp; Bugfix"
 
+    - tqlservice response uncaught error [@boonhapus][contrib-boonhapus].
 
-## [1.0.1] - 2020-05-24
+---
 
-### Modified
-- Handle `clear` in the Interactive TQL shell [@boonhapus][contrib-boonhapus].
+:octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-05-24
 
+=== ":wrench: &nbsp; Modified"
 
-## [1.0.0] - 2020-05-22
+    - Handle `clear` in the Interactive TQL shell [@boonhapus][contrib-boonhapus].
 
-### Added
-- Initial release [@boonhapus][contrib-boonhapus].
+:octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-22
+
+=== ":hammer_and_wrench: &nbsp; Added"
+
+    - Initial release [@boonhapus][contrib-boonhapus].
 
 
 [keep-a-changelog]: https://keepachangelog.com/en/1.0.0/

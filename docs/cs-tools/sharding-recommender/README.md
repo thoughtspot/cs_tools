@@ -1,10 +1,9 @@
 # Sharding Recommender
 
-**USE AT YOUR OWN RISK!**
+!!! caution "USE AT YOUR OWN RISK!"
 
-**This tool uses private API calls which could change on any version update and break the tool.**
-
----
+    *__This tool uses private API calls!__ These could change with any version update and
+    break the provided functionality.*
 
 This solution allows the customer to extract key data about their Falcon tables to help
 guide on the optimal number of shards for each table. Ideally, the customer will
@@ -18,10 +17,7 @@ Office Hours session and a CSA will be able to help guide them through the proce
 
 ## Pinboard preview
 
-<p align="center">
-  <img src="./static/pinboard.png" width="1000" height="700" alt="pinboard">
-</p>
-
+<img src="pinboard.png" width="1000" alt="pinboard">
 
 ## CLI preview
 
