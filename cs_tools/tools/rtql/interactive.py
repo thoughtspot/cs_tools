@@ -2,6 +2,7 @@ from typing import List
 import logging
 import json
 
+import httpx
 import typer
 
 from cs_tools.helpers.cli_ux import console
@@ -74,12 +75,7 @@ class InteractiveTQL:
         commands can take a signficant amount of time to return, so we
         set the timeout to None and block until they do.
         """
-        data = {
-            'context': self.ctx,
-            'query': {
-                'statement': self._current_prompt
-            }
-        }
+        data = {'context': self.ctx, 'query': {'statement': self._current_prompt}}
 
         if questions is not None:
             data['query']['prompt_responses'] = questions
@@ -91,8 +87,12 @@ class InteractiveTQL:
             try:
                 r = self.ts_api.ts_dataservice.query(data, timeout=timeout)
                 r.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                log.error('TQL query request failed.', exc_info=True)
+                raise RuntimeError(f'TQL query request failed ({e.response.status_code}) for {e.request.url}')
             except Exception:
-                raise ValueError(f'TQL query request failed. {r.status_code}: {r.text}')
+                log.error('TQL query request failed.', exc_info=True)
+                raise ValueError('TQL query request failed.')
 
         return r.iter_lines()
 
@@ -194,7 +194,7 @@ class InteractiveTQL:
             r = call_()
             r.raise_for_status()
         except Exception as e:
-            log.debug(e)
+            log.debug(e, exc_info=True)
             console.print(
                 f'[red]Autocomplete tokens could not be fetched. '
                 f'{r.status_code}: {r.text}[/]'

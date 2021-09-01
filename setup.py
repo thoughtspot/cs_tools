@@ -39,6 +39,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cs_tools = cs_tools.cli:run',
+            'cstools = cs_tools.cli:run',
         ]
     }
 )
