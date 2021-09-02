@@ -80,6 +80,17 @@ nav:
     - Remote tsload:
       - rtsload: cs-tools/rtsload/README.md
       - cs-tools/rtsload/CHANGELOG.md
+    - Security Sharing:
+      - security-sharing: cs-tools/security-sharing/README.md
+      - cs-tools/security-sharing/CHANGELOG.md
+    - Transfer Ownership:
+      - transfer-ownership: cs-tools/transfer-ownership/README.md
+      - How-To Guide: cs-tools/transfer-ownership/RUNBOOK.md
+      - cs-tools/transfer-ownership/CHANGELOG.md
+    - "🙈 Introspect: Users, Groups":
+      - introspect-user-group: cs-tools/introspect-user-group/README.md
+      - How-To Guide: cs-tools/introspect-user-group/RUNBOOK.md
+      - cs-tools/introspect-user-group/CHANGELOG.md
     - 🙈 Sharding Recommender:
       - sharding-recommender: cs-tools/sharding-recommender/README.md
       - How-To Guide: cs-tools/sharding-recommender/RUNBOOK.md

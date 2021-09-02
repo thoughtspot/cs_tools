@@ -7,21 +7,14 @@
     The format is based on [Keep a Changelog][keep-a-changelog], and this project
     adheres to [Semantic Versioning][semver].
 
-:octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-05-22
-
-=== ":wrench: &nbsp; Modified"
-
-    - Migrated to new app structure [@boonhapus][contrib-boonhapus].
-
----
-
-:octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2020-08-18
+:octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-08-17
 
 === ":hammer_and_wrench: &nbsp; Added"
 
-    - Initial release [@boonhapus][contrib-boonhapus].
+    - Initial release from [@mishathoughtspot][contrib-misha].
 
+---
 
 [keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
 [semver]: https://semver.org/spec/v2.0.0.html
-[contrib-boonhapus]: https://github.com/boonhapus
+[contrib-misha]: https://github.com/MishaThoughtSpot

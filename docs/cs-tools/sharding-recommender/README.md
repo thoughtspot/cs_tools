@@ -17,7 +17,7 @@ Office Hours session and a CSA will be able to help guide them through the proce
 
 ## Pinboard preview
 
-<img src="pinboard.png" width="1000" alt="pinboard">
+![pinboard](./pinboard.png)
 
 ## CLI preview
 
