@@ -76,8 +76,8 @@ issue][gh-issue]!
 
 [this]: https://cs_tools.thoughtspot.com/
 [docs-tools]: cs-tools/overview.md
-[docs-install]: how-to/install.md
-[docs-howto-config]: how-to/configuration_file.md
+[docs-install]: how-to/install-upgrade-cs-tools.md
+[docs-howto-config]: how-to/configuration-file.md
 [gh-main]: https://github.com/thoughtspot/cs_tools/
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new
 [gh-clone]: https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository-from-github/cloning-a-repository

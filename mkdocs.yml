@@ -71,7 +71,7 @@ extra_css:
 
 nav:
   - Home: index.md
-  - Install: how-to/install.md
+  - Install: how-to/install-upgrade-cs-tools.md
   - Tools:
     - cs-tools/overview.md
     - Remote TQL:
@@ -84,11 +84,15 @@ nav:
       - sharding-recommender: cs-tools/sharding-recommender/README.md
       - How-To Guide: cs-tools/sharding-recommender/RUNBOOK.md
       - cs-tools/sharding-recommender/CHANGELOG.md
+  - How-to:
+    - how-to/configuration-file.md
+    - how-to/scheduling-tool-commands.md
   - Changelog:
     - v1.2.0: changelog/1.2.0.md
     - v1.1.0: changelog/1.1.0.md
     - v1.0.0: changelog/1.0.0.md
   - '':
     - for-developers/contributing.md
-    - for-developers/installation.md
+    - for-developers/environment-setup.md
+    - for-developers/your-first-tool.md
     - for-developers/documentation.md
