@@ -1,10 +1,5 @@
 # Security Sharing
 
-!!! caution "USE AT YOUR OWN RISK!"
-
-    *__This tool uses private API calls!__ These could change with any version update and
-    break the provided functionality.*
-
 This solution allows the customer to manage column-level and table-level security models
 within an easy to manipulate user interface.
 
