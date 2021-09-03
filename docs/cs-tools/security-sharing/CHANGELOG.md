@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # Changelog
 
 !!! info "Notable Changes"
@@ -7,7 +12,7 @@
     The format is based on [Keep a Changelog][keep-a-changelog], and this project
     adheres to [Semantic Versioning][semver].
 
-:octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-08-17
+### :octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-08-17
 
 === ":hammer_and_wrench: &nbsp; Added"
 

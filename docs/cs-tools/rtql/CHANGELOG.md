@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # Changelog
 
 !!! info "Notable Changes"
@@ -7,25 +12,23 @@
     The format is based on [Keep a Changelog][keep-a-changelog], and this project
     adheres to [Semantic Versioning][semver].
 
-:octicons-tag-16: v1.0.2 &nbsp; &nbsp; :material-calendar-text: 2021-08-28
+### :octicons-tag-16: v1.0.2 &nbsp; &nbsp; :material-calendar-text: 2021-08-28
 
 === ":bug: &nbsp; Bugfix"
 
     - tqlservice response uncaught error [@boonhapus][contrib-boonhapus].
 
----
+??? tldr ":octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-05-24"
 
-:octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-05-24
+    === ":wrench: &nbsp; Modified"
 
-=== ":wrench: &nbsp; Modified"
+        - Handle `clear` in the Interactive TQL shell [@boonhapus][contrib-boonhapus].
 
-    - Handle `clear` in the Interactive TQL shell [@boonhapus][contrib-boonhapus].
+??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-22"
 
-:octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-22
+    === ":hammer_and_wrench: &nbsp; Added"
 
-=== ":hammer_and_wrench: &nbsp; Added"
-
-    - Initial release [@boonhapus][contrib-boonhapus].
+        - Initial release [@boonhapus][contrib-boonhapus].
 
 
 [keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
