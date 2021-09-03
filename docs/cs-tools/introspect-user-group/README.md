@@ -1,10 +1,9 @@
-# Introspect Users & Groups
+# Introspect: Users, Groups
 
-**USE AT YOUR OWN RISK!**
+!!! caution "USE AT YOUR OWN RISK!"
 
-**This tool uses private API calls which could change on any version update and break the tool.**
-
----
+    *__This tool uses private API calls!__ These could change with any version update and
+    break the provided functionality.*
 
 This solution allows the customer to extract User and Group data, and make that
 information searchable within the platform.
@@ -23,10 +22,7 @@ so that the information provided is not stale.
 
 ## Relationship preview
 
-<p align="center">
-  <img src="./static/relationship.png" width="1000" height="375" alt="user-group-relationship">
-</p>
-
+![user-group-relationship](./relationship.png)
 
 ## CLI preview
 
