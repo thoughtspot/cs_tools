@@ -87,6 +87,10 @@ nav:
       - transfer-ownership: cs-tools/transfer-ownership/README.md
       - How-To Guide: cs-tools/transfer-ownership/RUNBOOK.md
       - cs-tools/transfer-ownership/CHANGELOG.md
+    - 🙈 Created Objects:
+      - created-objects: cs-tools/created-objects/README.md
+      - How-To Guide: cs-tools/created-objects/RUNBOOK.md
+      - cs-tools/created-objects/CHANGELOG.md
     - "🙈 Introspect: Users, Groups":
       - introspect-user-group: cs-tools/introspect-user-group/README.md
       - How-To Guide: cs-tools/introspect-user-group/RUNBOOK.md
