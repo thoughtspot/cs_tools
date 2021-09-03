@@ -1,10 +1,9 @@
 # Created Objects
 
-**USE AT YOUR OWN RISK!**
+!!! caution "USE AT YOUR OWN RISK!"
 
-**This tool uses private API calls which could change on any version update and break the tool.**
-
----
+    *__This tool uses private API calls!__ These could change with any version update and
+    break the provided functionality.*
 
 This solution allows the customer to extract data on common ThoughtSpot metadata, and
 make that information searchable within the platform.
