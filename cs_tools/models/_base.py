@@ -66,7 +66,7 @@ class APIBase:
             log.exception('HTTP Error')
             raise
 
-        log.debug(f'<< data\n{r.text}')
+        log.debug('<< data\n%s', r.text)
         return r
 
     def get(self, url: str, *args, **kwargs) -> httpx.Response:
