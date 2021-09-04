@@ -3,10 +3,8 @@ import traceback
 import pathlib
 import logging
 import shutil
-import logging
 
 from typer import Argument as A_, Option as O_
-from rich.logging import RichHandler
 import pydantic
 import click
 import typer
@@ -261,13 +259,14 @@ def run():
     app.add_typer(log_app, name='logs')
 
     # SETUP LOGGING
-    logging.getLogger('urllib3').setLevel(logging.ERROR)
-
     now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
     _clean_logs(now)
 
+    logging.getLogger('urllib3').setLevel(logging.ERROR)
     logging.basicConfig(
-        filename=f'{APP_DIR}/logs/{now}.log',
+        handlers=[
+            logging.FileHandler(f'{APP_DIR}/logs/{now}.log', mode='w', encoding='utf-8')
+        ],
         format='[%(levelname)s - %(asctime)s] '
                '[%(name)s - %(module)s.%(funcName)s %(lineno)d] '
                '%(message)s',
