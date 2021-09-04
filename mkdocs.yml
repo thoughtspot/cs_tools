@@ -94,6 +94,10 @@ nav:
     - 🙈 Delete Objects:
       - delete-objects: cs-tools/delete-objects/README.md
       - cs-tools/delete-objects/CHANGELOG.md
+    - 🙈 Dependency Checker:
+      - dependency-checker: cs-tools/dependency-checker/README.md
+      - How-To Guide: cs-tools/dependency-checker/RUNBOOK.md
+      - cs-tools/dependency-checker/CHANGELOG.md
     - "🙈 Introspect: Users, Groups":
       - introspect-user-group: cs-tools/introspect-user-group/README.md
       - How-To Guide: cs-tools/introspect-user-group/RUNBOOK.md
