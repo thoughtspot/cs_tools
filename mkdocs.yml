@@ -91,6 +91,9 @@ nav:
       - created-objects: cs-tools/created-objects/README.md
       - How-To Guide: cs-tools/created-objects/RUNBOOK.md
       - cs-tools/created-objects/CHANGELOG.md
+    - 🙈 Delete Objects:
+      - delete-objects: cs-tools/delete-objects/README.md
+      - cs-tools/delete-objects/CHANGELOG.md
     - "🙈 Introspect: Users, Groups":
       - introspect-user-group: cs-tools/introspect-user-group/README.md
       - How-To Guide: cs-tools/introspect-user-group/RUNBOOK.md
