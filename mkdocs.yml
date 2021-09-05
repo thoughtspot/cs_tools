@@ -1,7 +1,8 @@
 site_name: CS Tools
-# site_url: https://cs_tools.thoughtspot.com/
-# site_description: >-
-#   Lorem ipsum..
+site_url: https://cs_tools.thoughtspot.com/
+site_description: >-
+  Tools created by the ThoughtSpot PS/CS organization to assist implementation and
+  administration of your platform.
 
 repo_name: thoughtspot/cs_tools
 repo_url: https://github.com/thoughtspot/cs_tools
@@ -45,14 +46,18 @@ theme:
 
 markdown_extensions:
   - admonition
+  - footnotes
+  - pymdownx.caret
   - pymdownx.details
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.highlight
   - pymdownx.keys
+  - pymdownx.mark
   - pymdownx.superfences
   - pymdownx.tabbed
+  - pymdownx.tilde
   - toc:
       permalink: true
 
