@@ -85,9 +85,9 @@ class ListObjectHeadersParameters(APIParameters):
     fetchids: str = None
     auto_created: bool = None
 
-    @pydantic.validator('subtypes')
-    def stringify_the_array(cls, v):
-        return to_array([_.value for _ in v])
+    @pydantic.validator('subtypes', pre=True)
+    def stringify_the_array(cls, v) -> str:
+        return to_array(v)
 
 
 class ListParameters(ListObjectHeadersParameters):

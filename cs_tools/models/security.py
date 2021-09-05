@@ -72,7 +72,7 @@ class DefinedPermissionParameters(APIParameters):
     id: str
 
     @pydantic.validator('id', pre=True)
-    def stringify_the_array(cls, v):
+    def stringify_the_array(cls, v) -> str:
         return to_array(v)
 
 
