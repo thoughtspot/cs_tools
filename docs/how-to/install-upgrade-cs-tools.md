@@ -6,24 +6,38 @@ hide:
 
 <style>
   /* Hide the Edit on Github button */
-  .md-content__button { display: none; }
+  .md-typeset h1, .md-content__button { display: none; }
   /* Skinny down and center the page */
   .md-content { max-width: 75%; margin: auto; }
+  .md-button { width: 50%; text-align: center; margin: auto; }
+  .md-typeset .admonition { margin: 1%; min-width: 48%; min-height: calc(1rem * 5); }
 </style>
 
-# Install Instructions
+<center>
+## __Getting Started__ with `cs_tools`
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam eget gravida purus. Ut
-vestibulum at turpis quis mollis. Nam aliquam egestas magna ut blandit. Vivamus ultrices
-aliquet tortor, ac tristique mauris pulvinar vitae. Nulla nec faucibus dolor.
+To install `cs_tools` on your machine, you'll want to download our pre-built
+distribution. This is a compressed directory containing all the files necessary to set
+up the environment[^1]. Please click the button below to get the zip file, and then
+follow the instructions down the page.
+</center>
 
-Maecenas ornare quam ipsum, et efficitur ex dapibus tempus...
+!!! warning inline "Pre-requisites"
+    The only strict requirement for CS Tools to function is
+    <a href="https://www.python.org/downloads/" target="_blank">Python</a> v3.6.8 or newer.
 
-!!! important "Important Links"
+!!! hint inline "Need to update?"
 
-    :card_box: &nbsp; [`dist.zip`][distzip] (password: `th0ughtSp0t`)
+    Our install script is written to allow both first-time installs __and__ upgrades to
+    an environment.
 
-    :tools: &nbsp; [tools offered][tools]
+<center>
+<a href="https://thoughtspot.egnyte.com/dl/MyBRZT6leI/dist.zip_" target="_blank" class="md-button md-button--primary">
+    :material-tools: &nbsp; cs_tools
+</a>
+
+<sup>__password__: `th0ughtSp0t`</sup>
+</center>
 
 ---
 
@@ -112,7 +126,7 @@ Maecenas ornare quam ipsum, et efficitur ex dapibus tempus...
    You'll know you've made it when the screen looks something like this. 
 </i></b></center>
 
-```
+```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools
 
 Usage: cs_tools [OPTIONS] COMMAND [ARGS]...
@@ -140,5 +154,4 @@ Commands:
   tools   Run an installed tool.
 ```
 
-[tools]: ../cs_tools/tools
-[distzip]: https://thoughtspot.egnyte.com/dl/MyBRZT6leI/dist.zip_
+[^1]: `cs_tools` is a python-based utility, and will set up its own virtual environment.
