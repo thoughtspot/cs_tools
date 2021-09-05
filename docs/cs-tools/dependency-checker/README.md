@@ -1,10 +1,9 @@
 # Dependency Checker
 
-**USE AT YOUR OWN RISK!**
+!!! caution "USE AT YOUR OWN RISK!"
 
-**This tool uses private API calls which could change on any version update and break the tool.**
-
----
+    *__This tool uses private API calls!__ These could change with any version update and
+    break the provided functionality.*
 
 This solution allows the customer to Search all metadata that could produce a dependent.
 These metadata types include System Tables, Imported Data, Worksheets, and Views.
@@ -15,9 +14,7 @@ content a User makes.
 
 ## Relationship preview
 
-<p align="center">
-  <img src="./static/relationship.png" width="1000" height="375" alt="dependency-relationship">
-</p>
+![user-group-relationship](./relationship.png)
 
 ## CLI preview
 
