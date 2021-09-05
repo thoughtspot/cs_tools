@@ -5,24 +5,25 @@ hide:
 ---
 
 <style>
-  .md-grid { max-width: 75%; }
-  .md-typeset h1,
+  /* Hide the Edit on Github button */
   .md-content__button { display: none; }
+  /* Skinny down and center the page */
+  .md-content { max-width: 75%; margin: auto; }
 </style>
 
 # Install Instructions
-
-!!! important inline end "Important Links"
-
-    :card_box: &nbsp; [`dist.zip`][distzip] (password: `th0ughtSp0t`)
-
-    :tools: &nbsp; [tools offered][tools]
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam eget gravida purus. Ut
 vestibulum at turpis quis mollis. Nam aliquam egestas magna ut blandit. Vivamus ultrices
 aliquet tortor, ac tristique mauris pulvinar vitae. Nulla nec faucibus dolor.
 
 Maecenas ornare quam ipsum, et efficitur ex dapibus tempus...
+
+!!! important "Important Links"
+
+    :card_box: &nbsp; [`dist.zip`][distzip] (password: `th0ughtSp0t`)
+
+    :tools: &nbsp; [tools offered][tools]
 
 ---
 

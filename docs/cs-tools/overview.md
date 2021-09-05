@@ -1,7 +1,20 @@
 # Tools
 
-ThoughtSpot CS Tools are a collection of different tools that assist implementation and
-administration, and may contain API calls that we normally wouldn't share with customers.
+Tools are a collection of different scripts to perform different functions which aren't
+native to the ThoughtSpot or advanced functionality for clients who have a well-adopted
+platform.
+
+Tools which are marked with a :see_no_evil: in the sidebar utilize unpublished, or
+internal, API calls in your ThoughtSpot platform and thus ^^==__could change with any
+version or release__==^^. You should not rely on them for production-critical workflows.
+
+!!! info "Helpful Links"
+
+    :smile: &nbsp; __[Installation Guide][docs-install]__
+
+    :gear: &nbsp; __[Setup a configuration file][docs-howto-config]__
+
+    :material-github: &nbsp; __[Found a problem? Submit an issue.][gh-issue]__
 
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
@@ -23,3 +36,7 @@ Commands:
   security-sharing       Scalably manage your table- and column-level security right in the browser.
   transfer-ownership     Transfer ownership of all objects from one user to another.
 ```
+
+[docs-install]: how-to/install-upgrade-cs-tools.md
+[docs-howto-config]: how-to/configuration-file.md
+[gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new
