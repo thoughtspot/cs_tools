@@ -107,7 +107,9 @@ Maecenas ornare quam ipsum, et efficitur ex dapibus tempus...
 
 ---
 
-*__You'll know you've made it when the screen looks something like this__*
+<center><b><i>
+   You'll know you've made it when the screen looks something like this. 
+</i></b></center>
 
 ```
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools
