@@ -14,7 +14,7 @@ version or release__==^^. You should not rely on them for production-critical wo
 
     :gear: &nbsp; __[Setup a configuration file][docs-howto-config]__
 
-    :material-github: &nbsp; __[Found a problem? Submit an issue.][gh-issue]__
+    :material-github: &nbsp; <a href="https://github.com/thoughtspot/cs_tools/issues/new" target="_blank">__Found a problem? Submit an issue.__</a>
 
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
