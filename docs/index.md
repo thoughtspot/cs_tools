@@ -17,11 +17,14 @@ hide:
 
 <figure><img src="assets/logo_black.svg" width="350"/></figure>
 
+<center>
 CS Tools is a utility written by the __ThoughtSpot__ Professional Services & Customer
 Success organizations, meant to augment built-in platform tools, help with
-administration of and enhance adoption within your ThoughtSpot environment.
-
-It is designed with a focus on being simple enough for non-technical users to operate.
+administration of and enhance adoption within your ThoughtSpot environment. The tools
+are a collection of different scripts to perform a variety of functions which aren't
+native to ThoughtSpot or advanced functionality for clients who have a well-adopted
+platform.
+</center>
 
 # Features
 

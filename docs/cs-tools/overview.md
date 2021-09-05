@@ -1,8 +1,16 @@
-# Tools
+# Available Tools
 
 Tools are a collection of different scripts to perform different functions which aren't
 native to the ThoughtSpot or advanced functionality for clients who have a well-adopted
 platform.
+
+### __All tools and this library are provided as-is.__
+
+While every effort has been made to test and certify use of these tools in the various
+supported ThoughtSpot deployments, each environment is different. You should ALWAYS take
+a snapshot before you make any significant changes to your environment!
+
+### Advanced Tools
 
 Tools which are marked with a :see_no_evil: in the sidebar utilize unpublished, or
 internal, API calls in your ThoughtSpot platform and thus ^^==__could change with any
@@ -37,6 +45,6 @@ Commands:
   transfer-ownership     Transfer ownership of all objects from one user to another.
 ```
 
-[docs-install]: how-to/install-upgrade-cs-tools.md
-[docs-howto-config]: how-to/configuration-file.md
+[docs-install]: ../../how-to/install-upgrade-cs-tools
+[docs-howto-config]: ../../how-to/configuration-file
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new
