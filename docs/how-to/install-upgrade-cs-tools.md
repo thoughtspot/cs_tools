@@ -32,7 +32,7 @@ follow the instructions down the page.
     an environment.
 
 <center>
-[:material-tools: &nbsp; cs_tools &nbsp;][fs]{ target='secondary' .external-link .md-button .md-button--primary }
+[:material-tools: &nbsp; cs_tools &nbsp;][fs]{ target='secondary' .md-button .md-button--primary }
 
 <sup>__password__: `th0ughtSp0t`</sup>
 </center>
