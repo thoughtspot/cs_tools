@@ -73,7 +73,7 @@ extra:
       name: email the team
 
 extra_css:
-  - stylesheets/extra.css
+  - css/custom.css
 
 nav:
   - Home: index.md
