@@ -8,7 +8,7 @@ title: Contributing
 
     We strongly believe everyone in PS/CS can participate, no matter what their
     technical proficiency is. If you don't know where to start, see the Github Issue
-    Tracker filtered to [Good First Issue][issue-tracker].
+    Tracker filtered to <a href="https://github.com/thoughtspot/cs_tools/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22" target="_blank">Good First Issue</a>.
 
 This project is maintained by the Professional Services and Customer Success
 organizations. It is meant to help client manage and scale their ThoughtSpot platform.
@@ -50,6 +50,5 @@ pip install -r cs_tools/dev-requirements.txt
 [^2]: 
     It is highly recommended that you first [set up a virtual environment][venv].
 
-[issue-tracker]: https://github.com/thoughtspot/cs_tools/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
-[setup]: ../environment-setup.md
-[venv]: ../environment-setup.md#virtual-environments
+[setup]: ../environment-setup
+[venv]: ../environment-setup#virtual-environments
