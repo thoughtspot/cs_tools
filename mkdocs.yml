@@ -90,26 +90,26 @@ nav:
       - cs-tools/security-sharing/CHANGELOG.md
     - Transfer Ownership:
       - transfer-ownership: cs-tools/transfer-ownership/README.md
-      - How-To Guide: cs-tools/transfer-ownership/RUNBOOK.md
+      # - How-To Guide: cs-tools/transfer-ownership/RUNBOOK.md
       - cs-tools/transfer-ownership/CHANGELOG.md
     - 🙈 Created Objects:
       - created-objects: cs-tools/created-objects/README.md
-      - How-To Guide: cs-tools/created-objects/RUNBOOK.md
+      # - How-To Guide: cs-tools/created-objects/RUNBOOK.md
       - cs-tools/created-objects/CHANGELOG.md
     - 🙈 Delete Objects:
       - delete-objects: cs-tools/delete-objects/README.md
       - cs-tools/delete-objects/CHANGELOG.md
     - 🙈 Dependency Checker:
       - dependency-checker: cs-tools/dependency-checker/README.md
-      - How-To Guide: cs-tools/dependency-checker/RUNBOOK.md
+      # - How-To Guide: cs-tools/dependency-checker/RUNBOOK.md
       - cs-tools/dependency-checker/CHANGELOG.md
     - "🙈 Introspect: Users, Groups":
       - introspect-user-group: cs-tools/introspect-user-group/README.md
-      - How-To Guide: cs-tools/introspect-user-group/RUNBOOK.md
+      # - How-To Guide: cs-tools/introspect-user-group/RUNBOOK.md
       - cs-tools/introspect-user-group/CHANGELOG.md
     - 🙈 Sharding Recommender:
       - sharding-recommender: cs-tools/sharding-recommender/README.md
-      - How-To Guide: cs-tools/sharding-recommender/RUNBOOK.md
+      # - How-To Guide: cs-tools/sharding-recommender/RUNBOOK.md
       - cs-tools/sharding-recommender/CHANGELOG.md
   - How-to:
     - how-to/configuration-file.md
