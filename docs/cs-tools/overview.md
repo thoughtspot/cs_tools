@@ -4,7 +4,7 @@ Tools are a collection of different scripts to perform different functions which
 native to the ThoughtSpot or advanced functionality for clients who have a well-adopted
 platform.
 
-### __All tools and this library are provided as-is.__
+### __All tools are provided as-is__
 
 While every effort has been made to test and certify use of these tools in the various
 supported ThoughtSpot deployments, each environment is different. You should ALWAYS take
