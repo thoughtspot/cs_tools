@@ -23,8 +23,8 @@ follow the instructions down the page.
 </center>
 
 !!! warning inline "Pre-requisites"
-    The only strict requirement for CS Tools to function is
-    <a href="https://www.python.org/downloads/" target="_blank">Python</a> v3.6.8 or newer.
+    The only strict requirement for CS Tools to function is 
+    [Python][py]{ target='secondary' .external-link } v3.6.8 or newer.
 
 !!! hint inline "Need to update?"
 
@@ -32,9 +32,7 @@ follow the instructions down the page.
     an environment.
 
 <center>
-<a href="https://thoughtspot.egnyte.com/dl/MyBRZT6leI/dist.zip_" target="_blank" class="md-button md-button--primary">
-    :material-tools: &nbsp; cs_tools
-</a>
+[:material-tools: &nbsp; cs_tools &nbsp;][fs]{ target='secondary' .external-link .md-button .md-button--primary }
 
 <sup>__password__: `th0ughtSp0t`</sup>
 </center>
@@ -155,3 +153,5 @@ Commands:
 ```
 
 [^1]: `cs_tools` is a python-based utility, and will set up its own virtual environment.
+[py]: https://www.python.org/downloads/
+[fs]: https://thoughtspot.egnyte.com/dl/MyBRZT6leI/dist.zip_

@@ -8,7 +8,7 @@ title: Contributing
 
     We strongly believe everyone in PS/CS can participate, no matter what their
     technical proficiency is. If you don't know where to start, see the Github Issue
-    Tracker filtered to <a href="https://github.com/thoughtspot/cs_tools/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22" target="_blank">Good First Issue</a>.
+    Tracker filtered to [Good First Issue][fi]{ target='secondary' .external-link }.
 
 This project is maintained by the Professional Services and Customer Success
 organizations. It is meant to help client manage and scale their ThoughtSpot platform.
@@ -17,7 +17,7 @@ CS Tools offers this additional feature set primarily through a command line int
 Most tools have a python base, with an optional web-based application written primary
 in HTML and javascript.
 
-To contribute to the project, you'll want to [setup your development environment][setup].
+To contribute to the project, you'll want to [setup your development environment][setup]{ .internal-link }.
 
 ## Installation
 
@@ -45,10 +45,11 @@ pip install -r cs_tools/dev-requirements.txt
 
 [^1]:
     If you're already lost by the install instructions, you might want to start by
-    [setting up your environment][setup]!
+    [setting up your environment][setup]{ .internal-link }!
 
 [^2]: 
-    It is highly recommended that you first [set up a virtual environment][venv].
+    It is highly recommended that you first [set up a virtual environment][venv]{ .internal-link }.
 
 [setup]: ../environment-setup
 [venv]: ../environment-setup#virtual-environments
+[fi]: https://github.com/thoughtspot/cs_tools/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22

@@ -44,10 +44,9 @@ __Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
 
 ---
 
-##### *Should you find anything lacking about the docs or* `cs_tools` *itself,
-<a href="https://github.com/thoughtspot/cs_tools/issues/new" target="_blank">please submit an issue</a>!*
+##### *Should you find anything lacking about the docs or* `cs_tools` *itself, [please submit an issue][gh-issue]{ target='secondary' }!*
 </center>
-
 
 [this]: https://cs_tools.thoughtspot.com/
 [gh-main]: https://github.com/thoughtspot/cs_tools/
+[gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new

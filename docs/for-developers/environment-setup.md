@@ -6,9 +6,11 @@
 ## __Getting Started__ for Developers
 
 To work on `cs_tools`, you'll want to have :fontawesome-brands-git-alt:
-[git][install-git] and :fontawesome-brands-python: [python 3.6.8][install-python]+
-installed on your machine. Then you can [clone the source][gh-clone] from github, and be
-up and running in less than 5 minutes!
+[git][install-git]{ target='secondary' .external-link } and :fontawesome-brands-python:
+[python 3.6.8+][install-python]{ target='secondary' .external-link } installed on your machine.
+
+Then you can [clone the source][gh-clone]{ target='secondary' .external-link } from github,
+and be up and running in less than 5 minutes!
 
 === ":fontawesome-brands-apple: Mac"
 
@@ -59,7 +61,8 @@ installed Python packages in its site directories.
     isolated environment for Python projects. This means that each project can have its
     own dependencies, regardless of what dependencies every other project has.
 
-    *For full breakdown, see [Real Python's tutorial][rp-venv] on virtual environments.*
+    *For full breakdown, see* [Real Python's tutorial][rp-venv]{ target='secondary' .external-link }
+    *on virtual environments.*
 
 
 [gh-clone]: https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository-from-github/cloning-a-repository
