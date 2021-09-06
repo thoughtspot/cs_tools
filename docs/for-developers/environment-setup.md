@@ -14,6 +14,8 @@ up and running in less than 5 minutes!
 
     ++cmd+space++, &nbsp; type `terminal`, &nbsp; ++enter++
     ```bash
+    # change $HOME/cs_tools to where you want to save your local copy of the repository
+    git clone https://github.com/thoughtspot/cs_tools.git $HOME/cs_tools
     python3 -m venv $HOME/.cs_tools-dev
     source $HOME/.cs_tools-dev/bin/activate.bat
     pip install -r dev-requirements.txt
@@ -23,6 +25,8 @@ up and running in less than 5 minutes!
 
     *if in a GUI environment*, &nbsp; ++ctrl+shift+t++
     ```bash
+    # change $HOME/cs_tools to where you want to save your local copy of the repository
+    git clone https://github.com/thoughtspot/cs_tools.git $HOME/cs_tools
     python3 -m venv $HOME/.cs_tools-dev
     source $HOME/.cs_tools-dev/bin/activate.bat
     pip install -r dev-requirements.txt
@@ -32,6 +36,8 @@ up and running in less than 5 minutes!
 
     ++windows++, &nbsp; type `cmd`, &nbsp; ++enter++
     ```powershell
+    # change %USERPROFILE%/cs_tools to where you want to save your local copy of the repository
+    git clone https://github.com/thoughtspot/cs_tools.git %USERPROFILE%/cs_tools
     python -m venv %USERPROFILE%\.cs_tools-dev
     %USERPROFILE%\.cs_tools-dev\Scripts\activate.bat
     pip install -r dev-requirements.txt
@@ -47,7 +53,7 @@ Each virtual environment has its own Python binary (which matches the version of
 that was used to create that environment) and can have its own *independent* set of
 installed Python packages in its site directories.
 
-!!! hint
+!!! hint ""
 
     At its core, the main purpose of Python virtual environments is to create an
     isolated environment for Python projects. This means that each project can have its
