@@ -22,10 +22,11 @@ Usage: cs_tools tools security-sharing [OPTIONS] COMMAND [ARGS]...
 
   Scalably manage your table- and column-level security right in the browser.
 
-  Setting up Column Level Security (especially on larger tables) can be time-consuming when done directly in the
-  ThoughtSpot user interface. The web interface provided by this tool will allow you to quickly understand the current
-  security settings for a given table across all columns, and as many groups as are in your platform. You may then set
-  the appropriate security settings for those group-table combinations.
+  Setting up Column Level Security (especially on larger tables) can be time-consuming when done
+  directly in the ThoughtSpot user interface. The web interface provided by this tool will allow you
+  to quickly understand the current security settings for a given table across all columns, and as
+  many groups as are in your platform. You may then set the appropriate security settings for those
+  group-table combinations.
 
 Options:
   --version   Show the tool's version and exit.

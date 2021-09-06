@@ -19,13 +19,14 @@ least the "Can Manage Data" privilege in ThoughtSpot.
 ## CLI preview
 
 ```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql --help
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql
+
 Usage: cs_tools tools rtql [OPTIONS] COMMAND [ARGS]...
 
   Enable querying the ThoughtSpot TQL CLI from a remote machine.
 
-  TQL is the ThoughtSpot language for entering SQL commands. You can use TQL to view and modify schemas and data in
-  tables.
+  TQL is the ThoughtSpot language for entering SQL commands. You can use TQL to view and modify
+  schemas and data in tables.
 
   For further information on TQL, please refer to:
     https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html

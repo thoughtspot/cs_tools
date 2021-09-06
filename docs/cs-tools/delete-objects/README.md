@@ -41,7 +41,7 @@ in if supplied to `delete-objects from-file`
 | QUESTION_ANSWER_BOOK | a1bc2d3e-f456-78g9-012h-3i4j5k67m890 |
 
 ```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects --help
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects
 
 Usage: cs_tools tools delete-objects [OPTIONS] COMMAND [ARGS]...
 

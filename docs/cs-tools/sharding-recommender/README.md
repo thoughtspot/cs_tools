@@ -28,15 +28,15 @@ Usage: cs_tools tools sharding-recommender [OPTIONS] COMMAND [ARGS]...
 
   Gather data on your existing Falcon tables for sharding.
 
-  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
-  break the tool.
+  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
+  version update and break the tool.
 
-  Once tables grow sufficiently large within a Falcon deployment, cluster performance and data loading can be enhanced
-  through the use of sharding. The choice of what column to shards and how many shards to use can vary based on many
-  factors. This tool helps expose that key information.
+  Once tables grow sufficiently large within a Falcon deployment, cluster performance and data
+  loading can be enhanced through the use of sharding. The choice of what column to shards and how
+  many shards to use can vary based on many factors. This tool helps expose that key information.
 
-  Before sharding, it can be helpful to implement this solution and consult with your ThoughtSpot contact for guidance on
-  the best shard key and number of shards to use.
+  Before sharding, it can be helpful to implement this solution and consult with your ThoughtSpot
+  contact for guidance on the best shard key and number of shards to use.
 
   For further information on sharding, please refer to:
     https://docs.thoughtspot.com/latest/admin/loading/sharding.html

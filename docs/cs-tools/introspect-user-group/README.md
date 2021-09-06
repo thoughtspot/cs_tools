@@ -27,7 +27,7 @@ so that the information provided is not stale.
 ## CLI preview
 
 ```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group --help
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group
 
 Usage: cs_tools tools introspect-user-group [OPTIONS] COMMAND [ARGS]...
 

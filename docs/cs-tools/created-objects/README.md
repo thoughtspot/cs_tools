@@ -21,7 +21,7 @@ value to others in your platform.
 ## CLI preview
 
 ```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools created-objects --help
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools created-objects
 
 Usage: cs_tools tools created-objects [OPTIONS] COMMAND [ARGS]...
 
@@ -30,8 +30,8 @@ Usage: cs_tools tools created-objects [OPTIONS] COMMAND [ARGS]...
   USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
   break the tool.
 
-  Metadata is created through normal ThoughtSpot activities. Tables, Worksheets, Answers, and Pinboards are all examples
-  of metadata.
+  Metadata is created through normal ThoughtSpot activities. Tables, Worksheets, Answers, and Pinboards
+  are all examples of metadata.
 
   Metadata Object
   - guid

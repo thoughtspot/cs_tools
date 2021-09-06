@@ -18,7 +18,8 @@ least the "Can Manage Data" privilege in ThoughtSpot.
 ## CLI preview
 
 ```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtsload --help
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtsload
+
 Usage: cs_tools tools rtsload [OPTIONS] COMMAND [ARGS]...
 
   Enable loading files to ThoughtSpot from a remote machine.

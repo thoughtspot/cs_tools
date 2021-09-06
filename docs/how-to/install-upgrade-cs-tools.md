@@ -133,11 +133,11 @@ Usage: cs_tools [OPTIONS] COMMAND [ARGS]...
 
   Welcome to CS Tools!
 
-  These are scripts and utilities used to assist in the development, implementation, and administration of your
-  ThoughtSpot platform.
+  These are scripts and utilities used to assist in the development, implementation, and
+  administration of your ThoughtSpot platform.
 
-  All tools and this library are provided as-is. While every effort has been made to test and certify use of these
-  tools in the various supported ThoughtSpot deployments, each environment is different.
+  All tools and this library are provided as-is. While every effort has been made to test and certify
+  use of these tools in the various supported ThoughtSpot deployments, each environment is different.
 
   You should ALWAYS take a snapshot before you make any significant changes to your environment!
 

@@ -19,7 +19,7 @@ content a User makes.
 ## CLI preview
 
 ```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker --help
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker
 
 Usage: cs_tools tools dependency-checker [OPTIONS] COMMAND [ARGS]...
 
@@ -28,8 +28,8 @@ Usage: cs_tools tools dependency-checker [OPTIONS] COMMAND [ARGS]...
   USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
   break the tool.
 
-  Dependencies can be collected for various types of metadata. For example, many tables are used within a worksheet,
-  while many worksheets will have answers and pinboards built on top of them.
+  Dependencies can be collected for various types of metadata. For example, many tables are used within
+  a worksheet, while many worksheets will have answers and pinboards built on top of them.
 
   Metadata Object             Metadata Dependent
   - guid                      - guid
