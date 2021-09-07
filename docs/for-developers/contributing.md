@@ -34,18 +34,20 @@ When cloning from `git`, you must install all required dependencies[^2] yourself
 pip install -r cs_tools/dev-requirements.txt
 ```
 
-### A note on our __Branch Strategy__
+## A note on our __Branch Strategy__
 
-- Maintainers merge pull requests
-- Maintainers merge back into `master`
-- All coordination will happen on `dev`
-- New features, documentation or hotfixes require you to branch off `dev`
-- All changes must be submitted via Pull Request and go through code review
-- include branch_strategy.png
+![branch-strategy](branch_strategy.png){ align=center }
+
+- `master` is our release branch
+- `dev` is our coordination branch
+- All new features, hotfixes, and documentation updates require..
+    - pulls and branch from `dev`
+    - work to be done within a feature branch
+    - pull requests with code-review
 
 [^1]:
     If you're already lost by the install instructions, you might want to start by
-    [setting up your environment][setup]{ .internal-link }!
+    [setting up your environment!][setup]{ .internal-link }
 
 [^2]: 
     It is highly recommended that you first [set up a virtual environment][venv]{ .internal-link }.
