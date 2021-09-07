@@ -113,8 +113,8 @@ nav:
       # - How-To Guide: cs-tools/sharding-recommender/RUNBOOK.md
       - cs-tools/sharding-recommender/CHANGELOG.md
   - How-to:
-    - how-to/configuration-file.md
-    - how-to/scheduling-tool-commands.md
+    - "Setup a Configuration File": how-to/configuration-file.md
+    - "Scheduling Tools": how-to/scheduling-tool-commands.md
   - Changelog:
     - v1.2.0: changelog/1.2.0.md
     - v1.1.0: changelog/1.1.0.md
