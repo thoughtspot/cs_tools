@@ -72,7 +72,7 @@ class ListVizHeadersParameters(APIParameters):
 
 class ListObjectHeadersParameters(APIParameters):
     type: Union[MetadataObject, None] = MetadataObject.PINBOARD_ANSWER_BOOK
-    subtypes: List[LogicalTableSubtype] = None
+    subtypes: str = None
     category: MetadataCategory = MetadataCategory.ALL
     sort: SortOrder = SortOrder.DEFAULT
     sortascending: bool = None

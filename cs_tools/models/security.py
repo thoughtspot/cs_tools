@@ -93,7 +93,6 @@ class _Security(TSPrivate):
         List of metadata objects in the repository.
         """
         p = ShareParameters(**parameters)
-        # print(p.json())
         r = self.post(f'{self.base_url}/share', data=p.json())
         return r
 
