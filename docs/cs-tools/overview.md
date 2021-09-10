@@ -1,7 +1,7 @@
 # Available Tools
 
-Tools are a collection of different scripts to perform different functions which aren't
-native to the ThoughtSpot or advanced functionality for clients who have a well-adopted
+Tools are a collection of different scripts to perform various functions which aren't
+native to ThoughtSpot or advanced functionality for clients who have a well-adopted
 platform.
 
 ### __All tools are provided as-is__
