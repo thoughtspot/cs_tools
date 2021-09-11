@@ -2,7 +2,7 @@
 title: Contributing
 ---
 
-# :tada: &nbsp; Thanks for your interest in cs_tools! &nbsp; :tada:
+# :tada: &nbsp; Thanks for your interest in cs_tools!
 
 !!! tip "Everyone Can Participate!"
 
@@ -11,7 +11,8 @@ title: Contributing
     Tracker filtered to [Good First Issue][fi]{ target='secondary' .external-link }.
 
 This project is maintained by the Professional Services and Customer Success
-organizations. It is meant to help client manage and scale their ThoughtSpot platform.
+organizations at ThoughtSpot. It is meant to help client manage and scale their
+ThoughtSpot platform.
 
 CS Tools offers this additional feature set primarily through a command line interface.
 Most tools have a python base, with an optional web-based application written primary
