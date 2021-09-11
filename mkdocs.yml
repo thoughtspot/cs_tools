@@ -75,6 +75,9 @@ extra:
 extra_css:
   - css/custom.css
 
+extra_javascript:
+  - js/konami.js
+
 nav:
   - Home: index.md
   - Install: how-to/install-upgrade-cs-tools.md
@@ -119,8 +122,9 @@ nav:
     - v1.2.0: changelog/1.2.0.md
     - v1.1.0: changelog/1.1.0.md
     - v1.0.0: changelog/1.0.0.md
-  - '':
+  - 🤓:
     - for-developers/contributing.md
     - for-developers/environment-setup.md
     - for-developers/your-first-tool.md
     - for-developers/documentation.md
+    - "What is Markdown?": for-developers/what-is-markdown.md

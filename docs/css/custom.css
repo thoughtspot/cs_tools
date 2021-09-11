@@ -54,13 +54,16 @@
     max-width: 80%;
 }
 
+/* \00A0 is a non-breaking space to make the mark be on the same line as the link */
 a.external-link::after {
-    /* \00A0 is a non-breaking space to make the mark be on the same line as the link */
     content: "\00A0[↪]";
 }
 
 a.internal-link::after {
-    /* \00A0 is a non-breaking space to make the mark be on the same line as the link */
     content: "\00A0↪";
 }
 
+/* Hide the developer docs nav menu item. */
+.md-tabs__item:last-child {
+    display: none;
+}
