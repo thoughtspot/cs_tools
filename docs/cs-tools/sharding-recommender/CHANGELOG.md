@@ -12,18 +12,21 @@ hide:
     The format is based on [Keep a Changelog][keep-a-changelog]{ target='secondary' .external-link }, and this project
     adheres to [Semantic Versioning][semver]{ target='secondary' .external-link }.
 
-### :octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-05-22
+### :octicons-tag-16: v1.1.1 &nbsp; &nbsp; :material-calendar-text: 2021-09-11
 
 === ":wrench: &nbsp; Modified"
-
-    - Migrated to new app structure [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+    - support for large clusters with API call batching [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 ---
+
+??? tldr ":octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-05-22"
+
+    === ":wrench: &nbsp; Modified"
+        - Migrated to new app structure [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2020-08-18"
 
     === ":hammer_and_wrench: &nbsp; Added"
-
         - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 
