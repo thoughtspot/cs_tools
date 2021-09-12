@@ -1,4 +1,5 @@
 import datetime as dt
+import platform
 import pathlib
 import logging
 import shutil
@@ -12,6 +13,7 @@ import toml
 from cs_tools.helpers.cli_ux import console, RichGroup, RichCommand
 from cs_tools.helpers.loader import _gather_tools
 from cs_tools.util.algo import deep_update
+from cs_tools._version import __version__
 from cs_tools.settings import TSConfig
 from cs_tools.const import APP_DIR
 
@@ -99,6 +101,20 @@ log_app = typer.Typer(
     """,
     cls=RichGroup
 )
+
+
+@app.command('platform', cls=RichCommand, hidden=True)
+def _platform():
+    """
+    Return details about this machine for debugging purposes.
+    """
+    console.print(f"""
+        [PLATFORM DETAILS]
+        system: {platform.system()} (detail: {platform.platform()})
+        python: {platform.python_version()}
+        datetime: {dt.datetime.now(dt.timezone.utc).astimezone().strftime('%Y-%m-%d %H:%M:%S%z')}
+        cs_tools: {__version__}
+    """)
 
 
 @log_app.command(cls=RichCommand)
