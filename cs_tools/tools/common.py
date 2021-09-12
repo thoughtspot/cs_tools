@@ -1,4 +1,6 @@
+from collections.abc import Callable
 from typing import Union, List, Dict, Any
+import logging
 import pathlib
 import json
 import csv
@@ -14,17 +16,24 @@ from cs_tools.schema.user import PrivilegeEnum
 from cs_tools.api import ThoughtSpot
 
 
+log = logging.getLogger(__name__)
 REQUIRED_PRIVILEGES = set([
     PrivilegeEnum.can_administer_thoughtspot,
     PrivilegeEnum.can_manage_data
 ])
 
 
+class TableAlreadyExists(Exception):
+    """
+    """
+
+
 def run_tql_script(
     api: ThoughtSpot,
     *,
     fp: pathlib.Path,
-    verbose: bool=False
+    verbose: bool=False,
+    raise_errors: bool=False
 ) -> None:
     """
     Run multiple commands within TQL on a remote server.
@@ -45,8 +54,6 @@ def run_tql_script(
         )
         raise typer.Exit()
 
-    # TODO handle errors found in tql?
-    # TODO handle forigveable errors [CREATE TABLE when it exists]
     with fp.open() as f:
         commands = f.read()
 
@@ -67,14 +74,15 @@ def run_tql_script(
         if 'message' in data['result']:
             m = api.ts_dataservice._parse_api_messages(data['result']['message'])
 
-            if verbose:
-                console.print(m)
+            if raise_errors and 'returned error' in m:
+                if 'create table' in m.lower():
+                    raise TableAlreadyExists()
+                else:
+                    raise ValueError(m)
 
         if 'table' in data['result']:
             m = api.ts_dataservice._parse_tql_query(data['result']['table'])
-
-            if verbose:
-                console.print(m)
+            log.debug(m)
 
 
 def run_tql_command(
@@ -82,7 +90,7 @@ def run_tql_command(
     *,
     command: str,
     schema: str='falcon_default_schema',
-    verbose: bool=True
+    raise_errors: bool=False
 ) -> None:
     """
     Run a single TQL command on a remote server.
@@ -103,8 +111,6 @@ def run_tql_command(
         )
         raise typer.Exit()
 
-    # TODO handle errors found in tql?
-    # TODO handle forigveable errors [CREATE TABLE when it exists]
     data = {
         'context': {
             'schema': schema,
@@ -123,14 +129,12 @@ def run_tql_command(
         if 'message' in data['result']:
             m = api.ts_dataservice._parse_api_messages(data['result']['message'])
 
-            if verbose:
-                console.print(m)
+            if raise_errors and 'returned error' in m:
+                raise ValueError(m)
 
         if 'table' in data['result']:
             m = api.ts_dataservice._parse_tql_query(data['result']['table'])
-
-            if verbose:
-                console.print(m)
+            log.debug(m)
 
 
 def tsload(
@@ -201,13 +205,13 @@ def tsload(
     try:
         r = api.ts_dataservice.load_init(flags)
     except Exception as e:
-        console.print(
+        log.error(
             f'[red]something went wrong trying to access tsload service: {e}[/]'
-            f'\nIf you haven\'t enabled tsload service yet, please find the link below '
-            f'further information:'
+            f'\n\nIf you haven\'t enabled tsload service yet, please find the link '
+            f'below further information:'
             f'\nhttps://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html'
             f'\n\nHeres the tsload command for the file you tried to load:'
-            f'\ntsload --source_file {fp} --target_database {target_database} '
+            f'\n\ntsload --source_file {fp} --target_database {target_database} '
             f'--target_schema {target_schema} --target_table {target_table} '
             f'--field_separator "{field_separator}" --boolean_representation True_False '
             f'--null_value "" --time_format {FMT_TSLOAD_TIME} --date_format {FMT_TSLOAD_DATE} '
@@ -250,7 +254,6 @@ def to_csv(
     fp: pathlib.Path,
     *,
     mode: str='w',
-    header: bool=True,
     sep: str='|'
 ):
     """
@@ -258,6 +261,8 @@ def to_csv(
 
     Data must be in record format.. [{column -> value}, ..., {column -> value}]
     """
+    header = not fp.exists()
+
     with fp.open(mode=mode, encoding='utf-8', newline='') as c:
         writer = csv.DictWriter(c, data[0].keys(), delimiter=sep)
 
@@ -265,3 +270,71 @@ def to_csv(
             writer.writeheader()
 
         writer.writerows(data)
+
+
+def check_exists(path: pathlib.Path, *, raise_error: bool=True) -> bool:
+    """
+    Determine if filepath exists on disk.
+
+    This may optionally raise an error.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+      file path to test
+
+    raise_error : bool = True
+      whether or not to raise an error
+    """
+    if path is None or (path.exists() and not path.is_file()):
+        return True
+
+    if raise_error:
+        log.error(f'path does not exist: {path}')
+        raise typer.Exit()
+
+    return False
+
+
+def batched(
+    api_call: Callable,
+    *args,
+    batchsize: int=-1,
+    transformer: Callable=None,
+    **kwargs
+) -> List[Any]:
+    """
+    Enforce batching on an api call.
+
+    Many API calls take a batchsize parameter. In especially large clusters, it
+    can be detrimental to the main node's memory pool to gather all the data at
+    once.
+
+    Parameters
+    ----------
+    api_call : Callable
+      bound-method to call on the api
+
+    batchsize : int = -1
+      amount of data to load in each successive call to the api, default is everything
+
+    transformer : Callable
+      post-processor of the api call, usually used to extract data
+
+    *args, **kwargs
+      passed through to the api_call
+    """
+    responses = []
+
+    while True:
+        r = api_call(*args, batchsize=batchsize, **kwargs)
+
+        if transformer is not None:
+            r = transformer(r)
+
+        responses.extend(r)
+
+        if len(r) < batchsize or batchsize == -1:
+            break
+
+    return responses

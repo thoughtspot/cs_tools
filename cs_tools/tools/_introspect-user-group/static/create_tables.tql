@@ -1,6 +1,4 @@
-CREATE DATABASE cs_tools;
 USE cs_tools;
-
 
 CREATE TABLE introspect_user (
       guid_              VARCHAR(255)

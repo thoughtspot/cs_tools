@@ -8,10 +8,11 @@ import yaml
 
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.util.datetime import to_datetime
-from cs_tools.tools.common import to_csv, run_tql_script, tsload
+from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.api import ThoughtSpot
+from cs_tools.tools import common
 
 
 HERE = pathlib.Path(__file__).parent
@@ -141,19 +142,16 @@ def gather(
     """
     app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-
-    if save_path is not None and (not save_path.exists() or save_path.is_file()):
-        console.print(f'[red]"{save_path.resolve()}" should be a valid directory![/]')
-        raise typer.Exit()
+    common.check_exists(save_path)
 
     dir_ = save_path if save_path is not None else app_dir
-    fp = dir_ / 'falcon_table_info.csv'
+    path = dir_ / 'falcon_table_info.csv'
 
     with ThoughtSpot(cfg) as api:
         with console.status('getting falcon table info'):
             data = _format_table_info_data(api._periscope.sage_combinedtableinfo().json())
 
-        to_csv(data, fp=fp)
+        common.to_csv(data, fp=path, mode='a')
 
         if save_path is not None:
             return
@@ -161,10 +159,18 @@ def gather(
         # TODO .. should we do a version check?
         # rTQL released in 6.2.1+
         # rTSLOAD released in 6.3+
-        run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
-        cycle_id = tsload(api, fp=fp, target_database='cs_tools', target_table='falcon_table_info')
-        (dir_ / 'falcon_table_info.csv').unlink()
+        with console.status('creating tables with remote TQL'):
+            run_tql_command(api, command='CREATE DATABASE cs_tools;')
+            run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
 
-        r = api.ts_dataservice.load_status(cycle_id).json()
-        m = api.ts_dataservice._parse_tsload_status(r)
-        console.print(m)
+        with console.status('loading data to Falcon with remote tsload'):
+            cycle_id = tsload(
+                api,
+                fp=path,
+                target_database='cs_tools',
+                target_table='falcon_table_info'
+            )
+            path.unlink()
+            r = api.ts_dataservice.load_status(cycle_id).json()
+            m = api.ts_dataservice._parse_tsload_status(r)
+            console.print(m)

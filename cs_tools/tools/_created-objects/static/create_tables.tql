@@ -1,6 +1,4 @@
-CREATE DATABASE cs_tools;
 USE cs_tools;
-
 
 CREATE TABLE introspect_metadata_object (
       -- apparently GUID is a reserved word.
@@ -13,6 +11,7 @@ CREATE TABLE introspect_metadata_object (
     , created             DATETIME
     , modified            DATETIME
     , type                VARCHAR(255)
+    , context             VARCHAR(255)
 );
 
 ALTER TABLE introspect_metadata_object ADD CONSTRAINT PRIMARY KEY (guid_);

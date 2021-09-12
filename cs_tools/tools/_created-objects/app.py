@@ -8,10 +8,11 @@ import typer
 
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.util.datetime import to_datetime
-from cs_tools.tools.common import to_csv, run_tql_script, tsload
+from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.api import ThoughtSpot
+from cs_tools.tools import common
 
 
 HERE = pathlib.Path(__file__).parent
@@ -66,7 +67,8 @@ def _format_metadata_objects(metadata: List[Dict], type_: str):
             'created': to_datetime(meta['created'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
             'modified': to_datetime(meta['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
             # 'modified_by': meta['modifiedBy']  # user.guid
-            'type': SystemType.to_friendly(meta['type']) if meta.get('type') else type_
+            'type': SystemType.to_friendly(meta['type']) if meta.get('type') else type_,
+            'context': None
         })
 
     return objects
@@ -133,12 +135,11 @@ def gather(
     """
     app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-
-    if save_path is not None and (not save_path.exists() or save_path.is_file()):
-        console.print(f'[red]"{save_path.resolve()}" should be a valid directory![/]')
-        raise typer.Exit()
+    common.check_exists(save_path)
 
     dir_ = save_path if save_path is not None else app_dir
+    path = dir_ / 'introspect_metadata_object.csv'
+    static = HERE / 'static'
 
     if metadata is not None:
         metadata_types = [metadata]
@@ -146,30 +147,49 @@ def gather(
         metadata_types = list(SystemType)
 
     with ThoughtSpot(cfg) as api:
-        with console.status('getting top level metadata'):
-            for metadata in metadata_types:
-                type_ = SystemType.to_metadata_type(metadata.value)
-                r = api._metadata.list(type=type_, batchsize=-1).json()['headers']
-                objects = _format_metadata_objects(r, metadata.value)
+        for metadata in metadata_types:
+            type_ = SystemType.to_metadata_type(metadata.value)
 
-                # if we're only looking for a LOGICAL_TABLE subtype..
-                # system table, imported data, worksheet, view
-                if type_ == 'LOGICAL_TABLE':
-                    objects = list(filter(lambda e: e['type'] == metadata.value, objects))
+            with console.status(f'getting top level metadata: {metadata}'):
+                r = common.batched(
+                    api._metadata.list,
+                    type=type_,
+                    batchsize=5000,
+                    transformer=lambda r: r.json()['headers']
+                )
 
-                fp = dir_ / 'introspect_metadata_object.csv'
-                mode, header = ('a', False) if fp.exists() else ('w', True)
-                to_csv(objects, fp, mode=mode, header=header)
+            objects = _format_metadata_objects(r, metadata.value)
+
+            # if we're only looking for a LOGICAL_TABLE subtype..
+            # system table, imported data, worksheet, view
+            if type_ == 'LOGICAL_TABLE':
+                objects = list(filter(lambda e: e['type'] == metadata.value, objects))
+
+            if not objects:
+                continue
+
+            with console.status(f'saving top level metadata: {metadata}'):
+                common.to_csv(objects, path, mode='a')
 
         if save_path is not None:
             return
 
-        run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
+        try:
+            with console.status('creating tables with remote TQL'):
+                run_tql_command(api, command='CREATE DATABASE cs_tools;')
+                run_tql_script(api, fp=static / 'create_tables.tql', raise_errors=True)
+        except common.TableAlreadyExists:
+            with console.status('altering tables with remote TQL'):
+                run_tql_script(api, fp=static / 'alter_tables.tql')
 
-        path = dir_ / 'introspect_metadata_object.csv'
-        cycle_id = tsload(api, fp=path, target_database='cs_tools', target_table='introspect_metadata_object')
-        path.unlink()
-
-        r = api.ts_dataservice.load_status(cycle_id).json()
-        m = api.ts_dataservice._parse_tsload_status(r)
-        console.print(m)
+        with console.status('loading data to Falcon with remote tsload'):
+            cycle_id = tsload(
+                api,
+                fp=path,
+                target_database='cs_tools',
+                target_table='introspect_metadata_object'
+            )
+            path.unlink()
+            r = api.ts_dataservice.load_status(cycle_id).json()
+            m = api.ts_dataservice._parse_tsload_status(r)
+            console.print(m)
