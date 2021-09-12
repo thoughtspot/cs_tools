@@ -47,10 +47,11 @@ def run_tql_script(
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """
     if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
-        console.print(
-            '[red]You do not have the correct privileges to access the remote TQL '
-            'service!\n\nYou require at least the "Can Manage Data" privilege.'
-            '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+        log.error(
+            f'[red]User {api.logged_in_user.display_name} do not have the correct '
+            f'privileges to access the remote tsload service!\n\nYou require at least '
+            f'the "Can Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
+            f'Administrator.[/]'
         )
         raise typer.Exit()
 
@@ -104,10 +105,11 @@ def run_tql_command(
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """
     if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
-        console.print(
-            '[red]You do not have the correct privileges to access the remote TQL '
-            'service!\n\nYou require at least the "Can Manage Data" privilege.'
-            '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+        log.error(
+            f'[red]User {api.logged_in_user.display_name} do not have the correct '
+            f'privileges to access the remote tsload service!\n\nYou require at least '
+            f'the "Can Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
+            f'Administrator.[/]'
         )
         raise typer.Exit()
 
@@ -170,10 +172,11 @@ def tsload(
       https://docs.thoughtspot.com/latest/reference/data-importer-ref.html
     """
     if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
-        console.print(
-            '[red]You do not have the correct privileges to access the remote tsload '
-            'service!\n\nYou require at least the "Can Manage Data" privilege.'
-            '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+        log.error(
+            f'[red]User {api.logged_in_user.display_name} do not have the correct '
+            f'privileges to access the remote tsload service!\n\nYou require at least '
+            f'the "Can Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
+            f'Administrator.[/]'
         )
         raise typer.Exit()
 
@@ -300,7 +303,6 @@ def batched(
     api_call: Callable,
     *args,
     batchsize: int=-1,
-    offset: Union[int, str]='auto',
     transformer: Callable=None,
     **kwargs
 ) -> List[Any]:
@@ -319,12 +321,6 @@ def batched(
     batchsize : int = -1
       amount of data to load in each successive call to the api, default is everything
 
-    offset : int = -1
-      batch offset to fetch page of headers; default is first page
-
-      if this value is 'auto', offset will be determined by the number of
-      objects seen so far
-
     transformer : Callable
       post-processor of the api call, usually used to extract data
 
@@ -333,33 +329,15 @@ def batched(
     """
     responses = []
 
-    if offset == 'auto':
-        auto_offset = True
-        offset = 0
-    else:
-        auto_offset = False
-
     while True:
-        r = api_call(*args, batchsize=batchsize, offset=offset, **kwargs)
+        r = api_call(*args, batchsize=batchsize, **kwargs)
 
         if transformer is not None:
             r = transformer(r)
 
         responses.extend(r)
 
-        # We'll only get a single response
-        if batchsize == -1:
-            break
-
-        # We only care about a single response
-        if not auto_offset:
-            break
-
-        offset += len(r)
-
-        # If the response volume is less than the batchsize,
-        # we ran out of records to fetch
-        if len(r) < batchsize:
+        if len(r) < batchsize or batchsize == -1:
             break
 
     return responses
