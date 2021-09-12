@@ -7,10 +7,11 @@ import typer
 
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.util.datetime import to_datetime
-from cs_tools.tools.common import to_csv, run_tql_script, tsload
+from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.api import ThoughtSpot
+from cs_tools.tools import common
 
 
 HERE = pathlib.Path(__file__).parent
@@ -190,33 +191,34 @@ def gather(
     """
     app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-
-    if save_path is not None and (not save_path.exists() or save_path.is_file()):
-        console.print(f'[red]"{save_path.resolve()}" should be a valid directory![/]')
-        raise typer.Exit()
+    common.check_exists(save_path)
 
     dir_ = save_path if save_path is not None else app_dir
 
     with ThoughtSpot(cfg) as api:
         users, groups, asso = _get_users_in_group(api)
 
-        to_csv(users, fp=dir_ / 'introspect_user.csv')
-        to_csv(groups, fp=dir_ / 'introspect_group.csv')
-        to_csv(asso, fp=dir_ / 'introspect_asso_user_group.csv')
+        common.to_csv(users, fp=dir_ / 'introspect_user.csv', mode='a')
+        common.to_csv(groups, fp=dir_ / 'introspect_group.csv', mode='a')
+        common.to_csv(asso, fp=dir_ / 'introspect_asso_user_group.csv', mode='a')
 
         if save_path is not None:
             return
 
-        run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
+        with console.status('creating tables with remote TQL'):
+            run_tql_command(api, command='CREATE DATABASE cs_tools;')
+            run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
 
-        for stem in ('introspect_user', 'introspect_group', 'introspect_asso_user_group'):
-            path = dir_ / f'{stem}.csv'
-            cycle_id = tsload(api, fp=path, target_database='cs_tools', target_table=stem)
-            path.unlink()
-
-            if cycle_id is None:
-                continue
-
-            r = api.ts_dataservice.load_status(cycle_id).json()
-            m = api.ts_dataservice._parse_tsload_status(r)
-            console.print(m)
+        with console.status('loading data to Falcon with remote tsload'):
+            for stem in ('introspect_user', 'introspect_group', 'introspect_asso_user_group'):
+                path = dir_ / f'{stem}.csv'
+                cycle_id = tsload(
+                    api,
+                    fp=path,
+                    target_database='cs_tools',
+                    target_table=stem
+                )
+                path.unlink()
+                r = api.ts_dataservice.load_status(cycle_id).json()
+                m = api.ts_dataservice._parse_tsload_status(r)
+                console.print(m)
