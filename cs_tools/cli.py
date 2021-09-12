@@ -1,5 +1,4 @@
 import datetime as dt
-import traceback
 import pathlib
 import logging
 import shutil
@@ -15,9 +14,6 @@ from cs_tools.helpers.loader import _gather_tools
 from cs_tools.util.algo import deep_update
 from cs_tools.settings import TSConfig
 from cs_tools.const import APP_DIR
-
-
-log = logging.getLogger(__name__)
 
 
 log = logging.getLogger(__name__)
@@ -262,16 +258,44 @@ def run():
     now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
     _clean_logs(now)
 
+    logging.config.dictConfig({
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '[%(levelname)s - %(asctime)s] [%(name)s - %(module)s.%(funcName)s %(lineno)d] %(message)s'
+            }
+        },
+        'handlers': {
+            'to_file': {
+                'formatter': 'verbose',
+                'level': 'DEBUG',
+                'class': 'logging.handlers.RotatingFileHandler',
+                # RotatingFileHandler.__init__ params...
+                'filename': f'{APP_DIR}/logs/{now}.log',
+                'mode': 'w',          # Create a new file for each run of cs_tools.
+                'backupCount': 25,    # Only keep 25 files.
+                'encoding': 'utf-8',  # Handle unicode fun.
+                'delay': True         # Don't create a file if no logging is done.
+            },
+            'to_console': {
+                'level': 'INFO',
+                'class': 'rich.logging.RichHandler',
+                # rich.__init__ params...
+                'console': console,
+                'show_level': False,
+                'markup': True,
+                'log_time_format': '[%X]'
+            }
+        },
+        'loggers': {},
+        'root': {
+            'level': 'DEBUG',
+            'handlers': ['to_file', 'to_console']
+        }
+    })
+
     logging.getLogger('urllib3').setLevel(logging.ERROR)
-    logging.basicConfig(
-        handlers=[
-            logging.FileHandler(f'{APP_DIR}/logs/{now}.log', mode='w', encoding='utf-8')
-        ],
-        format='[%(levelname)s - %(asctime)s] '
-               '[%(name)s - %(module)s.%(funcName)s %(lineno)d] '
-               '%(message)s',
-        level='DEBUG'
-    )
 
     try:
         app(prog_name='cs_tools')
@@ -284,4 +308,3 @@ def run():
             e = f'{type(e).__name__}: {e}'
 
         log.exception(f'[error]{e}')
-        console.print(f'[red]{traceback.format_exc()}[/]')
