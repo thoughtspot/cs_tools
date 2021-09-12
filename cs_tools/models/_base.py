@@ -116,12 +116,12 @@ class TSPrivate(APIBase):
         """
         return f'{super().base_url}/callosum/v1'
 
-    def _request(self, method, url, *args, **kwargs) -> httpx.Response:
-        """
-        Make a generic request.
-        """
-        log.warning(
-            f'UNSUPPORTED API CALL\n\n{method} to {url} is using a private and '
-            'unsupported API!\n'
-        )
-        return super()._request(method, url, *args, **kwargs)
+    # def _request(self, method, url, *args, **kwargs) -> httpx.Response:
+    #     """
+    #     Make a generic request.
+    #     """
+    #     log.warning(
+    #         f'UNSUPPORTED API CALL\n\n{method} to {url} is using a private and '
+    #         'unsupported API!\n'
+    #     )
+    #     return super()._request(method, url, *args, **kwargs)
