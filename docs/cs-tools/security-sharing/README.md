@@ -15,25 +15,59 @@ the appropriate security settings for those group-table combinations.
 
 ## CLI preview
 
-```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools security-sharing
+=== "security-sharing --help"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools security-sharing
 
-Usage: cs_tools tools security-sharing [OPTIONS] COMMAND [ARGS]...
+    Usage: cs_tools tools security-sharing [OPTIONS] COMMAND [ARGS]...
 
-  Scalably manage your table- and column-level security right in the browser.
+      Scalably manage your table- and column-level security right in the browser.
 
-  Setting up Column Level Security (especially on larger tables) can be time-consuming when done
-  directly in the ThoughtSpot user interface. The web interface provided by this tool will allow you
-  to quickly understand the current security settings for a given table across all columns, and as
-  many groups as are in your platform. You may then set the appropriate security settings for those
-  group-table combinations.
+      Setting up Column Level Security (especially on larger tables) can be time-consuming when done
+      directly in the ThoughtSpot user interface. The web interface provided by this tool will allow you
+      to quickly understand the current security settings for a given table across all columns, and as
+      many groups as are in your platform. You may then set the appropriate security settings for those
+      group-table combinations.
 
-Options:
-  --version   Show the tool's version and exit.
-  --helpfull  Show the full help message and exit.
-  -h, --help  Show this message and exit.
+    Options:
+      --version   Show the tool's version and exit.
+      --helpfull  Show the full help message and exit.
+      -h, --help  Show this message and exit.
 
-Commands:
-  run    Start the built-in webserver which runs the security management interface.
-  share  Share database tables with groups.
-```
+    Commands:
+      run    Start the built-in webserver which runs the security management interface.
+      share  Share database tables with groups.
+    ```
+
+=== "security-sharing run"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools security-sharing run --help
+
+    Usage: cs_tools tools security-sharing run [OPTIONS]
+
+      Start the built-in webserver which runs the security management interface.
+
+    Options:
+      --webserver-port INTEGER  port to host the webserver on  (default: 5000)
+      --helpfull                Show the full help message and exit.
+      -h, --help                Show this message and exit.
+    ```
+
+=== "security-sharing share"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools security-sharing share --help
+
+    Usage: cs_tools tools security-sharing share [OPTIONS]
+
+      Share database tables with groups.
+
+    Options:
+      --group TEXT                    group to share with  (required)
+      --permission (view|edit|remove)
+                                      permission type to assign  (required)
+      --database TEXT                 name of database of tables to share  (required)
+      --schema TEXT                   name of schema of tables to share  (default: falcon_default_schema)
+      --table TEXT                    name of the table to share, if not provided then share all tables
+      --helpfull                      Show the full help message and exit.
+      -h, --help                      Show this message and exit.
+    ```

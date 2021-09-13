@@ -10,7 +10,7 @@ guide on the optimal number of shards for each table. Ideally, the customer will
 implement this solution to run on a regular basis, with a plan to review the pinboard
 once every few months (depending on data volume growth).
 
-**Currently, this solution does not consider co-sharding as part of the output.**
+__Currently, this solution does not consider co-sharding as part of the output.__
 
 If your customer is not comfortable with sharding, please have them schedule an
 Office Hours session and a CSA will be able to help guide them through the process.
