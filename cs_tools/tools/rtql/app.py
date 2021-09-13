@@ -45,7 +45,7 @@ def interactive(
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
     api = ThoughtSpot(cfg)
-    tql = InteractiveTQL(api, schema=schema, autocomplete=autocomplete)
+    tql = InteractiveTQL(api, schema=schema, autocomplete=autocomplete, console=console)
     tql.run()
 
 

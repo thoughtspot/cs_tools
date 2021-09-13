@@ -1,11 +1,11 @@
-from typing import List
+from typing import List, Callable
 import logging
 import json
 
+from rich.console import Console
 import httpx
 import typer
 
-from cs_tools.helpers.cli_ux import console
 from cs_tools.schema.user import PrivilegeEnum
 from cs_tools.api import ThoughtSpot
 from .completer import TQLCompleter
@@ -30,8 +30,11 @@ class InteractiveTQL:
     schema : dict
       default schema to use
 
-    autocomplete: bool  [default: True]
+    autocomplete : bool  [default: True]
       whether or not to autocomplete, invoked with TAB
+
+    console : rich.Console  [default: new console]
+      rich console to print feedback to
 
     Attributes
     ----------
@@ -47,19 +50,25 @@ class InteractiveTQL:
         *,
         schema: dict='falcon_default_schema',
         autocomplete: bool=True,
+        console: Callable=None
     ):
         self.ts_api = api
         self.ctx = {'schema': schema, 'server_schema_version': -1}
         self.autocomplete = autocomplete
         self.completer = TQLCompleter()
         self._current_prompt = None
+        self.console = console if console is not None else Console()
+
+    @property
+    def print(self):
+        return self.console.print
 
     def _check_privileges(self):
         required = set([PrivilegeEnum.can_administer_thoughtspot, PrivilegeEnum.can_manage_data])
         privileges = set(self.ts_api.logged_in_user.privileges)
 
         if not set(privileges).intersection(required):
-            console.print(
+            self.print(
                 '[red]You do not have the correct privileges to access the remote TQL '
                 'service!\n\nYou require at least the "Can Manage Data" privilege.'
                 '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
@@ -83,7 +92,7 @@ class InteractiveTQL:
         else:
             timeout = 5.0
 
-        with console.status('[bold green]running query[/]'):
+        with self.console.status('[bold green]running query[/]'):
             try:
                 r = self.ts_api.ts_dataservice.query(data, timeout=timeout)
                 r.raise_for_status()
@@ -122,7 +131,7 @@ class InteractiveTQL:
 
         while answer.lower() not in answers:
             if answer != '':
-                console.print(f'[red]"{answer} is an unnacceptable answer[/]')
+                self.print(f'[red]"{answer} is an unnacceptable answer[/]')
 
             answer = typer.prompt(
                         typer.style(question, fg='yellow'),
@@ -160,11 +169,11 @@ class InteractiveTQL:
 
             if 'message' in data['result']:
                 msg = self.ts_api.ts_dataservice._parse_api_messages(data['result']['message'])
-                console.print(msg)
+                self.print(msg)
 
             if 'table' in data['result']:
                 msg = self.ts_api.ts_dataservice._parse_tql_query(data['result']['table'])
-                console.print(msg)
+                self.print(msg)
 
         return new_ctx
 
@@ -195,7 +204,7 @@ class InteractiveTQL:
             r.raise_for_status()
         except Exception as e:
             log.debug(e, exc_info=True)
-            console.print(
+            self.print(
                 f'[red]Autocomplete tokens could not be fetched. '
                 f'{r.status_code}: {r.text}[/]'
             )
@@ -263,15 +272,15 @@ class InteractiveTQL:
 
         This method is purely functional.
         """
-        with console.status('[green]starting remote TQL client..[/]'):
+        with self.console.status('[bold green]starting remote TQL client..[/]'):
             self.ts_api.__enter__()
             self._check_privileges()
             self.update_tokens('static')
             self.update_tokens('dynamic')
 
-        console.clear()
+        self.console.clear()
 
-        console.print(
+        self.print(
             '\nWelcome to the ThoughtSpot SQL command line interface, '
             f'{self.ts_api.logged_in_user.display_name}!'
             '\n\n[green]Controls:'
@@ -288,14 +297,14 @@ class InteractiveTQL:
             prompt = self.simulate_tql_prompt()
 
             if prompt == 'clear':
-                console.clear()
+                self.console.clear()
                 continue
 
             if prompt is None or prompt.startswith(('quit', 'exit')):
                 break
 
             if prompt == 'h' or prompt.startswith('help'):
-                console.print(TQL_HELP)
+                self.print(TQL_HELP)
                 continue
 
             # only set the current prompt for when we need to send it remotely
