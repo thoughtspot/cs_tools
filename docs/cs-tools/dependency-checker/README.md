@@ -18,37 +18,78 @@ content a User makes.
 
 ## CLI preview
 
-```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker
+=== "dependency-checker --help"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker
 
-Usage: cs_tools tools dependency-checker [OPTIONS] COMMAND [ARGS]...
+    Usage: cs_tools tools dependency-checker [OPTIONS] COMMAND [ARGS]...
 
-  Make Dependencies searchable in your platform.
+      Make Dependencies searchable in your platform.
 
-  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
-  break the tool.
+      USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
+      version update and break the tool.
 
-  Dependencies can be collected for various types of metadata. For example, many tables are used within
-  a worksheet, while many worksheets will have answers and pinboards built on top of them.
+      Dependencies can be collected for various types of metadata. For example, many tables are used
+      within a worksheet, while many worksheets will have answers and pinboards built on top of them.
 
-  Metadata Object             Metadata Dependent
-  - guid                      - guid
-  - name                      - parent guid
-  - description               - name
-  - author guid               - description
-  - author name               - author guid
-  - author display name       - author name
-  - created                   - author display name
-  - modified                  - created
-  - object type               - modified
-                              - object type
+      Metadata Object             Metadata Dependent
+      - guid                      - guid
+      - name                      - parent guid
+      - description               - name
+      - author guid               - description
+      - author name               - author guid
+      - author display name       - author name
+      - created                   - author display name
+      - modified                  - created
+      - object type               - modified
+      - context                   - object type
 
-Options:
-  --version   Show the tool's version and exit.
-  --helpfull  Show the full help message and exit.
-  -h, --help  Show this message and exit.
+    Options:
+      --version   Show the tool's version and exit.
+      --helpfull  Show the full help message and exit.
+      -h, --help  Show this message and exit.
 
-Commands:
-  gather  Gather and optionally, insert data into Falcon.
-  tml     Create TML files.
-```
+    Commands:
+      gather  Gather and optionally, insert data into Falcon.
+      tml     Create TML files.
+    ```
+
+=== "dependency-checker gather"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker gather --help
+
+    Usage: cs_tools tools dependency-checker gather [OPTIONS]
+
+      Gather and optionally, insert data into Falcon.
+
+      By default, data is automatically gathered and inserted into the platform. If save_path argument is
+      used, data will not be inserted and will instead be dumped to the location specified.
+
+    Options:
+      --save-path PATH                if specified, directory to save data to
+      --parent (system table|imported data|worksheet|view)
+                                      type of object to find dependents for
+      --include-columns               whether or not to find column dependents
+      --helpfull                      Show the full help message and exit.
+      -h, --help                      Show this message and exit.
+    ```
+
+=== "dependency-checker tml"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker tml --help
+
+    Usage: cs_tools tools dependency-checker tml [OPTIONS]
+
+      Create TML files.
+
+      Generates and saves multiple TML files.
+
+      TABLE:
+        - introspect_metadata_object
+        - introspect_metadata_dependent
+
+    Options:
+      --save-path PATH  filepath to save TML files to  (required)
+      --helpfull        Show the full help message and exit.
+      -h, --help        Show this message and exit.
+    ```

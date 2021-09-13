@@ -95,9 +95,11 @@ def tml(
     TABLE:
       - falcon_table_info
 
+    \b
     WORKSHEET:
       - PS: Falcon Table Sharding Recommender
 
+    \b
     PINBOARD:
       - PS: Falcon Table Sharding Recommender
     """

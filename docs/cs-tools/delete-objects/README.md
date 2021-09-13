@@ -25,57 +25,104 @@ in if supplied to `delete-objects from-file`
      &nbsp; &nbsp; &nbsp; &nbsp; 
     [:fontawesome-solid-file-csv: CSV template](template.csv)
 
+=== "delete-objects --help"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects
 
-| type                 | guid                                 |
-| -------------------- | ------------------------------------ |
-| pinboard             | 1234a5bc-6d7e-8f90-12g3-h4ij5km6n78p |
-| saved answer         | 1abcdef2-345g-6ghi-j789-0k1m2n345p67 |
-| saved answer         | 1ab23456-789c-0de1-f23g-45h678ij9012 |
-| pinboard             | ab1cde23-45f6-7gf8-hi90-1234j5k6789m |
-| saved answer         | a1bc2d3e-f456-78g9-012h-3i4j5k67m890 |
-| ...                  | ...                                  |
-| PINBOARD_ANSWER_BOOK | 1234a5bc-6d7e-8f90-12g3-h4ij5km6n78p |
-| QUESTION_ANSWER_BOOK | 1abcdef2-345g-6ghi-j789-0k1m2n345p67 |
-| QUESTION_ANSWER_BOOK | 1ab23456-789c-0de1-f23g-45h678ij9012 |
-| PINBOARD_ANSWER_BOOK | ab1cde23-45f6-7gf8-hi90-1234j5k6789m |
-| QUESTION_ANSWER_BOOK | a1bc2d3e-f456-78g9-012h-3i4j5k67m890 |
+    Usage: cs_tools tools delete-objects [OPTIONS] COMMAND [ARGS]...
 
-```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects
+      Bulk delete metadata objects from your ThoughtSpot platform.
 
-Usage: cs_tools tools delete-objects [OPTIONS] COMMAND [ARGS]...
+      USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
+      version update and break the tool.
 
-  Bulk delete metadata objects from your ThoughtSpot platform.
+      Leverages the /metadata/delete private API endpoint.
 
-  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
-  break the tool.
+      Tool takes an input file and or a specific object and deletes it from the metadata.
 
-  Leverages the /metadata/delete private API endpoint.
+      Valid metadata object type values are:
+          - saved answer
+          - pinboard
 
-  Tool takes an input file and or a specific object and deletes it from the metadata.
+      CSV/XLSX file format should look like..
+          +----------------+-------+
+          | type           | guid  |
+          +----------------+-------+
+          | saved answer   | guid1 |
+          | pinboard       | guid2 |
+          | ...            | ...   |
+          | saved answer   | guid3 |
+          +----------------+-------+
 
-  Valid metadata object type values are:
-      - saved answer
-      - pinboard
+    Options:
+      --version   Show the tool's version and exit.
+      --helpfull  Show the full help message and exit.
+      -h, --help  Show this message and exit.
 
-  CSV/XLSX file format should look like..
+    Commands:
+      from-file      Remove many objects from ThoughtSpot.
+      generate-file  Generates example file in Excel or CSV format
+      single         Removes a specific object from ThoughtSpot.
+    ```
 
-      +----------+-------+
-      |  type    | guid  |
-      +----------+-------+
-      | answer   | guid1 |
-      | pinboard | guid2 |
-      | ...      | ...   |
-      | answer   | guid3 |
-      +----------+-------+
+=== "delete-objects from-file"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects from-file --help
 
-Options:
-  --version   Show the tool's version and exit.
-  --helpfull  Show the full help message and exit.
-  -h, --help  Show this message and exit.
+    Usage: cs_tools tools delete-objects from-file [OPTIONS] FILE
 
-Commands:
-  from-file      Remove many objects from ThoughtSpot.
-  generate-file  Generates example file in Excel or CSV format
-  single         Removes a specific object from ThoughtSpot.
-```
+      Remove many objects from ThoughtSpot.
+
+      Accepts an Excel (.xlsx) file or CSV (.csv) file.
+
+      CSV/XLSX file format should look like..
+
+          +----------------+-------+
+          | type           | guid  |
+          +----------------+-------+
+          | saved answer   | guid1 |
+          | pinboard       | guid2 |
+          | ...            | ...   |
+          | saved answer   | guid3 |
+          +----------------+-------+
+
+    Arguments:
+      FILE  path to a file with columns "type" and "guid"  (required)
+
+    Options:
+      --batchsize INTEGER  maximum amount of objects to delete simultaneously  (default:
+                           1)
+
+      --helpfull           Show the full help message and exit.
+      -h, --help           Show this message and exit.
+    ```
+
+=== "delete-objects generate-file"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects generate-file --help
+
+    Usage: cs_tools tools delete-objects generate-file [OPTIONS]
+
+      Generates example file in Excel or CSV format
+
+    Options:
+      --save-path PATH  filepath to save generated file to  (required)
+      --helpfull        Show the full help message and exit.
+      -h, --help        Show this message and exit.
+    ```
+
+=== "delete-objects single"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects single --help
+
+    Usage: cs_tools tools delete-objects single [OPTIONS]
+
+      Removes a specific object from ThoughtSpot.
+
+    Options:
+      --type (pinboard|PINBOARD_ANSWER_BOOK|saved answer|QUESTION_ANSWER_BOOK)
+                                      type of the metadata to delete  (required)
+      --guid TEXT                     guid to delete  (required)
+      --helpfull                      Show the full help message and exit.
+      -h, --help                      Show this message and exit.
+    ```

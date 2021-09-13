@@ -26,34 +26,73 @@ so that the information provided is not stale.
 
 ## CLI preview
 
-```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group
+=== "introspect-user-group --help"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group
 
-Usage: cs_tools tools introspect-user-group [OPTIONS] COMMAND [ARGS]...
+    Usage: cs_tools tools introspect-user-group [OPTIONS] COMMAND [ARGS]...
 
-  Make Users and Groups searchable in your platform.
+      Make Users and Groups searchable in your platform.
 
-  USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and
-  break the tool.
+      USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
+      version update and break the tool.
 
-  Return data on your users, groups, and each users' group membership.
+      Return data on your users, groups, and each users' group membership.
 
-  Users                       Groups
-  - guid                      - guid
-  - email                     - description
-  - name                      - name
-  - display name              - display name
-  - created                   - created
-  - modified                  - modified
-  - sharing visibility        - sharing visibility
-  - user type                 - group type
+      Users                       Groups
+      - guid                      - guid
+      - email                     - description
+      - name                      - name
+      - display name              - display name
+      - created                   - created
+      - modified                  - modified
+      - sharing visibility        - sharing visibility
+      - user type                 - group type
 
-Options:
-  --version   Show the tool's version and exit.
-  --helpfull  Show the full help message and exit.
-  -h, --help  Show this message and exit.
+    Options:
+      --version   Show the tool's version and exit.
+      --helpfull  Show the full help message and exit.
+      -h, --help  Show this message and exit.
 
-Commands:
-  gather  Gather and optionally, insert data into Falcon.
-  tml     Create TML files.
-```
+    Commands:
+      gather  Gather and optionally, insert data into Falcon.
+      tml     Create TML files.
+    ```
+
+=== "introspect-user-group gather"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group gather --help
+
+    Usage: cs_tools tools introspect-user-group gather [OPTIONS]
+
+      Gather and optionally, insert data into Falcon.
+
+      By default, data is automatically gathered and inserted into the platform. If save_path argument is
+      used, data will not be inserted and will instead be dumped to the location specified.
+
+    Options:
+      --save-path PATH  if specified, directory to save data to
+      --helpfull        Show the full help message and exit.
+      -h, --help        Show this message and exit.
+    ```
+
+=== "introspect-user-group tml"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group tml --help
+
+    Usage: cs_tools tools introspect-user-group tml [OPTIONS]
+
+      Create TML files.
+
+      Generates and saves multiple TML files.
+
+      TABLE:
+        - introspect_user
+        - introspect_group
+        - introspect_asso_user_group
+
+    Options:
+      --save-path PATH  filepath to save TML files to  (required)
+      --helpfull        Show the full help message and exit.
+      -h, --help        Show this message and exit.
+    ```
