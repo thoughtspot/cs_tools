@@ -13,7 +13,6 @@ Then you can [clone the source][gh-clone]{ target='secondary' .external-link } f
 and be up and running in less than 5 minutes!
 
 === ":fontawesome-brands-apple: Mac"
-
     ++cmd+space++, &nbsp; type `terminal`, &nbsp; ++enter++
     ```bash
     # change $HOME/cs_tools to where you want to save your local copy of the repository
@@ -24,7 +23,6 @@ and be up and running in less than 5 minutes!
     ```
 
 === ":fontawesome-brands-linux: Linux"
-
     *if in a GUI environment*, &nbsp; ++ctrl+shift+t++
     ```bash
     # change $HOME/cs_tools to where you want to save your local copy of the repository
@@ -35,7 +33,6 @@ and be up and running in less than 5 minutes!
     ```
 
 === ":fontawesome-brands-windows: Windows"
-
     ++windows++, &nbsp; type `cmd`, &nbsp; ++enter++
     ```powershell
     # change %USERPROFILE%/cs_tools to where you want to save your local copy of the repository
@@ -44,7 +41,6 @@ and be up and running in less than 5 minutes!
     %USERPROFILE%\.cs_tools-dev\Scripts\activate.bat
     pip install -r dev-requirements.txt
     ```
-
 
 ## Virtual Environments
 

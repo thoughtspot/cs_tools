@@ -80,7 +80,7 @@ It's up to you to decide when it's appropriate to use which header. In general, 
 
 We'll now learn how to make links to other web sites on the world wide web.
 
-There are two different link types in Markdown, but both of them render the exact same way. The first link style is called an *inline link*. To create an inline link, you wrap the link text in brackets (`[ ]`), and then you wrap the link in parenthesis (`( )`). For example, to create a hyperlink to www.github.com, with a link text that says, Visit GitHub!, you'd write this in Markdown: [Visit GitHub!](https://www.github.com).
+There are two different link types in Markdown, but both of them render the exact same way. The first link style is called an *inline link*. To create an inline link, you wrap the link text in brackets (`[ ]`), and then you wrap the link in parenthesis (`( )`). For example, to create a hyperlink to www.github.com, with a link text that says, Visit GitHub!, you'd write this in Markdown: `[Visit GitHub!](https://www.github.com)`.
 
 You can add emphasis to link texts, if you like. You'll want to make sure that the bold phrasing occurs within the link text brackets and although it might make for an awkward experience, you can make links within headings, too.
 
@@ -317,9 +317,9 @@ Markdown has several ways of formatting paragraphs.
 
 Let's take a few lines of poetry as an example. Suppose you want to write text that looks like this:
 
-Do I contradict myself?
-Very well then I contradict myself,
-(I am large, I contain multitudes.)
+> Do I contradict myself?  
+> Very well then I contradict myself,  
+> (I am large, I contain multitudes.)
 
 Now, you might think that simply typing each verse onto its own line would be enough to solve the problem:
 
@@ -329,7 +329,9 @@ Very well then I contradict myself,
 (I am large, I contain multitudes.)
 ```
 
-Unfortunately, you'd be wrong! This Markdown would render simply as a single straight line: Do I contradict myself? Very well then I contradict myself, (I am large, I contain multitudes.).
+Unfortunately, you'd be wrong! This Markdown would render simply as a single straight line:
+
+> Do I contradict myself? Very well then I contradict myself, (I am large, I contain multitudes.).
 
 If you forcefully insert a new line, you end up breaking the togetherness:
 
