@@ -170,8 +170,8 @@ def create(
     port: int=O_(None, help='optional, port of the thoughtspot server'),
     username: str=O_(..., help='username when logging into ThoughtSpot', prompt=True),
     password: str=O_(..., help='password when logging into ThoughtSpot', hide_input=True, prompt=True),
-    disable_ssl: bool=O_(False, '--disable_ssl', help='disable SSL verification'),
-    disable_sso: bool=O_(False, '--disable_sso', help='disable automatic SAML redirect'),
+    disable_ssl: bool=O_(False, '--disable_ssl', help='disable SSL verification', show_default=False),
+    disable_sso: bool=O_(False, '--disable_sso', help='disable automatic SAML redirect', show_default=False),
 ):
     """
     Create a new config file.
