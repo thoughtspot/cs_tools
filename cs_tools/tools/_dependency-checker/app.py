@@ -28,10 +28,10 @@ class SystemType(str, enum.Enum):
     USER_DEFINED = 'imported data'
     WORKSHEET = 'worksheet'
     AGGR_WORKSHEET = 'view'
-    MATERIALIZED_VIEW = 'materialized view'
-    CALENDAR_TABLE = 'custom calendar'
     PINBOARD_ANSWER_BOOK = 'pinboard'
     QUESTION_ANSWER_BOOK = 'saved answer'
+    MATERIALIZED_VIEW = 'materialized view'
+    CALENDAR_TABLE = 'custom calendar'
     FORMULA = 'formula'
 
     @classmethod
