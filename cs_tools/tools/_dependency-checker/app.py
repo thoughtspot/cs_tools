@@ -27,6 +27,8 @@ class SystemType(str, enum.Enum):
     USER_DEFINED = 'imported data'
     WORKSHEET = 'worksheet'
     AGGR_WORKSHEET = 'view'
+    MATERIALIZED_VIEW = 'materialized view'
+    CALENDAR_TABLE = 'custom calendar'
     PINBOARD_ANSWER_BOOK = 'pinboard'
     QUESTION_ANSWER_BOOK = 'saved answer'
     FORMULA = 'formula'
@@ -112,7 +114,7 @@ def _get_dependents(api: ThoughtSpot, parent: str, metadata: List[Dict]) -> List
             api._dependency.list_dependents,
             type='LOGICAL_TABLE',
             id=to_array([item['id'] for item in metadata]),
-            batchsize=500,
+            batchsize=5000,
             transformer=lambda r: [r.json()]
         )
 
@@ -143,11 +145,28 @@ def _get_recordset_metadata(api: ThoughtSpot) -> Dict[str, List]:
         'other': []
     }
 
-    active_users = common.batched(api._metadata.list, type='USER', batchsize=500, transformer=lambda r: r.json()['headers'])
+    active_users = common.batched(
+        api._metadata.list,
+        type='USER',
+        batchsize=5000,
+        transformer=lambda r: r.json()['headers']
+    )
 
     r = [
-        *common.batched(api._metadata.list, type='LOGICAL_TABLE', batchsize=500, transformer=lambda r: r.json()['headers']),
-        *common.batched(api._metadata.list, type='LOGICAL_COLUMN', batchsize=500, transformer=lambda r: r.json()['headers'])
+        *common.batched(
+            api._metadata.list,
+            type='LOGICAL_TABLE',
+            batchsize=5000,
+            transformer=lambda r: r.json()['headers']
+        ),
+        *common.batched(
+            api._metadata.list,
+            type='LOGICAL_COLUMN',
+            batchsize=5000,
+            # NOTE: "True" = includes Custom Calendars & Materialized Views...
+            # auto_created=False,
+            transformer=lambda r: r.json()['headers']
+        )
     ]
 
     for item in r:
@@ -234,7 +253,7 @@ def tml(
 def gather(
     save_path: pathlib.Path=O_(None, help='if specified, directory to save data to'),
     parent: ParentType=O_(None, help='type of object to find dependents for'),
-    include_columns: bool=O_(False, help='whether or not to find column dependents'),
+    include_columns: bool=O_(False, '--include-columns', help='whether or not to find column dependents', show_default=False),
     **frontend_kw
 ):
     """
