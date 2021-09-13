@@ -5,8 +5,9 @@ hide:
 ---
 
 <style>
-  /* Hide the Edit on Github button */
+  /* Hide the "Edit on Github" button and paragraph header link */
   .md-content__button { display: none; }
+  .md-typeset .headerlink { display: none; }
   /* Skinny down and center the page */
   .md-content { max-width: 75%; margin: auto; }
   /* Indent Features list, replace bullet point with check mark */
