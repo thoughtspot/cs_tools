@@ -286,11 +286,10 @@ def run():
             'to_file': {
                 'formatter': 'verbose',
                 'level': 'DEBUG',
-                'class': 'logging.handlers.RotatingFileHandler',
+                'class': 'logging.FileHandler',
                 # RotatingFileHandler.__init__ params...
                 'filename': f'{APP_DIR}/logs/{now}.log',
                 'mode': 'w',          # Create a new file for each run of cs_tools.
-                'backupCount': 25,    # Only keep 25 files.
                 'encoding': 'utf-8',  # Handle unicode fun.
                 'delay': True         # Don't create a file if no logging is done.
             },
