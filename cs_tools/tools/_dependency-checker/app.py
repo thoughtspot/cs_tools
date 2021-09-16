@@ -10,6 +10,7 @@ from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
 from cs_tools.util.swagger import to_array
+from cs_tools.util.algo import chunks
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.api import ThoughtSpot
@@ -110,25 +111,62 @@ def _format_dependencies(dependencies: Dict[str, Dict]):
 
 
 def _get_dependents(api: ThoughtSpot, parent: str, metadata: List[Dict]) -> List[Dict[str, Any]]:
-    r = common.batched(
-            api._dependency.list_dependents,
-            type='LOGICAL_TABLE',
-            id=to_array([item['id'] for item in metadata]),
-            batchsize=5000,
-            transformer=lambda r: [r.json()]
-        )
-
+    # DEV NOTE: (@boonhapus)
+    #
+    # I don't like magic numbers. Why am I using chunks=50? Why are we using
+    # batchsize=5000? Well, because we have no clear guidelines on how much data can be
+    # passed back and forth to the API. For even moderately sized clusters, column
+    # dependents could be in the hundreds of thousands. Consider a few worksheets with
+    # 60 columns each, shared with 50 users, who then create 10 answers (or worse,
+    # pinboards) each - all referencing a popular underlying physical column, like a
+    # measure.
+    #
+    # 1 column * 3 worksheets * 50 users * 10 answers = 53 dependencies logged .. for a single column
+    #
+    # This adds up fast. This a toy scenario. ThoughtSpot response output just doesn't
+    # like that. So we're being conservative and asking for 50 guids' dependencies at a
+    # time. Then we're also batching the output so that we get only 5000 dependencies in
+    # each response.
+    #
+    # We can normalize across the chunks and batches in RAM, later.
     data = {}
 
-    for batch in r:
-        for guid, dependency in batch.items():
-            if guid not in data:
-                data[guid] = []
+    # normalize and flatten the dependency batch data.
+    #
+    # r = [
+    #     {
+    #         'guid1': {
+    #             'LOGICAL_TABLE': [{}, ...],         # dependency headers
+    #             'PINBOARD_ANSWER_BOOK': [{}, ...],  # dependency headers
+    #             ...
+    #         },
+    #         'guid2': { ... },
+    #         ...
+    #     },
+    #     {
+    #         'guid5001': {},
+    #         'guid5002': {},
+    #         ...
+    #     }
+    # ]
+    for chunk in chunks(metadata, n=50):
+        r = common.batched(
+                api._dependency.list_dependents,
+                type='LOGICAL_COLUMN' if parent in ('formula', 'column') else 'LOGICAL_TABLE',
+                id=to_array(item['id'] for item in chunk),
+                batchsize=5000,
+                transformer=lambda r: [r.json()]
+            )
 
-            for child_type, children in dependency.items():
-                for child in children:
-                    child['type'] = child.get('type', child_type)
-                    data[guid].append(child)
+        for batch in r:
+            for guid, dependent_data in batch.items():
+                for dependent_type, dependencies in dependent_data.items():
+                    if guid not in data:
+                        data[guid] = []
+
+                    for dependency in dependencies:
+                        dependency['type'] = dependency.get('type', dependent_type)
+                        data[guid].append(dependency)
 
     return data
 
