@@ -23,5 +23,5 @@ introduced to form consistency in how we design and distribute our tools.
 
 ---
 
-[this]: https://cs_tools.thoughtspot.com/
+[this]: https://thoughtspot.github.io/cs_tools/
 [gh-main]: https://github.com/thoughtspot/cs_tools/
