@@ -6,8 +6,8 @@ import typer
 
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.tools.common import run_tql_script, run_tql_command
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
-from cs_tools.api import ThoughtSpot
 from .interactive import InteractiveTQL
 
 
