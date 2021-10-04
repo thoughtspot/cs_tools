@@ -125,7 +125,14 @@ class _RESTAPIv1:
             'password': reveal(self._config.auth['frontend'].password).decode(),
             'rememberme': True
         }
-        r = self.request('POST', 'session/login', privacy='private', data=data)
+
+        r = self.request(
+                'POST',
+                'session/login',
+                privacy='private',
+                data=data,
+                params={'disableSAMLAutoRedirect': self._config.thoughtspot.disable_sso}
+            )
         return r
 
     def logout(self) -> httpx.Response:
