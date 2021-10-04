@@ -78,6 +78,10 @@ class TSDataService:
     def query(self, data, *, timeout: float=5.0) -> httpx.Response:
         """
         Run a TQL query.
+
+        Further reading on what can be passed to `data`:
+        https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
+        https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body
         """
         r = self.rest_api.request(
                 'POST',
@@ -93,6 +97,10 @@ class TSDataService:
     def script(self, data) -> httpx.Response:
         """
         Execute a series of queries against TQL.
+
+        Further reading on what can be passed to `data`:
+        https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
+        https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body_2
         """
         r = self.rest_api.request(
                 'POST',
