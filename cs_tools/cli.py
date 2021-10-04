@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 
 
 app = typer.Typer(
+    name="cs_tools",
     help="""
     Welcome to CS Tools!
 
@@ -313,7 +314,7 @@ def run():
     logging.getLogger('urllib3').setLevel(logging.ERROR)
 
     try:
-        app(prog_name='cs_tools')
+        app()
     except Exception as e:
         log.debug('whoopsie, something went wrong!', exc_info=True)
 
