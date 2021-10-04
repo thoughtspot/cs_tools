@@ -5,6 +5,7 @@ import httpx
 
 from cs_tools.helpers.secrets import reveal
 from cs_tools.modelsv2 import (
+    _Metadata,
     Metadata,
     TSDataService,
     User
@@ -39,7 +40,7 @@ class _RESTAPIv1:
 
         # private API endpoints
         # self._dependency = _Dependency(self)
-        # self._metadata = _Metadata(self)
+        self._metadata = _Metadata(self)
         # self._periscope = _Periscope(self)
         # self._security = _Security(self)
         # self._session = _Session(self)

@@ -1,6 +1,17 @@
 import enum
 
 
+class AccessLevel(enum.Enum):
+    no_access = 'NO_ACCESS'
+    read_only = 'READ_ONLY'
+    modify = 'MODIFY'
+
+
+class Principal(enum.Enum):
+    user = 'USER'
+    group = 'USER_GROUP'
+
+
 class Privilege(enum.Enum):
     innate = 'AUTHORING'
     can_administer_thoughtspot = 'ADMINISTRATION'

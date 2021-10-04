@@ -5,7 +5,6 @@ import httpx
 
 from cs_tools.models.dependency import _Dependency
 from cs_tools.models.periscope import _Periscope
-from cs_tools.models.metadata import Metadata, _Metadata
 from cs_tools.models.security import _Security
 from cs_tools.models.session import _Session
 from cs_tools.models.auth import Session
@@ -27,12 +26,10 @@ class ThoughtSpot:
         self.http.headers.update({'X-Requested-By': 'ThoughtSpot'})
 
         # add public API endpoints
-        self.metadata = Metadata(self)
         self.auth = Session(self)
 
         # add private API endpoints
         self._dependency = _Dependency(self)
-        self._metadata = _Metadata(self)
         self._periscope = _Periscope(self)
         self._security = _Security(self)
         self._session = _Session(self)
