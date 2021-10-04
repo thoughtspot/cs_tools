@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from ._enums import PrivilegeEnum
+from ._enums import Privilege
 
 
 @dataclass
@@ -35,7 +35,7 @@ class LoggedInUser:
     name: str
     display_name: str
     email: str
-    privileges: List[PrivilegeEnum]
+    privileges: List[Privilege]
 
     @classmethod
     def from_session_info(cls, info):

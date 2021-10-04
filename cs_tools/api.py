@@ -9,7 +9,6 @@ from cs_tools.models.metadata import Metadata, _Metadata
 from cs_tools.models.security import _Security
 from cs_tools.models.session import _Session
 from cs_tools.models.auth import Session
-from cs_tools.schema.user import User as UserSchema
 from cs_tools.errors import CertificateVerifyFailure
 
 
@@ -26,10 +25,6 @@ class ThoughtSpot:
         # NOTE: base_url is a valid parameter for httpx.Client
         self.http = httpx.Client(timeout=180.0, verify=not ts_config.thoughtspot.disable_ssl)
         self.http.headers.update({'X-Requested-By': 'ThoughtSpot'})
-
-        # set in __enter__()
-        self.logged_in_user = None
-        self.thoughtspot_version = None
 
         # add public API endpoints
         self.metadata = Metadata(self)
@@ -60,13 +55,6 @@ class ThoughtSpot:
             raise SystemExit(1)
 
         rj = r.json()
-
-        self.logged_in_user = UserSchema(
-            guid=rj['userGUID'], name=rj['userName'], display_name=rj['userDisplayName'],
-            email=rj['userEmail'], privileges=rj.get('privileges', ['AUTHORING'])
-        )
-
-        self.thoughtspot_version = rj['releaseVersion']
         return self
 
     def __exit__(self, exc_type, exc_value, exc_tb):

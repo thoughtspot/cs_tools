@@ -12,14 +12,14 @@ from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 )
 from cs_tools.util.datetime import to_datetime
-from cs_tools.schema.user import PrivilegeEnum
+from cs_tools._enums import Privilege
 from cs_tools.api import ThoughtSpot
 
 
 log = logging.getLogger(__name__)
 REQUIRED_PRIVILEGES = set([
-    PrivilegeEnum.can_administer_thoughtspot,
-    PrivilegeEnum.can_manage_data
+    Privilege.can_administer_thoughtspot,
+    Privilege.can_manage_data
 ])
 
 

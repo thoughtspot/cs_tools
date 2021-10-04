@@ -1,7 +1,7 @@
 import enum
 
 
-class PrivilegeEnum(enum.Enum):
+class Privilege(enum.Enum):
     innate = 'AUTHORING'
     can_administer_thoughtspot = 'ADMINISTRATION'
     can_upload_user_data = 'USERDATAUPLOADING'
