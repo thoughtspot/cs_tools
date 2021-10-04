@@ -1,17 +1,14 @@
 import logging.config
-import datetime as dt
 import logging
 
 import httpx
 
-from cs_tools.models.ts_dataservice import TSDataService
 from cs_tools.models.dependency import _Dependency
 from cs_tools.models.periscope import _Periscope
 from cs_tools.models.metadata import Metadata, _Metadata
 from cs_tools.models.security import _Security
 from cs_tools.models.session import _Session
 from cs_tools.models.auth import Session
-from cs_tools.models.user import User
 from cs_tools.schema.user import User as UserSchema
 from cs_tools.errors import CertificateVerifyFailure
 
@@ -34,13 +31,9 @@ class ThoughtSpot:
         self.logged_in_user = None
         self.thoughtspot_version = None
 
-        # add remote TQL & tsload services
-        self.ts_dataservice = TSDataService(self)
-
         # add public API endpoints
         self.metadata = Metadata(self)
         self.auth = Session(self)
-        self.user = User(self)
 
         # add private API endpoints
         self._dependency = _Dependency(self)

@@ -1,19 +1,10 @@
-from typing import List
-
 from pydantic import validate_arguments
 import httpx
-
-from cs_tools.util import stringified_array
-from cs_tools._enums import (
-    MetadataObject,
-    LogicalTableSubtype,
-    MetadataCategory,
-    SortOrder
-)
 
 
 class User:
     """
+    Public User Services.
     """
     def __init__(self, rest_api):
         self.rest_api = rest_api

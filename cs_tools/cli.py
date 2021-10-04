@@ -75,10 +75,11 @@ def _show_hidden_tool_options(
         ctx.command.commands = unhidden_cmds
 
     console.print(ctx.get_help())
-    raise typer.Exit()
+    raise typer.Exit(code=0)
 
 
 tools_app = typer.Typer(
+    name='tools',
     help="""
     Run an installed tool.
 
@@ -94,6 +95,7 @@ tools_app = typer.Typer(
 
 
 log_app = typer.Typer(
+    name='logs',
     help="""
     Export and view log files.
 
@@ -133,6 +135,7 @@ def export(
 
 
 cfg_app = typer.Typer(
+    name='config',
     help="""
     Work with dedicated config files.
 
@@ -267,9 +270,9 @@ def run():
     Entrypoint into cs_tools.
     """
     _gather_tools(tools_app)
-    app.add_typer(tools_app, name='tools')
-    app.add_typer(cfg_app, name='config')
-    app.add_typer(log_app, name='logs')
+    app.add_typer(tools_app)
+    app.add_typer(cfg_app)
+    app.add_typer(log_app)
 
     # SETUP LOGGING
     now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
