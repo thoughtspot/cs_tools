@@ -177,6 +177,7 @@ class TSDataService:
             cache = self._cache(cycle_id)
             self._tsload_node = cache[cycle_id]['node']
             self._tsload_port = cache[cycle_id]['port']
+            log.debug(f'redirecting to: {self.etl_server_fullpath}')
         except KeyError:
             # happens when etl_http_server loadbalancer is not running
             pass
@@ -208,6 +209,7 @@ class TSDataService:
             cache = self._cache(cycle_id)
             self._tsload_node = cache[cycle_id]['node']
             self._tsload_port = cache[cycle_id]['port']
+            log.debug(f'redirecting to: {self.etl_server_fullpath}')
         except KeyError:
             # happens when etl_http_server loadbalancer is not running
             pass
@@ -236,6 +238,7 @@ class TSDataService:
             cache = self._cache(cycle_id)
             self._tsload_node = cache[cycle_id]['node']
             self._tsload_port = cache[cycle_id]['port']
+            log.debug(f'redirecting to: {self.etl_server_fullpath}')
         except KeyError:
             # happens when etl_http_server loadbalancer is not running
             pass
