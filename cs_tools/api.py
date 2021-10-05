@@ -32,7 +32,6 @@ class ThoughtSpot:
         self._dependency = _Dependency(self)
         self._periscope = _Periscope(self)
         self._security = _Security(self)
-        self._session = _Session(self)
 
     @property
     def host(self):

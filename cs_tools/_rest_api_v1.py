@@ -7,6 +7,7 @@ from cs_tools.helpers.secrets import reveal
 from cs_tools.modelsv2 import (
     _Metadata,
     Metadata,
+    _Session,
     TSDataService,
     User
 )
@@ -43,7 +44,7 @@ class _RESTAPIv1:
         self._metadata = _Metadata(self)
         # self._periscope = _Periscope(self)
         # self._security = _Security(self)
-        # self._session = _Session(self)
+        self._session = _Session(self)
 
     def request(
         self,
