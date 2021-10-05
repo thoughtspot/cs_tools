@@ -23,7 +23,7 @@ class ThoughtSpot:
         # self.tag
 
     @property
-    def me(self):
+    def me(self) -> LoggedInUser:
         """
         Return information about the logged in user.
         """
@@ -36,7 +36,7 @@ class ThoughtSpot:
         return self._logged_in_user
 
     @property
-    def platform(self):
+    def platform(self) -> ThoughtSpotPlatform:
         """
         Return information about the ThoughtSpot platform.
         """
@@ -48,7 +48,7 @@ class ThoughtSpot:
 
         return self._this_platform
 
-    def login(self):
+    def login(self) -> None:
         """
         Log in to ThoughtSpot.
         """
@@ -56,7 +56,7 @@ class ThoughtSpot:
         self._logged_in_user = LoggedInUser.from_session_info(r.json())
         self._this_platform = ThoughtSpotPlatform.from_session_info(r.json())
 
-    def logout(self):
+    def logout(self) -> None:
         """
         Log out of ThoughtSpot.
         """

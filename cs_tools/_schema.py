@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 from pydantic.dataclasses import dataclass
 
@@ -7,6 +7,9 @@ from ._enums import Privilege
 
 @dataclass
 class ThoughtSpotPlatform:
+    """
+    Information about the ThoughtSpot deployment.
+    """
     version: str
     deployment: str
     url: str
@@ -15,8 +18,9 @@ class ThoughtSpotPlatform:
     cluster_id: str
 
     @classmethod
-    def from_session_info(cls, info):
+    def from_session_info(cls, info: Dict[str, Any]):
         """
+        Form a User from the session/info response.
         """
         data = {
             'version': info['releaseVersion'],
@@ -32,6 +36,9 @@ class ThoughtSpotPlatform:
 
 @dataclass
 class LoggedInUser:
+    """
+    Information about the currently authenticed user.
+    """
     guid: str
     name: str
     display_name: str
@@ -39,8 +46,9 @@ class LoggedInUser:
     privileges: List[Privilege]
 
     @classmethod
-    def from_session_info(cls, info):
+    def from_session_info(cls, info: Dict[str, Any]):
         """
+        Form a User from the session/info response.
         """
         data = {
             'guid': info['userGUID'],
