@@ -26,6 +26,7 @@ class Privilege(enum.Enum):
 
     # Available in ts-sw>=7.0.0 and ts-cloud>=7.0.0
     cannot_create_or_delete_pinboards = 'DISABLE_PINBOARD_CREATION'
+    developer = 'DEVELOPER'
 
 
 class MetadataObject(enum.Enum):
