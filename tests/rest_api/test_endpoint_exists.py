@@ -8,6 +8,8 @@ PARAMETERS = {
     'public': [
         ('GET', 'metadata/listvizheaders'),
         ('GET', 'metadata/listobjectheaders'),
+        ('GET', 'user/list'),
+        ('POST', 'user/transfer/ownership')
     ],
     'private': [
         ('GET', 'metadata/list'),
@@ -15,6 +17,8 @@ PARAMETERS = {
         ('GET', 'metadata/detail/this-is-a-fake-guid'),
         ('POST', 'metadata/delete'),
         ('GET', 'metadata/listcolumns/this-is-a-fake-guid'),
+        ('GET', 'session/group/listuser/this-is-a-fake-guid'),
+        ('GET', 'session/group/listgroup/this-is-a-fake-guid'),
     ],
     'dataservice': [
         ('GET', 'tql/tokens/static'),
@@ -32,8 +36,10 @@ PARAMETERS = {
 
 for privacy, endpoints in PARAMETERS.items():
     for method, endpoint in endpoints:
+        # TODO:
+        #   if this is a cloud environment, then we need to xfail on tsload cmds.
 
-        @test('endpoint exists: {method} {endpoint} ({privacy})', tags=['unit', 'exists'])
+        @test('endpoint exists: {method: <4} {privacy: >11} {endpoint}', tags=['unit', 'exists'])
         @using(ts=thoughtspot)
         def _(ts, method=method, endpoint=endpoint, privacy=privacy):
             # handle tsload being located at resource port 8442
@@ -45,9 +51,12 @@ for privacy, endpoints in PARAMETERS.items():
             # so we'll have to try with the intended method instead.
             for meth in ('HEAD', method):
                 try:
-                    r = ts._rest_api.request(method, endpoint, privacy=privacy)
+                    r = ts._rest_api.request(method, endpoint, privacy=privacy, timeout=3)
+                    status = r.status_code
                     break
+                except httpx.ConnectTimeout:
+                    status = 504
                 except httpx.HTTPError as exc:
-                    r = exc.response
+                    status = exc.response.status_code
 
-            assert r.status_code != 404
+            assert status != 404
