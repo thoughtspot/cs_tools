@@ -52,7 +52,7 @@ class TSDataService:
         """
         Handle etl_http_server load balancer redirects.
         """
-        return f'{self._tsload_node}:{self._tsload_port}/v1/public'
+        return f'{self._tsload_node}:{self._tsload_port}/ts_dataservice/v1/public'
 
     @requires(software='6.2.1', cloud='*')
     def tokens_static(self) -> httpx.Response:

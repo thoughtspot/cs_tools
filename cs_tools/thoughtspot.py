@@ -6,6 +6,7 @@ class ThoughtSpot:
     """
     """
     def __init__(self, config):
+        self.config = config
         self._rest_api = _RESTAPIv1(config, ts=self)
 
         # Middleware methods. These are logically grouped interactions within

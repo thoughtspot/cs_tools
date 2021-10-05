@@ -315,6 +315,7 @@ def run():
     })
 
     logging.getLogger('urllib3').setLevel(logging.ERROR)
+    logging.getLogger('httpx').setLevel(logging.ERROR)
 
     try:
         app()

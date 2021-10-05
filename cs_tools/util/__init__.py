@@ -50,8 +50,8 @@ class ThoughtSpotVersionGuard:
         if version == '*':
             return 0, 0, 0
 
-        major, minor, release, *_ = map(int, version.split('.'))
-        return major, minor, release
+        major, minor, release, *_ = version.split('.')
+        return int(major), int(minor), int(release)
 
     @staticmethod
     def _cloud_parts(version: str) -> tuple:
@@ -67,10 +67,10 @@ class ThoughtSpotVersionGuard:
             return 0, 0, 0
 
         ts_major, month, cl_release, *_ = version.split('.')
-        major = int(ts_major[2:])
+        major = ts_major[2:]
         minor = dt.datetime.strptime(month, '%b').month
-        release = int(cl_release.split('-')[1])
-        return major, minor, release
+        release = cl_release.split('-')[1]
+        return int(major), int(minor), int(release)
 
     def __get__(self, instance, owner):
         deployment = instance.rest_api._ts.platform.deployment
