@@ -1,4 +1,5 @@
-from typing import Dict, List, BinaryIO
+from typing import Dict, List
+from io import BufferedIOBase
 import datetime as dt
 import logging
 import pathlib
@@ -173,7 +174,7 @@ class TSDataService:
         self,
         cycle_id: str,
         *,
-        fd: BinaryIO
+        fd: BufferedIOBase
     ) -> httpx.Response:
         """
         Begin loading data in this session.
