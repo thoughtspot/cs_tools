@@ -32,3 +32,15 @@ class _Session:
                 privacy='private',
             )
         return r
+
+    @validate_arguments
+    def info(self) -> httpx.Response:
+        """
+        Get session information.
+        """
+        r = self.rest_api.request(
+                'GET',
+                'session/info',
+                privacy='private',
+            )
+        return r

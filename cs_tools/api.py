@@ -6,7 +6,6 @@ import httpx
 from cs_tools.models.dependency import _Dependency
 from cs_tools.models.periscope import _Periscope
 from cs_tools.models.security import _Security
-from cs_tools.models.session import _Session
 from cs_tools.models.auth import Session
 from cs_tools.errors import CertificateVerifyFailure
 
