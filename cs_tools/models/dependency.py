@@ -1,50 +1,45 @@
-from typing import Union
-import logging
-import enum
+from typing import List
 
+from pydantic import validate_arguments
 import httpx
 
-from cs_tools.settings import APIParameters
-from cs_tools.models import TSPrivate
+from cs_tools._enums import MetadataObject
+from cs_tools.util import stringified_array
 
 
-log = logging.getLogger(__name__)
-
-
-class MetadataObject(enum.Enum):
-    PHYSICAL_COLUMN = 'PHYSICAL_COLUMN'
-    PHYSICAL_TABLE = 'PHYSICAL_TABLE'
-    LOGICAL_COLUMN = 'LOGICAL_COLUMN'
-    LOGICAL_TABLE = 'LOGICAL_TABLE'
-    LOGICAL_RELATIONSHIP = 'LOGICAL_RELATIONSHIP'
-
-
-#
-
-class ListDependentsParameters(APIParameters):
-    type: Union[MetadataObject, None] = MetadataObject.PHYSICAL_COLUMN
-    id: str  # GUIDs .. so technically this is an array of guids [<guid>, <guid>]
-    batchsize: int = -1
-
-
-#
-
-class _Dependency(TSPrivate):
+class _Dependency:
     """
-    Dependency Services.
+    Private dependency Services.
     """
+    def __init__(self, rest_api):
+        self.rest_api = rest_api
 
-    @property
-    def base_url(self):
-        """
-        Append to the base URL.
-        """
-        return f'{super().base_url}/dependency'
-
-    def list_dependents(self, **parameters) -> httpx.Response:
+    @validate_arguments
+    def list_dependents(
+        self,
+        id: List[str],
+        type: MetadataObject = MetadataObject.logical_column,
+        batchsize: int = -1,
+        offset: int = -1
+    ) -> httpx.Response:
         """
         Metadata objects referencing given object.
+
+        This implementation slightly deviates from the REST API contract.
+        Offset is not advertised to be part of the contract, but is an allowed
+        value whenever batchsize is included.
         """
-        p = ListDependentsParameters(**parameters)
-        r = self.post(f'{self.base_url}/listdependents', data=p.json())
+        r = self.rest_api.request(
+                'POST',
+                'dependency/listdependents',
+                privacy='private',
+                data={
+                    'type': type.value,
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
+                    'id': stringified_array(id),
+                    'batchsize': batchsize,
+                    'offset': offset
+                }
+            )
         return r

@@ -10,14 +10,14 @@ from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.api import ThoughtSpot
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.tools import common
 
 
 HERE = pathlib.Path(__file__).parent
 
 
-def _get_users(api: ThoughtSpot, batchsize=-1):
+def _get_users(api, batchsize=-1):
     """
     """
     results = []
@@ -92,7 +92,7 @@ def _get_users_in_group(api: ThoughtSpot, batchsize=500) -> Tuple[list, list, li
 
     with console.status('associating USERS to GROUPS'):
         for group in groups:
-            r = api._session.group_list_user(group_id=group['guid_']).json()
+            r = api._session.group_list_user(groupid=group['guid_']).json()
 
             for data in r:
                 asso.append({
@@ -195,8 +195,8 @@ def gather(
 
     dir_ = save_path if save_path is not None else app_dir
 
-    with ThoughtSpot(cfg) as api:
-        users, groups, asso = _get_users_in_group(api)
+    with ThoughtSpot(cfg) as ts:
+        users, groups, asso = _get_users_in_group(ts.api)
 
         common.to_csv(users, fp=dir_ / 'introspect_user.csv', mode='a')
         common.to_csv(groups, fp=dir_ / 'introspect_group.csv', mode='a')
@@ -206,19 +206,19 @@ def gather(
             return
 
         with console.status('creating tables with remote TQL'):
-            run_tql_command(api, command='CREATE DATABASE cs_tools;')
-            run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
+            run_tql_command(ts, command='CREATE DATABASE cs_tools;')
+            run_tql_script(ts, fp=HERE / 'static' / 'create_tables.tql')
 
         with console.status('loading data to Falcon with remote tsload'):
             for stem in ('introspect_user', 'introspect_group', 'introspect_asso_user_group'):
                 path = dir_ / f'{stem}.csv'
                 cycle_id = tsload(
-                    api,
+                    ts,
                     fp=path,
                     target_database='cs_tools',
                     target_table=stem
                 )
                 path.unlink()
-                r = api.ts_dataservice.load_status(cycle_id).json()
-                m = api.ts_dataservice._parse_tsload_status(r)
+                r = ts.api.ts_dataservice.load_status(cycle_id).json()
+                m = ts.api.ts_dataservice._parse_tsload_status(r)
                 console.print(m)

@@ -135,8 +135,6 @@ dmypy.json
 # Sublime files
 *.sublime-project
 *.sublime-workspace
-poetry.lock
-pyproject.toml
 !.gitdontignore
 dist/pkgs/*.whl
 dist/pkgs/*.zip

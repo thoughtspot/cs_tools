@@ -67,6 +67,21 @@ class HostConfig(Settings):
     disable_ssl: bool = False
     disable_sso: bool = False
 
+    @property
+    def fullpath(self):
+        host = self.host
+        port = self.port
+
+        if not host.startswith('http'):
+            host = f'https://{host}'
+
+        if port:
+            port = f':{port}'
+        else:
+            port = ''
+
+        return f'{host}{port}'
+
     @validator('host')
     def cast_as_str(v: Any) -> str:
         """

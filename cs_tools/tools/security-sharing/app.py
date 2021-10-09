@@ -8,9 +8,9 @@ import uvicorn
 import typer
 
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
-from cs_tools.models.security import SharePermission
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
-from cs_tools.api import ThoughtSpot
+from cs_tools._enums import AccessLevel
 
 from .web_app import _scoped
 
@@ -105,14 +105,14 @@ def _get_physical_table(api, *, table_id: str) -> str:
     return r['logicalTableContent']['physicalTableName']
 
 
-def _permission_param_to_permission(permission: str) -> SharePermission:
+def _permission_param_to_permission(permission: str) -> AccessLevel:
     """
     """
     # should be one of these due to parameter checking
     _mapping = {
-        'view': SharePermission.READ_ONLY,
-        'edit': SharePermission.MODIFY,
-        'remove': SharePermission.NO_ACCESS
+        'view': AccessLevel.read_only,
+        'edit': AccessLevel.modify,
+        'remove': AccessLevel.no_access
     }
     return _mapping[permission]
 
@@ -143,8 +143,8 @@ def run(
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
     visit_ip = _find_my_local_ip()
 
-    with ThoughtSpot(cfg) as api:
-        _scoped['api'] = api
+    with ThoughtSpot(cfg) as ts:
+        _scoped['ts'] = ts
 
         console.print(
             'starting webserver...'
@@ -155,7 +155,7 @@ def run(
             'cs_tools.tools.security-sharing.web_app:web_app',
             host='0.0.0.0',
             port=webserver_port,
-            # log_config=None   # TODO log to file instead of console (less confusing for user)
+            log_config=None   # TODO log to file instead of console (less confusing for user)
         )
 
 
@@ -174,8 +174,8 @@ def share(
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
-    with ThoughtSpot(cfg) as api:
-        group_id = _get_group_id(api, group_name=group)
+    with ThoughtSpot(cfg) as ts:
+        group_id = _get_group_id(ts.api, group_name=group)
 
         if not group_id:
             console.print(
@@ -183,13 +183,13 @@ def share(
             )
             raise typer.Exit()
 
-        table_ids = _get_table_ids(api, db=database, schema=schema, table=table)
+        table_ids = _get_table_ids(ts.api, db=database, schema=schema, table=table)
 
         if not table_ids:
             console.print(f"No tables found for {database}.{schema}{f'.{table}' if table else ''}")
             raise typer.Exit()
 
-        r = api._security.share(
+        r = ts.api._security.share(
                 type='LOGICAL_TABLE',
                 id=table_ids,
                 permission={group_id: _permission_param_to_permission(permission)}
