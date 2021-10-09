@@ -3,10 +3,11 @@ import copy
 
 import httpx
 
-from cs_tools.helpers.secrets import reveal
-from cs_tools.modelsv2 import (
+from cs_tools.models import (
     _Metadata,
     Metadata,
+    _Periscope,
+    _Security,
     _Session,
     TSDataService,
     User
@@ -42,8 +43,8 @@ class _RESTAPIv1:
         # private API endpoints
         # self._dependency = _Dependency(self)
         self._metadata = _Metadata(self)
-        # self._periscope = _Periscope(self)
-        # self._security = _Security(self)
+        self._periscope = _Periscope(self)
+        self._security = _Security(self)
         self._session = _Session(self)
 
     def request(
@@ -115,30 +116,3 @@ class _RESTAPIv1:
             log.debug('<< CONTENT:\n\n%s', r.text)
 
         return r
-
-    # AUTH
-
-    def login(self) -> httpx.Response:
-        """
-        Log in to ThoughtSpot.
-        """
-        data = {
-            'username': self._config.auth['frontend'].username,
-            'password': reveal(self._config.auth['frontend'].password).decode(),
-            'rememberme': True
-        }
-
-        r = self.request(
-                'POST',
-                'session/login',
-                privacy='private',
-                data=data,
-                params={'disableSAMLAutoRedirect': self._config.thoughtspot.disable_sso}
-            )
-        return r
-
-    def logout(self) -> httpx.Response:
-        """
-        Log out of ThoughtSpot.
-        """
-        return self.request('POST', 'session/logout', privacy='private')

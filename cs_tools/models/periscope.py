@@ -1,86 +1,52 @@
-import logging
-
+from pydantic import validate_arguments
 import httpx
 
-from cs_tools.settings import APIParameters
-from cs_tools.models import TSPrivate
 
-
-log = logging.getLogger(__name__)
-
-
-class SageCombinedTableInfoParameters(APIParameters):
-    nodes: str = 'all'
-
-
-class _Periscope(TSPrivate):
+class _Periscope:
     """
-    Periscope Services.
+    Undocumented Periscope API.
     """
-
-    @property
-    def base_url(self):
-        """
-        """
-        host = self.config.thoughtspot.host
-        port = self.config.thoughtspot.port
-
-        if not host.startswith('http'):
-            host = f'https://{host}'
-
-        if port:
-            port = f':{port}'
-        else:
-            port = ''
-
-        return f'{host}{port}/periscope'
+    def __init__(self, rest_api):
+        self.rest_api = rest_api
 
     def alert_getalerts(self) -> httpx.Response:
         """
-        TODO
         """
-        r = self.get(f'{self.base_url}/alerts/getalerts')
-        return r
-
-    def alert_getevents(self) -> httpx.Response:
-        """
-        TODO
-        """
-        r = self.get(f'{self.base_url}/alerts/getevents')
+        r = self.rest_api.request('GET', 'alert/getalerts', privacy='periscope')
         return r
 
     def sage_getsummary(self) -> httpx.Response:
         """
-        TODO
         """
-        r = self.get(f'{self.base_url}/sage/getsummary')
+        r = self.rest_api.request('GET', 'sage/getsummary', privacy='periscope')
         return r
 
-    def sage_combinedtableinfo(self, **parameters) -> httpx.Response:
+    @validate_arguments
+    def sage_combinedtableinfo(self, nodes: str = 'all') -> httpx.Response:
         """
-        TODO
         """
-        p = SageCombinedTableInfoParameters(**parameters)
-        r = self.get(f'{self.base_url}/sage/combinedtableinfo', params=p.json())
+        r = self.rest_api.request(
+                'GET',
+                'sage/combinedtableinfo',
+                privacy='periscope',
+                params={'nodes': nodes}
+            )
         return r
 
     def falcon_getsummary(self) -> httpx.Response:
         """
-        TODO
         """
-        r = self.get(f'{self.base_url}/falcon/getsummary')
+        r = self.rest_api.request('GET', 'falcon/getsummary', privacy='periscope')
         return r
 
     def orion_getstats(self) -> httpx.Response:
         """
-        TODO
         """
-        r = self.get(f'{self.base_url}/orion/getstats')
+        r = self.rest_api.request('GET', 'orion/getstats', privacy='periscope')
         return r
 
     def orion_listsnapshots(self) -> httpx.Response:
         """
-        TODO
         """
-        r = self.get(f'{self.base_url}/orion/listsnapshots')
+        r = self.rest_api.request('GET', 'orion/listsnapshots', privacy='periscope')
         return r

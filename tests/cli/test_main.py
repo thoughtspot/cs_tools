@@ -12,12 +12,12 @@ PARAMETERS = {
 }
 
 
-for command, partial_output in PARAMETERS.items():
+# for command, partial_output in PARAMETERS.items():
 
-    @test('command: cs_tools {command}', tags=['unit'])
-    @using(runner=app_runner, cli=app)
-    def _(runner, cli, command=command, partial_output=partial_output):
-        r = runner.invoke(cli, command.split())
-        print(r.stdout)
-        assert r.exit_code == 0
-        assert partial_output in r.stdout
+#     @test('command: cs_tools {command}', tags=['unit'])
+#     @using(runner=app_runner, cli=app)
+#     def _(runner, cli, command=command, partial_output=partial_output):
+#         r = runner.invoke(cli, command.split())
+#         print(r.stdout)
+#         assert r.exit_code == 0
+#         assert partial_output in r.stdout

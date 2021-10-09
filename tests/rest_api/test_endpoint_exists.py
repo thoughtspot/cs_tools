@@ -12,6 +12,7 @@ PARAMETERS = {
         ('POST', 'user/transfer/ownership')
     ],
     'private': [
+        ('POST', 'dependency/listdependents'),
         ( 'GET', 'metadata/list'),
         ( 'GET', 'metadata/listas'),
         ( 'GET', 'metadata/detail/this-is-a-fake-guid'),
@@ -22,6 +23,16 @@ PARAMETERS = {
         ( 'GET', 'session/group/listuser/this-is-a-fake-guid'),
         ( 'GET', 'session/group/listgroup/this-is-a-fake-guid'),
         ( 'GET', 'session/info'),
+        ( 'GET', 'session/login'),
+        ( 'GET', 'session/logout'),
+    ],
+    'periscope': [
+        ( 'GET', 'alert/getalerts'),
+        ( 'GET', 'sage/getsummary'),
+        ( 'GET', 'sage/combinedtableinfo'),
+        ( 'GET', 'falcon/getsummary'),
+        ( 'GET', 'orion/getstats'),
+        ( 'GET', 'orion/listsnapshots'),
     ],
     'dataservice': [
         ( 'GET', 'tql/tokens/static'),
@@ -52,7 +63,7 @@ for privacy, endpoints in PARAMETERS.items():
             # so we'll have to try with the intended method instead.
             for meth in ('HEAD', method):
                 try:
-                    r = ts._rest_api.request(method, endpoint, privacy=privacy, timeout=3)
+                    r = ts._rest_api.request(method, endpoint, privacy=privacy, timeout=5)
                     status = r.status_code
                     break
                 except httpx.ConnectTimeout:  # akin to xfail, mostly for tsload on cloud
