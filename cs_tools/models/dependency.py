@@ -1,5 +1,6 @@
 from typing import List
 
+from pydantic import validate_arguments
 import httpx
 
 from cs_tools._enums import MetadataObject
@@ -12,6 +13,7 @@ class _Dependency:
     def __init__(self, rest_api):
         self.rest_api = rest_api
 
+    @validate_arguments
     def list_dependents(
         self,
         id: List[str],
