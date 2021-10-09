@@ -13,7 +13,7 @@ from cs_tools.util.swagger import to_array
 from cs_tools.util.algo import chunks
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.api import ThoughtSpot
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.tools import common
 
 
@@ -153,7 +153,7 @@ def _get_dependents(api: ThoughtSpot, parent: str, metadata: List[Dict]) -> List
         r = common.batched(
                 api._dependency.list_dependents,
                 type='LOGICAL_COLUMN' if parent in ('formula', 'column') else 'LOGICAL_TABLE',
-                id=to_array(item['id'] for item in chunk),
+                id=[item['id'] for item in chunk],
                 batchsize=5000,
                 transformer=lambda r: [r.json()]
             )
@@ -312,13 +312,13 @@ def gather(
     if include_columns:
         parent_types.extend(['formula', 'column'])
 
-    with ThoughtSpot(cfg) as api:
+    with ThoughtSpot(cfg) as ts:
         with console.status('getting top level metadata'):
-            metadata = _get_recordset_metadata(api)
+            metadata = _get_recordset_metadata(ts.api)
 
         for parent in parent_types:
             with console.status(f'getting dependents of metadata: {parent}'):
-                dependents = _get_dependents(api, parent, metadata[parent])
+                dependents = _get_dependents(ts.api, parent, metadata[parent])
                 parents = _format_metadata_objects(metadata[parent])
                 children = _format_dependencies(dependents)
 
@@ -341,22 +341,22 @@ def gather(
 
         try:
             with console.status('creating tables with remote TQL'):
-                run_tql_command(api, command='CREATE DATABASE cs_tools;')
-                run_tql_script(api, fp=static / 'create_tables.tql', raise_errors=True)
+                run_tql_command(ts, command='CREATE DATABASE cs_tools;')
+                run_tql_script(ts, fp=static / 'create_tables.tql', raise_errors=True)
         except common.TableAlreadyExists:
             with console.status('altering tables with remote TQL'):
-                run_tql_script(api, fp=static / 'alter_tables.tql')
+                run_tql_script(ts, fp=static / 'alter_tables.tql')
 
         with console.status('loading data to Falcon with remote tsload'):
             for stem in ('introspect_metadata_object', 'introspect_metadata_dependent'):
                 path = dir_ / f'{stem}.csv'
                 cycle_id = tsload(
-                    api,
+                    ts,
                     fp=path,
                     target_database='cs_tools',
                     target_table=stem
                 )
                 path.unlink()
-                r = api.ts_dataservice.load_status(cycle_id).json()
-                m = api.ts_dataservice._parse_tsload_status(r)
+                r = ts.api.ts_dataservice.load_status(cycle_id).json()
+                m = ts.api.ts_dataservice._parse_tsload_status(r)
                 console.print(m)

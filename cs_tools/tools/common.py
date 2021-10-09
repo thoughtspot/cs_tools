@@ -12,8 +12,8 @@ from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 )
 from cs_tools.util.datetime import to_datetime
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools._enums import Privilege
-from cs_tools.api import ThoughtSpot
 
 
 log = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class TableAlreadyExists(Exception):
 
 
 def run_tql_script(
-    api: ThoughtSpot,
+    ts: ThoughtSpot,
     *,
     fp: pathlib.Path,
     verbose: bool=False,
@@ -46,11 +46,11 @@ def run_tql_script(
       https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """
-    if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
+    if not set(ts.me.privileges).intersection(REQUIRED_PRIVILEGES):
         log.error(
-            f'[red]User {api.logged_in_user.display_name} do not have the correct '
-            f'privileges to access the remote tsload service!\n\nYou require at least '
-            f'the "Can Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
+            f'[red]User {ts.me.display_name} do not have the correct privileges to '
+            f'access the remote tsload service!\n\nYou require at least the "Can '
+            f'Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
             f'Administrator.[/]'
         )
         raise typer.Exit()
@@ -67,13 +67,13 @@ def run_tql_script(
         'script': commands
     }
 
-    r = api.ts_dataservice.script(data)
+    r = ts.api.ts_dataservice.script(data)
 
     for line in r.iter_lines():
         data = json.loads(line)
 
         if 'message' in data['result']:
-            m = api.ts_dataservice._parse_api_messages(data['result']['message'])
+            m = ts.api.ts_dataservice._parse_api_messages(data['result']['message'])
 
             if raise_errors and 'returned error' in m:
                 if 'create table' in m.lower():
@@ -82,12 +82,12 @@ def run_tql_script(
                     raise ValueError(m)
 
         if 'table' in data['result']:
-            m = api.ts_dataservice._parse_tql_query(data['result']['table'])
+            m = ts.api.ts_dataservice._parse_tql_query(data['result']['table'])
             log.debug(m)
 
 
 def run_tql_command(
-    api: ThoughtSpot,
+    ts: ThoughtSpot,
     *,
     command: str,
     schema: str='falcon_default_schema',
@@ -104,11 +104,11 @@ def run_tql_command(
       https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """
-    if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
+    if not set(ts.me.privileges).intersection(REQUIRED_PRIVILEGES):
         log.error(
-            f'[red]User {api.logged_in_user.display_name} do not have the correct '
-            f'privileges to access the remote tsload service!\n\nYou require at least '
-            f'the "Can Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
+            f'[red]User {ts.me.display_name} do not have the correct privileges to '
+            f'access the remote tsload service!\n\nYou require at least the "Can '
+            f'Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
             f'Administrator.[/]'
         )
         raise typer.Exit()
@@ -123,24 +123,24 @@ def run_tql_command(
         }
     }
 
-    r = api.ts_dataservice.query(data)
+    r = ts.api.ts_dataservice.query(data)
 
     for line in r.iter_lines():
         data = json.loads(line)
 
         if 'message' in data['result']:
-            m = api.ts_dataservice._parse_api_messages(data['result']['message'])
+            m = ts.api.ts_dataservice._parse_api_messages(data['result']['message'])
 
             if raise_errors and 'returned error' in m:
                 raise ValueError(m)
 
         if 'table' in data['result']:
-            m = api.ts_dataservice._parse_tql_query(data['result']['table'])
+            m = ts.api.ts_dataservice._parse_tql_query(data['result']['table'])
             log.debug(m)
 
 
 def tsload(
-    api: ThoughtSpot,
+    ts: ThoughtSpot,
     *,
     fp: pathlib.Path,
     target_database: str,
@@ -171,11 +171,11 @@ def tsload(
       https://docs.thoughtspot.com/latest/reference/tsload-service-api-ref.html
       https://docs.thoughtspot.com/latest/reference/data-importer-ref.html
     """
-    if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
+    if not set(ts.me.privileges).intersection(REQUIRED_PRIVILEGES):
         log.error(
-            f'[red]User {api.logged_in_user.display_name} do not have the correct '
-            f'privileges to access the remote tsload service!\n\nYou require at least '
-            f'the "Can Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
+            f'[red]User {ts.me.display_name} do not have the correct privileges to '
+            f'access the remote tsload service!\n\nYou require at least the "Can '
+            f'Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
             f'Administrator.[/]'
         )
         raise typer.Exit()
@@ -206,7 +206,7 @@ def tsload(
     }
 
     try:
-        r = api.ts_dataservice.load_init(flags)
+        r = ts.api.ts_dataservice.load_init(flags)
     except Exception as e:
         log.error(
             f'[red]something went wrong trying to access tsload service: {e}[/]'
@@ -227,17 +227,17 @@ def tsload(
     cycle_id = r.json()['cycle_id']
 
     with fp.open('rb') as file:
-        r = api.ts_dataservice.load_start(cycle_id, fd=file)
+        r = ts.api.ts_dataservice.load_start(cycle_id, fd=file)
 
     if verbose:
         console.print(r.text)
 
-    r = api.ts_dataservice.load_commit(cycle_id)
+    r = ts.api.ts_dataservice.load_commit(cycle_id)
 
     if verbose:
         console.print(r.text)
 
-    r = api.ts_dataservice.load_status(cycle_id)
+    r = ts.api.ts_dataservice.load_status(cycle_id)
     data = r.json()
 
     if verbose:

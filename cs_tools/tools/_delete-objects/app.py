@@ -12,7 +12,7 @@ import typer
 from cs_tools.helpers.cli_ux import RichGroup, RichCommand, frontend, console
 from cs_tools.util.algo import chunks
 from cs_tools.settings import TSConfig
-from cs_tools.api import ThoughtSpot
+from cs_tools.thoughtspot import ThoughtSpot
 
 
 log = logging.getLogger(__name__)
@@ -133,12 +133,12 @@ def single(
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
     type = ReversibleSystemType.to_system(type.value)
 
-    with ThoughtSpot(cfg) as api:
+    with ThoughtSpot(cfg) as ts:
         console.print(f'deleting object .. {type} ... {guid} ... ')
 
         # NOTE: /metadata/delete WILL NOT error if content does not exist, or if the
         # wrong type & guid are passed. This is a ThoughtSpot API limitation.
-        r = api._metadata.delete(type=type, id=[guid])
+        r = ts.api._metadata.delete(type=type, id=[guid])
         log.debug(f'{r} - {r.content}')
 
 
@@ -178,7 +178,7 @@ def from_file(
         console.print(f'[red]must provide an Excel (.xlsx) or CSV (.csv) file, got {file}[/]')
         return
 
-    with ThoughtSpot(cfg) as api:
+    with ThoughtSpot(cfg) as ts:
         #
         # Delete Pinboards
         #
@@ -192,7 +192,7 @@ def from_file(
                 console.print(f'    deleting {len(chunk)} pinboards')
                 log.debug(f'    guids: {chunk}')
 
-            r = api._metadata.delete(type='PINBOARD_ANSWER_BOOK', id=list(chunk))
+            r = ts.api._metadata.delete(type='PINBOARD_ANSWER_BOOK', id=list(chunk))
             log.debug(f'{r} - {r.content}')
 
         #
@@ -208,5 +208,5 @@ def from_file(
                 console.print(f'    deleting {len(chunk)} answers')
                 log.debug(f'    guids: {chunk}')
 
-            r = api._metadata.delete(type='QUESTION_ANSWER_BOOK', id=list(chunk))
+            r = ts.api._metadata.delete(type='QUESTION_ANSWER_BOOK', id=list(chunk))
             log.debug(f'{r} - {r.content}')

@@ -11,7 +11,7 @@ from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.api import ThoughtSpot
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.tools import common
 
 
@@ -149,30 +149,27 @@ def gather(
     dir_ = save_path if save_path is not None else app_dir
     path = dir_ / 'falcon_table_info.csv'
 
-    with ThoughtSpot(cfg) as api:
+    with ThoughtSpot(cfg) as ts:
         with console.status('getting Falcon table info'):
-            data = _format_table_info_data(api._periscope.sage_combinedtableinfo().json())
+            data = _format_table_info_data(ts.api._periscope.sage_combinedtableinfo().json())
 
         common.to_csv(data, fp=path, mode='a')
 
         if save_path is not None:
             return
 
-        # TODO .. should we do a version check?
-        # rTQL released in 6.2.1+
-        # rTSLOAD released in 6.3+
         with console.status('creating tables with remote TQL'):
-            run_tql_command(api, command='CREATE DATABASE cs_tools;')
-            run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
+            run_tql_command(ts, command='CREATE DATABASE cs_tools;')
+            run_tql_script(ts, fp=HERE / 'static' / 'create_tables.tql')
 
         with console.status('loading data to Falcon with remote tsload'):
             cycle_id = tsload(
-                api,
+                ts,
                 fp=path,
                 target_database='cs_tools',
                 target_table='falcon_table_info'
             )
             path.unlink()
-            r = api.ts_dataservice.load_status(cycle_id).json()
-            m = api.ts_dataservice._parse_tsload_status(r)
+            r = ts.api.ts_dataservice.load_status(cycle_id).json()
+            m = ts.api.ts_dataservice._parse_tsload_status(r)
             console.print(m)

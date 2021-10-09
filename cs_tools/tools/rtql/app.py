@@ -44,8 +44,8 @@ def interactive(
     For a list of all commands, type "help" after invoking tql
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-    api = ThoughtSpot(cfg)
-    tql = InteractiveTQL(api, schema=schema, autocomplete=autocomplete, console=console)
+    ts = ThoughtSpot(cfg)
+    tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=console)
     tql.run()
 
 
@@ -67,8 +67,8 @@ def file(
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
-    with ThoughtSpot(cfg) as api:
-        run_tql_script(api, fp=file)
+    with ThoughtSpot(cfg) as ts:
+        run_tql_script(ts.api, fp=file)
 
 
 @app.command(cls=RichCommand)
@@ -101,5 +101,5 @@ def command(
         console.print('[red]no valid input given to rtql command[/]')
         return
 
-    with ThoughtSpot(cfg) as api:
-        run_tql_command(api, command=command, schema=schema)
+    with ThoughtSpot(cfg) as ts:
+        run_tql_command(ts, command=command, schema=schema)

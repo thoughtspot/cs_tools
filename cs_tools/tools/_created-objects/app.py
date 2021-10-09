@@ -11,7 +11,7 @@ from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.api import ThoughtSpot
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.tools import common
 
 
@@ -146,13 +146,13 @@ def gather(
     else:
         metadata_types = list(SystemType)
 
-    with ThoughtSpot(cfg) as api:
+    with ThoughtSpot(cfg) as ts:
         for metadata in metadata_types:
             type_ = SystemType.to_metadata_type(metadata.value)
 
             with console.status(f'getting top level metadata: {metadata}'):
                 r = common.batched(
-                    api._metadata.list,
+                    ts.api._metadata.list,
                     type=type_,
                     batchsize=5000,
                     transformer=lambda r: r.json()['headers']
@@ -176,20 +176,20 @@ def gather(
 
         try:
             with console.status('creating tables with remote TQL'):
-                run_tql_command(api, command='CREATE DATABASE cs_tools;')
-                run_tql_script(api, fp=static / 'create_tables.tql', raise_errors=True)
+                run_tql_command(ts, command='CREATE DATABASE cs_tools;')
+                run_tql_script(ts, fp=static / 'create_tables.tql', raise_errors=True)
         except common.TableAlreadyExists:
             with console.status('altering tables with remote TQL'):
-                run_tql_script(api, fp=static / 'alter_tables.tql')
+                run_tql_script(ts, fp=static / 'alter_tables.tql')
 
         with console.status('loading data to Falcon with remote tsload'):
             cycle_id = tsload(
-                api,
+                ts,
                 fp=path,
                 target_database='cs_tools',
                 target_table='introspect_metadata_object'
             )
             path.unlink()
-            r = api.ts_dataservice.load_status(cycle_id).json()
-            m = api.ts_dataservice._parse_tsload_status(r)
+            r = ts.api.ts_dataservice.load_status(cycle_id).json()
+            m = ts.api.ts_dataservice._parse_tsload_status(r)
             console.print(m)
