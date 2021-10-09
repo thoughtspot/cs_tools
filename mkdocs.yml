@@ -123,8 +123,8 @@ nav:
   - 🤓:
     - for-developers/contributing.md
     - for-developers/environment-setup.md
-    - for-developers/your-first-tool.md
-    - for-developers/project-architecture.md
+    # - for-developers/your-first-tool.md
+    # - for-developers/project-architecture.md
     - for-developers/writing-documentation.md
     - "What is Markdown?": for-developers/what-is-markdown.md
-    - for-developers/FAQ.md
+    # - for-developers/FAQ.md
