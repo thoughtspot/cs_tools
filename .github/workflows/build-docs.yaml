@@ -3,7 +3,7 @@ name: Deploy docs to GH Pages
 on:
   push:
     branches: 
-      - docs
+      - dev
 jobs:
   deploy:
     runs-on: ubuntu-latest
