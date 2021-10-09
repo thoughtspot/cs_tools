@@ -25,6 +25,13 @@ class ThoughtSpot:
         # self.tag
 
     @property
+    def api(self) -> _RESTAPIv1:
+        """
+        Access the REST API.
+        """
+        return self._rest_api
+
+    @property
     def me(self) -> LoggedInUser:
         """
         Return information about the logged in user.
@@ -54,7 +61,7 @@ class ThoughtSpot:
         """
         Log in to ThoughtSpot.
         """
-        r = self._rest_api._session.login(
+        r = self.api._session.login(
             username=self.config.auth['frontend'].username,
             password=reveal(self.config.auth['frontend'].password).decode(),
             rememberme=True,
@@ -68,7 +75,7 @@ class ThoughtSpot:
         """
         Log out of ThoughtSpot.
         """
-        self._rest_api.logout()
+        self.api._session.logout()
 
     def __enter__(self):
         self.login()
