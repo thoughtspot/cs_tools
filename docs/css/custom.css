@@ -1,14 +1,11 @@
 @font-face {
   font-family: "Optimo-Plain";
-  src: url("assets/fonts/Optimo-Plain/Plain-Light.otf") format("otf"),
-       url("assets/fonts/Optimo-Plain/Plain-Medium.otf") format("otf"),
-       url("assets/fonts/Optimo-Plain/Plain-Regular.otf") format("otf");
+  src: url("../assets/fonts/Optimo-Plain/Plain-Light.woff") format("woff");
 }
 
 @font-face {
   font-family: "BB Roller Mono";
-  src: url("assets/fonts/BB Roller Mono/bbrollermonoprotx-medium.otf") format("otf"),
-       url("assets/fonts/BB Roller Mono/bbrollermonoprotx-regular.otf") format("otf");
+  src: url("../assets/fonts/BB Roller Mono/bbrollermonoprotx-regular.woff") format("woff");
 }
 
 :root {
@@ -26,8 +23,8 @@
   --ts-color-coral:  #FF595A;
   --ts-color-purple: #A35DFF;
 
-  /*--md-text-font-family: "Optimo-Plain";*/
-  /*--md-code-font-family: "BB Roller Mono";*/
+  --md-text-font-family: "Optimo-Plain";
+  --md-code-font-family: "BB Roller Mono";
 }
 
 
