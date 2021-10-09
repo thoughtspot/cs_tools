@@ -1,4 +1,5 @@
 import datetime as dt
+import platform
 import pathlib
 import logging
 import shutil
@@ -12,6 +13,7 @@ import toml
 from cs_tools.helpers.cli_ux import console, RichGroup, RichCommand
 from cs_tools.helpers.loader import _gather_tools
 from cs_tools.util.algo import deep_update
+from cs_tools._version import __version__
 from cs_tools.settings import TSConfig
 from cs_tools.const import APP_DIR
 
@@ -42,7 +44,7 @@ app = typer.Typer(
     add_completion=False,
     context_settings={
         'help_option_names': ['--help', '-h'],
-        'max_content_width': 125,
+        'max_content_width': 105,
         'token_normalize_func': lambda x: x.lower()  # allow case-insensitive commands
     }
 )
@@ -101,6 +103,20 @@ log_app = typer.Typer(
 )
 
 
+@app.command('platform', cls=RichCommand, hidden=True)
+def _platform():
+    """
+    Return details about this machine for debugging purposes.
+    """
+    console.print(f"""
+        [PLATFORM DETAILS]
+        system: {platform.system()} (detail: {platform.platform()})
+        python: {platform.python_version()}
+        datetime: {dt.datetime.now(dt.timezone.utc).astimezone().strftime('%Y-%m-%d %H:%M:%S%z')}
+        cs_tools: {__version__}
+    """)
+
+
 @log_app.command(cls=RichCommand)
 def export(
     save_path: pathlib.Path=A_(..., help='directory to save logs to'),
@@ -154,8 +170,8 @@ def create(
     port: int=O_(None, help='optional, port of the thoughtspot server'),
     username: str=O_(..., help='username when logging into ThoughtSpot', prompt=True),
     password: str=O_(..., help='password when logging into ThoughtSpot', hide_input=True, prompt=True),
-    disable_ssl: bool=O_(False, '--disable_ssl', help='disable SSL verification'),
-    disable_sso: bool=O_(False, '--disable_sso', help='disable automatic SAML redirect'),
+    disable_ssl: bool=O_(False, '--disable_ssl', help='disable SSL verification', show_default=False),
+    disable_sso: bool=O_(False, '--disable_sso', help='disable automatic SAML redirect', show_default=False),
 ):
     """
     Create a new config file.
@@ -270,11 +286,10 @@ def run():
             'to_file': {
                 'formatter': 'verbose',
                 'level': 'DEBUG',
-                'class': 'logging.handlers.RotatingFileHandler',
+                'class': 'logging.FileHandler',
                 # RotatingFileHandler.__init__ params...
                 'filename': f'{APP_DIR}/logs/{now}.log',
                 'mode': 'w',          # Create a new file for each run of cs_tools.
-                'backupCount': 25,    # Only keep 25 files.
                 'encoding': 'utf-8',  # Handle unicode fun.
                 'delay': True         # Don't create a file if no logging is done.
             },

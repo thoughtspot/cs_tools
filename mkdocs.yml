@@ -1,0 +1,130 @@
+site_name: CS Tools
+site_url: https://cs_tools.thoughtspot.com/
+site_description: >-
+  Tools created by the ThoughtSpot PS/CS organization to assist implementation and
+  administration of your platform.
+
+repo_name: thoughtspot/cs_tools
+repo_url: https://github.com/thoughtspot/cs_tools
+edit_uri: tree/docs/docs/
+
+copyright: Copyright &copy; 2021 ThoughtSpot Inc. All Rights Reserved
+
+theme:
+  features:
+    - header.autohide
+    - navigation.instant
+    - navigation.tabs
+
+  font:
+    text: Optimo-Plain
+    code: BB Roller Mono
+  icon:
+    repo: fontawesome/brands/github
+  logo: assets/logo_white.png
+  name: material
+
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      primary: indigo
+      accent: blue
+      scheme: default
+      # scheme: thoughtspot-light
+      toggle:
+        icon: material/lightbulb-outline
+        name: switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      primary: blue
+      accent: indigo
+      scheme: slate
+      # scheme: thoughtspot-dark
+      toggle:
+        icon: material/lightbulb
+        name: switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - footnotes
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.tilde
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/thoughtspot/cs_tools
+      name: find us on github
+
+    - icon: fontawesome/solid/paper-plane
+      link: mailto:ps-na@thoughtspot.com
+      name: email the team
+
+extra_css:
+  - css/custom.css
+
+extra_javascript:
+  - js/konami.js
+
+nav:
+  - Home: index.md
+  - Install: how-to/install-upgrade-cs-tools.md
+  - Tools:
+    - cs-tools/overview.md
+    - Remote TQL:
+      - rtql: cs-tools/rtql/README.md
+      - cs-tools/rtql/CHANGELOG.md
+    - Remote tsload:
+      - rtsload: cs-tools/rtsload/README.md
+      - cs-tools/rtsload/CHANGELOG.md
+    - Security Sharing:
+      - security-sharing: cs-tools/security-sharing/README.md
+      - cs-tools/security-sharing/CHANGELOG.md
+    - Transfer Ownership:
+      - transfer-ownership: cs-tools/transfer-ownership/README.md
+      # - How-To Guide: cs-tools/transfer-ownership/RUNBOOK.md
+      - cs-tools/transfer-ownership/CHANGELOG.md
+    - 🙈 Created Objects:
+      - created-objects: cs-tools/created-objects/README.md
+      # - How-To Guide: cs-tools/created-objects/RUNBOOK.md
+      - cs-tools/created-objects/CHANGELOG.md
+    - 🙈 Delete Objects:
+      - delete-objects: cs-tools/delete-objects/README.md
+      - cs-tools/delete-objects/CHANGELOG.md
+    - 🙈 Dependency Checker:
+      - dependency-checker: cs-tools/dependency-checker/README.md
+      # - How-To Guide: cs-tools/dependency-checker/RUNBOOK.md
+      - cs-tools/dependency-checker/CHANGELOG.md
+    - "🙈 Introspect: Users, Groups":
+      - introspect-user-group: cs-tools/introspect-user-group/README.md
+      # - How-To Guide: cs-tools/introspect-user-group/RUNBOOK.md
+      - cs-tools/introspect-user-group/CHANGELOG.md
+    - 🙈 Sharding Recommender:
+      - sharding-recommender: cs-tools/sharding-recommender/README.md
+      # - How-To Guide: cs-tools/sharding-recommender/RUNBOOK.md
+      - cs-tools/sharding-recommender/CHANGELOG.md
+  - How-to:
+    - "Setup a Configuration File": how-to/configuration-file.md
+    - "Scheduling Tools": how-to/scheduling-tool-commands.md
+  - Changelog:
+    - v1.2.0: changelog/1.2.0.md
+    - v1.1.0: changelog/1.1.0.md
+    - v1.0.0: changelog/1.0.0.md
+  - 🤓:
+    - for-developers/contributing.md
+    - for-developers/environment-setup.md
+    # - for-developers/your-first-tool.md
+    # - for-developers/project-architecture.md
+    - for-developers/writing-documentation.md
+    - "What is Markdown?": for-developers/what-is-markdown.md
+    # - for-developers/FAQ.md

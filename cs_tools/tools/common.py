@@ -47,10 +47,11 @@ def run_tql_script(
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """
     if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
-        console.print(
-            '[red]You do not have the correct privileges to access the remote TQL '
-            'service!\n\nYou require at least the "Can Manage Data" privilege.'
-            '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+        log.error(
+            f'[red]User {api.logged_in_user.display_name} do not have the correct '
+            f'privileges to access the remote tsload service!\n\nYou require at least '
+            f'the "Can Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
+            f'Administrator.[/]'
         )
         raise typer.Exit()
 
@@ -104,10 +105,11 @@ def run_tql_command(
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """
     if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
-        console.print(
-            '[red]You do not have the correct privileges to access the remote TQL '
-            'service!\n\nYou require at least the "Can Manage Data" privilege.'
-            '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+        log.error(
+            f'[red]User {api.logged_in_user.display_name} do not have the correct '
+            f'privileges to access the remote tsload service!\n\nYou require at least '
+            f'the "Can Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
+            f'Administrator.[/]'
         )
         raise typer.Exit()
 
@@ -170,10 +172,11 @@ def tsload(
       https://docs.thoughtspot.com/latest/reference/data-importer-ref.html
     """
     if not set(api.logged_in_user.privileges).intersection(REQUIRED_PRIVILEGES):
-        console.print(
-            '[red]You do not have the correct privileges to access the remote tsload '
-            'service!\n\nYou require at least the "Can Manage Data" privilege.'
-            '\n\nPlease consult with your ThoughtSpot Administrator.[/]'
+        log.error(
+            f'[red]User {api.logged_in_user.display_name} do not have the correct '
+            f'privileges to access the remote tsload service!\n\nYou require at least '
+            f'the "Can Manage Data" privilege.\n\nPlease consult with your ThoughtSpot '
+            f'Administrator.[/]'
         )
         raise typer.Exit()
 

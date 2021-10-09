@@ -72,7 +72,7 @@ class DefinedPermissionParameters(APIParameters):
     id: str
 
     @pydantic.validator('id', pre=True)
-    def stringify_the_array(cls, v):
+    def stringify_the_array(cls, v) -> str:
         return to_array(v)
 
 
@@ -93,7 +93,6 @@ class _Security(TSPrivate):
         List of metadata objects in the repository.
         """
         p = ShareParameters(**parameters)
-        # print(p.json())
         r = self.post(f'{self.base_url}/share', data=p.json())
         return r
 
