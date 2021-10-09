@@ -152,7 +152,7 @@ class _Metadata:
         """
         r = self.rest_api.request(
                 'GET',
-                'metadata/listcolumns/{id}',
+                f'metadata/listcolumns/{id}',
                 privacy='private',
                 params={'id': id, 'showhidden': showhidden}
             )

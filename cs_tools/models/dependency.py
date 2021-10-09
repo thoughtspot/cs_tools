@@ -4,6 +4,7 @@ from pydantic import validate_arguments
 import httpx
 
 from cs_tools._enums import MetadataObject
+from cs_tools.util import stringified_array
 
 
 class _Dependency:
@@ -18,15 +19,27 @@ class _Dependency:
         self,
         id: List[str],
         type: MetadataObject = MetadataObject.logical_column,
-        batchsize: int = -1
+        batchsize: int = -1,
+        offset: int = -1
     ) -> httpx.Response:
         """
         Metadata objects referencing given object.
+
+        This implementation slightly deviates from the REST API contract.
+        Offset is not advertised to be part of the contract, but is an allowed
+        value whenever batchsize is included.
         """
         r = self.rest_api.request(
                 'POST',
                 'dependency/listdependents',
                 privacy='private',
-                data={'type': type, 'id': id, 'batchsize': batchsize}
+                data={
+                    'type': type.value,
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
+                    'id': stringified_array(id),
+                    'batchsize': batchsize,
+                    'offset': offset
+                }
             )
         return r

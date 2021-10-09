@@ -4,6 +4,7 @@ from pydantic import validate_arguments
 import httpx
 
 from cs_tools._enums import AccessLevel
+from cs_tools.util import stringified_array
 
 
 class _Security:
@@ -51,14 +52,14 @@ class _Security:
                 privacy='private',
                 data={
                     'type': type,
-                    'id': id,
+                    'id': stringified_array(id),
                     'permission': {
                         'permissions': {
-                            user_guid: {'shareMode': access_level}
-                            for user_guid, access_level in permissions.items()
+                            guid: {'shareMode': access_level.value}
+                            for guid, access_level in permissions.items()
                         }
                     },
-                    'emailshares': emailshares,
+                    'emailshares': emailshares or [],
                     'notify': notify,
                     'message': message
                 }
@@ -74,6 +75,6 @@ class _Security:
                 'POST',
                 'security/definedpermission',
                 privacy='private',
-                data={'type': type, 'id': id}
+                data={'type': type, 'id': stringified_array(id)}
             )
         return r

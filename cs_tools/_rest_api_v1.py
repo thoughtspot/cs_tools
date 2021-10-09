@@ -4,6 +4,7 @@ import copy
 import httpx
 
 from cs_tools.models import (
+    _Dependency,
     _Metadata,
     Metadata,
     _Periscope,
@@ -41,7 +42,7 @@ class _RESTAPIv1:
         self.user = User(self)
 
         # private API endpoints
-        # self._dependency = _Dependency(self)
+        self._dependency = _Dependency(self)
         self._metadata = _Metadata(self)
         self._periscope = _Periscope(self)
         self._security = _Security(self)
@@ -109,8 +110,14 @@ class _RESTAPIv1:
 
         meth = getattr(self._http, method.lower())
         r = meth(endpoint, **kw)
-        r.raise_for_status()  # pass thru errors
-        log.debug(f'<< HTTP: {r.status_code}')
+
+        try:
+            r.raise_for_status()
+        except Exception as e:
+            log.warning(e.response.content)
+            raise e
+        else:
+            log.debug(f'<< HTTP: {r.status_code}')
 
         if r.text:
             log.debug('<< CONTENT:\n\n%s', r.text)
