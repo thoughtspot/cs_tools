@@ -4,6 +4,7 @@ import logging
 import pathlib
 import json
 
+from pydantic import validate_arguments
 import typer
 import httpx
 
@@ -52,7 +53,12 @@ class TSDataService:
         """
         Handle etl_http_server load balancer redirects.
         """
-        return f'{self._tsload_node}:{self._tsload_port}/ts_dataservice/v1/public'
+        host = self._tsload_node
+
+        if not host.startswith('http'):
+            host = f'https://{host}'
+
+        return f'{host}:{self._tsload_port}/ts_dataservice/v1/public'
 
     @requires(software='6.2.1', cloud='*')
     def tokens_static(self) -> httpx.Response:
@@ -75,6 +81,7 @@ class TSDataService:
         return r
 
     @requires(software='6.2.1', cloud='*')
+    @validate_arguments
     def query(self, data, *, timeout: float=5.0) -> httpx.Response:
         """
         Run a TQL query.
@@ -94,6 +101,7 @@ class TSDataService:
         return r
 
     @requires(software='6.2.1', cloud='*')
+    @validate_arguments
     def script(self, data) -> httpx.Response:
         """
         Execute a series of queries against TQL.
@@ -120,8 +128,8 @@ class TSDataService:
                 'POST',
                 f'{self.etl_server_fullpath}/session',
                 data={
-                    'username': self._config.auth['frontend'].username,
-                    'password': reveal(self._config.auth['frontend'].password).decode(),
+                    'username': self.rest_api._config.auth['frontend'].username,
+                    'password': reveal(self.rest_api._config.auth['frontend'].password).decode(),
                 }
             )
 
@@ -129,6 +137,7 @@ class TSDataService:
         return r
 
     @requires(software='6.2.1', cloud=None)
+    @validate_arguments
     def load_init(self, data: dict, *, timeout: float=5.0) -> httpx.Response:
         """
         Initialize a tsload session, with options data.
@@ -159,6 +168,7 @@ class TSDataService:
         return r
 
     @requires(software='6.2.1', cloud=None)
+    @validate_arguments(config={'arbitrary_types_allowed': True})
     def load_start(
         self,
         cycle_id: str,
@@ -202,6 +212,7 @@ class TSDataService:
         return r
 
     @requires(software='6.2.1', cloud=None)
+    @validate_arguments
     def load_commit(self, cycle_id: str) -> httpx.Response:
         """
         Commits currently ingested data to Falcon in this session.
@@ -233,6 +244,7 @@ class TSDataService:
         return r
 
     @requires(software='6.2.1', cloud=None)
+    @validate_arguments
     def load_status(self, cycle_id: str) -> httpx.Response:
         """
         Return the status of the dataload for a particular session.

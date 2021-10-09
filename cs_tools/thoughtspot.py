@@ -65,7 +65,7 @@ class ThoughtSpot:
             username=self.config.auth['frontend'].username,
             password=reveal(self.config.auth['frontend'].password).decode(),
             rememberme=True,
-            _disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
+            disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
         )
 
         self._logged_in_user = LoggedInUser.from_session_info(r.json())

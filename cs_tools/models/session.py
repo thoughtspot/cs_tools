@@ -33,7 +33,6 @@ class _Session:
             )
         return r
 
-    @validate_arguments
     def info(self) -> httpx.Response:
         """
         Get session information.
@@ -45,12 +44,13 @@ class _Session:
             )
         return r
 
+    @validate_arguments
     def login(
         self,
         username: str,
         password: str,
         rememberme: bool = True,
-        _disableSAMLAutoRedirect: bool = False
+        disableSAMLAutoRedirect: bool = False
     ) -> httpx.Response:
         """
         Log in to ThoughtSpot.
@@ -69,7 +69,7 @@ class _Session:
                     'password': password,
                     'rememberme': rememberme
                 },
-                params={'disableSAMLAutoRedirect': _disableSAMLAutoRedirect}
+                params={'disableSAMLAutoRedirect': disableSAMLAutoRedirect}
             )
         return r
 

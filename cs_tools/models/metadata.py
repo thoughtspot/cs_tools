@@ -48,8 +48,7 @@ class _Metadata:
                 params={
                     'type': type.value,
                     'subtypes': stringified_array([_.value for _ in subtypes or ()]),
-                    'ownertypes': ownertypes.value,
-                    # 'ownertypes': stringified_array([_.value for _ in ownertypes or ()]),
+                    'ownertypes': stringified_array([_.value for _ in ownertypes or ()]),
                     'category': category.value,
                     'sort': sort.value,
                     'sortascending': sortascending,
@@ -92,6 +91,7 @@ class _Metadata:
             )
         return r
 
+    @validate_arguments
     def detail(
         self,
         id: str,
@@ -119,6 +119,7 @@ class _Metadata:
             )
         return r
 
+    @validate_arguments
     def delete(
         self,
         id: List[str],
@@ -133,13 +134,14 @@ class _Metadata:
                 'metadata/delete',
                 privacy='private',
                 data={
-                    'type': type.value,
+                    'type': None if type is None else type.value,
                     'id': stringified_array([_ for _ in id or ()]),
                     'includedisabled': includedisabled
                 }
             )
         return r
 
+    @validate_arguments
     def list_columns(
         self,
         id: str,
