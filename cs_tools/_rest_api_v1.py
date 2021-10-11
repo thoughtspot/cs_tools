@@ -6,10 +6,11 @@ import httpx
 from cs_tools.models import (
     _Dependency,
     _Metadata,
-    Metadata,
     _Periscope,
     _Security,
     _Session,
+    Data,
+    Metadata,
     TSDataService,
     User
 )
@@ -38,6 +39,7 @@ class _RESTAPIv1:
         self.ts_dataservice = TSDataService(self)
 
         # public API endpoints
+        self.data = Data(self)
         self.metadata = Metadata(self)
         self.user = User(self)
 

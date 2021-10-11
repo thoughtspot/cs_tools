@@ -1,6 +1,12 @@
 import enum
 
 
+class GUID(str):
+    """
+    Purely for the sake of annotation documentation.
+    """
+
+
 class AccessLevel(enum.Enum):
     no_access = 'NO_ACCESS'
     read_only = 'READ_ONLY'
@@ -72,3 +78,8 @@ class SortOrder(enum.Enum):
     author = 'AUTHOR'
     created = 'CREATED'
     modified = 'MODIFIED'
+
+
+class ResultsFormat(enum.Enum):
+    records = 'FULL'
+    values = 'COMPACT'
