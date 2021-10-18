@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 import datetime as dt
+import uuid
 
 
 def stringified_array(iterable: Iterable) -> str:
@@ -25,6 +26,22 @@ def stringified_array(iterable: Iterable) -> str:
     string.
     """
     return '[' + ', '.join(iterable) + ']'
+
+
+def is_valid_guid(to_test: str) -> bool:
+    """
+    Determine if value is a valid UUID.
+
+    Parameters
+    ----------
+    to_test : str
+        value to test
+    """
+    try:
+        guid = uuid.UUID(to_test)
+    except ValueError:
+        return False
+    return str(guid) == to_test
 
 
 class ThoughtSpotVersionGuard:
