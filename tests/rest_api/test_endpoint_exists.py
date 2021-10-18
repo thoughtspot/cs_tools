@@ -9,7 +9,9 @@ PARAMETERS = {
         ( 'GET', 'metadata/listvizheaders'),
         ( 'GET', 'metadata/listobjectheaders'),
         ( 'GET', 'user/list'),
-        ('POST', 'user/transfer/ownership')
+        ('POST', 'user/transfer/ownership'),
+        ('POST', 'pinboarddata'),
+        ('POST', 'searchdata'),
     ],
     'private': [
         ('POST', 'dependency/listdependents'),
