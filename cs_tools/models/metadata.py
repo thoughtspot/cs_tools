@@ -34,6 +34,7 @@ class _Metadata:
         batchsize: int = None,
         tagname: List[str] = None,
         pattern: str = None,
+        showhidden: bool = False,
         skipids: List[str] = None,
         fetchids: List[str] = None,
         auto_created: bool = None,
