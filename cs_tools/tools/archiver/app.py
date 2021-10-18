@@ -1,8 +1,7 @@
-import pathlib
 import enum
 
 from typer import Argument as A_, Option as O_  # noqa
-import click
+from rich.table import Table
 import typer
 
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
@@ -32,7 +31,6 @@ class UserActions(enum.Enum):
                 'PINBOARD_TSPUBLIC_NO_RUNTIME_FILTER'
             ]
         }
-
         allowed = mapper.get(context, [_.value for _ in cls])
         return sep.join([_.value for _ in cls if _.value in allowed])
 
@@ -65,15 +63,55 @@ def fetch(
 
     with ThoughtSpot(cfg) as ts:
         data = ts.search(
-            f"[user action] = '{actions}' [timestamp].'last {months} months' [answer book guid]",
+            f"[user action] = '{actions}' "
+            f"[timestamp].'last {months} months' "
+            f"[answer book guid]",
             worksheet='TS: BI Server'
         )
 
+        # Currently used GUIDs (within the past {months} months ...)
+        usage = set(_['Answer Book GUID'] for _ in data)
+
+        # Repository of all available GUIDs
+        data = []
+
+        if content.value in ('all', 'answer'):
+            r = ts.api._metadata.list(type='QUESTION_ANSWER_BOOK', showhidden=False, auto_created=False)
+            data.extend({'content_type': 'answer', **_} for _ in r.json()['headers'] if _['authorName'] not in ('tsadmin', 'system'))
+
+        if content.value in ('all', 'pinboard'):
+            r = ts.api._metadata.list(type='PINBOARD_ANSWER_BOOK', showhidden=False, auto_created=False)
+            data.extend({'content_type': 'pinboard', **_} for _ in r.json()['headers'] if _['authorName'] not in ('tsadmin', 'system'))
+
+        #
+        #
+        #
+        archive = {_['id'] for _ in data}.difference(usage)
+
+        to_archive = [
+            {'content_type': _['content_type'], 'guid': _['id'], 'name': _['name']}
+            for _ in data if _['id'] in archive
+        ]
+
+        #
+        #
+        #
+
         if dry_run:
-            print(data)
+            table = Table(
+                *to_archive[0].keys(),
+                title=f"[green]Dry Run Results[/]: Tagging content with [cyan]'{tag}'[/]",
+                caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} seen)'
+            )
+            [table.add_row(*r.values()) for r in to_archive[:3]]
+            [table.add_row('...', '...', '...')]
+            [table.add_row(*r.values()) for r in to_archive[-3:]]
+            console.log('\n', table)
             raise typer.Exit(-1)
 
-        ...
+        #
+        #
+        #
 
 
 @app.command(cls=RichCommand)
