@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import validate_arguments
 import httpx
@@ -20,7 +20,8 @@ class _Dependency:
         id: List[str],
         type: MetadataObject = MetadataObject.logical_column,
         batchsize: int = -1,
-        offset: int = -1
+        offset: int = -1,
+        timeout: Optional[int] = -1
     ) -> httpx.Response:
         """
         Metadata objects referencing given object.
@@ -29,6 +30,8 @@ class _Dependency:
         Offset is not advertised to be part of the contract, but is an allowed
         value whenever batchsize is included.
         """
+        timeout = self.rest_api._http.timeout if timeout == -1 else timeout
+
         r = self.rest_api.request(
                 'POST',
                 'dependency/listdependents',
@@ -40,6 +43,7 @@ class _Dependency:
                     'id': stringified_array(id),
                     'batchsize': batchsize,
                     'offset': offset
-                }
+                },
+                timeout=timeout
             )
         return r

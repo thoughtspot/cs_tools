@@ -1,4 +1,4 @@
-from typing import Any, List, Dict
+from typing import List, Dict
 import pathlib
 import shutil
 import enum
@@ -9,12 +9,13 @@ import typer
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
-from cs_tools.util.swagger import to_array
 from cs_tools.util.algo import chunks
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.tools import common
+
+from .util import FileQueue
 
 
 HERE = pathlib.Path(__file__).parent
@@ -53,7 +54,7 @@ class ParentType(str, enum.Enum):
     VIEW = 'view'
 
 
-def _format_metadata_objects(metadata: List[Dict]):
+def _format_metadata_objects(queue, metadata: List[Dict]):
     """
     Standardize data in an expected format.
 
@@ -61,10 +62,8 @@ def _format_metadata_objects(metadata: List[Dict]):
     record-based and in the format that's expected for an eventual
     tsload command.
     """
-    parents = []
-
     for parent in metadata:
-        parents.append({
+        queue.put({
             'guid_': parent['id'],
             'name': parent['name'],
             'description': parent.get('description'),
@@ -78,10 +77,8 @@ def _format_metadata_objects(metadata: List[Dict]):
             'context': parent.get('owner')
         })
 
-    return parents
 
-
-def _format_dependencies(dependencies: Dict[str, Dict]):
+def _format_dependency(queue, parent_guid, dependencies: Dict[str, Dict]):
     """
     Standardize data in an expected format.
 
@@ -89,86 +86,49 @@ def _format_dependencies(dependencies: Dict[str, Dict]):
     record-based and in the format that's expected for an eventual
     tsload command.
     """
-    children = []
-
-    for parent_guid, dependencies_ in dependencies.items():
-        for dependency in dependencies_:
-            children.append({
-                'guid_': dependency['id'],
-                'parent_guid': parent_guid,
-                'name': dependency['name'],
-                'description': dependency.get('description'),
-                'author_guid': dependency['author'],
-                'author_name': dependency['authorName'],
-                'author_display_name': dependency['authorDisplayName'],
-                'created': to_datetime(dependency['created'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
-                'modified': to_datetime(dependency['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
-                # 'modified_by': dependency['modifiedBy']  # user.guid
-                'type': SystemType.to_friendly(dependency['type'])
-            })
-
-    return children
+    for dependency in dependencies:
+        queue.put({
+            'guid_': dependency['id'],
+            'parent_guid': parent_guid,
+            'name': dependency['name'],
+            'description': dependency.get('description'),
+            'author_guid': dependency['author'],
+            'author_name': dependency['authorName'],
+            'author_display_name': dependency['authorDisplayName'],
+            'created': to_datetime(dependency['created'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
+            'modified': to_datetime(dependency['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
+            # 'modified_by': dependency['modifiedBy']  # user.guid
+            'type': SystemType.to_friendly(dependency['type'])
+        })
 
 
-def _get_dependents(api: ThoughtSpot, parent: str, metadata: List[Dict]) -> List[Dict[str, Any]]:
-    # DEV NOTE: (@boonhapus)
-    #
-    # I don't like magic numbers. Why am I using chunks=50? Why are we using
-    # batchsize=5000? Well, because we have no clear guidelines on how much data can be
-    # passed back and forth to the API. For even moderately sized clusters, column
-    # dependents could be in the hundreds of thousands. Consider a few worksheets with
-    # 60 columns each, shared with 50 users, who then create 10 answers (or worse,
-    # pinboards) each - all referencing a popular underlying physical column, like a
-    # measure.
-    #
-    # 1 column * 3 worksheets * 50 users * 10 answers = 53 dependencies logged .. for a single column
-    #
-    # This adds up fast. This a toy scenario. ThoughtSpot response output just doesn't
-    # like that. So we're being conservative and asking for 50 guids' dependencies at a
-    # time. Then we're also batching the output so that we get only 5000 dependencies in
-    # each response.
-    #
-    # We can normalize across the chunks and batches in RAM, later.
-    data = {}
-
-    # normalize and flatten the dependency batch data.
-    #
-    # r = [
-    #     {
-    #         'guid1': {
-    #             'LOGICAL_TABLE': [{}, ...],         # dependency headers
-    #             'PINBOARD_ANSWER_BOOK': [{}, ...],  # dependency headers
-    #             ...
-    #         },
-    #         'guid2': { ... },
-    #         ...
-    #     },
-    #     {
-    #         'guid5001': {},
-    #         'guid5002': {},
-    #         ...
-    #     }
-    # ]
+def _get_dependents(api: ThoughtSpot, queue, parent: str, metadata: List[Dict]):
     for chunk in chunks(metadata, n=50):
-        r = common.batched(
-                api._dependency.list_dependents,
+        r = api._dependency.list_dependents(
+                id=[_['id'] for _ in chunk],
                 type='LOGICAL_COLUMN' if parent in ('formula', 'column') else 'LOGICAL_TABLE',
-                id=[item['id'] for item in chunk],
-                batchsize=5000,
-                transformer=lambda r: [r.json()]
+                batchsize=-1,
+                timeout=None if parent == 'column' else -1
             )
 
-        for batch in r:
-            for guid, dependent_data in batch.items():
-                for dependent_type, dependencies in dependent_data.items():
-                    if guid not in data:
-                        data[guid] = []
+        for parent_guid, dependent_data in r.json().items():
+            for dependency_type, dependencies in dependent_data.items():
+                for dependency in dependencies:
+                    dependency['type'] = dependency.get('type', dependency_type)
 
-                    for dependency in dependencies:
-                        dependency['type'] = dependency.get('type', dependent_type)
-                        data[guid].append(dependency)
-
-    return data
+                    queue.put({
+                        'guid_': dependency['id'],
+                        'parent_guid': parent_guid,
+                        'name': dependency['name'],
+                        'description': dependency.get('description'),
+                        'author_guid': dependency['author'],
+                        'author_name': dependency['authorName'],
+                        'author_display_name': dependency['authorDisplayName'],
+                        'created': to_datetime(dependency['created'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
+                        'modified': to_datetime(dependency['modified'], unit='ms').strftime(FMT_TSLOAD_DATETIME),
+                        # 'modified_by': dependency['modifiedBy']  # user.guid
+                        'type': SystemType.to_friendly(dependency['type'])
+                    })
 
 
 def _get_recordset_metadata(api: ThoughtSpot) -> Dict[str, List]:
@@ -316,25 +276,14 @@ def gather(
         with console.status('getting top level metadata'):
             metadata = _get_recordset_metadata(ts.api)
 
-        for parent in parent_types:
-            with console.status(f'getting dependents of metadata: {parent}'):
-                dependents = _get_dependents(ts.api, parent, metadata[parent])
-                parents = _format_metadata_objects(metadata[parent])
-                children = _format_dependencies(dependents)
+        parent_q = FileQueue(dir_ / 'introspect_metadata_object.csv')
+        children_q = FileQueue(dir_ / 'introspect_metadata_dependent.csv')
 
-            if not parents:
-                continue
-
-            with console.status(f'saving metadata: {parent}'):
-                path = dir_ / 'introspect_metadata_object.csv'
-                common.to_csv(parents, path, mode='a')
-
-                if not children:
-                    continue
-
-            with console.status(f'saving children metadata: {parent}'):
-                path = dir_ / 'introspect_metadata_dependent.csv'
-                common.to_csv(children, path, mode='a')
+        with parent_q as pq, children_q as cq:
+            for parent in parent_types:
+                with console.status(f'getting dependents of metadata: {parent}'):
+                    _format_metadata_objects(pq, metadata[parent])
+                    _get_dependents(ts.api, cq, parent, metadata[parent])
 
         if save_path is not None:
             return
