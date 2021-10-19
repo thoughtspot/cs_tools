@@ -1,3 +1,4 @@
+from typing import Any, Dict, List
 import logging
 
 from pydantic import validate_arguments
@@ -34,8 +35,44 @@ class SearchMiddlware:
         worksheet: str=None,
         table: str=None,
         view: str=None
-    ):
+    ) -> List[Dict[str, Any]]:
         """
+        Search a data source.
+
+        Columns must be surrounded by square brackets. Search-level formulas
+        are not currently supported, but a formula as part of a data source is.
+
+        Further reading:
+          https://docs.thoughtspot.com/software/latest/search-data-api
+          https://docs.thoughtspot.com/software/latest/search-data-api#components
+
+        Parameters
+        ----------
+        query : str
+          the ThoughtSpot Search to issue against a data source
+
+        worksheet, table, view : str
+          name or GUID of a data source to search against - these keywords are
+          mutually exclusive
+
+        Returns
+        -------
+        data : List[Dict[str, Any]]
+          search result in data records format
+
+        Raises
+        ------
+        TypeError
+          raised when providing no input, or too much input to mutually
+          exclusive keyword-arguments: worksheet, table, view
+
+        ContentDoesNotExist
+          raised when a worksheet, table, or view does not exist in the
+          ThoughtSpot platform
+
+        AmbiguousContentError
+          raised when multiple worksheets, tables, or view exist in the
+          platform by a single name
         """
         if (worksheet, table, view).count(None) == 3:
             raise TypeError(
