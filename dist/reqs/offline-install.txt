@@ -39,4 +39,4 @@ typing-extensions==3.10.0.0; python_version >= "3.6" and python_version < "3.8" 
 uvicorn==0.14.0; python_version >= "3.6"
 watchgod==0.7; python_version >= "3.6"
 websockets==9.1; python_version >= "3.6"
-cs_tools==1.2.0b2
+cs_tools==1.2.0
