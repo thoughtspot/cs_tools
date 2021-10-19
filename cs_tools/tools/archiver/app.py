@@ -86,6 +86,7 @@ def fetch(
         #
         #
         #
+
         archive = {_['id'] for _ in data}.difference(usage)
 
         to_archive = [
@@ -112,6 +113,9 @@ def fetch(
         #
         #
         #
+
+        # get_or_create tag
+        # assign tag
 
 
 @app.command(cls=RichCommand)
