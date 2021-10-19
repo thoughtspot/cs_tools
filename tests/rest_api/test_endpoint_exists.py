@@ -15,6 +15,10 @@ PARAMETERS = {
     ],
     'private': [
         ('POST', 'dependency/listdependents'),
+        ('POST', 'metadata/create'),
+        ('POST', 'metadata/save'),
+        ('POST', 'metadata/assigntag'),
+        ('POST', 'metadata/unassigntag'),
         ( 'GET', 'metadata/list'),
         ( 'GET', 'metadata/listas'),
         ( 'GET', 'metadata/detail/this-is-a-fake-guid'),
