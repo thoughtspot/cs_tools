@@ -1,10 +1,11 @@
-from typing import List
+from typing import Any, Dict, List
 
 from pydantic import validate_arguments
 import httpx
 
 from cs_tools.util import stringified_array
 from cs_tools._enums import (
+    GUID,
     MetadataObject,
     LogicalTableSubtype,
     MetadataCategory,
@@ -22,6 +23,102 @@ class _Metadata:
         self.rest_api = rest_api
 
     @validate_arguments
+    def assigntag(
+        self,
+        id: List[GUID],
+        type: MetadataObject,
+        tagid: List[GUID]
+    ) -> httpx.Response:
+        """
+        Assign tags to metadata objects; types[i] corresponds to ids[i].
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/assigntag',
+                privacy='private',
+                params={
+                    'id': id,
+                    'type': type.value,
+                    'tagid': tagid
+                }
+            )
+        return r
+
+    @validate_arguments
+    def unassigntag(
+        self,
+        id: List[GUID],
+        type: MetadataObject,
+        tagid: List[GUID]
+    ) -> httpx.Response:
+        """
+        Un-assign tags to metadata objects; types[i] corresponds to ids[i].
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/unassigntag',
+                privacy='private',
+                params={
+                    'id': id,
+                    'type': type.value,
+                    'tagid': tagid
+                }
+            )
+        return r
+
+    @validate_arguments
+    def create(
+        self,
+        name: str,
+        type: MetadataObject = MetadataObject.saved_answer,
+        subtype: MetadataObject = None,
+        description: str = None,
+        content: Dict[str, Any] = None,
+        save: bool = True,
+        clientstate: Any = None
+    ) -> httpx.Response:
+        """
+        Create a new metadata object in the repository.
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/create',
+                privacy='private',
+                params={
+                    'type': type.value,
+                    'subtype': subtype.value,
+                    'name': name,
+                    'description': description,
+                    'content': content,
+                    'save': save,
+                    'clientstate': clientstate
+                }
+            )
+        return r
+
+    @validate_arguments
+    def save(
+        self,
+        type: MetadataObject,
+        content: Dict[str, Any],
+        forcesave: bool = False,
+    ) -> httpx.Response:
+        """
+        Save metadata object in the repository.
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/save',
+                privacy='private',
+                params={
+                    'type': type.value,
+                    'content': content,
+                    'forcesave': forcesave,
+                }
+            )
+        return r
+
+    @validate_arguments
     def list(
         self,
         type: MetadataObject = MetadataObject.pinboard,
@@ -35,8 +132,8 @@ class _Metadata:
         tagname: List[str] = None,
         pattern: str = None,
         showhidden: bool = False,
-        skipids: List[str] = None,
-        fetchids: List[str] = None,
+        skipids: List[GUID] = None,
+        fetchids: List[GUID] = None,
         auto_created: bool = None,
     ) -> httpx.Response:
         """
@@ -70,7 +167,7 @@ class _Metadata:
         offset: int = -1,
         batchsize: int = None,
         pattern: str = None,
-        principalid: str = None,
+        principalid: GUID = None,
         minimumaccesslevel: AccessLevel = AccessLevel.no_access,
         type: Principal = Principal.group,
     ) -> httpx.Response:
@@ -95,7 +192,7 @@ class _Metadata:
     @validate_arguments
     def detail(
         self,
-        id: str,
+        id: GUID,
         type: MetadataObject = None,
         showhidden: bool = False,
         dropquestiondetails: bool = False,
@@ -123,7 +220,7 @@ class _Metadata:
     @validate_arguments
     def delete(
         self,
-        id: List[str],
+        id: List[GUID],
         type: MetadataObject = None,
         includedisabled: bool = False,
     ) -> httpx.Response:
@@ -145,7 +242,7 @@ class _Metadata:
     @validate_arguments
     def list_columns(
         self,
-        id: str,
+        id: GUID,
         showhidden: bool = False,
     ) -> httpx.Response:
         """
@@ -168,7 +265,7 @@ class Metadata:
         self.rest_api = rest_api
 
     @validate_arguments
-    def list_viz_headers(self, id: str) -> httpx.Response:
+    def list_viz_headers(self, id: GUID) -> httpx.Response:
         """
         Get the visualization headers from the ThoughtSpot system.
         """
@@ -192,8 +289,8 @@ class Metadata:
         batchsize: int = None,
         tagname: List[str] = None,
         pattern: str = None,
-        skipids: List[str] = None,
-        fetchids: List[str] = None,
+        skipids: List[GUID] = None,
+        fetchids: List[GUID] = None,
         auto_created: bool = None
     ) -> httpx.Response:
         """
