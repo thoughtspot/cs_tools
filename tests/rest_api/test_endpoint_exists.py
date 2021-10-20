@@ -16,7 +16,6 @@ PARAMETERS = {
     'private': [
         ('POST', 'dependency/listdependents'),
         ('POST', 'metadata/create'),
-        ('POST', 'metadata/save'),
         ('POST', 'metadata/assigntag'),
         ('POST', 'metadata/unassigntag'),
         ( 'GET', 'metadata/list'),
