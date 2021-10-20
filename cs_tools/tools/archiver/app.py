@@ -51,7 +51,7 @@ app = typer.Typer(
 
 @app.command(cls=RichCommand)
 @frontend
-def fetch(
+def identify(
     tag: str=O_('TO BE ARCHIVED', help='tag name to use for labeling objects to archive'),
     content: ContentType=O_('all', help='type of content to archive'),
     usage_months: int=O_(
@@ -171,7 +171,7 @@ def fetch(
 
 @app.command(cls=RichCommand)
 @frontend
-def annul(
+def deidentify(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
     dry_run: bool=O_(
         False,
@@ -250,7 +250,7 @@ def annul(
 
 @app.command(cls=RichCommand)
 @frontend
-def delete(
+def remove(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
     export: pathlib.Path=O_(None, help='directory to export tagged objects, as TML'),
     dry_run: bool=O_(
