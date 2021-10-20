@@ -1,3 +1,4 @@
+import pathlib
 import enum
 
 from typer import Argument as A_, Option as O_  # noqa
@@ -37,10 +38,12 @@ class UserActions(enum.Enum):
 
 app = typer.Typer(
     help="""
-    Archiver.
+    Manage stale answers and pinboards within your platform.
 
-    Solution should help the customer identify objects which have not
-    been visited within a certain timeframe.
+    As your platform grows, users will create and use answers and pinboards.
+    Sometimes, users will create content for temporary exploratory purpopses
+    and then abandon it for newer pursuits. Archiver enables you to identify,
+    tag, export, and remove that potentially abandoned content.
     """,
     cls=RichGroup
 )
@@ -50,13 +53,27 @@ app = typer.Typer(
 @frontend
 def fetch(
     tag: str=O_('TO BE ARCHIVED', help='tag name to use for labeling objects to archive'),
-    content: ContentType=O_('all', help=''),
-    months: int=O_(999, show_default=False, help=''),
-    dry_run: bool=O_(False, '--dry-run', show_default=False, help=''),
+    content: ContentType=O_('all', help='type of content to archive'),
+    usage_months: int=O_(
+        999,
+        show_default=False,
+        help='months to consider for user activity (default: all user history)'
+    ),
+    dry_run: bool=O_(
+        False,
+        '--dry-run',
+        show_default=False,
+        help='test selection criteria, do not apply tags and instead output information on content to be archived'
+    ),
     **frontend_kw
 ):
     """
     Identify objects which objects can be archived.
+
+    ThoughtSpot stores usage activity (by default, 6 months of interactions) by user in
+    the platform. If a user views, edits, or creates an Answer or Pinboard, ThoughtSpot
+    knows about it. This can be used as a proxy to understanding what content is
+    actively being used.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
     actions = UserActions.strigified(sep="', '", context=content)
@@ -64,7 +81,8 @@ def fetch(
     with ThoughtSpot(cfg) as ts:
         data = ts.search(
             f"[user action] = '{actions}' "
-            f"[timestamp].'last {months} months' "
+            f"[timestamp].'last {usage_months} months' "
+            f"[timestamp].'this month' "
             f"[answer book guid]",
             worksheet='TS: BI Server'
         )
@@ -77,17 +95,25 @@ def fetch(
 
         if content.value in ('all', 'answer'):
             r = ts.api._metadata.list(type='QUESTION_ANSWER_BOOK', showhidden=False, auto_created=False)
-            data.extend({'content_type': 'answer', **_} for _ in r.json()['headers'] if _['authorName'] not in ('tsadmin', 'system'))
+            data.extend(
+                {'content_type': 'answer', **_}
+                for _ in r.json()['headers']
+                if _['authorName'] not in ('tsadmin', 'system')
+            )
 
         if content.value in ('all', 'pinboard'):
             r = ts.api._metadata.list(type='PINBOARD_ANSWER_BOOK', showhidden=False, auto_created=False)
-            data.extend({'content_type': 'pinboard', **_} for _ in r.json()['headers'] if _['authorName'] not in ('tsadmin', 'system'))
+            data.extend(
+                {'content_type': 'pinboard', **_}
+                for _ in r.json()['headers']
+                if _['authorName'] not in ('tsadmin', 'system')
+            )
 
         #
         #
         #
 
-        archive = {_['id'] for _ in data}.difference(usage)
+        archive = set(_['id'] for _ in data) - usage
 
         to_archive = [
             {'content_type': _['content_type'], 'guid': _['id'], 'name': _['name']}
@@ -98,55 +124,151 @@ def fetch(
         #
         #
 
+        table = Table(
+            *to_archive[0].keys(),
+            title=f"[green]Archive Results[/]: Tagging content with [cyan]'{tag}'[/]",
+            caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} seen)'
+        )
+        [table.add_row(*r.values()) for r in to_archive[:3]]
+        [table.add_row('...', '...', '...')]
+        [table.add_row(*r.values()) for r in to_archive[-3:]]
+        console.log('\n', table)
+
         if dry_run:
-            table = Table(
-                *to_archive[0].keys(),
-                title=f"[green]Dry Run Results[/]: Tagging content with [cyan]'{tag}'[/]",
-                caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} seen)'
-            )
-            [table.add_row(*r.values()) for r in to_archive[:3]]
-            [table.add_row('...', '...', '...')]
-            [table.add_row(*r.values()) for r in to_archive[-3:]]
-            console.log('\n', table)
             raise typer.Exit(-1)
 
         #
         #
         #
 
-        # get_or_create tag
-        # assign tag
+        r = ts.api._metadata.list(type='TAG')
+        tag_exists = [_ for _ in r.json()['headers'] if _['name'].casefold() == tag.casefold()]
+
+        if not tag_exists:
+            r = ts.api._metadata.create(name=tag, type='TAG')
+            tag_guid = r.json()['header']['id']
+        else:
+            tag_guid = tag_exists[0]['id']
+
+        #
+        #
+        #
+
+        answers = [content['guid'] for content in to_archive if content['content_type'] == 'answer']
+        ts.api._metadata.assigntag(
+            id=answers,
+            type=['QUESTION_ANSWER_BOOK' for _ in answers],
+            tagid=[tag_guid for _ in answers]
+        )
+
+        pinboards = [content['guid'] for content in to_archive if content['content_type'] == 'pinboard']
+        ts.api._metadata.assigntag(
+            id=pinboards,
+            type=['PINBOARD_ANSWER_BOOK' for _ in pinboards],
+            tagid=[tag_guid for _ in pinboards]
+        )
 
 
 @app.command(cls=RichCommand)
 @frontend
 def annul(
-    # tag: str=O_(),
-    # dry_run: bool=O_(),
+    tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
+    dry_run: bool=O_(
+        False,
+        '--dry-run',
+        show_default=False,
+        help='test selection criteria, do not remove tags and instead output information on content to be unarchived'
+    ),
     **frontend_kw
 ):
     """
-    Unarchive objects.
+    Remove objects from the temporary archive.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
     with ThoughtSpot(cfg) as ts:
-        ...
+        to_unarchive = []
+
+        r = ts.api._metadata.list(type='QUESTION_ANSWER_BOOK', tagname=[tag])
+        to_unarchive.extend({'content_type': 'answer', **_} for _ in r.json()['headers'])
+
+        r = ts.api._metadata.list(type='PINBOARD_ANSWER_BOOK', tagname=[tag])
+        to_unarchive.extend({'content_type': 'pinboard', **_} for _ in r.json()['headers'])
+
+        #
+        #
+        #
+
+        if not to_unarchive:
+            console.log(f'no content found with the tag "{tag}"')
+            raise typer.Exit()
+
+        table = Table(
+            *to_unarchive[0].keys(),
+            title=f"[green]Unarchive Results[/]: Untagging content with [cyan]'{tag}'[/]",
+            caption=f'Total of {len(to_unarchive)} items tagged..'
+        )
+        [table.add_row(*r.values()) for r in to_unarchive[:3]]
+        [table.add_row('...', '...', '...')]
+        [table.add_row(*r.values()) for r in to_unarchive[-3:]]
+        console.log('\n', table)
+
+        if dry_run:
+            raise typer.Exit()
+
+        #
+        #
+        #
+
+        r = ts.api._metadata.list(type='TAG')
+        tag_exists = [_ for _ in r.json()['headers'] if _['name'].casefold() == tag.casefold()]
+
+        if not tag_exists:
+            r = ts.api._metadata.create(name=tag, type='TAG')
+            tag_guid = r.json()['header']['id']
+        else:
+            tag_guid = tag_exists[0]['id']
+
+        #
+        #
+        #
+
+        answers = [content['id'] for content in to_unarchive if content['content_type'] == 'answer']
+        ts.api._metadata.unassigntag(
+            id=answers,
+            type=['QUESTION_ANSWER_BOOK' for _ in answers],
+            tagid=[tag_guid for _ in answers]
+        )
+
+        pinboards = [content['id'] for content in to_unarchive if content['content_type'] == 'pinboard']
+        ts.api._metadata.unassigntag(
+            id=pinboards,
+            type=['QUESTION_ANSWER_BOOK' for _ in pinboards],
+            tagid=[tag_guid for _ in pinboards]
+        )
 
 
 @app.command(cls=RichCommand)
 @frontend
 def delete(
-    # tag: str=O_(),
-    # months: int=O_(),
-    # export: pathlib.Path=O_(),
-    # dry_run: bool=O_(),
+    tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
+    export: pathlib.Path=O_(None, help='directory to export tagged objects, as TML'),
+    dry_run: bool=O_(
+        False,
+        '--dry-run',
+        show_default=False,
+        help=(
+            'test selection criteria, does not export/delete content and instead '
+            'output information on content to be unarchived'
+        )
+    ),
     **frontend_kw
 ):
     """
-    Remove objects from the platform.
+    Remove objects from the ThoughtSpot platform.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
     with ThoughtSpot(cfg) as ts:
-        ...
+        console.error('This command has yet to be implemented.')
+        raise typer.Exit(-1)
