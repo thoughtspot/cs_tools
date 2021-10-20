@@ -26,7 +26,7 @@ class _Metadata:
     def assigntag(
         self,
         id: List[GUID],
-        type: MetadataObject,
+        type: List[MetadataObject],
         tagid: List[GUID]
     ) -> httpx.Response:
         """
@@ -36,10 +36,12 @@ class _Metadata:
                 'POST',
                 'metadata/assigntag',
                 privacy='private',
-                params={
-                    'id': id,
-                    'type': type.value,
-                    'tagid': tagid
+                data={
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
+                    'id': stringified_array(id),
+                    'type': stringified_array([_.value for _ in type]),
+                    'tagid': stringified_array(tagid)
                 }
             )
         return r
@@ -48,7 +50,7 @@ class _Metadata:
     def unassigntag(
         self,
         id: List[GUID],
-        type: MetadataObject,
+        type: List[MetadataObject],
         tagid: List[GUID]
     ) -> httpx.Response:
         """
@@ -58,10 +60,12 @@ class _Metadata:
                 'POST',
                 'metadata/unassigntag',
                 privacy='private',
-                params={
-                    'id': id,
-                    'type': type.value,
-                    'tagid': tagid
+                data={
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
+                    'id': stringified_array(id),
+                    'type': stringified_array([_.value for _ in type]),
+                    'tagid': stringified_array(tagid)
                 }
             )
         return r
@@ -84,36 +88,14 @@ class _Metadata:
                 'POST',
                 'metadata/create',
                 privacy='private',
-                params={
+                data={
                     'type': type.value,
-                    'subtype': subtype.value,
+                    'subtype': subtype.value if subtype is not None else None,
                     'name': name,
                     'description': description,
                     'content': content,
                     'save': save,
                     'clientstate': clientstate
-                }
-            )
-        return r
-
-    @validate_arguments
-    def save(
-        self,
-        type: MetadataObject,
-        content: Dict[str, Any],
-        forcesave: bool = False,
-    ) -> httpx.Response:
-        """
-        Save metadata object in the repository.
-        """
-        r = self.rest_api.request(
-                'POST',
-                'metadata/save',
-                privacy='private',
-                params={
-                    'type': type.value,
-                    'content': content,
-                    'forcesave': forcesave,
                 }
             )
         return r
@@ -232,6 +214,8 @@ class _Metadata:
                 'metadata/delete',
                 privacy='private',
                 data={
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
                     'type': None if type is None else type.value,
                     'id': stringified_array([_ for _ in id or ()]),
                     'includedisabled': includedisabled
