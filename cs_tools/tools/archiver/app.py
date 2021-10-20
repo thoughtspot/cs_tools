@@ -40,6 +40,9 @@ app = typer.Typer(
     help="""
     Manage stale answers and pinboards within your platform.
 
+    [b][yellow]This tool is still in active development![/b] Tool and command
+    names are not final and some or all commands may not yet be implemented.[/]
+
     As your platform grows, users will create and use answers and pinboards.
     Sometimes, users will create content for temporary exploratory purpopses
     and then abandon it for newer pursuits. Archiver enables you to identify,
