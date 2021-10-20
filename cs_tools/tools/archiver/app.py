@@ -193,10 +193,16 @@ def deidentify(
         to_unarchive = []
 
         r = ts.api._metadata.list(type='QUESTION_ANSWER_BOOK', tagname=[tag])
-        to_unarchive.extend({'content_type': 'answer', **_} for _ in r.json()['headers'])
+        to_unarchive.extend(
+            {'content_type': 'answer', 'guid': _['id'], 'name': _['name']}
+            for _ in r.json()['headers']
+        )
 
         r = ts.api._metadata.list(type='PINBOARD_ANSWER_BOOK', tagname=[tag])
-        to_unarchive.extend({'content_type': 'pinboard', **_} for _ in r.json()['headers'])
+        to_unarchive.extend(
+            {'content_type': 'pinboard', 'guid': _['id'], 'name': _['name']}
+            for _ in r.json()['headers']
+        )
 
         #
         #
@@ -236,14 +242,14 @@ def deidentify(
         #
         #
 
-        answers = [content['id'] for content in to_unarchive if content['content_type'] == 'answer']
+        answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
         ts.api._metadata.unassigntag(
             id=answers,
             type=['QUESTION_ANSWER_BOOK' for _ in answers],
             tagid=[tag_guid for _ in answers]
         )
 
-        pinboards = [content['id'] for content in to_unarchive if content['content_type'] == 'pinboard']
+        pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
         ts.api._metadata.unassigntag(
             id=pinboards,
             type=['QUESTION_ANSWER_BOOK' for _ in pinboards],
