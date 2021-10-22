@@ -75,18 +75,31 @@ class ThoughtSpotVersionGuard:
     def __get__(self, instance, owner):
         deployment = instance.rest_api._ts.platform.deployment
         current = instance.rest_api._ts.platform.version
+        passes = True
 
         if deployment == 'software':
             required = self.software
-            r_major, r_minor, r_release = self._software_parts(self.software)
-            c_major, c_minor, c_release = self._software_parts(current)
+            req_vers = self._software_parts(self.software)
+            cur_vers = self._software_parts(current)
 
         if deployment == 'cloud':
             required = self.cloud
-            r_major, r_minor, r_release = self._cloud_parts(self.cloud)
-            c_major, c_minor, c_release = self._cloud_parts(current)
+            req_vers = self._cloud_parts(self.cloud)
+            cur_vers = self._cloud_parts(current)
 
-        if any([r_major > c_major, r_minor > c_minor, r_release > c_release]):
+        for reqd, curr in zip(req_vers, cur_vers):
+            if reqd == curr:
+                continue
+
+            if reqd > curr:
+                passes = False
+                break
+
+            if reqd < curr:
+                passes = True
+                break
+
+        if not passes:
             raise RuntimeError(
                 f'Your ThoughtSpot version ({current}) does not meet the requirement. '
                 f'({required})'
