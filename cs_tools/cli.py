@@ -289,7 +289,7 @@ def run():
         'handlers': {
             'to_file': {
                 'formatter': 'verbose',
-                'level': 'INFO',
+                'level': 'DEBUG',
                 'class': 'logging.FileHandler',
                 # RotatingFileHandler.__init__ params...
                 'filename': f'{APP_DIR}/logs/{now}.log',

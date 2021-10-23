@@ -119,7 +119,7 @@ class _RESTAPIv1:
         else:
             log.debug(f'<< HTTP: {r.status_code}')
 
-        if r.text:
-            log.debug('<< CONTENT:\n\n%s', r.text)
+        # if r.text:
+        #     log.verbose('<< CONTENT:\n\n%s', r.text)
 
         return r
