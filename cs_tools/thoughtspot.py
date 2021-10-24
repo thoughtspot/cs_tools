@@ -1,7 +1,7 @@
 from cs_tools.helpers.secrets import reveal
 
 from ._rest_api_v1 import _RESTAPIv1
-from .middlewares import SearchMiddlware
+from .middlewares import SearchMiddlware, TagMiddleware
 from ._schema import ThoughtSpotPlatform, LoggedInUser
 
 
@@ -24,7 +24,7 @@ class ThoughtSpot:
         # self.connection
         # self.worksheet
         # self.table
-        # self.tag
+        self.tag = TagMiddleware(self)
 
     @property
     def api(self) -> _RESTAPIv1:
