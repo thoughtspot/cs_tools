@@ -1,6 +1,46 @@
+from typing import Any, Callable, Optional
 from collections.abc import Iterable
 import datetime as dt
 import uuid
+
+
+def find(predicate: Callable[Any], seq: Iterable) -> Optional[Any]:
+    """
+    Return the first element in the sequence which meets the predicate.
+
+    If an entry is not found, then None is returned.
+
+    This is different from python's filter due to the fact it stops the
+    moment it finds a valid entry.
+
+    Parameters
+    -----------
+    predicate
+        a function that returns a boolean-like result
+
+    seq
+        an iterable to search through
+    """
+    for element in seq:
+        if predicate(element):
+            return element
+    return None
+
+
+def is_valid_guid(to_test: str) -> bool:
+    """
+    Determine if value is a valid UUID.
+
+    Parameters
+    ----------
+    to_test : str
+        value to test
+    """
+    try:
+        guid = uuid.UUID(to_test)
+    except ValueError:
+        return False
+    return str(guid) == to_test
 
 
 def stringified_array(iterable: Iterable) -> str:
@@ -26,22 +66,6 @@ def stringified_array(iterable: Iterable) -> str:
     string.
     """
     return '[' + ', '.join(iterable) + ']'
-
-
-def is_valid_guid(to_test: str) -> bool:
-    """
-    Determine if value is a valid UUID.
-
-    Parameters
-    ----------
-    to_test : str
-        value to test
-    """
-    try:
-        guid = uuid.UUID(to_test)
-    except ValueError:
-        return False
-    return str(guid) == to_test
 
 
 class ThoughtSpotVersionGuard:
