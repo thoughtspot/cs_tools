@@ -4,7 +4,7 @@ import datetime as dt
 import uuid
 
 
-def find(predicate: Callable[Any], seq: Iterable) -> Optional[Any]:
+def find(predicate: Callable[[Any], Any], seq: Iterable) -> Optional[Any]:
     """
     Return the first element in the sequence which meets the predicate.
 

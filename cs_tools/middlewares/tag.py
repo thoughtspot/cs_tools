@@ -10,7 +10,7 @@ from cs_tools import util
 log = logging.getLogger(__name__)
 
 
-class TagMiddlware:
+class TagMiddleware:
     """
     """
     def __init__(self, ts):

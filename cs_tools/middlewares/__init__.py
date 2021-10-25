@@ -1,1 +1,2 @@
-from .search import SearchMiddlware
+from .search import SearchMiddleware
+from .tag import TagMiddleware

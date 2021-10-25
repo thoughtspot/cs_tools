@@ -10,7 +10,7 @@ from cs_tools import util
 log = logging.getLogger(__name__)
 
 
-class SearchMiddlware:
+class SearchMiddleware:
     """
     """
     def __init__(self, ts):

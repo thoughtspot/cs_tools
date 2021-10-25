@@ -1,7 +1,7 @@
 from cs_tools.helpers.secrets import reveal
 
 from ._rest_api_v1 import _RESTAPIv1
-from .middlewares import SearchMiddlware, TagMiddleware
+from .middlewares import SearchMiddleware, TagMiddleware
 from ._schema import ThoughtSpotPlatform, LoggedInUser
 
 
@@ -15,7 +15,7 @@ class ThoughtSpot:
         # Middleware endpoints. These are logically grouped interactions within
         # ThoughtSpot so that working with the REST and GraphQL apis is simpler
         # to do.
-        self.search = SearchMiddlware(self)
+        self.search = SearchMiddleware(self)
         # self.user
         # self.group
         # self.tml
