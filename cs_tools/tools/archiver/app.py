@@ -5,7 +5,7 @@ from typer import Argument as A_, Option as O_  # noqa
 from rich.table import Table
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
+from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand, DataTable
 from cs_tools.settings import TSConfig
 from cs_tools.thoughtspot import ThoughtSpot
 
@@ -123,52 +123,30 @@ def identify(
             for _ in data if _['id'] in archive
         ]
 
-        #
-        #
-        #
-
-        table = Table(
-            *to_archive[0].keys(),
-            title=f"[green]Archive Results[/]: Tagging content with [cyan]'{tag}'[/]",
-            caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} seen)'
-        )
-        [table.add_row(*r.values()) for r in to_archive[:3]]
-        [table.add_row('...', '...', '...')]
-        [table.add_row(*r.values()) for r in to_archive[-3:]]
+        table = DataTable(
+                    to_archive,
+                    title=f"[green]Archive Results[/]: Tagging content with [cyan]'{tag}'[/]",
+                    caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} seen)'
+                )
         console.log('\n', table)
 
         if dry_run:
             raise typer.Exit(-1)
 
-        #
-        #
-        #
-
-        r = ts.api._metadata.list(type='TAG')
-        tag_exists = [_ for _ in r.json()['headers'] if _['name'].casefold() == tag.casefold()]
-
-        if not tag_exists:
-            r = ts.api._metadata.create(name=tag, type='TAG')
-            tag_guid = r.json()['header']['id']
-        else:
-            tag_guid = tag_exists[0]['id']
-
-        #
-        #
-        #
+        tag = ts.tag.get(tag, create_if_not_exists=True)
 
         answers = [content['guid'] for content in to_archive if content['content_type'] == 'answer']
         ts.api._metadata.assigntag(
             id=answers,
             type=['QUESTION_ANSWER_BOOK' for _ in answers],
-            tagid=[tag_guid for _ in answers]
+            tagid=[tag['id'] for _ in answers]
         )
 
         pinboards = [content['guid'] for content in to_archive if content['content_type'] == 'pinboard']
         ts.api._metadata.assigntag(
             id=pinboards,
             type=['PINBOARD_ANSWER_BOOK' for _ in pinboards],
-            tagid=[tag_guid for _ in pinboards]
+            tagid=[tag['id'] for _ in pinboards]
         )
 
 
@@ -204,56 +182,35 @@ def deidentify(
             for _ in r.json()['headers']
         )
 
-        #
-        #
-        #
-
         if not to_unarchive:
-            console.log(f'no content found with the tag "{tag}"')
+            console.log(f"no content found with the tag '{tag}'")
             raise typer.Exit()
 
-        table = Table(
-            *to_unarchive[0].keys(),
-            title=f"[green]Unarchive Results[/]: Untagging content with [cyan]'{tag}'[/]",
-            caption=f'Total of {len(to_unarchive)} items tagged..'
-        )
-        [table.add_row(*r.values()) for r in to_unarchive[:3]]
-        [table.add_row('...', '...', '...')]
-        [table.add_row(*r.values()) for r in to_unarchive[-3:]]
+        table = DataTable(
+                    to_unarchive,
+                    title=f"[green]Unarchive Results[/]: Untagging content with [cyan]'{tag}'[/]",
+                    caption=f'Total of {len(to_unarchive)} items tagged..'
+                )
+
         console.log('\n', table)
 
         if dry_run:
             raise typer.Exit()
 
-        #
-        #
-        #
-
-        r = ts.api._metadata.list(type='TAG')
-        tag_exists = [_ for _ in r.json()['headers'] if _['name'].casefold() == tag.casefold()]
-
-        if not tag_exists:
-            r = ts.api._metadata.create(name=tag, type='TAG')
-            tag_guid = r.json()['header']['id']
-        else:
-            tag_guid = tag_exists[0]['id']
-
-        #
-        #
-        #
+        tag = ts.tag.get(tag)
 
         answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
         ts.api._metadata.unassigntag(
             id=answers,
             type=['QUESTION_ANSWER_BOOK' for _ in answers],
-            tagid=[tag_guid for _ in answers]
+            tagid=[tag['id'] for _ in answers]
         )
 
         pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
         ts.api._metadata.unassigntag(
             id=pinboards,
             type=['QUESTION_ANSWER_BOOK' for _ in pinboards],
-            tagid=[tag_guid for _ in pinboards]
+            tagid=[tag['id'] for _ in pinboards]
         )
 
 
@@ -279,5 +236,48 @@ def remove(
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
     with ThoughtSpot(cfg) as ts:
-        console.error('This command has yet to be implemented.')
-        raise typer.Exit(-1)
+        to_unarchive = []
+
+        r = ts.api._metadata.list(type='QUESTION_ANSWER_BOOK', tagname=[tag])
+        to_unarchive.extend(
+            {'content_type': 'answer', 'guid': _['id'], 'name': _['name']}
+            for _ in r.json()['headers']
+        )
+
+        r = ts.api._metadata.list(type='PINBOARD_ANSWER_BOOK', tagname=[tag])
+        to_unarchive.extend(
+            {'content_type': 'pinboard', 'guid': _['id'], 'name': _['name']}
+            for _ in r.json()['headers']
+        )
+
+        if not to_unarchive:
+            console.log(f"no content found with the tag '{tag}'")
+            raise typer.Exit()
+
+        _mod = '' if export is None else ' and exporting '
+        table = DataTable(
+                    to_unarchive,
+                    title=f"[green]Remove Results[/]: Removing{_mod} content with [cyan]'{tag}'[/]",
+                    caption=f'Total of {len(to_unarchive)} items tagged..'
+                )
+        console.log('\n', table)
+
+        if dry_run:
+            raise typer.Exit()
+
+        tag = ts.tag.get(tag)
+        answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
+        pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
+
+        if export is not None:
+            r = ts.api._metadata.edoc_export_epack(request={
+                    'object': [
+                        *[{'id': id, 'type': 'QUESTION_ANSWER_BOOK'} for id in answers],
+                        *[{'id': id, 'type': 'PINBOARD_ANSWER_BOOK'} for id in pinboards]
+                    ],
+                    'export_dependencies': False
+                })
+            raise NotImplementedError(r)
+
+        ts.api._metadata.delete(id=answers, type=['QUESTION_ANSWER_BOOK' for _ in answers])
+        ts.api._metadata.delete(id=pinboards, type=['PINBOARD_ANSWER_BOOK' for _ in pinboards])
