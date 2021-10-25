@@ -1,9 +1,10 @@
 from inspect import Signature, Parameter
-from typing import Optional, Callable, List
+from typing import Any, Callable, Dict, List, Optional
 import re
 
 from click.exceptions import UsageError
 from rich.console import Console
+from rich.table import Table
 from click.core import iter_params_for_processing
 from click import Parameter as Parameter_, Option, Context, HelpFormatter
 from typer import Argument as A_, Option as O_
@@ -13,6 +14,34 @@ import click
 from cs_tools.helpers.loader import CSTool
 from cs_tools.const import CONSOLE_THEME, PACKAGE_DIR
 from cs_tools import __version__
+
+
+class DataTable(Table):
+    """
+    Extends rich's CLI-pretty Table.
+
+    Feed DataTable data, and we'll render it prettily.
+    """
+    def __init__(
+        self,
+        data: List[Dict[str, Any]],
+        limit: int = 6,
+        **table_kw
+    ):
+        super().__init__(*data[0].keys(), **table_kw)
+        self.data = data
+        self.limit = limit
+
+        if len(self.data) > self.limit:
+            top  = self.data[: self.limit // 2]
+            mid  = [{_: '...' for _ in self.data[0]}]
+            bot  = self.data[-1 * self.limit // 2:]
+            data = [*top, *mid, *bot]
+        else:
+            data = self.data
+
+        for row in data:
+            self.add_row(*row.values())
 
 
 # NOTE:
