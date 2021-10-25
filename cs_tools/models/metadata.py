@@ -23,6 +23,47 @@ class _Metadata:
         self.rest_api = rest_api
 
     @validate_arguments
+    def edoc_type_id(
+        self,
+        id: GUID,
+        type: str=MetadataObject.logical_table,
+        formattype: str='YAML'
+    ) -> httpx.Response:
+        """
+        Returns EDoc representation of metadata object.
+        """
+        r = self.rest_api.request(
+                'GET',
+                f'metadata/edoc/{type.value}/{id}',
+                privacy='private',
+                params={'formattype': formattype}
+            )
+        return r
+
+    @validate_arguments
+    def edoc_export_epack(self, request: Dict[str, Any]) -> httpx.Response:
+        """
+        Export a list of objects as edocs packaged in a zip file.
+
+        request looks like:
+
+        {
+            "object": [
+                {"id": "0291f1cd-5f8e-4d96-80e2-e5ef1aa6c44f", "type":"QUESTION_ANSWER_BOOK"},
+                {"id": "4bcaadb4-031a-4afd-b159-2c0c0f194c42", "type":"PINBOARD_ANSWER_BOOK"}
+            ],
+            "export_dependencies": false
+        }
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/edoc/exportEPack',
+                privacy='private',
+                data={'request': request}
+            )
+        return r
+
+    @validate_arguments
     def assigntag(
         self,
         id: List[GUID],
@@ -134,7 +175,10 @@ class _Metadata:
                     'sortascending': sortascending,
                     'offset': offset,
                     'batchsize': batchsize,
-                    'tagname': stringified_array([_ for _ in tagname or ()]),
+                    # NOTE: This is an API error.. sooooo spaces in query parameters
+                    # should really be sanitized as + instead of %20, but our API
+                    # accepts only %20.
+                    'tagname': stringified_array([_.replace(' ', '%20') for _ in tagname or ()]),
                     'pattern': pattern,
                     'skipids': stringified_array([_ for _ in skipids or ()]),
                     'fetchids': stringified_array([_ for _ in fetchids or ()]),
