@@ -1,6 +1,8 @@
 from typing import Any, Callable, Optional
 from collections.abc import Iterable
 import datetime as dt
+import pathlib
+import base64
 import uuid
 
 
@@ -66,6 +68,22 @@ def stringified_array(iterable: Iterable) -> str:
     string.
     """
     return '[' + ', '.join(iterable) + ']'
+
+
+def base64_to_file(string: str, *, filepath: pathlib.Path) -> None:
+    """
+    Write a base64-encoded string to file.
+
+    Parameters
+    ----------
+    string : str
+      base64-encoded data
+
+    filepath : pathlib.Path
+      where to write the data encoded in string
+    """
+    with pathlib.Path(filepath).open(mode='wb') as file:
+        file.write(base64.b64decode(string))
 
 
 class ThoughtSpotVersionGuard:
