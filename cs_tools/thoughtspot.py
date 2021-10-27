@@ -1,7 +1,9 @@
 from cs_tools.helpers.secrets import reveal
 
 from ._rest_api_v1 import _RESTAPIv1
-from .middlewares import SearchMiddleware, TagMiddleware
+from .middlewares import (
+    AnswerMiddleware, PinboardMiddleware, SearchMiddleware, TagMiddleware
+)
 from ._schema import ThoughtSpotPlatform, LoggedInUser
 
 
@@ -19,8 +21,8 @@ class ThoughtSpot:
         # self.user
         # self.group
         # self.tml
-        # self.pinboard
-        # self.answer
+        self.pinboard = PinboardMiddleware(self)
+        self.answer = AnswerMiddleware(self)
         # self.connection
         # self.worksheet
         # self.table
