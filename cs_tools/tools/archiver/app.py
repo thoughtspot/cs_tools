@@ -7,6 +7,7 @@ import typer
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand, DataTable
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
+from cs_tools import util
 
 
 class ContentType(enum.Enum):
@@ -214,7 +215,7 @@ def deidentify(
 @frontend
 def remove(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
-    export: pathlib.Path=O_(None, help='directory to export tagged objects, as TML'),
+    export_tml: pathlib.Path=O_(None, help='file path to export tagged objects, as zipfile'),
     remove_tag: bool=O_(
         False,
         '--remove-tag',
@@ -237,6 +238,10 @@ def remove(
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
+    if export_tml is not None and not export_tml.as_posix().endswith('zip'):
+        console.print(f"[b red]TML export path must be a zip file! Got, '{export_tml}'")
+        raise typer.Exit(-1)
+
     with ThoughtSpot(cfg) as ts:
         to_unarchive = []
 
@@ -254,7 +259,7 @@ def remove(
             console.log(f"no content found with the tag '{tag}'")
             raise typer.Exit()
 
-        _mod = '' if export is None else ' and exporting '
+        _mod = '' if export_tml is None else ' and exporting '
         table = DataTable(
                     to_unarchive,
                     title=f"[green]Remove Results[/]: Removing{_mod} content with [cyan]'{tag}'[/]",
@@ -269,15 +274,18 @@ def remove(
         answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
         pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
 
-        if export is not None:
-            r = ts.api._metadata.edoc_export_epack(request={
-                    'object': [
-                        *[{'id': id, 'type': 'QUESTION_ANSWER_BOOK'} for id in answers],
-                        *[{'id': id, 'type': 'PINBOARD_ANSWER_BOOK'} for id in pinboards]
-                    ],
-                    'export_dependencies': False
-                })
-            raise NotImplementedError(r)
+        if export_tml is not None:
+            r = ts.api._metadata.edoc_export_epack(
+                    request={
+                        'object': [
+                            *[{'id': id, 'type': 'QUESTION_ANSWER_BOOK'} for id in answers],
+                            *[{'id': id, 'type': 'PINBOARD_ANSWER_BOOK'} for id in pinboards]
+                        ],
+                        'export_dependencies': False
+                    }
+                )
+
+            util.base64_to_file(r.json()['zip_file'], filepath=export_tml)
 
         ts.api._metadata.delete(id=answers, type=['QUESTION_ANSWER_BOOK' for _ in answers])
         ts.api._metadata.delete(id=pinboards, type=['PINBOARD_ANSWER_BOOK' for _ in pinboards])
