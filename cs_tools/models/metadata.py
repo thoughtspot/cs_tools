@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+import json
 
 from pydantic import validate_arguments
 import httpx
@@ -59,7 +60,7 @@ class _Metadata:
                 'POST',
                 'metadata/edoc/exportEPack',
                 privacy='private',
-                data={'request': request}
+                data={'request': json.dumps(request)}
             )
         return r
 

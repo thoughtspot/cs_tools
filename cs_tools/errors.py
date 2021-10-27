@@ -23,7 +23,7 @@ class ContentDoesNotExist(CSToolsException):
         Exception reason.
         """
         if self.reason is not None:
-            return f'No '{self.type}' found for {self.reason}'
+            return f"No '{self.type}' found for {self.reason}"
 
         if self.guid is not None:
             return f"No '{self.type}' found with guid '{self.guid}'"
