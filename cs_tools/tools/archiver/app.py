@@ -2,12 +2,11 @@ import pathlib
 import enum
 
 from typer import Argument as A_, Option as O_  # noqa
-from rich.table import Table
 import typer
 
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand, DataTable
-from cs_tools.settings import TSConfig
 from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools.settings import TSConfig
 
 
 class ContentType(enum.Enum):
@@ -97,20 +96,10 @@ def identify(
         data = []
 
         if content.value in ('all', 'answer'):
-            r = ts.api._metadata.list(type='QUESTION_ANSWER_BOOK', showhidden=False, auto_created=False)
-            data.extend(
-                {'content_type': 'answer', **_}
-                for _ in r.json()['headers']
-                if _['authorName'] not in ('tsadmin', 'system')
-            )
+            data.extend({**a, 'content_type': 'answer'} for a in ts.answer.all())
 
         if content.value in ('all', 'pinboard'):
-            r = ts.api._metadata.list(type='PINBOARD_ANSWER_BOOK', showhidden=False, auto_created=False)
-            data.extend(
-                {'content_type': 'pinboard', **_}
-                for _ in r.json()['headers']
-                if _['authorName'] not in ('tsadmin', 'system')
-            )
+            data.extend({**p, 'content_type': 'pinboard'} for p in ts.pinboard.all())
 
         #
         #
@@ -154,6 +143,12 @@ def identify(
 @frontend
 def deidentify(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
+    remove_tag: bool=O_(
+        False,
+        '--remove-tag',
+        show_default=False,
+        help='remove the tag after untagging identified objects'
+    ),
     dry_run: bool=O_(
         False,
         '--dry-run',
@@ -170,16 +165,14 @@ def deidentify(
     with ThoughtSpot(cfg) as ts:
         to_unarchive = []
 
-        r = ts.api._metadata.list(type='QUESTION_ANSWER_BOOK', tagname=[tag])
         to_unarchive.extend(
-            {'content_type': 'answer', 'guid': _['id'], 'name': _['name']}
-            for _ in r.json()['headers']
+            {'content_type': 'answer', 'guid': a['id'], 'name': a['name']}
+            for a in ts.answer.all(tags=tag)
         )
 
-        r = ts.api._metadata.list(type='PINBOARD_ANSWER_BOOK', tagname=[tag])
         to_unarchive.extend(
-            {'content_type': 'pinboard', 'guid': _['id'], 'name': _['name']}
-            for _ in r.json()['headers']
+            {'content_type': 'pinboard', 'guid': p['id'], 'name': p['name']}
+            for p in ts.pinboard.all(tags=tag)
         )
 
         if not to_unarchive:
@@ -213,12 +206,21 @@ def deidentify(
             tagid=[tag['id'] for _ in pinboards]
         )
 
+        if remove_tag:
+            ts.tag.delete(tag['name'])
+
 
 @app.command(cls=RichCommand)
 @frontend
 def remove(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
     export: pathlib.Path=O_(None, help='directory to export tagged objects, as TML'),
+    remove_tag: bool=O_(
+        False,
+        '--remove-tag',
+        show_default=False,
+        help='remove the tag after deleting identified objects'
+    ),
     dry_run: bool=O_(
         False,
         '--dry-run',
@@ -238,16 +240,14 @@ def remove(
     with ThoughtSpot(cfg) as ts:
         to_unarchive = []
 
-        r = ts.api._metadata.list(type='QUESTION_ANSWER_BOOK', tagname=[tag])
         to_unarchive.extend(
-            {'content_type': 'answer', 'guid': _['id'], 'name': _['name']}
-            for _ in r.json()['headers']
+            {'content_type': 'answer', 'guid': a['id'], 'name': a['name']}
+            for a in ts.answer.all(tags=tag)
         )
 
-        r = ts.api._metadata.list(type='PINBOARD_ANSWER_BOOK', tagname=[tag])
         to_unarchive.extend(
-            {'content_type': 'pinboard', 'guid': _['id'], 'name': _['name']}
-            for _ in r.json()['headers']
+            {'content_type': 'pinboard', 'guid': p['id'], 'name': p['name']}
+            for p in ts.pinboard.all(tags=tag)
         )
 
         if not to_unarchive:
@@ -281,3 +281,6 @@ def remove(
 
         ts.api._metadata.delete(id=answers, type=['QUESTION_ANSWER_BOOK' for _ in answers])
         ts.api._metadata.delete(id=pinboards, type=['PINBOARD_ANSWER_BOOK' for _ in pinboards])
+
+        if remove_tag:
+            ts.tag.delete(tag['name'])
