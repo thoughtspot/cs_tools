@@ -38,6 +38,8 @@ class User:
                 params={
                     'fromUserName': fromUserName,
                     'toUserName': toUserName,
+                    # technically not available until ts7.sep.cl-109 or greater, but
+                    # query parameters don't usually cause 4xx or 5xx errors
                     'objectsID': stringified_array(objectsID or ())
                 }
             )
