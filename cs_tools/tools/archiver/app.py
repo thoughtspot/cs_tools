@@ -40,9 +40,6 @@ app = typer.Typer(
     help="""
     Manage stale answers and pinboards within your platform.
 
-    [b][yellow]This tool is still in active development![/b] Tool and command
-    names are not final and some or all commands may not yet be implemented.[/]
-
     As your platform grows, users will create and use answers and pinboards.
     Sometimes, users will create content for temporary exploratory purpopses
     and then abandon it for newer pursuits. Archiver enables you to identify,
@@ -66,7 +63,14 @@ def identify(
         False,
         '--dry-run',
         show_default=False,
-        help='test selection criteria, do not apply tags and instead output information on content to be archived'
+        help='test selection criteria, do not apply tags and instead output '
+             'information to console on content to be archived'
+    ),
+    no_prompt: bool=O_(
+        False,
+        '--no-prompt',
+        show_default=False,
+        help='disable the confirmation prompt'
     ),
     **frontend_kw
 ):
@@ -102,10 +106,6 @@ def identify(
         if content.value in ('all', 'pinboard'):
             data.extend({**p, 'content_type': 'pinboard'} for p in ts.pinboard.all())
 
-        #
-        #
-        #
-
         archive = set(_['id'] for _ in data) - usage
 
         to_archive = [
@@ -116,7 +116,7 @@ def identify(
         table = DataTable(
                     to_archive,
                     title=f"[green]Archive Results[/]: Tagging content with [cyan]'{tag}'[/]",
-                    caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} seen)'
+                    caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} in platform)'
                 )
         console.log('\n', table)
 
@@ -126,13 +126,21 @@ def identify(
         tag = ts.tag.get(tag, create_if_not_exists=True)
 
         answers = [content['guid'] for content in to_archive if content['content_type'] == 'answer']
+        pinboards = [content['guid'] for content in to_archive if content['content_type'] == 'pinboard']
+
+        # PROMPT FOR INPUT
+        if not no_prompt:
+            typer.confirm(
+                f'Would you like to continue with tagging {len(to_archive)} objects?',
+                abort=True
+            )
+
         ts.api._metadata.assigntag(
             id=answers,
             type=['QUESTION_ANSWER_BOOK' for _ in answers],
             tagid=[tag['id'] for _ in answers]
         )
 
-        pinboards = [content['guid'] for content in to_archive if content['content_type'] == 'pinboard']
         ts.api._metadata.assigntag(
             id=pinboards,
             type=['PINBOARD_ANSWER_BOOK' for _ in pinboards],
@@ -142,19 +150,26 @@ def identify(
 
 @app.command(cls=RichCommand)
 @frontend
-def deidentify(
+def revert(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
-    remove_tag: bool=O_(
+    delete_tag: bool=O_(
         False,
-        '--remove-tag',
+        '--delete-tag',
         show_default=False,
-        help='remove the tag after untagging identified objects'
+        help='remove the tag itself, after untagging identified objects'
     ),
     dry_run: bool=O_(
         False,
         '--dry-run',
         show_default=False,
-        help='test selection criteria, do not remove tags and instead output information on content to be unarchived'
+        help='test selection criteria, do not remove tags and instead output '
+             'information on content to be unarchived'
+    ),
+    no_prompt: bool=O_(
+        False,
+        '--no-prompt',
+        show_default=False,
+        help='disable the confirmation prompt'
     ),
     **frontend_kw
 ):
@@ -194,20 +209,28 @@ def deidentify(
         tag = ts.tag.get(tag)
 
         answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
+        pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
+
+        # PROMPT FOR INPUT
+        if not no_prompt:
+            typer.confirm(
+                f'Would you like to continue with untagging {len([*answers, *pinboards])} objects?',
+                abort=True
+            )
+
         ts.api._metadata.unassigntag(
             id=answers,
             type=['QUESTION_ANSWER_BOOK' for _ in answers],
             tagid=[tag['id'] for _ in answers]
         )
 
-        pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
         ts.api._metadata.unassigntag(
             id=pinboards,
             type=['QUESTION_ANSWER_BOOK' for _ in pinboards],
             tagid=[tag['id'] for _ in pinboards]
         )
 
-        if remove_tag:
+        if delete_tag:
             ts.tag.delete(tag['name'])
 
 
@@ -215,12 +238,18 @@ def deidentify(
 @frontend
 def remove(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
-    export_tml: pathlib.Path=O_(None, help='file path to export tagged objects, as zipfile'),
-    remove_tag: bool=O_(
+    export_tml: pathlib.Path=O_(None, help='if set, file path to export tagged objects, as zipfile'),
+    delete_tag: bool=O_(
         False,
-        '--remove-tag',
+        '--delete-tag',
         show_default=False,
         help='remove the tag after deleting identified objects'
+    ),
+    export_only: bool=O_(
+        False,
+        '--export-only',
+        show_default=False,
+        help='export all tagged content, but do not remove it from that platform'
     ),
     dry_run: bool=O_(
         False,
@@ -228,8 +257,14 @@ def remove(
         show_default=False,
         help=(
             'test selection criteria, does not export/delete content and instead '
-            'output information on content to be unarchived'
+            'output information to console on content to be unarchived'
         )
+    ),
+    no_prompt: bool=O_(
+        False,
+        '--no-prompt',
+        show_default=False,
+        help='disable the confirmation prompt'
     ),
     **frontend_kw
 ):
@@ -274,6 +309,13 @@ def remove(
         answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
         pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
 
+        # PROMPT FOR INPUT
+        if not no_prompt:
+            typer.confirm(
+                f'Would you like to continue with removing {len([*answers, *pinboards])} objects?',
+                abort=True
+            )
+
         if export_tml is not None:
             r = ts.api._metadata.edoc_export_epack(
                     request={
@@ -287,8 +329,11 @@ def remove(
 
             util.base64_to_file(r.json()['zip_file'], filepath=export_tml)
 
+            if export_only:
+                raise typer.Exit()
+
         ts.api._metadata.delete(id=answers, type=['QUESTION_ANSWER_BOOK' for _ in answers])
         ts.api._metadata.delete(id=pinboards, type=['PINBOARD_ANSWER_BOOK' for _ in pinboards])
 
-        if remove_tag:
+        if delete_tag:
             ts.tag.delete(tag['name'])
