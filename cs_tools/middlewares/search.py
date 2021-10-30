@@ -45,6 +45,7 @@ class SearchMiddleware:
         Further reading:
           https://docs.thoughtspot.com/software/latest/search-data-api
           https://docs.thoughtspot.com/software/latest/search-data-api#components
+          https://docs.thoughtspot.com/software/latest/search-data-api#_limitations_of_search_query_api
 
         Parameters
         ----------

@@ -26,7 +26,7 @@ class User:
         self,
         fromUserName: str,
         toUserName: str,
-        objectsID: List[GUID]
+        objectsID: List[GUID] = None
     ) -> httpx.Response:
         """
         Transfer ownership of all objects from one user to another.

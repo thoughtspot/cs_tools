@@ -1,5 +1,6 @@
 from inspect import Signature, Parameter
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
+import itertools as it
 import re
 
 from click.exceptions import UsageError
@@ -569,3 +570,18 @@ class RichGroup(click.Group):
             ctx.protected_args, ctx.args = rest[:1], rest[1:]
 
         return ctx.args
+
+
+def _csv(ctx: Context, param: Parameter_, value: Tuple[str]) -> List[str]:
+    """
+    Convert arguments to a list of strings.
+
+    Arguments can be supplied on the CLI like..
+
+      --tables table1,table2 --tables table3
+
+    ..and will output as a flattened list of strings.
+
+      ['table1', 'table2', 'table3']
+    """
+    return list(it.chain.from_iterable([v.split(',') for v in value]))

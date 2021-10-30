@@ -4,7 +4,10 @@ import enum
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand, DataTable
+from cs_tools.helpers.cli_ux import (
+    # _csv,
+    console, frontend, RichGroup, RichCommand, DataTable
+)
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
 from cs_tools import util
@@ -25,7 +28,9 @@ class UserActions(enum.Enum):
     @classmethod
     def strigified(cls, sep: str=' ', context: str=None) -> str:
         mapper = {
-            'answer': ['ANSWER_VIEW'],
+            'answer': [
+                'ANSWER_VIEW'
+            ],
             'pinboard': [
                 'PINBOARD_VIEW',
                 'PINBOARD_TSPUBLIC_RUNTIME_FILTER',
@@ -59,6 +64,13 @@ def identify(
         show_default=False,
         help='months to consider for user activity (default: all user history)'
     ),
+    # TODO?
+    #
+    # ignore_tags: List[str]=O_(
+    #     None,
+    #     callback=_csv,
+    #     help='content with these tags will be ignored',
+    # ),
     dry_run: bool=O_(
         False,
         '--dry-run',
@@ -81,18 +93,22 @@ def identify(
     the platform. If a user views, edits, or creates an Answer or Pinboard, ThoughtSpot
     knows about it. This can be used as a proxy to understanding what content is
     actively being used.
+
+    \f
+    Need to document: identify, user removes tag, identify .. bad practice / implications
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
     actions = UserActions.strigified(sep="', '", context=content)
 
     with ThoughtSpot(cfg) as ts:
-        data = ts.search(
-            f"[user action] = '{actions}' "
-            f"[timestamp].'last {usage_months} months' "
-            f"[timestamp].'this month' "
-            f"[answer book guid]",
-            worksheet='TS: BI Server'
-        )
+        with console.status('[bold green]retrieving objects usage..[/]'):
+            data = ts.search(
+                f"[user action] = '{actions}' "
+                f"[timestamp].'last {usage_months} months' "
+                r"[timestamp].'this month' "
+                r"[answer book guid]",
+                worksheet='TS: BI Server'
+            )
 
         # Currently used GUIDs (within the past {months} months ...)
         usage = set(_['Answer Book GUID'] for _ in data)
@@ -101,15 +117,26 @@ def identify(
         data = []
 
         if content.value in ('all', 'answer'):
-            data.extend({**a, 'content_type': 'answer'} for a in ts.answer.all())
+            with console.status('[bold green]retrieving existing answers..[/]'):
+                data.extend({**a, 'content_type': 'answer'} for a in ts.answer.all())
 
         if content.value in ('all', 'pinboard'):
-            data.extend({**p, 'content_type': 'pinboard'} for p in ts.pinboard.all())
+            with console.status('[bold green]retrieving existing pinboards..[/]'):
+                data.extend({**p, 'content_type': 'pinboard'} for p in ts.pinboard.all())
 
         archive = set(_['id'] for _ in data) - usage
 
         to_archive = [
-            {'content_type': _['content_type'], 'guid': _['id'], 'name': _['name']}
+            {
+                'content_type': _['content_type'],
+                'guid': _['id'],
+                'name': _['name'],
+                'last_modified': util.to_datetime(
+                                    _['modified'],
+                                    tz=ts.platform.timezone,
+                                    friendly=True
+                                 )
+            }
             for _ in data if _['id'] in archive
         ]
 
@@ -182,12 +209,30 @@ def revert(
         to_unarchive = []
 
         to_unarchive.extend(
-            {'content_type': 'answer', 'guid': a['id'], 'name': a['name']}
+            {
+                'content_type': 'answer',
+                'guid': a['id'],
+                'name': a['name'],
+                'last_modified': util.to_datetime(
+                                    a['modified'],
+                                    tz=ts.platform.timezone,
+                                    friendly=True
+                                 )
+            }
             for a in ts.answer.all(tags=tag)
         )
 
         to_unarchive.extend(
-            {'content_type': 'pinboard', 'guid': p['id'], 'name': p['name']}
+            {
+                'content_type': 'pinboard',
+                'guid': p['id'],
+                'name': p['name'],
+                'last_modified': util.to_datetime(
+                                    p['modified'],
+                                    tz=ts.platform.timezone,
+                                    friendly=True
+                                 )
+            }
             for p in ts.pinboard.all(tags=tag)
         )
 
@@ -281,12 +326,30 @@ def remove(
         to_unarchive = []
 
         to_unarchive.extend(
-            {'content_type': 'answer', 'guid': a['id'], 'name': a['name']}
+            {
+                'content_type': 'answer',
+                'guid': a['id'],
+                'name': a['name'],
+                'last_modified': util.to_datetime(
+                                    a['modified'],
+                                    tz=ts.platform.timezone,
+                                    friendly=True
+                                 )
+            }
             for a in ts.answer.all(tags=tag)
         )
 
         to_unarchive.extend(
-            {'content_type': 'pinboard', 'guid': p['id'], 'name': p['name']}
+            {
+                'content_type': 'pinboard',
+                'guid': p['id'],
+                'name': p['name'],
+                'last_modified': util.to_datetime(
+                                    p['modified'],
+                                    tz=ts.platform.timezone,
+                                    friendly=True
+                                 )
+            }
             for p in ts.pinboard.all(tags=tag)
         )
 

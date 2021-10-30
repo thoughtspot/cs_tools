@@ -9,9 +9,9 @@ import typer
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.tools import common
 
 

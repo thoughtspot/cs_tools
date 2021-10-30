@@ -10,9 +10,9 @@ from openpyxl import load_workbook
 import typer
 
 from cs_tools.helpers.cli_ux import RichGroup, RichCommand, frontend, console
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.util.algo import chunks
 from cs_tools.settings import TSConfig
-from cs_tools.thoughtspot import ThoughtSpot
 
 
 log = logging.getLogger(__name__)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from pydantic.dataclasses import dataclass
 
@@ -43,7 +43,8 @@ class LoggedInUser:
     name: str
     display_name: str
     email: str
-    privileges: List[Privilege]
+    # Sometimes we get weird NULL privilege in data.. so we'll just accept some others
+    privileges: List[Union[Privilege, str, int]]
 
     @classmethod
     def from_session_info(cls, info: Dict[str, Any]):
