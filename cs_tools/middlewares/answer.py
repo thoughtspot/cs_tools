@@ -19,9 +19,11 @@ class AnswerMiddleware:
     @validate_arguments
     def all(
         self,
+        *,
         tags: Union[str, List[str]] = None,
         category: MetadataCategory = MetadataCategory.all,
-        exclude_system_content: bool = True
+        exclude_system_content: bool = True,
+        chunksize: int = 500
     ) -> List[Dict[str, Any]]:
         """
         Get all answers in ThoughtSpot.
@@ -53,7 +55,7 @@ class AnswerMiddleware:
                     type='QUESTION_ANSWER_BOOK',
                     category=category,
                     tagname=tags,
-                    batchsize=50,
+                    batchsize=chunksize,
                     offset=offset
                 )
 

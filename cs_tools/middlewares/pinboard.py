@@ -19,9 +19,11 @@ class PinboardMiddleware:
     @validate_arguments
     def all(
         self,
+        *,
         tags: Union[str, List[str]] = None,
         category: MetadataCategory = MetadataCategory.all,
-        exclude_system_content: bool = True
+        exclude_system_content: bool = True,
+        chunksize: int = 500
     ) -> List[Dict[str, Any]]:
         """
         Get all pinboards in ThoughtSpot.
@@ -53,7 +55,7 @@ class PinboardMiddleware:
                     type='PINBOARD_ANSWER_BOOK',
                     category=category,
                     tagname=tags,
-                    batchsize=50,
+                    batchsize=chunksize,
                     offset=offset
                 )
 
