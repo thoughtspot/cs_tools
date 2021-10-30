@@ -1,9 +1,58 @@
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 from collections.abc import Iterable
 import datetime as dt
 import pathlib
 import base64
 import uuid
+
+import pendulum
+
+
+def to_datetime(
+    epoch: Union[int, dt.datetime, str],
+    *,
+    tz: str='UTC',
+    friendly: bool=False,
+    format: str=None
+) -> Union[dt.timedelta, str]:
+    """
+    Convert a nominal value to a datetime.
+
+    Parameters
+    ----------
+    epoch : int or datetime or str
+      the "when" to convert
+
+    tz : str, default 'UTC'
+      timezone of the datetime
+
+    friendly : bool, default False
+      human readable text of the datetime
+
+    format : str , default None
+      strftime format to apply to resulting datetime
+
+    Returns
+    -------
+    when : timedelta or str
+    """
+    if isinstance(epoch, int):
+        parse = pendulum.from_timestamp
+        epoch = epoch / 1000.0
+    elif isinstance(epoch, dt.datetime):
+        parse = pendulum.datetime
+    elif isinstance(epoch, str):
+        parse = pendulum.parse
+
+    when = parse(epoch, tz)
+
+    if friendly:
+        return when.diff_for_humans()
+
+    if format:
+        return when.strftime(format)
+
+    return when
 
 
 def find(predicate: Callable[[Any], Any], seq: Iterable) -> Optional[Any]:
@@ -159,9 +208,15 @@ class ThoughtSpotVersionGuard:
                 break
 
         if not passes:
+            if required is None:
+                raise RuntimeError(
+                    f'The feature you are trying to access does not exist on your '
+                    f'{deployment} deployment!'
+                )
+
             raise RuntimeError(
                 f'Your ThoughtSpot version ({current}) does not meet the requirement. '
-                f'({required})'
+                f'({required or "NOT APPLICABLE"})'
             )
 
         self.instance = instance
