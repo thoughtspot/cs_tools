@@ -1,8 +1,12 @@
 from typing import Any, Dict, List, Union
+import logging
 
 from pydantic.dataclasses import dataclass
 
 from ._enums import Privilege
+
+
+log = logging.getLogger(__name__)
 
 
 @dataclass

@@ -1,10 +1,14 @@
-from cs_tools.helpers.secrets import reveal
+import logging
 
+from .helpers.secrets import reveal
 from ._rest_api_v1 import _RESTAPIv1
 from .middlewares import (
     AnswerMiddleware, PinboardMiddleware, SearchMiddleware, TagMiddleware
 )
 from ._schema import ThoughtSpotPlatform, LoggedInUser
+
+
+log = logging.getLogger(__name__)
 
 
 class ThoughtSpot:
@@ -74,6 +78,9 @@ class ThoughtSpot:
 
         self._logged_in_user = LoggedInUser.from_session_info(r.json())
         self._this_platform = ThoughtSpotPlatform.from_session_info(r.json())
+
+        log.debug(f'Platform information:\n{self._this_platform}')
+        log.debug(f'Logged in as:\n{self._logged_in_user}')
 
     def logout(self) -> None:
         """

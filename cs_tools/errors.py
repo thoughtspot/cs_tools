@@ -16,6 +16,7 @@ class ContentDoesNotExist(CSToolsException):
         self.guid = guid
         self.name = name
         self.reason = reason
+        super().__init__(self.message)
 
     @property
     def message(self) -> str:
@@ -23,13 +24,13 @@ class ContentDoesNotExist(CSToolsException):
         Exception reason.
         """
         if self.reason is not None:
-            return f"No '{self.type}' found for {self.reason}"
+            return f"No {self.type} found for {self.reason}"
 
         if self.guid is not None:
-            return f"No '{self.type}' found with guid '{self.guid}'"
+            return f"No {self.type} found with guid '{self.guid}'"
 
         if self.name is not None:
-            return f"No '{self.type}' found with name '{self.guid}'"
+            return f"No {self.type} found with name '{self.name}'"
 
 
 class AmbiguousContentError(CSToolsException):
@@ -39,6 +40,7 @@ class AmbiguousContentError(CSToolsException):
     def __init__(self, name: str, type: str = None):
         self.name = name
         self.type = type
+        super().__init__(self.message)
 
     @property
     def message(self) -> str:
@@ -51,12 +53,6 @@ class AmbiguousContentError(CSToolsException):
             objects = 'objects'
 
         return f"Multiple {objects} found with name '{self.name}'"
-
-        if self.guid is not None:
-            return f"No {self.type} found with guid '{self.guid}'"
-
-        if self.name is not None:
-            return f"No {self.type} found with name '{self.guid}'"
 
 
 class AuthenticationError(Exception):
