@@ -22,12 +22,14 @@ app = typer.Typer(
 def transfer(
     from_: str=A_(..., metavar='FROM', help='username of the current content owner'),
     to_: str=A_(..., metavar='TO', help='username to transfer content to'),
-    tag: List[str]=O_(None, callback=_csv, help='if specified, only move content marked with these tags'),
+    tag: List[str]=O_(None, callback=_csv, help='if specified, only move content marked with one or more of these tags'),
     guids: List[str]=O_(None, callback=_csv, help='if specified, only move specific objects'),
     **frontend_kw
 ):
     """
     Transfer ownership of all objects from one user to another.
+
+    Tags and GUIDs constraints are applied in OR fashion.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
@@ -41,7 +43,7 @@ def transfer(
             r = ts.api._metadata.listas(type='USER', principalid=r.json()['headers'][0]['id'])
 
             if tag is not None:
-                ids.update([_ for _ in r.json()['headers'] if _['tag'] in tag])
+                ids.update([_ for _ in r.json()['headers'] if set(_['tags']).intersection(set(tag))])
 
             if guids is not None:
                 ids.update([_ for _ in r.json()['headers'] if _['id'] in guids])
