@@ -121,7 +121,7 @@ class _RESTAPIv1:
         else:
             log.debug(f'<< HTTP: {r.status_code}')
 
-        if r.text:
+        if r.text and self._config.verbose:
             log.debug('<< CONTENT:\n\n%s', r.text)
 
         return r

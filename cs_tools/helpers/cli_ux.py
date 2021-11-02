@@ -97,11 +97,33 @@ def frontend(f: Callable) -> Callable:
         },
         'disable_ssl': {
             'type': bool,
-            'arg': O_(None, '--disable_ssl', help='~! disable SSL verification', hidden=True)
+            'arg': O_(
+                None,
+                '--disable_ssl',
+                help='~! disable SSL verification',
+                hidden=True,
+                show_default=False
+            )
         },
         'disable_sso': {
             'type': bool,
-            'arg': O_(None, '--disable_sso', help='~! disable automatic SAML redirect', hidden=True)
+            'arg': O_(
+                None,
+                '--disable_sso',
+                help='~! disable automatic SAML redirect',
+                hidden=True,
+                show_default=False
+            )
+        },
+        'verbose': {
+            'type': bool,
+            'arg': O_(
+                None,
+                '--verbose',
+                help='~! enable verbose logging for this run only',
+                hidden=True,
+                show_default=False
+            )
         }
     }
 

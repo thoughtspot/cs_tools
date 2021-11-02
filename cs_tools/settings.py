@@ -101,6 +101,7 @@ class AuthConfig(Settings):
 class TSConfig(Settings):
     thoughtspot: HostConfig
     auth: Dict[str, AuthConfig]
+    verbose: bool = False
 
     @classmethod
     def from_toml(cls, fp: pathlib.Path):
@@ -119,7 +120,6 @@ class TSConfig(Settings):
         *,
         host,
         username,
-        validate=True,
         default=True,
         interactive=False,
         **kw
@@ -133,11 +133,7 @@ class TSConfig(Settings):
           name of the config file to parse
 
         host : str
-
-        port : int
-
-        validate : bool, default: True
-          whether or not to validate args
+          url of the thoughtspot frontend
 
         default : bool, default: True
           whether or not to take default args if they're not provided
@@ -161,6 +157,9 @@ class TSConfig(Settings):
             if kw.get('disable_ssl', False):
                 cfg.thoughtspot.disable_ssl = kw['disable_ssl']
 
+            if kw.get('verbose', False):
+                cfg.verbose = kw['verbose']
+
             return cfg
 
         if interactive:
@@ -174,6 +173,7 @@ class TSConfig(Settings):
                 kw['password'] = typer.prompt('password', hide_input=True)
 
         data = {
+            'verbose': kw['verbose'] if kw.get('verbose') is not None else False,
             'thoughtspot': {
                 'host': host,
                 'port': kw.get('port', None),
@@ -188,8 +188,5 @@ class TSConfig(Settings):
                 }
             }
         }
-
-        if not validate:
-            return cls.construct(**data)
 
         return cls(**data)

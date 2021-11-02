@@ -176,6 +176,7 @@ def create(
     password: str=O_(..., help='password when logging into ThoughtSpot', hide_input=True, prompt=True),
     disable_ssl: bool=O_(False, '--disable_ssl', help='disable SSL verification', show_default=False),
     disable_sso: bool=O_(False, '--disable_sso', help='disable automatic SAML redirect', show_default=False),
+    verbose: bool=O_(False, '--verbose', help='enable verbose logging by default', show_default=False)
 ):
     """
     Create a new config file.
@@ -207,8 +208,9 @@ def modify(
     port: int=O_(None, help='optional, port of the thoughtspot server'),
     username: str=O_(None, help='username when logging into ThoughtSpot'),
     password: str=O_(None, help='password when logging into ThoughtSpot'),
-    disable_ssl: bool=O_(None, '--disable_ssl', help='disable SSL verification'),
-    disable_sso: bool=O_(None, '--disable_sso', help='disable automatic SAML redirect')
+    disable_ssl: bool=O_(None, '--disable_ssl', help='disable SSL verification', show_default=False),
+    disable_sso: bool=O_(None, '--disable_sso', help='disable automatic SAML redirect', show_default=False),
+    verbose: bool=O_(None, '--verbose', help='enable verbose logging by default', show_default=False)
 ):
     """
     Modify an existing config file.
@@ -289,7 +291,7 @@ def run():
         'handlers': {
             'to_file': {
                 'formatter': 'verbose',
-                'level': 'DEBUG',
+                'level': 'DEBUG',     # user can override in their config file
                 'class': 'logging.FileHandler',
                 # RotatingFileHandler.__init__ params...
                 'filename': f'{APP_DIR}/logs/{now}.log',
