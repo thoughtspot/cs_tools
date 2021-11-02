@@ -23,16 +23,17 @@ class Privilege(enum.Enum):
     can_administer_thoughtspot = 'ADMINISTRATION'
     can_upload_user_data = 'USERDATAUPLOADING'
     can_download_data = 'DATADOWNLOADING'
-    can_manage_data = 'DATAMANAGEMENT'
     can_share_with_all_users = 'SHAREWITHALL'
-    has_spotiq_privilege = 'A3ANALYSIS'
+    can_manage_data = 'DATAMANAGEMENT'
     can_use_experimental_features = 'EXPERIMENTALFEATUREPRIVILEG'
-    can_administer_and_bypass_rls = 'BYPASSRLS'
     can_invoke_custom_r_analysis = 'RANALYSIS'
+    can_schedule_pinboards = 'JOBSCHEDULING'
+    has_spotiq_privilege = 'A3ANALYSIS'
+    can_administer_and_bypass_rls = 'BYPASSRLS'
 
     # Available in ts-sw>=7.0.0 and ts-cloud>=7.0.0
-    cannot_create_or_delete_pinboards = 'DISABLE_PINBOARD_CREATION'
     developer = 'DEVELOPER'
+    cannot_create_or_delete_pinboards = 'DISABLE_PINBOARD_CREATION'
 
 
 class MetadataObject(enum.Enum):
