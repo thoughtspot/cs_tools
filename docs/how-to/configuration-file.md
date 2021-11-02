@@ -26,6 +26,7 @@ If you do not supply all the required arguments to properly authenticate to Thou
           --port        | INTEGER |  optional, port of the thoughtspot server
           --disable_ssl |  FLAG   |  disable SSL verification
           --disable_sso |  FLAG   |  disable automatic SAML redirect
+          --verbose     |  FLAG   |  enable verbose logging for this run only
         ```
 
     === "Recommended"
@@ -61,23 +62,10 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
       --port INTEGER   optional, port of the thoughtspot server
       --username TEXT  username when logging into ThoughtSpot  (required)
       --password TEXT  password when logging into ThoughtSpot  (required)
-      --disable_ssl    disable SSL verification  (default: False)
-      --disable_sso    disable automatic SAML redirect  (default: False)
+      --disable_ssl    disable SSL verification
+      --disable_sso    disable automatic SAML redirect
+      --verbose        enable verbose logging by default
       -h, --help       Show this message and exit.
-    ```
-
-=== "config delete"
-
-    ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config delete
-
-    Usage: cs_tools config delete [OPTIONS]
-
-      Delete a config file.
-
-    Options:
-      --name TEXT  config file identifier  (required)
-      -h, --help   Show this message and exit.
     ```
 
 === "config modify"
@@ -97,7 +85,22 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
       --password TEXT  password when logging into ThoughtSpot
       --disable_ssl    disable SSL verification
       --disable_sso    disable automatic SAML redirect
+      --verbose        enable verbose logging by default
       -h, --help       Show this message and exit.
+    ```
+
+=== "config delete"
+
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config delete
+
+    Usage: cs_tools config delete [OPTIONS]
+
+      Delete a config file.
+
+    Options:
+      --name TEXT  config file identifier  (required)
+      -h, --help   Show this message and exit.
     ```
 
 === "config show"
@@ -122,6 +125,8 @@ You can view all the currently configured environments by using the `cs_tools co
     For security reasons, your password lives obfuscated both in memory and the configuration file upon being captured by `cs_tools`. It is only decrypted once per run, when authorizing with your ThoughtSpot platform.
 
 ```toml
+verbose = False
+
 [thoughtspot]
 host = "https://ts.thoughtspot.cloud"
 disable_ssl = false

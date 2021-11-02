@@ -27,7 +27,7 @@ def transfer(
     **frontend_kw
 ):
     """
-    Transfer ownership of all objects from one user to another.
+    Transfer ownership of objects from one user to another.
 
     Tags and GUIDs constraints are applied in OR fashion.
     """

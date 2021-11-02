@@ -81,6 +81,9 @@ nav:
   - Install: how-to/install-upgrade-cs-tools.md
   - Tools:
     - cs-tools/overview.md
+    - Archiver:
+      - archiver: cs-tools/archiver/README.md
+      - cs-tools/archiver/CHANGELOG.md
     - Remote TQL:
       - rtql: cs-tools/rtql/README.md
       - cs-tools/rtql/CHANGELOG.md

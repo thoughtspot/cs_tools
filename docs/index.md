@@ -39,6 +39,8 @@ platform.
 ---
 
 <center>
+__Get Help__: [https://cs_tools.forms.google/issue][help]
+
 __Documentation__: [https://cs_tools.thoughtspot.com/][this]
 
 __Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
@@ -48,6 +50,7 @@ __Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
 ##### *Should you find anything lacking about the docs or* `cs_tools` *itself, [please submit an issue][gh-issue]{ target='secondary' }!*
 </center>
 
+[help]: https://forms.gle/sh6hyBSS2mnrwWCa9
 [this]: https://thoughtspot.github.io/cs_tools/
 [gh-main]: https://github.com/thoughtspot/cs_tools/
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new
