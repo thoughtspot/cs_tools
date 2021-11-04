@@ -217,9 +217,9 @@ def tsload(
             f'\n\ntsload --source_file {fp} --target_database {target_database} '
             f'--target_schema {target_schema} --target_table {target_table} '
             f'--field_separator "{field_separator}" --boolean_representation True_False '
-            f'--null_value "" --time_format {FMT_TSLOAD_TIME} --date_format {FMT_TSLOAD_DATE} '
-            f'--date_time_format {FMT_TSLOAD_DATETIME} '
-            f'--has_header_row '
+            f'--null_value "" --time_format "{FMT_TSLOAD_TIME}" '
+            f'--date_format "{FMT_TSLOAD_DATE}"'
+            f'--date_time_format "{FMT_TSLOAD_DATETIME}" --has_header_row '
             + ('--empty_target' if empty_target else '--noempty_target')
         )
         return

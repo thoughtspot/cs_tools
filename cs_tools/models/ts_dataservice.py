@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 from io import BufferedIOBase
 import datetime as dt
 import logging
@@ -83,7 +83,7 @@ class TSDataService:
 
     @requires(software='6.2.1', cloud='*')
     @validate_arguments
-    def query(self, data, *, timeout: float=5.0) -> httpx.Response:
+    def query(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
         """
         Run a TQL query.
 
@@ -103,7 +103,7 @@ class TSDataService:
 
     @requires(software='6.2.1', cloud='*')
     @validate_arguments
-    def script(self, data) -> httpx.Response:
+    def script(self, data: Any) -> httpx.Response:
         """
         Execute a series of queries against TQL.
 
@@ -139,7 +139,7 @@ class TSDataService:
 
     @requires(software='6.2.1', cloud=None)
     @validate_arguments
-    def load_init(self, data: dict, *, timeout: float=5.0) -> httpx.Response:
+    def load_init(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
         """
         Initialize a tsload session, with options data.
         """
@@ -274,7 +274,13 @@ class TSDataService:
     # API, but only in the sense that the api produces predictable output, and
     # not part of the model itself.
 
-    def _cache(self, cycle_id: str, *, node: str=None, port: int=None) -> Dict[str, str]:
+    def _cache(
+        self,
+        cycle_id: str,
+        *,
+        node: str = None,
+        port: int = None
+    ) -> Dict[str, str]:
         """
         Small local filestore for managing the load balancer re-route.
 

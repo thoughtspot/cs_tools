@@ -34,8 +34,6 @@ follow the instructions down the page.
 
 <center>
 [:material-tools: &nbsp; cs_tools &nbsp;][fs]{ target='secondary' .md-button .md-button--primary }
-
-<sup>__password__: `th0ughtSp0t`</sup>
 </center>
 
 ---
@@ -156,3 +154,4 @@ Commands:
 [^1]: `cs_tools` is a python-based utility, and will set up its own virtual environment.
 [py]: https://www.python.org/downloads/
 [fs]: https://thoughtspot.egnyte.com/dl/MyBRZT6leI/dist.zip_
+[gf]: https://forms.gle/fNQpF3ubkjQySGo66
