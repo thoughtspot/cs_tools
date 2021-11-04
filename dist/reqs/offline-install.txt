@@ -40,4 +40,4 @@ uvicorn==0.14.0; python_version >= "3.6"
 watchgod==0.7; python_version >= "3.6"
 websockets==9.1; python_version >= "3.6"
 pendulum==2.1.2; python_version >= "3.6"
-cs_tools==1.2.0b1
+cs_tools==1.2.0b3
