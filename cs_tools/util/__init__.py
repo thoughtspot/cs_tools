@@ -5,22 +5,22 @@ import pathlib
 import base64
 import uuid
 
-import pendulum
+from dateutil import tz as tz_
 
 
 def to_datetime(
-    epoch: Union[int, dt.datetime, str],
+    epoch: Union[int, dt.datetime],
     *,
-    tz: str='UTC',
-    friendly: bool=False,
-    format: str=None
+    tz: str = 'UTC',
+    friendly: bool = False,
+    format: str = None
 ) -> Union[dt.timedelta, str]:
     """
     Convert a nominal value to a datetime.
 
     Parameters
     ----------
-    epoch : int or datetime or str
+    epoch : int or datetime
       the "when" to convert
 
     tz : str, default 'UTC'
@@ -36,18 +36,35 @@ def to_datetime(
     -------
     when : timedelta or str
     """
-    if isinstance(epoch, int):
-        parse = pendulum.from_timestamp
-        epoch = epoch / 1000.0
-    elif isinstance(epoch, dt.datetime):
-        parse = pendulum.datetime
-    elif isinstance(epoch, str):
-        parse = pendulum.parse
+    tz = tz_.gettz(tz)
 
-    when = parse(epoch, tz)
+    if isinstance(epoch, int):
+        when = dt.datetime.fromtimestamp(epoch / 1000.0, tz=tz)
+    if isinstance(epoch, dt.datetime):
+        when = epoch if epoch.tzinfo is not None else epoch.replace(tzinfo=tz)
 
     if friendly:
-        return when.diff_for_humans()
+        now = dt.datetime.now(tz=tz)
+        delta = now - when
+
+        if delta.days >= 365:
+            years = delta.days // 365
+            s = 's' if years > 1 else ''
+            for_humans = f'about {years} year{s} ago'
+
+        elif delta.days > 0:
+            s = 's' if delta.days > 1 else ''
+            for_humans = f'about {delta.days} day{s} ago'
+
+        elif delta.seconds > 3600:
+            hours = delta.seconds // 3600
+            s = 's' if hours > 1 else ''
+            for_humans = f'about {hours} hour{s} ago'
+
+        else:
+            for_humans = 'less than 1 hour ago'
+
+        return for_humans
 
     if format:
         return when.strftime(format)
