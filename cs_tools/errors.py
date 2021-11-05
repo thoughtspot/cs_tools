@@ -55,6 +55,15 @@ class AmbiguousContentError(CSToolsException):
         return f"Multiple {objects} found with name '{self.name}'"
 
 
+class TSLoadServiceUnreachable(CSToolsException):
+    """
+    Raise when the etl_http_server service cannot be reached.
+    """
+    def __init__(self, message, http_error):
+        self.http_error = http_error
+        super().__init__(message)
+
+
 class AuthenticationError(Exception):
 
     def __init__(self, *, username: str):

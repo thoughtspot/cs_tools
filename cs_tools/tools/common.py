@@ -8,6 +8,7 @@ import csv
 import typer
 
 from cs_tools.helpers.cli_ux import console
+from cs_tools.errors import TSLoadServiceUnreachable
 from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 )
@@ -208,7 +209,7 @@ def tsload(
     try:
         r = ts.api.ts_dataservice.load_init(flags)
     except Exception as e:
-        log.error(
+        raise TSLoadServiceUnreachable(
             f'[red]something went wrong trying to access tsload service: {e}[/]'
             f'\n\nIf you haven\'t enabled tsload service yet, please find the link '
             f'below further information:'
@@ -220,22 +221,22 @@ def tsload(
             f'--null_value "" --time_format "{FMT_TSLOAD_TIME}" '
             f'--date_format "{FMT_TSLOAD_DATE}"'
             f'--date_time_format "{FMT_TSLOAD_DATETIME}" --has_header_row '
-            + ('--empty_target' if empty_target else '--noempty_target')
+            + ('--empty_target' if empty_target else '--noempty_target'),
+            http_error=e
         )
-        return
 
     cycle_id = r.json()['cycle_id']
 
     with fp.open('rb') as file:
         r = ts.api.ts_dataservice.load_start(cycle_id, fd=file)
 
-    if verbose:
-        console.print(r.text)
+        if verbose:
+            console.print(r.text)
 
-    r = ts.api.ts_dataservice.load_commit(cycle_id)
+        r = ts.api.ts_dataservice.load_commit(cycle_id)
 
-    if verbose:
-        console.print(r.text)
+        if verbose:
+            console.print(r.text)
 
     r = ts.api.ts_dataservice.load_status(cycle_id)
     data = r.json()
