@@ -32,14 +32,12 @@ def transfer(
     Tags and GUIDs constraints are applied in OR fashion.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-
-    console.print(f'\nTransferring all objects from "{from_}" to "{to_}"')
     ids = set()
 
     with ThoughtSpot(cfg) as ts:
 
         if tag is not None or guids is not None:
-            r = ts.api._metadata.list(type='USER', pattern=f'%{from_}%')
+            r = ts.api._metadata.list(type='USER', pattern=f'{from_}')
             r = ts.api._metadata.listas(type='USER', principalid=r.json()['headers'][0]['id'])
 
             if tag is not None:
@@ -48,7 +46,9 @@ def transfer(
             if guids is not None:
                 ids.update([_ for _ in r.json()['headers'] if _['id'] in guids])
 
-        with console.status('[bold green]running query[/]'):
+        amt = len(ids) if ids else 'all'
+
+        with console.status(f'[bold green]\nTransferring {amt} objects from "{from_}" to "{to_}"[/]'):
             try:
                 r = ts.api.user.transfer_ownership(
                         fromUserName=from_,
@@ -61,3 +61,5 @@ def transfer(
                 console.print(f'[red]Failed. {msg[-1]}[/]')
             else:
                 console.print('[green]Success![/]')
+
+        console.print(f'\nTransferring {amt} objects from "{from_}" to "{to_}"')

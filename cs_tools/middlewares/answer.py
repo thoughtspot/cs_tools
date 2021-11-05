@@ -64,7 +64,7 @@ class AnswerMiddleware:
             offset += len(data['headers'])
 
             if not data['headers'] and not answers:
-                rzn  = f"for '{category}' category"
+                rzn  = f"'{category.value}' category"
                 rzn += '' if exclude_system_content else ' (including system-generated answers)'
                 rzn += '' if tags is None else ' and tags: ' + ', '.join(tags)
                 raise ContentDoesNotExist(type='ANSWER', reason=rzn)
