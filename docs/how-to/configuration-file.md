@@ -21,12 +21,13 @@ If you do not supply all the required arguments to properly authenticate to Thou
 
     === "Optional"
         ```
-          Name             Type     Description
-          --------------------------------------------------------------
-          --port        | INTEGER |  optional, port of the thoughtspot server
-          --disable_ssl |  FLAG   |  disable SSL verification
-          --disable_sso |  FLAG   |  disable automatic SAML redirect
-          --verbose     |  FLAG   |  enable verbose logging for this run only
+          Name             Type       Description
+          ------------------------------------------------------------------------
+          --port        | INTEGER   |  optional, port of the thoughtspot server
+          --disable_ssl |  FLAG     |  disable SSL verification
+          --disable_sso |  FLAG     |  disable automatic SAML redirect
+          --temp_dir    | DIRECTORY |  filepath to save large temporary files to
+          --verbose     |  FLAG     |  enable verbose logging for this run only
         ```
 
     === "Recommended"
@@ -52,7 +53,7 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config create
 
-    Usage: cs_tools config create [OPTIONS]
+    Usage: cstools config create [OPTIONS]
 
       Create a new config file.
 
@@ -62,6 +63,7 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
       --port INTEGER   optional, port of the thoughtspot server
       --username TEXT  username when logging into ThoughtSpot  (required)
       --password TEXT  password when logging into ThoughtSpot  (required)
+      --temp_dir PATH  location on disk to save temporary files
       --disable_ssl    disable SSL verification
       --disable_sso    disable automatic SAML redirect
       --verbose        enable verbose logging by default
@@ -73,20 +75,21 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config modify --help
 
-    Usage: cs_tools config modify [OPTIONS]
+    Usage: cstools config modify [OPTIONS]
 
       Modify an existing config file.
 
     Options:
-      --name TEXT      config file identifier  (required)
-      --host TEXT      thoughtspot server
-      --port INTEGER   optional, port of the thoughtspot server
-      --username TEXT  username when logging into ThoughtSpot
-      --password TEXT  password when logging into ThoughtSpot
-      --disable_ssl    disable SSL verification
-      --disable_sso    disable automatic SAML redirect
-      --verbose        enable verbose logging by default
-      -h, --help       Show this message and exit.
+      --name TEXT                       config file identifier  (required)
+      --host TEXT                       thoughtspot server
+      --port INTEGER                    optional, port of the thoughtspot server
+      --username TEXT                   username when logging into ThoughtSpot
+      --password TEXT                   password when logging into ThoughtSpot
+      --temp_dir PATH                   location on disk to save temporary files
+      --disable_ssl / --no-disable_ssl  disable SSL verification
+      --disable_sso / --no-disable_sso  disable automatic SAML redirect
+      --verbose / --normal              enable verbose logging by default
+      -h, --help                        Show this message and exit.
     ```
 
 === "config delete"
@@ -126,10 +129,11 @@ You can view all the currently configured environments by using the `cs_tools co
 
 ```toml
 verbose = False
+temp_dir = "/export/sdbc1/data/dump"
 
 [thoughtspot]
 host = "https://ts.thoughtspot.cloud"
-disable_ssl = false
+disable_ssl = true
 disable_sso = false
 
 [auth.frontend]
