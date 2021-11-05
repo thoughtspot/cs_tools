@@ -158,7 +158,7 @@ def identify(
         # PROMPT FOR INPUT
         if not no_prompt:
             typer.confirm(
-                f'Would you like to continue with tagging {len(to_archive)} objects?',
+                f'\nWould you like to continue with tagging {len(to_archive)} objects?',
                 abort=True
             )
 
@@ -259,7 +259,7 @@ def revert(
         # PROMPT FOR INPUT
         if not no_prompt:
             typer.confirm(
-                f'Would you like to continue with untagging {len([*answers, *pinboards])} objects?',
+                f'\nWould you like to continue with untagging {len([*answers, *pinboards])} objects?',
                 abort=True
             )
 
@@ -375,7 +375,7 @@ def remove(
         # PROMPT FOR INPUT
         if not no_prompt:
             typer.confirm(
-                f'Would you like to continue with removing {len([*answers, *pinboards])} objects?',
+                f'\nWould you like to continue with removing {len([*answers, *pinboards])} objects?',
                 abort=True
             )
 
