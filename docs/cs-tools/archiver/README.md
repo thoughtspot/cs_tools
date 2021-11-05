@@ -1,6 +1,26 @@
 # Archiver
 
-...
+Archiver allows an admin within the ThoughtSpot platform to survey and identify all the
+content that the platform's users create. This content can build up over time and cause
+maintenance and upgrades to run more slowly. Additionally, your ThoughtSpot platform has
+some minor overhead when holding references to all of these objects as well.
+
+With Archiver, the Admin can set up a content maintenance process that will tag all
+content not opened or modified within the lifetime of recorded interactions within the 
+system worksheet, TS: BI Server.
+
+From here, the admin can notify all users of their visibly tagged and stale content, and
+if the user chooses, they can remove the tag from their answer or pinboard to safeguard
+it from removal.
+
+Once the Admin has completed their deprecation cycle, Archiver will help you remove the
+unused or unwanted content, optionally exporting it prior to removal.
+
+!!! danger "With great power, comes great responsibility!"
+
+    Archiver is a tool that can perform mass modification and deletion of content in
+    your platform! If not used appropriately, you could remove worthwhile answers and
+    pinboards. __Your users trust you__, use this tool carefully.
 
 ## CLI preview
 
