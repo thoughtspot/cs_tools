@@ -1,13 +1,16 @@
 from ipaddress import IPv4Address
 from typing import Union, Dict, Any
 import pathlib
+import json
 import re
 
+from pydantic.types import DirectoryPath
 from pydantic import BaseModel, AnyHttpUrl, validator
 import typer
 import toml
 
 from cs_tools.helpers.secrets import obscure
+from cs_tools.const import APP_DIR
 
 
 class Settings(BaseModel):
@@ -102,6 +105,18 @@ class TSConfig(Settings):
     thoughtspot: HostConfig
     auth: Dict[str, AuthConfig]
     verbose: bool = False
+    temp_dir: DirectoryPath = APP_DIR
+
+    def dict(self) -> Any:
+        """
+        Wrapper around model.dict to handle path types.
+        """
+        data = super().dict()
+
+        if data['temp_dir'] is not None:
+            data['temp_dir'] = data['temp_dir'].resolve().as_posix()
+
+        return data
 
     @classmethod
     def from_toml(cls, fp: pathlib.Path):

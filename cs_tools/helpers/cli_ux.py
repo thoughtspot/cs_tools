@@ -95,6 +95,16 @@ def frontend(f: Callable) -> Callable:
             'type': str,
             'arg': O_(None, help='~! password when logging into ThoughtSpot', hidden=True)
         },
+        'temp_dir': {
+            'type': bool,
+            'arg': O_(
+                None,
+                '--temp_dir',
+                help='~! location on disk to save temporary files',
+                hidden=True,
+                show_default=False
+            )
+        },
         'disable_ssl': {
             'type': bool,
             'arg': O_(

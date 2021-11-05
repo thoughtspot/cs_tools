@@ -142,11 +142,10 @@ def gather(
     platform. If save_path argument is used, data will not be inserted
     and will instead be dumped to the location specified.
     """
-    app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
     common.check_exists(save_path)
 
-    dir_ = save_path if save_path is not None else app_dir
+    dir_ = save_path if save_path is not None else cfg.temp_dir
     path = dir_ / 'falcon_table_info.csv'
 
     with ThoughtSpot(cfg) as ts:

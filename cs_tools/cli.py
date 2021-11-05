@@ -174,6 +174,7 @@ def create(
     port: int=O_(None, help='optional, port of the thoughtspot server'),
     username: str=O_(..., help='username when logging into ThoughtSpot', prompt=True),
     password: str=O_(..., help='password when logging into ThoughtSpot', hide_input=True, prompt=True),
+    temp_dir: pathlib.Path=O_(APP_DIR, '--temp_dir', help='location on disk to save temporary files', show_default=False),
     disable_ssl: bool=O_(False, '--disable_ssl', help='disable SSL verification', show_default=False),
     disable_sso: bool=O_(False, '--disable_sso', help='disable automatic SAML redirect', show_default=False),
     verbose: bool=O_(False, '--verbose', help='enable verbose logging by default', show_default=False)
@@ -182,13 +183,11 @@ def create(
     Create a new config file.
     """
     config = TSConfig.from_cli_args(
-                 host=host, username=username, password=password, disable_ssl=disable_ssl,
-                 disable_sso=disable_sso,
+                 host=host, username=username, password=password, temp_dir=temp_dir,
+                 disable_ssl=disable_ssl, disable_sso=disable_sso, verbose=verbose
              )
 
-    app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
-    app_dir.mkdir(parents=True, exist_ok=True)
-    file = app_dir / f'cluster-cfg_{name}.toml'
+    file = APP_DIR / f'cluster-cfg_{name}.toml'
 
     if file.exists():
         console.print(f'[red]cluster configuration file "{name}" already exists[/]')
@@ -208,20 +207,21 @@ def modify(
     port: int=O_(None, help='optional, port of the thoughtspot server'),
     username: str=O_(None, help='username when logging into ThoughtSpot'),
     password: str=O_(None, help='password when logging into ThoughtSpot'),
-    disable_ssl: bool=O_(None, '--disable_ssl', help='disable SSL verification', show_default=False),
-    disable_sso: bool=O_(None, '--disable_sso', help='disable automatic SAML redirect', show_default=False),
-    verbose: bool=O_(None, '--verbose', help='enable verbose logging by default', show_default=False)
+    temp_dir: pathlib.Path=O_(None, '--temp_dir', help='location on disk to save temporary files'),
+    disable_ssl: bool=O_(None, '--disable_ssl/--no-disable_ssl', help='disable SSL verification', show_default=False),
+    disable_sso: bool=O_(None, '--disable_sso/--no-disable_sso', help='disable automatic SAML redirect', show_default=False),
+    verbose: bool=O_(None, '--verbose/--normal', help='enable verbose logging by default', show_default=False)
 ):
     """
     Modify an existing config file.
     """
-    file = pathlib.Path(typer.get_app_dir('cs_tools')) / f'cluster-cfg_{name}.toml'
+    file = APP_DIR / f'cluster-cfg_{name}.toml'
     old  = TSConfig.from_toml(file).dict()
 
     data = TSConfig.from_cli_args(
                 host=host, port=port, username=username, password=password,
-                disable_ssl=disable_ssl, disable_sso=disable_sso,
-                validate=False, default=False
+                temp_dir=temp_dir, disable_ssl=disable_ssl, disable_sso=disable_sso,
+                verbose=verbose, validate=False, default=False
             ).dict()
 
     new = deep_update(old, data, ignore=None)
