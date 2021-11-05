@@ -131,12 +131,12 @@ class TSConfig(Settings):
     @classmethod
     def from_cli_args(
         cls,
-        config=None,
+        config: str = None,
         *,
-        host,
-        username,
-        default=True,
-        interactive=False,
+        host: str,
+        username: str,
+        interactive: bool = False,
+        validate: bool = True,
         **kw
     ) -> ['TSConfig', dict]:
         """
@@ -150,30 +150,24 @@ class TSConfig(Settings):
         host : str
           url of the thoughtspot frontend
 
-        default : bool, default: True
-          whether or not to take default args if they're not provided
-
         interactive : bool, default: False
-          wether or not to gather user input if required args not supplied
+          whether or not to gather user input if required args not supplied
+
+        validate : bool, default True
+          whether or not to validate input
 
         **kw
           additional arguments to provide to TSConfig
         """
         if config is not None:
-            app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
-            cfg = cls.from_toml(app_dir / f'cluster-cfg_{config}.toml')
+            cfg = cls.from_toml(APP_DIR / f'cluster-cfg_{config}.toml')
 
-            if host is not None:
-                cfg.thoughtspot.host = host
-
-            if kw.get('disable_sso', False):
-                cfg.thoughtspot.disable_sso = kw['disable_sso']
-
-            if kw.get('disable_ssl', False):
-                cfg.thoughtspot.disable_ssl = kw['disable_ssl']
-
+            # single-command overrides
             if kw.get('verbose', False):
                 cfg.verbose = kw['verbose']
+
+            if kw.get('temp_dir', False):
+                cfg.temp_dir = kw['temp_dir']
 
             return cfg
 
@@ -188,12 +182,13 @@ class TSConfig(Settings):
                 kw['password'] = typer.prompt('password', hide_input=True)
 
         data = {
-            'verbose': kw['verbose'] if kw.get('verbose') is not None else False,
+            'verbose': kw.get('verbose'),
+            'temp_dir': kw.get('temp_dir'),
             'thoughtspot': {
                 'host': host,
                 'port': kw.get('port', None),
-                'disable_ssl': kw['disable_ssl'] if kw.get('disable_ssl') is not None else False,
-                'disable_sso': kw['disable_sso'] if kw.get('disable_sso') is not None else False,
+                'disable_ssl': kw.get('disable_ssl'),
+                'disable_sso': kw.get('disable_sso'),
             },
             'auth': {
                 'frontend': {
@@ -203,5 +198,8 @@ class TSConfig(Settings):
                 }
             }
         }
+
+        if not validate:
+            return cls.construct(**data)
 
         return cls(**data)
