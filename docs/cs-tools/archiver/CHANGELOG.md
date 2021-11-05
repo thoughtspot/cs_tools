@@ -11,7 +11,7 @@ hide:
     The format is based on [Keep a Changelog][keep-a-changelog]{ target='secondary' .external-link }, and this project
     adheres to [Semantic Versioning][semver]{ target='secondary' .external-link }.
 
-### ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2020-11-01"
+### :octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2020-11-01
 === ":hammer_and_wrench: &nbsp; Added"
     - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
