@@ -176,10 +176,7 @@ class _Metadata:
                     'sortascending': sortascending,
                     'offset': offset,
                     'batchsize': batchsize,
-                    # NOTE: This is an API error.. sooooo spaces in query parameters
-                    # should really be sanitized as + instead of %20, but our API
-                    # accepts only %20.
-                    'tagname': stringified_array([_.replace(' ', '%20') for _ in tagname or ()]),
+                    'tagname': [tagname] if tagname is not None else None,
                     'pattern': pattern,
                     'skipids': stringified_array([_ for _ in skipids or ()]),
                     'fetchids': stringified_array([_ for _ in fetchids or ()]),
