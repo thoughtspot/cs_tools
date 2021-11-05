@@ -2,14 +2,13 @@ from typing import Any, Dict, List
 from io import BufferedIOBase
 import datetime as dt
 import logging
-import pathlib
 import json
 
 from pydantic import validate_arguments
-import typer
 import httpx
 
 from cs_tools.helpers.secrets import reveal
+from cs_tools.const import APP_DIR
 from cs_tools.util import requires
 
 
@@ -45,9 +44,8 @@ class TSDataService:
         self._tsload_port = 8442
         self._tsload_logged_in = False
 
-        app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
-        (app_dir / '.cache').mkdir(parents=True, exist_ok=True)
-        self._cache_fp = app_dir / '.cache/cycle-id-nodes.json'
+        (APP_DIR / '.cache').mkdir(parents=True, exist_ok=True)
+        self._cache_fp = APP_DIR / '.cache/cycle-id-nodes.json'
 
     @property
     def etl_server_fullpath(self) -> str:
