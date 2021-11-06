@@ -127,8 +127,8 @@ def export(
     """
     Grab logs to share with ThoughtSpot.
     """
-    app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
-    log_dir = app_dir / 'logs'
+    save_path.mkdir(parents=True, exist_ok=True)
+    log_dir = APP_DIR / 'logs'
 
     for log in log_dir.iterdir():
         shutil.copy(log, save_path)
@@ -151,16 +151,14 @@ def show():
     """
     Show the location of the currently saved config files.
     """
-    app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
-
-    if not app_dir.exists():
+    if not APP_DIR.exists():
         console.print('[yellow]no config files found just yet![/]')
         raise typer.Exit()
 
-    configs = [f for f in app_dir.iterdir() if f.name.startswith('cluster-cfg_')]
+    configs = [f for f in APP_DIR.iterdir() if f.name.startswith('cluster-cfg_')]
     s = 's' if (len(configs) > 1 or len(configs) == 0) else ''
 
-    console.print(f'Cluster configs located at: {app_dir}')
+    console.print(f'Cluster configs located at: {APP_DIR}')
     console.print(f'\nFound {len(configs)} config{s}')
 
     for file in configs:
