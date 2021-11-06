@@ -72,6 +72,7 @@ unused or unwanted content, optionally exporting it prior to removal.
                                       information to console on content to be archived
 
       --no-prompt                     disable the confirmation prompt
+      --report PATH                   directory, generates a list of content to be archived
       --helpfull                      Show the full help message and exit.
       -h, --help                      Show this message and exit.
     ```
@@ -85,14 +86,15 @@ unused or unwanted content, optionally exporting it prior to removal.
       Remove objects from the temporary archive.
 
     Options:
-      --tag TEXT    tag name to remove on labeled objects  (default: TO BE ARCHIVED)
-      --delete-tag  remove the tag itself, after untagging identified objects
-      --dry-run     test selection criteria, do not remove tags and instead output information on content
-                    to be unarchived
+      --tag TEXT     tag name to remove on labeled objects  (default: TO BE ARCHIVED)
+      --delete-tag   remove the tag itself, after untagging identified objects
+      --dry-run      test selection criteria, do not remove tags and instead output information on content
+                     to be unarchived
 
-      --no-prompt   disable the confirmation prompt
-      --helpfull    Show the full help message and exit.
-      -h, --help    Show this message and exit.
+      --no-prompt    disable the confirmation prompt
+      --report PATH  directory, generates a list of content to be untagged
+      --helpfull     Show the full help message and exit.
+      -h, --help     Show this message and exit.
     ```
 
 === "archiver remove"
@@ -114,6 +116,7 @@ unused or unwanted content, optionally exporting it prior to removal.
                          information to console on content to be unarchived
 
       --no-prompt        disable the confirmation prompt
+      --report PATH      directory, generates a list of content to be removed
       --helpfull         Show the full help message and exit.
       -h, --help         Show this message and exit.
     ```
