@@ -3,6 +3,7 @@ import platform
 import pathlib
 import logging
 import shutil
+import sys
 
 from typer import Argument as A_, Option as O_
 import pydantic
@@ -19,6 +20,12 @@ from cs_tools.const import APP_DIR
 
 
 log = logging.getLogger(__name__)
+
+
+def _log_the_command():
+    ctx = click.get_current_context()
+    args = ' '.join(sys.argv[1:])
+    log.debug(f'command issued:\n{ctx.info_name} {args}\n\n')
 
 
 app = typer.Typer(
@@ -43,6 +50,8 @@ app = typer.Typer(
     """,
     cls=RichGroup,
     add_completion=False,
+    callback=_log_the_command,
+    invoke_without_command=True,
     context_settings={
         'help_option_names': ['--help', '-h'],
         'max_content_width': 105,
