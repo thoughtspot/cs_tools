@@ -1,44 +1,19 @@
+import logging
 import pathlib
-import enum
 
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
-from cs_tools.helpers.cli_ux import (
-    # _csv,
-    console, frontend, RichGroup, RichCommand, DataTable
-)
+from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand, DataTable
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
+from cs_tools.tools import common
 from cs_tools import util
 
-
-class ContentType(enum.Enum):
-    answer = 'answer'
-    pinboard = 'pinboard'
-    all = 'all'
+from .enums import ContentType, UserActions
 
 
-class UserActions(enum.Enum):
-    view_answer = 'ANSWER_VIEW'
-    view_pinboard = 'PINBOARD_VIEW'
-    view_embed_pinboard = 'PINBOARD_TSPUBLIC_RUNTIME_FILTER'
-    view_embed_filtered_pinboard_view = 'PINBOARD_TSPUBLIC_NO_RUNTIME_FILTER'
-
-    @classmethod
-    def strigified(cls, sep: str=' ', context: str=None) -> str:
-        mapper = {
-            'answer': [
-                'ANSWER_VIEW'
-            ],
-            'pinboard': [
-                'PINBOARD_VIEW',
-                'PINBOARD_TSPUBLIC_RUNTIME_FILTER',
-                'PINBOARD_TSPUBLIC_NO_RUNTIME_FILTER'
-            ]
-        }
-        allowed = mapper.get(context, [_.value for _ in cls])
-        return sep.join([_.value for _ in cls if _.value in allowed])
+log = logging.getLogger(__name__)
 
 
 app = typer.Typer(
@@ -84,6 +59,10 @@ def identify(
         show_default=False,
         help='disable the confirmation prompt'
     ),
+    report: pathlib.Path=O_(
+        None,
+        help='directory, generates a list of content to be archived'
+    ),
     **frontend_kw
 ):
     """
@@ -93,9 +72,6 @@ def identify(
     the platform. If a user views, edits, or creates an Answer or Pinboard, ThoughtSpot
     knows about it. This can be used as a proxy to understanding what content is
     actively being used.
-
-    \f
-    Need to document: identify, user removes tag, identify .. bad practice / implications
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
     actions = UserActions.strigified(sep="', '", context=content)
@@ -131,21 +107,26 @@ def identify(
                 'content_type': _['content_type'],
                 'guid': _['id'],
                 'name': _['name'],
-                'last_modified': util.to_datetime(
-                                    _['modified'],
-                                    tz=ts.platform.timezone,
-                                    friendly=True
-                                 )
+                'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
+                'by': _['authorName']
             }
             for _ in data if _['id'] in archive
         ]
+
+        if not to_archive:
+            console.log('no stale content found')
+            raise typer.Exit()
 
         table = DataTable(
                     to_archive,
                     title=f"[green]Archive Results[/]: Tagging content with [cyan]'{tag}'[/]",
                     caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} in platform)'
                 )
+
         console.log('\n', table)
+
+        if report is not None:
+            common.to_csv(to_archive, fp=report / 'archiver_identify.csv', mode='a')
 
         if dry_run:
             raise typer.Exit(-1)
@@ -198,6 +179,10 @@ def revert(
         show_default=False,
         help='disable the confirmation prompt'
     ),
+    report: pathlib.Path=O_(
+        None,
+        help='directory, generates a list of content to be untagged'
+    ),
     **frontend_kw
 ):
     """
@@ -213,11 +198,8 @@ def revert(
                 'content_type': 'answer',
                 'guid': a['id'],
                 'name': a['name'],
-                'last_modified': util.to_datetime(
-                                    a['modified'],
-                                    tz=ts.platform.timezone,
-                                    friendly=True
-                                 )
+                'last_modified': util.to_datetime(a['modified'], tz=ts.platform.timezone, friendly=True),
+                'by': a['authorName']
             }
             for a in ts.answer.all(tags=tag)
         )
@@ -227,11 +209,8 @@ def revert(
                 'content_type': 'pinboard',
                 'guid': p['id'],
                 'name': p['name'],
-                'last_modified': util.to_datetime(
-                                    p['modified'],
-                                    tz=ts.platform.timezone,
-                                    friendly=True
-                                 )
+                'last_modified': util.to_datetime(p['modified'], tz=ts.platform.timezone, friendly=True),
+                'by': p['authorName']
             }
             for p in ts.pinboard.all(tags=tag)
         )
@@ -247,6 +226,9 @@ def revert(
                 )
 
         console.log('\n', table)
+
+        if report is not None:
+            common.to_csv(to_unarchive, fp=report / 'archiver_identify.csv', mode='a')
 
         if dry_run:
             raise typer.Exit()
@@ -311,6 +293,10 @@ def remove(
         show_default=False,
         help='disable the confirmation prompt'
     ),
+    report: pathlib.Path=O_(
+        None,
+        help='directory, generates a list of content to be removed'
+    ),
     **frontend_kw
 ):
     """
@@ -330,11 +316,8 @@ def remove(
                 'content_type': 'answer',
                 'guid': a['id'],
                 'name': a['name'],
-                'last_modified': util.to_datetime(
-                                    a['modified'],
-                                    tz=ts.platform.timezone,
-                                    friendly=True
-                                 )
+                'last_modified': util.to_datetime(a['modified'], tz=ts.platform.timezone, friendly=True),
+                'by': a['authorName']
             }
             for a in ts.answer.all(tags=tag)
         )
@@ -344,11 +327,8 @@ def remove(
                 'content_type': 'pinboard',
                 'guid': p['id'],
                 'name': p['name'],
-                'last_modified': util.to_datetime(
-                                    p['modified'],
-                                    tz=ts.platform.timezone,
-                                    friendly=True
-                                 )
+                'last_modified': util.to_datetime(p['modified'], tz=ts.platform.timezone, friendly=True),
+                'by': p['authorName']
             }
             for p in ts.pinboard.all(tags=tag)
         )
@@ -363,7 +343,11 @@ def remove(
                     title=f"[green]Remove Results[/]: Removing{_mod} content with [cyan]'{tag}'[/]",
                     caption=f'Total of {len(to_unarchive)} items tagged..'
                 )
+
         console.log('\n', table)
+
+        if report is not None:
+            common.to_csv(to_unarchive, fp=report / 'archiver_identify.csv', mode='a')
 
         if dry_run:
             raise typer.Exit()
