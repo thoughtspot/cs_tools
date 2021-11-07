@@ -7,6 +7,39 @@ import typer
 from cs_tools.helpers.cli_ux import _csv, console, frontend, RichGroup, RichCommand
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
+from cs_tools._enums import GUID
+
+
+def _all_user_content(user: GUID, ts: ThoughtSpot):
+    """
+    Return all content owned by this user.
+    """
+    types = (
+        'QUESTION_ANSWER_BOOK',
+        'PINBOARD_ANSWER_BOOK',
+        'LOGICAL_TABLE',
+        'TAG',
+        'DATA_SOURCE'
+    )
+    content = []
+
+    for metadata_type in types:
+        offset = 0
+
+        while True:
+            r = ts.api._metadata.list(type=metadata_type, batchsize=500, offset=offset)
+            data = r.json()
+            offset += len(data)
+
+            for metadata in data['headers']:
+                if metadata['author'] == user:
+                    metadata['type'] = metadata_type
+                    content.append(metadata)
+
+            if data['isLastBatch']:
+                break
+
+    return content
 
 
 app = typer.Typer(
@@ -37,14 +70,14 @@ def transfer(
     with ThoughtSpot(cfg) as ts:
 
         if tag is not None or guids is not None:
-            r = ts.api._metadata.list(type='USER', pattern=f'{from_}')
-            r = ts.api._metadata.listas(type='USER', principalid=r.json()['headers'][0]['id'])
+            user = ts.user.get(from_)
+            content = _all_user_content(user=user['id'], ts=ts)
 
             if tag is not None:
-                ids.update([_ for _ in r.json()['headers'] if set(_['tags']).intersection(set(tag))])
+                ids.update([_['id'] for _ in content if set([t['name'] for t in _['tags']]).intersection(set(tag))])
 
             if guids is not None:
-                ids.update([_ for _ in r.json()['headers'] if _['id'] in guids])
+                ids.update([_['id'] for _ in content if _['id'] in guids])
 
         amt = len(ids) if ids else 'all'
 
@@ -61,5 +94,3 @@ def transfer(
                 console.print(f'[red]Failed. {msg[-1]}[/]')
             else:
                 console.print('[green]Success![/]')
-
-        console.print(f'\nTransferring {amt} objects from "{from_}" to "{to_}"')
