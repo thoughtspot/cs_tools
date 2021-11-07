@@ -19,7 +19,7 @@ class TagMiddleware:
     @validate_arguments
     def create(self, tag_name: str) -> Dict[str, Any]:
         """
-        Create a tag in ThoughtSpot.
+        Create a new tag in ThoughtSpot.
 
         Parameters
         ----------
@@ -37,7 +37,7 @@ class TagMiddleware:
     @validate_arguments
     def delete(self, tag_name: str) -> None:
         """
-        Delete a tag in ThoughtSpot.
+        Remove a tag from ThoughtSpot.
 
         Parameters
         ----------
@@ -87,7 +87,7 @@ class TagMiddleware:
     @validate_arguments
     def get(self, tag_name: str, *, create_if_not_exists: bool = False) -> Dict[str, Any]:
         """
-        Get a tag in ThoughtSpot.
+        Find a tag in ThoughtSpot.
 
         Parameters
         ----------
@@ -107,6 +107,7 @@ class TagMiddleware:
         ContentDoesNotExist
           raised when a tag does not exist and is not to be autocreated
         """
+        # url param: 'pattern' doesn't work for tags
         r = self.ts.api._metadata.list(type='TAG')
 
         tag = util.find(

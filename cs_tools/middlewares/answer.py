@@ -60,10 +60,19 @@ class AnswerMiddleware:
                 )
 
             data = r.json()
-            answers.extend(data['headers'])
-            offset += len(data['headers'])
+            to_extend = data['headers']
+            offset += len(to_extend)
 
-            if not data['headers'] and not answers:
+            if exclude_system_content:
+                to_extend = [
+                    answer
+                    for answer in to_extend
+                    if answer['authorName'] not in ('system', 'tsadmin')
+                ]
+
+            answers.extend(to_extend)
+
+            if not to_extend and not answers:
                 rzn  = f"'{category.value}' category"
                 rzn += '' if exclude_system_content else ' (including system-generated answers)'
                 rzn += '' if tags is None else ' and tags: ' + ', '.join(tags)
@@ -71,12 +80,5 @@ class AnswerMiddleware:
 
             if data['isLastBatch']:
                 break
-
-        if exclude_system_content:
-            answers = [
-                answer
-                for answer in answers
-                if answer['authorName'] not in ('system', 'tsadmin')
-            ]
 
         return answers
