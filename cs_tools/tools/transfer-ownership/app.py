@@ -70,8 +70,9 @@ def transfer(
     with ThoughtSpot(cfg) as ts:
 
         if tag is not None or guids is not None:
-            user = ts.user.get(from_)
-            content = _all_user_content(user=user['id'], ts=ts)
+            with console.status(f'[bold green]Getting all content by: {from_}'):
+                user = ts.user.get(from_)
+                content = _all_user_content(user=user['id'], ts=ts)
 
             if tag is not None:
                 ids.update([_['id'] for _ in content if set([t['name'] for t in _['tags']]).intersection(set(tag))])
@@ -81,7 +82,7 @@ def transfer(
 
         amt = len(ids) if ids else 'all'
 
-        with console.status(f'[bold green]\nTransferring {amt} objects from "{from_}" to "{to_}"[/]'):
+        with console.status(f'[bold green]Transferring {amt} objects from "{from_}" to "{to_}"'):
             try:
                 r = ts.api.user.transfer_ownership(
                         fromUserName=from_,
