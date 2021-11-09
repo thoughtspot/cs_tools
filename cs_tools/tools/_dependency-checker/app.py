@@ -302,7 +302,8 @@ def gather(
                     ts,
                     fp=path,
                     target_database='cs_tools',
-                    target_table=stem
+                    target_table=stem,
+                    has_header_row=True
                 )
                 path.unlink()
                 r = ts.api.ts_dataservice.load_status(cycle_id).json()

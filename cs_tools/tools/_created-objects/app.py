@@ -186,7 +186,8 @@ def gather(
                 ts,
                 fp=path,
                 target_database='cs_tools',
-                target_table='introspect_metadata_object'
+                target_table='introspect_metadata_object',
+                has_header_row=True
             )
             path.unlink()
             r = ts.api.ts_dataservice.load_status(cycle_id).json()

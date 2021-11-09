@@ -166,7 +166,8 @@ def gather(
                 ts,
                 fp=path,
                 target_database='cs_tools',
-                target_table='falcon_table_info'
+                target_table='falcon_table_info',
+                has_header_row=True
             )
             path.unlink()
             r = ts.api.ts_dataservice.load_status(cycle_id).json()

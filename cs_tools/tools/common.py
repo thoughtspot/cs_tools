@@ -146,10 +146,21 @@ def tsload(
     fp: pathlib.Path,
     target_database: str,
     target_table: str,
-    target_schema: str='falcon_default_schema',
-    field_separator: str='|',
-    empty_target: bool=True,
-    verbose: bool=False
+    target_schema: str = 'falcon_default_schema',
+    empty_target: bool = True,
+    max_ignored_rows: int = 0,
+    date_format: str = FMT_TSLOAD_DATE,
+    date_time_format: str = FMT_TSLOAD_DATETIME,
+    time_format: str = FMT_TSLOAD_TIME,
+    skip_second_fraction: bool = False,
+    field_separator: str = '|',
+    null_value: str = '',
+    boolean_representation: str = FMT_TSLOAD_TRUE_FALSE,
+    has_header_row: bool = False,
+    escape_character: str = '"',
+    enclosing_character: str = '"',
+    flexible: bool = False,
+    verbose: bool = False,
 ) -> Union[str, None]:
     """
     Load a file via tsload on a remote server.
@@ -189,20 +200,25 @@ def tsload(
         },
         'format': {
             'field_separator': field_separator,
-            'has_header_row': True,
-            'null_value': '',
+            'enclosing_character': enclosing_character,
+            'escape_character': escape_character,
+            'null_value': null_value,
             'date_time': {
-                'date_time_format': FMT_TSLOAD_DATETIME,
-                'date_format': FMT_TSLOAD_DATE,
-                'time_format': FMT_TSLOAD_TIME
+                'date_time_format': date_time_format,
+                'date_format': date_format,
+                'time_format': time_format,
+                'skip_second_fraction': skip_second_fraction
             },
             'boolean': {
-                'true_format': FMT_TSLOAD_TRUE_FALSE.split('_')[0],
-                'false_format': FMT_TSLOAD_TRUE_FALSE.split('_')[1]
-            }
+                'true_format': boolean_representation.split('_')[0],
+                'false_format': boolean_representation.split('_')[1]
+            },
+            'has_header_row': has_header_row,
+            'flexible': flexible
         },
         'load_options': {
-            'empty_target': empty_target
+            'empty_target': empty_target,
+            'max_ignored_rows': max_ignored_rows
         }
     }
 
@@ -213,15 +229,15 @@ def tsload(
             f'[red]something went wrong trying to access tsload service: {e}[/]'
             f'\n\nIf you haven\'t enabled tsload service yet, please find the link '
             f'below further information:'
-            f'\nhttps://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html'
-            f'\n\nHeres the tsload command for the file you tried to load:'
-            f'\n\ntsload --source_file {fp} --target_database {target_database} '
-            f'--target_schema {target_schema} --target_table {target_table} '
-            f'--field_separator "{field_separator}" --boolean_representation True_False '
-            f'--null_value "" --time_format "{FMT_TSLOAD_TIME}" '
-            f'--date_format "{FMT_TSLOAD_DATE}"'
-            f'--date_time_format "{FMT_TSLOAD_DATETIME}" --has_header_row '
-            + ('--empty_target' if empty_target else '--noempty_target'),
+            f'\nhttps://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html',
+            # f'\n\nHeres the tsload command for the file you tried to load:'
+            # f'\n\ntsload --source_file {fp} --target_database {target_database} '
+            # f'--target_schema {target_schema} --target_table {target_table} '
+            # f'--field_separator "{field_separator}" --boolean_representation True_False '
+            # f'--null_value "" --time_format "{FMT_TSLOAD_TIME}" '
+            # f'--date_format "{FMT_TSLOAD_DATE}"'
+            # f'--date_time_format "{FMT_TSLOAD_DATETIME}" --has_header_row '
+            # + ('--empty_target' if empty_target else '--noempty_target'),
             http_error=e
         )
 
@@ -231,19 +247,19 @@ def tsload(
         r = ts.api.ts_dataservice.load_start(cycle_id, fd=file)
 
         if verbose:
-            console.print(r.text)
+            console.print(f'\n{r.text}')
 
         r = ts.api.ts_dataservice.load_commit(cycle_id)
 
         if verbose:
-            console.print(r.text)
+            console.print(f'\n{r.text}')
 
     r = ts.api.ts_dataservice.load_status(cycle_id)
     data = r.json()
 
     if verbose:
         console.print(
-            f'Cycle ID: {data["cycle_id"]}'
+            f'\nCycle ID: {data["cycle_id"]}'
             f'\nStarted at {to_datetime(int(data["start_time"]), unit="us")}'
             f'\nStage: {data["internal_stage"]}'
             f'\nRows to write: {data["rows_written"]}'
@@ -257,15 +273,16 @@ def to_csv(
     data: List[Dict[str, Any]],
     fp: pathlib.Path,
     *,
-    mode: str='w',
-    sep: str='|'
+    mode: str = 'w',
+    sep: str = '|',
+    header: bool = False
 ):
     """
     Write data to CSV.
 
     Data must be in record format.. [{column -> value}, ..., {column -> value}]
     """
-    header = not fp.exists()
+    header = header or not fp.exists()
 
     with fp.open(mode=mode, encoding='utf-8', newline='') as c:
         writer = csv.DictWriter(c, data[0].keys(), delimiter=sep)
