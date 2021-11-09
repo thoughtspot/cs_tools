@@ -268,6 +268,58 @@ class TSDataService:
         r = self.rest_api.request('GET', f'{self.etl_server_fullpath}/loads/{cycle_id}')
         return r
 
+    @requires(software='6.2.1', cloud=None)
+    @validate_arguments
+    def load_params(self, cycle_id: str) -> httpx.Response:
+        """
+        Return the status of the dataload for a particular session.
+
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
+        """
+        try:
+            cache = self._cache(cycle_id)
+            self._tsload_node = cache[cycle_id]['node']
+            self._tsload_port = cache[cycle_id]['port']
+            log.debug(f'redirecting to: {self.etl_server_fullpath}')
+        except KeyError:
+            # happens when etl_http_server loadbalancer is not running
+            pass
+
+        if not self._tsload_logged_in:
+            self._load_auth()
+
+        r = self.rest_api.request('GET', f'{self.etl_server_fullpath}/loads/{cycle_id}/input_summary')
+        return r
+
+    @requires(software='6.2.1', cloud=None)
+    @validate_arguments
+    def bad_records(self, cycle_id: str) -> httpx.Response:
+        """
+        Return the status of the dataload for a particular session.
+
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
+        """
+        try:
+            cache = self._cache(cycle_id)
+            self._tsload_node = cache[cycle_id]['node']
+            self._tsload_port = cache[cycle_id]['port']
+            log.debug(f'redirecting to: {self.etl_server_fullpath}')
+        except KeyError:
+            # happens when etl_http_server loadbalancer is not running
+            pass
+
+        if not self._tsload_logged_in:
+            self._load_auth()
+
+        r = self.rest_api.request('GET', f'{self.etl_server_fullpath}/loads/{cycle_id}/bad_records_file')
+        return r
+
     # Not sure where to put these.. they're attached to the ts data service
     # API, but only in the sense that the api produces predictable output, and
     # not part of the model itself.
