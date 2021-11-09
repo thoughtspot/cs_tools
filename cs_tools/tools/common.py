@@ -33,8 +33,8 @@ def run_tql_script(
     ts: ThoughtSpot,
     *,
     fp: pathlib.Path,
-    verbose: bool=False,
-    raise_errors: bool=False
+    verbose: bool = False,
+    raise_errors: bool = False
 ) -> None:
     """
     Run multiple commands within TQL on a remote server.
@@ -91,8 +91,8 @@ def run_tql_command(
     ts: ThoughtSpot,
     *,
     command: str,
-    schema: str='falcon_default_schema',
-    raise_errors: bool=False
+    schema: str = 'falcon_default_schema',
+    raise_errors: bool = False
 ) -> None:
     """
     Run a single TQL command on a remote server.
@@ -160,8 +160,8 @@ def tsload(
     escape_character: str = '"',
     enclosing_character: str = '"',
     flexible: bool = False,
-    verbose: bool = False,
-) -> Union[str, None]:
+    verbose: bool = False
+) -> str:
     """
     Load a file via tsload on a remote server.
 
@@ -171,17 +171,40 @@ def tsload(
                --target_database <target_database>
                --target_schema 'falcon_default_schema'
                --target_table <target_table>
-               --field_separator '|'
-               --boolean_representation True_False
-               --null_value ''
+               --max_ignored_rows 0
                --date_time_format '%Y-%m-%d %H:%M:%S'
-               --has_header_row
+               --field_separator '|'
+               --null_value ''
+               --boolean_representation True_False
+               --escape_character '"'
+               --enclosing_character '"'
                --empty_target
 
     For further information on tsload, please refer to:
       https://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html
       https://docs.thoughtspot.com/latest/reference/tsload-service-api-ref.html
       https://docs.thoughtspot.com/latest/reference/data-importer-ref.html
+
+    Parameters
+    ----------
+    ts : ThoughtSpot
+      thoughtspot client
+
+    fp : pathlib.Path
+      file to load to thoughtspot
+
+    verbose : bool, default False
+      include tsload output in the log
+
+    Returns
+    -------
+    cycle_id
+      unique identifier for this specific file load
+
+    Raises
+    ------
+    TSLoadServiceUnreachable
+      raised when the tsload api service is not reachable
     """
     if not set(ts.me.privileges).intersection(REQUIRED_PRIVILEGES):
         log.error(
@@ -230,14 +253,18 @@ def tsload(
             f'\n\nIf you haven\'t enabled tsload service yet, please find the link '
             f'below further information:'
             f'\nhttps://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html',
-            # f'\n\nHeres the tsload command for the file you tried to load:'
-            # f'\n\ntsload --source_file {fp} --target_database {target_database} '
-            # f'--target_schema {target_schema} --target_table {target_table} '
-            # f'--field_separator "{field_separator}" --boolean_representation True_False '
-            # f'--null_value "" --time_format "{FMT_TSLOAD_TIME}" '
-            # f'--date_format "{FMT_TSLOAD_DATE}"'
-            # f'--date_time_format "{FMT_TSLOAD_DATETIME}" --has_header_row '
-            # + ('--empty_target' if empty_target else '--noempty_target'),
+            f'\n\nHeres the tsload command for the file you tried to load:'
+            f'\n\ntsload --source_file {fp} --target_database {target_database} '
+            f'--target_schema {target_schema} --target_table {target_table} '
+            f'--max_ignored_rows {max_ignored_rows} --date_format "{FMT_TSLOAD_DATE}" '
+            f'--time_format "{FMT_TSLOAD_TIME}" --date_time_format "{FMT_TSLOAD_DATETIME}" '
+            f'--field_separator "{field_separator}" --null_value "{null_value}" '
+            f'--boolean_representation {boolean_representation} '
+            f'--escape_character "{escape_character}" --enclosing_character "{enclosing_character}"'
+            + ('--empty_target ' if empty_target else '--noempty_target ')
+            + ('--has_header_row ' if has_header_row else '')
+            + ('--skip_second_fraction ' if skip_second_fraction else '')
+            + ('--flexible' if flexible else ''),
             http_error=e
         )
 
@@ -293,7 +320,7 @@ def to_csv(
         writer.writerows(data)
 
 
-def check_exists(path: pathlib.Path, *, raise_error: bool=True) -> bool:
+def check_exists(path: pathlib.Path, *, raise_error: bool = True) -> bool:
     """
     Determine if filepath exists on disk.
 
@@ -320,9 +347,9 @@ def check_exists(path: pathlib.Path, *, raise_error: bool=True) -> bool:
 def batched(
     api_call: Callable,
     *args,
-    batchsize: int=-1,
-    offset: Union[int, str]='auto',
-    transformer: Callable=None,
+    batchsize: int = -1,
+    offset: Union[int, str] = 'auto',
+    transformer: Callable = None,
     **kwargs
 ) -> List[Any]:
     """

@@ -43,7 +43,7 @@ app = typer.Typer(
 @app.command(cls=RichCommand)
 @frontend
 def status(
-    id: str=A_(..., help='data load cycle id'),
+    cycle_id: str=A_(..., help='data load cycle id'),
     bad_records_file: pathlib.Path = O_(None, '--bad_records_file', help='file to use for storing rows that failed to load'),
     **frontend_kw
 ):
@@ -53,7 +53,7 @@ def status(
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
     with ThoughtSpot(cfg) as ts:
-        r = ts.api.ts_dataservice.load_status(id)
+        r = ts.api.ts_dataservice.load_status(cycle_id)
         data = r.json()
 
         console.print(
@@ -67,10 +67,10 @@ def status(
             console.print(f'\nFailure reason:\n  [red]{data["status"]["message"]}[/]')
 
         if bad_records_file is not None and int(data['ignored_row_count']) > 0:
-            r = ts.api.ts_dataservice.load_params(id)
+            r = ts.api.ts_dataservice.load_params(cycle_id)
             load_params = r.json()
 
-            r = ts.api.ts_dataservice.bad_records(id)
+            r = ts.api.ts_dataservice.bad_records(cycle_id)
             console.print(f'[red]\n\nBad records found...\n  writing to {bad_records_file}')
             _bad_records_to_file(bad_records_file, data=r.text, params=load_params)
 
