@@ -42,6 +42,8 @@ class SearchMiddleware:
         Columns must be surrounded by square brackets. Search-level formulas
         are not currently supported, but a formula as part of a data source is.
 
+        There is a hard limit of 100K rows extracted for any given Search.
+
         Further reading:
           https://docs.thoughtspot.com/software/latest/search-data-api
           https://docs.thoughtspot.com/software/latest/search-data-api#components
@@ -89,30 +91,48 @@ class SearchMiddleware:
         guid = worksheet or table or view
 
         if not util.is_valid_guid(guid):
-            data = self.ts._rest_api._metadata.list(
+            d = self.ts._rest_api._metadata.list(
                        type='LOGICAL_TABLE',
                        pattern=guid,
                        sort='CREATED',
                        sortascending=True
                    ).json()
 
-            if not data['headers']:
+            if not d['headers']:
                 raise ContentDoesNotExist(type='LOGICAL_TABLE', name=guid)
 
-            data = [_ for _ in data['headers'] if _['name'].casefold() == guid.casefold()]
+            d = [_ for _ in d['headers'] if _['name'].casefold() == guid.casefold()]
 
-            if len(data) > 1:
+            if len(d) > 1:
                 raise AmbiguousContentError(name=guid, type='LOGICAL_TABLE')
 
-            guid = data[0]['id']
+            guid = d[0]['id']
 
         _ = query.replace('[', '\[')
         log.debug(f"executing search: {_}\n            guid: {guid}")
 
-        r = self.ts._rest_api.data.searchdata(
+        d = self.ts._rest_api.data.searchdata(
                 query_string=query,
                 data_source_guid=guid,
                 formattype='FULL'
-            )
+            ).json()
 
-        return r.json()['data']
+        if d['samplingRatio'] < 1:
+            log.warning(f"not all data was included as part of this search, sampling ratio: {d['samplingRatio']}")
+
+        # normalize datatime-based data
+        data = []
+
+        for row in d['data']:
+            _data = {}
+
+            for col_name, col_data in row.items():
+                if isinstance(col_data, dict) and 'v' in col_data:
+                    col_data = col_data['v']['s']
+
+                _data[col_name] = col_data
+
+            data.append(_data)
+        # /
+
+        return data
