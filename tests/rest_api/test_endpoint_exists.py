@@ -51,6 +51,8 @@ PARAMETERS = {
         ('POST', 'tsload/loads/this-is-a-fake-cycle-id'),
         ('POST', 'tsload/loads/this-is-a-fake-cycle-id/commit'),
         ( 'GET', 'tsload/loads/this-is-a-fake-cycle-id'),
+        ( 'GET', 'tsload/loads/this-is-a-fake-cycle-id/input_summary'),
+        ( 'GET', 'tsload/loads/this-is-a-fake-cycle-id/bad_records_file'),
     ]
 }
 
