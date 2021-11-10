@@ -34,7 +34,7 @@ app = typer.Typer(
 def search(
     query: str = O_(..., help='search terms to issue against the dataset'),
     dataset: str = O_(..., help='name of the worksheet, view, or table to search against'),
-    export: pathlib.Path = O_(..., help='full path to save data set to'),
+    export: pathlib.Path = O_(..., help='full path to save data set to', dir_okay=False, resolve_path=True),
     data_type: RecordsetType = O_('worksheet', help='type of object to search'),
     **frontend_kw
 ):
@@ -46,6 +46,7 @@ def search(
 
     [b yellow]There is a hard limit of 100K rows extracted for any given Search.[/]
 
+    \b
     Further reading:
       https://docs.thoughtspot.com/software/latest/search-data-api
       https://docs.thoughtspot.com/software/latest/search-data-api#components
@@ -57,4 +58,4 @@ def search(
         with console.status(f'[bold green]retrieving data from {data_type.value} "{dataset}"..[/]'):
             data = ts.search(query, **{data_type.value: dataset})
 
-    common.to_csv(data, export, sep=',', header=True)
+    common.to_csv(data, export, header=True)

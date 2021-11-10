@@ -44,7 +44,13 @@ app = typer.Typer(
 @frontend
 def status(
     cycle_id: str=A_(..., help='data load cycle id'),
-    bad_records_file: pathlib.Path = O_(None, '--bad_records_file', help='file to use for storing rows that failed to load'),
+    bad_records_file: pathlib.Path = O_(
+        None,
+        '--bad_records_file',
+        help='file to use for storing rows that failed to load',
+        dir_okay=False,
+        resolve_path=True
+    ),
     **frontend_kw
 ):
     """
@@ -78,7 +84,7 @@ def status(
 @app.command(cls=RichCommand)
 @frontend
 def file(
-    file: pathlib.Path = A_(..., help='path to file to execute, default to stdin'),
+    file: pathlib.Path = A_(..., help='path to file to execute', dir_okay=False, resolve_path=True),
     target_database: str = O_(..., '--target_database', help='specifies the target database into which tsload should load the data'),
     target_table: str = O_(..., '--target_table', help='specifies the target database'),
     target_schema: str = O_('falcon_default_schema', '--target_schema', help='specifies the target schema'),
@@ -94,7 +100,13 @@ def file(
     has_header_row: bool = O_(False, '--has_header_row', show_default=False, help='indicates that the input file contains a header row'),
     escape_character: str = O_('"', '--escape_character', help='specifies the escape character used in the input file'),
     enclosing_character: str = O_('"', '--enclosing_character', help='enclosing character in csv source format'),
-    bad_records_file: pathlib.Path = O_(None, '--bad_records_file', help='file to use for storing rows that failed to load'),
+    bad_records_file: pathlib.Path = O_(
+        None,
+        '--bad_records_file',
+        help='file to use for storing rows that failed to load',
+        dir_okay=False,
+        resolve_path=True
+    ),
     flexible: bool = O_(False, '--flexible', show_default=False, help='whether input data file exactly matches target schema', hidden=True),
     **frontend_kw
 ):

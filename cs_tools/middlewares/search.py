@@ -127,7 +127,7 @@ class SearchMiddleware:
             _data = {}
 
             for col_name, col_data in row.items():
-                if isinstance(col_data, dict) and 'v' in col_data:
+                if isinstance(col_data, dict) and col_data['v']:
                     col_data = col_data['v']['s']
 
                 _data[col_name] = col_data
