@@ -11,12 +11,17 @@ hide:
     The format is based on [Keep a Changelog][keep-a-changelog]{ target='secondary' .external-link }, and this project
     adheres to [Semantic Versioning][semver]{ target='secondary' .external-link }.
 
-### :octicons-tag-16: v1.2.0 &nbsp; &nbsp; :material-calendar-text: 2021-09-11
+### :octicons-tag-16: v1.2.1 &nbsp; &nbsp; :material-calendar-text: 2021-11-09
 === ":wrench: &nbsp; Modified"
-    - `ALTER TABLE` to support column dependencies [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-    - support for large clusters with API call batching [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+    - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+    - `tml` is now `spotapp` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 ---
+
+??? tldr :octicons-tag-16: v1.2.0 &nbsp; &nbsp; :material-calendar-text: 2021-09-11
+    === ":wrench: &nbsp; Modified"
+        - `ALTER TABLE` to support column dependencies [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+        - support for large clusters with API call batching [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 ??? tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-25"
     === ":wrench: &nbsp; Modified"

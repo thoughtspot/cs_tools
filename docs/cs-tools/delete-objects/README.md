@@ -29,14 +29,12 @@ in if supplied to `delete-objects from-file`
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects
 
-    Usage: cs_tools tools delete-objects [OPTIONS] COMMAND [ARGS]...
+    Usage: cstools tools delete-objects [OPTIONS] COMMAND [ARGS]...
 
       Bulk delete metadata objects from your ThoughtSpot platform.
 
       USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
       version update and break the tool.
-
-      Leverages the /metadata/delete private API endpoint.
 
       Tool takes an input file and or a specific object and deletes it from the metadata.
 
@@ -69,7 +67,7 @@ in if supplied to `delete-objects from-file`
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects from-file --help
 
-    Usage: cs_tools tools delete-objects from-file [OPTIONS] FILE
+    Usage: cstools tools delete-objects from-file [OPTIONS] FILE
 
       Remove many objects from ThoughtSpot.
 
@@ -90,9 +88,7 @@ in if supplied to `delete-objects from-file`
       FILE  path to a file with columns "type" and "guid"  (required)
 
     Options:
-      --batchsize INTEGER  maximum amount of objects to delete simultaneously  (default:
-                           1)
-
+      --batchsize INTEGER  maximum amount of objects to delete simultaneously  (default: 1)
       --helpfull           Show the full help message and exit.
       -h, --help           Show this message and exit.
     ```
@@ -101,14 +97,14 @@ in if supplied to `delete-objects from-file`
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects generate-file --help
 
-    Usage: cs_tools tools delete-objects generate-file [OPTIONS]
+    Usage: cstools tools delete-objects generate-file [OPTIONS]
 
       Generates example file in Excel or CSV format
 
     Options:
-      --save-path PATH  filepath to save generated file to  (required)
-      --helpfull        Show the full help message and exit.
-      -h, --help        Show this message and exit.
+      --export FILE  filepath to save generated file to  (required)
+      --helpfull     Show the full help message and exit.
+      -h, --help     Show this message and exit.
     ```
 
 === "delete-objects single"

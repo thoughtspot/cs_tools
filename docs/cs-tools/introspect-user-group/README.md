@@ -28,7 +28,7 @@ so that the information provided is not stale.
 
 === "introspect-user-group --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group --help
 
     Usage: cs_tools tools introspect-user-group [OPTIONS] COMMAND [ARGS]...
 
@@ -55,8 +55,8 @@ so that the information provided is not stale.
       -h, --help  Show this message and exit.
 
     Commands:
-      gather  Gather and optionally, insert data into Falcon.
-      tml     Create TML files.
+      gather   Gather and optionally, insert data into Falcon.
+      spotapp  Exports the SpotApp associated with this tool.
     ```
 
 === "introspect-user-group gather"
@@ -71,28 +71,21 @@ so that the information provided is not stale.
       used, data will not be inserted and will instead be dumped to the location specified.
 
     Options:
-      --save-path PATH  if specified, directory to save data to
-      --helpfull        Show the full help message and exit.
-      -h, --help        Show this message and exit.
+      --export DIRECTORY  if specified, directory to save data to
+      --helpfull          Show the full help message and exit.
+      -h, --help          Show this message and exit.
     ```
 
-=== "introspect-user-group tml"
+=== "introspect-user-group spotapp"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group tml --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group spotapp --help
 
-    Usage: cs_tools tools introspect-user-group tml [OPTIONS]
+    Usage: cs_tools tools introspect-user-group spotapp [OPTIONS]
 
-      Create TML files.
-
-      Generates and saves multiple TML files.
-
-      TABLE:
-        - introspect_user
-        - introspect_group
-        - introspect_asso_user_group
+      Exports the SpotApp associated with this tool.
 
     Options:
-      --save-path PATH  filepath to save TML files to  (required)
-      --helpfull        Show the full help message and exit.
-      -h, --help        Show this message and exit.
+      --export DIRECTORY  directory to save the spot app to
+      --helpfull          Show the full help message and exit.
+      -h, --help          Show this message and exit.
     ```

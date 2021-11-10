@@ -77,8 +77,6 @@ app = typer.Typer(
     [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
     could change on any version update and break the tool.[/]
 
-    Leverages the /metadata/delete private API endpoint.
-
     Tool takes an input file and or a specific object and deletes it from the metadata.
 
     \b
@@ -104,27 +102,29 @@ app = typer.Typer(
 @app.command(cls=RichCommand)
 @frontend
 def generate_file(
-    save_path: pathlib.Path=O_(..., help='filepath to save generated file to', prompt=True),
+    export: pathlib.Path = O_(..., help='filepath to save generated file to', dir_okay=False, resolve_path=True, prompt=True),
+    # maintained for backwards compatability
+    backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True),
     **frontend_kw
 ):
     """
     Generates example file in Excel or CSV format
     """
-    if save_path.suffix == '.xlsx':
-        shutil.copy(HERE / 'static' / 'template.xlsx', save_path)
-    elif save_path.suffix == '.csv':
-        shutil.copy(HERE / 'static' / 'template.csv', save_path)
+    if export.suffix == '.xlsx':
+        shutil.copy(HERE / 'static' / 'template.xlsx', export)
+    elif export.suffix == '.csv':
+        shutil.copy(HERE / 'static' / 'template.csv', export)
     else:
         log.error('appropriate file not supplied, must be either Excel or CSV')
-        console.print(f'[red]must provide an Excel (.xlsx) or CSV (.csv) file, got {save_path}[/]')
+        console.print(f'[red]must provide an Excel (.xlsx) or CSV (.csv) file, got {export}[/]')
         return
 
 
 @app.command(cls=RichCommand)
 @frontend
 def single(
-    type: ReversibleSystemType=O_(..., help='type of the metadata to delete'),
-    guid: str=O_(..., help='guid to delete'),
+    type: ReversibleSystemType = O_(..., help='type of the metadata to delete'),
+    guid: str = O_(..., help='guid to delete'),
     **frontend_kw
 ):
     """
@@ -145,8 +145,8 @@ def single(
 @app.command(cls=RichCommand)
 @frontend
 def from_file(
-    file: pathlib.Path=A_(..., help='path to a file with columns "type" and "guid"'),
-    batchsize: int=O_(1, help='maximum amount of objects to delete simultaneously'),
+    file: pathlib.Path = A_(..., help='path to a file with columns "type" and "guid"', dir_okay=False, resolve_path=True),
+    batchsize: int = O_(1, help='maximum amount of objects to delete simultaneously'),
     **frontend_kw
 ):
     """

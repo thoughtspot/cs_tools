@@ -228,30 +228,27 @@ app = typer.Typer(
 
 @app.command(cls=RichCommand)
 @frontend
-def tml(
-    save_path: pathlib.Path=O_(..., help='filepath to save TML files to', prompt=True),
+def spotapp(
+    export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),
+    # maintained for backwards compatability
+    backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True),
     **frontend_kw
 ):
     """
-    Create TML files.
-
-    Generates and saves multiple TML files.
-
-    \b
-    TABLE:
-      - introspect_metadata_object
-      - introspect_metadata_dependent
+    Exports the SpotApp associated with this tool.
     """
-    for file in (HERE / 'static').glob('*.tml'):
-        shutil.copy(file, save_path)
+    shutil.copy(HERE / 'static' / 'spotapps.zip', export)
+    console.print(f'moved the SpotApp to {export}')
 
 
 @app.command(cls=RichCommand)
 @frontend
 def gather(
-    save_path: pathlib.Path=O_(None, help='if specified, directory to save data to'),
+    export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),
     parent: ParentType=O_(None, help='type of object to find dependents for'),
     include_columns: bool=O_(False, '--include-columns', help='whether or not to find column dependents', show_default=False),
+    # maintained for backwards compatability
+    backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True),
     **frontend_kw
 ):
     """
@@ -262,9 +259,10 @@ def gather(
     and will instead be dumped to the location specified.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-    common.check_exists(save_path)
 
-    dir_ = save_path if save_path is not None else cfg.temp_dir
+    dir_ = cfg.temp_dir if export is None else export
+    dir_.parent.mkdir(exist_ok=True)
+
     static = HERE / 'static'
     parent_types = [e.value for e in ParentType] if parent is None else [parent]
 
@@ -284,7 +282,7 @@ def gather(
                     _format_metadata_objects(pq, metadata[parent])
                     _get_dependents(ts.api, cq, parent, metadata[parent])
 
-        if save_path is not None:
+        if export is not None:
             return
 
         try:

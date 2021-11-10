@@ -50,15 +50,15 @@ content a User makes.
       -h, --help  Show this message and exit.
 
     Commands:
-      gather  Gather and optionally, insert data into Falcon.
-      tml     Create TML files.
+      gather   Gather and optionally, insert data into Falcon.
+      spotapp  Exports the SpotApp associated with this tool.
     ```
 
 === "dependency-checker gather"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker gather --help
 
-    Usage: cs_tools tools dependency-checker gather [OPTIONS]
+Usage: cs_tools tools dependency-checker gather [OPTIONS]
 
       Gather and optionally, insert data into Falcon.
 
@@ -66,7 +66,7 @@ content a User makes.
       used, data will not be inserted and will instead be dumped to the location specified.
 
     Options:
-      --save-path PATH                if specified, directory to save data to
+      --export DIRECTORY              directory to save the spot app to
       --parent (system table|imported data|worksheet|view)
                                       type of object to find dependents for
       --include-columns               whether or not to find column dependents
@@ -74,22 +74,16 @@ content a User makes.
       -h, --help                      Show this message and exit.
     ```
 
-=== "dependency-checker tml"
+=== "dependency-checker spotapp"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker tml --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker spotapp --help
 
-    Usage: cs_tools tools dependency-checker tml [OPTIONS]
+    Usage: cs_tools tools dependency-checker spotapp [OPTIONS]
 
-      Create TML files.
-
-      Generates and saves multiple TML files.
-
-      TABLE:
-        - introspect_metadata_object
-        - introspect_metadata_dependent
+      Exports the SpotApp associated with this tool.
 
     Options:
-      --save-path PATH  filepath to save TML files to  (required)
-      --helpfull        Show the full help message and exit.
-      -h, --help        Show this message and exit.
+      --export DIRECTORY  directory to save the spot app to
+      --helpfull          Show the full help message and exit.
+      -h, --help          Show this message and exit.
     ```

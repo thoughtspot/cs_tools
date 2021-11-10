@@ -22,9 +22,7 @@ value to others in your platform.
 
 === "created-objects --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools created-objects
-
-    Usage: cs_tools tools created-objects [OPTIONS] COMMAND [ARGS]...
+    Usage: cstools tools created-objects [OPTIONS] COMMAND [ARGS]...
 
       Make ThoughtSpot content searchable in your platform.
 
@@ -47,19 +45,18 @@ value to others in your platform.
 
     Options:
       --version   Show the tool's version and exit.
-      --helpfull  Show the full help message and exit.
       -h, --help  Show this message and exit.
 
     Commands:
-      gather  Gather and optionally, insert data into Falcon.
-      tml     Create TML files.
+      gather   Gather and optionally, insert data into Falcon.
+      spotapp  Exports the SpotApp associated with this tool.
     ```
 
 === "created-objects gather"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools created-objects gather --help
 
-    Usage: cs_tools tools created-objects gather [OPTIONS]
+    Usage: cstools tools created-objects gather [OPTIONS]
 
       Gather and optionally, insert data into Falcon.
 
@@ -67,28 +64,23 @@ value to others in your platform.
       used, data will not be inserted and will instead be dumped to the location specified.
 
     Options:
-      --save-path PATH                if specified, directory to save data to
+      --export DIRECTORY              if specified, directory to save data to
       --metadata (system table|imported data|worksheet|view|pinboard|saved answer)
                                       type of object to find data for
       --helpfull                      Show the full help message and exit.
       -h, --help                      Show this message and exit.
     ```
 
-=== "created-objects tml"
+=== "created-objects spotapp"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools created-objects tml --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools created-objects spotapp --help
 
-    Usage: cs_tools tools created-objects tml [OPTIONS]
+    Usage: cstools tools created-objects spotapp [OPTIONS]
 
-      Create TML files.
-
-      Generates and saves multiple TML files.
-
-      TABLE:
-        - introspect_metadata_object
+      Exports the SpotApp associated with this tool.
 
     Options:
-      --save-path PATH  filepath to save TML files to  (required)
-      --helpfull        Show the full help message and exit.
-      -h, --help        Show this message and exit.
+      --export DIRECTORY  directory to save the spot app to
+      --helpfull          Show the full help message and exit.
+      -h, --help          Show this message and exit.
     ```

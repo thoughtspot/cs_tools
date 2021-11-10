@@ -48,8 +48,8 @@ Office Hours session and a CSA will be able to help guide them through the proce
       -h, --help  Show this message and exit.
 
     Commands:
-      gather  Gather and optionally, insert data into Falcon.
-      tml     Create TML files.
+      gather   Gather and optionally, insert data into Falcon.
+      spotapp  Exports the SpotApp associated with this tool.
     ```
 
 === "sharding-recommender gather"
@@ -64,34 +64,21 @@ Office Hours session and a CSA will be able to help guide them through the proce
       used, data will not be inserted and will instead be dumped to the location specified.
 
     Options:
-      --save-path PATH  if specified, directory to save data to
-      --helpfull        Show the full help message and exit.
-      -h, --help        Show this message and exit.
+      --export DIRECTORY  directory to save the spot app to
+      --helpfull          Show the full help message and exit.
+      -h, --help          Show this message and exit.
     ```
 
-=== "sharding-recommender tml"
+=== "sharding-recommender spotapp"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools sharding-recommender tml --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools sharding-recommender spotapp --help
 
-    Usage: cs_tools tools sharding-recommender tml [OPTIONS]
+    Usage: cs_tools tools sharding-recommender spotapp [OPTIONS]
 
-      Create TML files.
-
-      Generates and saves multiple TML files.
-
-      TABLE:
-        - falcon_table_info
-
-      WORKSHEET:
-        - PS: Falcon Table Sharding Recommender
-
-      PINBOARD:
-        - PS: Falcon Table Sharding Recommender
+      Exports the SpotApp associated with this tool.
 
     Options:
-      --save-path PATH         directory to save TML files to  (required)
-      --nodes INTEGER          number of nodes in your ThoughtSpot cluster  (default: 4)
-      --cpus-per-node INTEGER  number of CPUs per node in your cluster  (default: 56)
-      --helpfull               Show the full help message and exit.
-      -h, --help               Show this message and exit.
+      --export DIRECTORY  directory to save the spot app to
+      --helpfull          Show the full help message and exit.
+      -h, --help          Show this message and exit.
     ```

@@ -183,6 +183,8 @@ def show_full_help(ctx: Context, param: Parameter_, value: str):
         for param in ctx.command.params:
             if param.name == 'private':
                 continue
+            if 'backwards-compat' in param.help:
+                continue
 
             param.hidden = False
             param.show_envvar = True
