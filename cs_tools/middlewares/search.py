@@ -10,6 +10,24 @@ from cs_tools import util
 log = logging.getLogger(__name__)
 
 
+def _clean_datetime(row: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    # BUG: SCAL-101507
+    #
+    # Prior to ts7.nov.cl-1xx / 7.2.1 release, DATE_TIME formatted columns would return
+    # data in the format below. This fixes that.
+    #
+    # "data": [ {"Timestamp": {"v":{"s":1625759921}} ]
+    #
+    for i, value in enumerate(row):
+        if isinstance(value, dict) and value['v']:
+            try:
+                row[i] = value['v']['s']
+            except Exception:
+                log.warning(f'unexpected value in search-data response: {value}')
+
+    return row
+
+
 class SearchMiddleware:
     """
     """
@@ -108,31 +126,17 @@ class SearchMiddleware:
 
             guid = d[0]['id']
 
-        _ = query.replace('[', '\[')
-        log.debug(f"executing search: {_}\n            guid: {guid}")
+        # _ = query.replace('[', r'\[')
+        # log.debug(fr"executing search: {_}\n            guid: {guid}"))
+        log.debug(fr"executing search: {query}\n            guid: {guid}")
 
         d = self.ts._rest_api.data.searchdata(
                 query_string=query,
                 data_source_guid=guid,
-                formattype='FULL'
+                formattype='COMPACT'
             ).json()
 
         if d['samplingRatio'] < 1:
-            log.warning(f"not all data was included as part of this search, sampling ratio: {d['samplingRatio']}")
+            log.warning(f"not all data was included as part of this search, sampling ratio: {d['samplingRatio']:.2f}")
 
-        # normalize datatime-based data
-        data = []
-
-        for row in d['data']:
-            _data = {}
-
-            for col_name, col_data in row.items():
-                if isinstance(col_data, dict) and col_data['v']:
-                    col_data = col_data['v']['s']
-
-                _data[col_name] = col_data
-
-            data.append(_data)
-        # /
-
-        return data
+        return [dict(zip(d['columnNames'], _clean_datetime(row))) for row in d['data']]
