@@ -52,7 +52,7 @@ def interactive(
 @app.command(cls=RichCommand)
 @frontend
 def file(
-    file: pathlib.Path=A_(..., help='path to file to execute, default to stdin'),
+    file: pathlib.Path=A_(..., metavar='FILE.tql', help='path to file to execute, default to stdin'),
     schema: str=O_('falcon_default_schema', help='schema name to use'),
     **frontend_kw
 ):

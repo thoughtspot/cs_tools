@@ -92,6 +92,6 @@ def transfer(
             except Exception:
                 json_msg = r.json()['debug']
                 msg = json.loads(json_msg)  # uhm, lol?
-                console.print(f'[red]Failed. {msg[-1]}[/]')
+                console.print(f'[red]Failed transferral of objects. {msg[-1]}')
             else:
-                console.print('[green]Success![/]')
+                console.print(f'[green]Transferred {amt} objects from "{from_}" to "{to_}"')

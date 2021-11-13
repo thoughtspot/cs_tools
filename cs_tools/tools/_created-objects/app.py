@@ -103,7 +103,12 @@ app = typer.Typer(
 @app.command(cls=RichCommand)
 @frontend
 def spotapp(
-    export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),
+    export: pathlib.Path = O_(
+        None,
+        help='directory to save the spot app to',
+        file_okay=False,
+        resolve_path=True
+    ),
     **frontend_kw
 ):
     """

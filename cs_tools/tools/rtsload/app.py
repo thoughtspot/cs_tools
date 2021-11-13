@@ -1,6 +1,5 @@
-from typing import Any, List
+from typing import Any
 import pathlib
-import csv
 
 from typer import Argument as A_, Option as O_
 import typer
@@ -48,6 +47,7 @@ def status(
         None,
         '--bad_records_file',
         help='file to use for storing rows that failed to load',
+        metavar='FILE.csv',
         dir_okay=False,
         resolve_path=True
     ),
@@ -84,7 +84,7 @@ def status(
 @app.command(cls=RichCommand)
 @frontend
 def file(
-    file: pathlib.Path = A_(..., help='path to file to execute', dir_okay=False, resolve_path=True),
+    file: pathlib.Path = A_(..., help='path to file to execute', metavar='FILE.csv', dir_okay=False, resolve_path=True),
     target_database: str = O_(..., '--target_database', help='specifies the target database into which tsload should load the data'),
     target_table: str = O_(..., '--target_table', help='specifies the target database'),
     target_schema: str = O_('falcon_default_schema', '--target_schema', help='specifies the target schema'),
@@ -104,6 +104,7 @@ def file(
         None,
         '--bad_records_file',
         help='file to use for storing rows that failed to load',
+        metavar='FILE.csv',
         dir_okay=False,
         resolve_path=True
     ),

@@ -34,7 +34,13 @@ app = typer.Typer(
 def search(
     query: str = O_(..., help='search terms to issue against the dataset'),
     dataset: str = O_(..., help='name of the worksheet, view, or table to search against'),
-    export: pathlib.Path = O_(..., help='full path to save data set to', dir_okay=False, resolve_path=True),
+    export: pathlib.Path = O_(
+        ...,
+        help='full path to save data set to',
+        metavar='FILE.csv',
+        dir_okay=False,
+        resolve_path=True
+    ),
     data_type: RecordsetType = O_('worksheet', help='type of object to search'),
     **frontend_kw
 ):

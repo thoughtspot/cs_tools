@@ -1,11 +1,9 @@
 from typing import List
 import pathlib
-import zipfile
 import shutil
 
 from typer import Option as O_
 import typer
-import yaml
 
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
 from cs_tools.util.datetime import to_datetime
