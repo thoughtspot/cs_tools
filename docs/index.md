@@ -33,8 +33,8 @@ platform.
 - Enhanced security with remote TQL and tsload workflows
 - Supported on MacOS, Linux, and Windows
 - Multiple-cluster support (Dev, QA, Prod)
+- SpotApps distribution for data tools
 - Scheduler-friendly execution
-- SpotApps style distribution for relevant tools *(..coming soon!)*
 
 ---
 

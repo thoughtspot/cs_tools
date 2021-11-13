@@ -1,11 +1,15 @@
 from typing import Any, Callable, Optional, Union
 from collections.abc import Iterable
 import datetime as dt
+import logging
 import pathlib
 import base64
 import uuid
 
 from dateutil import tz as tz_
+
+
+log = logging.getLogger(__name__)
 
 
 def to_datetime(
@@ -124,16 +128,16 @@ def stringified_array(iterable: Iterable) -> str:
             ?type=LOGICAL_TABLE
             &subtypes=[WORKSHEET, USER_DEFINED]
 
-    ..yet both requests and httpx see values in a list to `params` as multi-optioned
-    paramaters..
+    ..yet both requests and httpx see values in a list to `params` as
+    multi-optioned paramaters..
 
         https://my.thoughtspot.cloud
             ?type=LOGICAL_TABLE
             &subtypes=WORKSHEET
             &subtypes=USER_DEFINED
 
-    This function corrects this by simply converting the input into a comma-separated
-    string.
+    This function corrects this by simply converting the input into a
+    comma-separated string.
     """
     return '[' + ', '.join(iterable) + ']'
 

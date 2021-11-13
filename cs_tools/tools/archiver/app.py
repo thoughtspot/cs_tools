@@ -25,7 +25,7 @@ def _get_content(ts, *, tags) -> Tuple[List[Dict[str, Any]]]:
         answers = []
 
     try:
-        pinboards = [{'content_type': 'answer', **_} for _ in ts.pinboard.all(tags=tags)]
+        pinboards = [{'content_type': 'pinboard', **_} for _ in ts.pinboard.all(tags=tags)]
     except ContentDoesNotExist:
         pinboards = []
 
@@ -409,10 +409,10 @@ def remove(
             raise typer.Exit()
 
         if answers:
-            ts.api._metadata.delete(id=answers, type=['QUESTION_ANSWER_BOOK' for _ in answers])
+            ts.api._metadata.delete(id=answers, type='QUESTION_ANSWER_BOOK')
 
         if pinboards:
-            ts.api._metadata.delete(id=pinboards, type=['PINBOARD_ANSWER_BOOK' for _ in pinboards])
+            ts.api._metadata.delete(id=pinboards, type='PINBOARD_ANSWER_BOOK')
 
         if delete_tag:
             ts.tag.delete(tag['name'])
