@@ -1,3 +1,5 @@
+from typing import Any, Dict, List, Tuple
+import datetime as dt
 import logging
 import pathlib
 
@@ -7,13 +9,27 @@ import typer
 from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand, DataTable
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
+from cs_tools.errors import ContentDoesNotExist
 from cs_tools.tools import common
 from cs_tools import util
 
 from .enums import ContentType, UserActions
 
-
 log = logging.getLogger(__name__)
+
+
+def _get_content(ts, *, tags) -> Tuple[List[Dict[str, Any]]]:
+    try:
+        answers = [{'content_type': 'answer', **_} for _ in ts.answer.all(tags=tags)]
+    except ContentDoesNotExist:
+        answers = []
+
+    try:
+        pinboards = [{'content_type': 'answer', **_} for _ in ts.pinboard.all(tags=tags)]
+    except ContentDoesNotExist:
+        pinboards = []
+
+    return answers, pinboards
 
 
 app = typer.Typer(
@@ -39,6 +55,10 @@ def identify(
         show_default=False,
         help='months to consider for user activity (default: all user history)'
     ),
+    ignore_recent: int=O_(
+        30,
+        help='window of days to ignore for newly created or modified content'
+    ),
     # TODO?
     #
     # ignore_tags: List[str]=O_(
@@ -61,7 +81,10 @@ def identify(
     ),
     report: pathlib.Path=O_(
         None,
-        help='directory, generates a list of content to be archived'
+        help='generates a list of content to be archived',
+        metavar='FILE.csv',
+        dir_okay=False,
+        resolve_path=True
     ),
     **frontend_kw
 ):
@@ -77,6 +100,8 @@ def identify(
     actions = UserActions.strigified(sep="', '", context=content)
 
     with ThoughtSpot(cfg) as ts:
+        recently = dt.datetime.now(tz=ts.platform.tz) - dt.timedelta(days=ignore_recent)
+
         with console.status('[bold green]retrieving objects usage..[/]'):
             data = ts.search(
                 f"[user action] = '{actions}' "
@@ -107,10 +132,16 @@ def identify(
                 'content_type': _['content_type'],
                 'guid': _['id'],
                 'name': _['name'],
+                'created_at': util.to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
                 'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
                 'by': _['authorName']
             }
-            for _ in data if _['id'] in archive
+            for _ in data
+            # ignore recent content
+            if util.to_datetime(_['created'], tz=ts.platform.timezone) <= recently
+            if util.to_datetime(_['modified'], tz=ts.platform.timezone) <= recently
+            # only include content found in the metadata snapshot
+            if _['id'] in archive
         ]
 
         if not to_archive:
@@ -126,15 +157,15 @@ def identify(
         console.log('\n', table)
 
         if report is not None:
-            common.to_csv(to_archive, fp=report / 'archiver_identify.csv', mode='a')
+            common.to_csv(to_archive, fp=report, header=True)
 
         if dry_run:
             raise typer.Exit(-1)
 
         tag = ts.tag.get(tag, create_if_not_exists=True)
 
-        answers = [content['guid'] for content in to_archive if content['content_type'] == 'answer']
-        pinboards = [content['guid'] for content in to_archive if content['content_type'] == 'pinboard']
+        answers = [_['guid'] for _ in to_archive if _['content_type'] == 'answer']
+        pinboards = [_['guid'] for _ in to_archive if _['content_type'] == 'pinboard']
 
         # PROMPT FOR INPUT
         if not no_prompt:
@@ -143,17 +174,19 @@ def identify(
                 abort=True
             )
 
-        ts.api._metadata.assigntag(
-            id=answers,
-            type=['QUESTION_ANSWER_BOOK' for _ in answers],
-            tagid=[tag['id'] for _ in answers]
-        )
+        if answers:
+            ts.api._metadata.assigntag(
+                id=answers,
+                type=['QUESTION_ANSWER_BOOK' for _ in answers],
+                tagid=[tag['id'] for _ in answers]
+            )
 
-        ts.api._metadata.assigntag(
-            id=pinboards,
-            type=['PINBOARD_ANSWER_BOOK' for _ in pinboards],
-            tagid=[tag['id'] for _ in pinboards]
-        )
+        if pinboards:
+            ts.api._metadata.assigntag(
+                id=pinboards,
+                type=['PINBOARD_ANSWER_BOOK' for _ in pinboards],
+                tagid=[tag['id'] for _ in pinboards]
+            )
 
 
 @app.command(cls=RichCommand)
@@ -181,7 +214,10 @@ def revert(
     ),
     report: pathlib.Path=O_(
         None,
-        help='directory, generates a list of content to be untagged'
+        help='generates a list of content to be untagged',
+        metavar='FILE.csv',
+        dir_okay=False,
+        resolve_path=True
     ),
     **frontend_kw
 ):
@@ -192,27 +228,18 @@ def revert(
 
     with ThoughtSpot(cfg) as ts:
         to_unarchive = []
+        answers, pinboards = _get_content(ts, tags=tag)
 
         to_unarchive.extend(
             {
-                'content_type': 'answer',
-                'guid': a['id'],
-                'name': a['name'],
-                'last_modified': util.to_datetime(a['modified'], tz=ts.platform.timezone, friendly=True),
-                'by': a['authorName']
+                'content_type': _['content_type'],
+                'guid': _['id'],
+                'name': _['name'],
+                'created_at': util.to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
+                'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
+                'by': _['authorName']
             }
-            for a in ts.answer.all(tags=tag)
-        )
-
-        to_unarchive.extend(
-            {
-                'content_type': 'pinboard',
-                'guid': p['id'],
-                'name': p['name'],
-                'last_modified': util.to_datetime(p['modified'], tz=ts.platform.timezone, friendly=True),
-                'by': p['authorName']
-            }
-            for p in ts.pinboard.all(tags=tag)
+            for _ in (*answers, *pinboards)
         )
 
         if not to_unarchive:
@@ -228,7 +255,7 @@ def revert(
         console.log('\n', table)
 
         if report is not None:
-            common.to_csv(to_unarchive, fp=report / 'archiver_identify.csv', mode='a')
+            common.to_csv(to_unarchive, fp=report, header=True)
 
         if dry_run:
             raise typer.Exit()
@@ -245,17 +272,19 @@ def revert(
                 abort=True
             )
 
-        ts.api._metadata.unassigntag(
-            id=answers,
-            type=['QUESTION_ANSWER_BOOK' for _ in answers],
-            tagid=[tag['id'] for _ in answers]
-        )
+        if answers:
+            ts.api._metadata.unassigntag(
+                id=answers,
+                type=['QUESTION_ANSWER_BOOK' for _ in answers],
+                tagid=[tag['id'] for _ in answers]
+            )
 
-        ts.api._metadata.unassigntag(
-            id=pinboards,
-            type=['QUESTION_ANSWER_BOOK' for _ in pinboards],
-            tagid=[tag['id'] for _ in pinboards]
-        )
+        if pinboards:
+            ts.api._metadata.unassigntag(
+                id=pinboards,
+                type=['QUESTION_ANSWER_BOOK' for _ in pinboards],
+                tagid=[tag['id'] for _ in pinboards]
+            )
 
         if delete_tag:
             ts.tag.delete(tag['name'])
@@ -265,7 +294,13 @@ def revert(
 @frontend
 def remove(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
-    export_tml: pathlib.Path=O_(None, help='if set, file path to export tagged objects, as zipfile'),
+    export_tml: pathlib.Path=O_(
+        None,
+        help='if set, path to export tagged objects as a zipfile',
+        metavar='FILE.zip',
+        dir_okay=False,
+        resolve_path=True
+    ),
     delete_tag: bool=O_(
         False,
         '--delete-tag',
@@ -295,7 +330,10 @@ def remove(
     ),
     report: pathlib.Path=O_(
         None,
-        help='directory, generates a list of content to be removed'
+        help='generates a list of content to be removed',
+        metavar='FILE.csv',
+        dir_okay=False,
+        resolve_path=True
     ),
     **frontend_kw
 ):
@@ -310,27 +348,18 @@ def remove(
 
     with ThoughtSpot(cfg) as ts:
         to_unarchive = []
+        answers, pinboards = _get_content(ts, tags=tag)
 
         to_unarchive.extend(
             {
-                'content_type': 'answer',
-                'guid': a['id'],
-                'name': a['name'],
-                'last_modified': util.to_datetime(a['modified'], tz=ts.platform.timezone, friendly=True),
-                'by': a['authorName']
+                'content_type': _['content_type'],
+                'guid': _['id'],
+                'name': _['name'],
+                'created_at': util.to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
+                'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
+                'by': _['authorName']
             }
-            for a in ts.answer.all(tags=tag)
-        )
-
-        to_unarchive.extend(
-            {
-                'content_type': 'pinboard',
-                'guid': p['id'],
-                'name': p['name'],
-                'last_modified': util.to_datetime(p['modified'], tz=ts.platform.timezone, friendly=True),
-                'by': p['authorName']
-            }
-            for p in ts.pinboard.all(tags=tag)
+            for _ in (*answers, *pinboards)
         )
 
         if not to_unarchive:
@@ -347,14 +376,14 @@ def remove(
         console.log('\n', table)
 
         if report is not None:
-            common.to_csv(to_unarchive, fp=report / 'archiver_identify.csv', mode='a')
+            common.to_csv(to_unarchive, fp=report, header=True)
 
         if dry_run:
             raise typer.Exit()
 
         tag = ts.tag.get(tag)
-        answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
-        pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
+        answers = [_['guid'] for _ in to_unarchive if _['content_type'] == 'answer']
+        pinboards = [_['guid'] for _ in to_unarchive if _['content_type'] == 'pinboard']
 
         # PROMPT FOR INPUT
         if not no_prompt:
@@ -376,11 +405,14 @@ def remove(
 
             util.base64_to_file(r.json()['zip_file'], filepath=export_tml)
 
-            if export_only:
-                raise typer.Exit()
+        if export_only:
+            raise typer.Exit()
 
-        ts.api._metadata.delete(id=answers, type=['QUESTION_ANSWER_BOOK' for _ in answers])
-        ts.api._metadata.delete(id=pinboards, type=['PINBOARD_ANSWER_BOOK' for _ in pinboards])
+        if answers:
+            ts.api._metadata.delete(id=answers, type=['QUESTION_ANSWER_BOOK' for _ in answers])
+
+        if pinboards:
+            ts.api._metadata.delete(id=pinboards, type=['PINBOARD_ANSWER_BOOK' for _ in pinboards])
 
         if delete_tag:
             ts.tag.delete(tag['name'])
