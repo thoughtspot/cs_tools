@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Union
+import datetime
 import logging
 
 from pydantic.dataclasses import dataclass
+from dateutil import tz
 
 from ._enums import Privilege
 
@@ -20,6 +22,10 @@ class ThoughtSpotPlatform:
     timezone: str
     cluster_name: str
     cluster_id: str
+
+    @property
+    def tz(self) -> datetime.timezone:
+        return tz.gettz(self.timezone)
 
     @classmethod
     def from_session_info(cls, info: Dict[str, Any]):
