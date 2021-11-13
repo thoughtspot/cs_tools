@@ -1,7 +1,13 @@
+import datetime as dt
+import platform
 import logging
+import sys
+
+import click
 
 from .helpers.secrets import reveal
 from ._rest_api_v1 import _RESTAPIv1
+from ._version import __version__
 from .middlewares import (
     AnswerMiddleware, PinboardMiddleware, SearchMiddleware, TagMiddleware,
     UserMiddleware
@@ -80,8 +86,31 @@ class ThoughtSpot:
         self._logged_in_user = LoggedInUser.from_session_info(r.json())
         self._this_platform = ThoughtSpotPlatform.from_session_info(r.json())
 
-        log.debug(f'Platform information:\n{self._this_platform}')
-        log.debug(f'Logged in as:\n{self._logged_in_user}')
+        log.debug(f"""execution context...
+
+        [CS TOOLS COMMAND]
+        {click.get_current_context().info_name} {' '.join(sys.argv[1:])}
+
+        [PLATFORM DETAILS]
+        system: {platform.system()} (detail: {platform.platform()})
+        python: {platform.python_version()}
+        ran at: {dt.datetime.now(dt.timezone.utc).astimezone().strftime('%Y-%m-%d %H:%M:%S%z')}
+        cs_tools: v{__version__}
+
+        [THOUGHTSPOT]
+        cluster id: {self._this_platform.cluster_id}
+        cluster: {self._this_platform.cluster_name}
+        url: {self._this_platform.url}
+        timezone: {self._this_platform.timezone}
+        codebase: {self._this_platform.deployment}
+        version: {self._this_platform.version}
+
+        [LOGGED IN USER]
+        user_id: {self._logged_in_user.guid}
+        username: {self._logged_in_user.name}
+        display_name: {self._logged_in_user.display_name}
+        privileges: {list(map(str, self._logged_in_user.privileges))}
+        """)
 
     def logout(self) -> None:
         """
