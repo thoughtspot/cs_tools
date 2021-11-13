@@ -73,8 +73,9 @@ class AnswerMiddleware:
             answers.extend(to_extend)
 
             if not to_extend and not answers:
-                rzn  = f"'{category.value}' category"
-                rzn += '' if exclude_system_content else ' (including system-generated answers)'
+                rzn  = f"'{category.value}' category ("
+                rzn += 'excluding ' if exclude_system_content else 'including '
+                rzn += 'admin-generated answers)'
                 rzn += '' if tags is None else ' and tags: ' + ', '.join(tags)
                 raise ContentDoesNotExist(type='ANSWER', reason=rzn)
 

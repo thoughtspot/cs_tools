@@ -126,9 +126,7 @@ class SearchMiddleware:
 
             guid = d[0]['id']
 
-        # _ = query.replace('[', r'\[')
-        # log.debug(fr"executing search: {_}\n            guid: {guid}"))
-        log.debug(fr"executing search: {query}\n            guid: {guid}")
+        log.debug(f'executing search on guid {guid}\n\n{query}\n')
 
         d = self.ts._rest_api.data.searchdata(
                 query_string=query,
