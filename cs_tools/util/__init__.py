@@ -37,14 +37,16 @@ def to_datetime(
     when : timedelta or str
     """
     tz = tz_.gettz(tz)
+    now = dt.datetime.now(tz=tz)
 
     if isinstance(epoch, int):
         when = dt.datetime.fromtimestamp(epoch / 1000.0, tz=tz)
     if isinstance(epoch, dt.datetime):
         when = epoch if epoch.tzinfo is not None else epoch.replace(tzinfo=tz)
+    if epoch == 'now':
+        when = now
 
     if friendly:
-        now = dt.datetime.now(tz=tz)
         delta = now - when
 
         if delta.days >= 365:
