@@ -12,29 +12,29 @@ If you do not supply all the required arguments to properly authenticate to Thou
 
     === "Required"
         ```
-          Name             Type     Description
+          Name              Type      Description
           --------------------------------------------------------------
-          --host        |  TEXT   |  thoughtspot server
-          --username    |  TEXT   |  username when logging into ThoughtSpot
-          --password    |  TEXT   |  password when logging into ThoughtSpot
+          --host        |   TEXT    |  thoughtspot server
+          --username    |   TEXT    |  username when logging into ThoughtSpot
+          --password    |   TEXT    |  password when logging into ThoughtSpot
         ```
 
     === "Optional"
         ```
-          Name             Type       Description
+          Name              Type      Description
           ------------------------------------------------------------------------
-          --port        | INTEGER   |  optional, port of the thoughtspot server
-          --disable_ssl |  FLAG     |  disable SSL verification
-          --disable_sso |  FLAG     |  disable automatic SAML redirect
+          --port        |  INTEGER  |  optional, port of the thoughtspot server
+          --disable_ssl |   FLAG    |  disable SSL verification
+          --disable_sso |   FLAG    |  disable automatic SAML redirect
           --temp_dir    | DIRECTORY |  filepath to save large temporary files to
-          --verbose     |  FLAG     |  enable verbose logging for this run only
+          --verbose     |   FLAG    |  enable verbose logging for this run only
         ```
 
     === "Recommended"
         ```
-          Name             Type     Description
+          Name              Type      Description
           --------------------------------------------------------------
-          --config      |  TEXT   |  config file identifier
+          --config      |   TEXT    |  config file identifier
         ```
 
     *If any of these options are supplied in addition to *`--config`*, they override what's set in the configuration.*
