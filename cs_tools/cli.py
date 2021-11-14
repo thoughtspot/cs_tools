@@ -44,6 +44,7 @@ app = typer.Typer(
     """,
     cls=RichGroup,
     add_completion=False,
+    no_args_is_help=True,
     invoke_without_command=True,
     context_settings={
         'help_option_names': ['--help', '-h'],
