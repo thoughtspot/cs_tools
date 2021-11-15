@@ -45,6 +45,13 @@
 /*
  * Cosmetic changes below.
  */
+.fc-blue {
+    color: var(--ts-color-blue);
+}
+
+.fc-mint {
+    color: var(--ts-color-mint);
+}
 
 /* Make the page wider than default, but only slightly. */
 .md-grid {
