@@ -1,4 +1,4 @@
-name: ":scroll: Incorrect Documentation"
+name: "📜 Incorrect Documentation"
 description: Found something wrong with documentation? Report it here.
 labels: [documentation, bug]
 body:

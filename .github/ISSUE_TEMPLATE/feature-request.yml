@@ -1,4 +1,4 @@
-name: ":heavy_check_mark: Feature Request"
+name: "✔ Feature Request"
 description: Suggest something new for the cs_tools project!
 labels: [enhancement]
 body:
