@@ -76,24 +76,6 @@ app = typer.Typer(
 
     [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
     could change on any version update and break the tool.[/]
-
-    Tool takes an input file and or a specific object and deletes it from the metadata.
-
-    \b
-    Valid metadata object type values are:
-        - saved answer
-        - pinboard
-
-    \b
-    CSV/XLSX file format should look like..
-        +----------------+-------+
-        | type           | guid  |
-        +----------------+-------+
-        | saved answer   | guid1 |
-        | pinboard       | guid2 |
-        | ...            | ...   |
-        | saved answer   | guid3 |
-        +----------------+-------+
     """,
     cls=CSToolsGroup,
     options_metavar='[--version, --help]',
