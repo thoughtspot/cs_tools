@@ -1,0 +1,38 @@
+USE cs_tools;
+
+CREATE TABLE introspect_user (
+      guid_              VARCHAR(255)
+    , name               VARCHAR(255)
+    , display_name       VARCHAR(255)
+    , email              VARCHAR(255)
+    , created            DATETIME
+    , modified           DATETIME
+    , sharing_visibility VARCHAR(255)
+    , type               VARCHAR(255)
+);
+
+ALTER TABLE introspect_user ADD CONSTRAINT PRIMARY KEY (guid_);
+
+
+CREATE TABLE introspect_group (
+      guid_              VARCHAR(255)
+    , name               VARCHAR(255)
+    , display_name       VARCHAR(255)
+    , description        VARCHAR(255)
+    , created            DATETIME
+    , modified           DATETIME
+    , sharing_visibility VARCHAR(255)
+    , type               VARCHAR(255)
+);
+
+ALTER TABLE introspect_group ADD CONSTRAINT PRIMARY KEY (guid_);
+
+
+CREATE TABLE introspect_asso_user_group (
+      user_guid  VARCHAR(255)
+    , group_guid VARCHAR(255)
+);
+
+ALTER TABLE introspect_asso_user_group ADD CONSTRAINT PRIMARY KEY (user_guid, group_guid);
+ALTER TABLE introspect_asso_user_group ADD CONSTRAINT FK_user_guid FOREIGN KEY (user_guid) REFERENCES introspect_user (guid_);
+ALTER TABLE introspect_asso_user_group ADD CONSTRAINT FK_group_guid FOREIGN KEY (group_guid) REFERENCES introspect_group (guid_);

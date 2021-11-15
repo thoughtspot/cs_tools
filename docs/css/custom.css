@@ -1,0 +1,77 @@
+@font-face {
+  font-family: "Optimo-Plain";
+  src: url("../assets/fonts/Optimo-Plain/Plain-Light.woff") format("woff");
+}
+
+@font-face {
+  font-family: "BB Roller Mono";
+  src: url("../assets/fonts/BB Roller Mono/bbrollermonoprotx-regular.woff") format("woff");
+}
+
+:root {
+  /* Primary Colors */
+  --ts-color-black: #000000;
+  --ts-color-white: #FFFFFF;
+
+  /* Secondary Colors */
+  --ts-color-blue: #4E55FD;
+  
+  /* Tertiary Colors */
+  --ts-color-cyan:   #00AEEF;
+  --ts-color-mint:   #06BF7F;
+  --ts-color-yellow: #FEC943;
+  --ts-color-coral:  #FF595A;
+  --ts-color-purple: #A35DFF;
+
+  --md-text-font-family: "Optimo-Plain";
+  --md-code-font-family: "BB Roller Mono";
+}
+
+
+/*
+[data-md-color-scheme="thoughtspot-light"] {
+  --md-default-fg-color: var(--ts-color-black);
+  --md-default-bg-color: var(--ts-color-white);
+}
+
+
+[data-md-color-scheme="thoughtspot-dark"] {
+  --md-default-fg-color: var(--ts-color-blue);
+  --md-default-bg-color: #191919; // TS BLACK 10% WHITE
+}
+*/
+
+
+/*
+ * Cosmetic changes below.
+ */
+.fc-blue {
+    color: var(--ts-color-blue);
+}
+
+.fc-coral {
+    color: var(--ts-color-coral);
+}
+
+.fc-mint {
+    color: var(--ts-color-mint);
+}
+
+/* Make the page wider than default, but only slightly. */
+.md-grid {
+    max-width: 80%;
+}
+
+/* \00A0 is a non-breaking space to make the mark be on the same line as the link */
+a.external-link::after {
+    content: "\00A0[↪]";
+}
+
+a.internal-link::after {
+    content: "\00A0↪";
+}
+
+/* Hide the developer docs nav menu item. */
+.md-tabs__item:last-child {
+    display: none;
+}

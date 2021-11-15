@@ -1,0 +1,17 @@
+USE cs_tools;
+
+CREATE TABLE introspect_metadata_object (
+      -- apparently GUID is a reserved word.
+      guid_               VARCHAR(255)
+    , name                VARCHAR(255)
+    , description         VARCHAR(255)
+    , author_guid         VARCHAR(255)
+    , author_name         VARCHAR(255)
+    , author_display_name VARCHAR(255)
+    , created             DATETIME
+    , modified            DATETIME
+    , type                VARCHAR(255)
+    , context             VARCHAR(255)
+);
+
+ALTER TABLE introspect_metadata_object ADD CONSTRAINT PRIMARY KEY (guid_);

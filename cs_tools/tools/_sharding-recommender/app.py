@@ -4,14 +4,14 @@ import shutil
 
 from typer import Option as O_
 import typer
-import yaml
 
-from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
+from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
 from cs_tools.util.datetime import to_datetime
-from cs_tools.tools.common import to_csv, run_tql_script, tsload
+from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
 from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.api import ThoughtSpot
+from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools.tools import common
 
 
 HERE = pathlib.Path(__file__).parent
@@ -73,98 +73,70 @@ app = typer.Typer(
     For further information on sharding, please refer to:
       https://docs.thoughtspot.com/latest/admin/loading/sharding.html
     """,
-    cls=RichGroup
+    cls=CSToolsGroup,
+    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
-def tml(
-    save_path: pathlib.Path=O_(..., help='directory to save TML files to', prompt=True),
-    nodes: int=O_(4, help='number of nodes in your ThoughtSpot cluster', prompt=True),
-    cpus_per_node: int=O_(56, help='number of CPUs per node in your cluster', prompt=True),
+def spotapp(
+    export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),
     **frontend_kw
 ):
     """
-    Create TML files.
-
-    Generates and saves multiple TML files.
-
-    \b
-    TABLE:
-      - falcon_table_info
-
-    WORKSHEET:
-      - PS: Falcon Table Sharding Recommender
-
-    PINBOARD:
-      - PS: Falcon Table Sharding Recommender
+    Exports the SpotApp associated with this tool.
     """
-    with (HERE / 'static' / 'PS_ Falcon Table Sharding.worksheet.tml').open() as in_:
-        data = yaml.full_load(in_)
-
-        # set the parameters
-        for formula in data['worksheet']['formulas']:
-            if formula['name'] == '❔ CPU per Node':
-                formula['expr'] = f'{cpus_per_node}'  # constant formulas in TS are str
-
-            if formula['name'] == '❔ Total ThoughtSpot Nodes':
-                formula['expr'] = f'{nodes}'  # constant formulas in TS are str
-
-        with (save_path / 'PS_ Falcon Table Sharding.worksheet.tml').open('w') as out:
-            yaml.dump(data, out)
-
-    # TODO: use TML apis
-    # end user shouldn't need to worry about this doesn't need to worry about this step)
-
-    # TODO: check TS version
-    # mostly because of feature parity in TML between 6.0, 6.2, 6.3, 7.0, 7.0.1
-    table_tml = 'falcon_table_info.table.tml'
-    pinboard_tml  = 'PS_ Falcon Table Sharding Analysis.pinboard.tml'
-
-    for stem in (table_tml, pinboard_tml):
-        shutil.copy(HERE / 'static' / stem, save_path)
+    shutil.copy(HERE / 'static' / 'spotapps.zip', export)
+    console.print(f'moved the SpotApp to {export}')
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def gather(
-    save_path: pathlib.Path=O_(None, help='if specified, directory to save data to'),
+    export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),
+    # maintained for backwards compatability
+    backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True),
     **frontend_kw
 ):
     """
     Gather and optionally, insert data into Falcon.
 
     By default, data is automatically gathered and inserted into the
-    platform. If save_path argument is used, data will not be inserted
+    platform. If --export argument is used, data will not be inserted
     and will instead be dumped to the location specified.
     """
-    app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    export = export or backwards_compat
 
-    if save_path is not None and (not save_path.exists() or save_path.is_file()):
-        console.print(f'[red]"{save_path.resolve()}" should be a valid directory![/]')
-        raise typer.Exit()
+    dir_ = cfg.temp_dir if export is None else export
+    dir_.parent.mkdir(exist_ok=True)
+    path = dir_ / 'falcon_table_info.csv'
 
-    dir_ = save_path if save_path is not None else app_dir
-    fp = dir_ / 'falcon_table_info.csv'
+    with ThoughtSpot(cfg) as ts:
+        with console.status('getting Falcon table info'):
+            data = _format_table_info_data(ts.api._periscope.sage_combinedtableinfo().json())
 
-    with ThoughtSpot(cfg) as api:
-        with console.status('getting falcon table info'):
-            data = _format_table_info_data(api._periscope.sage_combinedtableinfo().json())
+        with console.status('saving Falcon table info'):
+            common.to_csv(data, fp=path, mode='a')
+            console.print(f'wrote {len(data): >7,} rows to {path}')
 
-        to_csv(data, fp=fp)
-
-        if save_path is not None:
+        if export is not None:
             return
 
-        # TODO .. should we do a version check?
-        # rTQL released in 6.2.1+
-        # rTSLOAD released in 6.3+
-        run_tql_script(api, fp=HERE / 'static' / 'create_tables.tql')
-        cycle_id = tsload(api, fp=fp, target_database='cs_tools', target_table='falcon_table_info')
-        (dir_ / 'falcon_table_info.csv').unlink()
+        with console.status('creating tables with remote TQL'):
+            run_tql_command(ts, command='CREATE DATABASE cs_tools;')
+            run_tql_script(ts, fp=HERE / 'static' / 'create_tables.tql')
 
-        r = api.ts_dataservice.load_status(cycle_id).json()
-        m = api.ts_dataservice._parse_tsload_status(r)
-        console.print(m)
+        with console.status('loading data to Falcon with remote tsload'):
+            cycle_id = tsload(
+                ts,
+                fp=path,
+                target_database='cs_tools',
+                target_table='falcon_table_info',
+                has_header_row=True
+            )
+            path.unlink()
+            r = ts.api.ts_dataservice.load_status(cycle_id).json()
+            m = ts.api.ts_dataservice._parse_tsload_status(r)
+            console.print(m)

@@ -1,219 +1,344 @@
-from typing import Union, List
-import logging
-import enum
+from typing import Any, Dict, List
+import json
 
-import pydantic
+from pydantic import validate_arguments
 import httpx
 
-from cs_tools.util.swagger import to_array
-from cs_tools.settings import APIParameters
-from cs_tools.models import TSPrivate, TSPublic
+from cs_tools.util import stringified_array
+from cs_tools._enums import (
+    GUID,
+    MetadataObject,
+    LogicalTableSubtype,
+    MetadataCategory,
+    SortOrder,
+    AccessLevel,
+    Principal
+)
 
 
-log = logging.getLogger(__name__)
-
-
-class MetadataObject(enum.Enum):
-    DATA_SOURCE = 'DATA_SOURCE'
-    LOGICAL_COLUMN = 'LOGICAL_COLUMN'
-    LOGICAL_RELATIONSHIP = 'LOGICAL_RELATIONSHIP'
-    LOGICAL_TABLE = 'LOGICAL_TABLE'
-    PINBOARD_ANSWER_SHEET = 'PINBOARD_ANSWER_SHEET'
-    PINBOARD_ANSWER_BOOK = 'PINBOARD_ANSWER_BOOK'
-    QUESTION_ANSWER_BOOK = 'QUESTION_ANSWER_BOOK'
-    QUESTION_ANSWER_SHEET = 'QUESTION_ANSWER_SHEET'
-    TAG = 'TAG'
-    # not currently shown in the Swagger UI.
-    USER_GROUP = 'USER_GROUP'
-    USER = 'USER'
-
-
-class LogicalTableSubtype(enum.Enum):
-    ONE_TO_ONE_LOGICAL = 'ONE_TO_ONE_LOGICAL'
-    WORKSHEET = 'WORKSHEET'
-    PRIVATE_WORKSHEET = 'PRIVATE_WORKSHEET'
-    USER_DEFINED = 'USER_DEFINED'
-    AGGR_WORKSHEET = 'AGGR_WORKSHEET'
-
-
-class MetadataCategory(enum.Enum):
-    ALL = 'ALL'
-    MY = 'MY'
-    FAVORITE = 'FAVORITE'
-    REQUESTED = 'REQUESTED'
-
-
-class SortOrder(enum.Enum):
-    DEFAULT = 'DEFAULT'
-    NAME = 'NAME'
-    DISPLAY_NAME = 'DISPLAY_NAME'
-    AUTHOR = 'AUTHOR'
-    CREATED = 'CREATED'
-    MODIFIED = 'MODIFIED'
-
-
-class MinimumAccessLevel(enum.Enum):
-    NO_ACCESS = 'NO_ACCESS'
-    READ_ONLY = 'READ_ONLY'
-    MODIFY = 'MODIFY'
-
-
-class PrincipalType(enum.Enum):
-    USER = 'USER'
-    USER_GROUP = 'USER_GROUP'
-
-
-#
-
-
-class ListVizHeadersParameters(APIParameters):
-    id: str
-
-
-class ListObjectHeadersParameters(APIParameters):
-    type: Union[MetadataObject, None] = MetadataObject.PINBOARD_ANSWER_BOOK
-    subtypes: List[LogicalTableSubtype] = None
-    category: MetadataCategory = MetadataCategory.ALL
-    sort: SortOrder = SortOrder.DEFAULT
-    sortascending: bool = None
-    offset: int = -1
-    batchsize: int = None
-    tagname: List[str] = []
-    pattern: str = None
-    showhidden: bool = False
-    skipids: str = None
-    fetchids: str = None
-    auto_created: bool = None
-
-    @pydantic.validator('subtypes')
-    def stringify_the_array(cls, v):
-        return to_array([_.value for _ in v])
-
-
-class ListParameters(ListObjectHeadersParameters):
-    ownertypes: LogicalTableSubtype = None
-
-
-class ListAsParameters(APIParameters):
-    offset: int = -1
-    batchsize: int = None
-    pattern: str = None
-    principalid: str = None
-    minimumaccesslevel: MinimumAccessLevel = MinimumAccessLevel.NO_ACCESS
-    type: PrincipalType = PrincipalType.USER_GROUP
-
-
-class DetailParameters(APIParameters):
-    type: MetadataObject = None
-    id: str
-    showhidden: bool = False
-    dropquestiondetails: bool = False
-    inboundrequesttype: int = 10000
-    doUpdate: bool = True
-
-
-class ListColumnParameters(APIParameters):
-    id: str
-    showhidden: bool = False
-
-
-class DeleteParameters(APIParameters):
-    type: MetadataObject = None
-    id: str
-    includedisabled: bool = False
-
-    @pydantic.validator('id', pre=True)
-    def stringify_the_array(cls, v) -> str:
-        return to_array(v)
-
-
-#
-
-class Metadata(TSPublic):
+class _Metadata:
     """
-    Public Metadata Services.
+    Private Metadata Services.
     """
+    def __init__(self, rest_api):
+        self.rest_api = rest_api
 
-    @property
-    def base_url(self):
+    @validate_arguments
+    def edoc_type_id(
+        self,
+        id: GUID,
+        type: str=MetadataObject.logical_table,
+        formattype: str='YAML'
+    ) -> httpx.Response:
         """
-        Append to the base URL.
+        Returns EDoc representation of metadata object.
         """
-        return f'{super().base_url}/metadata'
-
-    def list_viz_headers(self, **parameters) -> httpx.Response:
-        """
-        Get the visualization headers from the ThoughtSpot system.
-        """
-        p = ListVizHeadersParameters(**parameters)
-        r = self.get(f'{self.base_url}/listvizheaders', params=p.json())
+        r = self.rest_api.request(
+                'GET',
+                f'metadata/edoc/{type.value}/{id}',
+                privacy='private',
+                params={'formattype': formattype}
+            )
         return r
 
-    def list_object_headers(self, **parameters) -> httpx.Response:
+    @validate_arguments
+    def edoc_export_epack(self, request: Dict[str, Any]) -> httpx.Response:
         """
-        List of metadata object headers in the repository.
+        Export a list of objects as edocs packaged in a zip file.
+
+        request looks like:
+
+        {
+            "object": [
+                {"id": "0291f1cd-5f8e-4d96-80e2-e5ef1aa6c44f", "type":"QUESTION_ANSWER_BOOK"},
+                {"id": "4bcaadb4-031a-4afd-b159-2c0c0f194c42", "type":"PINBOARD_ANSWER_BOOK"}
+            ],
+            "export_dependencies": false
+        }
         """
-        p = ListObjectHeadersParameters(**parameters)
-        r = self.get(f'{self.base_url}/listobjectheaders', params=p.json())
+        r = self.rest_api.request(
+                'POST',
+                'metadata/edoc/exportEPack',
+                privacy='private',
+                data={'request': json.dumps(request)}
+            )
         return r
 
-
-#
-
-class _Metadata(TSPrivate):
-    """
-    Metadata Services.
-    """
-
-    @property
-    def base_url(self):
+    @validate_arguments
+    def assigntag(
+        self,
+        id: List[GUID],
+        type: List[MetadataObject],
+        tagid: List[GUID]
+    ) -> httpx.Response:
         """
-        Append to the base URL.
+        Assign tags to metadata objects; types[i] corresponds to ids[i].
         """
-        return f'{super().base_url}/metadata'
+        r = self.rest_api.request(
+                'POST',
+                'metadata/assigntag',
+                privacy='private',
+                data={
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
+                    'id': stringified_array(id),
+                    'type': stringified_array([_.value for _ in type]),
+                    'tagid': stringified_array(tagid)
+                }
+            )
+        return r
 
-    # def details(self, **parameters) -> httpx.Response:
-    #     """
-    #     """
-    #     p = DetailsParameters(**parameters)
-    #     r = self.post(f'{self.base_url}/details', params=p.json())
+    @validate_arguments
+    def unassigntag(
+        self,
+        id: List[GUID],
+        type: List[MetadataObject],
+        tagid: List[GUID]
+    ) -> httpx.Response:
+        """
+        Un-assign tags to metadata objects; types[i] corresponds to ids[i].
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/unassigntag',
+                privacy='private',
+                data={
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
+                    'id': stringified_array(id),
+                    'type': stringified_array([_.value for _ in type]),
+                    'tagid': stringified_array(tagid)
+                }
+            )
+        return r
 
-    def list(self, **parameters) -> httpx.Response:
+    @validate_arguments
+    def create(
+        self,
+        name: str,
+        type: MetadataObject = MetadataObject.saved_answer,
+        subtype: MetadataObject = None,
+        description: str = None,
+        content: Dict[str, Any] = None,
+        save: bool = True,
+        clientstate: Any = None
+    ) -> httpx.Response:
+        """
+        Create a new metadata object in the repository.
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/create',
+                privacy='private',
+                data={
+                    'type': type.value,
+                    'subtype': subtype.value if subtype is not None else None,
+                    'name': name,
+                    'description': description,
+                    'content': content,
+                    'save': save,
+                    'clientstate': clientstate
+                }
+            )
+        return r
+
+    @validate_arguments
+    def list(
+        self,
+        type: MetadataObject = MetadataObject.pinboard,
+        subtypes: List[LogicalTableSubtype] = None,
+        ownertypes: LogicalTableSubtype = None,
+        category: MetadataCategory = MetadataCategory.all,
+        sort: SortOrder = SortOrder.default,
+        sortascending: bool = None,
+        offset: int = -1,
+        batchsize: int = None,
+        tagname: List[str] = None,
+        pattern: str = None,
+        showhidden: bool = False,
+        skipids: List[GUID] = None,
+        fetchids: List[GUID] = None,
+        auto_created: bool = None,
+    ) -> httpx.Response:
         """
         List of metadata objects in the repository.
         """
-        p = ListParameters(**parameters)
-        r = self.get(f'{self.base_url}/list', params=p.json())
+        r = self.rest_api.request(
+                'GET',
+                'metadata/list',
+                privacy='private',
+                params={
+                    'type': type.value,
+                    'subtypes': stringified_array([_.value for _ in subtypes or ()]),
+                    'ownertypes': stringified_array([_.value for _ in ownertypes or ()]),
+                    'category': category.value,
+                    'sort': sort.value,
+                    'sortascending': sortascending,
+                    'offset': offset,
+                    'batchsize': batchsize,
+                    'tagname': [tagname] if tagname is not None else None,
+                    'pattern': pattern,
+                    'skipids': stringified_array([_ for _ in skipids or ()]),
+                    'fetchids': stringified_array([_ for _ in fetchids or ()]),
+                    'auto_created': auto_created
+                }
+            )
         return r
 
-    def listas(self, **parameters) -> httpx.Response:
+    @validate_arguments
+    def listas(
+        self,
+        offset: int = -1,
+        batchsize: int = None,
+        pattern: str = None,
+        principalid: GUID = None,
+        minimumaccesslevel: AccessLevel = AccessLevel.no_access,
+        type: Principal = Principal.group,
+    ) -> httpx.Response:
         """
         List of metadata objects in the repository as seen by a User/Group.
         """
-        p = ListAsParameters(**parameters)
-        r = self.get(f'{self.base_url}/listas', params=p.json())
+        r = self.rest_api.request(
+                'GET',
+                'metadata/listas',
+                privacy='private',
+                params={
+                    'offset': offset,
+                    'batchsize': batchsize,
+                    'pattern': pattern,
+                    'principalid': principalid,
+                    'minimumaccesslevel': minimumaccesslevel.value,
+                    'type': type.value,
+                }
+            )
         return r
 
-    def detail(self, guid, **parameters) -> httpx.Response:
+    @validate_arguments
+    def detail(
+        self,
+        id: GUID,
+        type: MetadataObject = None,
+        showhidden: bool = False,
+        dropquestiondetails: bool = False,
+        inboundrequesttype: int = 10000,
+        doUpdate: bool = True
+    ) -> httpx.Response:
         """
         Detail of a metadata object in the repository.
         """
-        p = DetailParameters(id=guid, **parameters)
-        r = self.get(f'{self.base_url}/detail/{guid}', params=p.json())
+        r = self.rest_api.request(
+                'GET',
+                f'metadata/detail/{id}',
+                privacy='private',
+                params={
+                    'id': id,
+                    'type': type.value,
+                    'showhidden': showhidden,
+                    'dropquestiondetails': dropquestiondetails,
+                    'inboundrequesttype': inboundrequesttype,
+                    'doUpdate': doUpdate
+                }
+            )
         return r
 
-    def delete(self, **parameters) -> httpx.Response:
+    @validate_arguments
+    def delete(
+        self,
+        id: List[GUID],
+        type: MetadataObject = None,
+        includedisabled: bool = False,
+    ) -> httpx.Response:
         """
         Delete metadata object(s) from the repository.
         """
-        p = DeleteParameters(**parameters)
-        r = self.post(f'{self.base_url}/delete', data=p.json())
+        r = self.rest_api.request(
+                'POST',
+                'metadata/delete',
+                privacy='private',
+                data={
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
+                    'type': None if type is None else type.value,
+                    'id': stringified_array([_ for _ in id or ()]),
+                    'includedisabled': includedisabled
+                }
+            )
         return r
 
-    def list_columns(self, guid, **parameters) -> httpx.Response:
+    @validate_arguments
+    def list_columns(
+        self,
+        id: GUID,
+        showhidden: bool = False,
+    ) -> httpx.Response:
         """
         Get list of all logical columns of a given logical table.
         """
-        p = ListColumnParameters(id=guid, **parameters)
-        r = self.get(f'{self.base_url}/listcolumns/{guid}', params=p.json())
+        r = self.rest_api.request(
+                'GET',
+                f'metadata/listcolumns/{id}',
+                privacy='private',
+                params={'id': id, 'showhidden': showhidden}
+            )
+        return r
+
+
+class Metadata:
+    """
+    Public Metadata Services.
+    """
+    def __init__(self, rest_api):
+        self.rest_api = rest_api
+
+    @validate_arguments
+    def list_viz_headers(self, id: GUID) -> httpx.Response:
+        """
+        Get the visualization headers from the ThoughtSpot system.
+        """
+        r = self.rest_api.request(
+                'GET',
+                'metadata/listvizheaders',
+                privacy='public',
+                params={'id': id}
+            )
+        return r
+
+    @validate_arguments
+    def list_object_headers(
+        self,
+        type: MetadataObject = MetadataObject.pinboard,
+        subtypes: List[LogicalTableSubtype] = None,
+        category: MetadataCategory = MetadataCategory.all,
+        sort: SortOrder = SortOrder.default,
+        sortascending: bool = None,
+        offset: int = -1,
+        batchsize: int = None,
+        tagname: List[str] = None,
+        pattern: str = None,
+        skipids: List[GUID] = None,
+        fetchids: List[GUID] = None,
+        auto_created: bool = None
+    ) -> httpx.Response:
+        """
+        List of metadata object headers in the repository.
+        """
+        r = self.rest_api.request(
+                'GET',
+                'metadata/listobjectheaders',
+                privacy='public',
+                params={
+                    'type': type.value,
+                    'subtypes': stringified_array([_.value for _ in subtypes or ()]),
+                    'category': category.value,
+                    'sort': sort.value,
+                    'sortascending': sortascending,
+                    'offset': offset,
+                    'batchsize': batchsize,
+                    'tagname': stringified_array([_ for _ in tagname or ()]),
+                    'pattern': pattern,
+                    'skipids': stringified_array([_ for _ in skipids or ()]),
+                    'fetchids': stringified_array([_ for _ in fetchids or ()]),
+                    'auto_created': auto_created
+                }
+            )
         return r

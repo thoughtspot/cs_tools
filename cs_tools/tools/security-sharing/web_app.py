@@ -36,8 +36,8 @@ templates = Jinja2Templates(directory=f'{HERE}/static')
 async def read_index(request: Request):
     data = {
         'request': request,
-        'host': _scoped['api'].config.thoughtspot.host,
-        'user': _scoped['api'].logged_in_user.display_name
+        'host': _scoped['ts'].platform.url,
+        'user': _scoped['ts'].me.display_name
     }
     return templates.TemplateResponse('index.html', data)
 
@@ -60,7 +60,8 @@ async def _(type: str=Body(...), guids: List[str]=Body(...), permissions: Dict[s
     """
     TSSetPermissionRequest
     """
-    r = _scoped['api']._security.share(type=type, id=guids, permission={'permissions': permissions})
+    permissions = {guid: data['shareMode'] for guid, data in permissions.items()}
+    r = _scoped['ts'].api._security.share(type=type, id=guids, permissions=permissions)
 
     try:
         return r.json()
@@ -74,7 +75,7 @@ async def _(type: str=Body(...), guids: List[str]=Body(...)):
     """
     TSGetTablePermissionsRequest
     """
-    r = _scoped['api']._security.defined_permission(type=type, id=guids)
+    r = _scoped['ts'].api._security.defined_permission(type=type, id=guids)
     return r.json()
 
 
@@ -83,7 +84,7 @@ async def _(guid: str):
     """
     TSGetColumnsRequest
     """
-    r = _scoped['api']._metadata.list_columns(guid=guid)
+    r = _scoped['ts'].api._metadata.list_columns(id=guid)
     return r.json()
 
 
@@ -99,7 +100,7 @@ async def _():
         'offset': -1,
         'auto_created': False
     }
-    r = _scoped['api'].metadata.list_object_headers(**params)
+    r = _scoped['ts'].api.metadata.list_object_headers(**params)
     return r.json()
 
 
@@ -115,5 +116,5 @@ async def _():
         'sort': 'DEFAULT',
         'offset': -1
     }
-    r = _scoped['api'].metadata.list_object_headers(**params)
+    r = _scoped['ts'].api.metadata.list_object_headers(**params)
     return r.json()

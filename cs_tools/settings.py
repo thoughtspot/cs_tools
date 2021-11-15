@@ -1,13 +1,16 @@
 from ipaddress import IPv4Address
 from typing import Union, Dict, Any
 import pathlib
+import json
 import re
 
+from pydantic.types import DirectoryPath
 from pydantic import BaseModel, AnyHttpUrl, validator
 import typer
 import toml
 
 from cs_tools.helpers.secrets import obscure
+from cs_tools.const import APP_DIR
 
 
 class Settings(BaseModel):
@@ -67,6 +70,21 @@ class HostConfig(Settings):
     disable_ssl: bool = False
     disable_sso: bool = False
 
+    @property
+    def fullpath(self):
+        host = self.host
+        port = self.port
+
+        if not host.startswith('http'):
+            host = f'https://{host}'
+
+        if port:
+            port = f':{port}'
+        else:
+            port = ''
+
+        return f'{host}{port}'
+
     @validator('host')
     def cast_as_str(v: Any) -> str:
         """
@@ -86,6 +104,19 @@ class AuthConfig(Settings):
 class TSConfig(Settings):
     thoughtspot: HostConfig
     auth: Dict[str, AuthConfig]
+    verbose: bool = False
+    temp_dir: DirectoryPath = APP_DIR
+
+    def dict(self) -> Any:
+        """
+        Wrapper around model.dict to handle path types.
+        """
+        data = super().dict()
+
+        if data['temp_dir'] is not None:
+            data['temp_dir'] = data['temp_dir'].resolve().as_posix()
+
+        return data
 
     @classmethod
     def from_toml(cls, fp: pathlib.Path):
@@ -100,13 +131,12 @@ class TSConfig(Settings):
     @classmethod
     def from_cli_args(
         cls,
-        config=None,
+        config: str = None,
         *,
-        host,
-        username,
-        validate=True,
-        default=True,
-        interactive=False,
+        host: str,
+        username: str,
+        interactive: bool = False,
+        validate: bool = True,
         **kw
     ) -> ['TSConfig', dict]:
         """
@@ -118,33 +148,26 @@ class TSConfig(Settings):
           name of the config file to parse
 
         host : str
-
-        port : int
-
-        validate : bool, default: True
-          whether or not to validate args
-
-        default : bool, default: True
-          whether or not to take default args if they're not provided
+          url of the thoughtspot frontend
 
         interactive : bool, default: False
-          wether or not to gather user input if required args not supplied
+          whether or not to gather user input if required args not supplied
+
+        validate : bool, default True
+          whether or not to validate input
 
         **kw
           additional arguments to provide to TSConfig
         """
         if config is not None:
-            app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
-            cfg = cls.from_toml(app_dir / f'cluster-cfg_{config}.toml')
+            cfg = cls.from_toml(APP_DIR / f'cluster-cfg_{config}.toml')
 
-            if host is not None:
-                cfg.thoughtspot.host = host
+            # single-command overrides
+            if kw.get('verbose', False):
+                cfg.verbose = kw['verbose']
 
-            if kw.get('disable_sso', False):
-                cfg.thoughtspot.disable_sso = kw['disable_sso']
-
-            if kw.get('disable_ssl', False):
-                cfg.thoughtspot.disable_ssl = kw['disable_ssl']
+            if kw.get('temp_dir', False):
+                cfg.temp_dir = kw['temp_dir']
 
             return cfg
 
@@ -159,11 +182,13 @@ class TSConfig(Settings):
                 kw['password'] = typer.prompt('password', hide_input=True)
 
         data = {
+            'verbose': kw.get('verbose'),
+            'temp_dir': kw.get('temp_dir'),
             'thoughtspot': {
                 'host': host,
                 'port': kw.get('port', None),
-                'disable_ssl': kw['disable_ssl'] if kw.get('disable_ssl') is not None else False,
-                'disable_sso': kw['disable_sso'] if kw.get('disable_sso') is not None else False,
+                'disable_ssl': kw.get('disable_ssl'),
+                'disable_sso': kw.get('disable_sso'),
             },
             'auth': {
                 'frontend': {

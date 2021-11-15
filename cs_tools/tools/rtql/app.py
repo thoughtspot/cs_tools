@@ -4,10 +4,10 @@ import sys
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
+from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
 from cs_tools.tools.common import run_tql_script, run_tql_command
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
-from cs_tools.api import ThoughtSpot
 from .interactive import InteractiveTQL
 
 
@@ -23,11 +23,12 @@ app = typer.Typer(
       https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """,
-    cls=RichGroup
+    cls=CSToolsGroup,
+    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def interactive(
     autocomplete: bool=O_(True, '--autocomplete', help='toggle auto complete feature'),
@@ -44,15 +45,15 @@ def interactive(
     For a list of all commands, type "help" after invoking tql
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-    api = ThoughtSpot(cfg)
-    tql = InteractiveTQL(api, schema=schema, autocomplete=autocomplete)
+    ts = ThoughtSpot(cfg)
+    tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=console)
     tql.run()
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def file(
-    file: pathlib.Path=A_(..., help='path to file to execute, default to stdin'),
+    file: pathlib.Path=A_(..., metavar='FILE.tql', help='path to file to execute, default to stdin'),
     schema: str=O_('falcon_default_schema', help='schema name to use'),
     **frontend_kw
 ):
@@ -67,11 +68,11 @@ def file(
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
-    with ThoughtSpot(cfg) as api:
-        run_tql_script(api, fp=file)
+    with ThoughtSpot(cfg) as ts:
+        run_tql_script(ts.api, fp=file)
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def command(
     command: str=A_('-', help='TQL query to execute'),
@@ -101,5 +102,5 @@ def command(
         console.print('[red]no valid input given to rtql command[/]')
         return
 
-    with ThoughtSpot(cfg) as api:
-        run_tql_command(api, command=command, schema=schema)
+    with ThoughtSpot(cfg) as ts:
+        run_tql_command(ts, command=command, schema=schema)

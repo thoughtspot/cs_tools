@@ -1,45 +1,46 @@
-import logging
+from typing import List
 
+from pydantic import validate_arguments
 import httpx
 
-from cs_tools.settings import APIParameters
-from cs_tools.models import TSPublic
+from cs_tools.util import stringified_array
+from cs_tools._enums import GUID
 
 
-log = logging.getLogger(__name__)
-
-
-class TransferOwnershipParameters(APIParameters):
-    fromUserName: str
-    toUserName: str
-
-
-#
-
-
-class User(TSPublic):
+class User:
     """
-    Public Metadata Services.
+    Public User Services.
     """
-
-    @property
-    def base_url(self):
-        """
-        Append to the base URL.
-        """
-        return f'{super().base_url}/user'
+    def __init__(self, rest_api):
+        self.rest_api = rest_api
 
     def list(self) -> httpx.Response:
         """
         Fetch users and groups.
         """
-        r = self.get(f'{self.base_url}/list')
+        r = self.rest_api.request('GET', 'user/list', privacy='public')
         return r
 
-    def transfer_ownership(self, from_, to_) -> httpx.Response:
+    @validate_arguments
+    def transfer_ownership(
+        self,
+        fromUserName: str,
+        toUserName: str,
+        objectsID: List[GUID] = None
+    ) -> httpx.Response:
         """
         Transfer ownership of all objects from one user to another.
         """
-        p = TransferOwnershipParameters(fromUserName=from_, toUserName=to_)
-        r = self.post(f'{self.base_url}/transfer/ownership', params=p.json())
+        r = self.rest_api.request(
+                'POST',
+                'user/transfer/ownership',
+                privacy='public',
+                params={
+                    'fromUserName': fromUserName,
+                    'toUserName': toUserName,
+                    # technically not available until ts7.sep.cl-109 or greater, but
+                    # query parameters don't usually cause 4xx or 5xx errors
+                    'objectsID': stringified_array(objectsID or ())
+                }
+            )
         return r

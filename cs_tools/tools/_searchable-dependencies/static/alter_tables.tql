@@ -1,0 +1,3 @@
+USE cs_tools;
+
+ALTER TABLE introspect_metadata_object ADD COLUMN context varchar(255) DEFAULT '';

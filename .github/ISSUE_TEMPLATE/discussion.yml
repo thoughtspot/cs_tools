@@ -1,0 +1,40 @@
+name: ":thinking: Question, Problem, or Open Discussion"
+description: Ask about a question or problem you're having.
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        ## *Thanks for your interest in cs_tools!* :tada:
+
+        This project is maintained by the Professional Services and Customer Success
+        organizations at ThoughtSpot, meant to augment built-in platform tools, help
+        with administration of and enhance adoption within your ThoughtSpot environment.
+
+        That said, it is our passion project! While we make every opportunity to keep up
+        to date, resolve issues, well-document our tools, and provide a great
+        experience; **if you have a true support issue or are missing critical
+        functionality** of your ThoughtSpot platform, we absolutely encourage you to
+        reach out to your designated account team!
+ 
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: First Stop
+      description: Please confirm and check all the following options.
+      options:
+        - label: I have read and agreed to the ThoughtSpot Dev Tools EULA.
+          required: true
+        - label: >-
+            I understand that if I have a critical issue with ThoughtSpot, I should
+            reach out to my account team instead of cs_tools.
+          required: true
+        - label: I searched the cs_tools documentation, with the integrated search.
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+    validations:
+      required: true
