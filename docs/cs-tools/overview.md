@@ -13,8 +13,9 @@ adoption within your ThoughtSpot environment.
 ### Advanced Tools
 
 Tools which are marked with a :see_no_evil: in the sidebar utilize unpublished, or
-internal, API calls in your ThoughtSpot platform and thus ^^==__could change with any
-version or release__==^^. You should not rely on them for production-critical workflows.
+internal, API calls in your ThoughtSpot platform and thus ^^__could change with any
+version or release__^^{ .fc-coral }. You should not rely on them for production-critical
+workflows.
 
 !!! info "Helpful Links"
 

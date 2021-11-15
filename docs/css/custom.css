@@ -49,6 +49,10 @@
     color: var(--ts-color-blue);
 }
 
+.fc-coral {
+    color: var(--ts-color-coral);
+}
+
 .fc-mint {
     color: var(--ts-color-mint);
 }
