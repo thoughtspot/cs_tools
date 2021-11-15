@@ -431,7 +431,7 @@ class CSToolsGroup(click.Group):
         self.format_help(ctx, formatter)
 
         with console.capture() as c:
-            console.print(formatter.getvalue().rstrip())
+            console.print('\n', formatter.getvalue().rstrip())
 
         return c.get()
 
