@@ -1,13 +1,12 @@
 from inspect import Signature, Parameter
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import itertools as it
+import pathlib
 import re
 
 from click.exceptions import UsageError
 from rich.console import Console
 from rich.table import Table
-from click.core import iter_params_for_processing
-from click import Parameter as Parameter_, Option, Context, HelpFormatter
 from typer import Argument as A_, Option as O_
 import typer
 import click
@@ -44,24 +43,8 @@ class DataTable(Table):
         for row in data:
             self.add_row(*row.values())
 
+#
 
-# NOTE:
-#
-#   click dependent version (>=7.1.2, <8.0.0), does not yet support proper subclassing
-#   of Command and Group. There's a lot of duplication below, but it's necessary in
-#   order to achieve the user experience we want.
-#
-#   In click >= 8.0.0, we can set the command and group subclass types like..
-#
-#   class RichGroup(click.Group):
-#       command_class = RichCommand
-#       group_class = type
-#
-#   ..and remove all the code duplication in RichGroup.
-#
-#   Also, the reason why we're on click ^7.1.2 is because typer has not yet been updated
-#   to use click 8.0.0
-#
 
 RE_CLICK_SPECIFIER = re.compile(r'\[(.+)\]')
 RE_REQUIRED = re.compile(r'\(.*(?P<tok>required).*\)')
@@ -96,11 +79,13 @@ def frontend(f: Callable) -> Callable:
             'arg': O_(None, help='~! password when logging into ThoughtSpot', hidden=True)
         },
         'temp_dir': {
-            'type': bool,
+            'type': pathlib.Path,
             'arg': O_(
                 None,
                 '--temp_dir',
                 help='~! location on disk to save temporary files',
+                file_okay=False,
+                resolve_path=True,
                 hidden=True,
                 show_default=False
             )
@@ -150,27 +135,26 @@ def frontend(f: Callable) -> Callable:
     return f
 
 
-def show_error(e: UsageError):
+def show_error(error: UsageError):
     """
     Show an error on the CLI.
     """
-    ctx = e.ctx
     msg = ''
 
-    if ctx is not None:
-        msg = f'{ctx.get_usage()}'
+    if error.ctx is not None:
+        msg = error.ctx.get_usage()
 
-        if ctx.command.get_help_option(ctx) is not None:
+        if error.ctx.command.get_help_option(error.ctx) is not None:
             msg += (
-                f'\n[warning]Try \'{ctx.command_path} '
-                f'{ctx.help_option_names[0]}\' for help.[/]'
+                f'\n[warning]Try \'{error.ctx.command_path} '
+                f'{error.ctx.help_option_names[0]}\' for help.[/]'
             )
 
-    msg += f'\n\n[error]Error: {e.format_message()}[/]'
+    msg += f'\n\n[error]Error: {error.format_message()}[/]'
     console.print(msg)
 
 
-def show_full_help(ctx: Context, param: Parameter_, value: str):
+def show_full_help(ctx: click.Context, param: click.Parameter, value: str):
     """
     Show help.
 
@@ -190,11 +174,11 @@ def show_full_help(ctx: Context, param: Parameter_, value: str):
             param.show_envvar = True
 
     if value and not ctx.resilient_parsing:
-        console.print(f'{ctx.get_help()}')
+        console.print(ctx.get_help())
         raise typer.Exit()
 
 
-def show_version(ctx: Context, param: Parameter, value: str):
+def show_version(ctx: click.Context, param: click.Parameter, value: str):
     """
     Show version.
     """
@@ -227,7 +211,7 @@ def show_version(ctx: Context, param: Parameter, value: str):
                 name = tool.name
                 break
 
-    console.print(f'[white]{name} ({version})')
+    console.print(f'{name} ({version})')
     raise typer.Exit()
 
 
@@ -302,11 +286,35 @@ def prettify_params(params: List[str], *, default_prefix: str='~!'):
     return [*options, *default]
 
 
-class RichCommand(click.Command):
+VERSION_OPT = click.Option(
+    ['--version'],
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=show_version,
+    help="Show the version and exit."
+)
+
+
+class CSToolsCommand(click.Command):
     """
-    Allow Commands to use the rich interface.
     """
-    def get_params(self, ctx: Context) -> List[Parameter_]:
+    def __init__(self, **kw):
+        if kw['options_metavar'] == '[OPTIONS]':
+            kw['options_metavar'] = '[--option, ..., --help]'
+
+        super().__init__(**kw)
+
+    # OVERRIDES
+
+    def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
+        try:
+            super().parse_args(ctx, args)
+        except UsageError as e:
+            show_error(e)
+            raise typer.Exit(-1)
+
+    def get_params(self, ctx: click.Context) -> List[click.Parameter]:
         rv = self.params
         help_option = self.get_help_option(ctx)
         help_full_option = self.get_full_help_option(ctx)
@@ -316,46 +324,19 @@ class RichCommand(click.Command):
 
         return rv
 
-    def get_help_option(self, ctx: Context) -> Optional[Option]:
-        """
-        Returns the help option object.
-        """
-        help_options = self.get_help_option_names(ctx)
-
-        if not help_options or not self.add_help_option:
-            return None
-
-        return Option(
-            help_options,
-            is_flag=True,
-            is_eager=True,
-            expose_value=False,
-            callback=show_full_help,
-            help=('Show this message and exit.')
-        )
-
-    def get_full_help_option(self, ctx: Context) -> Optional[Option]:
-        """
-        Returns the help option object.
-        """
-        return Option(
-            ['--helpfull'],
-            is_flag=True,
-            is_eager=True,
-            expose_value=False,
-            callback=show_full_help,
-            help=('Show the full help message and exit.')
-        )
-
-    def get_help(self, ctx: Context) -> str:
+    def get_help(self, ctx: click.Context) -> str:
         """
         Formats the help into a string and returns it.
         """
         formatter = ctx.make_formatter()
         self.format_help(ctx, formatter)
-        return formatter.getvalue()
 
-    def format_help(self, ctx: Context, formatter: HelpFormatter) -> None:
+        with console.capture() as c:
+            console.print(formatter.getvalue().rstrip())
+
+        return c.get()
+
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         """
         Writes the help into the formatter if it exists.
         """
@@ -385,101 +366,30 @@ class RichCommand(click.Command):
     def format_options(self, ctx, formatter):
         options = []
 
-        for param in self.get_params(ctx):
-            r = param.get_help_record(ctx)
+        for p in self.get_params(ctx):
+            r = p.get_help_record(ctx)
 
-            if r is not None:
-                if isinstance(param, click.Option):
-                    options.append(r)
+            if r is not None and isinstance(p, click.Option):
+                options.append(r)
 
         if options:
             *params, help_full, help_ = options
-            options = prettify_params(params)
 
-            if '--helpfull' in click.get_os_args():
-                options = [*options, help_]
-            elif ctx.info_name == ctx.command_path:
-                options = [*options, help_]
-            elif 'logs' in click.get_os_args() or 'config' in click.get_os_args():
-                options = [*options, help_]
+            if click.get_os_args()[0] == 'tools':
+                options = [*prettify_params(params), help_full, help_]
             else:
-                options = [*options, help_full, help_]
+                options = [*prettify_params(params), help_]
 
             with formatter.section('Options'):
                 formatter.write_dl(options)
 
-    def parse_args(self, ctx: Context, args: List[str]) -> List[str]:
+    # EXTRA METHODS
 
-        if not args and self.no_args_is_help and not ctx.resilient_parsing:
-            show_full_help(ctx, None, True)
-            raise typer.Exit()
-
-        parser = self.make_parser(ctx)
-
-        try:
-            opts, args, param_order = parser.parse_args(args=args)
-        except UsageError as e:
-            show_error(e)
-            raise typer.Exit(-1)
-
-        for param in iter_params_for_processing(param_order, self.get_params(ctx)):
-            value, args = param.handle_parse_result(ctx, opts, args)
-
-        if args and not ctx.allow_extra_args and not ctx.resilient_parsing:
-            s = '' if len(args) == 1 else 's'
-            args = ' '.join(args)
-            console.print(f'[error]Got unexpected extra argument{s} ({args})[/]')
-            raise typer.Exit(code=1)
-
-        ctx.args = args
-        return args
-
-
-class RichGroup(click.Group):
-    """
-    Allow Groups to use the rich interface.
-    """
-    def get_params(self, ctx: Context) -> List[Parameter_]:
-        rv = self.params
-        help_option = self.get_help_option(ctx)
-        help_full_option = self.get_full_help_option(ctx)
-        version_option = self.get_version_option(ctx)
-
-        # top-level commands
-        if ctx.command_path.endswith(('config', 'tools', 'logs')):
-            version_option.hidden = True
-
-        if version_option is not None:
-            rv = [*rv, version_option]
-
-        if help_option is not None:
-            rv = [*rv, help_full_option, help_option]
-
-        return rv
-
-    def get_help_option(self, ctx: Context) -> Optional[Option]:
+    def get_full_help_option(self, ctx: click.Context) -> Optional[click.Option]:
         """
         Returns the help option object.
         """
-        help_options = self.get_help_option_names(ctx)
-
-        if not help_options or not self.add_help_option:
-            return None
-
-        return Option(
-            help_options,
-            is_flag=True,
-            is_eager=True,
-            expose_value=False,
-            callback=show_full_help,
-            help=('Show this message and exit.')
-        )
-
-    def get_full_help_option(self, ctx: Context) -> Optional[Option]:
-        """
-        Returns the help option object.
-        """
-        return Option(
+        return click.Option(
             ['--helpfull'],
             is_flag=True,
             is_eager=True,
@@ -488,125 +398,121 @@ class RichGroup(click.Group):
             help=('Show the full help message and exit.')
         )
 
-    def get_version_option(self, ctx: Context) -> Optional[Option]:
+
+class CSToolsGroup(click.Group):
+    """
+    """
+
+    def __init__(self, **kw):
+        if kw['options_metavar'] == '[OPTIONS]':
+            kw['options_metavar'] = '[--help]'
+
+        if kw['subcommand_metavar'] is None:
+            kw['subcommand_metavar'] = '<command>'
+
+        kw['no_args_is_help'] = True
+        super().__init__(**kw)
+
+    # OVERRIDES
+
+    def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
+
+        try:
+            super().parse_args(ctx, args)
+        except UsageError as e:
+            show_error(e)
+            raise typer.Exit(-1)
+
+    def get_help(self, ctx: click.Context) -> str:
         """
-        Returns the help option object.
+        Formats the help into a string and returns it.
         """
-        return Option(
+        formatter = ctx.make_formatter()
+        self.format_help(ctx, formatter)
+
+        with console.capture() as c:
+            console.print(formatter.getvalue().rstrip())
+
+        return c.get()
+
+    def get_params(self, ctx: click.Context) -> List[click.Parameter]:
+        rv = self.params
+        help_option = self.get_help_option(ctx)
+        version_option = self.get_version_option(ctx)
+
+        args = click.get_os_args()
+
+        if (
+            not args                                 # cs_tools
+            or args[0].startswith('--')              # cs_tools --version
+            or args[0] == 'tools' and len(args) > 1  # cs_tools tools * --version
+        ):
+            rv = [*rv, version_option]
+
+        if help_option is not None:
+            rv = [*rv, help_option]
+
+        return rv
+
+    def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """
+        Extra format methods for multi methods that
+        adds all the commands after the options.
+
+        Nearly direct copy from source:
+            https://github.com/pallets/click/blob/main/src/click/core.py#L1571
+
+        ... with the only change being the section name change (at the end of
+        this method), to "Tools" instead of "Commands"
+        """
+        commands = []
+        for subcommand in self.list_commands(ctx):
+            cmd = self.get_command(ctx, subcommand)
+            # What is this, the tool lied about a command.  Ignore it
+            if cmd is None:
+                continue
+            if cmd.hidden:
+                continue
+
+            commands.append((subcommand, cmd))
+
+        # allow for 3 times the default spacing
+        if len(commands):
+            limit = formatter.width - 6 - max(len(cmd[0]) for cmd in commands)
+
+            rows = []
+            for subcommand, cmd in commands:
+                help = cmd.get_short_help_str(limit)
+                rows.append((subcommand, help))
+
+            if rows:
+                args = click.get_os_args()
+
+                if args == ['tools'] or args == ['tools', '--help']:
+                    section = 'Tools'
+                else:
+                    section = 'Commands'
+
+                with formatter.section(section):
+                    formatter.write_dl(rows)
+
+    # EXTRA METHODS
+
+    def get_version_option(self, ctx: click.Context) -> Optional[click.Option]:
+        """
+        Returns the version option.
+        """
+        return click.Option(
             ['--version'],
             is_flag=True,
             is_eager=True,
             expose_value=False,
             callback=show_version,
-            help=('Show the tool\'s version and exit.')
+            help="Show the version and exit."
         )
 
-    def get_help(self, ctx: Context) -> str:
-        """
-        Formats the help into a string and returns it.
-        """
-        formatter = ctx.make_formatter()
-        self.format_help(ctx, formatter)
-        return formatter.getvalue()
 
-    def format_help(self, ctx: Context, formatter: HelpFormatter) -> None:
-        """
-        Writes the help into the formatter if it exists.
-        """
-        formatter.write('\n')
-        self.format_usage(ctx, formatter)
-        self.format_help_text(ctx, formatter)
-        self.format_arguments(ctx, formatter)
-        self.format_options(ctx, formatter)
-        self.format_epilog(ctx, formatter)
-
-    def format_arguments(self, ctx, formatter):
-        arguments = []
-
-        for param in self.get_params(ctx):
-            r = param.get_help_record(ctx)
-
-            if r is not None:
-                if isinstance(param, click.Argument):
-                    arguments.append(r)
-
-        if arguments:
-            arguments = prettify_params(arguments)
-
-            with formatter.section('Arguments'):
-                formatter.write_dl(arguments)
-
-    def format_options(self, ctx, formatter):
-        options = []
-
-        for param in self.get_params(ctx):
-            r = param.get_help_record(ctx)
-
-            if r is not None:
-                if isinstance(param, click.Option):
-                    options.append(r)
-
-        if options:
-            *params, help_full, help_ = options
-            options = prettify_params(params)
-
-            if '--helpfull' in click.get_os_args():
-                options = [*options, help_]
-            elif ctx.info_name == ctx.command_path:
-                options = [*options, help_]
-            elif 'logs' in click.get_os_args() or 'config' in click.get_os_args():
-                options = [*options, help_]
-            else:
-                options = [*options, help_full, help_]
-
-            with formatter.section('Options'):
-                formatter.write_dl(options)
-
-        # NOTE: during refactor, do not delete!
-        self.format_commands(ctx, formatter)
-
-    def _parse_args(self, ctx: Context, args: List[str]) -> List[str]:
-        if not args and self.no_args_is_help and not ctx.resilient_parsing:
-            show_full_help(ctx, None, True)
-            raise typer.Exit()
-
-        parser = self.make_parser(ctx)
-
-        try:
-            opts, args, param_order = parser.parse_args(args=args)
-        except UsageError as e:
-            show_error(e)
-            raise typer.Exit(-1)
-
-        for param in iter_params_for_processing(param_order, self.get_params(ctx)):
-            value, args = param.handle_parse_result(ctx, opts, args)
-
-        if args and not ctx.allow_extra_args and not ctx.resilient_parsing:
-            s = '' if len(args) == 1 else 's'
-            args = ' '.join(args)
-            console.print(f'[error]Got unexpected extra argument{s} ({args})[/]')
-            raise typer.Exit(code=1)
-
-        ctx.args = args
-        return args
-
-    def parse_args(self, ctx: Context, args: List[str]) -> List[str]:
-        if not args and self.no_args_is_help and not ctx.resilient_parsing:
-            show_full_help(ctx, None, True)
-            raise typer.Exit()
-
-        rest = self._parse_args(ctx, args)
-
-        if self.chain:
-            ctx.protected_args = rest
-            ctx.args = []
-        elif rest:
-            ctx.protected_args, ctx.args = rest[:1], rest[1:]
-
-        return ctx.args
-
-
-def _csv(ctx: Context, param: Parameter_, value: Tuple[str]) -> List[str]:
+def _csv(ctx: click.Context, param: click.Parameter, value: Tuple[str]) -> List[str]:
     """
     Convert arguments to a list of strings.
 

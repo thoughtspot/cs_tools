@@ -9,7 +9,7 @@ from typer import Argument as A_, Option as O_  # noqa
 from openpyxl import load_workbook
 import typer
 
-from cs_tools.helpers.cli_ux import RichGroup, RichCommand, frontend, console
+from cs_tools.helpers.cli_ux import CSToolsGroup, CSToolsCommand, frontend, console
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.util.algo import chunks
 from cs_tools.settings import TSConfig
@@ -95,11 +95,12 @@ app = typer.Typer(
         | saved answer   | guid3 |
         +----------------+-------+
     """,
-    cls=RichGroup
+    cls=CSToolsGroup,
+    options_metavar='[--version, --help]',
 )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def generate_file(
     export: pathlib.Path = O_(
@@ -127,7 +128,7 @@ def generate_file(
         return
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def single(
     type: ReversibleSystemType = O_(..., help='type of the metadata to delete'),
@@ -149,7 +150,7 @@ def single(
         log.debug(f'{r} - {r.content}')
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def from_file(
     file: pathlib.Path = A_(

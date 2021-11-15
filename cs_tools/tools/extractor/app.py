@@ -4,7 +4,7 @@ import pathlib
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
+from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
 from cs_tools.tools import common
@@ -25,11 +25,12 @@ app = typer.Typer(
     into an Embrace-connected CDW, and then re-expose it to ThoughtSpot to
     maintain the historicals indefinitely.
     """,
-    cls=RichGroup
+    cls=CSToolsGroup,
+    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def search(
     query: str = O_(..., help='search terms to issue against the dataset'),

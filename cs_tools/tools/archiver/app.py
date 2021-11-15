@@ -6,7 +6,7 @@ import pathlib
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand, DataTable
+from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand, CSToolsGroup, CSToolsCommand, DataTable
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
 from cs_tools.errors import ContentDoesNotExist
@@ -41,11 +41,12 @@ app = typer.Typer(
     and then abandon it for newer pursuits. Archiver enables you to identify,
     tag, export, and remove that potentially abandoned content.
     """,
-    cls=RichGroup
+    cls=CSToolsGroup,
+    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def identify(
     tag: str=O_('TO BE ARCHIVED', help='tag name to use for labeling objects to archive'),
@@ -189,7 +190,7 @@ def identify(
             )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def revert(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
@@ -290,7 +291,7 @@ def revert(
             ts.tag.delete(tag['name'])
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def remove(
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
