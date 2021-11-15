@@ -1,4 +1,4 @@
-# Created Objects
+# Searchable Content
 
 !!! caution "USE AT YOUR OWN RISK!"
 
@@ -20,17 +20,19 @@ value to others in your platform.
 
 ## CLI preview
 
-=== "created-objects --help"
+=== "searchable-content --help"
     ```console
-    Usage: cstools tools created-objects [OPTIONS] COMMAND [ARGS]...
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content --help
+
+    Usage: cs_tools tools searchable-content [--version, --help] <command>
 
       Make ThoughtSpot content searchable in your platform.
 
       USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
       version update and break the tool.
 
-      Metadata is created through normal ThoughtSpot activities. Tables, Worksheets, Answers, and
-      Pinboards are all examples of metadata.
+      Metadata is created through normal ThoughtSpot activities. Tables, Worksheets,
+      Answers, and Pinboards are all examples of metadata.
 
       Metadata Object
       - guid
@@ -44,7 +46,7 @@ value to others in your platform.
       - object type
 
     Options:
-      --version   Show the tool's version and exit.
+      --version   Show the version and exit.
       -h, --help  Show this message and exit.
 
     Commands:
@@ -52,16 +54,17 @@ value to others in your platform.
       spotapp  Exports the SpotApp associated with this tool.
     ```
 
-=== "created-objects gather"
+=== "searchable-content gather"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools created-objects gather --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content gather --help
 
-    Usage: cstools tools created-objects gather [OPTIONS]
+    Usage: cs_tools tools searchable-content gather [--option, ..., --help]
 
       Gather and optionally, insert data into Falcon.
 
-      By default, data is automatically gathered and inserted into the platform. If save_path argument is
-      used, data will not be inserted and will instead be dumped to the location specified.
+      By default, data is automatically gathered and inserted into the platform. If
+      --export argument is used, data will not be inserted and will instead be dumped
+      to the location specified.
 
     Options:
       --export DIRECTORY              if specified, directory to save data to
@@ -71,11 +74,11 @@ value to others in your platform.
       -h, --help                      Show this message and exit.
     ```
 
-=== "created-objects spotapp"
+=== "searchable-content spotapp"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools created-objects spotapp --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content spotapp --help
 
-    Usage: cstools tools created-objects spotapp [OPTIONS]
+    Usage: cs_tools tools searchable-content spotapp [--option, ..., --help]
 
       Exports the SpotApp associated with this tool.
 

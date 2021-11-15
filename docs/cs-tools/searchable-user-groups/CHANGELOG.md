@@ -13,6 +13,7 @@ hide:
 
 ### :octicons-tag-16: v1.2.2 &nbsp; &nbsp; :material-calendar-text: 2021-11-09
 === ":wrench: &nbsp; Modified"
+    - now known as Searchable User Groups, `searchable-user-groups`
     - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
     - `tml` is now `spotapp` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 

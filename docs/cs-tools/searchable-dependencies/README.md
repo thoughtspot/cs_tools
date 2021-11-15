@@ -1,4 +1,4 @@
-# Dependency Checker
+# Searchable Dependencies
 
 !!! caution "USE AT YOUR OWN RISK!"
 
@@ -14,23 +14,24 @@ content a User makes.
 
 ## Relationship preview
 
-![user-group-relationship](./relationship.png)
+![dependency-relationship](./relationship.png)
 
 ## CLI preview
 
-=== "dependency-checker --help"
+=== "searchable-dependencies --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-dependencies --help
 
-    Usage: cs_tools tools dependency-checker [OPTIONS] COMMAND [ARGS]...
+     Usage: cs_tools tools searchable-dependencies [--version, --help] <command>
 
       Make Dependencies searchable in your platform.
 
       USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
       version update and break the tool.
 
-      Dependencies can be collected for various types of metadata. For example, many tables are used
-      within a worksheet, while many worksheets will have answers and pinboards built on top of them.
+      Dependencies can be collected for various types of metadata. For example, many
+      tables are used within a worksheet, while many worksheets will have answers and
+      pinboards built on top of them.
 
       Metadata Object             Metadata Dependent
       - guid                      - guid
@@ -45,8 +46,7 @@ content a User makes.
       - context                   - object type
 
     Options:
-      --version   Show the tool's version and exit.
-      --helpfull  Show the full help message and exit.
+      --version   Show the version and exit.
       -h, --help  Show this message and exit.
 
     Commands:
@@ -54,16 +54,17 @@ content a User makes.
       spotapp  Exports the SpotApp associated with this tool.
     ```
 
-=== "dependency-checker gather"
+=== "searchable-dependencies gather"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker gather --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-dependencies gather --help
 
-Usage: cs_tools tools dependency-checker gather [OPTIONS]
+    Usage: cs_tools tools searchable-dependencies gather [--option, ..., --help]
 
       Gather and optionally, insert data into Falcon.
 
-      By default, data is automatically gathered and inserted into the platform. If save_path argument is
-      used, data will not be inserted and will instead be dumped to the location specified.
+      By default, data is automatically gathered and inserted into the platform. If
+      --export argument is used, data will not be inserted and will instead be dumped
+      to the location specified.
 
     Options:
       --export DIRECTORY              directory to save the spot app to
@@ -74,11 +75,11 @@ Usage: cs_tools tools dependency-checker gather [OPTIONS]
       -h, --help                      Show this message and exit.
     ```
 
-=== "dependency-checker spotapp"
+=== "searchable-dependencies spotapp"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools dependency-checker spotapp --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-dependencies spotapp --help
 
-    Usage: cs_tools tools dependency-checker spotapp [OPTIONS]
+    Usage: cs_tools tools searchable-dependencies spotapp [--option, ..., --help]
 
       Exports the SpotApp associated with this tool.
 

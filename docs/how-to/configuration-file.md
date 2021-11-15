@@ -51,23 +51,23 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
 === "config create"
 
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config create
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config create --help
 
-    Usage: cstools config create [OPTIONS]
+    Usage: cs_tools config create [--option, ..., --help]
 
       Create a new config file.
 
     Options:
-      --name TEXT      config file identifier  (required)
-      --host TEXT      thoughtspot server  (required)
-      --port INTEGER   optional, port of the thoughtspot server
-      --username TEXT  username when logging into ThoughtSpot  (required)
-      --password TEXT  password when logging into ThoughtSpot  (required)
-      --temp_dir PATH  location on disk to save temporary files
-      --disable_ssl    disable SSL verification
-      --disable_sso    disable automatic SAML redirect
-      --verbose        enable verbose logging by default
-      -h, --help       Show this message and exit.
+      --name TEXT           config file identifier  (required)
+      --host TEXT           thoughtspot server  (required)
+      --port INTEGER        optional, port of the thoughtspot server
+      --username TEXT       username when logging into ThoughtSpot  (required)
+      --password TEXT       password when logging into ThoughtSpot  (required)
+      --temp_dir DIRECTORY  location on disk to save temporary files
+      --disable_ssl         disable SSL verification
+      --disable_sso         disable automatic SAML redirect
+      --verbose             enable verbose logging by default
+      -h, --help            Show this message and exit.
     ```
 
 === "config modify"
@@ -75,29 +75,31 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config modify --help
 
-    Usage: cstools config modify [OPTIONS]
+    Usage: cs_tools config modify [--option, ..., --help]
 
       Modify an existing config file.
 
     Options:
-      --name TEXT                       config file identifier  (required)
-      --host TEXT                       thoughtspot server
-      --port INTEGER                    optional, port of the thoughtspot server
-      --username TEXT                   username when logging into ThoughtSpot
-      --password TEXT                   password when logging into ThoughtSpot
-      --temp_dir PATH                   location on disk to save temporary files
-      --disable_ssl / --no-disable_ssl  disable SSL verification
-      --disable_sso / --no-disable_sso  disable automatic SAML redirect
-      --verbose / --normal              enable verbose logging by default
-      -h, --help                        Show this message and exit.
+      --name TEXT                     config file identifier  (required)
+      --host TEXT                     thoughtspot server
+      --port INTEGER                  optional, port of the thoughtspot server
+      --username TEXT                 username when logging into ThoughtSpot
+      --password TEXT                 password when logging into ThoughtSpot
+      --temp_dir DIRECTORY            location on disk to save temporary files
+      --disable_ssl / --no-disable_ssl
+                                      disable SSL verification
+      --disable_sso / --no-disable_sso
+                                      disable automatic SAML redirect
+      --verbose / --normal            enable verbose logging by default
+      -h, --help                      Show this message and exit.
     ```
 
 === "config delete"
 
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config delete
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config delete --help
 
-    Usage: cs_tools config delete [OPTIONS]
+    Usage: cs_tools config delete [--option, ..., --help]
 
       Delete a config file.
 
@@ -109,9 +111,9 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
 === "config show"
 
     ```console
-    (.venv) C:\work\thoughtspot\cs_tools>cs_tools config show --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config show --help
 
-    Usage: cs_tools config show [OPTIONS]
+    Usage: cs_tools config show [--option, ..., --help]
 
       Show the location of the currently saved config files.
 

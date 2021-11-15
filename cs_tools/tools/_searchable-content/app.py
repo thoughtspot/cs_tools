@@ -132,10 +132,11 @@ def gather(
     Gather and optionally, insert data into Falcon.
 
     By default, data is automatically gathered and inserted into the
-    platform. If save_path argument is used, data will not be inserted
+    platform. If --export argument is used, data will not be inserted
     and will instead be dumped to the location specified.
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    export = export or backwards_compat
 
     dir_ = cfg.temp_dir if export is None else export
     dir_.parent.mkdir(exist_ok=True)

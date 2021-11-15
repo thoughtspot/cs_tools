@@ -13,6 +13,7 @@ hide:
 
 ### :octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-11-09
 === ":wrench: &nbsp; Modified"
+    - now known as Bulk Deleter, `bulk-deleter`
     - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 ---

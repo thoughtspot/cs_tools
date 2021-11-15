@@ -14,24 +14,24 @@ content to another designated owner.
 === "transfer-ownership --help"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools transfer-ownership --help
-    Usage: cs_tools tools transfer-ownership [OPTIONS] COMMAND [ARGS]...
 
-      Transfer ownership of objects from one user to another.
+     Usage: cs_tools tools transfer-ownership [--version, --help] <command>
+
+      Transfer ownership of all objects from one user to another.
 
     Options:
-      --version   Show the tool's version and exit.
-      --helpfull  Show the full help message and exit.
+      --version   Show the version and exit.
       -h, --help  Show this message and exit.
 
     Commands:
-      transfer  Transfer ownership of all objects from one user to another.
+      transfer  Transfer ownership of objects from one user to another.
     ```
 
 === "transfer-ownership transfer"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cstools tools transfer-ownership transfer --help
 
-    Usage: cstools tools transfer-ownership transfer [OPTIONS] FROM TO
+    Usage: cstools tools transfer-ownership transfer [--option, ..., --help] FROM TO
 
       Transfer ownership of objects from one user to another.
 

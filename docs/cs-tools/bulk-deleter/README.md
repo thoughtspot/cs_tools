@@ -1,4 +1,4 @@
-# Delete Objects
+# Bulk Deleter
 
 !!! caution "USE AT YOUR OWN RISK!"
 
@@ -17,7 +17,7 @@ up the delete process, but gives less visibility should an issue occur. A summar
 what has been removed is saved in the logs directory of cs-tools. 
 
 An example data set is provided below. This is the same format an Excel or CSV should be
-in if supplied to `delete-objects from-file`
+in if supplied to `bulk-deleter from-file`
 
 !!! note "Example input files"
 
@@ -25,49 +25,32 @@ in if supplied to `delete-objects from-file`
      &nbsp; &nbsp; &nbsp; &nbsp; 
     [:fontawesome-solid-file-csv: CSV template](template.csv)
 
-=== "delete-objects --help"
+=== "bulk-deleter --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools bulk-deleter --help
 
-    Usage: cstools tools delete-objects [OPTIONS] COMMAND [ARGS]...
+     Usage: cs_tools tools bulk-deleter [--version, --help] <command>
 
       Bulk delete metadata objects from your ThoughtSpot platform.
 
       USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
       version update and break the tool.
 
-      Tool takes an input file and or a specific object and deletes it from the metadata.
-
-      Valid metadata object type values are:
-          - saved answer
-          - pinboard
-
-      CSV/XLSX file format should look like..
-          +----------------+-------+
-          | type           | guid  |
-          +----------------+-------+
-          | saved answer   | guid1 |
-          | pinboard       | guid2 |
-          | ...            | ...   |
-          | saved answer   | guid3 |
-          +----------------+-------+
-
     Options:
-      --version   Show the tool's version and exit.
-      --helpfull  Show the full help message and exit.
+      --version   Show the version and exit.
       -h, --help  Show this message and exit.
 
     Commands:
       from-file      Remove many objects from ThoughtSpot.
-      generate-file  Generates example file in Excel or CSV format
+      generate-file  Generates example file in Excel or CSV format.
       single         Removes a specific object from ThoughtSpot.
     ```
 
-=== "delete-objects from-file"
+=== "bulk-deleter from-file"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects from-file --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools bulk-deleter from-file --help
 
-    Usage: cstools tools delete-objects from-file [OPTIONS] FILE
+    Usage: cs_tools tools bulk-deleter from-file [--option, ..., --help] FILE.csv
 
       Remove many objects from ThoughtSpot.
 
@@ -85,33 +68,35 @@ in if supplied to `delete-objects from-file`
           +----------------+-------+
 
     Arguments:
-      FILE  path to a file with columns "type" and "guid"  (required)
+      FILE.csv  path to a file with columns "type" and "guid"  (required)
 
     Options:
-      --batchsize INTEGER  maximum amount of objects to delete simultaneously  (default: 1)
+      --batchsize INTEGER  maximum amount of objects to delete simultaneously
+                           (default: 1)
+
       --helpfull           Show the full help message and exit.
       -h, --help           Show this message and exit.
     ```
 
-=== "delete-objects generate-file"
+=== "bulk-deleter generate-file"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects generate-file --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools bulk-deleter generate-file --help
 
-    Usage: cstools tools delete-objects generate-file [OPTIONS]
+    Usage: cs_tools tools bulk-deleter generate-file [--option, ..., --help]
 
-      Generates example file in Excel or CSV format
+      Generates example file in Excel or CSV format.
 
     Options:
-      --export FILE  filepath to save generated file to  (required)
-      --helpfull     Show the full help message and exit.
-      -h, --help     Show this message and exit.
+      --export FILE.csv  filepath to save generated file to  (required)
+      --helpfull         Show the full help message and exit.
+      -h, --help         Show this message and exit.
     ```
 
-=== "delete-objects single"
+=== "bulk-deleter single"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools delete-objects single --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools bulk-deleter single --help
 
-    Usage: cs_tools tools delete-objects single [OPTIONS]
+    Usage: cs_tools tools bulk-deleter single [--option, ..., --help]
 
       Removes a specific object from ThoughtSpot.
 

@@ -42,11 +42,11 @@ follow the instructions down the page.
 
     === ":fontawesome-brands-apple: Mac"
 
-        1. Download dist.zip above.
+        1. Download cs_tools-platform-installer.zip above.
         2. Move it to a permanent location on your machine.
             - `$HOME/Downloads` is fine
-        3. Unzip the file by double-clicking `dist.zip`
-        4. Move into the newly created /dist directory
+        3. Unzip the file by double-clicking `cs_tools-platform-installer.zip`
+        4. Move into the newly created /cs_tools-platform-installer directory
         5. Run `unix_install.sh`
 
             ++ctrl+left-button++ on `unix_install.sh`
@@ -62,23 +62,23 @@ follow the instructions down the page.
     === ":fontawesome-brands-linux: Linux"
 
 
-        1. Download dist.zip above.
+        1. Download cs_tools-platform-installer.zip above.
         2. Move it to a permanent location on your machine.
             - `$HOME/Downloads` is fine
         3. Unzip and install the tools.
         ```console
-        unzip -u $HOME/downloads/dist.zip -d $HOME/downloads
-        source $HOME/downloads/dist/unix_install.sh
+        unzip -u $HOME/downloads/cs_tools-platform-installer.zip -d $HOME/downloads
+        source $HOME/downloads/cs_tools-platform-installer/unix_install.sh
         ```
 
     === ":fontawesome-brands-windows: Windows"
 
 
-        1. Download dist.zip above.
+        1. Download cs_tools-platform-installer.zip above.
         2. Move it to a permanent location on your machine.
             - `%USERPROFILE%/Downloads` is fine
-        3. Unzip the file by ++right-button++ clicking `dist.zip` and selecting "Extract All..."
-        4. Move into the newly created /dist folder
+        3. Unzip the file by ++right-button++ clicking `cs_tools-platform-installer.zip` and selecting "Extract All..."
+        4. Move into the newly created /cs_tools-platform-installer folder
         5. Run `windows_install.ps1`
 
             ++shift+right-button++ on `windows_install.ps1`
@@ -88,11 +88,11 @@ follow the instructions down the page.
     === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
 
         ```console
-        # 1. Download dist.zip
+        # 1. Download cs_tools-platform-installer.zip
         # 2. Open a Terminal and run the following commands
 
-        unzip -u $HOME/downloads/dist.zip -d $HOME/downloads
-        source $HOME/downloads/dist/unix_install.sh
+        unzip -u $HOME/downloads/cs_tools-platform-installer.zip -d $HOME/downloads
+        source $HOME/downloads/cs_tools-platform-installer/unix_install.sh
 
         # To activate the environment later (for interactive or automation needs)
         # the path to unix_activate.sh must be a valid relative or full path!
@@ -103,9 +103,9 @@ follow the instructions down the page.
     === ":fontawesome-brands-windows: Windows"
 
         ```console
-        # 1. Download dist.zip
-        # 2. Unzip dist.zip
-        # 3. Navigate to the folder dist/
+        # 1. Download cs_tools-platform-installer.zip
+        # 2. Unzip cs_tools-platform-installer.zip
+        # 3. Navigate to the folder cs_tools-platform-installer/
         # 4. Right-click windows_install.ps1, select "Run with Powershell"
 
         # To activate the environment later (for interactive or automation needs)
@@ -126,23 +126,25 @@ follow the instructions down the page.
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools
 
-Usage: cs_tools [OPTIONS] COMMAND [ARGS]...
+ Usage: cs_tools [--version, --help] <command>
 
   Welcome to CS Tools!
 
-  These are scripts and utilities used to assist in the development, implementation, and
+  These are scripts and utilities used to assist in the development, implementation, and 
   administration of your ThoughtSpot platform.
 
-  All tools and this library are provided as-is. While every effort has been made to test and certify
-  use of these tools in the various supported ThoughtSpot deployments, each environment is different.
+  All tools are provided as-is. While every effort has been made to test and certify use
+  of these tools in the various supported ThoughtSpot deployments, each environment is
+  different!
 
-  You should ALWAYS take a snapshot before you make any significant changes to your environment!
+  You should ALWAYS take a snapshot before you make any significant changes to your
+  environment!
 
-  For additional help, please reach out to the ThoughtSpot Customer Success team.
-
-  email: ps-na@thoughtspot.com
+  For additional help, please visit our documentation!
+  https://thoughtspot.github.io/cs_tools/
 
 Options:
+  --version   Show the version and exit.
   -h, --help  Show this message and exit.
 
 Commands:

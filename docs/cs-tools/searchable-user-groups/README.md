@@ -1,4 +1,4 @@
-# Introspect: Users, Groups
+# Searchable Users & Groups
 
 !!! caution "USE AT YOUR OWN RISK!"
 
@@ -26,11 +26,11 @@ so that the information provided is not stale.
 
 ## CLI preview
 
-=== "introspect-user-group --help"
+=== "searchable-user-groups --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-user-groups --help
 
-    Usage: cs_tools tools introspect-user-group [OPTIONS] COMMAND [ARGS]...
+    Usage: cs_tools tools searchable-user-groups [--version, --help] <command>
 
       Make Users and Groups searchable in your platform.
 
@@ -50,8 +50,7 @@ so that the information provided is not stale.
       - user type                 - group type
 
     Options:
-      --version   Show the tool's version and exit.
-      --helpfull  Show the full help message and exit.
+      --version   Show the version and exit.
       -h, --help  Show this message and exit.
 
     Commands:
@@ -59,16 +58,17 @@ so that the information provided is not stale.
       spotapp  Exports the SpotApp associated with this tool.
     ```
 
-=== "introspect-user-group gather"
+=== "searchable-user-groups gather"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group gather --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-user-groups gather --help
 
-    Usage: cs_tools tools introspect-user-group gather [OPTIONS]
+    Usage: cs_tools tools searchable-user-groups gather [--option, ..., --help]
 
       Gather and optionally, insert data into Falcon.
 
-      By default, data is automatically gathered and inserted into the platform. If save_path argument is
-      used, data will not be inserted and will instead be dumped to the location specified.
+      By default, data is automatically gathered and inserted into the platform. If
+      --export argument is used, data will not be inserted and will instead be dumped
+      to the location specified.
 
     Options:
       --export DIRECTORY  if specified, directory to save data to
@@ -76,11 +76,11 @@ so that the information provided is not stale.
       -h, --help          Show this message and exit.
     ```
 
-=== "introspect-user-group spotapp"
+=== "searchable-user-groups spotapp"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools introspect-user-group spotapp --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-user-groups spotapp --help
 
-    Usage: cs_tools tools introspect-user-group spotapp [OPTIONS]
+    Usage: cs_tools tools searchable-user-groups spotapp [--option, ..., --help]
 
       Exports the SpotApp associated with this tool.
 
