@@ -1,7 +1,21 @@
-from cs_tools.helpers.secrets import reveal
+import datetime as dt
+import platform
+import logging
+import sys
 
+import click
+
+from .helpers.secrets import reveal
 from ._rest_api_v1 import _RESTAPIv1
+from ._version import __version__
+from .middlewares import (
+    AnswerMiddleware, PinboardMiddleware, SearchMiddleware, TagMiddleware,
+    UserMiddleware
+)
 from ._schema import ThoughtSpotPlatform, LoggedInUser
+
+
+log = logging.getLogger(__name__)
 
 
 class ThoughtSpot:
@@ -11,18 +25,19 @@ class ThoughtSpot:
         self.config = config
         self._rest_api = _RESTAPIv1(config, ts=self)
 
-        # Middleware methods. These are logically grouped interactions within
+        # Middleware endpoints. These are logically grouped interactions within
         # ThoughtSpot so that working with the REST and GraphQL apis is simpler
         # to do.
-        # self.user
+        self.search = SearchMiddleware(self)
+        self.user = UserMiddleware(self)
         # self.group
         # self.tml
-        # self.pinboard
-        # self.answer
+        self.pinboard = PinboardMiddleware(self)
+        self.answer = AnswerMiddleware(self)
         # self.connection
         # self.worksheet
         # self.table
-        # self.tag
+        self.tag = TagMiddleware(self)
 
     @property
     def api(self) -> _RESTAPIv1:
@@ -70,6 +85,32 @@ class ThoughtSpot:
 
         self._logged_in_user = LoggedInUser.from_session_info(r.json())
         self._this_platform = ThoughtSpotPlatform.from_session_info(r.json())
+
+        log.debug(f"""execution context...
+
+        [CS TOOLS COMMAND]
+        {click.get_current_context().info_name} {' '.join(sys.argv[1:])}
+
+        [PLATFORM DETAILS]
+        system: {platform.system()} (detail: {platform.platform()})
+        python: {platform.python_version()}
+        ran at: {dt.datetime.now(dt.timezone.utc).astimezone().strftime('%Y-%m-%d %H:%M:%S%z')}
+        cs_tools: v{__version__}
+
+        [THOUGHTSPOT]
+        cluster id: {self._this_platform.cluster_id}
+        cluster: {self._this_platform.cluster_name}
+        url: {self._this_platform.url}
+        timezone: {self._this_platform.timezone}
+        codebase: {self._this_platform.deployment}
+        version: {self._this_platform.version}
+
+        [LOGGED IN USER]
+        user_id: {self._logged_in_user.guid}
+        username: {self._logged_in_user.name}
+        display_name: {self._logged_in_user.display_name}
+        privileges: {list(map(str, self._logged_in_user.privileges))}
+        """)
 
     def logout(self) -> None:
         """

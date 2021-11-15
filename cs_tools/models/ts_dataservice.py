@@ -1,15 +1,14 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 from io import BufferedIOBase
 import datetime as dt
 import logging
-import pathlib
 import json
 
 from pydantic import validate_arguments
-import typer
 import httpx
 
 from cs_tools.helpers.secrets import reveal
+from cs_tools.const import APP_DIR
 from cs_tools.util import requires
 
 
@@ -45,9 +44,8 @@ class TSDataService:
         self._tsload_port = 8442
         self._tsload_logged_in = False
 
-        app_dir = pathlib.Path(typer.get_app_dir('cs_tools'))
-        (app_dir / '.cache').mkdir(parents=True, exist_ok=True)
-        self._cache_fp = app_dir / '.cache/cycle-id-nodes.json'
+        (APP_DIR / '.cache').mkdir(parents=True, exist_ok=True)
+        self._cache_fp = APP_DIR / '.cache/cycle-id-nodes.json'
 
     @property
     def etl_server_fullpath(self) -> str:
@@ -83,7 +81,7 @@ class TSDataService:
 
     @requires(software='6.2.1', cloud='*')
     @validate_arguments
-    def query(self, data, *, timeout: float=5.0) -> httpx.Response:
+    def query(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
         """
         Run a TQL query.
 
@@ -103,7 +101,7 @@ class TSDataService:
 
     @requires(software='6.2.1', cloud='*')
     @validate_arguments
-    def script(self, data) -> httpx.Response:
+    def script(self, data: Any) -> httpx.Response:
         """
         Execute a series of queries against TQL.
 
@@ -139,7 +137,7 @@ class TSDataService:
 
     @requires(software='6.2.1', cloud=None)
     @validate_arguments
-    def load_init(self, data: dict, *, timeout: float=5.0) -> httpx.Response:
+    def load_init(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
         """
         Initialize a tsload session, with options data.
         """
@@ -270,11 +268,69 @@ class TSDataService:
         r = self.rest_api.request('GET', f'{self.etl_server_fullpath}/loads/{cycle_id}')
         return r
 
+    @requires(software='6.2.1', cloud=None)
+    @validate_arguments
+    def load_params(self, cycle_id: str) -> httpx.Response:
+        """
+        Return the status of the dataload for a particular session.
+
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
+        """
+        try:
+            cache = self._cache(cycle_id)
+            self._tsload_node = cache[cycle_id]['node']
+            self._tsload_port = cache[cycle_id]['port']
+            log.debug(f'redirecting to: {self.etl_server_fullpath}')
+        except KeyError:
+            # happens when etl_http_server loadbalancer is not running
+            pass
+
+        if not self._tsload_logged_in:
+            self._load_auth()
+
+        r = self.rest_api.request('GET', f'{self.etl_server_fullpath}/loads/{cycle_id}/input_summary')
+        return r
+
+    @requires(software='6.2.1', cloud=None)
+    @validate_arguments
+    def bad_records(self, cycle_id: str) -> httpx.Response:
+        """
+        Return the status of the dataload for a particular session.
+
+        Parameters
+        ----------
+        cycle_id : str
+          unique identifier of a load cycle
+        """
+        try:
+            cache = self._cache(cycle_id)
+            self._tsload_node = cache[cycle_id]['node']
+            self._tsload_port = cache[cycle_id]['port']
+            log.debug(f'redirecting to: {self.etl_server_fullpath}')
+        except KeyError:
+            # happens when etl_http_server loadbalancer is not running
+            pass
+
+        if not self._tsload_logged_in:
+            self._load_auth()
+
+        r = self.rest_api.request('GET', f'{self.etl_server_fullpath}/loads/{cycle_id}/bad_records_file')
+        return r
+
     # Not sure where to put these.. they're attached to the ts data service
     # API, but only in the sense that the api produces predictable output, and
     # not part of the model itself.
 
-    def _cache(self, cycle_id: str, *, node: str=None, port: int=None) -> Dict[str, str]:
+    def _cache(
+        self,
+        cycle_id: str,
+        *,
+        node: str = None,
+        port: int = None
+    ) -> Dict[str, str]:
         """
         Small local filestore for managing the load balancer re-route.
 

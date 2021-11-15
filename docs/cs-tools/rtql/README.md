@@ -20,22 +20,21 @@ least the "Can Manage Data" privilege in ThoughtSpot.
 
 === "rtql --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql --help
 
-    Usage: cs_tools tools rtql [OPTIONS] COMMAND [ARGS]...
+     Usage: cs_tools tools rtql [--version, --help] <command>
 
       Enable querying the ThoughtSpot TQL CLI from a remote machine.
 
-      TQL is the ThoughtSpot language for entering SQL commands. You can use TQL to view and modify
-      schemas and data in tables.
+      TQL is the ThoughtSpot language for entering SQL commands. You can use TQL to
+      view and modify schemas and data in tables.
 
       For further information on TQL, please refer to:
         https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
         https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
 
     Options:
-      --version   Show the tool's version and exit.
-      --helpfull  Show the full help message and exit.
+      --version   Show the version and exit.
       -h, --help  Show this message and exit.
 
     Commands:
@@ -48,7 +47,7 @@ least the "Can Manage Data" privilege in ThoughtSpot.
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql command --help
 
-    Usage: cs_tools tools rtql command [OPTIONS] [COMMAND]
+    Usage: cs_tools tools rtql command [--option, ..., --help] [COMMAND]
 
       Run a single TQL command on a remote server.
 
@@ -67,12 +66,12 @@ least the "Can Manage Data" privilege in ThoughtSpot.
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql file --help
 
-    Usage: cs_tools tools rtql file [OPTIONS] FILE
+    Usage: cs_tools tools rtql file [--option, ..., --help] FILE.tql
 
       Run multiple commands within TQL on a remote server.
 
     Arguments:
-      FILE  path to file to execute, default to stdin  (required)
+      FILE.tql  path to file to execute, default to stdin  (required)
 
     Options:
       --schema TEXT  schema name to use  (default: falcon_default_schema)
@@ -84,18 +83,19 @@ least the "Can Manage Data" privilege in ThoughtSpot.
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql interactive --help
 
-    Usage: cs_tools tools rtql interactive [OPTIONS]
+    Usage: cs_tools tools rtql interactive [--option, ..., --help]
 
       Run an interactive TQL session as if you were on the cluster.
 
-      TQL is a command line interface for creating schemas and performing basic database administration.
+      TQL is a command line interface for creating schemas and performing basic database
+      administration.
 
       For a list of all commands, type "help" after invoking tql
 
     Options:
       --autocomplete  toggle auto complete feature  (default: True)
       --schema TEXT   schema name to use  (default: falcon_default_schema)
-      --debug         print the entire response to console  (default: False)
+      --debug         print the entire response to console
       --helpfull      Show the full help message and exit.
       -h, --help      Show this message and exit.
     ```

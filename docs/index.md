@@ -33,12 +33,14 @@ platform.
 - Enhanced security with remote TQL and tsload workflows
 - Supported on MacOS, Linux, and Windows
 - Multiple-cluster support (Dev, QA, Prod)
+- SpotApps distribution for data tools
 - Scheduler-friendly execution
-- SpotApps style distribution for relevant tools *(..coming soon!)*
 
 ---
 
 <center>
+__Get Help__: [https://cs_tools.forms.google/issue][help]
+
 __Documentation__: [https://cs_tools.thoughtspot.com/][this]
 
 __Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
@@ -48,6 +50,7 @@ __Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
 ##### *Should you find anything lacking about the docs or* `cs_tools` *itself, [please submit an issue][gh-issue]{ target='secondary' }!*
 </center>
 
+[help]: https://forms.gle/sh6hyBSS2mnrwWCa9
 [this]: https://thoughtspot.github.io/cs_tools/
 [gh-main]: https://github.com/thoughtspot/cs_tools/
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new

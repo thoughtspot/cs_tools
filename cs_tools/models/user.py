@@ -1,5 +1,10 @@
+from typing import List
+
 from pydantic import validate_arguments
 import httpx
+
+from cs_tools.util import stringified_array
+from cs_tools._enums import GUID
 
 
 class User:
@@ -17,7 +22,12 @@ class User:
         return r
 
     @validate_arguments
-    def transfer_ownership(self, fromUserName: str, toUserName: str) -> httpx.Response:
+    def transfer_ownership(
+        self,
+        fromUserName: str,
+        toUserName: str,
+        objectsID: List[GUID] = None
+    ) -> httpx.Response:
         """
         Transfer ownership of all objects from one user to another.
         """
@@ -25,6 +35,12 @@ class User:
                 'POST',
                 'user/transfer/ownership',
                 privacy='public',
-                params={'fromUserName': fromUserName, 'toUserName': toUserName}
+                params={
+                    'fromUserName': fromUserName,
+                    'toUserName': toUserName,
+                    # technically not available until ts7.sep.cl-109 or greater, but
+                    # query parameters don't usually cause 4xx or 5xx errors
+                    'objectsID': stringified_array(objectsID or ())
+                }
             )
         return r

@@ -9,10 +9,17 @@ PARAMETERS = {
         ( 'GET', 'metadata/listvizheaders'),
         ( 'GET', 'metadata/listobjectheaders'),
         ( 'GET', 'user/list'),
-        ('POST', 'user/transfer/ownership')
+        ('POST', 'user/transfer/ownership'),
+        ('POST', 'pinboarddata'),
+        ('POST', 'searchdata'),
     ],
     'private': [
         ('POST', 'dependency/listdependents'),
+        ( 'GET', 'metadata/edoc/THIS_IS_A_FAKE_TYPE/this-is-a-fake-guid'),
+        ('POST', 'metadata/edoc/exportepack'),
+        ('POST', 'metadata/create'),
+        ('POST', 'metadata/assigntag'),
+        ('POST', 'metadata/unassigntag'),
         ( 'GET', 'metadata/list'),
         ( 'GET', 'metadata/listas'),
         ( 'GET', 'metadata/detail/this-is-a-fake-guid'),
@@ -44,6 +51,8 @@ PARAMETERS = {
         ('POST', 'tsload/loads/this-is-a-fake-cycle-id'),
         ('POST', 'tsload/loads/this-is-a-fake-cycle-id/commit'),
         ( 'GET', 'tsload/loads/this-is-a-fake-cycle-id'),
+        ( 'GET', 'tsload/loads/this-is-a-fake-cycle-id/input_summary'),
+        ( 'GET', 'tsload/loads/this-is-a-fake-cycle-id/bad_records_file'),
     ]
 }
 

@@ -1,10 +1,12 @@
-from typing import List
+from typing import Any, Dict, List
+import json
 
 from pydantic import validate_arguments
 import httpx
 
 from cs_tools.util import stringified_array
 from cs_tools._enums import (
+    GUID,
     MetadataObject,
     LogicalTableSubtype,
     MetadataCategory,
@@ -22,6 +24,125 @@ class _Metadata:
         self.rest_api = rest_api
 
     @validate_arguments
+    def edoc_type_id(
+        self,
+        id: GUID,
+        type: str=MetadataObject.logical_table,
+        formattype: str='YAML'
+    ) -> httpx.Response:
+        """
+        Returns EDoc representation of metadata object.
+        """
+        r = self.rest_api.request(
+                'GET',
+                f'metadata/edoc/{type.value}/{id}',
+                privacy='private',
+                params={'formattype': formattype}
+            )
+        return r
+
+    @validate_arguments
+    def edoc_export_epack(self, request: Dict[str, Any]) -> httpx.Response:
+        """
+        Export a list of objects as edocs packaged in a zip file.
+
+        request looks like:
+
+        {
+            "object": [
+                {"id": "0291f1cd-5f8e-4d96-80e2-e5ef1aa6c44f", "type":"QUESTION_ANSWER_BOOK"},
+                {"id": "4bcaadb4-031a-4afd-b159-2c0c0f194c42", "type":"PINBOARD_ANSWER_BOOK"}
+            ],
+            "export_dependencies": false
+        }
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/edoc/exportEPack',
+                privacy='private',
+                data={'request': json.dumps(request)}
+            )
+        return r
+
+    @validate_arguments
+    def assigntag(
+        self,
+        id: List[GUID],
+        type: List[MetadataObject],
+        tagid: List[GUID]
+    ) -> httpx.Response:
+        """
+        Assign tags to metadata objects; types[i] corresponds to ids[i].
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/assigntag',
+                privacy='private',
+                data={
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
+                    'id': stringified_array(id),
+                    'type': stringified_array([_.value for _ in type]),
+                    'tagid': stringified_array(tagid)
+                }
+            )
+        return r
+
+    @validate_arguments
+    def unassigntag(
+        self,
+        id: List[GUID],
+        type: List[MetadataObject],
+        tagid: List[GUID]
+    ) -> httpx.Response:
+        """
+        Un-assign tags to metadata objects; types[i] corresponds to ids[i].
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/unassigntag',
+                privacy='private',
+                data={
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
+                    'id': stringified_array(id),
+                    'type': stringified_array([_.value for _ in type]),
+                    'tagid': stringified_array(tagid)
+                }
+            )
+        return r
+
+    @validate_arguments
+    def create(
+        self,
+        name: str,
+        type: MetadataObject = MetadataObject.saved_answer,
+        subtype: MetadataObject = None,
+        description: str = None,
+        content: Dict[str, Any] = None,
+        save: bool = True,
+        clientstate: Any = None
+    ) -> httpx.Response:
+        """
+        Create a new metadata object in the repository.
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/create',
+                privacy='private',
+                data={
+                    'type': type.value,
+                    'subtype': subtype.value if subtype is not None else None,
+                    'name': name,
+                    'description': description,
+                    'content': content,
+                    'save': save,
+                    'clientstate': clientstate
+                }
+            )
+        return r
+
+    @validate_arguments
     def list(
         self,
         type: MetadataObject = MetadataObject.pinboard,
@@ -34,8 +155,9 @@ class _Metadata:
         batchsize: int = None,
         tagname: List[str] = None,
         pattern: str = None,
-        skipids: List[str] = None,
-        fetchids: List[str] = None,
+        showhidden: bool = False,
+        skipids: List[GUID] = None,
+        fetchids: List[GUID] = None,
         auto_created: bool = None,
     ) -> httpx.Response:
         """
@@ -54,7 +176,7 @@ class _Metadata:
                     'sortascending': sortascending,
                     'offset': offset,
                     'batchsize': batchsize,
-                    'tagname': stringified_array([_ for _ in tagname or ()]),
+                    'tagname': [tagname] if tagname is not None else None,
                     'pattern': pattern,
                     'skipids': stringified_array([_ for _ in skipids or ()]),
                     'fetchids': stringified_array([_ for _ in fetchids or ()]),
@@ -69,7 +191,7 @@ class _Metadata:
         offset: int = -1,
         batchsize: int = None,
         pattern: str = None,
-        principalid: str = None,
+        principalid: GUID = None,
         minimumaccesslevel: AccessLevel = AccessLevel.no_access,
         type: Principal = Principal.group,
     ) -> httpx.Response:
@@ -94,7 +216,7 @@ class _Metadata:
     @validate_arguments
     def detail(
         self,
-        id: str,
+        id: GUID,
         type: MetadataObject = None,
         showhidden: bool = False,
         dropquestiondetails: bool = False,
@@ -122,7 +244,7 @@ class _Metadata:
     @validate_arguments
     def delete(
         self,
-        id: List[str],
+        id: List[GUID],
         type: MetadataObject = None,
         includedisabled: bool = False,
     ) -> httpx.Response:
@@ -134,6 +256,8 @@ class _Metadata:
                 'metadata/delete',
                 privacy='private',
                 data={
+                    # NOTE: This is an API data parsing error.. data shouldn't need to
+                    # be stringified.
                     'type': None if type is None else type.value,
                     'id': stringified_array([_ for _ in id or ()]),
                     'includedisabled': includedisabled
@@ -144,7 +268,7 @@ class _Metadata:
     @validate_arguments
     def list_columns(
         self,
-        id: str,
+        id: GUID,
         showhidden: bool = False,
     ) -> httpx.Response:
         """
@@ -167,7 +291,7 @@ class Metadata:
         self.rest_api = rest_api
 
     @validate_arguments
-    def list_viz_headers(self, id: str) -> httpx.Response:
+    def list_viz_headers(self, id: GUID) -> httpx.Response:
         """
         Get the visualization headers from the ThoughtSpot system.
         """
@@ -191,8 +315,8 @@ class Metadata:
         batchsize: int = None,
         tagname: List[str] = None,
         pattern: str = None,
-        skipids: List[str] = None,
-        fetchids: List[str] = None,
+        skipids: List[GUID] = None,
+        fetchids: List[GUID] = None,
         auto_created: bool = None
     ) -> httpx.Response:
         """

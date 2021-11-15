@@ -7,7 +7,7 @@ from typer import Argument as A_, Option as O_  # noqa
 import uvicorn
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
+from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
 from cs_tools._enums import AccessLevel
@@ -127,11 +127,12 @@ app = typer.Typer(
     given table across all columns, and as many groups as are in your platform. You may
     then set the appropriate security settings for those group-table combinations.
     """,
-    cls=RichGroup
+    cls=CSToolsGroup,
+    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def run(
     webserver_port: int=O_(5000, help='port to host the webserver on'),
@@ -159,7 +160,7 @@ def run(
         )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def share(
     group: str=O_(..., help='group to share with'),

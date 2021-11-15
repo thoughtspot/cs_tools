@@ -11,9 +11,16 @@ hide:
     The format is based on [Keep a Changelog][keep-a-changelog]{ target='secondary' .external-link }, and this project
     adheres to [Semantic Versioning][semver]{ target='secondary' .external-link }.
 
-### :octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-22
+### :octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2021-11-08
 === ":hammer_and_wrench: &nbsp; Added"
-    - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+    - added many tsload flags [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+    - allow retrieval of bad records on failed data loads [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+---
+
+??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-22"
+    === ":hammer_and_wrench: &nbsp; Added"
+        - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 ---
 

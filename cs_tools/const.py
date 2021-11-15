@@ -18,9 +18,7 @@ PACKAGE_DIR = pathlib.Path(__file__).parent
 FMT_TSLOAD_DATE = '%Y-%m-%d'
 FMT_TSLOAD_TIME = '%H:%M:%S'
 FMT_TSLOAD_DATETIME = f'{FMT_TSLOAD_DATE} {FMT_TSLOAD_TIME}'
-
 FMT_TSLOAD_TRUE_FALSE = 'True_False'
-
 
 APP_DIR = pathlib.Path(typer.get_app_dir('cs_tools'))
 APP_DIR.mkdir(parents=True, exist_ok=True)

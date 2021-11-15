@@ -81,6 +81,13 @@ nav:
   - Install: how-to/install-upgrade-cs-tools.md
   - Tools:
     - cs-tools/overview.md
+    - Archiver:
+      - archiver: cs-tools/archiver/README.md
+      - cs-tools/archiver/CHANGELOG.md
+    - Extractor:
+      - extractor: cs-tools/extractor/README.md
+      - cs-tools/extractor/CHANGELOG.md
+      # - "TS: BI Mirroring": cs-tools/extractor/TS_BI_RUNBOOK.md
     - Remote TQL:
       - rtql: cs-tools/rtql/README.md
       - cs-tools/rtql/CHANGELOG.md
@@ -94,27 +101,27 @@ nav:
       - transfer-ownership: cs-tools/transfer-ownership/README.md
       # - How-To Guide: cs-tools/transfer-ownership/RUNBOOK.md
       - cs-tools/transfer-ownership/CHANGELOG.md
-    - 🙈 Created Objects:
-      - created-objects: cs-tools/created-objects/README.md
-      # - How-To Guide: cs-tools/created-objects/RUNBOOK.md
-      - cs-tools/created-objects/CHANGELOG.md
-    - 🙈 Delete Objects:
-      - delete-objects: cs-tools/delete-objects/README.md
-      - cs-tools/delete-objects/CHANGELOG.md
-    - 🙈 Dependency Checker:
-      - dependency-checker: cs-tools/dependency-checker/README.md
-      # - How-To Guide: cs-tools/dependency-checker/RUNBOOK.md
-      - cs-tools/dependency-checker/CHANGELOG.md
-    - "🙈 Introspect: Users, Groups":
-      - introspect-user-group: cs-tools/introspect-user-group/README.md
-      # - How-To Guide: cs-tools/introspect-user-group/RUNBOOK.md
-      - cs-tools/introspect-user-group/CHANGELOG.md
+    - 🙈 Bulk Deleter:
+      - bulker-deleter: cs-tools/bulk-deleter/README.md
+      - cs-tools/bulk-deleter/CHANGELOG.md
+    - "🙈 Search: Content":
+      - searchable-content: cs-tools/searchable-content/README.md
+      # - How-To Guide: cs-tools/searchable-content/RUNBOOK.md
+      - cs-tools/searchable-content/CHANGELOG.md
+    - "🙈 Search: Dependencies":
+      - searchable-dependencies: cs-tools/searchable-dependencies/README.md
+      # - How-To Guide: cs-tools/searchable-dependencies/RUNBOOK.md
+      - cs-tools/searchable-dependencies/CHANGELOG.md
+    - "🙈 Search: Users & Groups":
+      - searchable-user-groups: cs-tools/searchable-user-groups/README.md
+      # - How-To Guide: cs-tools/searchable-user-groups/RUNBOOK.md
+      - cs-tools/searchable-user-groups/CHANGELOG.md
     - 🙈 Sharding Recommender:
       - sharding-recommender: cs-tools/sharding-recommender/README.md
       # - How-To Guide: cs-tools/sharding-recommender/RUNBOOK.md
       - cs-tools/sharding-recommender/CHANGELOG.md
   - How-to:
-    - "Setup a Configuration File": how-to/configuration-file.md
+    - "Set up a Configuration File": how-to/configuration-file.md
     - "Scheduling Tools": how-to/scheduling-tool-commands.md
   - Changelog:
     - v1.2.0: changelog/1.2.0.md
