@@ -5,7 +5,7 @@ import shutil
 from typer import Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
+from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
 from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
 from cs_tools.settings import TSConfig
@@ -73,11 +73,12 @@ app = typer.Typer(
     For further information on sharding, please refer to:
       https://docs.thoughtspot.com/latest/admin/loading/sharding.html
     """,
-    cls=RichGroup
+    cls=CSToolsGroup,
+    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def spotapp(
     export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),
@@ -90,7 +91,7 @@ def spotapp(
     console.print(f'moved the SpotApp to {export}')
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def gather(
     export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),

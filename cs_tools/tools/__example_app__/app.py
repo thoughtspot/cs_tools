@@ -4,7 +4,7 @@
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
-from cs_tools.helpers.cli_ux import RichGroup
+from cs_tools.helpers.cli_ux import CSToolsGroup
 
 
 app = typer.Typer(
@@ -39,5 +39,5 @@ app = typer.Typer(
       \b - Preserve Whitespace / formatting.
       \f - EOF, don't include anything after this character in helptext.
     """,
-    cls=RichGroup
+    cls=CSToolsGroup
 )

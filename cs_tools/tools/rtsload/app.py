@@ -4,7 +4,7 @@ import pathlib
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, RichGroup, RichCommand
+from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
 from cs_tools.tools.common import tsload
 from cs_tools.settings import TSConfig
 from cs_tools.thoughtspot import ThoughtSpot
@@ -35,11 +35,12 @@ app = typer.Typer(
       https://docs.thoughtspot.com/latest/reference/tsload-service-api-ref.html
       https://docs.thoughtspot.com/latest/reference/data-importer-ref.html
     """,
-    cls=RichGroup
+    cls=CSToolsGroup,
+    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def status(
     cycle_id: str=A_(..., help='data load cycle id'),
@@ -81,7 +82,7 @@ def status(
             _bad_records_to_file(bad_records_file, data=r.text, params=load_params)
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def file(
     file: pathlib.Path = A_(..., help='path to file to execute', metavar='FILE.csv', dir_okay=False, resolve_path=True),

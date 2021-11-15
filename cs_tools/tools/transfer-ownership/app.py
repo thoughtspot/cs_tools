@@ -4,7 +4,7 @@ import json
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import _csv, console, frontend, RichGroup, RichCommand
+from cs_tools.helpers.cli_ux import _csv, console, frontend, CSToolsGroup, CSToolsCommand
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
 from cs_tools._enums import GUID
@@ -46,11 +46,12 @@ app = typer.Typer(
     help="""
     Transfer ownership of all objects from one user to another.
     """,
-    cls=RichGroup
+    cls=CSToolsGroup,
+    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=RichCommand)
+@app.command(cls=CSToolsCommand)
 @frontend
 def transfer(
     from_: str=A_(..., metavar='FROM', help='username of the current content owner'),
