@@ -120,11 +120,17 @@ def identify(
 
         if content.value in ('all', 'answer'):
             with console.status('[bold green]retrieving existing answers..[/]'):
-                data.extend({**a, 'content_type': 'answer'} for a in ts.answer.all())
+                try:
+                    data.extend({**a, 'content_type': 'answer'} for a in ts.answer.all())
+                except ContentDoesNotExist:
+                    pass
 
         if content.value in ('all', 'pinboard'):
             with console.status('[bold green]retrieving existing pinboards..[/]'):
-                data.extend({**p, 'content_type': 'pinboard'} for p in ts.pinboard.all())
+                try:
+                    data.extend({**p, 'content_type': 'pinboard'} for p in ts.pinboard.all())
+                except ContentDoesNotExist:
+                    pass
 
         archive = set(_['id'] for _ in data) - usage
 
