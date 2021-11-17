@@ -92,6 +92,9 @@ def identify(
     """
     Identify objects which objects can be archived.
 
+    [yellow]Identification criteria will skip content owned by "System User" (system)
+    and "Administrator" (tsamin)[/]
+
     ThoughtSpot stores usage activity (by default, 6 months of interactions) by user in
     the platform. If a user views, edits, or creates an Answer or Pinboard, ThoughtSpot
     knows about it. This can be used as a proxy to understanding what content is
@@ -349,9 +352,16 @@ def remove(
     """
     cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
 
-    if export_tml is not None and not export_tml.as_posix().endswith('zip'):
-        console.print(f"[b red]TML export path must be a zip file! Got, '{export_tml}'")
-        raise typer.Exit(-1)
+    if export_tml is not None:
+        if not export_tml.as_posix().endswith('zip'):
+            console.log(
+                f"[b red]TML export path must be a zip file! Got, '{export_tml}'"
+            )
+            raise typer.Exit(-1)
+
+        if export_tml.exists():
+            console.log(f'[b red]Zip file "{export_tml}" already exists!')
+            typer.confirm('Would you like to ovewrite it?', abort=True)
 
     with ThoughtSpot(cfg) as ts:
         to_unarchive = []
@@ -394,8 +404,16 @@ def remove(
 
         # PROMPT FOR INPUT
         if not no_prompt:
+
+            if export_only:
+                op = 'exporting'
+            elif export_tml:
+                op = 'exporting and removing'
+            else:
+                op = 'removing'
+
             typer.confirm(
-                f'\nWould you like to continue with removing {len([*answers, *pinboards])} objects?',
+                f'\nWould you like to continue with {op} {len([*answers, *pinboards])} objects?',
                 abort=True
             )
 
@@ -409,6 +427,14 @@ def remove(
                         'export_dependencies': False
                     }
                 )
+
+            if not r.json().get('zip_file'):
+                console.log(
+                    '[b red]attempted to export TML, but the API response failed, '
+                    'please re-run the command with --verbose flag to capture more log '
+                    'details'
+                )
+                raise typer.Exit(-1)
 
             util.base64_to_file(r.json()['zip_file'], filepath=export_tml)
 
