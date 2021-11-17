@@ -22,6 +22,7 @@ unused or unwanted content, optionally exporting it prior to removal.
     your platform! If not used appropriately, you could remove worthwhile answers and
     pinboards. __Your users trust you__, use this tool carefully.
 
+
 ## CLI preview
 
 === "archiver --help"
@@ -48,12 +49,20 @@ unused or unwanted content, optionally exporting it prior to removal.
     ```
 
 === "archiver identify"
+    !!! info "Selection criteria"
+
+        The `identify` command will skip content owned by "System User" (system) and
+        "Administrator" (tsamin)
+
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools archiver identify --help
 
     Usage: cs_tools tools archiver identify [--option, ..., --help]
 
       Identify objects which objects can be archived.
+
+      Identification criteria will skip content owned by "System User" (system) and
+      "Administrator" (tsamin)
 
       ThoughtSpot stores usage activity (by default, 6 months of interactions) by user
       in the platform. If a user views, edits, or creates an Answer or Pinboard,
@@ -63,10 +72,10 @@ unused or unwanted content, optionally exporting it prior to removal.
     Options:
       --tag TEXT                      tag name to use for labeling objects to archive
                                       (default: TO BE ARCHIVED)
-      
+
       --content (answer|pinboard|all)
                                       type of content to archive  (default: all)
-      
+
       --usage-months INTEGER          months to consider for user activity
                                       (default: all user history)
       
@@ -75,8 +84,8 @@ unused or unwanted content, optionally exporting it prior to removal.
 
       --dry-run                       test selection criteria, do not apply tags and
                                       instead output information to console on content
-                                      to be archived
-
+                                      tobe archived
+                                      
       --no-prompt                     disable the confirmation prompt
       --report FILE.csv               generates a list of content to be archived
       --helpfull                      Show the full help message and exit.
