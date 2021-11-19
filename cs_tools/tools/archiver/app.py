@@ -361,7 +361,7 @@ def remove(
 
         if export_tml.exists():
             console.log(f'[b red]Zip file "{export_tml}" already exists!')
-            typer.confirm('Would you like to ovewrite it?', abort=True)
+            typer.confirm('Would you like to overwrite it?', abort=True)
 
     with ThoughtSpot(cfg) as ts:
         to_unarchive = []
