@@ -252,7 +252,7 @@ def tsload(
             f'[red]something went wrong trying to access tsload service: {e}[/]'
             f'\n\nIf you haven\'t enabled tsload service yet, please find the link '
             f'below further information:'
-            f'\nhttps://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html',
+            f'\nhttps://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html'
             f'\n\nHeres the tsload command for the file you tried to load:'
             f'\n\ntsload --source_file {fp} --target_database {target_database} '
             f'--target_schema {target_schema} --target_table {target_table} '
