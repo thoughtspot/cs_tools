@@ -31,7 +31,7 @@ platform.
 
 - Low-fuss distribution and installation
 - Enhanced security with remote TQL and tsload workflows
-- Supported on MacOS, Linux, and Windows
+- Installs and runs on MacOS, Linux, and Windows
 - Multiple-cluster support (Dev, QA, Prod)
 - SpotApps distribution for data tools
 - Scheduler-friendly execution
