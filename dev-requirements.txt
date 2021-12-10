@@ -1,6 +1,6 @@
 -r requirements.txt
 
-mkdocs-material==7.2.5
+mkdocs-material==8.1.0
 ward==0.63.0
 coverage==6.0
 -e .
