@@ -28,6 +28,7 @@ class SystemType(str, enum.Enum):
     AGGR_WORKSHEET = 'view'
     PINBOARD_ANSWER_BOOK = 'pinboard'
     QUESTION_ANSWER_BOOK = 'saved answer'
+    SQL_VIEW = 'sql view'  # cirrus project
 
     @classmethod
     def to_friendly(cls, value) -> str:
