@@ -211,6 +211,7 @@ class ThoughtSpotVersionGuard:
         Cloud branch is custom.
 
         ts7.aug.cl-84
+        8.0.0.cl-49
         """
         if version is None:
             return 999, 999, 999
@@ -236,8 +237,14 @@ class ThoughtSpotVersionGuard:
 
         if deployment == 'cloud':
             required = self.cloud
-            req_vers = self._cloud_parts(self.cloud)
-            cur_vers = self._cloud_parts(current)
+            try:
+                req_vers = self._cloud_parts(self.cloud)
+                cur_vers = self._cloud_parts(current)
+
+            # cloud switched to semantic versioning after 8.0.0.cl-49
+            except ValueError:
+                req_vers = self._software_parts(self.software)
+                cur_vers = self._software_parts(current)
 
         for reqd, curr in zip(req_vers, cur_vers):
             if reqd == curr:
