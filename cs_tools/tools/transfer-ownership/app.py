@@ -88,7 +88,7 @@ def transfer(
                 r = ts.api.user.transfer_ownership(
                         fromUserName=from_,
                         toUserName=to_,
-                        objectsID=ids
+                        objectid=ids
                     )
             except Exception:
                 json_msg = r.json()['debug']
