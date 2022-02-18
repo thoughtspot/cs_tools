@@ -49,6 +49,7 @@ class InteractiveTQL:
         ts: ThoughtSpot,
         *,
         schema: dict='falcon_default_schema',
+        http_timeout: int=5,
         autocomplete: bool=True,
         console: Callable=None
     ):
@@ -89,7 +90,7 @@ class InteractiveTQL:
             data['query']['prompt_responses'] = questions
             timeout = None
         else:
-            timeout = 5.0
+            timeout = max(5.0, self.http_timeout)
 
         with self.console.status('[bold green]running query[/]'):
             try:

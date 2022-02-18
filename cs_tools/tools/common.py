@@ -34,7 +34,8 @@ def run_tql_script(
     *,
     fp: pathlib.Path,
     verbose: bool = False,
-    raise_errors: bool = False
+    raise_errors: bool = False,
+    http_timeout: int = 5.0
 ) -> None:
     """
     Run multiple commands within TQL on a remote server.
@@ -65,7 +66,8 @@ def run_tql_script(
             'server_schema_version': -1
         },
         'script_type': 1,
-        'script': commands
+        'script': commands,
+        'timeout': http_timeout
     }
 
     r = ts.api.ts_dataservice.script(data)
@@ -92,7 +94,8 @@ def run_tql_command(
     *,
     command: str,
     schema: str = 'falcon_default_schema',
-    raise_errors: bool = False
+    raise_errors: bool = False,
+    http_timeout: int = 5.0
 ) -> None:
     """
     Run a single TQL command on a remote server.
@@ -121,7 +124,8 @@ def run_tql_command(
         },
         'query': {
             'statement': command
-        }
+        },
+        'timeout': http_timeout
     }
 
     r = ts.api.ts_dataservice.query(data)

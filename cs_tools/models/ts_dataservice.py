@@ -101,7 +101,7 @@ class TSDataService:
 
     @requires(software='6.2.1', cloud='*')
     @validate_arguments
-    def script(self, data: Any) -> httpx.Response:
+    def script(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
         """
         Execute a series of queries against TQL.
 
@@ -113,6 +113,7 @@ class TSDataService:
                 'POST',
                 'tql/script',
                 privacy='dataservice',
+                timeout=timeout,
                 json=data
             )
 

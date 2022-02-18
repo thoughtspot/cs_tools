@@ -125,6 +125,8 @@ def spotapp(
 def gather(
     export: pathlib.Path = O_(None, help='if specified, directory to save data to', file_okay=False, resolve_path=True),
     metadata: SystemType = O_(None, help='type of object to find data for'),
+    # hidden options
+    http_timeout: int=O_(5.0, '--timeout', help='TQL network call timeout threshold'),
     # maintained for backwards compatability
     backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True),
     **frontend_kw
@@ -181,11 +183,11 @@ def gather(
 
         try:
             with console.status('creating tables with remote TQL'):
-                run_tql_command(ts, command='CREATE DATABASE cs_tools;')
-                run_tql_script(ts, fp=static / 'create_tables.tql', raise_errors=True)
+                run_tql_command(ts, command='CREATE DATABASE cs_tools;', http_timeout=http_timeout)
+                run_tql_script(ts, fp=static / 'create_tables.tql', raise_errors=True, http_timeout=http_timeout)
         except common.TableAlreadyExists:
             with console.status('altering tables with remote TQL'):
-                run_tql_script(ts, fp=static / 'alter_tables.tql')
+                run_tql_script(ts, fp=static / 'alter_tables.tql', http_timeout=http_timeout)
 
         with console.status('loading data to Falcon with remote tsload'):
             cycle_id = tsload(
