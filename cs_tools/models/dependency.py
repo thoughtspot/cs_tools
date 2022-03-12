@@ -21,7 +21,7 @@ class _Dependency:
         type: MetadataObject = MetadataObject.logical_column,
         batchsize: int = -1,
         offset: int = -1,
-        timeout: Optional[int] = -1
+        timeout: Optional[int] = 0
     ) -> httpx.Response:
         """
         Metadata objects referencing given object.
@@ -30,7 +30,10 @@ class _Dependency:
         Offset is not advertised to be part of the contract, but is an allowed
         value whenever batchsize is included.
         """
-        timeout = self.rest_api._http.timeout if timeout == -1 else timeout
+        # This looks weird.. default value for timeout is 0? It's because HTTPX's value
+        # for "no timeout" is None. A zero second timeout is not realistic, so we can
+        # effectively use it as a null value.
+        timeout = self.rest_api._http.timeout if timeout == 0 else timeout
 
         r = self.rest_api.request(
                 'POST',

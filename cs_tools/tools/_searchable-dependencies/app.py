@@ -108,7 +108,7 @@ def _get_dependents(api: ThoughtSpot, queue, parent: str, metadata: List[Dict]):
                 id=[_['id'] for _ in chunk],
                 type='LOGICAL_COLUMN' if parent in ('formula', 'column') else 'LOGICAL_TABLE',
                 batchsize=-1,
-                timeout=None if parent == 'column' else -1
+                timeout=None if parent == 'column' else 0
             )
 
         for parent_guid, dependent_data in r.json().items():
