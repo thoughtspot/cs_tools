@@ -1,6 +1,7 @@
 from inspect import Signature, Parameter
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import itertools as it
+import logging
 import pathlib
 import re
 
@@ -10,10 +11,44 @@ from rich.table import Table
 from typer import Argument as A_, Option as O_
 import typer
 import click
+import toml
 
 from cs_tools.helpers.loader import CSTool
+from cs_tools.sync.protocol import SyncerProtocol
 from cs_tools.const import CONSOLE_THEME, PACKAGE_DIR
-from cs_tools import __version__
+from cs_tools.sync import register
+from cs_tools import __version__, db_models
+
+
+log = logging.getLogger(__name__)
+
+
+class SyncerProtocolType(click.ParamType):
+    """
+    Convert a path string to a syncer and defintion file.
+    """
+    name = 'path'
+
+    def convert(
+        self,
+        value: str,
+        param: click.Parameter = None,
+        ctx: click.Context = None
+    ) -> SyncerProtocol:
+        proto, definition = value.split('://')
+        cfg = toml.load(definition)
+
+        if proto != 'custom':
+            cfg['manifest'] = pathlib.Path(__file__).parent.parent / 'sync' / proto / 'MANIFEST.json'
+
+        Syncer = register.load_syncer(protocol=proto, manifest_path=cfg.pop('manifest'))
+        syncer = Syncer(**cfg['configuration'])
+        log.info(f'registering syncer: {syncer.name}')
+
+        if getattr(syncer, '__is_database__', False):
+            db_models.SQLModel.metadata.create_all(syncer.engine)
+
+        return syncer
 
 
 class DataTable(Table):
