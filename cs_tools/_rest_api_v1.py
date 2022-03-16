@@ -11,6 +11,7 @@ from cs_tools.models import (
     _Session,
     Data,
     Metadata,
+    Security,
     TSDataService,
     User
 )
@@ -41,6 +42,7 @@ class _RESTAPIv1:
         # public API endpoints
         self.data = Data(self)
         self.metadata = Metadata(self)
+        self.security = Security(self)
         self.user = User(self)
 
         # private API endpoints

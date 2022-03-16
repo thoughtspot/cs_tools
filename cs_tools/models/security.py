@@ -3,7 +3,7 @@ from typing import Dict, List
 from pydantic import validate_arguments
 import httpx
 
-from cs_tools._enums import AccessLevel
+from cs_tools._enums import GUID, AccessLevel, MetadataObject, PermissionType
 from cs_tools.util import stringified_array
 
 
@@ -76,5 +76,37 @@ class _Security:
                 'security/definedpermission',
                 privacy='private',
                 data={'type': type, 'id': stringified_array(id)}
+            )
+        return r
+
+
+class Security:
+    """
+    Public Security Services.
+    """
+    def __init__(self, rest_api):
+        self.rest_api = rest_api
+
+    @validate_arguments
+    def metadata_permissions(
+        self,
+        type: MetadataObject,
+        id: List[GUID],
+        dependentshare: bool = False,
+        permissiontype: PermissionType = PermissionType.explicit
+    ) -> httpx.Response:
+        """
+        Query object permission details for multiple object types and IDs.
+        """
+        r = self.rest_api.request(
+                'GET',
+                'security/metadata/permissions',
+                privacy='public',
+                params={
+                    'type': type.value,
+                    'id': stringified_array(id),
+                    'dependentshare': dependentshare,
+                    'permissiontype': permissiontype.value
+                }
             )
         return r
