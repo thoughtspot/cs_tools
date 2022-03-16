@@ -137,4 +137,4 @@ class SearchMiddleware:
         if d['samplingRatio'] < 1:
             log.warning(f"not all data was included as part of this search, sampling ratio: {d['samplingRatio']:.2f}")
 
-        return [dict(zip(d['columnNames'], _clean_datetime(row))) for row in d['data']]
+        return [dict(zip(d['columnNames'], row)) for row in d['data']]
