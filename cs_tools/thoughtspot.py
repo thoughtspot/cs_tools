@@ -9,8 +9,8 @@ from .helpers.secrets import reveal
 from ._rest_api_v1 import _RESTAPIv1
 from ._version import __version__
 from .middlewares import (
-    AnswerMiddleware, PinboardMiddleware, SearchMiddleware, TagMiddleware,
-    UserMiddleware
+    AnswerMiddleware, MetadataMiddleware, PinboardMiddleware, SearchMiddleware,
+    TagMiddleware, UserMiddleware
 )
 from ._schema import ThoughtSpotPlatform, LoggedInUser
 
@@ -32,6 +32,7 @@ class ThoughtSpot:
         self.user = UserMiddleware(self)
         # self.group
         # self.tml
+        self.metadata = MetadataMiddleware(self)
         self.pinboard = PinboardMiddleware(self)
         self.answer = AnswerMiddleware(self)
         # self.connection
