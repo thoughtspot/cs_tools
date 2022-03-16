@@ -45,24 +45,24 @@ class MetadataObject(enum.Enum):
 
     # table-column or formula
     logical_column = 'LOGICAL_COLUMN'
-    # see: LogicalTableSubtype
+    # see: MetadataObjectSubtype
     logical_table = 'LOGICAL_TABLE'
 
     # not currently shown in the Swagger UI.
     group = 'USER_GROUP'
     user = 'USER'
 
-    # unused
-    pinboard_answer_sheet = 'PINBOARD_ANSWER_SHEET'
-    question_answer_sheet = 'QUESTION_ANSWER_SHEET'
 
-
-class LogicalTableSubtype(enum.Enum):
+class MetadataObjectSubtype(enum.Enum):
     system_table = 'ONE_TO_ONE_LOGICAL'
     user_upload = 'USER_DEFINED'
     worksheet = 'WORKSHEET'
     view = 'AGGR_WORKSHEET'
-    private_worksheet = 'PRIVATE_WORKSHEET'
+    formula = 'FORMULA'
+    materialized_view = 'MATERIALIZED_VIEW'
+    custom_calendar = 'CALENDAR_TABLE'
+    custom_calendar_type = 'CALENDAR_TYPE'
+    sql_view = 'SQL_VIEW'
 
 
 class MetadataCategory(enum.Enum):
@@ -84,3 +84,8 @@ class SortOrder(enum.Enum):
 class ResultsFormat(enum.Enum):
     records = 'FULL'
     values = 'COMPACT'
+
+
+class PermissionType(enum.Enum):
+    inherited = 'EFFECTIVE'
+    explicit = 'DEFINED' 
