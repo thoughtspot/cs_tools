@@ -22,6 +22,61 @@ app = typer.Typer(
     """,
     cls=CSToolsGroup
 )
+
+
+@app.command(cls=CSToolsCommand)
+@frontend
+def bi_server(
+    # Note:
+    # really this is a SyncerProtocolType type,
+    # but typer does not yet support click.ParamType,
+    # so we can fake it with a callback :~)
+    export: str = A_(
+        ...,
+        help='protocol and path for options to pass to the syncer',
+        metavar='protocol://DEFINITION.toml',
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+    ),
+    **frontend_kw
+):
+    """
+    """
+    SEARCH_TOKENS = (
+        "[incident id] [timestamp].'detailed' [url] [http response code] "
+        "[browser type] [browser version] [client type] [client id] [answer book guid] "
+        "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
+        "[impressions]"
+    )
+
+    cfg = TSConfig.from_cli_args(**frontend_kw)
+
+    with ThoughtSpot(cfg) as ts:
+        with console.status('[bold green]getting TS: BI Server data..[/]'):
+            data = ts.search(SEARCH_TOKENS, worksheet='TS: BI Server')
+            renamed = [
+                {
+                    'incident_id': _['Incident Id'],
+                    'timestamp': dt.datetime.fromtimestamp(_['Timestamp']),
+                    'url': _['URL'],
+                    'http_response_code': _['HTTP Response Code'],
+                    'browser_type': _['Browser Type'],
+                    'browser_version': _['Browser Version'],
+                    'client_type': _['Client Type'],
+                    'client_id': _['Client Id'],
+                    'answer_book_guid': _['Answer Book GUID'],
+                    'viz_id': _['Viz Id'],
+                    'user_id': _['User Id'],
+                    'user_action': _['User Action'],
+                    'query_text': _['Query Text'],
+                    'response_size': _['Total Response Size'],
+                    'latency_us': _['Total Latency (us)'],
+                    'impressions': _['Total Impressions']
+                }
+                for _ in data
+            ]
+            export.dump('ts_bi_server', data=renamed)
+
+
 @app.command(cls=CSToolsCommand)
 @frontend
 def gather(
