@@ -8,7 +8,7 @@ from cs_tools.util import stringified_array
 from cs_tools._enums import (
     GUID,
     MetadataObject,
-    LogicalTableSubtype,
+    MetadataObjectSubtype,
     MetadataCategory,
     SortOrder,
     AccessLevel,
@@ -146,8 +146,8 @@ class _Metadata:
     def list(
         self,
         type: MetadataObject = MetadataObject.pinboard,
-        subtypes: List[LogicalTableSubtype] = None,
-        ownertypes: LogicalTableSubtype = None,
+        subtypes: List[MetadataObjectSubtype] = None,
+        ownertypes: MetadataObjectSubtype = None,
         category: MetadataCategory = MetadataCategory.all,
         sort: SortOrder = SortOrder.default,
         sortascending: bool = None,
@@ -307,7 +307,7 @@ class Metadata:
     def list_object_headers(
         self,
         type: MetadataObject = MetadataObject.pinboard,
-        subtypes: List[LogicalTableSubtype] = None,
+        subtypes: List[MetadataObjectSubtype] = None,
         category: MetadataCategory = MetadataCategory.all,
         sort: SortOrder = SortOrder.default,
         sortascending: bool = None,
@@ -339,6 +339,32 @@ class Metadata:
                     'skipids': stringified_array([_ for _ in skipids or ()]),
                     'fetchids': stringified_array([_ for _ in fetchids or ()]),
                     'auto_created': auto_created
+                }
+            )
+        return r
+
+    @validate_arguments
+    def details(
+        self,
+        id: List[GUID],
+        type: MetadataObject = MetadataObject.logical_table,
+        showhidden: bool = False,
+        dropquestiondetails: bool = False,
+        version: int = -1
+    ) -> httpx.Response:
+        """
+        Details of one or more metadata objects in the repository.
+        """
+        r = self.rest_api.request(
+                'GET',
+                'metadata/details',
+                privacy='public',
+                params={
+                    'type': type.value,
+                    'id': id,
+                    'showhidden': showhidden,
+                    'dropquestiondetails': dropquestiondetails,
+                    'version': version
                 }
             )
         return r
