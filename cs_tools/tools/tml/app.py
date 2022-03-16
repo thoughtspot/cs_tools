@@ -73,12 +73,12 @@ def export(
     export_ids = strip_blanks(export_ids)
     tags = strip_blanks(tags)
 
-    console.log(f"[bold green]exporting {export_ids} as {format_type.value} " +
-                f"{'with ' if export_associated else 'without '} associated.[/]")
-
     with ThoughtSpot(cfg) as ts:
         if tags:
             export_ids.extend(_get_object_ids_with_tags(ts,tags))
+
+        console.log(f"[bold green]exporting {export_ids} as {format_type.value} " +
+                    f"{'with ' if export_associated else 'without '} associated.[/]")
 
         with console.status(f"[bold green]exporting....[/]"):
             r = ts.api.metadata.tml_export(export_ids=export_ids,
