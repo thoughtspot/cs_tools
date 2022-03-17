@@ -59,6 +59,7 @@ class InteractiveTQL:
         self.completer = TQLCompleter()
         self._current_prompt = None
         self.console = console if console is not None else Console()
+        self.http_timeout = http_timeout
 
     @property
     def print(self):
