@@ -8,6 +8,7 @@ from typer import Argument as A_, Option as O_  # noqa
 import typer
 from typing import List
 
+from cs_tools import util
 from cs_tools._enums import TMLImportPolicy, TMLType
 from cs_tools.helpers.cli_ux import _csv, console, CSToolsCommand, CSToolsGroup, frontend
 from cs_tools.settings import TSConfig
@@ -73,65 +74,55 @@ def export(
     export_ids = strip_blanks(export_ids)
     tags = strip_blanks(tags)
 
+    # Options:
+    #    guids, no associated
+    #    guids, associated
+    #    tag, associated
+    #    tag, not associated
+    # if associated - get all the guids, then get the mapping of types, then call to use edoc
+    # if not associated - get all the guids, then call export
+
     with ThoughtSpot(cfg) as ts:
         if tags:
-            export_ids.extend(_get_object_ids_with_tags(ts,tags))
+            export_ids.extend(ts.metadata.get_object_ids_with_tags(tags))
 
-        console.log(f"[bold green]exporting {export_ids} as {format_type.value} " +
-                    f"{'with ' if export_associated else 'without '} associated.[/]")
+        if not export_associated:
+            with console.status(f"[bold green]exporting ${export_ids} without associated content.[/]"):
+                r = ts.api.metadata.tml_export(export_ids=export_ids,
+                                               format_type=format_type,
+                                               export_associated=export_associated)
 
-        with console.status(f"[bold green]exporting....[/]"):
-            r = ts.api.metadata.tml_export(export_ids=export_ids,
-                                           format_type=format_type,
-                                           export_associated=export_associated)
-            objects = r.json()['object']
-            for _ in objects:
-                status = _['info']['status']
-                if not status['status_code'] == 'OK':  # usually access errors.
-                    console.log(f"unable to get {_['info']['name']}: {_['info']['status']}")
+                # TODO - add code to check that I got something back and handle errors.
+                objects = r.json().get('object', [])
+                for _ in objects:
+                    status = _['info']['status']
+                    if not status['status_code'] == 'OK':  # usually access errors.
+                        console.log(f"unable to get {_['info']['name']}: {_['info']['status']}")
 
-                else:
-                    fn = _['info'].get('filename', None)
-                    if path:
-                        fn = f"{path}/{fn}"
+                    else:
+                        fn = _['info'].get('filename', None)
+                        if path:
+                            fn = f"{path}/{fn}"
 
-                    console.log(f'\twriting {fn}')
-                    with open (fn, "w") as f:
-                        f.write(_['edoc'])
+                        console.log(f'\twriting {fn}')
+                        with open (fn, "w") as f:
+                            f.write(_['edoc'])
+
+        else:  # getting associated, so get the full pack.
+            with console.status(f"[bold green]exporting ${export_ids} with associated content.[/]"):
+                object_list = ts.metadata.get_edoc_object_list(export_ids)
+                r = ts.api._metadata.edoc_export_epack(
+                    {
+                        "object": object_list,
+                        "export_dependencies": True
+                    }
+                )
+                console.log(r)
+                filepath = path if not path.is_dir() else path / "metadata.tml.zip"
+
+                util.base64_to_file(r.json()['zip_file'], filepath=filepath)
 
     return None
-
-
-def _get_object_ids_with_tags(ts, tags: List[str]) -> List[str]:
-    object_ids = []
-
-    # TODO Verify if these are all the types.  It seems to be the ones we want other than connections.
-    types = (
-        'QUESTION_ANSWER_BOOK',
-        'PINBOARD_ANSWER_BOOK',
-        'LOGICAL_TABLE',
-        'DATA_SOURCE'
-    )
-
-    console.log(f"Getting GUIDs for tag {tags}")
-
-    for metadata_type in types:
-        offset = 0
-
-        while True:
-            r = ts.api._metadata.list(type=metadata_type, batchsize=500, offset=offset, tagname=tags)
-            data = r.json()
-            offset += len(data)
-
-            for metadata in data['headers']:
-                console.log(f"{metadata['id']}: {metadata['name']} -- {metadata['description']}")
-                object_ids.append(metadata["id"])
-
-            if data['isLastBatch']:
-                break
-
-    console.log(object_ids)
-    return list(set(object_ids))
 
 
 @app.command(cls=CSToolsCommand)
@@ -139,14 +130,14 @@ def _get_object_ids_with_tags(ts, tags: List[str]) -> List[str]:
 def upload(  # can't use import, since that's a reserved word.
         path: pathlib.Path = A_(
             ...,
-            help='full path to the TML file(s) to upload.  Could be .zip',
-            metavar='FILE',
-            dir_okay=False,
+            help='full path to the TML file or directory to upload.',
+            metavar='FILE_OR_DIR',
+            dir_okay=True,
             resolve_path=True
         ),
         import_policy: TMLImportPolicy = O_(TMLImportPolicy.validate_only.value,
                                             help="The import policy type"),
-        force_create: bool = O_(True,
+        force_create: bool = O_(False,
                                 help="If true, will force a new object to be created."),
         **frontend_kw
 ) -> None:
@@ -161,7 +152,14 @@ def upload(  # can't use import, since that's a reserved word.
     else:
         console.log(f"[bold green]importing {path.name} with policy {import_policy.value}.[/]")
 
-    tml = yaml.load(path.read_text("utf-8"), Loader=yaml.Loader)
+    tml = []  # array of TML to update
+
+    if path.is_dir():
+        for p in path.iterdir():
+            if not p.is_dir():  # don't currently support sub-folders.  Might add later.
+                tml.append(yaml.load(p.read_text("utf-8"), Loader=yaml.Loader))
+    else:
+        tml.append(yaml.load(path.read_text("utf-8"), Loader=yaml.Loader))
 
     with ThoughtSpot(cfg) as ts:
         with console.status(f"[bold green]importing {path.name}[/]"):
@@ -171,3 +169,4 @@ def upload(  # can't use import, since that's a reserved word.
             console.log(f"{r.status_code}: {r.text}")
 
     return None
+
