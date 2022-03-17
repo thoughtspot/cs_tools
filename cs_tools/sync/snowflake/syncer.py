@@ -77,7 +77,7 @@ class Snowflake:
                     self.cnxn.execute(table.delete())
 
     def __repr__(self):
-        return f"<Database (snowflake) sync: conn_string='{self.engine.url}'>"
+        return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 

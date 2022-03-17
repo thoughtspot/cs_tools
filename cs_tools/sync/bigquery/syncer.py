@@ -59,7 +59,7 @@ class BigQuery:
                     self.cnxn.execute(table.delete().where(True))
 
     def __repr__(self):
-        return f"<Database (bigquery) sync: conn_string='{self.engine.url}'>"
+        return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 

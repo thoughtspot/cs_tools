@@ -39,7 +39,7 @@ class SQLite:
                 cnxn.commit()
 
     def __repr__(self):
-        return f"<Database (sqlite) sync: conn_string='{self.engine.url}'>"
+        return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 
