@@ -28,7 +28,7 @@ app = typer.Typer(
     can be modified and uploaded into another instance. These files can then be modified and imported 
     into another (or the same) instance to either create or modify objects.
 
-      cs_tools tools tml-migration --help
+      cs_tools tools scriptability-migration --help
     
     \f
     TODO - add more details on using the tools and a workflow.
@@ -118,7 +118,7 @@ def export(
                     }
                 )
                 console.log(r)
-                filepath = path if not path.is_dir() else path / "metadata.tml.zip"
+                filepath = path if not path.is_dir() else path / "metadata.scriptability.zip"
 
                 util.base64_to_file(r.json()['zip_file'], filepath=filepath)
 
