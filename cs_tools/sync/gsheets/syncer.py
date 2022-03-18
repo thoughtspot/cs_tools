@@ -31,9 +31,6 @@ class GoogleSheets:
     spreadsheet: str
       name of the google sheet to interact with
 
-    has_header_row: bool, default True
-      whether or not tabs include a header row
-
     mode: str, default 'overwrite'
       either "append" or "overwrite"
 
@@ -41,7 +38,6 @@ class GoogleSheets:
       absolute path to your credentials file
     """
     spreadsheet: str
-    has_header_row: bool = True
     mode: InsertMode = InsertMode.overwrite
     credentials_file: pathlib.Path = gspread.auth.DEFAULT_SERVICE_ACCOUNT_FILENAME
 
@@ -78,11 +74,12 @@ class GoogleSheets:
     def dump(self, tab_name: str, *, data: List[Dict[str, Any]]) -> None:
         t = self._get_or_create_tab(tab_name)
 
-        if self.has_header_row and not t.get('A1'):
+        # no header row exists (it's a new tab)
+        if not t.get('A1'):
             t.append_row(list(data[0].keys()))
 
         if self.mode == InsertMode.overwrite:
-            beg = gspread.utils.rowcol_to_a1(2 if self.has_header_row else 1, 1)
+            beg = gspread.utils.rowcol_to_a1(2, 1)
             end = gspread.utils.rowcol_to_a1(t.row_count, t.col_count)
             t.batch_clear([f'{beg}:{end}'])
 
