@@ -74,14 +74,12 @@ class GoogleSheets:
     def dump(self, tab_name: str, *, data: List[Dict[str, Any]]) -> None:
         t = self._get_or_create_tab(tab_name)
 
-        # no header row exists (it's a new tab)
+        if self.mode == InsertMode.overwrite:
+            t.delete_rows(0, t.row_count + 1)
+
+        # write the header if it does not exist
         if not t.get('A1'):
             t.append_row(list(data[0].keys()))
-
-        if self.mode == InsertMode.overwrite:
-            beg = gspread.utils.rowcol_to_a1(2, 1)
-            end = gspread.utils.rowcol_to_a1(t.row_count, t.col_count)
-            t.batch_clear([f'{beg}:{end}'])
 
         d = sanitize.clean_for_gsheets(data)
         t.append_rows(d)
