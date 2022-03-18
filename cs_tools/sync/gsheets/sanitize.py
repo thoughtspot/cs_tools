@@ -16,7 +16,7 @@ class MaybeDateTimeEncoder(json.JSONEncoder):
         return super().default(self, o)
 
 
-def clean_for_gsheets(data: List[Dict[str, Any]]) -> List[str]:
+def clean_for_gsheets(data: List[Dict[str, Any]]) -> List[List[str]]:
     """
     Round-trip from JSON to sanitize.
 
@@ -31,7 +31,7 @@ def clean_for_gsheets(data: List[Dict[str, Any]]) -> List[str]:
 
     Returns
     -------
-    cleaned : List[str]
+    cleaned : List[List[str]]
     """
     # round-trip to sanitize because gspread only accepts strings
     d = [list(_.values()) for _ in data]
