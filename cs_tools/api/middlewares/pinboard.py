@@ -3,7 +3,7 @@ import logging
 
 from pydantic import validate_arguments
 
-from cs_tools._enums import MetadataCategory
+from cs_tools.data.enums import MetadataCategory
 from cs_tools.errors import ContentDoesNotExist
 
 

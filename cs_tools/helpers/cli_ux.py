@@ -16,8 +16,9 @@ import toml
 from cs_tools.helpers.loader import CSTool
 from cs_tools.sync.protocol import SyncerProtocol
 from cs_tools.const import CONSOLE_THEME, PACKAGE_DIR
+from cs_tools.data import models
 from cs_tools.sync import register
-from cs_tools import __version__, db_models
+from cs_tools import __version__
 
 
 log = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ class SyncerProtocolType(click.ParamType):
         log.info(f'registering syncer: {syncer.name}')
 
         if getattr(syncer, '__is_database__', False):
-            db_models.SQLModel.metadata.create_all(syncer.engine)
+            models.SQLModel.metadata.create_all(syncer.engine)
 
         return syncer
 

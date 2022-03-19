@@ -14,7 +14,7 @@ from cs_tools.const import (
 )
 from cs_tools.util.datetime import to_datetime
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools._enums import Privilege
+from cs_tools.data.enums import Privilege
 
 
 log = logging.getLogger(__name__)

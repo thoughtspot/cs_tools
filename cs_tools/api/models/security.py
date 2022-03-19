@@ -3,7 +3,7 @@ from typing import Dict, List
 from pydantic import validate_arguments
 import httpx
 
-from cs_tools._enums import GUID, AccessLevel, MetadataObject, PermissionType
+from cs_tools.data.enums import GUID, AccessLevel, MetadataObject, PermissionType
 from cs_tools.util import stringified_array
 
 

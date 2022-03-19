@@ -3,7 +3,7 @@ import logging
 
 from pydantic import validate_arguments
 
-from cs_tools._enums import GUID
+from cs_tools.data.enums import GUID
 from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist
 from cs_tools import util
 

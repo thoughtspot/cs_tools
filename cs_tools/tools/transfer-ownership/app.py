@@ -7,7 +7,7 @@ import typer
 from cs_tools.helpers.cli_ux import _csv, console, frontend, CSToolsGroup, CSToolsCommand
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
-from cs_tools._enums import GUID
+from cs_tools.data.enums import GUID
 
 
 def _all_user_content(user: GUID, ts: ThoughtSpot):

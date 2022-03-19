@@ -10,7 +10,7 @@ import typer
 from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
-from cs_tools._enums import AccessLevel
+from cs_tools.data.enums import AccessLevel
 
 from .web_app import _scoped
 

@@ -3,7 +3,7 @@ import copy
 
 import httpx
 
-from cs_tools.models import (
+from cs_tools.api.models import (
     _Dependency,
     _Metadata,
     _Periscope,

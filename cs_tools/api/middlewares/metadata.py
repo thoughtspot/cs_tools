@@ -3,7 +3,7 @@ import logging
 
 from pydantic import validate_arguments
 
-from cs_tools._enums import (
+from cs_tools.data.enums import (
     GUID, MetadataCategory, MetadataObject, MetadataObjectSubtype, PermissionType
 )
 from cs_tools.errors import ContentDoesNotExist

@@ -3,7 +3,7 @@ from typing import List, Optional
 from pydantic import validate_arguments
 import httpx
 
-from cs_tools._enums import MetadataObject
+from cs_tools.data.enums import MetadataObject
 from cs_tools.util import stringified_array
 
 

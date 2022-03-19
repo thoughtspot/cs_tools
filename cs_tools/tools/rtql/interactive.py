@@ -7,7 +7,7 @@ import httpx
 import typer
 
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools._schema import Privilege
+from cs_tools.data.models import Privilege
 from .completer import TQLCompleter
 from .const import TQL_HELP
 

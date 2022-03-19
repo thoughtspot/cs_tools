@@ -5,14 +5,14 @@ import sys
 
 import click
 
-from .helpers.secrets import reveal
-from ._rest_api_v1 import _RESTAPIv1
-from ._version import __version__
-from .middlewares import (
+from cs_tools.helpers.secrets import reveal
+from cs_tools.api._rest_api_v1 import _RESTAPIv1
+from cs_tools._version import __version__
+from cs_tools.api.middlewares import (
     AnswerMiddleware, MetadataMiddleware, PinboardMiddleware, SearchMiddleware,
     TagMiddleware, UserMiddleware
 )
-from ._schema import ThoughtSpotPlatform, LoggedInUser
+from cs_tools.data.models import ThoughtSpotPlatform, LoggedInUser
 
 
 log = logging.getLogger(__name__)

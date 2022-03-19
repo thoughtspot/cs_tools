@@ -1,48 +1,48 @@
 import itertools as it
 
-from cs_tools import db_models as model
+from cs_tools.data import models
 
 
-def to_user(data) -> model.User:
-    return [model.User.from_api_v1(d).dict() for d in data]
+def to_user(data) -> models.User:
+    return [models.User.from_api_v1(d).dict() for d in data]
 
 
-def to_group(data) -> model.Group:
-    return [model.Group.from_api_v1(d).dict() for d in data]
+def to_group(data) -> models.Group:
+    return [models.Group.from_api_v1(d).dict() for d in data]
 
 
-def to_group_privilege(data) -> model.Group:
+def to_group_privilege(data) -> models.Group:
     return [
         _.dict()
-        for _ in it.chain.from_iterable(model.GroupPrivilege.from_api_v1(d) for d in data)
+        for _ in it.chain.from_iterable(models.GroupPrivilege.from_api_v1(d) for d in data)
     ]
 
 
-def to_principal_association(data) -> model.XREFPrincipal:
+def to_principal_association(data) -> models.XREFPrincipal:
     return [
         _.dict()
-        for _ in it.chain.from_iterable(model.XREFPrincipal.from_api_v1(d) for d in data)
+        for _ in it.chain.from_iterable(models.XREFPrincipal.from_api_v1(d) for d in data)
     ]
 
 
-def to_tag(data) -> model.MetadataObject:
-    return [model.Tag.from_api_v1(d).dict() for d in data]
+def to_tag(data) -> models.MetadataObject:
+    return [models.Tag.from_api_v1(d).dict() for d in data]
 
 
-def to_metadata_object(data) -> model.MetadataObject:
-    return [model.MetadataObject.from_api_v1(d).dict() for d in data]
+def to_metadata_object(data) -> models.MetadataObject:
+    return [models.MetadataObject.from_api_v1(d).dict() for d in data]
 
 
-def to_tagged_object(data) -> model.TaggedObject:
+def to_tagged_object(data) -> models.TaggedObject:
     return [
         _.dict()
-        for _ in it.chain.from_iterable(model.TaggedObject.from_api_v1(d) for d in data if d['tags'])
+        for _ in it.chain.from_iterable(models.TaggedObject.from_api_v1(d) for d in data if d['tags'])
     ]
 
 
-def to_dependent_object(data) -> model.DependentObject:
-    return [model.DependentObject.from_api_v1(d).dict() for d in data]
+def to_dependent_object(data) -> models.DependentObject:
+    return [models.DependentObject.from_api_v1(d).dict() for d in data]
 
 
-def to_sharing_access(data) -> model.SharingAccess:
-    return [model.SharingAccess(**d).dict() for d in data]
+def to_sharing_access(data) -> models.SharingAccess:
+    return [models.SharingAccess(**d).dict() for d in data]
