@@ -179,7 +179,11 @@ def gather(
                 r = ts.metadata.permissions(guids, type=type_, permission_type='DEFINED')
                 data.extend(transform.to_sharing_access(r))
 
-                # TODO: get inherited permissions across entire userbase
+                # DEV NOTE:
+                #   this does not exist in TS apis as of 2022/03, the call below only
+                #   retrieves inherited/effective sharing access for the authenticated
+                #   user
+                #
                 # r = ts.metadata.permissions(guids, type=type_, permission_type='EFFECTIVE')
 
         with console.status(f'[bold green]writing sharing access to {export.name}..[/]'):
