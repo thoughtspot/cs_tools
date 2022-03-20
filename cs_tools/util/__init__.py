@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 from collections.abc import Iterable
 import datetime as dt
 import logging
@@ -10,6 +10,33 @@ from dateutil import tz as tz_
 
 
 log = logging.getLogger(__name__)
+
+
+class State:
+    """
+    An object that can be used to store arbitrary state.
+    Used for `request.state` and `app.state`.
+    """
+
+    _state: Dict[str, Any]
+
+    def __init__(self, state: Optional[Dict[str, Any]] = None):
+        if state is None:
+            state = {}
+        super().__setattr__("_state", state)
+
+    def __setattr__(self, key: Any, value: Any) -> None:
+        self._state[key] = value
+
+    def __getattr__(self, key: Any) -> Any:
+        try:
+            return self._state[key]
+        except KeyError:
+            message = "'{}' object has no attribute '{}'"
+            raise AttributeError(message.format(self.__class__.__name__, key))
+
+    def __delattr__(self, key: Any) -> None:
+        del self._state[key]
 
 
 def to_datetime(

@@ -314,5 +314,3 @@ class InteractiveTQL:
             r   = self._query()
             ctx = self._handle_query(r)
             self.reset_context(ctx)
-
-        self.ts.__exit__(None, None, None)

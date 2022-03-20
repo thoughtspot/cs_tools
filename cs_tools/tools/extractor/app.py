@@ -4,9 +4,7 @@ import pathlib
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
-from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.settings import TSConfig
+from cs_tools.helpers.cli_ux import console, depends, CSToolsGroup, CSToolsCommand
 from cs_tools.tools import common
 
 from .enums import RecordsetType
@@ -31,8 +29,17 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=common.setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def search(
+    ctx: typer.Context,
     query: str = O_(..., help='search terms to issue against the dataset'),
     dataset: str = O_(..., help='name of the worksheet, view, or table to search against'),
     export: pathlib.Path = O_(
@@ -42,8 +49,7 @@ def search(
         dir_okay=False,
         resolve_path=True
     ),
-    data_type: RecordsetType = O_('worksheet', help='type of object to search'),
-    **frontend_kw
+    data_type: RecordsetType = O_('worksheet', help='type of object to search')
 ):
     """
     Search a dataset from the command line.
@@ -59,10 +65,9 @@ def search(
       https://docs.thoughtspot.com/software/latest/search-data-api#components
       https://docs.thoughtspot.com/software/latest/search-data-api#_limitations_of_search_query_api
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
 
-    with ThoughtSpot(cfg) as ts:
-        with console.status(f'[bold green]retrieving data from {data_type.value} "{dataset}"..[/]'):
-            data = ts.search(query, **{data_type.value: dataset})
+    with console.status(f'[bold green]retrieving data from {data_type.value} "{dataset}"..[/]'):
+        data = ts.search(query, **{data_type.value: dataset})
 
     common.to_csv(data, export, header=True)

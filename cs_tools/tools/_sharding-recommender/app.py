@@ -5,12 +5,10 @@ import shutil
 from typer import Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
+from cs_tools.helpers.cli_ux import console, depends, CSToolsGroup, CSToolsCommand
 from cs_tools.util.datetime import to_datetime
 from cs_tools.tools.common import run_tql_command, run_tql_script, tsload
-from cs_tools.settings import TSConfig
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.tools import common
 
 
@@ -79,10 +77,8 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
 def spotapp(
-    export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),
-    **frontend_kw
+    export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True)
 ):
     """
     Exports the SpotApp associated with this tool.
@@ -92,12 +88,20 @@ def spotapp(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=common.setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def gather(
+    ctx: typer.Context,
     export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),
     # maintained for backwards compatability
-    backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True),
-    **frontend_kw
+    backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True)
 ):
     """
     Gather and optionally, insert data into Falcon.
@@ -106,37 +110,36 @@ def gather(
     platform. If --export argument is used, data will not be inserted
     and will instead be dumped to the location specified.
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
     export = export or backwards_compat
 
-    dir_ = cfg.temp_dir if export is None else export
+    dir_ = ts.config.temp_dir if export is None else export
     dir_.parent.mkdir(exist_ok=True)
     path = dir_ / 'falcon_table_info.csv'
 
-    with ThoughtSpot(cfg) as ts:
-        with console.status('getting Falcon table info'):
-            data = _format_table_info_data(ts.api._periscope.sage_combinedtableinfo().json())
+    with console.status('getting Falcon table info'):
+        data = _format_table_info_data(ts.api._periscope.sage_combinedtableinfo().json())
 
-        with console.status('saving Falcon table info'):
-            common.to_csv(data, fp=path, mode='a')
-            console.print(f'wrote {len(data): >7,} rows to {path}')
+    with console.status('saving Falcon table info'):
+        common.to_csv(data, fp=path, mode='a')
+        console.print(f'wrote {len(data): >7,} rows to {path}')
 
-        if export is not None:
-            return
+    if export is not None:
+        return
 
-        with console.status('creating tables with remote TQL'):
-            run_tql_command(ts, command='CREATE DATABASE cs_tools;')
-            run_tql_script(ts, fp=HERE / 'static' / 'create_tables.tql')
+    with console.status('creating tables with remote TQL'):
+        run_tql_command(ts, command='CREATE DATABASE cs_tools;')
+        run_tql_script(ts, fp=HERE / 'static' / 'create_tables.tql')
 
-        with console.status('loading data to Falcon with remote tsload'):
-            cycle_id = tsload(
-                ts,
-                fp=path,
-                target_database='cs_tools',
-                target_table='falcon_table_info',
-                has_header_row=True
-            )
-            path.unlink()
-            r = ts.api.ts_dataservice.load_status(cycle_id).json()
-            m = ts.api.ts_dataservice._parse_tsload_status(r)
-            console.print(m)
+    with console.status('loading data to Falcon with remote tsload'):
+        cycle_id = tsload(
+            ts,
+            fp=path,
+            target_database='cs_tools',
+            target_table='falcon_table_info',
+            has_header_row=True
+        )
+        path.unlink()
+        r = ts.api.ts_dataservice.load_status(cycle_id).json()
+        m = ts.api.ts_dataservice._parse_tsload_status(r)
+        console.print(m)

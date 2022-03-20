@@ -9,10 +9,9 @@ from typer import Argument as A_, Option as O_  # noqa
 from openpyxl import load_workbook
 import typer
 
-from cs_tools.helpers.cli_ux import CSToolsGroup, CSToolsCommand, frontend, console
-from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools.helpers.cli_ux import CSToolsGroup, CSToolsCommand, depends, console
+from cs_tools.tools.common import setup_thoughtspot
 from cs_tools.util.algo import chunks
-from cs_tools.settings import TSConfig
 
 
 log = logging.getLogger(__name__)
@@ -83,7 +82,6 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
 def generate_file(
     export: pathlib.Path = O_(
         ...,
@@ -94,8 +92,7 @@ def generate_file(
         prompt=True
     ),
     # maintained for backwards compatability
-    backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True),
-    **frontend_kw
+    backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True)
 ):
     """
     Generates example file in Excel or CSV format.
@@ -111,30 +108,46 @@ def generate_file(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def single(
+    ctx: typer.Context,
     type: ReversibleSystemType = O_(..., help='type of the metadata to delete'),
-    guid: str = O_(..., help='guid to delete'),
-    **frontend_kw
+    guid: str = O_(..., help='guid to delete')
 ):
     """
     Removes a specific object from ThoughtSpot.
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
     type = ReversibleSystemType.to_system(type.value)
 
-    with ThoughtSpot(cfg) as ts:
-        console.print(f'deleting object .. {type} ... {guid} ... ')
+    console.print(f'deleting object .. {type} ... {guid} ... ')
 
-        # NOTE: /metadata/delete WILL NOT error if content does not exist, or if the
-        # wrong type & guid are passed. This is a ThoughtSpot API limitation.
-        r = ts.api._metadata.delete(type=type, id=[guid])
-        log.debug(f'{r} - {r.content}')
+    # NOTE: /metadata/delete WILL NOT error if content does not exist, or if the
+    # wrong type & guid are passed. This is a ThoughtSpot API limitation.
+    r = ts.api._metadata.delete(type=type, id=[guid])
+    log.debug(f'{r} - {r.content}')
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def from_file(
+    ctx: typer.Context,
     file: pathlib.Path = A_(
         ...,
         help='path to a file with columns "type" and "guid"',
@@ -142,8 +155,7 @@ def from_file(
         dir_okay=False,
         resolve_path=True
     ),
-    batchsize: int = O_(1, help='maximum amount of objects to delete simultaneously'),
-    **frontend_kw
+    batchsize: int = O_(1, help='maximum amount of objects to delete simultaneously')
 ):
     """
     Remove many objects from ThoughtSpot.
@@ -163,7 +175,7 @@ def from_file(
         | saved answer   | guid3 |
         +----------------+-------+
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
 
     if file.suffix == '.xlsx':
         data = _from_excel(file)
@@ -174,35 +186,34 @@ def from_file(
         console.print(f'[red]must provide an Excel (.xlsx) or CSV (.csv) file, got {file}[/]')
         return
 
-    with ThoughtSpot(cfg) as ts:
-        #
-        # Delete Pinboards
-        #
-        guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'pinboard']
+    #
+    # Delete Pinboards
+    #
+    guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'pinboard']
 
-        if guids:
-            console.print(f'deleting {len(guids)} pinboards')
+    if guids:
+        console.print(f'deleting {len(guids)} pinboards')
 
-        for chunk in chunks(guids, n=batchsize):
-            if batchsize > 1:
-                console.print(f'    deleting {len(chunk)} pinboards')
-                log.debug(f'    guids: {chunk}')
+    for chunk in chunks(guids, n=batchsize):
+        if batchsize > 1:
+            console.print(f'    deleting {len(chunk)} pinboards')
+            log.debug(f'    guids: {chunk}')
 
-            r = ts.api._metadata.delete(type='PINBOARD_ANSWER_BOOK', id=list(chunk))
-            log.debug(f'{r} - {r.content}')
+        r = ts.api._metadata.delete(type='PINBOARD_ANSWER_BOOK', id=list(chunk))
+        log.debug(f'{r} - {r.content}')
 
-        #
-        # Delete Answers
-        #
-        guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'saved answer']
+    #
+    # Delete Answers
+    #
+    guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'saved answer']
 
-        if guids:
-            console.print(f'deleting {len(guids)} answers')
+    if guids:
+        console.print(f'deleting {len(guids)} answers')
 
-        for chunk in chunks(guids, n=batchsize):
-            if batchsize > 1:
-                console.print(f'    deleting {len(chunk)} answers')
-                log.debug(f'    guids: {chunk}')
+    for chunk in chunks(guids, n=batchsize):
+        if batchsize > 1:
+            console.print(f'    deleting {len(chunk)} answers')
+            log.debug(f'    guids: {chunk}')
 
-            r = ts.api._metadata.delete(type='QUESTION_ANSWER_BOOK', id=list(chunk))
-            log.debug(f'{r} - {r.content}')
+        r = ts.api._metadata.delete(type='QUESTION_ANSWER_BOOK', id=list(chunk))
+        log.debug(f'{r} - {r.content}')

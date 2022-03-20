@@ -4,8 +4,8 @@ import sys
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
-from cs_tools.tools.common import run_tql_script, run_tql_command
+from cs_tools.helpers.cli_ux import console, depends, CSToolsGroup, CSToolsCommand
+from cs_tools.tools.common import run_tql_script, run_tql_command, setup_thoughtspot
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import TSConfig
 from .interactive import InteractiveTQL
@@ -29,13 +29,21 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def interactive(
+    ctx: typer.Context,
     autocomplete: bool=O_(True, '--autocomplete', help='toggle auto complete feature'),
     schema: str=O_('falcon_default_schema', help='schema name to use'),
     debug: bool=O_(False, '--debug', help='print the entire response to console'),
-    http_timeout: int=O_(5.0, '--timeout', help='network call timeout threshold'),
-    **frontend_kw
+    http_timeout: int=O_(5.0, '--timeout', help='network call timeout threshold')
 ):
     """
     Run an interactive TQL session as if you were on the cluster.
@@ -45,18 +53,25 @@ def interactive(
 
     For a list of all commands, type "help" after invoking tql
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-    ts = ThoughtSpot(cfg)
+    ts = ctx.obj.thoughtspot
     tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=console)
     tql.run()
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def file(
+    ctx: typer.Context,
     file: pathlib.Path=A_(..., metavar='FILE.tql', help='path to file to execute, default to stdin'),
-    schema: str=O_('falcon_default_schema', help='schema name to use'),
-    **frontend_kw
+    schema: str=O_('falcon_default_schema', help='schema name to use')
 ):
     """
     Run multiple commands within TQL on a remote server.
@@ -67,18 +82,24 @@ def file(
 
             cat create-schema.sql | tql
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-
-    with ThoughtSpot(cfg) as ts:
-        run_tql_script(ts.api, fp=file)
+    ts = ctx.obj.thoughtspot
+    run_tql_script(ts.api, fp=file)
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def command(
+    ctx: typer.Context,
     command: str=A_('-', help='TQL query to execute'),
-    schema: str=O_('falcon_default_schema', help='schema name to use'),
-    **frontend_kw
+    schema: str=O_('falcon_default_schema', help='schema name to use')
 ):
     """
     Run a single TQL command on a remote server.
@@ -91,7 +112,7 @@ def command(
 
             echo SELECT * FROM db.schema.table | tql
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
 
     if command == '-':
         if sys.stdin.isatty():
@@ -103,5 +124,4 @@ def command(
         console.print('[red]no valid input given to rtql command[/]')
         return
 
-    with ThoughtSpot(cfg) as ts:
-        run_tql_command(ts, command=command, schema=schema)
+    run_tql_command(ts, command=command, schema=schema)

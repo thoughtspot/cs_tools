@@ -7,9 +7,8 @@ from typer import Argument as A_, Option as O_  # noqa
 import uvicorn
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
-from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.settings import TSConfig
+from cs_tools.helpers.cli_ux import console, depends, CSToolsGroup, CSToolsCommand
+from cs_tools.tools.common import setup_thoughtspot
 from cs_tools.data.enums import AccessLevel
 
 from .web_app import _scoped
@@ -39,7 +38,7 @@ def _find_my_local_ip() -> str:
     return ip
 
 
-def _get_group_id(api: ThoughtSpot, *, group_name: str) -> Optional[str]:
+def _get_group_id(api, *, group_name: str) -> Optional[str]:
     """
     Returns the id for the group with the given name.
 
@@ -64,7 +63,7 @@ def _get_group_id(api: ThoughtSpot, *, group_name: str) -> Optional[str]:
 
 
 def _get_table_ids(
-    api: ThoughtSpot,
+    api,
     *,
     db: str,
     schema: str='falcon_default_schema',
@@ -133,71 +132,85 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def run(
-    webserver_port: int=O_(5000, help='port to host the webserver on'),
-    **frontend_kw
+    ctx: typer.Context,
+    webserver_port: int=O_(5000, help='port to host the webserver on')
 ):
     """
     Start the built-in webserver which runs the security management interface.
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
     visit_ip = _find_my_local_ip()
 
-    with ThoughtSpot(cfg) as ts:
-        _scoped['ts'] = ts
+    _scoped['ts'] = ts
 
-        console.print(
-            'starting webserver...'
-            f'\nplease visit [green]http://{visit_ip}:5000/[/] in your browser'
-        )
+    console.print(
+        'starting webserver...'
+        f'\nplease visit [green]http://{visit_ip}:5000/[/] in your browser'
+    )
 
-        uvicorn.run(
-            'cs_tools.tools.security-sharing.web_app:web_app',
-            host='0.0.0.0',
-            port=webserver_port,
-            log_config=None   # TODO log to file instead of console (less confusing for user)
-        )
+    uvicorn.run(
+        'cs_tools.tools.security-sharing.web_app:web_app',
+        host='0.0.0.0',
+        port=webserver_port,
+        log_config=None   # TODO log to file instead of console (less confusing for user)
+    )
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def share(
+    ctx: typer.Context,
     group: str=O_(..., help='group to share with'),
     permission: PermissionType=O_(..., help='permission type to assign'),
     database: str=O_(..., help='name of database of tables to share'),
     schema: str=O_('falcon_default_schema', help='name of schema of tables to share'),
-    table: str=O_(None, help='name of the table to share, if not provided then share all tables'),
-    **frontend_kw
+    table: str=O_(None, help='name of the table to share, if not provided then share all tables')
 ):
     """
     Share database tables with groups.
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
 
-    with ThoughtSpot(cfg) as ts:
-        group_id = _get_group_id(ts.api, group_name=group)
+    group_id = _get_group_id(ts.api, group_name=group)
 
-        if not group_id:
-            console.print(
-                f'[red]Group "{group}" not found. Verify the name and try again.[/]'
-            )
-            raise typer.Exit()
+    if not group_id:
+        console.print(
+            f'[red]Group "{group}" not found. Verify the name and try again.[/]'
+        )
+        raise typer.Exit()
 
-        table_ids = _get_table_ids(ts.api, db=database, schema=schema, table=table)
+    table_ids = _get_table_ids(ts.api, db=database, schema=schema, table=table)
 
-        if not table_ids:
-            console.print(f"No tables found for {database}.{schema}{f'.{table}' if table else ''}")
-            raise typer.Exit()
+    if not table_ids:
+        console.print(f"No tables found for {database}.{schema}{f'.{table}' if table else ''}")
+        raise typer.Exit()
 
-        r = ts.api._security.share(
-                type='LOGICAL_TABLE',
-                id=table_ids,
-                permission={group_id: _permission_param_to_permission(permission)}
-            )
+    r = ts.api._security.share(
+            type='LOGICAL_TABLE',
+            id=table_ids,
+            permission={group_id: _permission_param_to_permission(permission)}
+        )
 
-        status = '[green]success[/]' if r.status_code == 204 else '[red]failed[/]'
-        console.print(f'Sharing with group "{group}": {status}')
+    status = '[green]success[/]' if r.status_code == 204 else '[red]failed[/]'
+    console.print(f'Sharing with group "{group}": {status}')
 
-        if r.status_code != 204:
-            log.error(r.content)
+    if r.status_code != 204:
+        log.error(r.content)

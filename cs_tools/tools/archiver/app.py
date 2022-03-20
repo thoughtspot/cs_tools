@@ -4,11 +4,10 @@ import logging
 import pathlib
 
 from typer import Argument as A_, Option as O_  # noqa
+import click
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand, CSToolsGroup, CSToolsCommand, DataTable
-from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.settings import TSConfig
+from cs_tools.helpers.cli_ux import console, depends, CSToolsGroup, CSToolsCommand, DataTable
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.tools import common
 from cs_tools import util
@@ -47,8 +46,17 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=common.setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def identify(
+    ctx: click.Context,
     tag: str=O_('TO BE ARCHIVED', help='tag name to use for labeling objects to archive'),
     content: ContentType=O_('all', help='type of content to archive'),
     usage_months: int=O_(
@@ -86,8 +94,7 @@ def identify(
         metavar='FILE.csv',
         dir_okay=False,
         resolve_path=True
-    ),
-    **frontend_kw
+    )
 ):
     """
     Identify objects which objects can be archived.
@@ -100,108 +107,116 @@ def identify(
     knows about it. This can be used as a proxy to understanding what content is
     actively being used.
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
     actions = UserActions.strigified(sep="', '", context=content)
 
-    with ThoughtSpot(cfg) as ts:
-        recently = dt.datetime.now(tz=ts.platform.tz) - dt.timedelta(days=ignore_recent)
+    recently = dt.datetime.now(tz=ts.platform.tz) - dt.timedelta(days=ignore_recent)
 
-        with console.status('[bold green]retrieving objects usage..[/]'):
-            data = ts.search(
-                f"[user action] = '{actions}' "
-                f"[timestamp].'last {usage_months} months' "
-                r"[timestamp].'this month' "
-                r"[answer book guid]",
-                worksheet='TS: BI Server'
+    with console.status('[bold green]retrieving objects usage..[/]'):
+        data = ts.search(
+            f"[user action] = '{actions}' "
+            f"[timestamp].'last {usage_months} months' "
+            r"[timestamp].'this month' "
+            r"[answer book guid]",
+            worksheet='TS: BI Server'
+        )
+
+    # Currently used GUIDs (within the past {months} months ...)
+    usage = set(_['Answer Book GUID'] for _ in data)
+
+    # Repository of all available GUIDs
+    data = []
+
+    if content.value in ('all', 'answer'):
+        with console.status('[bold green]retrieving existing answers..[/]'):
+            try:
+                data.extend({**a, 'content_type': 'answer'} for a in ts.answer.all())
+            except ContentDoesNotExist:
+                pass
+
+    if content.value in ('all', 'pinboard'):
+        with console.status('[bold green]retrieving existing pinboards..[/]'):
+            try:
+                data.extend({**p, 'content_type': 'pinboard'} for p in ts.pinboard.all())
+            except ContentDoesNotExist:
+                pass
+
+    archive = set(_['id'] for _ in data) - usage
+
+    to_archive = [
+        {
+            'content_type': _['content_type'],
+            'guid': _['id'],
+            'name': _['name'],
+            'created_at': util.to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
+            'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
+            'by': _['authorName']
+        }
+        for _ in data
+        # ignore recent content
+        if util.to_datetime(_['created'], tz=ts.platform.timezone) <= recently
+        if util.to_datetime(_['modified'], tz=ts.platform.timezone) <= recently
+        # only include content found in the metadata snapshot
+        if _['id'] in archive
+    ]
+
+    if not to_archive:
+        console.log('no stale content found')
+        raise typer.Exit()
+
+    table = DataTable(
+                to_archive,
+                title=f"[green]Archive Results[/]: Tagging content with [cyan]'{tag}'[/]",
+                caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} in platform)'
             )
 
-        # Currently used GUIDs (within the past {months} months ...)
-        usage = set(_['Answer Book GUID'] for _ in data)
+    console.log('\n', table)
 
-        # Repository of all available GUIDs
-        data = []
+    if report is not None:
+        common.to_csv(to_archive, fp=report, header=True)
 
-        if content.value in ('all', 'answer'):
-            with console.status('[bold green]retrieving existing answers..[/]'):
-                try:
-                    data.extend({**a, 'content_type': 'answer'} for a in ts.answer.all())
-                except ContentDoesNotExist:
-                    pass
+    if dry_run:
+        raise typer.Exit(-1)
 
-        if content.value in ('all', 'pinboard'):
-            with console.status('[bold green]retrieving existing pinboards..[/]'):
-                try:
-                    data.extend({**p, 'content_type': 'pinboard'} for p in ts.pinboard.all())
-                except ContentDoesNotExist:
-                    pass
+    tag = ts.tag.get(tag, create_if_not_exists=True)
 
-        archive = set(_['id'] for _ in data) - usage
+    answers = [_['guid'] for _ in to_archive if _['content_type'] == 'answer']
+    pinboards = [_['guid'] for _ in to_archive if _['content_type'] == 'pinboard']
 
-        to_archive = [
-            {
-                'content_type': _['content_type'],
-                'guid': _['id'],
-                'name': _['name'],
-                'created_at': util.to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
-                'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
-                'by': _['authorName']
-            }
-            for _ in data
-            # ignore recent content
-            if util.to_datetime(_['created'], tz=ts.platform.timezone) <= recently
-            if util.to_datetime(_['modified'], tz=ts.platform.timezone) <= recently
-            # only include content found in the metadata snapshot
-            if _['id'] in archive
-        ]
+    # PROMPT FOR INPUT
+    if not no_prompt:
+        typer.confirm(
+            f'\nWould you like to continue with tagging {len(to_archive)} objects?',
+            abort=True
+        )
 
-        if not to_archive:
-            console.log('no stale content found')
-            raise typer.Exit()
+    if answers:
+        ts.api._metadata.assigntag(
+            id=answers,
+            type=['QUESTION_ANSWER_BOOK' for _ in answers],
+            tagid=[tag['id'] for _ in answers]
+        )
 
-        table = DataTable(
-                    to_archive,
-                    title=f"[green]Archive Results[/]: Tagging content with [cyan]'{tag}'[/]",
-                    caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} in platform)'
-                )
-
-        console.log('\n', table)
-
-        if report is not None:
-            common.to_csv(to_archive, fp=report, header=True)
-
-        if dry_run:
-            raise typer.Exit(-1)
-
-        tag = ts.tag.get(tag, create_if_not_exists=True)
-
-        answers = [_['guid'] for _ in to_archive if _['content_type'] == 'answer']
-        pinboards = [_['guid'] for _ in to_archive if _['content_type'] == 'pinboard']
-
-        # PROMPT FOR INPUT
-        if not no_prompt:
-            typer.confirm(
-                f'\nWould you like to continue with tagging {len(to_archive)} objects?',
-                abort=True
-            )
-
-        if answers:
-            ts.api._metadata.assigntag(
-                id=answers,
-                type=['QUESTION_ANSWER_BOOK' for _ in answers],
-                tagid=[tag['id'] for _ in answers]
-            )
-
-        if pinboards:
-            ts.api._metadata.assigntag(
-                id=pinboards,
-                type=['PINBOARD_ANSWER_BOOK' for _ in pinboards],
-                tagid=[tag['id'] for _ in pinboards]
-            )
+    if pinboards:
+        ts.api._metadata.assigntag(
+            id=pinboards,
+            type=['PINBOARD_ANSWER_BOOK' for _ in pinboards],
+            tagid=[tag['id'] for _ in pinboards]
+        )
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=common.setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def revert(
+    ctx: typer.Context,
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
     delete_tag: bool=O_(
         False,
@@ -228,81 +243,88 @@ def revert(
         metavar='FILE.csv',
         dir_okay=False,
         resolve_path=True
-    ),
-    **frontend_kw
+    )
 ):
     """
     Remove objects from the temporary archive.
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
 
-    with ThoughtSpot(cfg) as ts:
-        to_unarchive = []
-        answers, pinboards = _get_content(ts, tags=tag)
+    to_unarchive = []
+    answers, pinboards = _get_content(ts, tags=tag)
 
-        to_unarchive.extend(
-            {
-                'content_type': _['content_type'],
-                'guid': _['id'],
-                'name': _['name'],
-                'created_at': util.to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
-                'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
-                'by': _['authorName']
-            }
-            for _ in (*answers, *pinboards)
+    to_unarchive.extend(
+        {
+            'content_type': _['content_type'],
+            'guid': _['id'],
+            'name': _['name'],
+            'created_at': util.to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
+            'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
+            'by': _['authorName']
+        }
+        for _ in (*answers, *pinboards)
+    )
+
+    if not to_unarchive:
+        console.log(f"no content found with the tag '{tag}'")
+        raise typer.Exit()
+
+    table = DataTable(
+                to_unarchive,
+                title=f"[green]Unarchive Results[/]: Untagging content with [cyan]'{tag}'[/]",
+                caption=f'Total of {len(to_unarchive)} items tagged..'
+            )
+
+    console.log('\n', table)
+
+    if report is not None:
+        common.to_csv(to_unarchive, fp=report, header=True)
+
+    if dry_run:
+        raise typer.Exit()
+
+    tag = ts.tag.get(tag)
+
+    answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
+    pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
+
+    # PROMPT FOR INPUT
+    if not no_prompt:
+        typer.confirm(
+            f'\nWould you like to continue with untagging {len([*answers, *pinboards])} objects?',
+            abort=True
         )
 
-        if not to_unarchive:
-            console.log(f"no content found with the tag '{tag}'")
-            raise typer.Exit()
+    if answers:
+        ts.api._metadata.unassigntag(
+            id=answers,
+            type=['QUESTION_ANSWER_BOOK' for _ in answers],
+            tagid=[tag['id'] for _ in answers]
+        )
 
-        table = DataTable(
-                    to_unarchive,
-                    title=f"[green]Unarchive Results[/]: Untagging content with [cyan]'{tag}'[/]",
-                    caption=f'Total of {len(to_unarchive)} items tagged..'
-                )
+    if pinboards:
+        ts.api._metadata.unassigntag(
+            id=pinboards,
+            type=['QUESTION_ANSWER_BOOK' for _ in pinboards],
+            tagid=[tag['id'] for _ in pinboards]
+        )
 
-        console.log('\n', table)
-
-        if report is not None:
-            common.to_csv(to_unarchive, fp=report, header=True)
-
-        if dry_run:
-            raise typer.Exit()
-
-        tag = ts.tag.get(tag)
-
-        answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
-        pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
-
-        # PROMPT FOR INPUT
-        if not no_prompt:
-            typer.confirm(
-                f'\nWould you like to continue with untagging {len([*answers, *pinboards])} objects?',
-                abort=True
-            )
-
-        if answers:
-            ts.api._metadata.unassigntag(
-                id=answers,
-                type=['QUESTION_ANSWER_BOOK' for _ in answers],
-                tagid=[tag['id'] for _ in answers]
-            )
-
-        if pinboards:
-            ts.api._metadata.unassigntag(
-                id=pinboards,
-                type=['QUESTION_ANSWER_BOOK' for _ in pinboards],
-                tagid=[tag['id'] for _ in pinboards]
-            )
-
-        if delete_tag:
-            ts.tag.delete(tag['name'])
+    if delete_tag:
+        ts.tag.delete(tag['name'])
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=common.setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def remove(
+    ctx: typer.Context,
     tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
     export_tml: pathlib.Path=O_(
         None,
@@ -344,13 +366,12 @@ def remove(
         metavar='FILE.csv',
         dir_okay=False,
         resolve_path=True
-    ),
-    **frontend_kw
+    )
 ):
     """
     Remove objects from the ThoughtSpot platform.
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
 
     if export_tml is not None:
         if not export_tml.as_posix().endswith('zip'):
@@ -363,89 +384,88 @@ def remove(
             console.log(f'[b red]Zip file "{export_tml}" already exists!')
             typer.confirm('Would you like to overwrite it?', abort=True)
 
-    with ThoughtSpot(cfg) as ts:
-        to_unarchive = []
-        answers, pinboards = _get_content(ts, tags=tag)
+    to_unarchive = []
+    answers, pinboards = _get_content(ts, tags=tag)
 
-        to_unarchive.extend(
-            {
-                'content_type': _['content_type'],
-                'guid': _['id'],
-                'name': _['name'],
-                'created_at': util.to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
-                'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
-                'by': _['authorName']
-            }
-            for _ in (*answers, *pinboards)
-        )
+    to_unarchive.extend(
+        {
+            'content_type': _['content_type'],
+            'guid': _['id'],
+            'name': _['name'],
+            'created_at': util.to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
+            'last_modified': util.to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
+            'by': _['authorName']
+        }
+        for _ in (*answers, *pinboards)
+    )
 
-        if not to_unarchive:
-            console.log(f"no content found with the tag '{tag}'")
-            raise typer.Exit()
+    if not to_unarchive:
+        console.log(f"no content found with the tag '{tag}'")
+        raise typer.Exit()
 
-        _mod = '' if export_tml is None else ' and exporting '
-        table = DataTable(
-                    to_unarchive,
-                    title=f"[green]Remove Results[/]: Removing{_mod} content with [cyan]'{tag}'[/]",
-                    caption=f'Total of {len(to_unarchive)} items tagged..'
-                )
-
-        console.log('\n', table)
-
-        if report is not None:
-            common.to_csv(to_unarchive, fp=report, header=True)
-
-        if dry_run:
-            raise typer.Exit()
-
-        tag = ts.tag.get(tag)
-        answers = [_['guid'] for _ in to_unarchive if _['content_type'] == 'answer']
-        pinboards = [_['guid'] for _ in to_unarchive if _['content_type'] == 'pinboard']
-
-        # PROMPT FOR INPUT
-        if not no_prompt:
-
-            if export_only:
-                op = 'exporting'
-            elif export_tml:
-                op = 'exporting and removing'
-            else:
-                op = 'removing'
-
-            typer.confirm(
-                f'\nWould you like to continue with {op} {len([*answers, *pinboards])} objects?',
-                abort=True
+    _mod = '' if export_tml is None else ' and exporting '
+    table = DataTable(
+                to_unarchive,
+                title=f"[green]Remove Results[/]: Removing{_mod} content with [cyan]'{tag}'[/]",
+                caption=f'Total of {len(to_unarchive)} items tagged..'
             )
 
-        if export_tml is not None:
-            r = ts.api._metadata.edoc_export_epack(
-                    request={
-                        'object': [
-                            *[{'id': id, 'type': 'QUESTION_ANSWER_BOOK'} for id in answers],
-                            *[{'id': id, 'type': 'PINBOARD_ANSWER_BOOK'} for id in pinboards]
-                        ],
-                        'export_dependencies': False
-                    }
-                )
+    console.log('\n', table)
 
-            if not r.json().get('zip_file'):
-                console.log(
-                    '[b red]attempted to export TML, but the API response failed, '
-                    'please re-run the command with --verbose flag to capture more log '
-                    'details'
-                )
-                raise typer.Exit(-1)
+    if report is not None:
+        common.to_csv(to_unarchive, fp=report, header=True)
 
-            util.base64_to_file(r.json()['zip_file'], filepath=export_tml)
+    if dry_run:
+        raise typer.Exit()
+
+    tag = ts.tag.get(tag)
+    answers = [_['guid'] for _ in to_unarchive if _['content_type'] == 'answer']
+    pinboards = [_['guid'] for _ in to_unarchive if _['content_type'] == 'pinboard']
+
+    # PROMPT FOR INPUT
+    if not no_prompt:
 
         if export_only:
-            raise typer.Exit()
+            op = 'exporting'
+        elif export_tml:
+            op = 'exporting and removing'
+        else:
+            op = 'removing'
 
-        if answers:
-            ts.api._metadata.delete(id=answers, type='QUESTION_ANSWER_BOOK')
+        typer.confirm(
+            f'\nWould you like to continue with {op} {len([*answers, *pinboards])} objects?',
+            abort=True
+        )
 
-        if pinboards:
-            ts.api._metadata.delete(id=pinboards, type='PINBOARD_ANSWER_BOOK')
+    if export_tml is not None:
+        r = ts.api._metadata.edoc_export_epack(
+                request={
+                    'object': [
+                        *[{'id': id, 'type': 'QUESTION_ANSWER_BOOK'} for id in answers],
+                        *[{'id': id, 'type': 'PINBOARD_ANSWER_BOOK'} for id in pinboards]
+                    ],
+                    'export_dependencies': False
+                }
+            )
 
-        if delete_tag:
-            ts.tag.delete(tag['name'])
+        if not r.json().get('zip_file'):
+            console.log(
+                '[b red]attempted to export TML, but the API response failed, '
+                'please re-run the command with --verbose flag to capture more log '
+                'details'
+            )
+            raise typer.Exit(-1)
+
+        util.base64_to_file(r.json()['zip_file'], filepath=export_tml)
+
+    if export_only:
+        raise typer.Exit()
+
+    if answers:
+        ts.api._metadata.delete(id=answers, type='QUESTION_ANSWER_BOOK')
+
+    if pinboards:
+        ts.api._metadata.delete(id=pinboards, type='PINBOARD_ANSWER_BOOK')
+
+    if delete_tag:
+        ts.tag.delete(tag['name'])

@@ -4,10 +4,8 @@ import pathlib
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.helpers.cli_ux import console, frontend, CSToolsGroup, CSToolsCommand
+from cs_tools.helpers.cli_ux import console, depends, CSToolsGroup, CSToolsCommand
 from cs_tools.tools.common import tsload
-from cs_tools.settings import TSConfig
-from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 )
@@ -41,8 +39,17 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=common.setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def status(
+    ctx: typer.Context,
     cycle_id: str=A_(..., help='data load cycle id'),
     bad_records_file: pathlib.Path = O_(
         None,
@@ -51,40 +58,47 @@ def status(
         metavar='FILE.csv',
         dir_okay=False,
         resolve_path=True
-    ),
-    **frontend_kw
+    )
 ):
     """
     Get the status of a data load.
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
 
-    with ThoughtSpot(cfg) as ts:
-        r = ts.api.ts_dataservice.load_status(cycle_id)
-        data = r.json()
+    r = ts.api.ts_dataservice.load_status(cycle_id)
+    data = r.json()
 
-        console.print(
-            f'\nCycle ID: {data["cycle_id"]} ({data["status"]["code"]})'
-            f'\nStage: {data["internal_stage"]}'
-            f'\nRows written: {data["rows_written"]}'
-            f'\nIgnored rows: {data["ignored_row_count"]}'
-        )
+    console.print(
+        f'\nCycle ID: {data["cycle_id"]} ({data["status"]["code"]})'
+        f'\nStage: {data["internal_stage"]}'
+        f'\nRows written: {data["rows_written"]}'
+        f'\nIgnored rows: {data["ignored_row_count"]}'
+    )
 
-        if data['status']['code'] == 'LOAD_FAILED':
-            console.print(f'\nFailure reason:\n  [red]{data["status"]["message"]}[/]')
+    if data['status']['code'] == 'LOAD_FAILED':
+        console.print(f'\nFailure reason:\n  [red]{data["status"]["message"]}[/]')
 
-        if bad_records_file is not None and int(data['ignored_row_count']) > 0:
-            r = ts.api.ts_dataservice.load_params(cycle_id)
-            load_params = r.json()
+    if bad_records_file is not None and int(data['ignored_row_count']) > 0:
+        r = ts.api.ts_dataservice.load_params(cycle_id)
+        load_params = r.json()
 
-            r = ts.api.ts_dataservice.bad_records(cycle_id)
-            console.print(f'[red]\n\nBad records found...\n  writing to {bad_records_file}')
-            _bad_records_to_file(bad_records_file, data=r.text, params=load_params)
+        r = ts.api.ts_dataservice.bad_records(cycle_id)
+        console.print(f'[red]\n\nBad records found...\n  writing to {bad_records_file}')
+        _bad_records_to_file(bad_records_file, data=r.text, params=load_params)
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=common.setup_thoughtspot,
+    option=O_(
+        ...,
+        '--config',
+        help='identifier for your thoughtspot configuration file'
+    ),
+    enter_exit=True
+)
 def file(
+    ctx: typer.Context,
     file: pathlib.Path = A_(..., help='path to file to execute', metavar='FILE.csv', dir_okay=False, resolve_path=True),
     target_database: str = O_(..., '--target_database', help='specifies the target database into which tsload should load the data'),
     target_table: str = O_(..., '--target_table', help='specifies the target database'),
@@ -109,13 +123,12 @@ def file(
         dir_okay=False,
         resolve_path=True
     ),
-    flexible: bool = O_(False, '--flexible', show_default=False, help='whether input data file exactly matches target schema', hidden=True),
-    **frontend_kw
+    flexible: bool = O_(False, '--flexible', show_default=False, help='whether input data file exactly matches target schema', hidden=True)
 ):
     """
     Load a file using the remote tsload service.
     """
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+    ts = ctx.obj.thoughtspot
 
     # TODO: this loads files in a single chunk over to the server, there is no
     #       parallelization. We can optimize this in the future if it's desired
@@ -126,47 +139,46 @@ def file(
     # this data is uploaded to the ThoughtSpot cluster unless a commit load is issued.
     #
 
-    with ThoughtSpot(cfg) as ts:
-        opts = {
-            'target_database': target_database,
-            'target_table': target_table,
-            'target_schema': target_schema,
-            'empty_target': empty_target,
-            'max_ignored_rows': max_ignored_rows,
-            'date_format': date_format,
-            'date_time_format': date_time_format,
-            'time_format': time_format,
-            'skip_second_fraction': skip_second_fraction,
-            'field_separator': field_separator,
-            'null_value': null_value,
-            'boolean_representation': boolean_representation,
-            'has_header_row': has_header_row,
-            'flexible': flexible,
-            'escape_character': escape_character,
-            'enclosing_character': enclosing_character
-        }
+    opts = {
+        'target_database': target_database,
+        'target_table': target_table,
+        'target_schema': target_schema,
+        'empty_target': empty_target,
+        'max_ignored_rows': max_ignored_rows,
+        'date_format': date_format,
+        'date_time_format': date_time_format,
+        'time_format': time_format,
+        'skip_second_fraction': skip_second_fraction,
+        'field_separator': field_separator,
+        'null_value': null_value,
+        'boolean_representation': boolean_representation,
+        'has_header_row': has_header_row,
+        'flexible': flexible,
+        'escape_character': escape_character,
+        'enclosing_character': enclosing_character
+    }
 
-        with console.status(f'[bold green]Loading {file} to ThoughtSpot'):
-            cycle_id = tsload(ts, fp=file, **opts, verbose=True)
+    with console.status(f'[bold green]Loading {file} to ThoughtSpot'):
+        cycle_id = tsload(ts, fp=file, **opts, verbose=True)
 
-        if bad_records_file is not None:
-            # loop, waiting for total load to be complete
-            while True:
-                r = ts.api.ts_dataservice.load_status(cycle_id)
-                data = r.json()
+    if bad_records_file is not None:
+        # loop, waiting for total load to be complete
+        while True:
+            r = ts.api.ts_dataservice.load_status(cycle_id)
+            data = r.json()
 
-                if int(data['ignored_row_count']) > 0:
-                    r = ts.api.ts_dataservice.load_params(cycle_id)
-                    load_params = r.json()
+            if int(data['ignored_row_count']) > 0:
+                r = ts.api.ts_dataservice.load_params(cycle_id)
+                load_params = r.json()
 
-                    r = ts.api.ts_dataservice.bad_records(cycle_id)
-                    console.print(f'[red]\n\nBad records found...\n  writing to {bad_records_file}')
-                    _bad_records_to_file(bad_records_file, data=r.text, params=load_params)
+                r = ts.api.ts_dataservice.bad_records(cycle_id)
+                console.print(f'[red]\n\nBad records found...\n  writing to {bad_records_file}')
+                _bad_records_to_file(bad_records_file, data=r.text, params=load_params)
 
-                if data['internal_stage'] == 'DONE':
-                    break
+            if data['internal_stage'] == 'DONE':
+                break
 
-                if 'status' in data:
-                    if 'code' in data['status']:
-                        if data['status']['code'] != 'OK':
-                            break
+            if 'status' in data:
+                if 'code' in data['status']:
+                    if data['status']['code'] != 'OK':
+                        break
