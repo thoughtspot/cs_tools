@@ -5,6 +5,7 @@ import pathlib
 import json
 import csv
 
+import click
 import typer
 
 from cs_tools.helpers.cli_ux import console
@@ -15,6 +16,7 @@ from cs_tools.const import (
 from cs_tools.util.datetime import to_datetime
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.data.enums import Privilege
+from cs_tools.settings import TSConfig
 
 
 log = logging.getLogger(__name__)
@@ -22,6 +24,17 @@ REQUIRED_PRIVILEGES = set([
     Privilege.can_administer_thoughtspot,
     Privilege.can_manage_data
 ])
+
+
+def setup_thoughtspot(config_name: str, *, ctx: click.Context) -> ThoughtSpot:
+    """
+    Returns the ThoughtSpot object.
+    """
+    if not hasattr(ctx.obj, 'thoughtspot'):
+        cfg = TSConfig.from_config_name(config_name)
+        ctx.obj.thoughtspot = ThoughtSpot(cfg)
+
+    return ctx.obj.thoughtspot
 
 
 class TableAlreadyExists(Exception):

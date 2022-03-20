@@ -128,6 +128,13 @@ class TSConfig(Settings):
         return cls.parse_obj(data)
 
     @classmethod
+    def from_config_name(
+        cls,
+        config: str = None
+    ):
+        return cls.from_toml(APP_DIR / f'cluster-cfg_{config}.toml')
+
+    @classmethod
     def from_cli_args(
         cls,
         config: str = None,

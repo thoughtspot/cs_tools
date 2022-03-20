@@ -5,9 +5,13 @@ import logging
 import pathlib
 import re
 
+from pydantic.dataclasses import dataclass
 from click.exceptions import UsageError
 from rich.console import Console
+from typer.models import ParamMeta
 from rich.table import Table
+from typer.main import get_click_param
+from pydantic import validator
 from typer import Argument as A_, Option as O_
 import typer
 import click
@@ -15,10 +19,12 @@ import toml
 
 from cs_tools.helpers.loader import CSTool
 from cs_tools.sync.protocol import SyncerProtocol
+from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools.settings import TSConfig
 from cs_tools.const import CONSOLE_THEME, PACKAGE_DIR
 from cs_tools.data import models
 from cs_tools.sync import register
-from cs_tools import __version__
+from cs_tools import __version__, util
 
 
 log = logging.getLogger(__name__)
@@ -50,6 +56,58 @@ class SyncerProtocolType(click.ParamType):
             models.SQLModel.metadata.create_all(syncer.engine)
 
         return syncer
+
+
+@dataclass
+class Dependency:
+    name: str
+    to_call: Callable
+    option: Any = None
+    enter_exit: bool = False
+
+    @validator('option')
+    def _(cls, v, *, values) -> ParamMeta:
+        if v is None:
+            return None
+
+        if v.param_decls:
+            name, *_ = sorted(v.param_decls, key=lambda s: len(s), reverse=True)
+        else:
+            name = values['name']
+
+        param = ParamMeta(name=name.strip('-'), default=v, annotation=str)
+        click_param, _ = get_click_param(param)
+        return click_param
+
+    def setup(self, cli_input: Any=None, *, ctx: click.Context):
+        r = self.to_call(cli_input, ctx=ctx)
+
+        if self.enter_exit:
+            r.__enter__()
+
+    def close(self):
+        ctx = click.get_current_context()
+        r = getattr(ctx.obj, self.name)
+
+        if self.enter_exit:
+            r.__exit__(None, None, None)
+
+
+def depends(option: Optional[O_]=None, enter_exit: bool=False, **kw):
+    """
+    Inject a dependency into the underlying command.
+    """
+    def _wrapper(f):
+        if not hasattr(f, '_dependencies'):
+            f._dependencies = []
+
+        for k, v in kw.items():
+            d = Dependency(name=k, to_call=v, option=option, enter_exit=enter_exit)
+            f._dependencies.append(d)
+
+        return f
+
+    return _wrapper
 
 
 class DataTable(Table):
@@ -336,10 +394,34 @@ class CSToolsCommand(click.Command):
     """
     """
     def __init__(self, **kw):
+        self._the_callback = cb = kw.pop('callback')
+        self._dependencies = getattr(cb, '_dependencies', [])
+
         if kw['options_metavar'] == '[OPTIONS]':
             kw['options_metavar'] = '[--option, ..., --help]'
 
-        super().__init__(**kw)
+        [kw['params'].append(d.option) for d in self._dependencies if d.option]
+        super().__init__(**kw, callback=self.callback_with_dependency_injection)
+
+    def callback_with_dependency_injection(self, *a, **kw):
+        kw['ctx'] = ctx = click.get_current_context()
+        ctx.ensure_object(util.State)
+        ctx.call_on_close(self.teardown)
+
+        for _ in self._dependencies:
+            if _.option is not None:
+                value = kw.pop(_.option.name)
+            else:
+                value = kw.get(_.option.name)
+
+            _.setup(cli_input=value, ctx=ctx) 
+
+        return self._the_callback(*a, **kw)
+
+    def teardown(self):
+        for dependency in self._dependencies:
+            if dependency.enter_exit:
+                dependency.close()
 
     # OVERRIDES
 
