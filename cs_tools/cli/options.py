@@ -18,7 +18,7 @@ PASSWORD_OPT = O_(
 
 VERBOSE_OPT = O_(
     False,
-    '--vebose',
+    '--verbose',
     help='...',
     hidden=True,
     show_default=False
