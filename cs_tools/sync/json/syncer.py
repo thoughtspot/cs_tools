@@ -7,6 +7,7 @@ from pydantic.dataclasses import dataclass
 
 from . import util
 
+
 log = logging.getLogger(__name__)
 
 

@@ -4,7 +4,7 @@ from pydantic import validate_arguments
 import httpx
 
 from cs_tools.data.enums import MetadataObject
-from cs_tools.util import stringified_array
+from cs_tools.api.util import stringified_array
 
 
 class _Dependency:

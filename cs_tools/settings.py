@@ -8,7 +8,7 @@ from pydantic import BaseModel, AnyHttpUrl, validator
 import typer
 import toml
 
-from cs_tools.helpers.secrets import obscure
+from cs_tools.util import obscure
 from cs_tools.const import APP_DIR
 
 

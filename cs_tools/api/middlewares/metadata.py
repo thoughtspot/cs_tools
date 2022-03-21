@@ -7,7 +7,7 @@ from cs_tools.data.enums import (
     GUID, MetadataCategory, MetadataObject, MetadataObjectSubtype, PermissionType
 )
 from cs_tools.errors import ContentDoesNotExist
-from cs_tools.util.algo import chunks
+from cs_tools.util import chunks
 
 
 log = logging.getLogger(__name__)

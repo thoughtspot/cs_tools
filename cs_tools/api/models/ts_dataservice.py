@@ -7,9 +7,9 @@ import json
 from pydantic import validate_arguments
 import httpx
 
-from cs_tools.helpers.secrets import reveal
+from cs_tools.api.requirement import requires
 from cs_tools.const import APP_DIR
-from cs_tools.util import requires
+from cs_tools.util import reveal
 
 
 log = logging.getLogger(__name__)

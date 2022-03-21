@@ -30,7 +30,7 @@ class CSV:
                 self.path.mkdir(parents=True, exist_ok=True)
 
     def __repr__(self):
-        return f"<JSON sync: path='{self.path}', file={self.is_file()}'>"
+        return f"<CSV sync: path='{self.path}', file={self.is_file()}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 

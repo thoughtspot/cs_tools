@@ -4,7 +4,7 @@ import logging
 from pydantic import validate_arguments
 
 from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist
-from cs_tools import util
+from cs_tools.api import util
 
 
 log = logging.getLogger(__name__)

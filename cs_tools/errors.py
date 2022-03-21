@@ -64,16 +64,20 @@ class TSLoadServiceUnreachable(CSToolsException):
         super().__init__(message)
 
 
-class AuthenticationError(Exception):
+class AuthenticationError(CSToolsException):
 
     def __init__(self, *, username: str):
         self.username = username
 
-    def __str__(self) -> str:
+    @property
+    def message(self) -> str:
+        """
+        Exception reason.
+        """
         return f'Authentication failed for {self.username}.'
 
 
-class CertificateVerifyFailure(Exception):
+class CertificateVerifyFailure(CSToolsException):
     """
     """
 

@@ -5,12 +5,12 @@ import sys
 
 import click
 
-from cs_tools.helpers.secrets import reveal
+from cs_tools.util import reveal
 from cs_tools.api._rest_api_v1 import _RESTAPIv1
 from cs_tools._version import __version__
 from cs_tools.api.middlewares import (
     AnswerMiddleware, MetadataMiddleware, PinboardMiddleware, SearchMiddleware,
-    TagMiddleware, UserMiddleware
+    TagMiddleware, TQLMiddleware, TSLoadMiddleware, UserMiddleware
 )
 from cs_tools.data.models import ThoughtSpotPlatform, LoggedInUser
 
@@ -39,6 +39,8 @@ class ThoughtSpot:
         # self.worksheet
         # self.table
         self.tag = TagMiddleware(self)
+        self.tql = TQLMiddleware(self)
+        self.tsload = TSLoadMiddleware(self)
 
     @property
     def api(self) -> _RESTAPIv1:
@@ -103,7 +105,7 @@ class ThoughtSpot:
         cluster: {self._this_platform.cluster_name}
         url: {self._this_platform.url}
         timezone: {self._this_platform.timezone}
-        codebase: {self._this_platform.deployment}
+        branch: {self._this_platform.deployment}
         version: {self._this_platform.version}
 
         [LOGGED IN USER]

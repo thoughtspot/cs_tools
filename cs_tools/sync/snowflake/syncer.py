@@ -7,7 +7,7 @@ from snowflake.sqlalchemy import URL, snowdialect
 from pydantic import Field
 import sqlalchemy as sa
 
-from cs_tools.util.algo import chunks
+from cs_tools.util import chunks
 
 from .const import MAX_EXPRESSIONS_MAGIC_NUMBER
 
