@@ -6,6 +6,8 @@ import re
 
 from click.exceptions import UsageError
 from rich.console import Console
+from click.core import iter_params_for_processing
+from gettext import ngettext
 import typer
 import click
 import toml
@@ -58,7 +60,7 @@ class SyncerProtocolType(click.ParamType):
         cfg = toml.load(definition)
 
         if proto != 'custom':
-            cfg['manifest'] = pathlib.Path(__file__).parent.parent / 'sync' / proto / 'MANIFEST.json'
+            cfg['manifest'] = pathlib.Path(__file__).parent.parent / f'sync/{proto}/MANIFEST.json'
 
         Syncer = register.load_syncer(protocol=proto, manifest_path=cfg.pop('manifest'))
         syncer = Syncer(**cfg['configuration'])
@@ -228,8 +230,7 @@ class CSToolsCommand(click.Command):
     """
     """
     def __init__(self, **kw):
-        self._the_callback = cb = kw.pop('callback')
-        self._dependencies = getattr(cb, '_dependencies', [])
+        self._dependencies = getattr(kw['callback'], '_dependencies', [])
         [kw['params'].append(o) for d in self._dependencies for o in (d.options or [])]
 
         if kw['options_metavar'] == '[OPTIONS]':
@@ -241,23 +242,20 @@ class CSToolsCommand(click.Command):
             metavar += '[--option, ..., --help]'
             kw['options_metavar'] = metavar
 
-        super().__init__(**kw, callback=self.callback_with_dependency_injection)
+        super().__init__(**kw)
 
-    def callback_with_dependency_injection(self, *a, **kw):
-        kw['ctx'] = ctx = click.get_current_context()
+    def _setup_dependencies(self, ctx, opts):
         ctx.ensure_object(State)
         ctx.call_on_close(self.teardown)
 
-        for _ in self._dependencies:
-            cli_input = {
-                option.name: kw.pop(option.name)
-                for option in (_.options, [])
-            }
+        for dep in self._dependencies:
+            overrides = {}
 
-            _.setup(**cli_input, ctx=ctx) 
+            for k, v in opts.items():
+                if k in [o.name for o in dep.options]:
+                    overrides[k] = v
 
-        raise
-        return self._the_callback(*a, **kw)
+            dep.setup(ctx, **overrides)
 
     def teardown(self):
         for dependency in self._dependencies:
@@ -267,11 +265,40 @@ class CSToolsCommand(click.Command):
     # OVERRIDES
 
     def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
+        """
+        """
+        if not args and self.no_args_is_help and not ctx.resilient_parsing:
+            # echo(ctx.get_help(), color=ctx.color)
+            ctx.exit()
+
         try:
-            super().parse_args(ctx, args)
+            parser = self.make_parser(ctx)
+            opts, args, param_order = parser.parse_args(args=args)
+            self._setup_dependencies(ctx, opts.copy())
+
+            for param in iter_params_for_processing(param_order, self.get_params(ctx)):
+                value, args = param.handle_parse_result(ctx, opts, args)
+
+            if args and not ctx.allow_extra_args and not ctx.resilient_parsing:
+                ctx.fail(
+                    ngettext(
+                        "Got unexpected extra argument ({args})",
+                        "Got unexpected extra arguments ({args})",
+                        len(args),
+                    ).format(args=" ".join(map(str, args)))
+                )
         except UsageError as e:
             show_error(e)
             raise typer.Exit(-1)
+
+        # remove extra arguments
+        for dep in self._dependencies:
+            for opt in dep.options:
+                if opt.name in ctx.params:
+                    ctx.params.pop(opt.name)
+
+        ctx.args = args
+        return args
 
     def get_params(self, ctx: click.Context) -> List[click.Parameter]:
         rv = self.params

@@ -36,10 +36,10 @@ class Dependency:
 
         return params
 
-    def setup(self, cli_input: Any=None, *, ctx: click.Context):
+    def setup(self, ctx: click.Context, **kw):
         """
         """
-        r = self.to_call(cli_input, ctx=ctx)
+        r = self.to_call(ctx, **kw)
 
         if self.enter_exit:
             r.__enter__()
