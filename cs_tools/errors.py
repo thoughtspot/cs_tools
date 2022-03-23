@@ -55,9 +55,29 @@ class AmbiguousContentError(CSToolsException):
         return f"Multiple {objects} found with name '{self.name}'"
 
 
+class InsufficientPrivileges(CSToolsException):
+    """
+    Raised when the User cannot perform an action.
+    """
+    def __init__(self, *, user, service, required_privileges):
+        self.user = user
+        self.service = service
+        self.required_privileges = required_privileges
+
+    @property
+    def message(self) -> str:
+        p = ', '.join(self.required_privileges)
+        s = (
+            f'[red]User {self.user.display_name} do not have the correct privileges to '
+            f'access the {self.service} service!\n\nYou require the {p} privilege.\n\n'
+            f'Please consult with your ThoughtSpot Administrator.[/]'
+        )
+        return s
+
+
 class TSLoadServiceUnreachable(CSToolsException):
     """
-    Raise when the etl_http_server service cannot be reached.
+    Raised when the etl_http_server service cannot be reached.
     """
     def __init__(self, message, http_error):
         self.http_error = http_error
@@ -65,7 +85,9 @@ class TSLoadServiceUnreachable(CSToolsException):
 
 
 class AuthenticationError(CSToolsException):
-
+    """
+    Raised when the ThoughtSpot platform is unreachable.
+    """
     def __init__(self, *, username: str):
         self.username = username
 
