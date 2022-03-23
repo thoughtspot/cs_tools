@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from io import BufferedIOBase
 import datetime as dt
 import logging
@@ -173,7 +173,7 @@ class TSDataService:
         self,
         cycle_id: str,
         *,
-        fd: BufferedIOBase
+        fd: Union[BufferedIOBase, Any]
     ) -> httpx.Response:
         """
         Begin loading data in this session.

@@ -75,7 +75,8 @@ class GoogleSheets:
         t = self._get_or_create_tab(tab_name)
 
         if self.mode == InsertMode.overwrite:
-            t.delete_rows(0, t.row_count + 1)
+            XN = gspread.utils.rowcol_to_a1(t.row_count, t.col_count)
+            t.batch_clear([f'A2:{XN}'])
 
         # write the header if it does not exist
         if not t.get('A1'):

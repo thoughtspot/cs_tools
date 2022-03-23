@@ -7,7 +7,6 @@ import typer
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
-from cs_tools.cli.tools.common import tsload
 from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 )

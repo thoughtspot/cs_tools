@@ -5,7 +5,7 @@ import json
 from .const import BIG_QUERY_DATETIME_FORMAT
 
 
-class MaybeDateTimeEncoder(json.JSONEncoder):
+class MaybeDateTimeDecoder(json.JSONDecoder):
     """
     Include a check for datetime.datetime.
     """
@@ -36,4 +36,4 @@ def clean_for_bq(data: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     -------
     cleaned : List[Dict[str, str]]
     """
-    return json.loads(json.dumps(data, cls=MaybeDateTimeEncoder, default=str))
+    return json.loads(json.dumps(data, cls=MaybeDateTimeDecoder, default=str))
