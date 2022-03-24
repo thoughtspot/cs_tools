@@ -45,4 +45,4 @@ def to_dependent_object(data) -> models.DependentObject:
 
 
 def to_sharing_access(data) -> models.SharingAccess:
-    return [models.SharingAccess(**d).dict() for d in data]
+    return [models.SharingAccess().from_api_v1(d).dict() for d in data]

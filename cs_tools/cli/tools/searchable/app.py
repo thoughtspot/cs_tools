@@ -58,7 +58,7 @@ def bi_server(
         renamed = [
             {
                 'incident_id': _['Incident Id'],
-                'timestamp': dt.datetime.fromtimestamp(_['Timestamp']),
+                'timestamp': dt.datetime.fromtimestamp(_['Timestamp'] or 0),
                 'url': _['URL'],
                 'http_response_code': _['HTTP Response Code'],
                 'browser_type': _['Browser Type'],
