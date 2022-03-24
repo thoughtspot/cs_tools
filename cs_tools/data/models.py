@@ -186,7 +186,7 @@ class Tag(SQLModel, table=True):
         Takes input from /tspublic/v1/metadata/list.
         """
         return cls(
-            tag_guid=data['id'], tag_name=data['id'],
+            tag_guid=data['id'], tag_name=data['name'],
             color=data['clientState']['color'], author_guid=data['author'],
             created=data['created'], modified=data['modified']
         )
@@ -285,15 +285,37 @@ class DependentObject(SQLModel, table=True):
 
 class SharingAccess(SQLModel, table=True):
     __tablename__ = 'ts_sharing_access'
-    object_guid: str = Field(primary_key=True, foreign_key='ts_metadata_object.object_guid')
-    shared_to_user_guid: Optional[str] = Field(primary_key=True, foreign_key='ts_user.user_guid')
-    shared_to_group_guid: Optional[str] = Field(primary_key=True, foreign_key='ts_group.group_guid')
-    permission_type: str = Field(primary_key=True)
+    sk_dummy: str = Field(primary_key=True, sa_column_kwargs={'comment': 'shared_to_* is a composite PK, but can be nullable, so we need a dummy'})
+    object_guid: str = Field(foreign_key='ts_metadata_object.object_guid')
+    shared_to_user_guid: Optional[str] = Field(foreign_key='ts_user.user_guid')
+    shared_to_group_guid: Optional[str] = Field(foreign_key='ts_group.group_guid')
+    permission_type: str
     share_mode: str
 
     metadata_object: 'MetadataObject' = Relationship(back_populates='sharing')
     shared_to_user: 'User' = Relationship(back_populates='sharing')
     shared_to_group: 'Group' = Relationship(back_populates='sharing')
+
+    @classmethod
+    def from_api_v1(cls, data) -> 'SharingAccess':
+        """
+        """
+        PK = (
+            data['object_guid'],
+            data.get('shared_to_user_guid', 'NULL'),
+            data.get('shared_to_group_guid', 'NULL')
+        )
+
+        data = {
+            'sk_dummy': '-'.join(PK),
+            'object_guid': data['object_guid'],
+            'shared_to_user_guid': data.get('shared_to_user_guid', None),
+            'shared_to_group_guid': data.get('shared_to_group_guid', None),
+            'permission_type': data['permission_type'],
+            'share_mode': data['share_mode'],
+        }
+
+        return cls(**data)
 
 
 class BIServer(SQLModel, table=True):
