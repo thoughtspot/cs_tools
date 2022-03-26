@@ -50,9 +50,10 @@ class SearchMiddleware:
         self,
         query: str,
         *,
-        worksheet: str=None,
-        table: str=None,
-        view: str=None
+        worksheet: str = None,
+        table: str = None,
+        view: str = None,
+        sample: bool = -1
     ) -> List[Dict[str, Any]]:
         """
         Search a data source.
@@ -127,14 +128,26 @@ class SearchMiddleware:
             guid = d[0]['id']
 
         log.debug(f'executing search on guid {guid}\n\n{query}\n')
+        offset = 0
+        data = []
 
-        d = self.ts._rest_api.data.searchdata(
-                query_string=query,
-                data_source_guid=guid,
-                formattype='COMPACT'
-            ).json()
+        while True:
+            r = self.ts._rest_api.data.searchdata(
+                    query_string=query,
+                    data_source_guid=guid,
+                    formattype='COMPACT',
+                    batchsize=sample,
+                    offset=offset
+                )
+            d = r.json()
+            data.extend(d.pop('data'))
+            offset += d['rowCount']
+            log.info(d)
 
-        if d['samplingRatio'] < 1:
-            log.warning(f"not all data was included as part of this search, sampling ratio: {d['samplingRatio']:.2f}")
+            if d['rowCount'] < d['pageSize']:
+                break
 
-        return [dict(zip(d['columnNames'], row)) for row in d['data']]
+            if sample >= 0 and d['rowCount'] == d['pageSize']:
+                break
+
+        return [dict(zip(d['columnNames'], _clean_datetime(row))) for row in data]
