@@ -25,7 +25,7 @@ class BigQuery:
     project_name: str
     dataset: str
     credentials_file: pathlib.Path = None
-    truncate_on_connect: bool = True
+    truncate_on_load: bool = True
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
@@ -53,11 +53,6 @@ class BigQuery:
     def capture_metadata(self, metadata, cnxn, **kw):
         self.metadata = metadata
 
-        if self.truncate_on_connect:
-            with self.cnxn.begin():
-                for table in reversed(self.metadata.sorted_tables):
-                    self.cnxn.execute(table.delete().where(True))
-
     def __repr__(self):
         return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
 
@@ -76,6 +71,12 @@ class BigQuery:
         return [dict(_) for _ in r]
 
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+        t = self.metadata.tables[table]
+
+        if self.truncate_on_load:
+            with self.cnxn.begin():
+                self.cnxn.execute(t.delete().where(True))
+
         # DEV NOTE: nicholas.cooper@thoughtspot.com
         #
         # Why are we using the underlying BigQuery client?
@@ -91,7 +92,6 @@ class BigQuery:
         #
         t = self.bq.get_table(f'{self.project_name}.{self.dataset}.{table}')
         d = sanitize.clean_for_bq(data)
-        r = self.bq.insert_rows_json(t, d)
 
-        for error in r:
-            log.warning(f'ERROR FROM BIGQUERY:\n{error}')
+        cfg = bigquery.LoadJobConfig(schema=t.schema)
+        job = self.bq.load_table_from_json(d, t, job_config=cfg)

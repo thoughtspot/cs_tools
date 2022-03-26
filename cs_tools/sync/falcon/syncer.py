@@ -21,6 +21,7 @@ class Falcon:
     """
     database: str = 'cs_tools'
     schema_: str = Field('falcon_default_schema', alias='schema')
+    empty_target: bool = True
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
@@ -33,7 +34,6 @@ class Falcon:
 
         # create the database if it doesn't exist
         self.ts.tql.command(command=f'CREATE DATABASE {self.database};')
-        self.ts.tql.command(command=f'USE {self.database};')
 
         # decorators must be declared here, SQLAlchemy doesn't care about instances
         sa.event.listen(sa.schema.MetaData, 'after_create', self.capture_metadata)
@@ -86,6 +86,12 @@ class Falcon:
 
         with tempfile.NamedTemporaryFile(**file_opts) as fd:
             writer = csv.DictWriter(fd, data[0].keys(), delimiter='|')
+            # writer.writeheader()
             writer.writerows(data)
             fd.seek(0)
-            self.ts.tsload.upload(fd, database=self.database, table=table)
+            self.ts.tsload.upload(
+                fd,
+                database=self.database,
+                table=table,
+                empty_target=self.empty_target
+            )
