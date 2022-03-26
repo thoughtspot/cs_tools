@@ -40,7 +40,9 @@ def bi_server(
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    )
+    ),
+    since: dt.datetime = O_(None, help='...'),
+    skinny: bool = O_(True, help='...'),
 ):
     """
     """
@@ -48,15 +50,21 @@ def bi_server(
         "[incident id] [timestamp].'detailed' [url] [http response code] "
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
-        "[impressions]"
+        "[database latency (us)] [impressions]"
+        + ("" if since is None else f" [timestamp] >= '{since.date()}'")
+        + ("" if not skinny else " [user action] != {null} 'invalid'")
     )
 
     ts = ctx.obj.thoughtspot
 
     with console.status('[bold green]getting TS: BI Server data..[/]'):
         data = ts.search(SEARCH_TOKENS, worksheet='TS: BI Server')
+
+    with console.status(f'[bold green]writing TS: BI Server to {export.name}..[/]'):
+        seed = dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         renamed = [
             {
+                'sk_dummy': f'{seed}-{idx}',
                 'incident_id': _['Incident Id'],
                 'timestamp': dt.datetime.fromtimestamp(_['Timestamp'] or 0),
                 'url': _['URL'],
@@ -74,8 +82,9 @@ def bi_server(
                 'latency_us': _['Total Latency (us)'],
                 'impressions': _['Total Impressions']
             }
-            for _ in data
+            for idx, _ in enumerate(data)
         ]
+
         export.dump('ts_bi_server', data=renamed)
 
 
