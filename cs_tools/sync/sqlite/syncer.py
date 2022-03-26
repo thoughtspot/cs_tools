@@ -15,7 +15,7 @@ class SQLite:
     Interact with a SQLite database.
     """
     database_path: pathlib.Path
-    truncate_on_connect: bool = True
+    truncate_on_load: bool = True
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
@@ -31,12 +31,6 @@ class SQLite:
 
     def capture_metadata(self, metadata, cnxn, **kw):
         self.metadata = metadata
-
-        if self.truncate_on_connect:
-            with self.cnxn.begin():
-                for table in reversed(self.metadata.sorted_tables):
-                    cnxn.execute(table.delete())
-                cnxn.commit()
 
     def __repr__(self):
         return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
@@ -59,4 +53,7 @@ class SQLite:
         t = self.metadata.tables[table]
 
         with self.cnxn.begin():
+            if self.truncate_on_load:
+                self.cnxn.execute(t.delete())
+
             self.cnxn.execute(t.insert(), data)

@@ -33,7 +33,7 @@ class Snowflake:
     database: str
     schema_: str = Field('PUBLIC', alias='schema')
     auth_type: AuthType = AuthType.local
-    truncate_on_connect: bool = True
+    truncate_on_load: bool = True
     silence_noisiness: bool = True
 
     # DATABASE ATTRIBUTES
@@ -95,6 +95,10 @@ class Snowflake:
 
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
         t = self.metadata.tables[table]
+
+        if self.truncate_on_load:
+            with self.cnxn.begin():
+                self.cnxn.execute(t.delete())
 
         for chunk in chunks(data, n=MAX_EXPRESSIONS_MAGIC_NUMBER):
             with self.cnxn.begin():

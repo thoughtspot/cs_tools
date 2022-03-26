@@ -33,7 +33,7 @@ class Redshift:
     auth_type: AuthType = AuthType.local
     # okta_account_name: str = None
     # okta_app_id: str = None
-    truncate_on_connect: bool = True
+    truncate_on_load: bool = True
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
@@ -83,11 +83,6 @@ class Redshift:
     def capture_metadata(self, metadata, cnxn, **kw):
         self.metadata = metadata
 
-        if self.truncate_on_connect:
-            with self.cnxn.begin():
-                for table in reversed(self.metadata.sorted_tables):
-                    self.cnxn.execute(table.delete().where(True))
-
     def __repr__(self):
         return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
 
@@ -107,6 +102,10 @@ class Redshift:
 
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
         t = self.metadata.tables[table]
+
+        if self.truncate_on_load:
+            with self.cnxn.begin():
+                self.cnxn.execute(table.delete().where(True))
 
         # 1. Load file to S3
         fs = s3fs.S3FileSystem(key=self.aws_access_key, secret=self.aws_secret_key)
