@@ -320,22 +320,23 @@ class SharingAccess(SQLModel, table=True):
 
 class BIServer(SQLModel, table=True):
     __tablename__ = 'ts_bi_server'
-    incident_id: str = Field(primary_key=True)
-    timestamp: dt.datetime
+    sk_dummy: str = Field(primary_key=True)
+    incident_id: str
+    timestamp: Optional[dt.datetime]
     url: str
-    http_response_code: str
-    browser_type: str
-    browser_version: str
-    client_type: str
-    client_id: str
-    answer_book_guid: str = Field(foreign_key='ts_metadata_object.object_guid')
-    viz_id: str
-    user_id: str = Field(foreign_key='ts_user.user_guid')
-    user_action: str
-    query_text: str
-    response_size: int
-    latency_us: int
-    impressions: int
+    http_response_code: Optional[str]
+    browser_type: Optional[str]
+    browser_version: Optional[str]
+    client_type: Optional[str]
+    client_id: Optional[str]
+    answer_book_guid: Optional[str] = Field(foreign_key='ts_metadata_object.object_guid')
+    viz_id: Optional[str]
+    user_id: Optional[str] = Field(foreign_key='ts_user.user_guid')
+    user_action: Optional[str]
+    query_text: Optional[str]
+    response_size: Optional[int]
+    latency_us: Optional[int]
+    impressions: Optional[float]
 
     metadata_object: 'MetadataObject' = Relationship(back_populates='bi_actions')
     user: 'User' = Relationship(back_populates='bi_actions')
