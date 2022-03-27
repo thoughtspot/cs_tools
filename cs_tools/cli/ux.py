@@ -56,6 +56,9 @@ class SyncerProtocolType(click.ParamType):
         param: click.Parameter = None,
         ctx: click.Context = None
     ) -> SyncerProtocol:
+        # if value is None:
+        #     return value
+
         proto, definition = value.split('://')
         cfg = toml.load(definition)
 

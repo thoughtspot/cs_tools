@@ -142,12 +142,18 @@ class SearchMiddleware:
             d = r.json()
             data.extend(d.pop('data'))
             offset += d['rowCount']
-            log.info(d)
-
+            
             if d['rowCount'] < d['pageSize']:
                 break
 
             if sample >= 0 and d['rowCount'] == d['pageSize']:
                 break
+
+            if offset % 500_000 == 0:
+                log.warning(
+                    f'using the Search API to extract >= {offset / 1000:,}K rows is '
+                    f'not a scalable practice, please consider extracting records '
+                    f'directly from the underlying data source instead!'
+                )
 
         return [dict(zip(d['columnNames'], _clean_datetime(row))) for row in data]

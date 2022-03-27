@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 def setup_thoughtspot(
     ctx: click.Context,
     *,
-    config: str,
+    config_name: str,
     password: str = None,
     verbose: bool = None,
 ) -> ThoughtSpot:
@@ -23,7 +23,7 @@ def setup_thoughtspot(
     Returns the ThoughtSpot object.
     """
     if not hasattr(ctx.obj, 'thoughtspot'):
-        cfg = TSConfig.from_config_name(config)
+        cfg = TSConfig.from_config_name(config_name)
         ctx.obj.thoughtspot = ThoughtSpot(cfg)
 
     return ctx.obj.thoughtspot
