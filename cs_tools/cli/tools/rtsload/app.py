@@ -37,7 +37,7 @@ app = typer.Typer(
 def status(
     ctx: typer.Context,
     cycle_id: str=A_(..., help='data load cycle id'),
-    bad_records: str = A_(
+    bad_records: str = O_(
         None,
         '--bad_records_file',
         help='file to use for storing rows that failed to load',
@@ -96,7 +96,7 @@ def file(
     has_header_row: bool = O_(False, '--has_header_row', show_default=False, help='indicates that the input file contains a header row'),
     escape_character: str = O_('"', '--escape_character', help='specifies the escape character used in the input file'),
     enclosing_character: str = O_('"', '--enclosing_character', help='enclosing character in csv source format'),
-    bad_records: str = A_(
+    bad_records: str = O_(
         None,
         '--bad_records_file',
         help='file to use for storing rows that failed to load',

@@ -151,9 +151,10 @@ class SearchMiddleware:
 
             if offset % 500_000 == 0:
                 log.warning(
-                    f'using the Search API to extract >= {offset / 1000:,}K rows is '
-                    f'not a scalable practice, please consider extracting records '
-                    f'directly from the underlying data source instead!'
+                    f'using the Search API to extract >= {offset / 1000: >6,.0f}K rows '
+                    f'is not a scalable practice, please consider adding a filter or '
+                    f'extracting records directly from the underlying data source '
+                    f'instead!'
                 )
 
         return [dict(zip(d['columnNames'], _clean_datetime(row))) for row in data]

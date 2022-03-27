@@ -71,11 +71,6 @@ class Snowflake:
     def capture_metadata(self, metadata, cnxn, **kw):
         self.metadata = metadata
 
-        if self.truncate_on_connect:
-            with self.cnxn.begin():
-                for table in reversed(self.metadata.sorted_tables):
-                    self.cnxn.execute(table.delete())
-
     def __repr__(self):
         return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
 
