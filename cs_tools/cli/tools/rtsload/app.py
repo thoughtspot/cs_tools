@@ -1,4 +1,4 @@
-from typing import Any
+import datetime as dt
 import pathlib
 
 from typer import Argument as A_, Option as O_
@@ -6,22 +6,11 @@ import typer
 
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
 from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 )
 from cs_tools.cli.tools import common
-
-
-def _bad_records_to_file(fp: pathlib.Path, *, data, params: Any):
-    """
-    """
-    sep = params['load_params']['format']['field_separator']
-    rows = [
-        {i: v for i, v in enumerate(line.rstrip().split(sep), start=1)}
-        for line in data.split('\n')
-    ]
-    common.to_csv(rows, fp, sep=sep)
 
 
 app = typer.Typer(
@@ -48,13 +37,12 @@ app = typer.Typer(
 def status(
     ctx: typer.Context,
     cycle_id: str=A_(..., help='data load cycle id'),
-    bad_records_file: pathlib.Path = O_(
+    bad_records: str = A_(
         None,
         '--bad_records_file',
         help='file to use for storing rows that failed to load',
-        metavar='FILE.csv',
-        dir_okay=False,
-        resolve_path=True
+        metavar='protocol://DEFINITION.toml',
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     )
 ):
     """
@@ -62,26 +50,26 @@ def status(
     """
     ts = ctx.obj.thoughtspot
 
-    r = ts.api.ts_dataservice.load_status(cycle_id)
-    data = r.json()
+    with console.status('[bold green]Waiting for data load to complete..'):
+        data = ts.tsload.status(cycle_id, wait_for_complete=True)
+        console.print(
+            f'\nCycle ID: {data["cycle_id"]} ({data["status"]["code"]})'
+            f'\nStage: {data["internal_stage"]}'
+            f'\nRows written: {data["rows_written"]}'
+            f'\nIgnored rows: {data["ignored_row_count"]}'
+        )
 
-    console.print(
-        f'\nCycle ID: {data["cycle_id"]} ({data["status"]["code"]})'
-        f'\nStage: {data["internal_stage"]}'
-        f'\nRows written: {data["rows_written"]}'
-        f'\nIgnored rows: {data["ignored_row_count"]}'
-    )
+    if data['ignored_row_count'] > 0:
+        now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
+        fp = f'BAD_RECORDS_{now}_{cycle_id}'
+        console.print(
+            f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
+        )
+        data = ts.tsload.bad_records(cycle_id)
+        bad_records.dump(fp, data=data)
 
     if data['status']['code'] == 'LOAD_FAILED':
         console.print(f'\nFailure reason:\n  [red]{data["status"]["message"]}[/]')
-
-    if bad_records_file is not None and int(data['ignored_row_count']) > 0:
-        r = ts.api.ts_dataservice.load_params(cycle_id)
-        load_params = r.json()
-
-        r = ts.api.ts_dataservice.bad_records(cycle_id)
-        console.print(f'[red]\n\nBad records found...\n  writing to {bad_records_file}')
-        _bad_records_to_file(bad_records_file, data=r.text, params=load_params)
 
 
 @app.command(cls=CSToolsCommand)
@@ -108,13 +96,12 @@ def file(
     has_header_row: bool = O_(False, '--has_header_row', show_default=False, help='indicates that the input file contains a header row'),
     escape_character: str = O_('"', '--escape_character', help='specifies the escape character used in the input file'),
     enclosing_character: str = O_('"', '--enclosing_character', help='enclosing character in csv source format'),
-    bad_records_file: pathlib.Path = O_(
+    bad_records: str = A_(
         None,
         '--bad_records_file',
         help='file to use for storing rows that failed to load',
-        metavar='FILE.csv',
-        dir_okay=False,
-        resolve_path=True
+        metavar='protocol://DEFINITION.toml',
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
     flexible: bool = O_(False, '--flexible', show_default=False, help='whether input data file exactly matches target schema', hidden=True)
 ):
@@ -151,27 +138,20 @@ def file(
         'enclosing_character': enclosing_character
     }
 
-    with console.status(f'[bold green]Loading {file} to ThoughtSpot'):
-        cycle_id = tsload(ts, fp=file, **opts, verbose=True)
+    with console.status(f'[bold green]Loading {file} to ThoughtSpot..'):
+        cycle_id = ts.tsload.upload(ts, fp=file, **opts, verbose=True)
 
-    if bad_records_file is not None:
-        # loop, waiting for total load to be complete
-        while True:
-            r = ts.api.ts_dataservice.load_status(cycle_id)
-            data = r.json()
+    if bad_records is None:
+        return
 
-            if int(data['ignored_row_count']) > 0:
-                r = ts.api.ts_dataservice.load_params(cycle_id)
-                load_params = r.json()
+    with console.status('[bold green]Waiting for data load to complete..'):
+        data = ts.tsload.status(cycle_id, wait_for_complete=True)
 
-                r = ts.api.ts_dataservice.bad_records(cycle_id)
-                console.print(f'[red]\n\nBad records found...\n  writing to {bad_records_file}')
-                _bad_records_to_file(bad_records_file, data=r.text, params=load_params)
-
-            if data['internal_stage'] == 'DONE':
-                break
-
-            if 'status' in data:
-                if 'code' in data['status']:
-                    if data['status']['code'] != 'OK':
-                        break
+    if data['ignored_row_count'] > 0:
+        now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
+        fp = f'BAD_RECORDS_{now}_{cycle_id}'
+        console.print(
+            f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
+        )
+        data = ts.tsload.bad_records(cycle_id)
+        bad_records.dump(fp, data=data)

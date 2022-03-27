@@ -135,8 +135,8 @@ class TSLoadMiddleware:
                 f'below further information:'
                 f'\nhttps://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html'
                 f'\n\nHeres the tsload command for the file you tried to load:'
-                f'\n\ntsload --source_file {fd.name} --target_database {target_database} '
-                f'--target_schema {target_schema} --target_table {target_table} '
+                f'\n\ntsload --source_file {fd.name} --target_database {database} '
+                f'--target_schema {schema_} --target_table {table} '
                 f'--max_ignored_rows {max_ignored_rows} --date_format "{FMT_TSLOAD_DATE}" '
                 f'--time_format "{FMT_TSLOAD_TIME}" --date_time_format "{FMT_TSLOAD_DATETIME}" '
                 f'--field_separator "{field_separator}" --null_value "{null_value}" '
@@ -153,3 +153,31 @@ class TSLoadMiddleware:
         self.ts.api.ts_dataservice.load_start(cycle_id, fd=fd)
         self.ts.api.ts_dataservice.load_commit(cycle_id)
         return cycle_id
+
+    @validate_arguments
+    def status(self, cycle_id: str, *, wait_for_complete: bool = False):
+        """
+        """
+        self._check_privileges()
+
+        while True:
+            r = self.ts.api.ts_dataservice.load_status(cycle_id)
+            data = r.json()
+
+            if not wait_for_complete:
+                break
+
+            print(data)
+            raise
+
+    @validate_arguments
+    def bad_records(self, cycle_id: str) -> List[Dict[str, Any]]:
+        """
+        """
+        r = self.ts.api.ts_dataservice.load_params(cycle_id)
+        params = r.json()
+        print(params)
+        raise
+
+        r = self.ts.api.ts_dataservice.bad_records(cycle_id)
+        r.text
