@@ -14,6 +14,7 @@ from cs_tools._enums import (
 
 log = logging.getLogger(__name__)
 
+
 class MetadataMiddleware:
     """
     TODO - add docs

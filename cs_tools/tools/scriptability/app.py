@@ -1,12 +1,13 @@
 # DEV NOTE:
 #
 
+import datetime
 import pathlib
-
-import yaml
+import requests
 from typer import Argument as A_, Option as O_  # noqa
+from typing import Dict, List
 import typer
-from typing import List
+import yaml
 
 from cs_tools import util
 from cs_tools._enums import TMLImportPolicy, TMLType
@@ -100,13 +101,7 @@ def export(
                         console.log(f"unable to get {_['info']['name']}: {_['info']['status']}")
 
                     else:
-                        fn = _['info'].get('filename', None)
-                        if path:
-                            fn = f"{path}/{fn}"
-
-                        console.log(f'\twriting {fn}')
-                        with open (fn, "w") as f:
-                            f.write(_['edoc'])
+                        _write_tml_obj_to_file(path=path, tml=_)
 
         else:  # getting associated, so get the full pack.
             with console.status(f"[bold green]exporting ${export_ids} with associated content.[/]"):
@@ -118,11 +113,42 @@ def export(
                     }
                 )
                 console.log(r)
-                filepath = path if not path.is_dir() else path / "metadata.scriptability.zip"
-
-                util.base64_to_file(r.json()['zip_file'], filepath=filepath)
+                _write_tml_package_to_file(path=path, contents=r.json()['zip_file'])
 
     return None
+
+
+def _write_tml_obj_to_file(path: pathlib.Path, tml: str) -> None:
+    """
+    Writes the TML to a file.
+    :param path: The path to write to.  Can be a directory or filename.  If it's a directory, the file will be saved
+    in the form <GUI>.<type>.TML
+    :param TML:  The TML as a JSON object returned from ThoughtSpot
+    :return: None
+    """
+    guid = tml['info']['id']
+    type = tml['info']['type']
+    name = tml['info']['name']
+
+    fn = f"{guid}.{type}.tml"
+    if path:
+        fn = f"{path}/{fn}"
+
+    console.log(f'\twriting {name} to {fn}')
+    with open (fn, "w") as f:
+        f.write(tml['edoc'])
+
+
+def _write_tml_package_to_file(path: pathlib.Path, contents: str) -> None:
+    """
+    :param path: The path to write to.  Can be a directory or filename.  If it's a directory, the file will be saved
+    in the form <GUI>.<type>.TML
+    :param contents: The contents to write to the zip file.
+    :return: None
+    """
+    now = datetime.datetime.now().strftime("_%Y%m%d_%H%M%S")
+    filepath = path if not path.is_dir() else path / f"metadata{now}.scriptability.zip"
+    util.base64_to_file(contents, filepath=filepath)
 
 
 @app.command(cls=CSToolsCommand)
@@ -155,7 +181,9 @@ def upload(  # can't use import, since that's a reserved word.
     tml = []  # array of TML to update
 
     if path.is_dir():
-        for p in path.iterdir():
+        file_list = list(f for f in path.iterdir() if f.match("*.tml"))
+        console.log(f'validating {file_list}')
+        for p in file_list:
             if not p.is_dir():  # don't currently support sub-folders.  Might add later.
                 tml.append(yaml.load(p.read_text("utf-8"), Loader=yaml.Loader))
     else:
@@ -166,7 +194,36 @@ def upload(  # can't use import, since that's a reserved word.
             r = ts.api.metadata.tml_import(import_objects=tml,
                                            import_policy=import_policy.value,
                                            force_create=force_create)
-            console.log(f"{r.status_code}: {r.text}")
+            raise_tml_errors(r)
 
     return None
+
+
+def raise_tml_errors(response: requests.Response) -> Dict:
+    if len(response.content) == 0:
+        raise Exception(f'No response returned at all with status code {response.status_code}')
+    else:
+        j = response.json()
+        # JSON error response checking
+        if 'object' in j:
+            for k in j['object']:
+                if 'info' in k:
+                    # Older versions wrapped the errors in 'info'
+                    if k['info']['status']['status_code'] == 'ERROR':
+                        # print(k['info']['status']['error_message'])
+                        raise SyntaxError(k['info']['status']['error_message'])
+                    else:
+                        return response.json()
+                # Recent versions return as 'response'
+                elif 'response' in k:
+                    if k['response']['status']['status_code'] == 'ERROR':
+                        # print(k['info']['status']['error_message'])
+                        raise SyntaxError(k['response']['status']['error_message'])
+                    else:
+                        return response.json()
+                else:
+                    return response.json()
+
+        else:
+            return response.json()
 
