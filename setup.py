@@ -2,10 +2,6 @@ from setuptools import setup, find_packages
 import re
 
 
-print(find_packages())
-raise
-
-
 def read_version() -> str:
     """
     Don't import from the package we're trying to install.
