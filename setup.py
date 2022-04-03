@@ -2,6 +2,10 @@ from setuptools import setup, find_packages
 import re
 
 
+print(find_packages())
+raise
+
+
 def read_version() -> str:
     """
     Don't import from the package we're trying to install.
@@ -32,7 +36,13 @@ setup(
     author_email='ps-na@thoughtspot.com',
     url='https://github.com/thoughtspot/cs_tools',
     license='MIT',
-    packages=find_packages(),
+    packages=[
+        'cs_tools',
+        'cs_tools.api',
+        'cs_tools.cli',
+        'cs_tools.data',
+        'cs_tools.sync',
+    ],
     include_package_data=True,
     install_requires=REQUIRED,
     python_requires='>=3.6',
