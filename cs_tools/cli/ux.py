@@ -2,6 +2,7 @@ from typing import List, Optional
 import itertools as it
 import logging
 import pathlib
+import sys
 import re
 
 from click.exceptions import UsageError
@@ -82,7 +83,7 @@ def show_version(ctx: click.Context, param: click.Parameter, value: str):
     """
     Show version.
     """
-    args = click.get_os_args()
+    args = sys.argv[1:]
 
     if '--version' not in args:
         return
@@ -143,7 +144,7 @@ def show_full_help(ctx: click.Context, param: click.Parameter, value: str):
     """
     ctx = click.get_current_context()
 
-    if '--helpfull' in click.get_os_args():
+    if '--helpfull' in sys.argv[1:]:
         for p in ctx.command.params:
             if p.name == 'private':
                 continue
@@ -393,7 +394,7 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
         help_option = self.get_help_option(ctx)
         version_option = self.get_version_option(ctx)
 
-        args = click.get_os_args()
+        args = sys.argv[1:]
 
         if (
             not args                                 # cs_tools
@@ -439,7 +440,7 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
                 rows.append((subcommand, help))
 
             if rows:
-                args = click.get_os_args()
+                args = sys.argv[1:]
 
                 if args == ['tools'] or args == ['tools', '--help']:
                     section = 'Tools'
