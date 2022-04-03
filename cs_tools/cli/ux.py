@@ -144,14 +144,14 @@ def show_full_help(ctx: click.Context, param: click.Parameter, value: str):
     ctx = click.get_current_context()
 
     if '--helpfull' in click.get_os_args():
-        for param in ctx.command.params:
-            if param.name == 'private':
+        for p in ctx.command.params:
+            if p.name == 'private':
                 continue
-            if 'backwards-compat' in param.help:
+            if 'backwards-compat' in p.help:
                 continue
 
-            param.hidden = False
-            param.show_envvar = True
+            p.hidden = False
+            p.show_envvar = True
 
     if value and not ctx.resilient_parsing:
         console.print(ctx.get_help())
@@ -229,12 +229,46 @@ def prettify_params(params: List[str], *, default_prefix: str='~!'):
     return [*options, *default]
 
 
-class CSToolsCommand(click.Command):
+class CSToolsPrettyMixin:
+
+    def get_help(self, ctx: click.Context) -> str:
+        """
+        Formats the help into a string and returns it.
+        """
+        formatter = ctx.make_formatter()
+        self.format_help(ctx, formatter)
+
+        with console.capture() as c:
+            console.print(formatter.getvalue().rstrip())
+
+        return c.get()
+
+    def format_options(self, ctx, formatter):
+        options = []
+
+        for p in self.get_params(ctx):
+            r = p.get_help_record(ctx)
+
+            if r is not None and isinstance(p, click.Option):
+                options.append(r)
+
+        if options:
+            *params, (help_names, help_desc) = options
+            help_names = sorted(help_names.split(', '), key=len)
+            help_ = (', '.join(help_names), help_desc)
+            options = [*prettify_params(params), help_]
+
+            with formatter.section('Options'):
+                formatter.write_dl(options)
+
+
+class CSToolsCommand(CSToolsPrettyMixin, click.Command):
     """
     """
     def __init__(self, **kw):
         self._dependencies = getattr(kw['callback'], '_dependencies', [])
-        [kw['params'].append(o) for d in self._dependencies for o in (d.options or [])]
+        self._extra_params = [o for d in self._dependencies for o in (d.options or [])]
+        kw['params'].extend(self._extra_params)
 
         if kw['options_metavar'] == '[OPTIONS]':
             metavar = ''
@@ -246,6 +280,7 @@ class CSToolsCommand(click.Command):
             kw['options_metavar'] = metavar
 
         super().__init__(**kw)
+        # self.no_args_is_help = True
 
     def _setup_dependencies(self, ctx, opts):
         ctx.ensure_object(State)
@@ -270,14 +305,16 @@ class CSToolsCommand(click.Command):
     def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
         """
         """
-        if not args and self.no_args_is_help and not ctx.resilient_parsing:
-            # echo(ctx.get_help(), color=ctx.color)
-            ctx.exit()
+        if set(ctx.help_option_names).intersection(set(args)):
+            show_full_help(ctx, None, True)
 
         try:
             parser = self.make_parser(ctx)
             opts, args, param_order = parser.parse_args(args=args)
             self._setup_dependencies(ctx, opts.copy())
+
+            # remove extra params
+            self.params = [p for p in self.params if p not in self._extra_params]
 
             for param in iter_params_for_processing(param_order, self.get_params(ctx)):
                 value, args = param.handle_parse_result(ctx, opts, args)
@@ -294,36 +331,8 @@ class CSToolsCommand(click.Command):
             show_error(e)
             raise typer.Exit(-1)
 
-        # remove extra arguments
-        for dep in self._dependencies:
-            for opt in dep.options:
-                if opt.name in ctx.params:
-                    ctx.params.pop(opt.name)
-
         ctx.args = args
         return args
-
-    def get_params(self, ctx: click.Context) -> List[click.Parameter]:
-        rv = self.params
-        help_option = self.get_help_option(ctx)
-        help_full_option = self.get_full_help_option(ctx)
-
-        if help_option is not None:
-            rv = [*rv, help_full_option, help_option]
-
-        return rv
-
-    def get_help(self, ctx: click.Context) -> str:
-        """
-        Formats the help into a string and returns it.
-        """
-        formatter = ctx.make_formatter()
-        self.format_help(ctx, formatter)
-
-        with console.capture() as c:
-            console.print(formatter.getvalue().rstrip())
-
-        return c.get()
 
     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         """
@@ -352,45 +361,12 @@ class CSToolsCommand(click.Command):
             with formatter.section('Arguments'):
                 formatter.write_dl(arguments)
 
-    def format_options(self, ctx, formatter):
-        options = []
 
-        for p in self.get_params(ctx):
-            r = p.get_help_record(ctx)
-
-            if r is not None and isinstance(p, click.Option):
-                options.append(r)
-
-        if options:
-            *params, help_full, help_ = options
-
-            if click.get_os_args()[0] == 'tools':
-                options = [*prettify_params(params), help_full, help_]
-            else:
-                options = [*prettify_params(params), help_]
-
-            with formatter.section('Options'):
-                formatter.write_dl(options)
-
-    # EXTRA METHODS
-
-    def get_full_help_option(self, ctx: click.Context) -> Optional[click.Option]:
-        """
-        Returns the help option object.
-        """
-        return click.Option(
-            ['--helpfull'],
-            is_flag=True,
-            is_eager=True,
-            expose_value=False,
-            callback=show_full_help,
-            help=('Show the full help message and exit.')
-        )
-
-
-class CSToolsGroup(click.Group):
+class CSToolsGroup(CSToolsPrettyMixin, click.Group):
     """
     """
+    command_class = CSToolsCommand
+    group_class = type
 
     def __init__(self, **kw):
         if kw['options_metavar'] == '[OPTIONS]':
@@ -399,8 +375,8 @@ class CSToolsGroup(click.Group):
         if kw['subcommand_metavar'] is None:
             kw['subcommand_metavar'] = '<command>'
 
-        kw['no_args_is_help'] = True
         super().__init__(**kw)
+        self.no_args_is_help = True
 
     # OVERRIDES
 
@@ -411,18 +387,6 @@ class CSToolsGroup(click.Group):
         except UsageError as e:
             show_error(e)
             raise typer.Exit(-1)
-
-    def get_help(self, ctx: click.Context) -> str:
-        """
-        Formats the help into a string and returns it.
-        """
-        formatter = ctx.make_formatter()
-        self.format_help(ctx, formatter)
-
-        with console.capture() as c:
-            console.print('\n', formatter.getvalue().rstrip())
-
-        return c.get()
 
     def get_params(self, ctx: click.Context) -> List[click.Parameter]:
         rv = self.params
@@ -484,6 +448,10 @@ class CSToolsGroup(click.Group):
 
                 with formatter.section(section):
                     formatter.write_dl(rows)
+
+    def format_options(self, ctx, formatter):
+        super().format_options(ctx, formatter)
+        self.format_commands(ctx, formatter)
 
     # EXTRA METHODS
 

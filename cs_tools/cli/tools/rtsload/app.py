@@ -5,7 +5,7 @@ from typer import Argument as A_, Option as O_
 import typer
 
 from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT
+from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
 from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
@@ -31,7 +31,7 @@ app = typer.Typer(
 @app.command(cls=CSToolsCommand)
 @depends(
     thoughtspot=common.setup_thoughtspot,
-    options=[CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT],
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
 def status(
@@ -75,7 +75,7 @@ def status(
 @app.command(cls=CSToolsCommand)
 @depends(
     thoughtspot=common.setup_thoughtspot,
-    options=[CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT],
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
 def file(

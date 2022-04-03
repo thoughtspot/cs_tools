@@ -5,7 +5,7 @@ from typer import Argument as A_, Option as O_
 import typer
 
 from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT
+from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 from cs_tools.cli.tools.common import setup_thoughtspot
 from .interactive import InteractiveTQL
@@ -31,7 +31,7 @@ app = typer.Typer(
 @app.command(cls=CSToolsCommand)
 @depends(
     thoughtspot=setup_thoughtspot,
-    options=[CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT],
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
 def interactive(
@@ -57,7 +57,7 @@ def interactive(
 @app.command(cls=CSToolsCommand)
 @depends(
     thoughtspot=setup_thoughtspot,
-    options=[CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT],
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
 def file(
@@ -81,7 +81,7 @@ def file(
 @app.command(cls=CSToolsCommand)
 @depends(
     thoughtspot=setup_thoughtspot,
-    options=[CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT],
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
 def command(

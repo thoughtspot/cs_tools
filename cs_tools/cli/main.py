@@ -45,7 +45,7 @@ app = typer.Typer(
     add_completion=False,
     context_settings={
         # global settings
-        'help_option_names': ['--help', '-h'],
+        'help_option_names': ['--help', '-h', '--helpfull'],
 
         # allow responsive console design
         'max_content_width':

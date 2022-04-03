@@ -8,7 +8,7 @@ import click
 import typer
 
 from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT
+from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.tools import common
 from cs_tools.cli.util import base64_to_file
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
@@ -52,7 +52,7 @@ app = typer.Typer(
 @app.command(cls=CSToolsCommand)
 @depends(
     thoughtspot=common.setup_thoughtspot,
-    options=[CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT],
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
 def identify(
@@ -208,7 +208,7 @@ def identify(
 @app.command(cls=CSToolsCommand)
 @depends(
     thoughtspot=common.setup_thoughtspot,
-    options=[CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT],
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
 def revert(
@@ -312,7 +312,7 @@ def revert(
 @app.command(cls=CSToolsCommand)
 @depends(
     thoughtspot=common.setup_thoughtspot,
-    options=[CONFIG_OPT, PASSWORD_OPT, VERBOSE_OPT],
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
 def remove(
