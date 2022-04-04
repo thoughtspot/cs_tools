@@ -136,6 +136,6 @@ dmypy.json
 *.sublime-project
 *.sublime-workspace
 !.gitdontignore
-dist/pkgs/*.whl
-dist/pkgs/*.zip
-dist/pkgs/*.tar.gz
+dist/**/*.whl
+dist/**/*.zip
+dist/**/*.tar.gz
