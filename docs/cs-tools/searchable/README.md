@@ -1,9 +1,8 @@
+<style>
+  .tabbed-block ul ul ul { columns: 3; }
+</style>
+
 # Searchable Content
-
-!!! caution "USE AT YOUR OWN RISK!"
-
-    *__This tool uses private API calls!__ These could change with any version update and
-    break the provided functionality.*
 
 This solution allows the customer to extract data on common ThoughtSpot metadata, and
 make that information searchable within the platform.
@@ -18,9 +17,10 @@ metadata object's modified/created time and the ThoughtSpot datetime function no
 This could give you early warning when a user is missing a dataset that could provide
 value to others in your platform.
 
+
 ## CLI preview
 
-=== "searchable-content --help"
+=== "searchable --help"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content --help
 
@@ -54,7 +54,7 @@ value to others in your platform.
       spotapp  Exports the SpotApp associated with this tool.
     ```
 
-=== "searchable-content gather"
+=== "searchable gather"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content gather --help
 
@@ -74,7 +74,7 @@ value to others in your platform.
       -h, --help                      Show this message and exit.
     ```
 
-=== "searchable-content spotapp"
+=== "searchable bi-server"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content spotapp --help
 
@@ -87,3 +87,65 @@ value to others in your platform.
       --helpfull          Show the full help message and exit.
       -h, --help          Show this message and exit.
     ```
+
+=== "searchable spotapp"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content spotapp --help
+
+    Usage: cs_tools tools searchable-content spotapp [--option, ..., --help]
+
+      Exports the SpotApp associated with this tool.
+
+    Options:
+      --export DIRECTORY  directory to save the spot app to
+      --helpfull          Show the full help message and exit.
+      -h, --help          Show this message and exit.
+    ```
+
+---
+
+## Changelog
+
+!!! tldr ":octicons-tag-16: v1.3.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-15"
+
+    === ":wrench: &nbsp; Modified"
+        - now known as simply Searchable, `searchable`
+            - includes metadata about..
+                - Tables
+                - Views
+                - Worksheets
+                - Answers
+                - Liveboards
+                - Dependencies
+                - Users
+                - Groups
+                - Privileges
+                - Tags
+                - Access Control
+                - TS: BI Server
+
+??? info "Changes History"
+
+    ??? tldr ":octicons-tag-16: v1.2.1 &nbsp; &nbsp; :material-calendar-text: 2021-11-09"
+        === ":wrench: &nbsp; Modified"
+            - now known as Searchable Content, `searchable-content`
+            - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+            - `tml` is now `spotapp` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+    ??? tldr ":octicons-tag-16: v1.2.0 &nbsp; &nbsp; :material-calendar-text: 2021-09-11"
+        === ":wrench: &nbsp; Modified"
+            - `ALTER TABLE` to support column dependencies [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+            - support for large clusters with API call batching [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+    ??? tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-25"
+        === ":wrench: &nbsp; Modified"
+            - Migrated to new app structure [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+    ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2020-08-18"
+        === ":hammer_and_wrench: &nbsp; Added"
+            - Initial re-release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+
+[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
+[semver]: https://semver.org/spec/v2.0.0.html
+[contrib-boonhapus]: https://github.com/boonhapus
