@@ -12,7 +12,7 @@ adoption within your ThoughtSpot environment.
 
 ### Advanced Tools
 
-Tools which are marked with a :see_no_evil: in the sidebar utilize unpublished, or
+Tools which are marked with a 🔐 in the sidebar utilize unpublished, or
 internal, API calls in your ThoughtSpot platform and thus ^^__could change with any
 version or release__^^{ .fc-coral }. You should not rely on them for production-critical
 workflows.
@@ -26,9 +26,8 @@ workflows.
     :material-github: &nbsp; __[Found a problem? Submit an issue.][gh-issue]{ target='secondary' .external-link }__</a>
 
 ```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
-
- Usage: cs_tools tools [--help] <tool>
+(.cs_tools) C:\work\thoughtspot>cstools tools
+Usage: cstools tools [--help] <tool>
 
   Run an installed tool.
 
@@ -36,13 +35,15 @@ workflows.
   functionality for clients who have a well-adopted platform.
 
 Options:
-  -h, --help  Show this message and exit.
+  -h, --help, --helpfull  Show this message and exit.
 
 Tools:
   archiver            Manage stale answers and pinboards within your platform.
+  bulk-deleter        Bulk delete metadata objects from your ThoughtSpot platform.
   extractor           Extract data from a worksheet, view, or table in your platform.
   rtql                Enable querying the ThoughtSpot TQL CLI from a remote machine.
   rtsload             Enable loading files to ThoughtSpot from a remote machine.
+  searchable          Explore your ThoughtSpot metadata, in ThoughtSpot!
   security-sharing    Scalably manage your table- and column-level security right in the browser.
   transfer-ownership  Transfer ownership of all objects from one user to another.
 ```

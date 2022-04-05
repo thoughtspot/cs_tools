@@ -11,7 +11,7 @@ hide:
   /* Skinny down and center the page */
   .md-content { max-width: 75%; margin: auto; }
   .md-button { width: 50%; text-align: center; margin: auto; }
-  .md-typeset .admonition { margin: 1%; min-width: 48%; min-height: calc(1rem * 5); }
+  .md-typeset .admonition { margin: 1%; min-width: 45%; min-height: calc(1rem * 6); }
 </style>
 
 <center>
@@ -33,7 +33,7 @@ follow the instructions down the page.
     an environment.
 
 <center>
-[:material-tools: &nbsp; cs_tools &nbsp;][gf]{ target='secondary' .md-button .md-button--primary }
+[:material-tools: &nbsp; get the tools &nbsp;][gf]{ target='secondary' .md-button .md-button--primary }
 </center>
 
 ---
@@ -124,28 +124,24 @@ follow the instructions down the page.
 </i></b></center>
 
 ```console
-(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools
-
- Usage: cs_tools [--version, --help] <command>
+(.cs_tools) C:\work\thoughtspot>cs_tools
+Usage: cs_tools [--version, --help] <command>
 
   Welcome to CS Tools!
 
-  These are scripts and utilities used to assist in the development, implementation, and 
-  administration of your ThoughtSpot platform.
+  These are scripts and utilities used to assist in the development, implementation, and administration of your ThoughtSpot platform.
 
-  All tools are provided as-is. While every effort has been made to test and certify use
-  of these tools in the various supported ThoughtSpot deployments, each environment is
-  different!
+  All tools are provided as-is. While every effort has been made to test and certify use of these tools in the various supported
+  ThoughtSpot deployments, each environment is different!
 
-  You should ALWAYS take a snapshot before you make any significant changes to your
-  environment!
+  You should ALWAYS take a snapshot before you make any significant changes to your environment!
 
   For additional help, please visit our documentation!
   https://thoughtspot.github.io/cs_tools/
 
 Options:
-  --version   Show the version and exit.
-  -h, --help  Show this message and exit.
+  --version               Show the version and exit.
+  -h, --help, --helpfull  Show this message and exit.
 
 Commands:
   config  Work with dedicated config files.

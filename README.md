@@ -1,15 +1,12 @@
 <p align="center">
   <a href="https://www.thoughtspot.com/">
-    <img width="350" src="docs/assets/logo_black.svg" alt='ThoughtSpot'>
+    <img width="400" src="docs/assets/cs_tools logo black.svg" alt='ThoughtSpot | CS Tools'>
   </a>
 </p>
 
-<p align="center"><strong>CS Tools</strong> <em>- field engineering tooling tuned for
-customer delight.</em></p>
-
-CS Tools is an initiative by the CS/PS team to collect, organize, analyze, improve, and
-streamline various field engineering tools existing today. This repository was
-introduced to form consistency in how we design and distribute our tools.
+CS Tools is a utility written by the ThoughtSpot Professional Services & Customer
+Success organizations, meant to augment built-in platform tools, help with
+administration of and enhance adoption within your ThoughtSpot environment.
 
 ---
 

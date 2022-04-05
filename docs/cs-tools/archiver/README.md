@@ -138,3 +138,16 @@ unused or unwanted content, optionally exporting it prior to removal.
       --helpfull             Show the full help message and exit.
       -h, --help             Show this message and exit.
     ```
+
+---
+
+## Changelog
+
+!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2020-11-01"
+    
+    === ":hammer_and_wrench: &nbsp; Added"
+        - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
+[semver]: https://semver.org/spec/v2.0.0.html
+[contrib-boonhapus]: https://github.com/boonhapus

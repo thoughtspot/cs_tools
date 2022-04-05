@@ -19,8 +19,10 @@ theme:
   font:
     text: Optimo-Plain
     code: BB Roller Mono
+
   icon:
     repo: fontawesome/brands/github
+
   logo: assets/logo_white.png
   name: material
 
@@ -51,10 +53,18 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
+      options:
+        custom_icons:
+          - assets/overrides/.icons
   - pymdownx.highlight
   - pymdownx.keys
   - pymdownx.mark
   - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tilde
@@ -82,49 +92,32 @@ nav:
   - Install: how-to/install-upgrade-cs-tools.md
   - Tools:
     - cs-tools/overview.md
-    - Archiver:
-      - archiver: cs-tools/archiver/README.md
-      - cs-tools/archiver/CHANGELOG.md
-    - Extractor:
-      - extractor: cs-tools/extractor/README.md
-      - cs-tools/extractor/CHANGELOG.md
-      # - "TS: BI Mirroring": cs-tools/extractor/TS_BI_RUNBOOK.md
-    - Remote TQL:
-      - rtql: cs-tools/rtql/README.md
-      - cs-tools/rtql/CHANGELOG.md
-    - Remote tsload:
-      - rtsload: cs-tools/rtsload/README.md
-      - cs-tools/rtsload/CHANGELOG.md
-    - Security Sharing:
-      - security-sharing: cs-tools/security-sharing/README.md
-      - cs-tools/security-sharing/CHANGELOG.md
-    - Transfer Ownership:
-      - transfer-ownership: cs-tools/transfer-ownership/README.md
-      # - How-To Guide: cs-tools/transfer-ownership/RUNBOOK.md
-      - cs-tools/transfer-ownership/CHANGELOG.md
-    - 🙈 Bulk Deleter:
-      - bulker-deleter: cs-tools/bulk-deleter/README.md
-      - cs-tools/bulk-deleter/CHANGELOG.md
-    - "🙈 Search: Content":
-      - searchable-content: cs-tools/searchable-content/README.md
-      # - How-To Guide: cs-tools/searchable-content/RUNBOOK.md
-      - cs-tools/searchable-content/CHANGELOG.md
-    - "🙈 Search: Dependencies":
-      - searchable-dependencies: cs-tools/searchable-dependencies/README.md
-      # - How-To Guide: cs-tools/searchable-dependencies/RUNBOOK.md
-      - cs-tools/searchable-dependencies/CHANGELOG.md
-    - "🙈 Search: Users & Groups":
-      - searchable-user-groups: cs-tools/searchable-user-groups/README.md
-      # - How-To Guide: cs-tools/searchable-user-groups/RUNBOOK.md
-      - cs-tools/searchable-user-groups/CHANGELOG.md
-    - 🙈 Sharding Recommender:
-      - sharding-recommender: cs-tools/sharding-recommender/README.md
-      # - How-To Guide: cs-tools/sharding-recommender/RUNBOOK.md
-      - cs-tools/sharding-recommender/CHANGELOG.md
+    - Archiver: cs-tools/archiver/README.md
+    - Extractor: cs-tools/extractor/README.md
+    - Remote TQL: cs-tools/rtql/README.md
+    - Remote tsload: cs-tools/rtsload/README.md
+    - Security Sharing: cs-tools/security-sharing/README.md
+    - Transfer Ownership: cs-tools/transfer-ownership/README.md
+    - Bulk Deleter: cs-tools/bulk-deleter/README.md
+    - Searchable: cs-tools/searchable/README.md
+    - 🔐 Sharding Recommender: cs-tools/sharding-recommender/README.md
+  - Syncers:
+    - "What's a Syncer?": syncer/what-is.md
+    - Syncer Protocol: syncer/protocol.md
+    - ThoughtSpot Falcon: syncer/falcon.md
+    - Snowflake: syncer/snowflake.md
+    - Google BigQuery: syncer/bigquery.md
+    - Amazon Redshift: syncer/redshift.md
+    - Google Sheets: syncer/gsheets.md
+    - Microsoft Excel: syncer/excel.md
+    - CSV: syncer/csv.md
+    - SQLite: syncer/sqlite.md
+    - JSON: syncer/json.md
   - How-to:
     - "Set up a Configuration File": how-to/configuration-file.md
     - "Scheduling Tools": how-to/scheduling-tool-commands.md
   - Changelog:
+    - v1.3.0: changelog/1.3.0.md
     - v1.2.0: changelog/1.2.0.md
     - v1.1.0: changelog/1.1.0.md
     - v1.0.0: changelog/1.0.0.md
