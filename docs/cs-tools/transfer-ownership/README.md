@@ -7,7 +7,7 @@ ThoughtSpot content needs to be saved. In this case, you may transfer all their 
 content to another designated owner.
 
 !!! caution "Compatibility Note"
-    In the default case, transfer of owned content from one user to another is a one-shot operation. If your ThoughtSpot platform is on the __September, 2021 Cloud__ release or the __Software 7.0.1__ release or newer, you can use the additional transfer options.
+    In the default case, transfer of owned content from one user to another is a one-shot operation. If your ThoughtSpot platform is on the __Latest Cloud__ release or the __Software 7.1.1__ release or newer, you can use the additional transfer options.
 
 ## CLI preview
 
@@ -47,3 +47,25 @@ content to another designated owner.
       --helpfull    Show the full help message and exit.
       -h, --help    Show this message and exit.
     ```
+
+---
+
+## Changelog
+
+!!! tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2021-11-01"
+
+    === ":hammer_and_wrench: &nbsp; Added"
+        - support for limited transfer of objects identified by GUID, or tag [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+    === ":wrench: &nbsp; Modified"
+        - `--from` and `--to` options moved to required arugments
+
+??? info "Changes History"
+
+    ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-25"
+        === ":hammer_and_wrench: &nbsp; Added"
+            - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
+[semver]: https://semver.org/spec/v2.0.0.html
+[contrib-boonhapus]: https://github.com/boonhapus

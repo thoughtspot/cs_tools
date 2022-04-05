@@ -73,5 +73,19 @@ See [Components of a search query][search-components].
       -h, --help                      Show this message and exit.
     ```
 
+---
+
+## Changelog
+
+!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2020-11-14"
+
+    === ":hammer_and_wrench: &nbsp; Added"
+        - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+---
+
 [tsbi]: https://cloud-docs.thoughtspot.com/admin/system-monitor/worksheets.html#description-of-system-worksheets-and-views
 [search-components]: https://docs.thoughtspot.com/software/latest/search-data-api#components
+[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
+[semver]: https://semver.org/spec/v2.0.0.html
+[contrib-boonhapus]: https://github.com/boonhapus

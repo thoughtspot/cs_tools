@@ -1,10 +1,5 @@
 # Bulk Deleter
 
-!!! caution "USE AT YOUR OWN RISK!"
-
-    *__This tool uses private API calls!__ These could change with any version update and
-    break the provided functionality.*
-
 This tool allows the customer to delete common ThoughtSpot metadata from command line
 args or file input. 
 
@@ -107,3 +102,25 @@ in if supplied to `bulk-deleter from-file`
       --helpfull                      Show the full help message and exit.
       -h, --help                      Show this message and exit.
     ```
+
+---
+
+## Changelog
+
+!!! tldr ":octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-11-09"
+
+    === ":wrench: &nbsp; Modified"
+        - now known as Bulk Deleter, `bulk-deleter`
+        - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+??? info "Changes History"
+
+    ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-08-24"
+        === ":hammer_and_wrench: &nbsp; Added"
+            - Initial release from [@dpm][contrib-dpm]{ target='secondary' .external-link }.
+
+
+[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
+[semver]: https://semver.org/spec/v2.0.0.html
+[contrib-boonhapus]: https://github.com/boonhapus
+[contrib-dpm]: https://github.com/DevinMcPherson-TS

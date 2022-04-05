@@ -75,3 +75,19 @@ the appropriate security settings for those group-table combinations.
       --helpfull                      Show the full help message and exit.
       -h, --help                      Show this message and exit.
     ```
+
+---
+
+## Changelog
+
+
+!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-08-17"
+
+    === ":hammer_and_wrench: &nbsp; Added"
+        - Initial release from [@mishathoughtspot][contrib-misha]{ target='secondary' .external-link }.
+
+---
+
+[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
+[semver]: https://semver.org/spec/v2.0.0.html
+[contrib-misha]: https://github.com/MishaThoughtSpot
