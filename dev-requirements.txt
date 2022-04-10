@@ -1,6 +1,13 @@
+# core requirements
 -r requirements.txt
 
+# docs
 mkdocs-material
+
+# test
 ward
 coverage
+nox
+
+# editable
 -e .
