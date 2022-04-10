@@ -142,7 +142,7 @@ if __name__ == '__main__':
     # install from requirements.txt
     log.info('installing packages from requirements.txt')
     reqs = HERE.parent / 'requirements.txt'
-    pip('install', '-r', reqs)
+    pip('install', '-r', reqs.as_posix())
 
     # download all packages..
     for platform_name, architectures in SUPPORTED_ARCHITECTURES.items():
