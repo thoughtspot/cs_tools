@@ -7,7 +7,7 @@ import nox
 
 ON_GITHUB = 'GITHUB_ACTIONS' in os.environ
 HERE = pathlib.Path(__file__).parent
-DIST = HERE.parent / 'dist'
+DIST = HERE / 'dist'
 
 
 nox.options.reuse_existing_virtualenvs = False
