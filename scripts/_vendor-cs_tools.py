@@ -39,11 +39,13 @@ import platform
 import logging
 import pathlib
 import sys
+import os
 
 
 log = logging.getLogger(__name__)
 HERE = pathlib.Path(__file__).parent
 DIST = HERE.parent / 'dist'
+ON_GITHUB = 'GITHUB_ACTIONS' in os.environ
 
 SUPPORTED_PYTHON_VERSIONS = ('3.6.8', '3.7', '3.8', '3.9', '3.10')
 SUPPORTED_ARCHITECTURES = {
@@ -111,9 +113,10 @@ def pip(*args) -> str:
 if __name__ == '__main__':
     logging.basicConfig(format='[%(asctime)s] %(message)s', datefmt='%H:%M:%S', level='INFO')
 
-    if not in_virtual_env():
-        log.warning('not running in virtual environment.. please activate it first!')
-        raise SystemExit(-1)
+    if not ON_GITHUB:
+        if not in_virtual_env():
+            log.warning('not running in virtual environment.. please activate it first!')
+            raise SystemExit(-1)
 
     try:
         import cs_tools
@@ -126,13 +129,15 @@ if __name__ == '__main__':
         raise SystemExit(-1)
 
     __version__ = cs_tools._version.__version__
-    # uninstall all dependencies and reset the environment
-    log.info('uninstalling all packages and deleting pip\'s cache')
-    now_frozen = pip('freeze').strip().split('\r\n')
-    reqs = [_ for _ in now_frozen if 'cs_tools' not in _ if _]
-    reqs.append('cs_tools')
-    pip('uninstall', '-y', *reqs)
-    pip('cache', 'purge')
+
+    if not ON_GITHUB:
+        # uninstall all dependencies and reset the environment
+        log.info('uninstalling all packages and deleting pip\'s cache')
+        now_frozen = pip('freeze').strip().split('\r\n')
+        reqs = [_ for _ in now_frozen if 'cs_tools' not in _ if _]
+        reqs.append('cs_tools')
+        pip('uninstall', '-y', *reqs)
+        pip('cache', 'purge')
 
     # install from requirements.txt
     log.info('installing packages from requirements.txt')
@@ -141,6 +146,9 @@ if __name__ == '__main__':
 
     # download all packages..
     for platform_name, architectures in SUPPORTED_ARCHITECTURES.items():
+        if ON_GITHUB and get_system_name() != platform_name:
+            continue
+
         log.info(f'downloading packages for {platform_name}..')
         for py_version in SUPPORTED_PYTHON_VERSIONS:
             log.info(f'\t on  py{py_version: <5}')
@@ -190,13 +198,14 @@ if __name__ == '__main__':
     
     try:
         assert a == t
-    except AssertionError as e:
+    except AssertionError:
         log.info(f'\t failed! ❌\n\t   [found: {a}, expecting: {t}]')
         raise
     else:
         log.info('\tsuccess! ✅')
 
-    # re-install from dev-requirements.txt
-    log.info('resetting environment from dev-requirements.txt')
-    reqs = HERE.parent / 'dev-requirements.txt'
-    pip('install', '-r', reqs)
+    if not ON_GITHUB:
+        # re-install from dev-requirements.txt
+        log.info('resetting environment from dev-requirements.txt')
+        reqs = HERE.parent / 'dev-requirements.txt'
+        pip('install', '-r', reqs)
