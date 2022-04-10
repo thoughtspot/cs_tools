@@ -36,11 +36,7 @@ def ensure_working_local_install(session: nox.Session):
         session.install('install', '-e', '.', silent=True)
 
         session.log('..vendoring packages')
-        session.run(
-            session.virtualenv.bin + '/python.exe',
-            HERE.as_posix() + '/scripts/_vendor-cs_tools.py',
-            silent=True
-        )
+        session.run('python', f'{HERE.as_posix()}/scripts/_vendor-cs_tools.py', silent=True)
 
         session.log('..resetting environment')
         p = pathlib.Path('_current_requirements.txt')
