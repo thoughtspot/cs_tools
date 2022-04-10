@@ -149,7 +149,7 @@ if __name__ == '__main__':
             continue
 
         if ON_GITHUB:
-            SUPPORTED_PYTHON_VERSIONS = (sys.version, )
+            SUPPORTED_PYTHON_VERSIONS = (platform.python_version(), )
 
         log.info(f'downloading packages for {platform_name}..')
 
@@ -163,10 +163,6 @@ if __name__ == '__main__':
         pip('download', 'pip>=20.3', '--dest', (DIST / platform_name).as_posix())
 
         for py_version in SUPPORTED_PYTHON_VERSIONS:
-            # github doesn't support <=py3.6.15
-            # if ON_GITHUB and py_version == '3.6.8':
-            #     py_version = '3.6.15'
-
             log.info(f'\t on  py{py_version: <5}')
             pip(
                 'download',
