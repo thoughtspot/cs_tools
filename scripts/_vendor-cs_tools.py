@@ -150,6 +150,7 @@ if __name__ == '__main__':
 
         if ON_GITHUB:
             *v, _ = platform.python_version_tuple()
+            v = (3, 6, 8) if v == (3, 6) else v
             SUPPORTED_PYTHON_VERSIONS = ('.'.join(v),)
 
         log.info(f'downloading packages for {platform_name}..')
