@@ -1,4 +1,3 @@
-from importlib.metadata import version
 from subprocess import PIPE, Popen
 from typing import List
 from types import ModuleType
@@ -11,6 +10,7 @@ import sys
 import os
 
 from cs_tools.sync.protocol import SyncerProtocol
+from cs_tools.sync._compat import version
 
 
 log = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def is_installed(package: str) -> bool:
             return False
 
         return installed_version in req
-    except importlib.metadata.PackageNotFoundError:
+    except ModuleNotFoundError:
         return False
 
 
