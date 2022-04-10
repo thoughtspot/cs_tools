@@ -49,9 +49,6 @@ ON_GITHUB = 'GITHUB_ACTIONS' in os.environ
 
 SUPPORTED_PYTHON_VERSIONS = ('3.6.8', '3.7', '3.8', '3.9', '3.10')
 SUPPORTED_ARCHITECTURES = {
-    'windows': (
-        'win_amd64',  # Who's running on win32 these days? :~)
-    ),
     'linux': (
         # more info: https://github.com/pypa/manylinux
         # 'manylinux_x_y',       # Future-proofing
@@ -63,6 +60,9 @@ SUPPORTED_ARCHITECTURES = {
         'macosx_11_x86_64',      # Big Sur  released 2020/11
         'macosx_10_15_x86_64',   # Catalina released 2019/10
         'macosx_10_14_x86_64',   # Mojave   released 2018/09
+    ),
+    'windows': (
+        'win_amd64',  # Who's running on win32 these days? :~)
     )
 }
 
@@ -113,10 +113,9 @@ def pip(*args) -> str:
 if __name__ == '__main__':
     logging.basicConfig(format='[%(asctime)s] %(message)s', datefmt='%H:%M:%S', level='INFO')
 
-    if not ON_GITHUB:
-        if not in_virtual_env():
-            log.warning('not running in virtual environment.. please activate it first!')
-            raise SystemExit(-1)
+    if not ON_GITHUB and not in_virtual_env():
+        log.warning('not running in virtual environment.. please activate it first!')
+        raise SystemExit(-1)
 
     try:
         import cs_tools
@@ -149,21 +148,34 @@ if __name__ == '__main__':
         if ON_GITHUB and get_system_name() != platform_name:
             continue
 
+        if ON_GITHUB:
+            SUPPORTED_PYTHON_VERSIONS = (sys.version, )
+
         log.info(f'downloading packages for {platform_name}..')
+
+        # this package is stupid and configured improperly, and only required on py36,
+        # but i can't have it in the requirements.txt because then pip download
+        # complains but it's literally the only package like that..
+        #
+        # i hate it.
+        pip('download', 'contextvars', '--dest', (DIST / platform_name).as_posix())
+        # also pip, for good measure
+        pip('download', 'pip>=20.3', '--dest', (DIST / platform_name).as_posix())
+
         for py_version in SUPPORTED_PYTHON_VERSIONS:
             # github doesn't support <=py3.6.15
-            if ON_GITHUB and py_version == '3.6.8':
-                py_version = '3.6.15'
+            # if ON_GITHUB and py_version == '3.6.8':
+            #     py_version = '3.6.15'
 
             log.info(f'\t on  py{py_version: <5}')
             pip(
                 'download',
                 '-r', reqs.as_posix(),
                 '--dest', (DIST / platform_name).as_posix(),
+                '--only-binary=:all:',
                 '--implementation', 'cp',
                 *it.chain.from_iterable(('--platform', f'{a}') for a in architectures),
-                '--python-version', py_version,
-                '--only-binary=:all:'
+                '--python-version', py_version
             )
 
         # vendor cs_tools itself
@@ -212,4 +224,4 @@ if __name__ == '__main__':
         # re-install from dev-requirements.txt
         log.info('resetting environment from dev-requirements.txt')
         reqs = HERE.parent / 'dev-requirements.txt'
-        pip('install', '-r', reqs)
+        pip('install', '-r', reqs.as_posix())

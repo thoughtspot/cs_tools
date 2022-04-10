@@ -30,15 +30,14 @@ def get_system_name() -> str:
 def ensure_working_local_install(session: nox.Session):
     """
     """
+    # install cs_tools    
+    session.install('install', '-e', '.', silent=True)
+    
+    # vendor packages across architectures
+    session.run('python', f'{HERE.as_posix()}/scripts/_vendor-cs_tools.py', silent=True)
+
+    # reset the environment    
     if ON_GITHUB:
-        session.log('on Github: must vendor packages first')
-        session.log('..installing cs_tools')
-        session.install('install', '-e', '.', silent=True)
-
-        session.log('..vendoring packages')
-        session.run('python', f'{HERE.as_posix()}/scripts/_vendor-cs_tools.py', silent=True)
-
-        session.log('..resetting environment')
         p = pathlib.Path('_current_requirements.txt')
         with p.open('w') as in_:
             session.run('pip', 'freeze', stdout=in_)
