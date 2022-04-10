@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Protocol, Any, Dict, List
+from typing import Any, Dict, List
 
 # also available
 from pydantic.dataclasses import dataclass
@@ -9,7 +9,7 @@ RECORDS_FORMAT = List[Dict[str, Any]]
 
 
 @dataclass
-class SyncerProtocol(Protocol):
+class SyncerProtocol:
     """
     Implements a way to load and dump data to a data source.
 
