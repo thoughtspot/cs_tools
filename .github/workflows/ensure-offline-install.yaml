@@ -1,4 +1,4 @@
-name: Ensure local install option works across distributions.
+name: Ensure cross-platform local install.
 
 on:
   push:
@@ -32,4 +32,4 @@ jobs:
           pip install --upgrade nox
 
       - run: |
-          nox
+          nox --sessions ensure_working_local_install
