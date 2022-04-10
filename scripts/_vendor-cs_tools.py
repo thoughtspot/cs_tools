@@ -146,8 +146,8 @@ if __name__ == '__main__':
             log.info(f'\t on  py{py_version: <5}')
             pip(
                 'download',
-                '-r', reqs,
-                '--dest', DIST / platform_name,
+                '-r', reqs.as_posix(),
+                '--dest', (DIST / platform_name).as_posix(),
                 '--implementation', 'cp',
                 *it.chain.from_iterable(('--platform', f'{a}') for a in architectures),
                 '--python-version', py_version,
