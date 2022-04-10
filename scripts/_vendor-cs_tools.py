@@ -149,7 +149,8 @@ if __name__ == '__main__':
             continue
 
         if ON_GITHUB:
-            SUPPORTED_PYTHON_VERSIONS = (platform.python_version(), )
+            *v, _ = platform.python_version_tuple()
+            SUPPORTED_PYTHON_VERSIONS = ('.'.join(v),)
 
         log.info(f'downloading packages for {platform_name}..')
 
