@@ -74,3 +74,17 @@ The following additional features are planned for the near future:
       --helpfull                      Show the full help message and exit.
       -h, --help                      Show this message and exit.
     ```
+
+---
+
+## Changelog
+
+!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-15"
+    === ":hammer_and_wrench: &nbsp; Added"
+    - Initial release [@billdback-ts][contrib-billdback-ts]{ target='secondary' .external-link }.
+
+---
+
+[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
+[semver]: https://semver.org/spec/v2.0.0.html
+[contrib-billdback-ts]: https://github.com/billdback-ts

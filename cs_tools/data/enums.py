@@ -89,3 +89,30 @@ class ResultsFormat(enum.Enum):
 class PermissionType(enum.Enum):
     inherited = 'EFFECTIVE'
     explicit = 'DEFINED' 
+
+
+class TMLType(enum.Enum):
+    json = 'JSON'
+    yaml = 'YAML'
+
+
+class TMLImportPolicy(enum.Enum):
+    partial = 'PARTIAL'
+    all_or_none = 'ALL_OR_NONE'
+    validate_only = 'VALIDATE_ONLY'
+
+
+class TMLContentType(enum.Enum):
+    table = 'table'
+    worksheet = 'worksheet'
+    liveboard = 'liveboard'  # currently (as of 8.2) this will be pinboard, but future proofing.
+    pinboard = 'pinboard'
+    answer = 'answer'
+    view = 'sql_view'
+
+
+class DownloadableContent(enum.Enum):
+    saved_answer = 'QUESTION_ANSWER_BOOK'
+    pinboard = 'PINBOARD_ANSWER_BOOK'
+    logical_table = 'LOGICAL_TABLE'
+    data_source = 'DATA_SOURCE'

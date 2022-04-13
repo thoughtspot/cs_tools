@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Union
+from typing import List
 import logging
 
 from pydantic import validate_arguments
 
-from cs_tools._enums import GUID
+from cs_tools.data.enums import GUID
 
 
 log = logging.getLogger(__name__)
@@ -46,19 +46,19 @@ class ConnectionMiddleware:
             },
         ]
         """
-
         tables = []
 
         r = self.ts.api._connection.detail(id=id, pattern=pattern, tagname=tagname, showhidden=showhidden)
-        json_tables = r.json()['tables']
-        for _ in json_tables:
-            h = _['header']
+
+        for table in r.json()['tables']:
+            header = table['header']
+
             tables.append({
-                "id": h['id'],
-                "description": h['description'],
-                "name": h['name'],
-                "subtype": h['type'],
-                "isHidden": h['isHidden']
+                "id": header['id'],
+                "description": header['description'],
+                "name": header['name'],
+                "subtype": header['type'],
+                "isHidden": header['isHidden']
             })
 
         return tables

@@ -8,25 +8,27 @@
 import datetime
 import json
 import pathlib
-import requests
-from thoughtspot_tml import *
+import click
+# import requests   # use httpx
+from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
 from typer import Argument as A_, Option as O_  # noqa
 from typing import Dict, List
 import typer
-import yaml
 from zipfile import ZipFile
 
 from cs_tools import util
-from cs_tools._enums import GUID, TMLImportPolicy, TMLType, TMLContentType
-from cs_tools.middlewares import ConnectionMiddleware
-from cs_tools.helpers.cli_ux import _csv, console, CSToolsCommand, CSToolsGroup, frontend
-from cs_tools.settings import TSConfig
+from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType
+from cs_tools.api.middlewares import ConnectionMiddleware
+from cs_tools.cli.ux import _csv, console, CSToolsCommand, CSToolsGroup
+from cs_tools.cli.tools import common
 from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools.cli.dependency import depends
+from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 
 
-def strip_blanks(list: List[str]) -> List[str]:
-    return [l for l in list if l]
+def strip_blanks(inp: List[str]) -> List[str]:
+    return [e for e in inp if e]
 
 
 app = typer.Typer(
@@ -58,8 +60,13 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=common.setup_thoughtspot,
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
+    enter_exit=True
+)
 def export(
+        ctx: click.Context,
         tags: List[str] = O_([], metavar='TAGS',
                              callback=_csv,
                              help='list of tags to export for'),
@@ -77,14 +84,12 @@ def export(
             metavar='DIR',
             dir_okay=True,
             resolve_path=True
-        ),
-        **frontend_kw
-) -> None:
+        )
+):
     if not path.is_dir():
         console.stderr(f"[bold red]Only directories are supported for export.  {path} is not a directory.[/]")
 
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
-
+    ts = ctx.obj.thoughtspot
     export_ids = strip_blanks(export_ids)
     tags = strip_blanks(tags)
 
@@ -96,40 +101,37 @@ def export(
     # if associated - get all the guids, then get the mapping of types, then call to use edoc
     # if not associated - get all the guids, then call export
 
-    with ThoughtSpot(cfg) as ts:
-        if tags:
-            export_ids.extend(ts.metadata.get_object_ids_with_tags(tags))
+    if tags:
+        export_ids.extend(ts.metadata.get_object_ids_with_tags(tags))
 
-        if not export_associated:
-            with console.status(f"[bold green]exporting ${export_ids} without associated content.[/]"):
-                r = ts.api.metadata.tml_export(export_ids=export_ids,
-                                               format_type=TMLType.yaml.value,  # format_type=format_type
-                                               export_associated=export_associated)
+    if not export_associated:
+        with console.status(f"[bold green]exporting ${export_ids} without associated content.[/]"):
+            r = ts.api.metadata.tml_export(export_ids=export_ids,
+                                           format_type=TMLType.yaml.value,  # format_type=format_type
+                                           export_associated=export_associated)
 
-                # TODO - add code to check that I got something back and handle errors.
-                objects = r.json().get('object', [])
-                for _ in objects:
-                    status = _['info']['status']
-                    if not status['status_code'] == 'OK':  # usually access errors.
-                        console.log(f"[bold red]unable to get {_['info']['name']}: {_['info']['status']}[/]")
+            # TODO - add code to check that I got something back and handle errors.
+            objects = r.json().get('object', [])
+            for _ in objects:
+                status = _['info']['status']
+                if not status['status_code'] == 'OK':  # usually access errors.
+                    console.log(f"[bold red]unable to get {_['info']['name']}: {_['info']['status']}[/]")
 
-                    else:
-                        console.log(f"{_['info']['filename']} (OK)")
-                        _write_tml_obj_to_file(path=path, tml=_)
+                else:
+                    console.log(f"{_['info']['filename']} (OK)")
+                    _write_tml_obj_to_file(path=path, tml=_)
 
-        else:  # getting associated, so get the full pack.
-            with console.status(f"[bold green]exporting ${export_ids} with associated content.[/]"):
-                object_list = ts.metadata.get_edoc_object_list(export_ids)
-                r = ts.api._metadata.edoc_export_epack(
-                    {
-                        "object": object_list,
-                        "export_dependencies": True
-                    }
-                )
-                console.log(r)
-                _write_tml_package_to_file(path=path, contents=r.json()['zip_file'])
-
-    return None
+    else:  # getting associated, so get the full pack.
+        with console.status(f"[bold green]exporting ${export_ids} with associated content.[/]"):
+            object_list = ts.metadata.get_edoc_object_list(export_ids)
+            r = ts.api._metadata.edoc_export_epack(
+                {
+                    "object": object_list,
+                    "export_dependencies": True
+                }
+            )
+            console.log(r)
+            _write_tml_package_to_file(path=path, contents=r.json()['zip_file'])
 
 
 def _write_tml_obj_to_file(path: pathlib.Path, tml: str) -> None:
@@ -180,8 +182,13 @@ def _write_tml_package_to_file(path: pathlib.Path, contents: str) -> None:
 
 
 @app.command(cls=CSToolsCommand)
-@frontend
+@depends(
+    thoughtspot=common.setup_thoughtspot,
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
+    enter_exit=True
+)
 def upload(  # can't use import, since that's a reserved word.
+        ctx: click.Context,
         path: pathlib.Path = A_(
             ...,
             help='full path to the TML file or directory to upload.',
@@ -195,9 +202,8 @@ def upload(  # can't use import, since that's a reserved word.
                                 help="If true, will force a new object to be created."),
         connection: str = O_(None,
                              help="GUID for the target connection if tables need to be mapped to a new connection."),
-        **frontend_kw
-) -> None:
-    cfg = TSConfig.from_cli_args(**frontend_kw, interactive=True)
+):
+    ts = ctx.obj.thoughtspot
     connection = GUID(connection)
 
     if not path.exists():
@@ -210,49 +216,44 @@ def upload(  # can't use import, since that's a reserved word.
         console.log(f"[bold green]importing {path.name} with policy {import_policy.value}.[/]")
 
     tml = []  # array of TML to update
+    files = []
+    if path.is_dir():
+        file_list = list(f for f in path.iterdir() if f.match("*.tml"))
+        for f in file_list:
+            console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
 
-    with ThoughtSpot(cfg) as ts:
-
-        files = []
-        if path.is_dir():
-            file_list = list(f for f in path.iterdir() if f.match("*.tml"))
-            for f in file_list:
-                console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
-
-            for p in file_list:
-                if not p.is_dir():  # don't currently support sub-folders.  Might add later.
-                    tmlobj = _load_tml_from_file(ts=ts, path=p, connection=connection)
-                    if tmlobj.content_type == TMLContentType.table.value:
-                        console.log(f"[bold red]Table import not currently supported.  Ignoring {p}.[/]")
-                    else:
-                        files.append(p.name)
-                        tml.append(tmlobj.tml)
-        else:
-            # TODO - consider supporting .zip files in the future by extracting the files.
-            # TODO - currently tables aren't supported.
-            if not path.name.endswith(".tml"):
-                console.log(f"[bold red]Only TML files are currently supported.[/]")
-            else:
-                tmlobj = _load_tml_from_file(ts=ts, path=path, connection=connection)
-                if tmlobj.content_type == TMLContentType.table:
-                    console.log(f"[bold red]Table import not currently selected.  Ignoring file.[/]")
+        for p in file_list:
+            if not p.is_dir():  # don't currently support sub-folders.  Might add later.
+                tmlobj = _load_tml_from_file(ts=ts, path=p, connection=connection)
+                if tmlobj.content_type == TMLContentType.table.value:
+                    console.log(f"[bold red]Table import not currently supported.  Ignoring {p}.[/]")
                 else:
+                    files.append(p.name)
                     tml.append(tmlobj.tml)
+    else:
+        # TODO - consider supporting .zip files in the future by extracting the files.
+        # TODO - currently tables aren't supported.
+        if not path.name.endswith(".tml"):
+            console.log("[bold red]Only TML files are currently supported.[/]")
+        else:
+            tmlobj = _load_tml_from_file(ts=ts, path=path, connection=connection)
+            if tmlobj.content_type == TMLContentType.table:
+                console.log("[bold red]Table import not currently selected.  Ignoring file.[/]")
+            else:
+                tml.append(tmlobj.tml)
 
-        with console.status(f"[bold green]importing {path.name}[/]"):
-            r = ts.api.metadata.tml_import(import_objects=tml,
-                                           import_policy=import_policy.value,
-                                           force_create=force_create)
-            resp = _flatten_tml_response(r)
-            fcnt = 0
-            for _ in resp:
-                if _['status_code'] == 'ERROR':
-                    console.log(f"[bold red]{files[fcnt]} {_['status_code']}: {_['error_message']} ({_['error_code']})[/]")
-                else:
-                    console.log(f"{files[fcnt]} {_['status_code']}: {_['name']} ({_['type']}::{_['guid']})")
-                fcnt += 1
-
-    return None
+    with console.status(f"[bold green]importing {path.name}[/]"):
+        r = ts.api.metadata.tml_import(import_objects=tml,
+                                       import_policy=import_policy.value,
+                                       force_create=force_create)
+        resp = _flatten_tml_response(r)
+        fcnt = 0
+        for _ in resp:
+            if _['status_code'] == 'ERROR':
+                console.log(f"[bold red]{files[fcnt]} {_['status_code']}: {_['error_message']} ({_['error_code']})[/]")
+            else:
+                console.log(f"{files[fcnt]} {_['status_code']}: {_['name']} ({_['type']}::{_['guid']})")
+            fcnt += 1
 
 
 def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path, connection: GUID = None) -> TML:
@@ -310,31 +311,30 @@ def _flatten_tml_response(r: Dict) -> [Dict]:
     return flat
 
 
-def raise_tml_errors(response: requests.Response) -> Dict:
-    if len(response.content) == 0:
-        raise Exception(f'No response returned at all with status code {response.status_code}')
-    else:
-        j = response.json()
-        # JSON error response checking
-        if 'object' in j:
-            for k in j['object']:
-                if 'info' in k:
-                    # Older versions wrapped the errors in 'info'
-                    if k['info']['status']['status_code'] == 'ERROR':
-                        # print(k['info']['status']['error_message'])
-                        raise SyntaxError(k['info']['status']['error_message'])
-                    else:
-                        return response.json()
-                # Recent versions return as 'response'
-                elif 'response' in k:
-                    if k['response']['status']['status_code'] == 'ERROR':
-                        # print(k['info']['status']['error_message'])
-                        raise SyntaxError(k['response']['status']['error_message'])
-                    else:
-                        return response.json()
-                else:
-                    return response.json()
+# def raise_tml_errors(response: requests.Response) -> Dict:
+#     if len(response.content) == 0:
+#         raise Exception(f'No response returned at all with status code {response.status_code}')
+#     else:
+#         j = response.json()
+#         # JSON error response checking
+#         if 'object' in j:
+#             for k in j['object']:
+#                 if 'info' in k:
+#                     # Older versions wrapped the errors in 'info'
+#                     if k['info']['status']['status_code'] == 'ERROR':
+#                         # print(k['info']['status']['error_message'])
+#                         raise SyntaxError(k['info']['status']['error_message'])
+#                     else:
+#                         return response.json()
+#                 # Recent versions return as 'response'
+#                 elif 'response' in k:
+#                     if k['response']['status']['status_code'] == 'ERROR':
+#                         # print(k['info']['status']['error_message'])
+#                         raise SyntaxError(k['response']['status']['error_message'])
+#                     else:
+#                         return response.json()
+#                 else:
+#                     return response.json()
 
-        else:
-            return response.json()
-
+#         else:
+#             return response.json()

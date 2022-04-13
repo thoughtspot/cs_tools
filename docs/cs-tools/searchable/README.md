@@ -146,6 +146,4 @@ value to others in your platform.
             - Initial re-release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 
-[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
-[semver]: https://semver.org/spec/v2.0.0.html
 [contrib-boonhapus]: https://github.com/boonhapus
