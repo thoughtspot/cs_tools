@@ -11,6 +11,8 @@ edit_uri: tree/docs/docs/
 copyright: Copyright &copy; 2021 ThoughtSpot Inc. All Rights Reserved
 
 theme:
+  name: material
+  logo: assets/logo_white.png
   features:
     - header.autohide
     - navigation.instant
@@ -22,9 +24,6 @@ theme:
 
   icon:
     repo: fontawesome/brands/github
-
-  logo: assets/logo_white.png
-  name: material
 
   palette:
     - media: "(prefers-color-scheme: light)"

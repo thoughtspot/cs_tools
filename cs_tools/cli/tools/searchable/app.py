@@ -4,10 +4,10 @@ import logging
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
+from cs_tools.cli.tools.common import setup_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
-from cs_tools.cli.tools.common import setup_thoughtspot
 
 from . import transform
 
@@ -57,10 +57,10 @@ def bi_server(
 
     ts = ctx.obj.thoughtspot
 
-    with console.status('[bold green]getting TS: BI Server data..[/]'):
+    with console.status('[bold green]getting TS: BI Server data..'):
         data = ts.search(SEARCH_TOKENS, worksheet='TS: BI Server')
 
-    with console.status(f'[bold green]writing TS: BI Server to {export.name}..[/]'):
+    with console.status(f'[bold green]writing TS: BI Server to {export.name}..'):
         seed = dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         renamed = [
             {
@@ -113,10 +113,10 @@ def gather(
     """
     ts = ctx.obj.thoughtspot
 
-    with console.status('[bold green]getting groups..[/]'):
+    with console.status('[bold green]getting groups..'):
         r = ts.api.request('GET', 'group', privacy='public')
 
-    with console.status(f'[bold green]writing groups to {export.name}..[/]'):
+    with console.status(f'[bold green]writing groups to {export.name}..'):
         data = transform.to_group(r.json())
         export.dump('ts_group', data=data)
 
@@ -126,37 +126,37 @@ def gather(
         data = transform.to_principal_association(r.json())
         export.dump('ts_xref_principal', data=data)
 
-    with console.status('[bold green]getting users..[/]'):
+    with console.status('[bold green]getting users..'):
         r = ts.api.request('GET', 'user', privacy='public')
 
-    with console.status(f'[bold green]writing users to {export.name}..[/]'):
+    with console.status(f'[bold green]writing users to {export.name}..'):
         data = transform.to_user(r.json())
         export.dump('ts_user', data=data)
 
         data = transform.to_principal_association(r.json())
         export.dump('ts_xref_principal', data=data)
 
-    with console.status('[bold green]getting tags..[/]'):
+    with console.status('[bold green]getting tags..'):
         r = ts.tag.all()
 
-    with console.status(f'[bold green]writing tags to {export.name}..[/]'):
+    with console.status(f'[bold green]writing tags to {export.name}..'):
         data = transform.to_tag(r)
         export.dump('ts_tag', data=data)
 
-    with console.status('[bold green]getting metadata..[/]'):
+    with console.status('[bold green]getting metadata..'):
         content = ts.metadata.all(
                     include_columns=include_columns,
                     exclude_system_content=False
                 )
 
-    with console.status(f'[bold green]writing metadata to {export.name}..[/]'):
+    with console.status(f'[bold green]writing metadata to {export.name}..'):
         data = transform.to_metadata_object(content)
         export.dump('ts_metadata_object', data=data)
 
         data = transform.to_tagged_object(content)
         export.dump('ts_tagged_object', data=data)
 
-    with console.status('[bold green]getting dependents..[/]'):
+    with console.status('[bold green]getting dependents..'):
         types = (
             'LOGICAL_TABLE', 'ONE_TO_ONE_LOGICAL', 'USER_DEFINED', 'WORKSHEET',
             'AGGR_WORKSHEET', 'MATERIALIZED_VIEW', 'SQL_VIEW'
@@ -169,11 +169,11 @@ def gather(
             _ = ts.metadata.dependents(guids, for_columns=include_columns)
             r.extend(_)
 
-    with console.status(f'[bold green]writing dependents to {export.name}..[/]'):
+    with console.status(f'[bold green]writing dependents to {export.name}..'):
         data = transform.to_dependent_object(r)
         export.dump('ts_dependent_object', data=data)
 
-    with console.status('[bold green]getting sharing access..[/]'):
+    with console.status('[bold green]getting sharing access..'):
         types = {
             'QUESTION_ANSWER_BOOK': ('QUESTION_ANSWER_BOOK', ),
             'PINBOARD_ANSWER_BOOK': ('PINBOARD_ANSWER_BOOK', ),
@@ -200,5 +200,5 @@ def gather(
             #
             # r = ts.metadata.permissions(guids, type=type_, permission_type='EFFECTIVE')
 
-    with console.status(f'[bold green]writing sharing access to {export.name}..[/]'):
+    with console.status(f'[bold green]writing sharing access to {export.name}..'):
         export.dump('ts_sharing_access', data=data)

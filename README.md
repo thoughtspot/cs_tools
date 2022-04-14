@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://www.thoughtspot.com/">
-    <img width="400" src="docs/assets/cs_tools logo black.svg" alt='ThoughtSpot | CS Tools'>
+    <img width="400" src="docs/assets/cs_tools logo black.png" alt='ThoughtSpot | CS Tools'>
   </a>
 </p>
 

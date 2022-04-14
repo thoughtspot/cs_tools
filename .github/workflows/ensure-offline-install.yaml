@@ -3,7 +3,7 @@ name: Ensure cross-platform local install
 on:
   push:
     branches: 
-      - sql-connector
+      - dev
 
 jobs:
 
