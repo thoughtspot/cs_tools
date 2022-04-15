@@ -4,8 +4,8 @@ import json
 from pydantic import validate_arguments
 import httpx
 
-from cs_tools.util import stringified_array
-from cs_tools._enums import (
+from cs_tools.api.util import stringified_array
+from cs_tools.data.enums import (
     GUID,
     SortOrder,
 )

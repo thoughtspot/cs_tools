@@ -6,13 +6,15 @@ import httpx
 
 from cs_tools.api.util import stringified_array
 from cs_tools.data.enums import (
+    AccessLevel,
     GUID,
     MetadataObject,
     MetadataObjectSubtype,
     MetadataCategory,
+    Principal,
     SortOrder,
-    AccessLevel,
-    Principal
+    TMLImportPolicy,
+    TMLType,
 )
 
 
@@ -367,4 +369,53 @@ class Metadata:
                     'version': version
                 }
             )
+        return r
+
+    @validate_arguments
+    def tml_export(
+        self,
+        export_ids: List[GUID],
+        format_type: TMLType = TMLType.yaml,
+        export_associated: bool = False,
+    ) -> httpx.Response:
+        """
+        Details of one or more metadata objects in the repository.
+        """
+        r = self.rest_api.request(
+                'POST',
+                'metadata/tml/export',
+                privacy='public',
+                data={
+                    'export_ids': stringified_array(export_ids),
+                    'format_type': format_type.value,
+                    'export_associated': export_associated
+                }
+            )
+        return r
+
+    @validate_arguments
+    def tml_import(
+            self,
+            import_objects: List[str],
+            import_policy: TMLImportPolicy = TMLImportPolicy.validate_only,
+            force_create: bool = False,
+    ) -> httpx.Response:
+        """
+        Details of one or more metadata objects in the repository.
+        :param import_objects: List of TML objects as YAML format
+        :param import_policy: The import policy to use (q.v.)
+        :param force_create: If true, force creation of new objects.
+        """
+
+        r = self.rest_api.request(
+            'POST',
+            'metadata/tml/import',
+            headers={'Accept': 'text/plain'},
+            privacy='public',
+            data={
+                'import_objects': json.dumps(import_objects),
+                'import_policy': import_policy.value,
+                'force_create': str(force_create).lower()
+            }
+        )
         return r

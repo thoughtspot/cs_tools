@@ -1,10 +1,10 @@
+import typing
 import enum
+import uuid
 
 
-class GUID(str):
-    """
-    Purely for the sake of annotation documentation.
-    """
+# Purely for the sake of annotation documentation.
+GUID = typing.cast(uuid.UUID, str)
 
 
 class AccessLevel(enum.Enum):

@@ -4,7 +4,7 @@ import logging
 from pydantic import validate_arguments
 
 from cs_tools.data.enums import (
-    GUID, MetadataCategory, MetadataObject, MetadataObjectSubtype, PermissionType
+    DownloadableContent, GUID, MetadataCategory, MetadataObject, MetadataObjectSubtype, PermissionType,
 )
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.util import chunks
@@ -263,7 +263,10 @@ class MetadataMiddleware:
                 offset += len(data)
 
                 for metadata in data['headers']:
-                    mapped_guids.append({"id": metadata["id"], "type": self.map_subtype_to_type(metadata.get("type"))})
+                    if metadata_type == DownloadableContent.logical_table:
+                        mapped_guids.append({"id": metadata["id"], "type": self.map_subtype_to_type(metadata.get("type"))})
+                    else:
+                        mapped_guids.append({"id": metadata["id"], "type": metadata_type.value})
 
                 if data['isLastBatch']:
                     break
@@ -304,13 +307,13 @@ class MetadataMiddleware:
 
     @classmethod
     @validate_arguments
-    def map_subtype_to_type(self, subtype: str) -> str:
+    def map_subtype_to_type(self, subtype: Union[str,None]) -> str:
         """
         Takes a string subtype and maps to a type.  Only LOGICAL_TABLES have sub-types.
         :param subtype: The subtype to map, such as WORKSHEET
         :return: The type for the subtype, such as LOGICAL_TABLE or the subtype.
         """
-        if subtype in set(t.value for t in LogicalTableSubtype):
+        if subtype in set(t.value for t in MetadataObjectSubtype):
             return DownloadableContent.logical_table.value
 
         return subtype

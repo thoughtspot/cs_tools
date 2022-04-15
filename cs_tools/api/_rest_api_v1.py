@@ -4,6 +4,7 @@ import copy
 import httpx
 
 from cs_tools.api.models import (
+    _Connection,
     _Dependency,
     _Metadata,
     _Periscope,
@@ -46,6 +47,7 @@ class _RESTAPIv1:
         self.user = User(self)
 
         # private API endpoints
+        self._connection = _Connection(self)
         self._dependency = _Dependency(self)
         self._metadata = _Metadata(self)
         self._periscope = _Periscope(self)

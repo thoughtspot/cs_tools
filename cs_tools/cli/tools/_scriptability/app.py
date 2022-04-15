@@ -2,7 +2,10 @@
 #
 # Future enhancements:
 #   - add tags on upload
+#   - add support for GUID mapping across instances of ThoughtSpot
 #   - ability to manipulate objects, such as renaming references to worksheets and tables, token replacement, etc.
+#   - add support for uploading .zip files
+#   - add support for tables and connections
 #
 
 import datetime
@@ -13,7 +16,7 @@ import click
 from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
 from typer import Argument as A_, Option as O_  # noqa
-from typing import Dict, List
+from typing import Dict, List, Optional
 import typer
 from zipfile import ZipFile
 
@@ -22,6 +25,7 @@ from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType
 from cs_tools.api.middlewares import ConnectionMiddleware
 from cs_tools.cli.ux import _csv, console, CSToolsCommand, CSToolsGroup
 from cs_tools.cli.tools import common
+from cs_tools.cli.util import base64_to_file
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
@@ -73,7 +77,7 @@ def export(
         export_ids: List[str] = O_([], metavar='GUIDS',
                                     callback=_csv,
                                     help='list of guids to export'),
-        # TODO - consider JSON format in the future.  Not currently needed.
+        # consider JSON format in the future.  Not currently needed.
         # format_type: TMLType = O_(TMLType.yaml.value,
         #                  help=f'if specified, format to export, either {TMLType.yaml.value} or {TMLType.json.value}'),
         export_associated: bool = O_(False,
@@ -110,7 +114,6 @@ def export(
                                            format_type=TMLType.yaml.value,  # format_type=format_type
                                            export_associated=export_associated)
 
-            # TODO - add code to check that I got something back and handle errors.
             objects = r.json().get('object', [])
             for _ in objects:
                 status = _['info']['status']
@@ -164,7 +167,7 @@ def _write_tml_package_to_file(path: pathlib.Path, contents: str) -> None:
     """
     now = datetime.datetime.now().strftime("_%Y%m%d_%H%M%S")
     filepath = path / f"{now}.scriptability.zip"
-    util.base64_to_file(contents, filepath=filepath)
+    base64_to_file(contents, filepath=filepath)
 
     try:
         with ZipFile(filepath, 'r') as zippy:
@@ -200,11 +203,11 @@ def upload(  # can't use import, since that's a reserved word.
                                             help="The import policy type"),
         force_create: bool = O_(False,
                                 help="If true, will force a new object to be created."),
-        connection: str = O_(None,
+        connection: Optional[GUID] = O_(None,
                              help="GUID for the target connection if tables need to be mapped to a new connection."),
 ):
     ts = ctx.obj.thoughtspot
-    connection = GUID(connection)
+    # connection = GUID(connection) if connection else None
 
     if not path.exists():
         console.stderr(f"[bold red]Error: {path} doesn't exist[/]")
@@ -218,29 +221,16 @@ def upload(  # can't use import, since that's a reserved word.
     tml = []  # array of TML to update
     files = []
     if path.is_dir():
-        file_list = list(f for f in path.iterdir() if f.match("*.tml"))
-        for f in file_list:
-            console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
-
-        for p in file_list:
+        for p in list(f for f in path.iterdir() if f.match("*.tml")):
             if not p.is_dir():  # don't currently support sub-folders.  Might add later.
-                tmlobj = _load_tml_from_file(ts=ts, path=p, connection=connection)
-                if tmlobj.content_type == TMLContentType.table.value:
-                    console.log(f"[bold red]Table import not currently supported.  Ignoring {p}.[/]")
-                else:
-                    files.append(p.name)
-                    tml.append(tmlobj.tml)
+                files.append(p)
+                _load_and_append_tml_file(ts=ts, path=p, connection=connection, force_create=force_create, tml_list=tml)
     else:
-        # TODO - consider supporting .zip files in the future by extracting the files.
-        # TODO - currently tables aren't supported.
-        if not path.name.endswith(".tml"):
-            console.log("[bold red]Only TML files are currently supported.[/]")
-        else:
-            tmlobj = _load_tml_from_file(ts=ts, path=path, connection=connection)
-            if tmlobj.content_type == TMLContentType.table:
-                console.log("[bold red]Table import not currently selected.  Ignoring file.[/]")
-            else:
-                tml.append(tmlobj.tml)
+        files.append(path)
+        _load_and_append_tml_file(ts=ts, path=path, connection=connection, force_create=force_create, tml_list=tml)
+
+    for f in files:
+        console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
 
     with console.status(f"[bold green]importing {path.name}[/]"):
         r = ts.api.metadata.tml_import(import_objects=tml,
@@ -252,8 +242,39 @@ def upload(  # can't use import, since that's a reserved word.
             if _['status_code'] == 'ERROR':
                 console.log(f"[bold red]{files[fcnt]} {_['status_code']}: {_['error_message']} ({_['error_code']})[/]")
             else:
-                console.log(f"{files[fcnt]} {_['status_code']}: {_['name']} ({_['type']}::{_['guid']})")
+                console.log(f"{files[fcnt]} {_['status_code']}: {_['name']} ({_['metadata_type']}::{_['guid']})")
             fcnt += 1
+
+
+def _load_and_append_tml_file(
+        ts: ThoughtSpot,
+        path: pathlib.Path,
+        connection: GUID,
+        force_create: bool,
+        tml_list: List[str]) -> None:
+    """
+    Loads a TML file from the path, getting table mappings if needed.  Then strip GUID if creating new.
+    :param ts: The ThoughtSpot interface.
+    :param path:  The file path.
+    :param connection:  The connection to map to (optional).
+    :param force_create: If true, files are being created.
+    :param tml_list: A list that is being appended to.  Might get updated.
+    :return: None
+    """
+
+    if path.is_dir():
+        return
+
+    if not path.name.endswith(".tml"):
+        console.log("[bold red]Only TML (.tml) files are supported.[/]")
+
+    tmlobj = _load_tml_from_file(ts=ts, path=path, connection=connection)
+    if tmlobj.content_type == TMLContentType.table:
+        console.log("[bold red]Table import not currently selected.  Ignoring file.[/]")
+    else:
+        if force_create:
+            tmlobj.remove_guid()
+        tml_list.append(YAMLTML.dump_tml_object(tmlobj))
 
 
 def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path, connection: GUID = None) -> TML:
@@ -268,7 +289,7 @@ def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path, connection: GUID = 
 
     tmlobj = YAMLTML.get_tml_object(tml_yaml_str=tmlstr)
 
-    cnx = ConnectionMiddleware(ts) if connection else None
+    cnx = ts.connection if connection else None
 
     if tmlobj.content_type == TMLContentType.worksheet.value and connection:
         tmlobj = tmlobj
@@ -294,19 +315,21 @@ def _flatten_tml_response(r: Dict) -> [Dict]:
     flat = []
 
     text = json.loads(r.text)
-    for _ in text['object']:
-        resp = {'status_code': _['response']['status']['status_code']}
-        if resp['status_code'] == 'OK':
-            h = _['response']['header']
-            resp['guid'] = h.get('id_guid', 'UNKNOWN')
-            resp['name'] = h.get('name', 'UNKNOWN')
-            resp['type'] = h.get('type', 'UNKNOWN')
-            resp['metadata_type'] = h.get('metadata_type', 'UNKNOWN')
-        else:
-            resp['error_code'] = _['response']['status']['error_code']
-            resp['error_message'] = _['response']['status']['error_message'].replace('<br/>', '')
+    if text:
+        for _ in text['object']:
+            resp = {'status_code': _['response']['status']['status_code']}
+            if resp['status_code'] == 'OK':
+                h = _['response']['header']
+                resp['guid'] = h.get('id_guid', 'UNKNOWN')
+                resp['name'] = h.get('name', 'UNKNOWN')
+                resp['type'] = h.get('type', 'UNKNOWN')
+                resp['metadata_type'] = h.get('metadata_type', 'UNKNOWN')
+            else:
+                status = _['response']['status']
+                resp['error_code'] = status.get('error_code', '')
+                resp['error_message'] = status['error_message'].replace('<br/>', '')
 
-        flat.append(resp)
+            flat.append(resp)
 
     return flat
 
