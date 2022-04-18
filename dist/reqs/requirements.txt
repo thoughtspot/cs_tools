@@ -23,6 +23,7 @@ oyaml
 rich
 starlette
 sqlmodel
+thoughtspot-tml
 toml
 typer
 uvicorn
