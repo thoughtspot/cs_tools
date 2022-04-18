@@ -95,14 +95,14 @@ nav:
     - Remote TQL: cs-tools/rtql/README.md
     - Remote tsload: cs-tools/rtsload/README.md
     - Security Sharing: cs-tools/security-sharing/README.md
-    - Transfer Ownership: cs-tools/transfer-ownership/README.md
+    - User Management: cs-tools/user-management/README.md
     - Bulk Deleter: cs-tools/bulk-deleter/README.md
     - Searchable: cs-tools/searchable/README.md
     - 🔐 Scriptability: cs-tools/scriptability/README.md
     - 🔐 Sharding Recommender: cs-tools/sharding-recommender/README.md
   - Syncers:
     - "What's a Syncer?": syncer/what-is.md
-    - Syncer Protocol: syncer/protocol.md
+    - The Protocol: syncer/protocol.md
     - ThoughtSpot Falcon: syncer/falcon.md
     - Snowflake: syncer/snowflake.md
     - Google BigQuery: syncer/bigquery.md

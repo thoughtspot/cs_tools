@@ -3,74 +3,30 @@ hide:
   - toc
 ---
 
-Defining a syncer allows CS Tools to interact with a data storage layer without having
-to know the explicit details how to do so.
-
-If your use case for interacting ThoughtSpot API data isn't supported by the built-in
-syncers in CS Tools, we've exposed an interface for defining a custom syncer so that you
-can inject your own.
+If your use case for interacting with the ThoughtSpot API data isn't supported by the
+built-in syncers in CS Tools, we've exposed an interface for defining a custom syncer so
+that you can inject your own.
 
 ---
 
-<center>
-``` mermaid
-graph LR
-  A[ThoughtSpot] --> B{{CS Tools}};
-  B -.- | contains | C{Syncer};
-  C ---> | dump | D[Snowflake];
-  D ---> | load | C;
+To follow the Syncer protocol, you must provide at least..
 
-  %% style A justify:contents,fill:#f9f,stroke:#333
+  - A `class` in `syncer.py` which has at least 3 members: `.name`, `.load()`, `.dump()`
+  - `MANIFEST.json` which tells CS Tools how to register your custom syncer
+
+..while a typical project directory follows the below format.
+
 ```
-</center>
-
-To follow the Syncer protocol, you must..
-- define a class in syncer.py with 3 members   .name, .load(), .dump()
-- not override cls.__init__()
-
-Users will provide a DEFINITION.toml file to configure the behavior of a
-syncer. The details of each definition are relevant to which syncer is to
-be used. For example if you are to use the Excel syncer, you might specify
-a filepath to the target workbook, while if you use the Database syncer,
-the target database connection details might be required.
-
-If you are defining a custom syncer, there are 2-3 additional requirements:
-
-- a MANIFEST.json in the same path as syncer.py, with top-level keys..
-  - `name`, the protocol name, e.g. "gsheets" for google sheets
-  - `syncer_class`, the class name of your syncer protocol in syncer.py
-  - optional `requirements`, an array in pip-friendly requirements spec
-
-- the DEFINITION.toml must have a top-level reference for
-  `manifest` which is the absolute filepath to your MANIFEST.json
-
-- if you are implementing a database-specific syncer, you must also
-  define a truthy attribute `__is_database__`, which triggers creation
-  tables of tables in the database. (Pro tip: register a sqlalchemy
-  listener for after_create to capture .metadata!)
-
-Data is expressed to and from the syncer in standardized json format. The
-data should behave like a list of flat dictionaries. This format is most
-similar to how you would conceptualize an ANSI SQL table in-memory.
-
-```python
-data = [
-    {'guid': '308da7a3-cac0-42c8-bb74-3b05ba9281a3', 'username': 'tsadmin', ...},
-    {'guid': 'c0fcfcdd-e7a9-404b-9aab-f541a8d7fed3', 'username': 'cs_tools', ...},
-    ...,
-    {'guid': '1b3c6f8d-9dc5-4515-a4fc-c47bfbad4bce', 'username': 'namey.namerson', ...}
-]
+<custom-syncer>
+├─ __init__.py
+├─ ...
+├─ syncer.py
+└─ MANIFEST.json
 ```
 
-** It is recommended to use either standard library or pydantic's
-`dataclasses.dataclass` for your Syncer. This is primarily so you can
-augment instance creation and setup through the use of the __post_init__ or
-__post_init__post_parse__ methods. Only a single Syncer will be created per
-run.
-
-    See below references for more information.
-      https://docs.python.org/3/library/dataclasses.html
-      https://pydantic-docs.helpmanual.io/usage/dataclasses
+Outside of these two file requirements, you are free to augment the interface in any way
+you want! Custom Syncers are simply ad-hoc pure python packages, so you're able to
+leverage the full python ecosystem.
 
 !!! hint "Tip"
 
@@ -78,6 +34,7 @@ run.
     follow the 3 core requirements of defining a `.name` attribute, as well as `.load()`
     and `.dump()` members.
 
+### `syncer.py`
 
 ```python
 from dataclasses import dataclass
@@ -120,3 +77,70 @@ class SyncerProtocol:
           data to persist
         """
 ```
+
+
+??? info "Implementing a Database Syncer?"
+
+    Lorem ipsum..
+
+Data is expressed to and from the syncer in standardized json format. The data should
+behave like a list of flat dictionaries. This format is most similar to how you would
+receive data back from many REST and DB-APIs.
+
+```python
+data = [
+    {'guid': '308da7a3-cac0-42c8-bb74-3b05ba9281a3', 'username': 'tsadmin', ...},
+    {'guid': 'c0fcfcdd-e7a9-404b-9aab-f541a8d7fed3', 'username': 'cs_tools', ...},
+    ...,
+    {'guid': '1b3c6f8d-9dc5-4515-a4fc-c47bfbad4bce', 'username': 'namey.namerson', ...}
+]
+```
+
+!!! tip "Tip"
+
+    It's highly recommended to either the standard library's or pydantic's `dataclass`
+    paradigm for your Syncer. This will easily allow you to set up your syncer without
+    overriding the `__init__` method.
+
+    If you're using `dataclasses`, leverage the `__post_init__` method.
+
+    If you're using `pydantic`, leverage the `__post_init__post_parse__` method.
+
+    **See below references for more information.**
+     
+      - [`dataclasses.dataclass`](https://docs.python.org/3/library/dataclasses.html) 
+      - [`pydantic.dataclasses.dataclass`](https://pydantic-docs.helpmanual.io/usage/dataclasses)
+
+---
+
+The other required file is a MANIFEST which tells CS Tools how to utilize your Syncer.
+This JSON file should live in same directory as your `syncer.py`. It should contain 
+top-level keys in order to inform CS Tools how to set it up.
+
+> `name`: the name of your custom syncer protocol
+
+> `syncer_class`: the python class which contains your syncer's code
+
+> `requirements`: an array of pip-friendly requirements to have installed prior to code
+execution
+
+### `MANIFEST.json`
+
+```json
+{
+    "name": "<custom-syncer>",
+    "syncer_class": "CustomSyncer",
+    "requirements": [
+        "package>=X.Y.Z"
+    ]
+}
+```
+
+??? example "See it in action"
+
+    Want to see example code of how to implement your own syncer? Check out the built-in
+    ones!
+
+    - [CSV](https://github.com/thoughtspot/cs_tools/tree/master/cs_tools/sync/csv){ .external-link }
+    - [SQLite](https://github.com/thoughtspot/cs_tools/tree/master/cs_tools/sync/sqlite){ .external-link }
+    - [Snowflake](https://github.com/thoughtspot/cs_tools/tree/master/cs_tools/sync/snowflake){ .external-link }
