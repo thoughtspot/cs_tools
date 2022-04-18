@@ -170,7 +170,7 @@ def identify(
                 caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} in platform)'
             )
 
-    console.log('\n', table)
+    console.log('\n', table, justify='center')
 
     if report is not None:
         common.to_csv(to_archive, fp=report, header=True)
@@ -271,7 +271,7 @@ def revert(
                 caption=f'Total of {len(to_unarchive)} items tagged..'
             )
 
-    console.log('\n', table)
+    console.log('\n', table, justify='center')
 
     if report is not None:
         common.to_csv(to_unarchive, fp=report, header=True)
@@ -402,7 +402,7 @@ def remove(
                 caption=f'Total of {len(to_unarchive)} items tagged..'
             )
 
-    console.log('\n', table)
+    console.log('\n', table, justify='center')
 
     if report is not None:
         common.to_csv(to_unarchive, fp=report, header=True)

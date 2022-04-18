@@ -117,14 +117,12 @@ def gather(
         r = ts.api.request('GET', 'group', privacy='public')
 
     with console.status(f'[bold green]writing groups to {export.name}..'):
+        xref = transform.to_principal_association(r.json())
         data = transform.to_group(r.json())
         export.dump('ts_group', data=data)
 
         data = transform.to_group_privilege(r.json())
         export.dump('ts_group_privilege', data=data)
-
-        data = transform.to_principal_association(r.json())
-        export.dump('ts_xref_principal', data=data)
 
     with console.status('[bold green]getting users..'):
         r = ts.api.request('GET', 'user', privacy='public')
@@ -133,8 +131,9 @@ def gather(
         data = transform.to_user(r.json())
         export.dump('ts_user', data=data)
 
-        data = transform.to_principal_association(r.json())
+        data = [*xref, *transform.to_principal_association(r.json())]
         export.dump('ts_xref_principal', data=data)
+        del xref
 
     with console.status('[bold green]getting tags..'):
         r = ts.tag.all()

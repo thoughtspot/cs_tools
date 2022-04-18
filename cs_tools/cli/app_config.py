@@ -63,7 +63,7 @@ def show(
     for file in configs:
         name = file.stem[len('cluster-cfg_'):]
 
-        if name == meta['default']['config']:
+        if meta and name == meta['default']['config']:
             name += '\t[green]<-- default[/]'
 
         console.print(f"  - {name}")

@@ -363,7 +363,7 @@ class Metadata:
                 privacy='public',
                 params={
                     'type': type.value,
-                    'id': id,
+                    'id': stringified_array(id),
                     'showhidden': showhidden,
                     'dropquestiondetails': dropquestiondetails,
                     'version': version

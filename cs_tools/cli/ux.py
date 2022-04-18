@@ -42,7 +42,13 @@ class CommaSeparatedValuesType(click.ParamType):
         param: click.Parameter = None,
         ctx: click.Context = None
     ) -> List[str]:
-        return list(it.chain.from_iterable([v.split(',') for v in value]))
+        if value is None:
+            return None
+
+        if not isinstance(value, tuple):
+            value = (value, )
+
+        return list(it.chain.from_iterable(v.split(',') for v in value))
 
 
 class SyncerProtocolType(click.ParamType):
@@ -57,8 +63,8 @@ class SyncerProtocolType(click.ParamType):
         param: click.Parameter = None,
         ctx: click.Context = None
     ) -> SyncerProtocol:
-        # if value is None:
-        #     return value
+        if value is None:
+            return value
 
         proto, definition = value.split('://')
         cfg = toml.load(definition)

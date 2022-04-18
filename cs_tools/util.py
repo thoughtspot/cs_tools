@@ -12,10 +12,10 @@ def to_datetime(timestamp: int, *, unit: str='s') -> dt.datetime:
     Mostly offers a nice API to the datetime library.
     """
     _units = {
-         's': 1.0,
-        'ms': 1_000.0,
-        'us': 1_000_000.0,
-        'ns': 1_000_000_000.0
+         's': 1,
+        'ms': 1_000,
+        'us': 1_000_000,
+        'ns': 1_000_000_000
     }
 
     try:
