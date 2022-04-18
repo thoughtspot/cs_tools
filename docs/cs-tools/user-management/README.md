@@ -1,4 +1,4 @@
-# Transfer Ownership
+# User Management
 
 This solution allows the customer to transfer objects from one user to another.
 
