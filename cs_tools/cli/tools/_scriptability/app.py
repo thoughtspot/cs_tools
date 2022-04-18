@@ -1,10 +1,10 @@
 # DEV NOTE:
 #
 # Future enhancements:
-#   - add tags on upload
+#   - add tags on import
 #   - add support for GUID mapping across instances of ThoughtSpot
 #   - ability to manipulate objects, such as renaming references to worksheets and tables, token replacement, etc.
-#   - add support for uploading .zip files
+#   - add support for importing .zip files
 #   - add support for tables and connections
 #
 
@@ -12,7 +12,6 @@ import datetime
 import json
 import pathlib
 import click
-# import requests   # use httpx
 from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
 from typer import Argument as A_, Option as O_  # noqa
@@ -23,7 +22,7 @@ from zipfile import ZipFile
 from cs_tools import util
 from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType
 from cs_tools.api.middlewares import ConnectionMiddleware
-from cs_tools.cli.ux import _csv, console, CSToolsCommand, CSToolsGroup
+from cs_tools.cli.ux import _csv, console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
 from cs_tools.cli.tools import common
 from cs_tools.cli.util import base64_to_file
 from cs_tools.thoughtspot import ThoughtSpot
@@ -40,23 +39,13 @@ app = typer.Typer(
     Tool for easily migrating TML between clusters.
 
     ThoughtSpot provides the ability to extract object metadata (tables, worksheets, liveboards, etc.) 
-    in ThoughtSpot Modeling Language (TML) format, which is a text format based on YAML.  These files 
-    can be modified and uploaded into another instance. These files can then be modified and imported 
-    into another (or the same) instance to either create or modify objects.
+    in ThoughtSpot Modeling Language (TML) format, which is a text format based on YAML.  
+    These files can then be modified and imported into another (or the same) instance to either create 
+    or modify objects.
 
-      cs_tools tools scriptability-migration --help
+      cs_tools tools scriptability --help
     
     \f
-    TODO - add more details on using the tools and a workflow.
-    
-    DEV NOTE:
-
-      Two control characters are offered in order to help with
-      docstrings in typer App helptext and command helptext
-      (docstrings).
-
-      \b - Preserve Whitespace / formatting.
-      \f - EOF, don't include anything after this character in helptext.
     """,
     cls=CSToolsGroup,
     options_metavar='[--version, --help]'
@@ -72,13 +61,13 @@ app = typer.Typer(
 def export(
         ctx: click.Context,
         tags: List[str] = O_([], metavar='TAGS',
-                             callback=_csv,
-                             help='list of tags to export for'),
+                             callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+                             help='comma separated list of tags to export'),
         export_ids: List[str] = O_([], metavar='GUIDS',
-                                    callback=_csv,
-                                    help='list of guids to export'),
+                                   callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+                                   help='comma separated list of guids to export'),
         # consider JSON format in the future.  Not currently needed.
-        # format_type: TMLType = O_(TMLType.yaml.value,
+        # formattype: TMLType = O_(TMLType.yaml.value,
         #                  help=f'if specified, format to export, either {TMLType.yaml.value} or {TMLType.json.value}'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
@@ -90,8 +79,12 @@ def export(
             resolve_path=True
         )
 ):
+    """
+    Exports TML as YAML from ThoughtSpot.
+    """
     if not path.is_dir():
         console.stderr(f"[bold red]Only directories are supported for export.  {path} is not a directory.[/]")
+        raise typer.Exit(-1)
 
     ts = ctx.obj.thoughtspot
     export_ids = strip_blanks(export_ids)
@@ -109,9 +102,9 @@ def export(
         export_ids.extend(ts.metadata.get_object_ids_with_tags(tags))
 
     if not export_associated:
-        with console.status(f"[bold green]exporting ${export_ids} without associated content.[/]"):
+        with console.status(f"[bold green]exporting {export_ids} without associated content.[/]"):
             r = ts.api.metadata.tml_export(export_ids=export_ids,
-                                           format_type=TMLType.yaml.value,  # format_type=format_type
+                                           formattype=TMLType.yaml.value,  # formattype=formattype
                                            export_associated=export_associated)
 
             objects = r.json().get('object', [])
@@ -125,7 +118,7 @@ def export(
                     _write_tml_obj_to_file(path=path, tml=_)
 
     else:  # getting associated, so get the full pack.
-        with console.status(f"[bold green]exporting ${export_ids} with associated content.[/]"):
+        with console.status(f"[bold green]exporting {export_ids} with associated content.[/]"):
             object_list = ts.metadata.get_edoc_object_list(export_ids)
             r = ts.api._metadata.edoc_export_epack(
                 {
@@ -184,17 +177,17 @@ def _write_tml_package_to_file(path: pathlib.Path, contents: str) -> None:
         console.stderr(f"[bold red]{err}[/]")
 
 
-@app.command(cls=CSToolsCommand)
+@app.command(name='import', cls=CSToolsCommand)
 @depends(
     thoughtspot=common.setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
-def upload(  # can't use import, since that's a reserved word.
+def import_(
         ctx: click.Context,
         path: pathlib.Path = A_(
             ...,
-            help='full path to the TML file or directory to upload.',
+            help='full path to the TML file or directory to import.',
             metavar='FILE_OR_DIR',
             dir_okay=True,
             resolve_path=True
@@ -206,12 +199,14 @@ def upload(  # can't use import, since that's a reserved word.
         connection: Optional[GUID] = O_(None,
                              help="GUID for the target connection if tables need to be mapped to a new connection."),
 ):
+    """
+    Import TML from a file or directory into ThoughtSpot.
+    """
     ts = ctx.obj.thoughtspot
-    # connection = GUID(connection) if connection else None
 
     if not path.exists():
         console.stderr(f"[bold red]Error: {path} doesn't exist[/]")
-        exit(-1)
+        raise typer.Exit(-1)
 
     if import_policy == TMLImportPolicy.validate_only:
         console.log(f"[bold green]validating {path.name}.[/]")
@@ -332,32 +327,3 @@ def _flatten_tml_response(r: Dict) -> [Dict]:
             flat.append(resp)
 
     return flat
-
-
-# def raise_tml_errors(response: requests.Response) -> Dict:
-#     if len(response.content) == 0:
-#         raise Exception(f'No response returned at all with status code {response.status_code}')
-#     else:
-#         j = response.json()
-#         # JSON error response checking
-#         if 'object' in j:
-#             for k in j['object']:
-#                 if 'info' in k:
-#                     # Older versions wrapped the errors in 'info'
-#                     if k['info']['status']['status_code'] == 'ERROR':
-#                         # print(k['info']['status']['error_message'])
-#                         raise SyntaxError(k['info']['status']['error_message'])
-#                     else:
-#                         return response.json()
-#                 # Recent versions return as 'response'
-#                 elif 'response' in k:
-#                     if k['response']['status']['status_code'] == 'ERROR':
-#                         # print(k['info']['status']['error_message'])
-#                         raise SyntaxError(k['response']['status']['error_message'])
-#                     else:
-#                         return response.json()
-#                 else:
-#                     return response.json()
-
-#         else:
-#             return response.json()

@@ -5,9 +5,9 @@
     *__This tool uses private API calls!__ These could change with any version update and
     break the provided functionality.*
 
-This tool allows user to simplify and automate the extract and upload (import) of ThoughtSpot TML from and to the same or different instances.
+This tool allows user to simplify and automate the extract and import of ThoughtSpot TML from and to the same or different instances.
 
-There are several use cases where extracting and upload TML is useful:
+There are several use cases where extracting and importing TML is useful:
 
 1. Extract TML for version control.
 2. Extract TML for migration to a different ThoughtSpot instance.
@@ -21,44 +21,46 @@ Note that this is v1.0.0 of the software and should be considered a first, minim
 
 The following are some limitations of the existing software:
 
-* Connections and tables cannot be uploaded
+* Connections and tables cannot be imported
 * Content that is migrated to a new cluster is created as new unless GIUDs are manually modified in the TML files
 
 The following additional features are planned for the near future:
 
 * Map GUIDs from the old instance to the new instance in order to update content
 * Share content with users
-* Add tags to the uploaded content
+* Add tags to the imported content
 
 ## CLI preview
 
 === "scriptability export --help"
     ```console 
-    $ cs_tools tools scriptability export --help
+    Usage: cs_tools tools scriptability export --config IDENTIFIER [--option, ...,
+                                               --help]
 
-    Usage: cs_tools tools scriptability export [--option, ..., --help]
+    Exports TML as YAML from ThoughtSpot.
 
     Options:
-      --tags TAGS                     list of tags to export for
-      --export-ids GUIDS              list of guids to export
+      --tags TAGS                     comma separated list of tags to export
+      --export-ids GUIDS              comma separated list of guids to export
       --export-associated / --no-export-associated
                                       if specified, also export related content
                                       (default: no-export-
                                       associated)
       --path DIR                      full path (directory) to save data set to
-      --helpfull                      Show the full help message and exit.
-      -h, --help                      Show this message and exit.
-
+      --config IDENTIFIER             config file identifier
+                                      (required)
+      -h, --help, --helpfull          Show this message and exit.
     ```
 
-=== "scriptability upload --help"
+=== "scriptability import --help"
     ```console 
-    $ cs_tools tools scriptability upload --help
+    Usage: cs_tools tools scriptability import --config IDENTIFIER [--option, ...,
+                                               --help] FILE_OR_DIR
 
-    Usage: cs_tools tools scriptability upload [--option, ..., --help] FILE_OR_DIR
+    Import TML from a file or directory into ThoughtSpot.
 
     Arguments:
-      FILE_OR_DIR  full path to the TML file or directory to upload.
+      FILE_OR_DIR  full path to the TML file or directory to import.
                    (required)
 
     Options:
@@ -71,8 +73,9 @@ The following additional features are planned for the near future:
                                       force-create)
       --connection TEXT               GUID for the target connection if tables
                                       need to be mapped to a new connection.
-      --helpfull                      Show the full help message and exit.
-      -h, --help                      Show this message and exit.
+      --config IDENTIFIER             config file identifier
+                                      (required)
+      -h, --help, --helpfull          Show this message and exit.
     ```
 
 ---

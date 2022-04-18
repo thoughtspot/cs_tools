@@ -375,7 +375,7 @@ class Metadata:
     def tml_export(
         self,
         export_ids: List[GUID],
-        format_type: TMLType = TMLType.yaml,
+        formattype: TMLType = TMLType.yaml,
         export_associated: bool = False,
     ) -> httpx.Response:
         """
@@ -387,7 +387,7 @@ class Metadata:
                 privacy='public',
                 data={
                     'export_ids': stringified_array(export_ids),
-                    'format_type': format_type.value,
+                    'formattype': formattype.value,
                     'export_associated': export_associated
                 }
             )
