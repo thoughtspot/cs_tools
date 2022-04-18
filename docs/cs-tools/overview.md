@@ -26,26 +26,26 @@ workflows.
     :material-github: &nbsp; __[Found a problem? Submit an issue.][gh-issue]{ target='secondary' .external-link }__</a>
 
 ```console
-(.cs_tools) C:\work\thoughtspot>cstools tools
-Usage: cstools tools [--help] <tool>
+(.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
+Usage: cs_tools tools [--help] <tool>
 
   Run an installed tool.
 
-  Tools are a collection of different scripts to perform different functions which aren't native to the ThoughtSpot or advanced
-  functionality for clients who have a well-adopted platform.
+  Tools are a collection of different scripts to perform different functions which aren't native to the ThoughtSpot or
+  advanced functionality for clients who have a well-adopted platform.
 
 Options:
   -h, --help, --helpfull  Show this message and exit.
 
 Tools:
-  archiver            Manage stale answers and pinboards within your platform.
-  bulk-deleter        Bulk delete metadata objects from your ThoughtSpot platform.
-  extractor           Extract data from a worksheet, view, or table in your platform.
-  rtql                Enable querying the ThoughtSpot TQL CLI from a remote machine.
-  rtsload             Enable loading files to ThoughtSpot from a remote machine.
-  searchable          Explore your ThoughtSpot metadata, in ThoughtSpot!
-  security-sharing    Scalably manage your table- and column-level security right in the browser.
-  transfer-ownership  Transfer ownership of all objects from one user to another.
+  archiver          Manage stale answers and pinboards within your platform.
+  bulk-deleter      Bulk delete metadata objects from your ThoughtSpot platform.
+  extractor         Extract data from a worksheet, view, or table in your platform.
+  rtql              Enable querying the ThoughtSpot TQL CLI from a remote machine.
+  rtsload           Enable loading files to ThoughtSpot from a remote machine.
+  searchable        Explore your ThoughtSpot metadata, in ThoughtSpot!
+  security-sharing  Scalably manage your table- and column-level security right in the browser.
+  user-management   Managing Users and Groups in bulk.
 ```
 
 [docs-install]: ../../how-to/install-upgrade-cs-tools
