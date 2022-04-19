@@ -32,8 +32,9 @@ class Falcon:
         self.engine = sa.engine.create_mock_engine('sqlite://', self.intercept_create_table)
         self._thoughtspot = ctx.obj.thoughtspot
 
-        # create the database if it doesn't exist
+        # create the database and schema if it doesn't exist
         self.ts.tql.command(command=f'CREATE DATABASE {self.database};')
+        self.ts.tql.command(command=f'CREATE SCHEMA {self.database}.{self.schema_};')
 
         # decorators must be declared here, SQLAlchemy doesn't care about instances
         sa.event.listen(sa.schema.MetaData, 'after_create', self.capture_metadata)
