@@ -3,8 +3,9 @@ hide:
   - toc
 ---
 
-Syncers allow CS Tools to interact with a data storage layer without having to know the
-explicit details of how to do so.
+Syncers allow __CS Tools__ to interact with a data storage layer without having to know
+the explicit details of how to do so. We've implemented syncers to many popular data
+storage formats.
 
 ---
 
@@ -25,23 +26,48 @@ flowchart LR
 
 ---
 
-Users will provide a DEFINITION.toml file to configure the behavior of a
-syncer. The details of each definition are relevant to which syncer is to
-be used. For example if you are to use the Excel syncer, you might specify
-a filepath to the target workbook, while if you use the Database syncer,
-the target database connection details might be required.
+In order to configure connection to your external data storage format, users will be
+required to supply a `definition.toml` file. The details of each definition are relevant
+to which syncer is used.
 
-If you are defining a custom syncer, there are 2-3 additional requirements:
+For example if you are to use the Excel syncer, you might specify a filepath to the
+target workbook, while if you use the Database syncer, database connection details might
+be required.
 
-- a MANIFEST.json in the same path as syncer.py, with top-level keys..
-  - `name`, the protocol name, e.g. "gsheets" for google sheets
-  - `syncer_class`, the class name of your syncer protocol in syncer.py
-  - optional `requirements`, an array in pip-friendly requirements spec
+??? info "some examples of `DEFINITION.toml`"
 
-- the DEFINITION.toml must have a top-level reference for
-  `manifest` which is the absolute filepath to your MANIFEST.json
+    Definition files are your Users' way of configuring the Syncer's behavior. They do
+    not need to be complex to enable versatile behavior.
 
-- if you are implementing a database-specific syncer, you must also
-  define a truthy attribute `__is_database__`, which triggers creation
-  tables of tables in the database. (Pro tip: register a sqlalchemy
-  listener for after_create to capture .metadata!)
+    === ":material-code-json: JSON"
+        ```toml
+        [configuration]
+        path = '/home/user/ts-data/production.json'
+        ```
+
+    === ":material-database: SQLite"
+        ```toml
+        [configuration]
+        database_path = '/home/user/ts-data/production.db'
+        truncate_on_load = True
+        ```
+
+    === ":material-google-spreadsheet: Google Sheets"
+        ```toml
+        [configuration]
+        spreadsheet = 'ThoughtSpot Data Sink'
+        mode = 'overwrite'
+        credentials_file = '/home/user/ts-data/<project-name>-<uuid>.json'
+        ```
+
+    === ":material-new-box: Custom Syncer"
+        ```toml
+        manifest = '/home/user/syncers/foo-syncer/MANIFEST.json'
+
+        [configuration]
+        ...
+        ```
+        \* *custom syncers must supply the path to the MANIFEST.json file*
+
+If your data format is not yet implemented, read on to the next page to learn about the
+syncer protocol and be able to write your own custom syncer.

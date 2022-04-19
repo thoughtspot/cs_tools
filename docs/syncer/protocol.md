@@ -78,10 +78,36 @@ class SyncerProtocol:
         """
 ```
 
-
 ??? info "Implementing a Database Syncer?"
 
-    Lorem ipsum..
+    Database Syncers have special meaning in CS Tools. They interact with complex data
+    stores, typically at a remote location.
+
+    Set an attribute on your syncer class named `__is_database__` to any truthy value.
+    This will tell CS Tools to run `metadata.create_all(syncer.engine)` prior to any
+    calls to your syncer.
+
+    Additonally, your syncer should expose an `engine` attribute, with a fully
+    instantiated `sqlalchemy.engine.Engine` to interact with the database backend.
+
+    🔥 __Pro tip__: during initialization, register a `sqlalchemy` event listener to
+    capture the metadata during table creation.
+
+    ```python
+    import sqlalchemy as sa
+
+
+    class FooSyncer:
+        __is_database__ = True
+        name = 'foo_syncer'
+
+        def __post_init__(self):
+            self.engine = sa.create_engine(...)
+            sa.event.listen(sa.schema.MetaData, 'after_create', self.capture_metadata)
+
+        def capture_metadata(self, metadata, cnxn, **kw):
+            self.metadata = metadata
+    ```
 
 Data is expressed to and from the syncer in standardized json format. The data should
 behave like a list of flat dictionaries. This format is most similar to how you would
