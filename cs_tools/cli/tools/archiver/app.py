@@ -100,7 +100,7 @@ def identify(
     Identify objects which objects can be archived.
 
     [yellow]Identification criteria will skip content owned by "System User" (system)
-    and "Administrator" (tsamin)[/]
+    and "Administrator" (tsadmin)[/]
 
     ThoughtSpot stores usage activity (by default, 6 months of interactions) by user in
     the platform. If a user views, edits, or creates an Answer or Pinboard, ThoughtSpot
