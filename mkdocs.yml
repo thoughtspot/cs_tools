@@ -106,7 +106,7 @@ nav:
     - ThoughtSpot Falcon: syncer/falcon.md
     - Snowflake: syncer/snowflake.md
     - Google BigQuery: syncer/bigquery.md
-    - Amazon Redshift: syncer/redshift.md
+    # - Amazon Redshift: syncer/redshift.md
     - Google Sheets: syncer/gsheets.md
     - Microsoft Excel: syncer/excel.md
     - CSV: syncer/csv.md

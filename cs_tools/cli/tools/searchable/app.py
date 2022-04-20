@@ -41,17 +41,31 @@ def bi_server(
         metavar='protocol://DEFINITION.toml',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
-    since: dt.datetime = O_(None, help='...'),
-    skinny: bool = O_(True, help='...'),
+    from_date: dt.datetime = O_(None, metavar='YYYY-MM-DD', help='lower bound of rows to select from TS: BI Server'),
+    to_date: dt.datetime = O_(None, metavar='YYYY-MM-DD', help='upper bound of rows to select from TS: BI Server'),
+    include_today: bool = O_(False, '--include-today', help='if set, pull partial day data', show_default=False),
+    skinny: bool = O_(True, help='if skinny, exclude NULL and INVALID user actions'),
 ):
     """
+    Extract usage statistics from your ThoughtSpot platform.
+
+    \b
+    Fields extracted from TS: BI Server
+        - incident id           - timestamp detailed    - url
+        - http response code    - browser type          - client type
+        - client id             - answer book guid      - viz id
+        - user id               - user action           - query text
+        - response size         - latency (us)          - database latency (us)
+        - impressions
     """
     SEARCH_TOKENS = (
         "[incident id] [timestamp].'detailed' [url] [http response code] "
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions]"
-        + ("" if since is None else f" [timestamp] >= '{since.date()}'")
+        + ("" if from_date is None else f" [timestamp] >= '{from_date.date()}'")
+        + ("" if to_date is None else f" [timestamp] <= '{to_date.date()}'")
+        + ("" if include_today else " [timestamp] != 'today'")
         + ("" if not skinny else " [user action] != {null} 'invalid'")
     )
 
@@ -109,7 +123,10 @@ def gather(
     include_columns: bool=O_(False, '--include-columns', help='...', show_default=False)
 ):
     """
-    Lorem, ipsum.
+    Extract metadata from your ThoughtSpot platform.
+
+    See the full data model extract at the link below:
+      https://thoughtspot.github.io/cs_tools/cs-tools/searchable
     """
     ts = ctx.obj.thoughtspot
 
