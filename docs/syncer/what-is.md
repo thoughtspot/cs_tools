@@ -7,6 +7,15 @@ Syncers allow __CS Tools__ to interact with a data storage layer without having 
 the explicit details of how to do so. We've implemented syncers to many popular data
 storage formats.
 
+!!! attention "In Beta"
+
+    The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
+    __provisional basis__. It may change significantly in future releases and its
+    interface will not be concrete until v2.
+
+    Feedback from the community while it's still provisional would be extremely useful;
+    either comment on [#25][gh-issue25] or create a new issue.
+
 ---
 
 <center>
@@ -71,3 +80,6 @@ be required.
 
 If your data format is not yet implemented, read on to the next page to learn about the
 syncer protocol and be able to write your own custom syncer.
+
+
+[gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25

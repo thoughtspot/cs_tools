@@ -3,6 +3,15 @@ hide:
   - toc
 ---
 
+??? attention "In Beta"
+
+    The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
+    __provisional basis__. It may change significantly in future releases and its
+    interface will not be concrete until v2.
+
+    Feedback from the community while it's still provisional would be extremely useful;
+    either comment on [#25][gh-issue25] or create a new issue.
+
 If your use case for interacting with the ThoughtSpot API data isn't supported by the
 built-in syncers in CS Tools, we've exposed an interface for defining a custom syncer so
 that you can inject your own.
@@ -170,3 +179,6 @@ execution
     - [CSV](https://github.com/thoughtspot/cs_tools/tree/master/cs_tools/sync/csv){ .external-link }
     - [SQLite](https://github.com/thoughtspot/cs_tools/tree/master/cs_tools/sync/sqlite){ .external-link }
     - [Snowflake](https://github.com/thoughtspot/cs_tools/tree/master/cs_tools/sync/snowflake){ .external-link }
+
+
+[gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
