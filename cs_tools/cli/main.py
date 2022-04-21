@@ -1,9 +1,14 @@
+from tempfile import TemporaryDirectory
 import logging.config
+import subprocess as sp
 import datetime as dt
 import platform
 import logging
+import pathlib
+import shutil
 
 from typer import Argument as A_, Option as O_  # noqa
+import oyaml as yaml
 import typer
 
 from cs_tools.cli.tools.common import setup_thoughtspot
@@ -91,6 +96,51 @@ def _platform(ctx: typer.Context):
         display_name: {ts.me.display_name}
         privileges: {list(map(lambda e: e.name, ts.me.privileges))}
     """)
+
+
+@app.command('build-docs', cls=CSToolsCommand, hidden=True)
+def _docs_build(
+    dir_: pathlib.Path = A_(..., metavar='DIR', help='directory to output the documentation to'),
+    zipped: bool = O_(False, '--zipped', help='compress the documentation into a single zipfile')
+):
+    """
+    Build the documentation offline.
+
+    [yellow]You must have a development install in order to run this command![/]
+    """
+    try:
+        import mkdocs  # noqa
+    except ModuleNotFoundError:
+        log.error(
+            'You do not have a development install of cs_tools, please see the project '
+            'maintainers for an offline version of the documentation.'
+        )
+        raise typer.Exit(-1)
+
+    PROJECT_ROOT = pathlib.Path(__file__).parent.parent.parent
+    TMP_DIR  = TemporaryDirectory()
+    TMP_FILE = pathlib.Path(TMP_DIR.name) / 'local.yaml'
+
+    if zipped:
+        dir_ = dir_ / 'docs'
+
+    with (PROJECT_ROOT / 'mkdocs.yml').open('r') as remote, TMP_FILE.open('w') as local:
+        data = yaml.load(remote.read(), Loader=yaml.Loader)
+        # should also remove plugins.search when/if we enable it
+        data['docs_dir'] = (PROJECT_ROOT / 'docs').as_posix()
+        data['site_url'] = ''
+        data['use_directory_urls'] = False
+        yaml.dump(data, local)
+
+        # -f, --config-file  Provide a specific MkDocs config
+        # -d, --site-dir     The directory to output the result of the documentation build.
+        with sp.Popen(f'mkdocs build -f {TMP_FILE} -d {dir_}', stdout=sp.PIPE) as p:
+            for line in p.stdout:
+                log.info(line)
+
+    if zipped:
+        shutil.make_archive(dir_.parent / f'cs_tools-docs-{__version__}', 'zip', dir_)
+        shutil.rmtree(dir_)
 
 
 def _clean_logs(now):
