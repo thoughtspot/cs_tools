@@ -63,7 +63,6 @@ def interactive(
 def file(
     ctx: typer.Context,
     file: pathlib.Path=A_(..., metavar='FILE.tql', help='path to file to execute, default to stdin'),
-    schema: str=O_('falcon_default_schema', help='schema name to use')
 ):
     """
     Run multiple commands within TQL on a remote server.
@@ -75,7 +74,7 @@ def file(
             cat create-schema.sql | tql
     """
     ts = ctx.obj.thoughtspot
-    run_tql_script(ts.api, fp=file)
+    ts.tql.script(file)
 
 
 @app.command(cls=CSToolsCommand)
@@ -93,6 +92,7 @@ def command(
     Run a single TQL command on a remote server.
 
     By default, this command will accept input from a pipe.
+
     \f
     DEV NOTE:
 
@@ -109,7 +109,7 @@ def command(
             command = '\n'.join(sys.stdin.readlines())
 
     if not command:
-        console.print('[red]no valid input given to rtql command[/]')
-        return
+        console.print('[red]no valid input given to rtql command')
+        raise typer.Exit()
 
-    run_tql_command(ts, command=command, schema=schema)
+    ts.tql.command(command, schema=schema)

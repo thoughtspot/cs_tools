@@ -141,17 +141,19 @@ def file(
     with console.status(f'[bold green]Loading {file} to ThoughtSpot..'):
         cycle_id = ts.tsload.upload(ts, fp=file, **opts, verbose=True)
 
-    if bad_records is None:
-        return
+    console.log(f'Data load cycle_id: {cycle_id}')
 
-    with console.status('[bold green]Waiting for data load to complete..'):
-        data = ts.tsload.status(cycle_id, wait_for_complete=True)
+    # if bad_records is None:
+    #     return
 
-    if data['ignored_row_count'] > 0:
-        now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
-        fp = f'BAD_RECORDS_{now}_{cycle_id}'
-        console.print(
-            f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
-        )
-        data = ts.tsload.bad_records(cycle_id)
-        bad_records.dump(fp, data=data)
+    # with console.status('[bold green]Waiting for data load to complete..'):
+    #     data = ts.tsload.status(cycle_id, wait_for_complete=True)
+
+    # if data['ignored_row_count'] > 0:
+    #     now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
+    #     fp = f'BAD_RECORDS_{now}_{cycle_id}'
+    #     console.print(
+    #         f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
+    #     )
+    #     data = ts.tsload.bad_records(cycle_id)
+    #     bad_records.dump(fp, data=data)
