@@ -7,7 +7,8 @@ import typer
 
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.sync.falcon import Falcon
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
 from cs_tools.util import to_datetime
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.cli.tools import common
@@ -96,9 +97,12 @@ def spotapp(
 )
 def gather(
     ctx: typer.Context,
-    export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True),
-    # maintained for backwards compatability
-    backwards_compat: pathlib.Path = O_(None, '--save_path', help='backwards-compat if specified, directory to save data to', hidden=True)
+    export: str = O_(
+        None,
+        help='protocol and path for options to pass to the syncer',
+        metavar='protocol://DEFINITION.toml',
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+    )
 ):
     """
     Gather and optionally, insert data into Falcon.
@@ -108,35 +112,14 @@ def gather(
     and will instead be dumped to the location specified.
     """
     ts = ctx.obj.thoughtspot
-    export = export or backwards_compat
+    syncer = export if export is not None else Falcon()
 
-    dir_ = ts.config.temp_dir if export is None else export
-    dir_.parent.mkdir(exist_ok=True)
-    path = dir_ / 'falcon_table_info.csv'
-
-    with console.status('getting Falcon table info'):
+    with console.status('[bold green]getting falcon table info'):
         data = _format_table_info_data(ts.api._periscope.sage_combinedtableinfo().json())
 
-    with console.status('saving Falcon table info'):
-        common.to_csv(data, fp=path, mode='a')
-        console.print(f'wrote {len(data): >7,} rows to {path}')
+    if isinstance(syncer, Falcon):
+        with console.status('[bold green]creating tables with remote TQL'):
+            ts.tql.script(HERE / 'static' / 'create_tables.tql')
 
-    if export is not None:
-        return
-
-    with console.status('creating tables with remote TQL'):
-        run_tql_command(ts, command='CREATE DATABASE cs_tools;')
-        run_tql_script(ts, fp=HERE / 'static' / 'create_tables.tql')
-
-    with console.status('loading data to Falcon with remote tsload'):
-        cycle_id = tsload(
-            ts,
-            fp=path,
-            target_database='cs_tools',
-            target_table='falcon_table_info',
-            has_header_row=True
-        )
-        path.unlink()
-        r = ts.api.ts_dataservice.load_status(cycle_id).json()
-        m = ts.api.ts_dataservice._parse_tsload_status(r)
-        console.print(m)
+    with console.status(f'[bold green]loading data to {syncer.name}..'):
+        syncer.dump('falcon_table_info', data=data)
