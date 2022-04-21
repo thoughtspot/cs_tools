@@ -133,7 +133,8 @@ class MetadataMiddleware:
         guids: List[GUID],
         *,
         type: Union[MetadataObject, MetadataObjectSubtype],
-        permission_type: PermissionType = PermissionType.explicit,
+        # release in 7.2.0+
+        # permission_type: PermissionType = PermissionType.explicit,
         chunksize: int = 15
     ) -> List[Dict[str, Any]]:
         """
@@ -157,9 +158,7 @@ class MetadataMiddleware:
         user_guids = [user['id'] for user in self.ts.user.all()]
 
         for chunk in chunks(guids, n=chunksize):
-            r = self.ts.api.security.metadata_permissions(
-                    type=types[type.value], id=chunk, permissiontype=permission_type.value
-                )
+            r = self.ts.api._security.defined_permission(type=types[type.value], id=chunk)
 
             for data in r.json().values():
                 for shared_to_principal_guid, permission in data['permissions'].items():
@@ -167,7 +166,7 @@ class MetadataMiddleware:
                         'object_guid': permission['topLevelObjectId'],
                         # 'shared_to_user_guid':
                         # 'shared_to_group_guid':
-                        'permission_type': permission_type.value,
+                        'permission_type': 'DEFINED',
                         'share_mode': permission['shareMode']
                     }
 

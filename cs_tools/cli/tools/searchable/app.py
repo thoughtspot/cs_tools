@@ -206,7 +206,7 @@ def gather(
 
         for type_, subtypes in types.items():
             guids = [_['id'] for _ in content if _['type'] in subtypes]
-            r = ts.metadata.permissions(guids, type=type_, permission_type='DEFINED')
+            r = ts.metadata.permissions(guids, type=type_)
             data.extend(transform.to_sharing_access(r))
 
             # DEV NOTE:
