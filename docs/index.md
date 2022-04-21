@@ -28,7 +28,7 @@ administration of and enhance adoption within your ThoughtSpot environment.
 # Features
 
 - Low-fuss distribution and installation on MacOS, Linux, and Windows
-- Supports Software version 7.1.1+ and the 2 latest Cloud releases
+- Supports Software version 7.1.1+ and the latest Cloud release
 - Enhanced security with remote TQL and tsload workflows
 - Multiple-cluster support (Dev, QA, Prod)
 - Scheduler-friendly execution

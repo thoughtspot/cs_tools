@@ -154,30 +154,30 @@ class TSLoadMiddleware:
         self.ts.api.ts_dataservice.load_commit(cycle_id)
         return cycle_id
 
-    @validate_arguments
-    def status(self, cycle_id: str, *, wait_for_complete: bool = False):
-        """
-        """
-        self._check_privileges()
+    # @validate_arguments
+    # def status(self, cycle_id: str, *, wait_for_complete: bool = False):
+    #     """
+    #     """
+    #     self._check_privileges()
 
-        while True:
-            r = self.ts.api.ts_dataservice.load_status(cycle_id)
-            data = r.json()
+    #     while True:
+    #         r = self.ts.api.ts_dataservice.load_status(cycle_id)
+    #         data = r.json()
 
-            if not wait_for_complete:
-                break
+    #         if not wait_for_complete:
+    #             break
 
-            print(data)
-            raise
+    #         print(data)
+    #         raise
 
-    @validate_arguments
-    def bad_records(self, cycle_id: str) -> List[Dict[str, Any]]:
-        """
-        """
-        r = self.ts.api.ts_dataservice.load_params(cycle_id)
-        params = r.json()
-        print(params)
-        raise
+    # @validate_arguments
+    # def bad_records(self, cycle_id: str) -> List[Dict[str, Any]]:
+    #     """
+    #     """
+    #     r = self.ts.api.ts_dataservice.load_params(cycle_id)
+    #     params = r.json()
+    #     print(params)
+    #     raise
 
-        r = self.ts.api.ts_dataservice.bad_records(cycle_id)
-        r.text
+    #     r = self.ts.api.ts_dataservice.bad_records(cycle_id)
+    #     r.text
