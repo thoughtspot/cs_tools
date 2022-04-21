@@ -18,7 +18,7 @@ automatically.
 
 <span class=fc-coral>__In order to use the Google Sheets syncer__</span>, you must first configure your local
 environment. The setup instructions below will help you create a __Google Cloud Project__ and utilize the OAuth Client
-ID workflow to allow other __CS Tools__ to selectively interact with your Google Sheet.
+ID workflow to allow __CS Tools__ to selectively interact with your Google Sheet.
 
 ??? example "Setup instructions"
 
