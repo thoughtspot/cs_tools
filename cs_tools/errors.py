@@ -106,3 +106,8 @@ class CertificateVerifyFailure(CSToolsException):
     @property
     def warning(self) -> str:
         return 'SSL verify failed, did you mean to use flag --disable_ssl?'
+
+
+class TableAlreadyExists(Exception):
+    """
+    """

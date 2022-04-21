@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Tuple
+import pathlib
 import logging
 import json
 
@@ -6,7 +7,7 @@ from pydantic.typing import Annotated
 from pydantic import validate_arguments, Field
 
 from cs_tools.data.enums import Privilege
-from cs_tools.errors import InsufficientPrivileges
+from cs_tools.errors import InsufficientPrivileges, TableAlreadyExists
 
 
 log = logging.getLogger(__name__)
@@ -108,3 +109,42 @@ class TQLMiddleware:
         d = r.json()
         log.debug(d)
         return d['result']['message']
+
+    @validate_arguments
+    def script(
+        self,
+        fp: pathlib.Path,
+        *,
+        raise_errors: bool = False,
+        http_timeout: int = 5.0
+    ) -> List[Dict[str, Any]]:
+        """
+        """
+        self._check_privileges()
+
+        with fp.open() as f:
+            data = {
+                'context': {
+                    'schema': 'falcon_default_schema',
+                    'server_schema_version': -1
+                },
+                'script_type': 1,
+                'script': f.read()
+            }
+
+        r = self.ts.api.ts_dataservice.script(data, timeout=http_timeout)
+        d = [json.loads(_) for _ in r.iter_lines() if _]
+
+        for _ in d:
+            if 'message' in _['result']:
+                m = self.ts.api.ts_dataservice._parse_api_messages(_['result']['message'])
+            if 'table' in _['result']:
+                m = self.ts.api.ts_dataservice._parse_tql_query(_['result']['table'])
+            
+            log.debug(m)
+
+            if raise_errors and 'returned error' in m:
+                if 'create table' in m.lower():
+                    raise TableAlreadyExists()
+                else:
+                    raise ValueError(m)
