@@ -35,19 +35,14 @@ class GoogleSheets:
     mode: str, default 'overwrite'
       either "append" or "overwrite"
 
-    credentials_file: pathlib.Path, default temp_dir/gspread/credentials.json
+    credentials_file: pathlib.Path, default cs_tools-app-directory/gspread/credentials.json
       absolute path to your credentials file
     """
     spreadsheet: str
     mode: InsertMode = InsertMode.overwrite
-    credentials_file: pathlib.Path = None
+    credentials_file: pathlib.Path = APP_DIR / 'gsheets' / 'credentials.json'
 
     def __post_init_post_parse__(self):
-        if self.credentials_file is None:
-            dir_ = APP_DIR / 'gsheets'
-            dir_.mkdir(parents=True, exist_ok=True)
-            self.credentials_file = dir_ / 'credentials.json'
-
         self.client = gspread.service_account(filename=self.credentials_file)
         self.ws = self.client.open(self.spreadsheet)
 

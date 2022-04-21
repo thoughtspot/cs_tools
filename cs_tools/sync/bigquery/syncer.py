@@ -3,6 +3,7 @@ import pathlib
 import logging
 
 from pydantic.dataclasses import dataclass
+from cs_tools.const import APP_DIR
 from google.cloud import bigquery
 import sqlalchemy as sa
 
@@ -24,7 +25,7 @@ class BigQuery:
     """
     project_name: str
     dataset: str
-    credentials_file: pathlib.Path = None
+    credentials_file: pathlib.Path = APP_DIR / 'bigquery' / 'credentials.json'
     truncate_on_load: bool = True
 
     # DATABASE ATTRIBUTES
@@ -39,11 +40,7 @@ class BigQuery:
         return self.cnxn.connection._client
 
     def __post_init_post_parse__(self):
-        engine_kw = {}
-
-        if self.credentials_file is not None:
-            engine_kw['credentials_path'] = self.credentials_file
-
+        engine_kw = {'credentials_file': self.credentials_file}
         self.engine = sa.create_engine(f'bigquery://{self.project_name}/{self.dataset}', **engine_kw)
         self.cnxn = self.engine.connect()
 
