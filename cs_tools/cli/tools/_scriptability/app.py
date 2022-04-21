@@ -60,6 +60,13 @@ app = typer.Typer(
 )
 def export(
         ctx: click.Context,
+        path: pathlib.Path = A_(  # may not want to use
+            ...,
+            help='full path (directory) to save data set to',
+            metavar='DIR',
+            dir_okay=True,
+            resolve_path=True
+        ),
         tags: List[str] = O_([], metavar='TAGS',
                              callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                              help='comma separated list of tags to export'),
@@ -71,13 +78,6 @@ def export(
         #                  help=f'if specified, format to export, either {TMLType.yaml.value} or {TMLType.json.value}'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
-        path: pathlib.Path = O_(  # may not want to use
-            None,
-            help='full path (directory) to save data set to',
-            metavar='DIR',
-            dir_okay=True,
-            resolve_path=True
-        )
 ):
     """
     Exports TML as YAML from ThoughtSpot.
