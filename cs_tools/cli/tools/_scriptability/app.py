@@ -38,6 +38,9 @@ app = typer.Typer(
     help="""
     Tool for easily migrating TML between clusters.
 
+    [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
+    could change on any version update and break the tool.[/]
+
     ThoughtSpot provides the ability to extract object metadata (tables, worksheets, liveboards, etc.) 
     in ThoughtSpot Modeling Language (TML) format, which is a text format based on YAML.  
     These files can then be modified and imported into another (or the same) instance to either create 
