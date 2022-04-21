@@ -11,7 +11,7 @@ from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.tools import common
 from cs_tools.cli.util import base64_to_file
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
 from cs_tools.errors import ContentDoesNotExist
 
 from .enums import ContentType, UserActions
@@ -88,12 +88,11 @@ def identify(
         show_default=False,
         help='disable the confirmation prompt'
     ),
-    report: pathlib.Path=O_(
+    report: str = O_(
         None,
-        help='generates a list of content to be archived',
-        metavar='FILE.csv',
-        dir_okay=False,
-        resolve_path=True
+        metavar='protocol://DEFINITION.toml',
+        help='generates a list of content to be archived, utilizes protocol syntax',
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     )
 ):
     """
@@ -173,7 +172,8 @@ def identify(
     console.log('\n', table, justify='center')
 
     if report is not None:
-        common.to_csv(to_archive, fp=report, header=True)
+        to_archive = [{**_, 'operation': 'identify'} for _ in to_archive]
+        report.dump('archiver_report', data=to_archive)
 
     if dry_run:
         raise typer.Exit(-1)
@@ -233,12 +233,11 @@ def revert(
         show_default=False,
         help='disable the confirmation prompt'
     ),
-    report: pathlib.Path=O_(
+    report: str = O_(
         None,
-        help='generates a list of content to be untagged',
-        metavar='FILE.csv',
-        dir_okay=False,
-        resolve_path=True
+        metavar='protocol://DEFINITION.toml',
+        help='generates a list of content to be archived, utilizes protocol syntax',
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     )
 ):
     """
@@ -274,7 +273,8 @@ def revert(
     console.log('\n', table, justify='center')
 
     if report is not None:
-        common.to_csv(to_unarchive, fp=report, header=True)
+        to_archive = [{**_, 'operation': 'revert'} for _ in to_unarchive]
+        report.dump('archiver_report', data=to_archive)
 
     if dry_run:
         raise typer.Exit()
@@ -352,12 +352,11 @@ def remove(
         show_default=False,
         help='disable the confirmation prompt'
     ),
-    report: pathlib.Path=O_(
+    report: str = O_(
         None,
-        help='generates a list of content to be removed',
-        metavar='FILE.csv',
-        dir_okay=False,
-        resolve_path=True
+        metavar='protocol://DEFINITION.toml',
+        help='generates a list of content to be archived, utilizes protocol syntax',
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     )
 ):
     """
@@ -405,7 +404,8 @@ def remove(
     console.log('\n', table, justify='center')
 
     if report is not None:
-        common.to_csv(to_unarchive, fp=report, header=True)
+        to_archive = [{**_, 'operation': 'remove'} for _ in to_unarchive]
+        report.dump('archiver_report', data=to_archive)
 
     if dry_run:
         raise typer.Exit()
