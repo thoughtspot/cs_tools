@@ -6,66 +6,129 @@ One use case for this tool is when an employee has left the company, but their
 ThoughtSpot content needs to be saved. In this case, you may transfer all their created
 content to another designated owner.
 
-!!! caution "Compatibility Note"
-    In the default case, transfer of owned content from one user to another is a one-shot operation. If your ThoughtSpot platform is on the __Latest Cloud__ release or the __Software 7.1.1__ release or newer, you can use the additional transfer options.
-
 ## CLI preview
 
-=== "transfer-ownership --help"
+=== "user-management --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools transfer-ownership --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools user-management --help
+    Usage: cs_tools tools user-management [--version, --help] <command>
 
-     Usage: cs_tools tools transfer-ownership [--version, --help] <command>
-
-      Transfer ownership of all objects from one user to another.
+      Managing Users and Groups in bulk.
 
     Options:
-      --version   Show the version and exit.
-      -h, --help  Show this message and exit.
+      --version               Show the version and exit.
+      -h, --help, --helpfull  Show this message and exit.
 
     Commands:
-      transfer  Transfer ownership of objects from one user to another.
+      rename    Remap Users from one username to another.
+      sync      Sync your Users and Groups from an external data source.
+      transfer  Transfer ownership of objects from one User to another.
     ```
 
-=== "transfer-ownership transfer"
+=== "user-management rename"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cstools tools transfer-ownership transfer --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools user-management rename --help
 
-    Usage: cstools tools transfer-ownership transfer [--option, ..., --help] FROM TO
+    Usage: cs_tools tools user-management rename --config IDENTIFIER [--option, ..., --help]
 
-      Transfer ownership of objects from one user to another.
+      Remap Users from one username to another.
+
+      If you are renaming from an external data source, your data must follow the tabular format below.
+
+      +----------------+---------------------------+
+      | from_username  |        to_username        |
+      +----------------+---------------------------+
+      | cs_tools       | cstools                   |
+      | namey.namerson | namey@thoughtspot.com     |
+      | fake.user      | fake.user@thoughtspot.com |
+      +----------------+---------------------------+
+
+    Options:
+      --from TEXT                     current username
+      --to TEXT                       new username
+      --syncer protocol://DEFINITION.toml
+                                      protocol and path for options to pass to the syncer
+      --remapping TEXT                if using --syncer, directive to find user remapping at
+      --config IDENTIFIER             config file identifier  (required)
+      -h, --help, --helpfull          Show this message and exit.
+    ```
+
+=== "user-management sync"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools user-management sync --help
+
+    Usage: cs_tools tools user-management sync --config IDENTIFIER [--option, ..., --help] protocol://DEFINITION.toml
+
+      Sync your Users and Groups from an external data source.
+
+      During this operation, Users and Groups..
+      - present in ThoughtSpot, but not present in Syncer are deleted in ThoughtSpot
+        - if using the --no-remove-deleted flag, users will not be deleted in this case
+      - not present in ThoughtSpot, but present in Syncer are created in ThoughtSpot
+      - present in ThoughtSpot, and in Syncer are updated by their attributes
+        - this includes group membership
+
+    Arguments:
+      protocol://DEFINITION.toml  protocol and path for options to pass to the syncer  (required)
+
+    Options:
+      --users TEXT                    directive to find users to sync at  (default: ts_auth_sync_users)
+      --groups TEXT                   directive to find groups to sync at  (default: ts_auth_sync_groups)
+      --associations TEXT             directive to find associations to sync at  (default: ts_auth_sync_xref)
+      --apply-changes                 whether or not to sync the security strategy into ThoughtSpot
+      --new-user-password TEXT        password for new users added during the sync operation
+      --dont-remove-deleted / --no-dont-remove-deleted
+                                      whether to remove the deleted users and user groups
+      --export                        whether or not to dump data to the syncer
+      --config IDENTIFIER             config file identifier  (required)
+      -h, --help, --helpfull          Show this message and exit.
+    ```
+
+=== "user-management transfer"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools user-management transfer --help
+
+    Usage: cs_tools tools user-management transfer --config IDENTIFIER [--option, ..., --help]
+
+      Transfer ownership of objects from one User to another.
 
       Tags and GUIDs constraints are applied in OR fashion.
 
-    Arguments:
-      FROM  username of the current content owner  (required)
-      TO    username to transfer content to  (required)
-
     Options:
-      --tag TEXT    if specified, only move content marked with one or more of these tags
-      --guids TEXT  if specified, only move specific objects
-      --helpfull    Show the full help message and exit.
-      -h, --help    Show this message and exit.
+      --from TEXT             username of the current content owner  (required)
+      --to TEXT               username to transfer content to  (required)
+      --tag TEXT              if specified, only move content marked with one or more of these tags
+      --guids TEXT            if specified, only move specific objects
+      --config IDENTIFIER     config file identifier  (required)
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 ---
 
 ## Changelog
 
-!!! tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2021-11-01"
+!!! tldr ":octicons-tag-16: v1.2.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
 
     === ":hammer_and_wrench: &nbsp; Added"
-        - support for limited transfer of objects identified by GUID, or tag [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+        - migrated [User Tools][tsut]{ target='secondary' .external-link } to CS Tools under `sync`
+        - added user renaming as `rename`
 
     === ":wrench: &nbsp; Modified"
-        - `--from` and `--to` options moved to required arugments
+        - input/output using syncers! [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 ??? info "Changes History"
+
+    ??? tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2021-11-01"
+
+        === ":hammer_and_wrench: &nbsp; Added"
+            - support for limited transfer of objects identified by GUID, or tag [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+
+        === ":wrench: &nbsp; Modified"
+            - `--from` and `--to` options moved to required arugments
 
     ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-25"
         === ":hammer_and_wrench: &nbsp; Added"
             - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
-[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
-[semver]: https://semver.org/spec/v2.0.0.html
 [contrib-boonhapus]: https://github.com/boonhapus
+[tsut]: https://github.com/thoughtspot/user_tools

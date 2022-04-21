@@ -62,7 +62,11 @@ def interactive(
 )
 def file(
     ctx: typer.Context,
-    file: pathlib.Path=A_(..., metavar='FILE.tql', help='path to file to execute, default to stdin'),
+    file: pathlib.Path=A_(
+        ...,
+        metavar='FILE.tql',
+        help='path to file to execute, default to stdin'
+    )
 ):
     """
     Run multiple commands within TQL on a remote server.

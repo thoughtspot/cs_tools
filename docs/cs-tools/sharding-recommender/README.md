@@ -28,29 +28,26 @@ Office Hours session and a CSA will be able to help guide them through the proce
 === "sharding-recommender --help"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools sharding-recommender --help
-
-     Usage: cs_tools tools sharding-recommender [--version, --help] <command>
+    Usage: cs_tools tools sharding-recommender [--version, --help] <command>
 
       Gather data on your existing Falcon tables for sharding.
 
-      USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
-      version update and break the tool.
+      USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and break the
+      tool.
 
-      Once tables grow sufficiently large within a Falcon deployment, cluster
-      performance and data loading can be enhanced through the use of sharding. The
-      choice of what column to shards and how many shards to use can vary based on many
-      factors. This tool helps expose that key information.
+      Once tables grow sufficiently large within a Falcon deployment, cluster performance and data loading can be enhanced through the
+      use of sharding. The choice of what column to shards and how many shards to use can vary based on many factors. This tool helps
+      expose that key information.
 
-      Before sharding, it can be helpful to implement this solution and consult with
-      your ThoughtSpot contact for guidance on the best shard key and number of shards
-      to use.
+      Before sharding, it can be helpful to implement this solution and consult with your ThoughtSpot contact for guidance on the best
+      shard key and number of shards to use.
 
       For further information on sharding, please refer to:
         https://docs.thoughtspot.com/latest/admin/loading/sharding.html
 
     Options:
-      --version   Show the version and exit.
-      -h, --help  Show this message and exit.
+      --version               Show the version and exit.
+      -h, --help, --helpfull  Show this message and exit.
 
     Commands:
       gather   Gather and optionally, insert data into Falcon.
@@ -61,18 +58,18 @@ Office Hours session and a CSA will be able to help guide them through the proce
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools sharding-recommender gather --help
 
-    Usage: cs_tools tools sharding-recommender gather [--option, ..., --help]
+    Usage: cs_tools tools sharding-recommender gather --config IDENTIFIER [--option, ..., --help]
 
       Gather and optionally, insert data into Falcon.
 
-      By default, data is automatically gathered and inserted into the platform. If
-      --export argument is used, data will not be inserted and will instead be dumped
-      to the location specified.
+      By default, data is automatically gathered and inserted into the platform. If --export argument is used, data will not be inserted
+      and will instead be dumped to the location specified.
 
     Options:
-      --export DIRECTORY  directory to save the spot app to
-      --helpfull          Show the full help message and exit.
-      -h, --help          Show this message and exit.
+      --export protocol://DEFINITION.toml
+                                      protocol and path for options to pass to the syncer
+      --config IDENTIFIER             config file identifier  (required)
+      -h, --help, --helpfull          Show this message and exit.
     ```
 
 === "sharding-recommender spotapp"
@@ -84,22 +81,25 @@ Office Hours session and a CSA will be able to help guide them through the proce
       Exports the SpotApp associated with this tool.
 
     Options:
-      --export DIRECTORY  directory to save the spot app to
-      --helpfull          Show the full help message and exit.
-      -h, --help          Show this message and exit.
+      --export DIRECTORY      directory to save the spot app to
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 ---
 
 ## Changelog
 
-!!! tldr ":octicons-tag-16: v1.1.2 &nbsp; &nbsp; :material-calendar-text: 2021-11-09"
+!!! tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
 
     === ":wrench: &nbsp; Modified"
-        - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-        - `tml` is now `spotapp` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+        - input/output using syncers! [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 ??? info "Changes History"
+
+    ??? tldr ":octicons-tag-16: v1.1.2 &nbsp; &nbsp; :material-calendar-text: 2021-11-09"
+        === ":wrench: &nbsp; Modified"
+            - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+            - `tml` is now `spotapp` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
     ??? tldr ":octicons-tag-16: v1.1.1 &nbsp; &nbsp; :material-calendar-text: 2021-09-11"
         === ":wrench: &nbsp; Modified"

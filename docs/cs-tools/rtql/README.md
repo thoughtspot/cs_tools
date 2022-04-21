@@ -21,21 +21,19 @@ least the "Can Manage Data" privilege in ThoughtSpot.
 === "rtql --help"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql --help
-
-     Usage: cs_tools tools rtql [--version, --help] <command>
+    Usage: cs_tools tools rtql [--version, --help] <command>
 
       Enable querying the ThoughtSpot TQL CLI from a remote machine.
 
-      TQL is the ThoughtSpot language for entering SQL commands. You can use TQL to
-      view and modify schemas and data in tables.
+      TQL is the ThoughtSpot language for entering SQL commands. You can use TQL to view and modify schemas and data in tables.
 
       For further information on TQL, please refer to:
         https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
         https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
 
     Options:
-      --version   Show the version and exit.
-      -h, --help  Show this message and exit.
+      --version               Show the version and exit.
+      -h, --help, --helpfull  Show this message and exit.
 
     Commands:
       command      Run a single TQL command on a remote server.
@@ -47,7 +45,7 @@ least the "Can Manage Data" privilege in ThoughtSpot.
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql command --help
 
-    Usage: cs_tools tools rtql command [--option, ..., --help] [COMMAND]
+    Usage: cs_tools tools rtql command --config IDENTIFIER [--option, ..., --help] [COMMAND]
 
       Run a single TQL command on a remote server.
 
@@ -57,16 +55,16 @@ least the "Can Manage Data" privilege in ThoughtSpot.
       (COMMAND)  TQL query to execute  (default: -)
 
     Options:
-      --schema TEXT  schema name to use  (default: falcon_default_schema)
-      --helpfull     Show the full help message and exit.
-      -h, --help     Show this message and exit.
+      --schema TEXT           schema name to use  (default: falcon_default_schema)
+      --config IDENTIFIER     config file identifier  (required)
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 === "rtql file"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql file --help
 
-    Usage: cs_tools tools rtql file [--option, ..., --help] FILE.tql
+    Usage: cs_tools tools rtql file --config IDENTIFIER [--option, ..., --help] FILE.tql
 
       Run multiple commands within TQL on a remote server.
 
@@ -74,30 +72,29 @@ least the "Can Manage Data" privilege in ThoughtSpot.
       FILE.tql  path to file to execute, default to stdin  (required)
 
     Options:
-      --schema TEXT  schema name to use  (default: falcon_default_schema)
-      --helpfull     Show the full help message and exit.
-      -h, --help     Show this message and exit.
+      --config IDENTIFIER     config file identifier  (required)
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 === "rtql interactive"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools rtql interactive --help
 
-    Usage: cs_tools tools rtql interactive [--option, ..., --help]
+    Usage: cs_tools tools rtql interactive --config IDENTIFIER [--option, ..., --help]
 
       Run an interactive TQL session as if you were on the cluster.
 
-      TQL is a command line interface for creating schemas and performing basic database
-      administration.
+      TQL is a command line interface for creating schemas and performing basic database administration.
 
       For a list of all commands, type "help" after invoking tql
 
     Options:
-      --autocomplete  toggle auto complete feature  (default: True)
-      --schema TEXT   schema name to use  (default: falcon_default_schema)
-      --debug         print the entire response to console
-      --helpfull      Show the full help message and exit.
-      -h, --help      Show this message and exit.
+      --autocomplete          toggle auto complete feature  (default: True)
+      --schema TEXT           schema name to use  (default: falcon_default_schema)
+      --debug                 print the entire response to console
+      --timeout INTEGER       network call timeout threshold  (default: 5.0)
+      --config IDENTIFIER     config file identifier  (required)
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 ---
@@ -119,6 +116,4 @@ least the "Can Manage Data" privilege in ThoughtSpot.
         === ":hammer_and_wrench: &nbsp; Added"
             - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
-[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
-[semver]: https://semver.org/spec/v2.0.0.html
 [contrib-boonhapus]: https://github.com/boonhapus

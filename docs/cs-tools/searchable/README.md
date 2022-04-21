@@ -13,7 +13,7 @@ created over time can help you understand how your Users interact with ThoughtSp
 
 Another use case might be to set up a pinboard gating conditions based on when or how
 often a user uploads data (eg. a combination of metadata type of "imported data", the 
-metadata object's modified/created time and the ThoughtSpot datetime function now()).
+metadata object's modified/created time and the ThoughtSpot datetime function `now()`).
 This could give you early warning when a user is missing a dataset that could provide
 value to others in your platform.
 
@@ -22,91 +22,72 @@ value to others in your platform.
 
 === "searchable --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable --help
+    Usage: cs_tools tools searchable [--help] <command>
 
-    Usage: cs_tools tools searchable-content [--version, --help] <command>
-
-      Make ThoughtSpot content searchable in your platform.
-
-      USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
-      version update and break the tool.
-
-      Metadata is created through normal ThoughtSpot activities. Tables, Worksheets,
-      Answers, and Pinboards are all examples of metadata.
-
-      Metadata Object
-      - guid
-      - name
-      - description
-      - author guid
-      - author name
-      - author display name
-      - created
-      - modified
-      - object type
+      Explore your ThoughtSpot metadata, in ThoughtSpot!
 
     Options:
-      --version   Show the version and exit.
-      -h, --help  Show this message and exit.
+      --version               Show the version and exit.
+      -h, --help, --helpfull  Show this message and exit.
 
     Commands:
-      gather   Gather and optionally, insert data into Falcon.
-      spotapp  Exports the SpotApp associated with this tool.
+      bi-server  Extract usage statistics from your ThoughtSpot platform.
+      gather     Extract metadata from your ThoughtSpot platform.
     ```
 
 === "searchable gather"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content gather --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable gather --help
 
-    Usage: cs_tools tools searchable-content gather [--option, ..., --help]
+    Usage: cs_tools tools searchable gather --config IDENTIFIER [--option, ..., --help] protocol://DEFINITION.toml
 
-      Gather and optionally, insert data into Falcon.
+      Extract metadata from your ThoughtSpot platform.
 
-      By default, data is automatically gathered and inserted into the platform. If
-      --export argument is used, data will not be inserted and will instead be dumped
-      to the location specified.
+      See the full data model extract at the link below:   https://thoughtspot.github.io/cs_tools/cs-tools/searchable
+
+    Arguments:
+      protocol://DEFINITION.toml  protocol and path for options to pass to the syncer  (required)
 
     Options:
-      --export DIRECTORY              if specified, directory to save data to
-      --metadata (system table|imported data|worksheet|view|pinboard|saved answer)
-                                      type of object to find data for
-      --helpfull                      Show the full help message and exit.
-      -h, --help                      Show this message and exit.
+      --include-columns       ...
+      --config IDENTIFIER     config file identifier  (required)
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 === "searchable bi-server"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content spotapp --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable bi-server --help
 
-    Usage: cs_tools tools searchable-content spotapp [--option, ..., --help]
+    Usage: cs_tools tools searchable bi-server --config IDENTIFIER [--option, ..., --help] protocol://DEFINITION.toml
 
-      Exports the SpotApp associated with this tool.
+      Extract usage statistics from your ThoughtSpot platform.
 
-    Options:
-      --export DIRECTORY  directory to save the spot app to
-      --helpfull          Show the full help message and exit.
-      -h, --help          Show this message and exit.
-    ```
+      Fields extracted from TS: BI Server
+          - incident id           - timestamp detailed    - url
+          - http response code    - browser type          - client type
+          - client id             - answer book guid      - viz id
+          - user id               - user action           - query text
+          - response size         - latency (us)          - database latency (us)
+          - impressions
 
-=== "searchable spotapp"
-    ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools searchable-content spotapp --help
-
-    Usage: cs_tools tools searchable-content spotapp [--option, ..., --help]
-
-      Exports the SpotApp associated with this tool.
+    Arguments:
+      protocol://DEFINITION.toml  protocol and path for options to pass to the syncer  (required)
 
     Options:
-      --export DIRECTORY  directory to save the spot app to
-      --helpfull          Show the full help message and exit.
-      -h, --help          Show this message and exit.
+      --from-date YYYY-MM-DD  lower bound of rows to select from TS: BI Server
+      --to-date YYYY-MM-DD    upper bound of rows to select from TS: BI Server
+      --include-today         if set, pull partial day data
+      --skinny / --no-skinny  if skinny, exclude NULL and INVALID user actions  (default: skinny)
+      --config IDENTIFIER     config file identifier  (required)
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 ---
 
 ## Changelog
 
-!!! tldr ":octicons-tag-16: v1.3.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-15"
+!!! tldr ":octicons-tag-16: v1.3.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
 
     === ":wrench: &nbsp; Modified"
         - now known as simply Searchable, `searchable`

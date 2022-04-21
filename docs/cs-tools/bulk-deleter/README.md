@@ -12,46 +12,34 @@ up the delete process, but gives less visibility should an issue occur. A summar
 what has been removed is saved in the logs directory of cs-tools. 
 
 An example data set is provided below. This is the same format an Excel or CSV should be
-in if supplied to `bulk-deleter from-file`
-
-!!! note "Example input files"
-
-    [:fontawesome-solid-file-excel: Excel template](template.xlsx)
-     &nbsp; &nbsp; &nbsp; &nbsp; 
-    [:fontawesome-solid-file-csv: CSV template](template.csv)
+in if supplied to `bulk-deleter from-tabular`
 
 === "bulk-deleter --help"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools bulk-deleter --help
-
-     Usage: cs_tools tools bulk-deleter [--version, --help] <command>
+    Usage: cs_tools tools bulk-deleter [--version, --help] <command>
 
       Bulk delete metadata objects from your ThoughtSpot platform.
 
-      USE AT YOUR OWN RISK! This tool uses private API calls which could change on any
-      version update and break the tool.
-
     Options:
-      --version   Show the version and exit.
-      -h, --help  Show this message and exit.
+      --version               Show the version and exit.
+      -h, --help, --helpfull  Show this message and exit.
 
     Commands:
-      from-file      Remove many objects from ThoughtSpot.
-      generate-file  Generates example file in Excel or CSV format.
-      single         Removes a specific object from ThoughtSpot.
+      from-tabular  Remove many objects from ThoughtSpot.
+      single        Removes a specific object from ThoughtSpot.
     ```
 
-=== "bulk-deleter from-file"
+=== "bulk-deleter from-tabular"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools bulk-deleter from-file --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools bulk-deleter from-tabular --help
 
-    Usage: cs_tools tools bulk-deleter from-file [--option, ..., --help] FILE.csv
+    Usage: cs_tools tools bulk-deleter from-tabular --config IDENTIFIER [--option, ..., --help]
 
       Remove many objects from ThoughtSpot.
 
-      Accepts an Excel (.xlsx) file or CSV (.csv) file.
-
-      CSV/XLSX file format should look like..
+      If you are deleting from an external data source, your data must follow the
+      tabular format below.
 
           +----------------+-------+
           | type           | guid  |
@@ -62,36 +50,20 @@ in if supplied to `bulk-deleter from-file`
           | saved answer   | guid3 |
           +----------------+-------+
 
-    Arguments:
-      FILE.csv  path to a file with columns "type" and "guid"  (required)
-
     Options:
-      --batchsize INTEGER  maximum amount of objects to delete simultaneously
-                           (default: 1)
-
-      --helpfull           Show the full help message and exit.
-      -h, --help           Show this message and exit.
-    ```
-
-=== "bulk-deleter generate-file"
-    ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools bulk-deleter generate-file --help
-
-    Usage: cs_tools tools bulk-deleter generate-file [--option, ..., --help]
-
-      Generates example file in Excel or CSV format.
-
-    Options:
-      --export FILE.csv  filepath to save generated file to  (required)
-      --helpfull         Show the full help message and exit.
-      -h, --help         Show this message and exit.
+      --syncer protocol://DEFINITION.toml
+                                      protocol and path for options to pass to the syncer
+      --deletion TEXT                 if using --syncer, directive to find user deletion at
+      --batchsize INTEGER             maximum amount of objects to delete simultaneously  (default: 1)
+      --config IDENTIFIER             config file identifier  (required)
+      -h, --help, --helpfull          Show this message and exit.
     ```
 
 === "bulk-deleter single"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools bulk-deleter single --help
 
-    Usage: cs_tools tools bulk-deleter single [--option, ..., --help]
+    Usage: cs_tools tools bulk-deleter single --config IDENTIFIER [--option, ..., --help]
 
       Removes a specific object from ThoughtSpot.
 
@@ -99,28 +71,31 @@ in if supplied to `bulk-deleter from-file`
       --type (pinboard|PINBOARD_ANSWER_BOOK|saved answer|QUESTION_ANSWER_BOOK)
                                       type of the metadata to delete  (required)
       --guid TEXT                     guid to delete  (required)
-      --helpfull                      Show the full help message and exit.
-      -h, --help                      Show this message and exit.
+      --config IDENTIFIER             config file identifier  (required)
+      -h, --help, --helpfull          Show this message and exit.
     ```
 
 ---
 
 ## Changelog
 
-!!! tldr ":octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-11-09"
+!!! tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
 
     === ":wrench: &nbsp; Modified"
-        - now known as Bulk Deleter, `bulk-deleter`
-        - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+        - input/output using syncers! [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 ??? info "Changes History"
+
+    ??? tldr ":octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-11-09"
+        === ":wrench: &nbsp; Modified"
+            - now known as Bulk Deleter, `bulk-deleter`
+            - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
     ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-08-24"
         === ":hammer_and_wrench: &nbsp; Added"
             - Initial release from [@dpm][contrib-dpm]{ target='secondary' .external-link }.
 
+---
 
-[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
-[semver]: https://semver.org/spec/v2.0.0.html
 [contrib-boonhapus]: https://github.com/boonhapus
 [contrib-dpm]: https://github.com/DevinMcPherson-TS
