@@ -2,7 +2,7 @@ import pathlib
 
 from typer import Argument as A_, Option as O_
 from rich.markup import escape
-from rich.prompt import Confirm
+from rich.prompt import Prompt, Confirm
 import pydantic
 import typer
 import toml
@@ -75,7 +75,10 @@ def create(
     host: str = O_(..., help='thoughtspot server', prompt=True),
     port: int = O_(None, help='optional, port of the thoughtspot server'),
     username: str = O_(..., help='username when logging into ThoughtSpot', prompt=True),
-    password: str = O_(..., help='password when logging into ThoughtSpot', hide_input=True, prompt=True),
+    password: str = O_(
+        None,
+        help='password when logging into ThoughtSpot, if "prompt" then hide input',
+    ),
     temp_dir: pathlib.Path = O_(
         APP_DIR,
         '--temp_dir',
@@ -92,6 +95,9 @@ def create(
     """
     Create a new config file.
     """
+    if password is None:
+        password = Prompt.ask('[yellow](your input is hidden)[/]\nPassword', console=console, password=True)
+
     args = {
         'host': host, 'port': port, 'username': username, 'password': password,
         'temp_dir': temp_dir, 'disable_ssl': disable_ssl, 'disable_sso': disable_sso,
@@ -121,7 +127,10 @@ def modify(
     host: str = O_(None, help='thoughtspot server'),
     port: int = O_(None, help='optional, port of the thoughtspot server'),
     username: str = O_(None, help='username when logging into ThoughtSpot'),
-    password: str = O_(None, help='password when logging into ThoughtSpot'),
+    password: str = O_(
+        None,
+        help='password when logging into ThoughtSpot, if "prompt" then hide input',
+    ),
     temp_dir: pathlib.Path = O_(
         None,
         '--temp_dir',
@@ -138,6 +147,9 @@ def modify(
     """
     Modify an existing config file.
     """
+    if password == 'prompt':
+        password = Prompt.ask('[yellow](your input is hidden)[/]\nPassword', console=console, password=True)
+
     file = APP_DIR / f'cluster-cfg_{config}.toml'
     old  = TSConfig.from_toml(file).dict()
     args = {
