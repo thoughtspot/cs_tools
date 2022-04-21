@@ -1,12 +1,11 @@
 import logging
-import pathlib
 
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
 from cs_tools.cli.tools import common
 
 from .enums import RecordsetType
@@ -40,32 +39,27 @@ def search(
     ctx: typer.Context,
     query: str = O_(..., help='search terms to issue against the dataset'),
     dataset: str = O_(..., help='name of the worksheet, view, or table to search against'),
-    export: pathlib.Path = O_(
+    syncer: str = O_(
         ...,
-        help='full path to save data set to',
-        metavar='FILE.csv',
-        dir_okay=False,
-        resolve_path=True
+        help='protocol and path for options to pass to the syncer',
+        metavar='protocol://DEFINITION.toml',
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
-    data_type: RecordsetType = O_('worksheet', help='type of object to search')
+    target: str = O_(..., help='syncer directive to load data to'),
+    data_type: RecordsetType = O_(
+        RecordsetType.worksheet,
+        help='type of object to search'
+    )
 ):
     """
     Search a dataset from the command line.
 
     Columns must be surrounded by square brackets. Search-level formulas are
     not currently supported, but a formula defined as part of a data source is.
-
-    [b yellow]There is a hard limit of 100K rows extracted for any given Search.[/]
-
-    \b
-    Further reading:
-      https://docs.thoughtspot.com/software/latest/search-data-api
-      https://docs.thoughtspot.com/software/latest/search-data-api#components
-      https://docs.thoughtspot.com/software/latest/search-data-api#_limitations_of_search_query_api
     """
     ts = ctx.obj.thoughtspot
 
     with console.status(f'[bold green]retrieving data from {data_type.value} "{dataset}"..[/]'):
         data = ts.search(query, **{data_type.value: dataset})
 
-    common.to_csv(data, export, header=True)
+    syncer.dump(target, data=data)
