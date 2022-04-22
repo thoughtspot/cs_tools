@@ -106,7 +106,7 @@ Bulk management of users within ThoughtSpot.........
 !!! tldr ":octicons-tag-16: v1.2.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
 
     === ":hammer_and_wrench: &nbsp; Added"
-        - migrated [User Tools][tsut]{ target='secondary' .external-link } to CS Tools under `sync`
+        - migrated [User Tools][tsut]{ target='secondary' .external-link } to __CS Tools__ under `sync`
         - added user renaming as `rename`
 
     === ":wrench: &nbsp; Modified"

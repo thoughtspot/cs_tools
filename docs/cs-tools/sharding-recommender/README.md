@@ -89,7 +89,7 @@ Office Hours session and a CSA will be able to help guide them through the proce
 
 ## Changelog
 
-!!! tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
+!!! tldr ":octicons-tag-16: v1.2.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
 
     === ":wrench: &nbsp; Modified"
         - input/output using syncers! [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
