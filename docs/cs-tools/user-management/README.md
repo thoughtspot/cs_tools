@@ -1,10 +1,6 @@
 # User Management
 
-This solution allows the customer to transfer objects from one user to another.
-
-One use case for this tool is when an employee has left the company, but their
-ThoughtSpot content needs to be saved. In this case, you may transfer all their created
-content to another designated owner.
+Bulk management of users within ThoughtSpot.........
 
 ## CLI preview
 
