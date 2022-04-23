@@ -7,6 +7,7 @@ from snowflake.sqlalchemy import URL, snowdialect
 from pydantic import Field
 import sqlalchemy as sa
 
+from cs_tools import __version__
 from cs_tools.util import chunks
 
 from .const import MAX_EXPRESSIONS_MAGIC_NUMBER
@@ -34,16 +35,17 @@ class Snowflake:
     schema_: str = Field('PUBLIC', alias='schema')
     auth_type: AuthType = AuthType.local
     truncate_on_load: bool = True
-    silence_noisiness: bool = True
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
     metadata = None
 
     def __post_init_post_parse__(self):
-        if self.silence_noisiness:
-            snowdialect.SnowflakeDialect.supports_statement_cache = False
-            logging.getLogger('snowflake').setLevel('WARNING')
+        # silence the noise that snowflake dialect creates
+        # - they forcibly log EVERYTHING...
+        # - implement COMMIT: 93ee7cc, PR#275 prior to pypi release
+        snowdialect.SnowflakeDialect.supports_statement_cache = False
+        logging.getLogger('snowflake').setLevel('WARNING')
 
         url = URL(
             account=self.snowflake_account_identifier,
@@ -54,13 +56,15 @@ class Snowflake:
             warehouse=self.warehouse,
             role=self.role
         )
+    
+        connect_args = {
+            'session_parameters': {
+                'query_tag': f'thoughtspot.cs_tools (v{__version__})'
+            }
+        }
 
-        if self.auth_type == AuthType.local:
-            connect_args = {}
-        elif self.auth_type == AuthType.multi_factor:
-            connect_args = {'authenticator': 'externalbrowser'}
-        else:
-            connect_args = {'authenticator': 'externalbrowser'}
+        if self.auth_type != AuthType.local:
+            connect_args['authenticator'] = 'externalbrowser'
 
         self.engine = sa.create_engine(url, connect_args=connect_args)
         self.cnxn = self.engine.connect()
