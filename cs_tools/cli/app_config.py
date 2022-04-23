@@ -115,10 +115,13 @@ def create(
     with file.open('w') as t:
         toml.dump(cfg.dict(), t)
 
+    message = f'saved cluster configuration file "{config}"'
+
     if is_default:
         _meta_config(config)
+        message += 'as the default'
 
-    console.print(f'saved cluster configuration file "{config}"')
+    console.print(message)
 
 
 @app.command(cls=CSToolsCommand)
@@ -169,10 +172,13 @@ def modify(
     with file.open('w') as t:
         toml.dump(cfg.dict(), t)
 
+    message = f'saved cluster configuration file "{config}"'
+
     if is_default:
         _meta_config(config)
+        message += ' as the default'
 
-    console.print(f'saved cluster configuration file "{config}"')
+    console.print(message)
 
 
 @app.command(cls=CSToolsCommand)
