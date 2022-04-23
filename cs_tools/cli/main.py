@@ -76,7 +76,7 @@ def _platform(ctx: typer.Context):
     """
     ts = ctx.obj.thoughtspot
 
-    console.print(f"""
+    console.print(f"""[yellow]
         [PLATFORM DETAILS]
         system: {platform.system()} (detail: {platform.platform()})
         python: {platform.python_version()}

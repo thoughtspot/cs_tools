@@ -41,10 +41,10 @@ def bi_server(
         metavar='protocol://DEFINITION.toml',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
+    compact: bool = O_(True, '--compact / --full', help='if compact, exclude NULL and INVALID user actions'),
     from_date: dt.datetime = O_(None, metavar='YYYY-MM-DD', help='lower bound of rows to select from TS: BI Server'),
     to_date: dt.datetime = O_(None, metavar='YYYY-MM-DD', help='upper bound of rows to select from TS: BI Server'),
     include_today: bool = O_(False, '--include-today', help='if set, pull partial day data', show_default=False),
-    skinny: bool = O_(True, help='if skinny, exclude NULL and INVALID user actions'),
 ):
     """
     Extract usage statistics from your ThoughtSpot platform.
@@ -63,10 +63,10 @@ def bi_server(
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions]"
+        + ("" if compact else " [user action] != {null} 'invalid'")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.date()}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.date()}'")
         + ("" if include_today else " [timestamp] != 'today'")
-        + ("" if not skinny else " [user action] != {null} 'invalid'")
     )
 
     ts = ctx.obj.thoughtspot

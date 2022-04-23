@@ -77,11 +77,11 @@ class User(SQLModel, table=True):
     modified: dt.datetime
     user_type: str
 
-    groups: Optional[List['XREFPrincipal']] = Relationship(back_populates='user')
-    content: Optional[List['MetadataObject']] = Relationship(back_populates='author')
-    dependent_content: Optional[List['DependentObject']] = Relationship(back_populates='author')
-    sharing: Optional[List['SharingAccess']] = Relationship(back_populates='shared_to_user')
-    bi_actions: Optional[List['BIServer']] = Relationship(back_populates='user')
+    # groups: Optional[List['XREFPrincipal']] = Relationship(back_populates='user')
+    # content: Optional[List['MetadataObject']] = Relationship(back_populates='author')
+    # dependent_content: Optional[List['DependentObject']] = Relationship(back_populates='author')
+    # sharing: Optional[List['SharingAccess']] = Relationship(back_populates='shared_to_user')
+    # bi_actions: Optional[List['BIServer']] = Relationship(back_populates='user')
 
     @classmethod
     def from_api_v1(cls, data) -> 'User':
@@ -112,9 +112,9 @@ class Group(SQLModel, table=True):
     modified: dt.datetime
     group_type: str
 
-    groups: Optional[List['XREFPrincipal']] = Relationship(back_populates='group')
-    privileges: List['GroupPrivilege'] = Relationship(back_populates='group')
-    sharing: Optional[List['SharingAccess']] = Relationship(back_populates='shared_to_group')
+    # groups: Optional[List['XREFPrincipal']] = Relationship(back_populates='group')
+    # privileges: List['GroupPrivilege'] = Relationship(back_populates='group')
+    # sharing: Optional[List['SharingAccess']] = Relationship(back_populates='shared_to_group')
 
     @classmethod
     def from_api_v1(cls, data) -> 'Group':
@@ -139,7 +139,7 @@ class GroupPrivilege(SQLModel, table=True):
     group_guid: str = Field(primary_key=True, foreign_key='ts_group.group_guid')
     privilege: str = Field(primary_key=True)
 
-    group: 'Group' = Relationship(back_populates='privileges')
+    # group: 'Group' = Relationship(back_populates='privileges')
 
     @classmethod
     def from_api_v1(cls, data) -> List['GroupPrivilege']:
@@ -158,8 +158,8 @@ class XREFPrincipal(SQLModel, table=True):
     group_guid: str = Field(primary_key=True, foreign_key='ts_group.group_guid')
 
     # TODO: how do we portray nested groups?
-    user: 'User' = Relationship(back_populates='groups')
-    group: 'Group' = Relationship(back_populates='groups')
+    # user: 'User' = Relationship(back_populates='groups')
+    # group: 'Group' = Relationship(back_populates='groups')
 
     @classmethod
     def from_api_v1(cls, data) -> List['XREFPrincipal']:
@@ -178,7 +178,7 @@ class Tag(SQLModel, table=True):
     created: dt.datetime
     modified: dt.datetime
 
-    tagged_objects: Optional[List['TaggedObject']] = Relationship(back_populates='tag')
+    # tagged_objects: Optional[List['TaggedObject']] = Relationship(back_populates='tag')
 
     @classmethod
     def from_api_v1(cls, data) -> List['Tag']:
@@ -203,11 +203,11 @@ class MetadataObject(SQLModel, table=True):
     modified: dt.datetime
     object_type: str
 
-    author: 'User' = Relationship(back_populates='content')
-    dependents: Optional[List['DependentObject']] = Relationship(back_populates='parent')
-    tagged_objects: Optional[List['TaggedObject']] = Relationship(back_populates='metadata_object')
-    sharing: Optional[List['SharingAccess']] = Relationship(back_populates='metadata_object')
-    bi_actions: Optional[List['BIServer']] = Relationship(back_populates='metadata_object')
+    # author: 'User' = Relationship(back_populates='content')
+    # dependents: Optional[List['DependentObject']] = Relationship(back_populates='parent')
+    # tagged_objects: Optional[List['TaggedObject']] = Relationship(back_populates='metadata_object')
+    # sharing: Optional[List['SharingAccess']] = Relationship(back_populates='metadata_object')
+    # bi_actions: Optional[List['BIServer']] = Relationship(back_populates='metadata_object')
 
     @classmethod
     def from_api_v1(cls, data) -> 'TaggedObject':
@@ -238,8 +238,8 @@ class TaggedObject(SQLModel, table=True):
     object_guid: str = Field(primary_key=True, foreign_key='ts_metadata_object.object_guid')
     tag_guid: str = Field(primary_key=True, foreign_key='ts_tag.tag_guid')
 
-    metadata_object: 'MetadataObject' = Relationship(back_populates='tagged_objects')
-    tag: 'Tag' = Relationship(back_populates='tagged_objects')
+    # metadata_object: 'MetadataObject' = Relationship(back_populates='tagged_objects')
+    # tag: 'Tag' = Relationship(back_populates='tagged_objects')
 
     @classmethod
     def from_api_v1(cls, data) -> List['TaggedObject']:
@@ -260,8 +260,8 @@ class DependentObject(SQLModel, table=True):
     modified: dt.datetime
     object_type: str
 
-    author: 'User' = Relationship(back_populates='dependent_content')
-    parent: 'MetadataObject' = Relationship(back_populates='dependents')
+    # author: 'User' = Relationship(back_populates='dependent_content')
+    # parent: 'MetadataObject' = Relationship(back_populates='dependents')
 
     @classmethod
     def from_api_v1(cls, data) -> 'DependentObject':
@@ -292,9 +292,9 @@ class SharingAccess(SQLModel, table=True):
     permission_type: str
     share_mode: str
 
-    metadata_object: 'MetadataObject' = Relationship(back_populates='sharing')
-    shared_to_user: 'User' = Relationship(back_populates='sharing')
-    shared_to_group: 'Group' = Relationship(back_populates='sharing')
+    # metadata_object: 'MetadataObject' = Relationship(back_populates='sharing')
+    # shared_to_user: 'User' = Relationship(back_populates='sharing')
+    # shared_to_group: 'Group' = Relationship(back_populates='sharing')
 
     @classmethod
     def from_api_v1(cls, data) -> 'SharingAccess':
@@ -338,5 +338,5 @@ class BIServer(SQLModel, table=True):
     latency_us: Optional[int]
     impressions: Optional[float]
 
-    metadata_object: 'MetadataObject' = Relationship(back_populates='bi_actions')
-    user: 'User' = Relationship(back_populates='bi_actions')
+    # metadata_object: 'MetadataObject' = Relationship(back_populates='bi_actions')
+    # user: 'User' = Relationship(back_populates='bi_actions')

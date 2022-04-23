@@ -129,6 +129,7 @@ Cluster configs located at: ~/.config/cs_tools
 [default]
 ~/.config/cs_tools/cluster-cfg_production.toml
 
+name = "production"
 verbose = false
 temp_dir = "/export/sdbc1/data/dump"
 

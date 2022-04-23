@@ -19,8 +19,8 @@ hide:
 <figure><img src="assets/cs_tools logo black.png" width="400"/></figure>
 
 <center>
-CS Tools is a utility written by the __ThoughtSpot__ Professional Services & Customer
-Success organizations, meant to augment built-in platform tools, help with
+__CS Tools__ is a utility written by the __ThoughtSpot__ Professional Services &
+Customer Success organizations, meant to augment built-in platform tools, help with
 administration of and enhance adoption within your ThoughtSpot environment.
 </center>
 

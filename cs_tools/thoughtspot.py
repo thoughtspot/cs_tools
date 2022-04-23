@@ -4,9 +4,10 @@ import logging
 import json
 import sys
 
+import httpx
 import click
 
-from cs_tools.errors import ThoughtSpotUnreachable
+from cs_tools.errors import ThoughtSpotUnreachable, AuthenticationError
 from cs_tools.util import reveal
 from cs_tools.api._rest_api_v1 import _RESTAPIv1
 from cs_tools._version import __version__
@@ -26,6 +27,8 @@ class ThoughtSpot:
     def __init__(self, config):
         self.config = config
         self._rest_api = _RESTAPIv1(config, ts=self)
+        self._logged_in_user = None
+        self._platform = None
 
         # Middleware endpoints. These are logically grouped interactions within
         # ThoughtSpot so that working with the REST and GraphQL apis is simpler
@@ -81,26 +84,35 @@ class ThoughtSpot:
         """
         Log in to ThoughtSpot.
         """
-        r = self.api._session.login(
-            username=self.config.auth['frontend'].username,
-            password=reveal(self.config.auth['frontend'].password).decode(),
-            rememberme=True,
-            disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
-        )
+        try:
+            r = self.api._session.login(
+                username=self.config.auth['frontend'].username,
+                password=reveal(self.config.auth['frontend'].password).decode(),
+                rememberme=True,
+                disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
+            )
+        except httpx.ConnectError:
+            host = self.config.thoughtspot.host
+            rzn = f'cannot see url [blue]{host}[/] from the current machine'
+            raise ThoughtSpotUnreachable(rzn) from None
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == httpx.codes.UNAUTHORIZED:
+                raise AuthenticationError(self.config, original=e) from None
+            raise e
 
-        raise NotImplementedError('need to have all errors include .cli_message')
-
+        # got a response, but couldn't make sense of it
         try:
             data = r.json()
-            self._logged_in_user = LoggedInUser.from_session_info(data)
-            self._this_platform = ThoughtSpotPlatform.from_session_info(data)
         except json.JSONDecodeError:
             if 'Enter the activation code to enable service' in r.text:
-                m = 'Your ThoughtSpot cluster is in eco mode, please go activate it!'
+                rzn = 'it is in eco mode, please go activate it!'
             else:
-                m = 'Your ThoughtSpot cluster is currently unavailable.'
+                rzn = 'for an unknown reason.'
 
-            raise ThoughtSpotUnreachable(m) from None
+            raise ThoughtSpotUnreachable(rzn) from None
+
+        self._logged_in_user = LoggedInUser.from_session_info(data)
+        self._this_platform = ThoughtSpotPlatform.from_session_info(data)
 
         log.debug(f"""execution context...
 
@@ -139,4 +151,5 @@ class ThoughtSpot:
         return self
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
-        self.logout()
+        if self._logged_in_user is not None:
+            self.logout()

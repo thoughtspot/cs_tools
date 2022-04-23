@@ -77,7 +77,7 @@ class SyncerProtocolType(click.ParamType):
         log.info(f'registering syncer: {syncer.name}')
 
         if getattr(syncer, '__is_database__', False):
-            models.SQLModel.metadata.create_all(syncer.engine)
+            models.SQLModel.metadata.create_all(syncer.cnxn)
 
         return syncer
 

@@ -116,14 +116,8 @@ class _RESTAPIv1:
 
         meth = getattr(self._http, method.lower())
         r = meth(endpoint, **kw)
-
-        try:
-            r.raise_for_status()
-        except Exception as e:
-            log.warning(e.response.content)
-            raise e
-        else:
-            log.debug(f'<< HTTP: {r.status_code}')
+        r.raise_for_status()
+        log.debug(f'<< HTTP: {r.status_code}')
 
         if r.text and self._config.verbose:
             log.debug('<< CONTENT:\n\n%s', r.text)

@@ -123,6 +123,7 @@ class AuthConfig(Settings):
 
 
 class TSConfig(Settings):
+    name: str
     thoughtspot: HostConfig
     auth: Dict[str, AuthConfig]
     verbose: bool = False
@@ -154,6 +155,9 @@ class TSConfig(Settings):
         """
         data = toml.load(fp)
 
+        if data.get('name') is None:
+            data['name'] = fp.stem.replace('cluster-cfg_', '')
+
         # overrides
         if verbose is not None:
             data['verbose'] = verbose
@@ -174,12 +178,19 @@ class TSConfig(Settings):
         return cls.from_toml(APP_DIR / f'cluster-cfg_{config}.toml', **passthru)
 
     @classmethod
-    def from_parse_args(cls, *, validate: bool = True, **passthru) -> 'TSConfig':
+    def from_parse_args(
+        cls,
+        name: str,
+        *,
+        validate: bool = True,
+        **passthru
+    ) -> 'TSConfig':
         """
         """
         _pw = passthru.get('password')
 
         data = {
+            'name': name,
             'verbose': passthru.get('verbose'),
             'temp_dir': passthru.get('temp_dir'),
             'thoughtspot': {

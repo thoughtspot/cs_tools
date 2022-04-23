@@ -103,7 +103,7 @@ def create(
         'temp_dir': temp_dir, 'disable_ssl': disable_ssl, 'disable_sso': disable_sso,
         'verbose': verbose
     }
-    cfg  = TSConfig.from_parse_args(**args)
+    cfg  = TSConfig.from_parse_args(config, **args)
     file = APP_DIR / f'cluster-cfg_{config}.toml'
 
     if file.exists() and not Confirm.ask(
@@ -155,12 +155,12 @@ def modify(
 
     file = APP_DIR / f'cluster-cfg_{config}.toml'
     old  = TSConfig.from_toml(file).dict()
-    args = {
+    kw = {
         'host': host, 'port': port, 'username': username, 'password': password,
         'temp_dir': temp_dir, 'disable_ssl': disable_ssl, 'disable_sso': disable_sso,
         'verbose': verbose
     }
-    data = TSConfig.from_parse_args(**args, validate=False).dict()
+    data = TSConfig.from_parse_args(config, **kw, validate=False).dict()
     new  = deep_update(old, data, ignore=None)
 
     try:
