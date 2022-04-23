@@ -21,10 +21,10 @@ class JSON:
     def __post_init_post_parse__(self):
         self.path = self.path.resolve()
 
-        if not self.path.exists() or not self.path.parent.exists():
-            log.info(f'{self.path.parent} does not exist, creating..')
+        if not self.path.exists():
+            log.info(f'{self.path} does not exist, creating..')
 
-            if self.path.name.endswith('.json'):
+            if self.path.suffix:
                 self.path.parent.mkdir(parents=True, exist_ok=True)
                 self.path.touch()
             else:
@@ -33,6 +33,9 @@ class JSON:
     @property
     def is_file(self) -> bool:
         return self.path.is_file()
+
+    def resolve_path(self, directive: str) -> pathlib.Path:
+        return self.path if self.file else self.path / directive / '.json'
 
     def __repr__(self):
         return f"<JSON sync: path='{self.path}', file={self.is_file()}'>"
@@ -44,17 +47,13 @@ class JSON:
         return 'json'
 
     def load(self, directive: str) -> List[Dict[str, Any]]:
-        path = self.path if self.is_file else self.path / f'{directive}.json'
+        path = self.resolve_path(directive)
         data = util.read_from_possibly_empty(path)
-
-        if self.is_file:
-            data = data[directive]
-
-        return data
+        return data[directive]
 
     def dump(self, directive: str, *, data: List[Dict[str, Any]]) -> None:
-        path = self.path if self.is_file else self.path / f'{directive}.json'
-        
+        path = self.resolve_path(directive)
+
         if self.is_file:
             existing_data = util.read_from_possibly_empty(path)
             existing_data[directive] = data

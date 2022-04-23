@@ -14,10 +14,16 @@ def read_from_possibly_empty(fp: pathlib.Path) -> Dict[str, Any]:
 
     Returns
     -------
-    data : Dict[str, Any]
+    data : Dict[str, RECORDS_FORMAT]
     """
     if fp.stat().st_size == 0:
-        return {}
+        return None
 
     with fp.open('r') as j:
-        return json.load(j)
+        data = json.load(j)
+
+    # file with a single table stores records directly
+    if isinstance(data, list):
+        data = {fp.name: data}
+
+    return data
