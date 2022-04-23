@@ -1,10 +1,12 @@
 import datetime as dt
 import platform
 import logging
+import json
 import sys
 
 import click
 
+from cs_tools.errors import ThoughtSpotUnreachable
 from cs_tools.util import reveal
 from cs_tools.api._rest_api_v1 import _RESTAPIv1
 from cs_tools._version import __version__
@@ -86,8 +88,19 @@ class ThoughtSpot:
             disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
         )
 
-        self._logged_in_user = LoggedInUser.from_session_info(r.json())
-        self._this_platform = ThoughtSpotPlatform.from_session_info(r.json())
+        raise NotImplementedError('need to have all errors include .cli_message')
+
+        try:
+            data = r.json()
+            self._logged_in_user = LoggedInUser.from_session_info(data)
+            self._this_platform = ThoughtSpotPlatform.from_session_info(data)
+        except json.JSONDecodeError:
+            if 'Enter the activation code to enable service' in r.text:
+                m = 'Your ThoughtSpot cluster is in eco mode, please go activate it!'
+            else:
+                m = 'Your ThoughtSpot cluster is currently unavailable.'
+
+            raise ThoughtSpotUnreachable(m) from None
 
         log.debug(f"""execution context...
 

@@ -17,6 +17,7 @@ from cs_tools.cli._loader import _gather_tools
 from cs_tools.cli.options import CONFIG_OPT
 from cs_tools._version import __version__
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.errors import CSToolsException
 from cs_tools.const import APP_DIR
 
 from .app_config import app as cfg_app
@@ -212,9 +213,17 @@ def run():
     except Exception as e:
         log.debug('whoopsie, something went wrong!', exc_info=True)
 
-        if hasattr(e, 'warning'):
-            e = e.warning
+        if isinstance(e, CSToolsException):
+            log.info(f'[error]{e.cli_message}')
         else:
-            e = f'{type(e).__name__}: {e}'
+            GF = 'https://forms.gle/sh6hyBSS2mnrwWCa9'
+            GH = 'https://github.com/thoughtspot/cs_tools/issues/new/choose'
 
-        log.exception(f'[error]{e}')
+            log.exception(
+                '[yellow]This is an unhandled error!! 😅'
+                '\n\nIf you encounter this message more than once, please help by '
+                'letting us know at one of the links below:'
+                f'\n\n  Google Forms: [link={GF}]{GF}[/link]'
+                f'\n        GitHub: [link={GH}]{GH}[/link]'
+                '\n\n[/][error]'
+            )

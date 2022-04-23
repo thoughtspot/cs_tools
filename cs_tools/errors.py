@@ -7,6 +7,15 @@ class CSToolsException(Exception):
     """
 
 
+class ThoughtSpotUnreachable(CSToolsException):
+    """
+    Raised when ThoughtSpot can't be reached.
+    """
+    def __init__(self, message):
+        super().__init__(message)
+        self.cli_message = message
+
+
 class ContentDoesNotExist(CSToolsException):
     """
     Raised when ThoughtSpot can't find content by this name or guid.
