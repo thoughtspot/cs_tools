@@ -30,6 +30,7 @@ class Falcon:
     def __post_init_post_parse__(self):
         ctx = click.get_current_context()
         self.engine = sa.engine.create_mock_engine('sqlite://', self.intercept_create_table)
+        self.cnxn = self.engine.connect()
         self._thoughtspot = ctx.obj.thoughtspot
 
         # create the database and schema if it doesn't exist

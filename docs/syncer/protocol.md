@@ -93,10 +93,10 @@ class SyncerProtocol:
     stores, typically at a remote location.
 
     Set an attribute on your syncer class named `__is_database__` to any truthy value.
-    This will tell CS Tools to run `metadata.create_all(syncer.engine)` prior to any
+    This will tell CS Tools to run `metadata.create_all(syncer.cnxn)` prior to any
     calls to your syncer.
 
-    Additonally, your syncer should expose an `engine` attribute, with a fully
+    Additonally, your syncer should expose an `cnxn` attribute, with a fully
     instantiated `sqlalchemy.engine.Engine` to interact with the database backend.
 
     🔥 __Pro tip__: during initialization, register a `sqlalchemy` event listener to
@@ -112,6 +112,7 @@ class SyncerProtocol:
 
         def __post_init__(self):
             self.engine = sa.create_engine(...)
+            self.cnxn = self.engine.connect()
             sa.event.listen(sa.schema.MetaData, 'after_create', self.capture_metadata)
 
         def capture_metadata(self, metadata, cnxn, **kw):
