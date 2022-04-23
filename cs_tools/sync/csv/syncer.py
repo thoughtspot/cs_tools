@@ -1,9 +1,12 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TextIO
+import contextlib
 import logging
 import pathlib
 import csv
 
 from pydantic.dataclasses import dataclass
+
+from . import util
 
 
 log = logging.getLogger(__name__)
@@ -18,42 +21,56 @@ class CSV:
     zipped: bool = False
 
     def __post_init_post_parse__(self):
-        self.path = self.path.resolve()
+        self.directory = self.directory.resolve()
 
-        if not self.path.exists():
-            log.info(f'{self.path.parent} does not exist, creating..')
+        if not self.directory.exists():
+            log.info(f'{self.directory} does not exist, creating..')
 
-            if self.path.name.endswith('.json'):
-                self.path.parent.mkdir(parents=True, exist_ok=True)
-                self.path.touch()
+            if self.zipped:
+                self.directory.parent.mkdir(parents=True, exist_ok=True)
             else:
-                self.path.mkdir(parents=True, exist_ok=True)
+                self.directory.mkdir(parents=True, exist_ok=True)
 
     def __repr__(self):
-        return f"<CSV sync: path='{self.path}', file={self.is_file()}'>"
+        path = self.directory.with_suffix('.zip') if self.zipped else self.directory
+        return f"<CSV sync: path='{path}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 
     @property
     def name(self) -> str:
-        return 'json'
+        return 'csv'
+
+    @contextlib.contextmanager
+    def file_reference(self, file: str, mode: str) -> TextIO:
+        """
+        Handle open-close on a file, potentially in a zip archive.
+        """
+        if self.zipped:
+            z = util.ZipFile(self.directory.with_suffix('.zip'), mode=mode)
+            f = z.open(file, mode='r' if mode == 'r' else 'w')
+        else:
+            f = (self.directory / file).open(mode='r' if mode == 'r' else 'w')
+
+        try:
+            yield f
+        finally:
+            f.close()
+
+            if self.zipped:
+                z.close()
 
     def load(self, directive: str) -> List[Dict[str, Any]]:
-        path = self.path if self.is_file else self.path / f'{directive}.json'
-        data = util.read_from_possibly_empty(path)
-
-        if self.is_file:
-            data = data[directive]
+        with self.file_reference(f'{directive}.csv', mode='r') as f:
+            reader = csv.DictReader(f)
+            data = [row for row in reader]
 
         return data
 
     def dump(self, directive: str, *, data: List[Dict[str, Any]]) -> None:
-        path = self.path if self.is_file else self.path / f'{directive}.json'
-        
-        if self.is_file:
-            existing_data = util.read_from_possibly_empty(path)
-            existing_data[directive] = data
-            data = existing_data.copy()
+        header = data[0].keys()
 
-        with path.open('w') as j:
-            json.dump(data, j, indent=4)
+        with self.file_reference(f'{directive}.csv', mode='a') as f:
+            writer = csv.DictWriter(f, fieldnames=header)
+            writer.writeheader()
+            writer.writerows(data)
