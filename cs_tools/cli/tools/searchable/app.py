@@ -1,14 +1,18 @@
 import datetime as dt
+import pathlib
+import zipfile
 import logging
 
 from typer import Argument as A_, Option as O_  # noqa
 import typer
+import oyaml as yaml
 
 from cs_tools.cli.tools.common import setup_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
 
+from ._version import __version__
 from . import transform
 
 
@@ -21,6 +25,51 @@ app = typer.Typer(
     """,
     cls=CSToolsGroup
 )
+
+
+@app.command(cls=CSToolsCommand, hidden=True)
+@depends(
+    thoughtspot=setup_thoughtspot,
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
+    enter_exit=True
+)
+def spotapp(
+    ctx: typer.Context,
+    directory: pathlib.Path = A_(..., help=''),
+    connection_guid: str = O_(..., help=''),
+    database: str = O_(..., help=''),
+    schema: str = O_(..., help='')
+):
+    """
+    Copy the Searchable Spot App to your machine.
+    """
+    ts = ctx.obj.thoughtspot
+
+    r = ts.api.metadata.details(id=[connection_guid], type='DATA_SOURCE')
+    connection_name = next(
+        cnxn['header']['name']
+        for cnxn in r.json()['storables']
+        if cnxn['header']['id'] == connection_guid
+    )
+
+    HERE = pathlib.Path(__file__).parent
+    NAME = f'CS Tools Searchable SpotApp (v{__version__})'
+    tml = {}
+
+    with zipfile.ZipFile(HERE / 'mfs.zip', mode='r') as z:
+        for file in z.infolist():
+            with z.open(file, 'r') as f:
+                data = yaml.safe_load(f)
+                data['guid'] = None
+                data['table']['connection']['name'] = connection_name
+                data['table']['connection']['fqn'] = connection_guid
+                data['table']['db'] = database
+                data['table']['schema'] = schema
+                tml[file] = data
+
+    with zipfile.ZipFile(directory / f'{NAME}.zip', mode='w') as z:
+        for file, content in tml.items():
+            z.writestr(file, yaml.safe_dump(content))
 
 
 @app.command(cls=CSToolsCommand)
