@@ -78,7 +78,7 @@ value to others in your platform.
       --from-date YYYY-MM-DD  lower bound of rows to select from TS: BI Server
       --to-date YYYY-MM-DD    upper bound of rows to select from TS: BI Server
       --include-today         if set, pull partial day data
-      --skinny / --no-skinny  if skinny, exclude NULL and INVALID user actions  (default: skinny)
+      --compact / --full      if compact, exclude NULL and INVALID user actions  (default: compact)
       --config IDENTIFIER     config file identifier  (required)
       -h, --help, --helpfull  Show this message and exit.
     ```
