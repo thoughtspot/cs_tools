@@ -33,6 +33,10 @@ def to_metadata_object(data) -> models.MetadataObject:
     return [models.MetadataObject.from_api_v1(d).dict() for d in data]
 
 
+def to_metadata_column(data) -> models.MetadataColumn:
+    return [models.MetadataColumn.from_api_v1(d).dict() for d in data]
+
+
 def to_tagged_object(data) -> models.TaggedObject:
     return [
         _.dict()
@@ -45,4 +49,4 @@ def to_dependent_object(data) -> models.DependentObject:
 
 
 def to_sharing_access(data) -> models.SharingAccess:
-    return [models.SharingAccess().from_api_v1(d).dict() for d in data]
+    return [models.SharingAccess.from_api_v1(d).dict() for d in data]

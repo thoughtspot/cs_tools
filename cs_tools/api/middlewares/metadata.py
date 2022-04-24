@@ -23,7 +23,6 @@ class MetadataMiddleware:
     def all(
         self,
         *,
-        include_columns: bool = False,
         tags: Union[str, List[str]] = None,
         category: MetadataCategory = MetadataCategory.all,
         exclude_system_content: bool = True,
@@ -57,9 +56,6 @@ class MetadataMiddleware:
         types = ['PINBOARD_ANSWER_BOOK', 'QUESTION_ANSWER_BOOK', 'LOGICAL_TABLE']
         track_guids = {}
 
-        if include_columns:
-            types.append('LOGICAL_COLUMN')
-
         for type_ in types:
             offset = 0
 
@@ -78,13 +74,8 @@ class MetadataMiddleware:
                 for d in data['headers']:
                     track_guids[d['id']] = d['name']
 
-                    to_extend.append({
-                        # inject the type (only objects with subtypes define .type)
-                        'type': type_,
-                        # context is the object where this type_ is defined
-                        'context': track_guids.get(d['owner']) if type_ == 'LOGICAL_COLUMN' else None,
-                        **d
-                    })
+                    # inject the type (only objects with subtypes define .type)
+                    to_extend.append({'type': type_, **d})
 
                 offset += len(to_extend)
 
@@ -115,15 +106,38 @@ class MetadataMiddleware:
         guids: List[GUID],
         *,
         include_hidden: bool = False,
-        chunksize: int = 50
+        chunksize: int = 10
     ) -> List[Dict[str, Any]]:
         """
         """
         columns = []
 
         for chunk in chunks(guids, n=chunksize):
-            r = self.ts.api.metadata.details(id=guids, showhidden=include_hidden)
-            columns.extend(r.json()['storables']['columns'])
+            r = self.ts.api.metadata.details(id=chunk, showhidden=include_hidden)
+
+            for logical_table in r.json()['storables']:
+                for column in logical_table.get('columns', []):
+                    columns.append({
+                        'column_guid': column['header']['id'],
+                        'object_guid': logical_table['header']['id'],
+                        'column_name': column['header']['name'],
+                        'description': column['header'].get('description'),
+                        'data_type': column['dataType'],
+                        'column_type': column['type'],
+                        'additive': column['isAdditive'],
+                        'aggregation': column['defaultAggrType'],
+                        'hidden': column['header']['isHidden'],
+                        'synonyms': column['synonyms'],
+                        'index_type': column['indexType'],
+                        'geo_config': column.get('geoConfig'),
+                        'index_priority': column['indexPriority'],
+                        'format_pattern': column.get('formatPattern'),
+                        'currency_type': None,  # not implemented in api
+                        'attribution_dimension': column['isAttributionDimension'],
+                        'spotiq_preference': column['spotiqPreference'],
+                        'calendar_type': None,  # not implemented in api
+                        'is_formula': 'formulaId' in column,
+                    })
 
         return columns
 

@@ -120,7 +120,6 @@ def gather(
         metavar='protocol://DEFINITION.toml',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
-    include_columns: bool=O_(False, '--include-columns', help='...', show_default=False)
 ):
     """
     Extract metadata from your ThoughtSpot platform.
@@ -160,10 +159,7 @@ def gather(
         export.dump('ts_tag', data=data)
 
     with console.status('[bold green]getting metadata..'):
-        content = ts.metadata.all(
-                    include_columns=include_columns,
-                    exclude_system_content=False
-                )
+        content = ts.metadata.all(exclude_system_content=False)
 
     with console.status(f'[bold green]writing metadata to {export.name}..'):
         data = transform.to_metadata_object(content)
@@ -172,18 +168,18 @@ def gather(
         data = transform.to_tagged_object(content)
         export.dump('ts_tagged_object', data=data)
 
-    with console.status('[bold green]getting dependents..'):
-        types = (
-            'LOGICAL_TABLE', 'ONE_TO_ONE_LOGICAL', 'USER_DEFINED', 'WORKSHEET',
-            'AGGR_WORKSHEET', 'MATERIALIZED_VIEW', 'SQL_VIEW'
-        )
-        guids = [_['id'] for _ in content if _['type'] in types]
-        r = ts.metadata.dependents(guids, for_columns=include_columns)
+    with console.status('[bold green]getting columns..'):
+        guids = [_['id'] for _ in content if not _['type'].endswith('BOOK')]
+        data = ts.metadata.columns(guids, include_hidden=True)
 
-        if include_columns:
-            types = ('LOGICAL_COLUMN', 'FORMULA', 'CALENDAR_TABLE')
-            _ = ts.metadata.dependents(guids, for_columns=include_columns)
-            r.extend(_)
+    with console.status(f'[bold green]writing columns to {export.name}..'):
+        data = transform.to_metadata_column(data)
+        export.dump('ts_metadata_column', data=data)
+
+    with console.status('[bold green]getting dependents..'):
+        types = ('LOGICAL_COLUMN', 'FORMULA', 'CALENDAR_TABLE')
+        guids = [_['column_guid'] for _ in data]
+        r = ts.metadata.dependents(guids, for_columns=True)
 
     with console.status(f'[bold green]writing dependents to {export.name}..'):
         data = transform.to_dependent_object(r)
@@ -196,11 +192,9 @@ def gather(
             'LOGICAL_TABLE': (
                 'ONE_TO_ONE_LOGICAL', 'USER_DEFINED', 'WORKSHEET', 'AGGR_WORKSHEET',
                 'MATERIALIZED_VIEW', 'SQL_VIEW', 'LOGICAL_TABLE'
-            )
+            ),
+            'LOGICAL_COLUMN': ('FORMULA', 'CALENDAR_TABLE', 'LOGICAL_COLUMN')
         }
-
-        if include_columns:
-            types['LOGICAL_COLUMN'] = ('FORMULA', 'CALENDAR_TABLE', 'LOGICAL_COLUMN')
 
         data = []
 
