@@ -40,8 +40,11 @@ class BigQuery:
         return self.cnxn.connection._client
 
     def __post_init_post_parse__(self):
-        engine_kw = {'credentials_file': self.credentials_file}
-        self.engine = sa.create_engine(f'bigquery://{self.project_name}/{self.dataset}', **engine_kw)
+        self.engine = sa.create_engine(
+                          f'bigquery://{self.project_name}/{self.dataset}',
+                          credentials_path=self.credentials_file
+                      )
+
         self.cnxn = self.engine.connect()
 
         # decorators must be declared here, SQLAlchemy doesn't care about instances
