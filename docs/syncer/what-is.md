@@ -20,38 +20,49 @@ storage formats.
 
 <center>
 ``` mermaid
-flowchart LR
-  A[ThoughtSpot] --> | APIs | B{{searchable gather}};
-  subgraph cs_tools
-  B -.- | has a | C{Syncer};
-  end
-  C ---> | dump | D[Snowflake];
-  D ---> | load | C;
+  %%{init: { "securityLevel": "loose" }}%%
+graph LR
+  %% nodes
+  A[ThoughtSpot]
+  %% A["<img src='https://imageio.forbes.com/specials-images/imageserve/5d7912fb0762110008c1ec70/0x0.jpg'; width='30' />"]
+  B{{searchable gather}}
+  C{Syncer}
+  D[Snowflake]
 
-  %% style A justify:contents,fill:#f9f,stroke:#333
+  %% links
+  A --> | APIs | B
+  subgraph cs_tools
+  B -.- | has a | C;
+  end
+  C ---> | dump | D;
+  D ---> | load | C;
 ```
 *data flow diagram between ThoughtSpot and an external data source*
 </center>
 
 ---
 
-In order to configure connection to your external data storage format, users will be
-required to supply a `definition.toml` file. The details of each definition are relevant
-to which syncer is used.
+## __How do I use Syncers?__ { .fc-blue }
 
-For example if you are to use the Excel syncer, you might specify a filepath to the
-target workbook, while if you use the Database syncer, database connection details might
-be required.
+In order to interact with your external data source, users are required to supply a `definition.toml` file. This is a
+file which tells your Syncer how to behave.
 
-??? info "some examples of `DEFINITION.toml`"
+For example if you are to use the Excel syncer, you might specify a filepath to the target workbook. On the other hand
+if you use the Database syncer, you could be asked to provide database connection or authentication details.
 
-    Definition files are your Users' way of configuring the Syncer's behavior. They do
-    not need to be complex to enable versatile behavior.
+__Each Syncer has different requirements__ and should document them clearly. Think of the `DEFINITION.toml` as a mini
+configuration file.
 
-    === ":material-code-json: JSON"
+!!! info "some examples of `DEFINITION.toml`"
+
+    === ":fontawesome-solid-file-csv: CSV"
         ```toml
         [configuration]
-        path = '/home/user/ts-data/production.json'
+        directory: 'C:\Users\NameyNamerson\Downloads\thoughtspot'
+        delimiter: str = '|'
+        escape_character: str = '\'
+        line_terminator: str = '\r\n'
+        zipped: bool = True
         ```
 
     === ":material-database: SQLite"
@@ -66,7 +77,13 @@ be required.
         [configuration]
         spreadsheet = 'ThoughtSpot Data Sink'
         mode = 'overwrite'
-        credentials_file = '/home/user/ts-data/<project-name>-<uuid>.json'
+        credentials_file = '/home/.config/cs_tools/gsheets/credentials.json'
+        ```
+
+    === ":fontawesome-solid-snowflake: Snowflake"
+        ```toml
+        [configuration]
+        lorem ipsum bruh
         ```
 
     === ":material-new-box: Custom Syncer"
@@ -76,10 +93,21 @@ be required.
         [configuration]
         ...
         ```
-        \* *custom syncers must supply the path to the MANIFEST.json file*
+        __custom syncers are an advanced feature!__{ .fc-coral } users must supply both
+        the path to the MANIFEST.json and the configuration all at once*
 
-If your data format is not yet implemented, read on to the next page to learn about the
-syncer protocol and be able to write your own custom syncer.
+Once you have have a definition file, you can supply it to any cs_tool command which
+documents that it interfaces with Syncers. The syntax for this looks like..
+
+   ```console
+   cs_tools tools searchable bi-server gsheets:///home/user/syncers/data-sink.toml --compact
+   ```
+
+Where the __`gsheets://`__ portion tells CS Tools which Syncer to use, and the
+__`/home/user/syncers/data-sink.toml`__ is the full path to your `definition.toml` file.
+
+*If your data format is not yet implemented, read on to the next page to learn about the
+syncer protocol and be able to write your own custom syncer.*
 
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
