@@ -2,6 +2,7 @@ from typing import Any, Dict, List, TextIO
 import contextlib
 import logging
 import pathlib
+import zipfile
 import csv
 
 from pydantic.dataclasses import dataclass
@@ -18,6 +19,9 @@ class CSV:
     Interact with CSV.
     """
     directory: pathlib.Path
+    delimiter: str = '|'
+    escape_character: str = None
+    line_terminator: str = '\r\n'
     zipped: bool = False
 
     def __post_init_post_parse__(self):
@@ -31,15 +35,13 @@ class CSV:
             else:
                 self.directory.mkdir(parents=True, exist_ok=True)
 
-    def __repr__(self):
-        path = self.directory.with_suffix('.zip') if self.zipped else self.directory
-        return f"<CSV sync: path='{path}'>"
-
-    # MANDATORY PROTOCOL MEMBERS
-
-    @property
-    def name(self) -> str:
-        return 'csv'
+    def dialect_params(self) -> Dict[str, Any]:
+        extra = {
+            'delimiter': self.delimiter,
+            'escapechar': self.escape_character,
+            'lineterminator': self.line_terminator
+        }
+        return extra
 
     @contextlib.contextmanager
     def file_reference(self, file: str, mode: str) -> TextIO:
@@ -47,7 +49,8 @@ class CSV:
         Handle open-close on a file, potentially in a zip archive.
         """
         if self.zipped:
-            z = util.ZipFile(self.directory.with_suffix('.zip'), mode=mode)
+            p = self.directory.with_suffix('.zip')
+            z = util.ZipFile(p, mode=mode, compression=zipfile.ZIP_DEFLATED)
             f = z.open(file, mode='r' if mode == 'r' else 'w')
         else:
             f = (self.directory / file).open(mode='r' if mode == 'r' else 'w')
@@ -60,9 +63,19 @@ class CSV:
             if self.zipped:
                 z.close()
 
+    def __repr__(self):
+        path = self.directory.with_suffix('.zip') if self.zipped else self.directory
+        return f"<CSV sync: path='{path}'>"
+
+    # MANDATORY PROTOCOL MEMBERS
+
+    @property
+    def name(self) -> str:
+        return 'csv'
+
     def load(self, directive: str) -> List[Dict[str, Any]]:
         with self.file_reference(f'{directive}.csv', mode='r') as f:
-            reader = csv.DictReader(f)
+            reader = csv.DictReader(f, **self.dialect_params())
             data = [row for row in reader]
 
         return data
@@ -71,6 +84,6 @@ class CSV:
         header = data[0].keys()
 
         with self.file_reference(f'{directive}.csv', mode='a') as f:
-            writer = csv.DictWriter(f, fieldnames=header)
+            writer = csv.DictWriter(f, fieldnames=header, **self.dialect_params())
             writer.writeheader()
             writer.writerows(data)
