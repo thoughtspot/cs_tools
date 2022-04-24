@@ -1,4 +1,5 @@
 import subprocess as sp
+import zipfile
 import os
 
 from typer import Argument as A_, Option as O_
@@ -6,6 +7,7 @@ import typer
 
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 from cs_tools.const import PACKAGE_DIR
+from cs_tools import __version__
 
 
 app = typer.Typer(
@@ -57,6 +59,23 @@ def vendor_pkgs():
     """
     """
     sp.check_output(['nox', '--sessions', 'ensure_working_local_install'])
+
+    dist = PACKAGE_DIR.parent / 'dist'
+
+    for arch in ('windows', 'mac', 'linux'):
+        with zipfile.ZipFile(dist / f'{arch}-cs_tools-{__version__}.zip', mode='w') as z:
+            for file in (dist / arch).iterdir():
+                z.write(file, f'pkgs/{file.name}')
+
+            z.write(dist / 'reqs/offline-install.txt', 'reqs/offline-install.txt')
+            z.write(dist / 'reqs/requirements.txt', 'reqs/requirements.txt')
+
+            if arch == 'windows':
+                z.write(dist / 'windows_install.ps1', 'windows_install.ps1')
+                z.write(dist / 'windows_activate.ps1', 'windows_activate.ps1')
+            else:
+                z.write(dist / 'unix_install.sh', 'unix_install.sh')
+                z.write(dist / 'unix_activate.sh', 'unix_activate.sh')
 
 
 if __name__ == '__main__':
