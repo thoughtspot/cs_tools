@@ -50,25 +50,26 @@ environment. The setup instructions below will help you create a __Google Cloud 
 > __dataset__{ .fc-blue }: name of your bigquery dataset
 
 > __credentials_file__{ .fc-blue }: <span class=fc-coral>optional</span>, absolute path to your credentials JSON file
-<br/>*if not supplied, `cs_tools-app-directory/bigquery/credentials.json` will be used*
+<br/>*<span class=fc-mint>default</span>:* `<cs_tools-app-directory>/bigquery/credentials.json`
+<br/>*you can find the cs_tools app directory by running `cs_tools config show`*
 
 > __truncate_on_load__{ .fc-blue }: <span class=fc-coral>optional</span>, either `True` or `False`, remove all data in the table prior to a new data load
-<br/>*if not supplied, `True` will be used*
+<br/>*<span class=fc-mint>default</span>:* `True`
 
 
 ??? info "Usage in commands"
 
     === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
 
-        `cs_tools tools searchable bi-server bigquery:///home/user/syncers/bigquery-definition.toml --skinny`
+        `cs_tools tools searchable bi-server bigquery:///home/user/syncers/bigquery-definition.toml --compact`
 
-        `cs_tools tools searchable bi-server bigquery://default --skinny`
+        `cs_tools tools searchable bi-server bigquery://default --compact`
 
     === ":fontawesome-brands-windows: Windows"
 
-        `cs_tools tools searchable bi-server bigquery://C:\Users\%USERNAME%\Downloads\bigquery-definition.toml --skinny`
+        `cs_tools tools searchable bi-server bigquery://C:\Users\%USERNAME%\Downloads\bigquery-definition.toml --compact`
 
-        `cs_tools tools searchable bi-server bigquery://default --skinny`
+        `cs_tools tools searchable bi-server bigquery://default --compact`
 
 
 ## Full Definition Example

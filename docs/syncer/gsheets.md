@@ -51,25 +51,26 @@ ID workflow to allow __CS Tools__ to selectively interact with your Google Sheet
 > __spreadsheet__{ .fc-blue }: name of the google sheet to interact with
 
 > __mode__{ .fc-blue }: <span class=fc-coral>optional</span>, either `append` or `overwrite`
-<br/>*if not supplied, `overwrite` will be used*
+<br/>*<span class=fc-mint>default</span>:* `overwrite`
 
 > __credentials_file__{ .fc-blue }: <span class=fc-coral>optional</span>, absolute path to your credentials JSON file
-<br/>*if not supplied, `cs_tools-app-directory/gsheets/credentials.json` will be used*
+<br/>*<span class=fc-mint>default</span>:* `cs_tools-app-directory/gsheets/credentials.json`
+<br/>*you can find the cs_tools app directory by running `cs_tools config show`*
 
 
 ??? info "Usage in commands"
 
     === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
 
-        `cs_tools tools searchable bi-server gsheets:///home/user/syncers/google-sheets-definition.toml --skinny`
+        `cs_tools tools searchable bi-server gsheets:///home/user/syncers/google-sheets-definition.toml --compact`
 
-        `cs_tools tools searchable bi-server gsheets://default --skinny`
+        `cs_tools tools searchable bi-server gsheets://default --compact`
 
     === ":fontawesome-brands-windows: Windows"
 
-        `cs_tools tools searchable bi-server gsheets://C:\Users\%USERNAME%\Downloads\google-sheets-definition.toml --skinny`
+        `cs_tools tools searchable bi-server gsheets://C:\Users\%USERNAME%\Downloads\google-sheets-definition.toml --compact`
 
-        `cs_tools tools searchable bi-server gsheets://default --skinny`
+        `cs_tools tools searchable bi-server gsheets://default --compact`
 
 
 ## Full Definition Example

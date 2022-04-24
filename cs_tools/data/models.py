@@ -118,9 +118,6 @@ class Group(SQLModel, table=True):
 
     @classmethod
     def from_api_v1(cls, data) -> 'Group':
-        """
-        Takes input from /tspublic/v1/group.
-        """
         data = {
             'group_guid': data['header']['id'],
             'group_name': data['header']['name'],
@@ -143,9 +140,6 @@ class GroupPrivilege(SQLModel, table=True):
 
     @classmethod
     def from_api_v1(cls, data) -> List['GroupPrivilege']:
-        """
-        Takes input from /tspublic/v1/user or /tspublic/v1/group.
-        """
         return [
             cls(group_guid=data['header']['id'], privilege=p)
             for p in data['privileges']
@@ -163,9 +157,6 @@ class XREFPrincipal(SQLModel, table=True):
 
     @classmethod
     def from_api_v1(cls, data) -> List['XREFPrincipal']:
-        """
-        Takes input from /tspublic/v1/user or /tspublic/v1/group.
-        """
         return [cls(principal_guid=data['header']['id'], group_guid=g) for g in data['assignedGroups']]
 
 
@@ -182,9 +173,6 @@ class Tag(SQLModel, table=True):
 
     @classmethod
     def from_api_v1(cls, data) -> List['Tag']:
-        """
-        Takes input from /tspublic/v1/metadata/list.
-        """
         return cls(
             tag_guid=data['id'], tag_name=data['name'],
             color=data['clientState']['color'], author_guid=data['author'],
@@ -195,7 +183,6 @@ class Tag(SQLModel, table=True):
 class MetadataObject(SQLModel, table=True):
     __tablename__ = 'ts_metadata_object'
     object_guid: str = Field(primary_key=True)
-    context: Optional[str]
     name: str
     description: Optional[str]
     author_guid: str = Field(foreign_key='ts_user.user_guid')
@@ -204,25 +191,16 @@ class MetadataObject(SQLModel, table=True):
     object_type: str
 
     # author: 'User' = Relationship(back_populates='content')
+    # columns: List['MetadataColumn'] = Relationship(back_populates='parent')
     # dependents: Optional[List['DependentObject']] = Relationship(back_populates='parent')
     # tagged_objects: Optional[List['TaggedObject']] = Relationship(back_populates='metadata_object')
     # sharing: Optional[List['SharingAccess']] = Relationship(back_populates='metadata_object')
     # bi_actions: Optional[List['BIServer']] = Relationship(back_populates='metadata_object')
 
     @classmethod
-    def from_api_v1(cls, data) -> 'TaggedObject':
-        """
-        Takes input from /tspublic/v1/metadata/list.
-
-        Input data is filtered on just the headers for the following types:
-            - PINBOARD_ANSWER_BOOK
-            - QUESTION_ANSWER_BOOK
-            - LOGICAL_TABLE
-            - LOGICAL_COLUMN
-        """
+    def from_api_v1(cls, data) -> 'MetadataObject':
         data = {
             'object_guid': data['id'],
-            'context': data.get('context'),
             'name': data['name'],
             'description': data.get('description'),
             'author_guid': data['author'],
@@ -230,6 +208,35 @@ class MetadataObject(SQLModel, table=True):
             'modified': data['modified'],
             'object_type': data['type'],
         }
+        return cls(**data)
+
+
+class MetadataColumn(SQLModel, table=True):
+    __tablename__ = 'ts_metadata_column'
+    column_guid: str = Field(primary_key=True)
+    object_guid: str = Field(foreign_key='ts_metadata_object.object_guid')
+    column_name: str
+    description: Optional[str]
+    data_type: str
+    column_type: str
+    additive: bool
+    aggregation: str
+    hidden: bool
+    # synonyms: association
+    index_type: str
+    # geo_config: Optional[str]
+    index_priority: int
+    format_pattern: Optional[str]
+    # currency_type: Optional[str]
+    attribution_dimension: bool
+    spotiq_preference: str
+    # calendar_type: str  # DNE: might be a javascript setting?
+    is_formula: bool
+
+    # parent: 'MetadataColumn' = Relationship(back_populates='columns')
+
+    @classmethod
+    def from_api_v1(cls, data) -> 'MetadataColumn':
         return cls(**data)
 
 
@@ -243,16 +250,13 @@ class TaggedObject(SQLModel, table=True):
 
     @classmethod
     def from_api_v1(cls, data) -> List['TaggedObject']:
-        """
-        Takes input from /tspublic/v1/metadata/list.
-        """
         return [cls(object_guid=data['id'], tag_guid=t['id']) for t in data['tags']]
 
 
 class DependentObject(SQLModel, table=True):
     __tablename__ = 'ts_dependent_object'
     dependent_guid: str = Field(primary_key=True)
-    parent_guid: str = Field(primary_key=True, foreign_key='ts_metadata_object.object_guid')
+    column_guid: str = Field(primary_key=True, foreign_key='ts_metadata_column.column_guid')
     name: str
     description: Optional[str]
     author_guid: str = Field(foreign_key='ts_user.user_guid')
@@ -265,14 +269,9 @@ class DependentObject(SQLModel, table=True):
 
     @classmethod
     def from_api_v1(cls, data) -> 'DependentObject':
-        """
-        Takes input from /tspublic/v1/dependency/listdependents.
-
-        Input data is augmented with the parent's guid, and the dependent type.
-        """
         data = {
             'dependent_guid': data['id'],
-            'parent_guid': data['parent_guid'],
+            'column_guid': data['parent_guid'],
             'name': data['name'],
             'description': data.get('description'),
             'author_guid': data['author'],
@@ -298,8 +297,6 @@ class SharingAccess(SQLModel, table=True):
 
     @classmethod
     def from_api_v1(cls, data) -> 'SharingAccess':
-        """
-        """
         PK = (
             data['object_guid'],
             data.get('shared_to_user_guid', 'NULL'),

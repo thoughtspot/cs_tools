@@ -44,7 +44,7 @@ class SQLite:
     def load(self, table: str) -> List[Dict[str, Any]]:
         t = self.metadata.tables[table]
 
-        with self.cnxn.begin():
+        with self.cnxn.begin_nested():
             r = self.cnxn.execute(t.select())
 
         return [dict(_) for _ in r]
@@ -52,7 +52,7 @@ class SQLite:
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
         t = self.metadata.tables[table]
 
-        with self.cnxn.begin():
+        with self.cnxn.begin_nested():
             if self.truncate_on_load:
                 self.cnxn.execute(t.delete())
 

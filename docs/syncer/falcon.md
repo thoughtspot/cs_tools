@@ -31,29 +31,31 @@ Connections to a cloud-native data store.
 ## Falcon `DEFINITION.toml` spec
 
 > __database__{ .fc-blue }: name of the database to store data within
-<br/>*creating it if it doesn't yet exist*
+<br/>*`database` will be created if it does not exist*
 
-> __schema__{ .fc-blue }: name of the schema to store data within
-<br/>*creating it if it doesn't yet exist*
+> __schema__{ .fc-blue }: <span class=fc-coral>optional</span>, name of the schema to store data within
+<br/>*<span class=fc-mint>default</span>:* `falcon_default_schema`
+<br/>`schema` will be created if it does not exist*
 
-> __empty_target__{ .fc-blue }: either `True` or `False`
-<br/>*if `True`, then a `TRUNCATE` statement will be issued prior to loading any data,
-on every data load*
+> __empty_target__{ .fc-blue }: <span class=fc-coral>optional</span>, either `True` or `False`
+<br/>*<span class=fc-mint>default</span>:* `True`
+<br/>*a `TRUNCATE` statement will be issued prior to loading any data loads if `True`
+is used*
 
 
 ??? info "Usage in commands"
 
     === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
 
-        `cs_tools tools searchable bi-server falcon:///home/user/syncers/falcon-definition.toml --skinny`
+        `cs_tools tools searchable bi-server falcon:///home/user/syncers/falcon-definition.toml --compact`
 
-        `cs_tools tools searchable bi-server falcon://default --skinny`
+        `cs_tools tools searchable bi-server falcon://default --compact`
 
     === ":fontawesome-brands-windows: Windows"
 
-        `cs_tools tools searchable bi-server falcon://C:\Users\%USERNAME%\Downloads\falcon-definition.toml --skinny`
+        `cs_tools tools searchable bi-server falcon://C:\Users\%USERNAME%\Downloads\falcon-definition.toml --compact`
 
-        `cs_tools tools searchable bi-server falcon://default --skinny`
+        `cs_tools tools searchable bi-server falcon://default --compact`
 
 
 ## Full Definition Example
