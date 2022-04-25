@@ -12,10 +12,9 @@ hide:
     Feedback from the community while it's still provisional would be extremely useful;
     either comment on [#25][gh-issue25] or create a new issue.
 
-A comma-separated values (CSV) file is a delimited text file that uses a comma to separate values. Each line of the
-file is a data record. Each record consists of one or more fields, separated by commas. A CSV file typically stores
-tabular data in plain text, in which case each line will have the same number of fields. Alternative delimiter-separated
-files are often given a ".csv" extension despite the use of a non-comma field separator.
+A __comma-separated values__ (CSV) file is a delimited text file that uses a comma to separate values. Each line of the file is a data record. Each record consists of one or more fields, separated by commas.
+
+A CSV file typically stores tabular data in plain text, in which case each line will have the same number of fields. Alternative delimiter-separated files are often given a ".csv" extension despite the use of a non-comma field separator.
 
 ??? info "Want to see the source code?"
     

@@ -12,10 +12,9 @@ hide:
     Feedback from the community while it's still provisional would be extremely useful;
     either comment on [#25][gh-issue25] or create a new issue.
 
-BigQuery is a serverless, cost-effective and multicloud data warehouse designed to help you turn big data into valuable business insights. It a fully-managed, serverless data warehouse that enables scalable analysis over petabytes of data.
+__BigQuery__ is a serverless, cost-effective and multicloud data warehouse designed to help you turn big data into valuable business insights. It a fully-managed, serverless data warehouse that enables scalable analysis over petabytes of data.
 
-<span class=fc-coral>__In order to use the BigQuery syncer__</span>, you must first configure your local
-environment. The setup instructions below will help you create a __Google Cloud Project__ and enable the __BigQuery Storage API__ to allow __CS Tools__ to interact with your BigQuery environment.
+<span class=fc-coral>__In order to use the BigQuery syncer__</span>, you must first configure your local environment. The setup instructions below will help you create a __Google Cloud Project__ and enable the __BigQuery Storage API__ to allow __CS Tools__ to interact with your BigQuery environment.
 
 ??? example "Setup instructions"
 
@@ -84,6 +83,6 @@ truncate_on_load = True
 ```
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
-[syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/gsheets/syncer.py
+[syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/bigquery/syncer.py
 [gc-dev-console]: https://console.cloud.google.com/apis/dashboard
 [gc-service-account]: https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account

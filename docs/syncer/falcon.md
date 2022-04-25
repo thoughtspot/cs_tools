@@ -13,14 +13,9 @@ hide:
     either comment on [#25][gh-issue25] or create a new issue.
 
 
-Falcon is ThoughtSpot's proprietary in-memory database that exists as part of your
-cluster. Its speed allowed our users to be able to analyze along any dimension without
-there being any time penalty, giving them a free reign to do any kind of analysis. This
-data store has been the backbone of many of our long-term customers.
+Falcon is ThoughtSpot's proprietary in-memory database that exists as part of your cluster. Its speed allowed our users to be able to analyze along any dimension without there being any time penalty, giving them a free reign to do any kind of analysis. This data store has been the backbone of many of our long-term customers.
 
-<span class='fc-coral'>__This database is only available for data insertion if you
-operate on the Software version of the product__</span>, and are not using Embrace
-Connections to a cloud-native data store.
+<span class='fc-coral'>__This database is only available for data insertion if you operate on the Software version of the product__</span>, and are not using Embrace Connections to a cloud-native data store.
 
 ??? info "Want to see the source code?"
     

@@ -12,13 +12,9 @@ hide:
     Feedback from the community while it's still provisional would be extremely useful;
     either comment on [#25][gh-issue25] or create a new issue.
 
-With Google Sheets, you can create and edit spreadsheets directly in your web browser - no special software is required.
-Multiple people can work simultaneously, you can see people’s changes as they make them, and every change is saved
-automatically.
+With Google Sheets, you can create and edit spreadsheets directly in your web browser - no special software is required. Multiple people can work simultaneously, you can see people’s changes as they make them, and every change is saved automatically.
 
-<span class=fc-coral>__In order to use the Google Sheets syncer__</span>, you must first configure your local
-environment. The setup instructions below will help you create a __Google Cloud Project__ and utilize the OAuth Client
-ID workflow to allow __CS Tools__ to selectively interact with your Google Sheet.
+<span class=fc-coral>__In order to use the Google Sheets syncer__</span>, you must first configure your local environment. The setup instructions below will help you create a __Google Cloud Project__ and utilize the OAuth Client ID workflow to allow __CS Tools__ to selectively interact with your Google Sheet.
 
 ??? example "Setup instructions"
 
