@@ -83,7 +83,12 @@ configuration file.
     === ":fontawesome-solid-snowflake: Snowflake"
         ```toml
         [configuration]
-        lorem ipsum bruh
+        snowflake_account_identifier = 'thoughtspot'
+        username = 'namey.namerson@thoughtspot.com'
+        password = 'Really-Hard-Passphrase-to-Crack'
+        warehouse = 'DATALOAD_WH_XS'
+        role = 'SYSADMIN'
+        database = 'CS_TOOLS'
         ```
 
     === ":material-new-box: Custom Syncer"
