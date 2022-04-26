@@ -46,8 +46,8 @@ __Snowflake__ features out-of-the-box features like separation of storage and co
 <br/>*<span class=fc-mint>default</span>:* `local`
 <br/>both local and multi-factor auth use your username and password, <span class=fc-coral>^^if using multi-factor^^ access to a browser window is required</span>[^1]
 
-> __truncate_on_load__{ .fc-blue }: <span class=fc-coral>optional</span>, either `True` or `False`, remove all data in the table prior to a new data load
-<br/>*<span class=fc-mint>default</span>:* `True`
+> __truncate_on_load__{ .fc-blue }: <span class=fc-coral>optional</span>, either `true` or `false`, remove all data in the table prior to a new data load
+<br/>*<span class=fc-mint>default</span>:* `true`
 
 
 ??? info "Usage in commands"
@@ -78,7 +78,7 @@ role = 'SYSADMIN'
 database = 'CS_TOOLS'
 schema_ = 'PUBLIC'
 auth_type = 'multi-factor'
-truncate_on_load = True
+truncate_on_load = true
 ```
 
 [^1]: 

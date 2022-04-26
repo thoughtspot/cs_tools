@@ -61,14 +61,14 @@ configuration file.
         directory: 'C:\Users\NameyNamerson\Downloads\thoughtspot'
         delimiter: str = '|'
         escape_character: str = '\'
-        zipped: bool = True
+        zipped: bool = true
         ```
 
     === ":material-database: SQLite"
         ```toml
         [configuration]
         database_path = '/home/user/ts-data/production.db'
-        truncate_on_load = True
+        truncate_on_load = true
         ```
 
     === ":material-google-spreadsheet: Google Sheets"

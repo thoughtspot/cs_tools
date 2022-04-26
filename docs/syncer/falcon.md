@@ -32,9 +32,9 @@ Falcon is ThoughtSpot's proprietary in-memory database that exists as part of yo
 <br/>*<span class=fc-mint>default</span>:* `falcon_default_schema`
 <br/>`schema` will be created if it does not exist*
 
-> __empty_target__{ .fc-blue }: <span class=fc-coral>optional</span>, either `True` or `False`
-<br/>*<span class=fc-mint>default</span>:* `True`
-<br/>*a `TRUNCATE` statement will be issued prior to loading any data loads if `True`
+> __empty_target__{ .fc-blue }: <span class=fc-coral>optional</span>, either `true` or `false`
+<br/>*<span class=fc-mint>default</span>:* `true`
+<br/>*a* `TRUNCATE` *statement will be issued prior to loading any data loads if* `true`
 is used*
 
 
@@ -60,7 +60,7 @@ is used*
 [configuration]
 database = 'cs_tools'
 schema = 'falcon_default_schema'
-empty_target = True
+empty_target = true
 ```
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25

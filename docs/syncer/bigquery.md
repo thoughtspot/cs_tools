@@ -52,8 +52,8 @@ __BigQuery__ is a serverless, cost-effective and multicloud data warehouse desig
 <br/>*<span class=fc-mint>default</span>:* `<cs_tools-app-directory>/bigquery/credentials.json`
 <br/>*you can find the cs_tools app directory by running `cs_tools config show`*
 
-> __truncate_on_load__{ .fc-blue }: <span class=fc-coral>optional</span>, either `True` or `False`, remove all data in the table prior to a new data load
-<br/>*<span class=fc-mint>default</span>:* `True`
+> __truncate_on_load__{ .fc-blue }: <span class=fc-coral>optional</span>, either `true` or `false`, remove all data in the table prior to a new data load
+<br/>*<span class=fc-mint>default</span>:* `true`
 
 
 ??? info "Usage in commands"
@@ -79,7 +79,7 @@ __BigQuery__ is a serverless, cost-effective and multicloud data warehouse desig
 project_id = 'cs_tools'
 dataset = 'thoughtspot'
 credentials_file = 'C:\Users\NameyNamerson\Downloads\syncers\<project-name>.json'
-truncate_on_load = True
+truncate_on_load = true
 ```
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
