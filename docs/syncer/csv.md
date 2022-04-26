@@ -33,10 +33,6 @@ A CSV file typically stores tabular data in plain text, in which case each line 
 > __escape_character__{ .fc-blue }: <span class=fc-coral>optional</span>, one-character string used to escape the delimiter
 <br/>*<span class=fc-mint>default</span>: no escaping happens*
 
-> __line_terminator__{ .fc-blue }: <span class=fc-coral>optional</span>, string used to terminate lines
-<br/>*<span class=fc-mint>default</span>:* `\r\n` *most consistent with Microsoft Excel line-endings. Unix platforms
-typically end lines with simply* `\n`
-
 > __zipped__{ .fc-blue }: <span class=fc-coral>optional</span>, whether or not to zip the directory after writing all files
 <br/>*<span class=fc-mint>default</span>:* `False`
 
@@ -61,11 +57,10 @@ typically end lines with simply* `\n`
 `definition.toml`
 ```toml
 [configuration]
-directory: 'C:\Users\NameyNamerson\Downloads\thoughtspot'
-delimiter: str = '|'
-escape_character: str = '\'
-line_terminator: str = '\r\n'
-zipped: bool = True
+directory = 'C:\Users\NameyNamerson\Downloads\thoughtspot'
+delimiter = '|'
+escape_character = '\'
+zipped = True
 ```
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25

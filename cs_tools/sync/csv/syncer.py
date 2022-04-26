@@ -21,7 +21,6 @@ class CSV:
     directory: pathlib.Path
     delimiter: str = '|'
     escape_character: str = None
-    line_terminator: str = '\r\n'
     zipped: bool = False
 
     def __post_init_post_parse__(self):
@@ -39,7 +38,7 @@ class CSV:
         extra = {
             'delimiter': self.delimiter,
             'escapechar': self.escape_character,
-            'lineterminator': self.line_terminator
+            # 'lineterminator': self.line_terminator
         }
         return extra
 
@@ -48,12 +47,17 @@ class CSV:
         """
         Handle open-close on a file, potentially in a zip archive.
         """
+        file_opts = {
+            'newline': '',
+            'mode': 'r' if mode == 'r' else 'w'
+        }
+
         if self.zipped:
             p = self.directory.with_suffix('.zip')
             z = util.ZipFile(p, mode=mode, compression=zipfile.ZIP_DEFLATED)
-            f = z.open(file, mode='r' if mode == 'r' else 'w')
+            f = z.open(file, **file_opts)
         else:
-            f = (self.directory / file).open(mode='r' if mode == 'r' else 'w')
+            f = (self.directory / file).open(**file_opts)
 
         try:
             yield f

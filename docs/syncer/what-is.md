@@ -61,7 +61,6 @@ configuration file.
         directory: 'C:\Users\NameyNamerson\Downloads\thoughtspot'
         delimiter: str = '|'
         escape_character: str = '\'
-        line_terminator: str = '\r\n'
         zipped: bool = True
         ```
 
