@@ -73,6 +73,11 @@ class SyncerProtocolType(click.ParamType):
             cfg['manifest'] = pathlib.Path(__file__).parent.parent / f'sync/{proto}/MANIFEST.json'
 
         Syncer = register.load_syncer(protocol=proto, manifest_path=cfg.pop('manifest'))
+
+        # sanitize input by accepting aliases
+        if hasattr(Syncer, '__pydantic_model__'):
+            cfg['configuration'] = Syncer.__pydantic_model__.parse_obj(cfg['configuration']).dict()
+
         syncer = Syncer(**cfg['configuration'])
         log.info(f'registering syncer: {syncer.name}')
 
