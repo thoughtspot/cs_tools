@@ -34,7 +34,7 @@ A CSV file typically stores tabular data in plain text, in which case each line 
 <br/>*<span class=fc-mint>default</span>: no escaping happens*
 
 > __zipped__{ .fc-blue }: <span class=fc-coral>optional</span>, whether or not to zip the directory after writing all files
-<br/>*<span class=fc-mint>default</span>:* `False`
+<br/>*<span class=fc-mint>default</span>:* `false`
 
 
 ??? info "Usage in commands"
@@ -60,7 +60,7 @@ A CSV file typically stores tabular data in plain text, in which case each line 
 directory = 'C:\Users\NameyNamerson\Downloads\thoughtspot'
 delimiter = '|'
 escape_character = '\'
-zipped = True
+zipped = true
 ```
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
