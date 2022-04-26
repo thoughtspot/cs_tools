@@ -33,6 +33,9 @@ class InteractiveTQL:
     autocomplete : bool  [default: True]
       whether or not to autocomplete, invoked with TAB
 
+    http_timeout: int [default: 60s]
+      number of seconds for http calls to come back
+
     console : rich.Console  [default: new console]
       rich console to print feedback to
 
@@ -48,10 +51,10 @@ class InteractiveTQL:
         self,
         ts: ThoughtSpot,
         *,
-        schema: dict='falcon_default_schema',
-        http_timeout: int=5,
-        autocomplete: bool=True,
-        console: Callable=None
+        schema: dict = 'falcon_default_schema',
+        autocomplete: bool = True,
+        http_timeout: int = 60,
+        console: Callable = None
     ):
         self.ts = ts
         self.ctx = {'schema': schema, 'server_schema_version': -1}
