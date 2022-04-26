@@ -29,12 +29,15 @@ def export(
         file_okay=False,
         resolve_path=True
     ),
+    latest: int = O_(50, help='number of most recent logfiles to export', show_default=False)
 ):
     """
     Grab logs to share with ThoughtSpot.
     """
     save_path.mkdir(parents=True, exist_ok=True)
     log_dir = APP_DIR / 'logs'
+    sorted_newest = sorted(log_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
 
-    for log in log_dir.iterdir():
-        shutil.copy(log, save_path)
+    for i, log in enumerate(sorted_newest, start=1):
+        if i <= latest:
+            shutil.copy(log, save_path)
