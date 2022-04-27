@@ -1,7 +1,6 @@
 from typing import List, Tuple, Optional
 import itertools as it
 import logging
-import pathlib
 import sys
 import re
 
@@ -61,17 +60,29 @@ class SyncerProtocolType(click.ParamType):
         self,
         value: str,
         param: click.Parameter = None,
-        ctx: click.Context = None
+        *,
+        ctx: click.Context = None,
+        validate_only: bool = False
     ) -> SyncerProtocol:
         if value is None:
             return value
 
         proto, definition = value.split('://')
+
+        if definition == 'default':
+            ts_config = ctx.obj.thoughtspot.config
+            try:
+                definition = ts_config.syncer[proto]
+            except (TypeError, KeyError):
+                log.error(f'[error]no default found for syncer protocol: [blue]{proto}')
+                raise typer.Exit(-1)
+
         cfg = toml.load(definition)
 
-        if proto != 'custom':
-            cfg['manifest'] = pathlib.Path(__file__).parent.parent / f'sync/{proto}/MANIFEST.json'
+        if 'manifest' not in cfg:
+            cfg['manifest'] = PACKAGE_DIR / 'sync' / proto / 'MANIFEST.json'
 
+        log.info(f'registering syncer: {proto}')
         Syncer = register.load_syncer(protocol=proto, manifest_path=cfg.pop('manifest'))
 
         # sanitize input by accepting aliases
@@ -79,7 +90,10 @@ class SyncerProtocolType(click.ParamType):
             cfg['configuration'] = Syncer.__pydantic_model__.parse_obj(cfg['configuration']).dict()
 
         syncer = Syncer(**cfg['configuration'])
-        log.info(f'registering syncer: {syncer.name}')
+
+        # don't actually make lasting changes, just ensure it initializes
+        if validate_only:
+            return value
 
         if getattr(syncer, '__is_database__', False):
             models.SQLModel.metadata.create_all(syncer.cnxn)

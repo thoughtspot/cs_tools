@@ -1,9 +1,10 @@
 from ipaddress import IPv4Address
 from typing import Union, Dict, Any
 import pathlib
+import json
 import re
 
-from pydantic.types import DirectoryPath
+from pydantic.types import DirectoryPath, FilePath
 from pydantic import BaseModel, AnyHttpUrl, validator
 import toml
 
@@ -38,6 +39,12 @@ class Settings(BaseModel):
     """
     Base class for settings management and validation.
     """
+
+    class Config:
+        json_encoders = {
+            FilePath: lambda v: v.resolve().as_posix(),
+            DirectoryPath: lambda v: v.resolve().as_posix()
+        }
 
 
 class APIParameters(Settings):
@@ -126,6 +133,7 @@ class TSConfig(Settings):
     name: str
     thoughtspot: HostConfig
     auth: Dict[str, AuthConfig]
+    syncer: Dict[str, FilePath] = None
     verbose: bool = False
     temp_dir: DirectoryPath = APP_DIR
 
@@ -133,13 +141,8 @@ class TSConfig(Settings):
         """
         Wrapper around model.dict to handle path types.
         """
-        data = super().dict()
-
-        try:
-            data['temp_dir'] = data['temp_dir'].resolve().as_posix()
-        except AttributeError:
-            pass
-
+        data = super().json()
+        data = json.loads(data)
         return data
 
     @classmethod
@@ -152,6 +155,14 @@ class TSConfig(Settings):
     ) -> 'TSConfig':
         """
         Read in a ts-config.toml file.
+
+        Parameters
+        ----------
+        fp : pathlib.Path
+          location of the config toml on disk
+
+        verbose, temp_dir
+          overrides the settings found in the config file
         """
         data = toml.load(fp)
 
@@ -170,6 +181,15 @@ class TSConfig(Settings):
     @classmethod
     def from_command(cls, config: str = None, **passthru) -> 'TSConfig':
         """
+        Read in a ts-config.toml file by its name.
+
+        If no file is provided, we attempt to check for the default
+        configuration.
+
+        Parameters
+        ----------
+        config: str
+          name of the configuration file
         """
         if config is None:
             meta = _meta_config(config)
@@ -186,8 +206,10 @@ class TSConfig(Settings):
         **passthru
     ) -> 'TSConfig':
         """
+        Validate initial input from config.create or config.modify.
         """
         _pw = passthru.get('password')
+        _syncers = [syncer.split('://') for syncer in passthru.get('syncer', [])]
 
         data = {
             'name': name,
@@ -204,6 +226,8 @@ class TSConfig(Settings):
                     'username': passthru['username'],
                     'password': obscure(_pw).decode() if _pw is not None else _pw
                 }
-            }
+            },
+            'syncer': {proto: definition_fp for (proto, definition_fp) in _syncers}
         }
+
         return cls.parse_obj(data) if validate else cls.construct(**data)

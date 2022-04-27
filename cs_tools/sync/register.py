@@ -86,7 +86,8 @@ def module_from_fp(fp: pathlib.Path) -> ModuleType:
 
         from . import foo
     """
-    __name__ = fp.stem
+    # __name__ = fp.stem
+    __name__ = f'cs_tools_{fp.parent.stem}_syncer'
     __file__ = fp
     __path__ = [fp.parent.as_posix()]
 

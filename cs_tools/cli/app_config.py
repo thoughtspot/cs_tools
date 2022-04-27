@@ -68,7 +68,8 @@ def show(
 
         console.print(f"  - {name}")
 
-
+from typing import List
+from cs_tools.cli.ux import SyncerProtocolType
 @app.command(cls=CSToolsCommand)
 def create(
     config: str = O_(..., help='config file identifier', prompt=True),
@@ -89,6 +90,13 @@ def create(
     ),
     disable_ssl: bool = O_(False, '--disable_ssl', help='disable SSL verification', show_default=False),
     disable_sso: bool = O_(False, '--disable_sso', help='disable automatic SAML redirect', show_default=False),
+    syncers: List[str] = O_(
+        None,
+        '--syncer',
+        metavar='protocol://DEFINITION.toml',
+        help='default definition for the syncer protocol, may be provided multiple times',
+        callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx, validate_only=True) for _ in to]
+    ),
     verbose: bool = O_(False, '--verbose', help='enable verbose logging by default', show_default=False),
     is_default: bool = O_(False, '--default', help='set as the default configuration', show_default=False)
 ):
@@ -101,7 +109,7 @@ def create(
     args = {
         'host': host, 'port': port, 'username': username, 'password': password,
         'temp_dir': temp_dir, 'disable_ssl': disable_ssl, 'disable_sso': disable_sso,
-        'verbose': verbose
+        'verbose': verbose, 'syncer': syncers
     }
     cfg  = TSConfig.from_parse_args(config, **args)
     file = APP_DIR / f'cluster-cfg_{config}.toml'
@@ -144,11 +152,22 @@ def modify(
     ),
     disable_ssl: bool = O_(None, '--disable_ssl/--no-disable_ssl', help='disable SSL verification', show_default=False),
     disable_sso: bool = O_(None, '--disable_sso/--no-disable_sso', help='disable automatic SAML redirect', show_default=False),
+    syncers: List[str] = O_(
+        None,
+        '--syncer',
+        metavar='protocol://DEFINITION.toml',
+        help='default definition for the syncer protocol, may be provided multiple times',
+        callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx, validate_only=True) for _ in to]
+    ),
     verbose: bool = O_(None, '--verbose/--normal', help='enable verbose logging by default', show_default=False),
     is_default: bool = O_(False, '--default', help='set as the default configuration', show_default=False)
 ):
     """
     Modify an existing config file.
+
+    To modify the default syncers configured, you must supply all target syncers at
+    once. eg. if you had 3 defaults set up initially, and want to remove 1, supply the
+    two which are to remain.
     """
     if password == 'prompt':
         password = Prompt.ask('[yellow](your input is hidden)[/]\nPassword', console=console, password=True)
@@ -158,7 +177,7 @@ def modify(
     kw = {
         'host': host, 'port': port, 'username': username, 'password': password,
         'temp_dir': temp_dir, 'disable_ssl': disable_ssl, 'disable_sso': disable_sso,
-        'verbose': verbose
+        'verbose': verbose, 'syncer': syncers
     }
     data = TSConfig.from_parse_args(config, **kw, validate=False).dict()
     new  = deep_update(old, data, ignore=None)
