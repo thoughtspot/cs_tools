@@ -19,16 +19,17 @@ For example, the details you put into the login screen that's presented when you
 
     === "Defined by --config"
         ```
-          Name              Type      Description
-          ------------------------------------------------------------------------
-          --host        |   TEXT    |  thoughtspot server
-          --username    |   TEXT    |  username when logging into ThoughtSpot
-          --password    |   TEXT    |  password when logging into ThoughtSpot
-          --port        |  INTEGER  |  optional, port of the thoughtspot server
-          --disable_ssl |   FLAG    |  disable SSL verification
-          --disable_sso |   FLAG    |  disable automatic SAML redirect
-          --temp_dir    | DIRECTORY |  filepath to save large temporary files to
-          --verbose     |   FLAG    |  enable verbose logging for this run only
+          Name              Type         Description
+          ---------------------------------------------------------------------------
+          --host        |   TEXT       |  thoughtspot server
+          --username    |   TEXT       |  username when logging into ThoughtSpot
+          --password    |   TEXT       |  password when logging into ThoughtSpot
+          --port        |  INTEGER     |  optional, port of the thoughtspot server
+          --disable_ssl |   FLAG       |  disable SSL verification
+          --disable_sso |   FLAG       |  disable automatic SAML redirect
+          --temp_dir    | DIRECTORY    |  filepath to save large temporary files to
+          --syncer      | proto://PATH |  default definition for the syncer protocol
+          --verbose     |   FLAG       |  enable verbose logging for this run only
         ```
 
 
@@ -39,46 +40,53 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
 === "config create"
 
     ```console
-    (.cs_tools) C:\work\thoughtspot>cs_tools config create --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config create --help
 
     Usage: cs_tools config create --config IDENTIFIER [--option, ..., --help]
 
       Create a new config file.
 
     Options:
-      --config TEXT           config file identifier  (required)
-      --host TEXT             thoughtspot server  (required)
-      --port INTEGER          optional, port of the thoughtspot server
-      --username TEXT         username when logging into ThoughtSpot  (required)
-      --password TEXT         password when logging into ThoughtSpot  (required)
-      --temp_dir DIRECTORY    location on disk to save temporary files
-      --disable_ssl           disable SSL verification
-      --disable_sso           disable automatic SAML redirect
-      --verbose               enable verbose logging by default
-      --default               set as the default configuration
-      -h, --help, --helpfull  Show this message and exit.
+      --config TEXT                   config file identifier  (required)
+      --host TEXT                     thoughtspot server  (required)
+      --port INTEGER                  optional, port of the thoughtspot server
+      --username TEXT                 username when logging into ThoughtSpot  (required)
+      --password TEXT                 password when logging into ThoughtSpot, if "prompt" then hide input
+      --temp_dir DIRECTORY            location on disk to save temporary files
+      --disable_ssl                   disable SSL verification
+      --disable_sso                   disable automatic SAML redirect
+      --syncer protocol://DEFINITION.toml
+                                      default definition for the syncer protocol, may be provided multiple times
+      --verbose                       enable verbose logging by default
+      --default                       set as the default configuration
+      -h, --help, --helpfull          Show this message and exit.
     ```
 
 === "config modify"
 
     ```console
-    (.cs_tools) C:\work\thoughtspot>cs_tools config modify --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config modify --help
 
     Usage: cs_tools config modify --config IDENTIFIER [--option, ..., --help]
 
       Modify an existing config file.
+
+      To modify the default syncers configured, you must supply all target syncers at once. eg. if you had 3 defaults set
+      up initially, and want to remove 1, supply the two which are to remain.
 
     Options:
       --config TEXT                   config file identifier  (required)
       --host TEXT                     thoughtspot server
       --port INTEGER                  optional, port of the thoughtspot server
       --username TEXT                 username when logging into ThoughtSpot
-      --password TEXT                 password when logging into ThoughtSpot
+      --password TEXT                 password when logging into ThoughtSpot, if "prompt" then hide input
       --temp_dir DIRECTORY            location on disk to save temporary files
       --disable_ssl / --no-disable_ssl
                                       disable SSL verification
       --disable_sso / --no-disable_sso
                                       disable automatic SAML redirect
+      --syncer protocol://DEFINITION.toml
+                                      default definition for the syncer protocol, may be provided multiple times
       --verbose / --normal            enable verbose logging by default
       --default                       set as the default configuration
       -h, --help, --helpfull          Show this message and exit.
