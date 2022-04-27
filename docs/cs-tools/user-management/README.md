@@ -1,6 +1,14 @@
 # User Management
 
-Bulk management of users within ThoughtSpot.........
+Users and Groups can be managed on an ad-hoc basis in the Admin panel of your
+ThoughtSpot platform. Users may also be onboarded automatically upon successful
+authentication with one of our support Identity Providers. However, bulk management of
+users otherwise is often difficult or requirements scripting.
+
+These User Management tools will help you migrate users, sync them from external source
+systems, or transfer all content from one user to another. All of which are valid
+activities when onboarding or offboarding many users at once.
+
 
 ## CLI preview
 

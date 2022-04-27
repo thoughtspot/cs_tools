@@ -38,17 +38,23 @@ in if supplied to `bulk-deleter from-tabular`
 
       Remove many objects from ThoughtSpot.
 
+      Objects to delete are limited to answers and liveboards, but can follow either naming convention of internal API
+      type, or the name found in the user interface.
+
       If you are deleting from an external data source, your data must follow the
       tabular format below.
 
-          +----------------+-------+
-          | type           | guid  |
-          +----------------+-------+
-          | saved answer   | guid1 |
-          | pinboard       | guid2 |
-          | ...            | ...   |
-          | saved answer   | guid3 |
-          +----------------+-------+
+          +-----------------------+-------------+
+          | object_type           | object_guid |
+          +-----------------------+-------------+
+          | saved answer          | guid1       |
+          | pinboard              | guid2       |
+          | liveboard             | guid3       |
+          | ...                   | ...         |
+          | QUESTION_ANSWER_BOOK  | guid4       |
+          | PINBOARD_ANSWER_BOOK  | guid5       |
+          | ...                   | ...         |
+          +-----------------------+-------------+
 
     Options:
       --syncer protocol://DEFINITION.toml
@@ -68,7 +74,7 @@ in if supplied to `bulk-deleter from-tabular`
       Removes a specific object from ThoughtSpot.
 
     Options:
-      --type (pinboard|PINBOARD_ANSWER_BOOK|saved answer|QUESTION_ANSWER_BOOK)
+      --type (saved answer|pinboard|QUESTION_ANSWER_BOOK|PINBOARD_ANSWER_BOOK)
                                       type of the metadata to delete  (required)
       --guid TEXT                     guid to delete  (required)
       --config IDENTIFIER             config file identifier  (required)
