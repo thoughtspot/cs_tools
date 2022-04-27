@@ -56,7 +56,7 @@ class Snowflake:
             warehouse=self.warehouse,
             role=self.role
         )
-    
+
         connect_args = {
             'session_parameters': {
                 'query_tag': f'thoughtspot.cs_tools (v{__version__})'
@@ -76,7 +76,10 @@ class Snowflake:
         self.metadata = metadata
 
     def __repr__(self):
-        return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
+        u = self.username
+        w = self.warehouse
+        r = self.role
+        return f"<Database ({self.name}) sync: user='{u}', warehouse='{w}', role='{r}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 
