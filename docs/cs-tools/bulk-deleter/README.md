@@ -83,6 +83,10 @@ in if supplied to `bulk-deleter from-tabular`
 
     === ":wrench: &nbsp; Modified"
         - input/output using syncers! [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
+        - updated to accept Liveboards
+
+    === ":bug: &nbsp; Bugfix"
+        - handle case where user submits an invalid object to be deleted (by type or guid)
 
 ??? info "Changes History"
 

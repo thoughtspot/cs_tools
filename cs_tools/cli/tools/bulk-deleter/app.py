@@ -16,32 +16,60 @@ log = logging.getLogger(__name__)
 HERE = pathlib.Path(__file__).parent
 
 
-class ReversibleSystemType(str, enum.Enum):
-    """
-    Reversible mapping of system to friendly names.
-    """
-    PINBOARD_ANSWER_BOOK = 'pinboard'
-    pinboard = 'PINBOARD_ANSWER_BOOK'
+class AcceptedObjectType(str, enum.Enum):
     QUESTION_ANSWER_BOOK = 'saved answer'
+    PINBOARD_ANSWER_BOOK = 'pinboard'
     saved_answer = 'QUESTION_ANSWER_BOOK'
+    liveboard = 'PINBOARD_ANSWER_BOOK'
+    pinboard = 'PINBOARD_ANSWER_BOOK'
 
-    @classmethod
-    def to_friendly(cls, value) -> str:
-        value = value.strip()
+    def to_system_type(self) -> str:
+        return self.name if self.name.endswith('BOOK') else self.value
 
-        if '_' not in value:
-            return value
+    def __eq__(self, other) -> bool:
+        if hasattr(other, 'value'):
+            other = other.value
 
-        return getattr(cls, value).value
+        return other in (self.value, self.name)
 
-    @classmethod
-    def to_system(cls, value) -> str:
-        value = value.strip()
 
-        if '_' in value:
-            return value
+def _validate_objects_exist(ts, data):
+    """
+    /metadata/delete WILL NOT fail on ValueError.
 
-        return getattr(cls, value.replace(' ', '_')).value
+    As long as valid UUID4s are passed, and valid types are passed, the
+    endpoint will happily return. If content does not exist, or if the
+    wrong type for GUIDs is passed, ThoughtSpot will attempt to delete the
+    objects.
+
+    What this means is you could potentially delete an object you didn't
+    mean to delete.. so this filters those objects out.
+
+    This is a ThoughtSpot API limitation.
+    """
+    new_data = {
+        'QUESTION_ANSWER_BOOK': [],
+        'PINBOARD_ANSWER_BOOK': []
+    }
+
+    for object_ in data:
+        system_type = AcceptedObjectType(object_['object_type']).to_system_type()
+        new_data[system_type].append(object_['object_guid'])
+
+    for system_type, to_delete_guids in new_data.items():
+        for chunk in chunks(to_delete_guids, n=15):
+            r = ts.api.metadata.list_object_headers(type=system_type, fetchids=chunk)
+            returned_guids = [_['id'] for _ in r.json()]
+
+            if len(returned_guids) != len(chunk):
+                for guid in set(to_delete_guids).difference(set(returned_guids)):
+                    new_data[system_type].remove(guid)
+                    log.warning(
+                        f'{guid} [yellow]is not a valid [blue]{system_type}[/]![/] '
+                        f'[error]removing this from the delete operation[/]'
+                    )
+
+    return new_data['QUESTION_ANSWER_BOOK'], new_data['PINBOARD_ANSWER_BOOK']
 
 
 app = typer.Typer(
@@ -59,20 +87,23 @@ app = typer.Typer(
 )
 def single(
     ctx: typer.Context,
-    type: ReversibleSystemType = O_(..., help='type of the metadata to delete'),
+    type: AcceptedObjectType = O_(..., help='type of the metadata to delete'),
     guid: str = O_(..., help='guid to delete')
 ):
     """
     Removes a specific object from ThoughtSpot.
     """
     ts = ctx.obj.thoughtspot
-    type = ReversibleSystemType.to_system(type.value)
+    system_type = AcceptedObjectType.to_system_type(type)
 
-    console.print(f'deleting object .. {type} ... {guid} ... ')
+    data = [{'object_type': system_type, 'object_guid': guid}]
+    answers, liveboards = _validate_objects_exist(ts, data)
 
-    # NOTE: /metadata/delete WILL NOT error if content does not exist, or if the
-    # wrong type & guid are passed. This is a ThoughtSpot API limitation.
-    r = ts.api._metadata.delete(type=type, id=[guid])
+    if not answers and not liveboards:
+        raise typer.Exit(-1)
+
+    console.print(f'deleting {system_type}: {guid}')
+    r = ts.api._metadata.delete(type=system_type, id=[guid])
     log.debug(f'{r} - {r.content}')
 
 
@@ -99,56 +130,52 @@ def from_tabular(
     """
     Remove many objects from ThoughtSpot.
 
+    Objects to delete are limited to answers and liveboards, but can follow
+    either naming convention of internal API type, or the name found in the
+    user interface.
+
     \b
     If you are deleting from an external data source, your data must follow the
     tabular format below.
 
     \b
-        +----------------+-------+
-        | type           | guid  |
-        +----------------+-------+
-        | saved answer   | guid1 |
-        | pinboard       | guid2 |
-        | ...            | ...   |
-        | saved answer   | guid3 |
-        +----------------+-------+
+        +-----------------------+-------------+
+        | object_type           | object_guid |
+        +-----------------------+-------------+
+        | saved answer          | guid1       |
+        | pinboard              | guid2       |
+        | liveboard             | guid3       |
+        | ...                   | ...         |
+        | QUESTION_ANSWER_BOOK  | guid4       |
+        | PINBOARD_ANSWER_BOOK  | guid5       |
+        | ...                   | ...         |
+        +-----------------------+-------------+
     """
-    if syncer is not None:
-        if deletion is None:
-            console.print('[red]you must provide a syncer directive to --deletion')
-            raise typer.Exit(-1)
+    if syncer is not None and deletion is None:
+        console.print('[red]you must provide a syncer directive to --deletion')
+        raise typer.Exit(-1)
 
     ts = ctx.obj.thoughtspot
     data = syncer.load(deletion)
 
-    #
-    # Delete Pinboards
-    #
-    guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'pinboard']
+    answers, liveboards = _validate_objects_exist(ts, data)
 
-    if guids:
-        console.print(f'deleting {len(guids)} pinboards')
+    if liveboards:
+        console.print(f'deleting {len(liveboards)} total liveboards')
 
-    for chunk in chunks(guids, n=batchsize):
-        if batchsize > 1:
-            console.print(f'    deleting {len(chunk)} pinboards')
-            log.debug(f'    guids: {chunk}')
+        for chunk in chunks(liveboards, n=batchsize):
+            if batchsize > 1:
+                console.print(f'\tdeleting {len(chunk)} liveboards:\n{chunk}')
 
-        r = ts.api._metadata.delete(type='PINBOARD_ANSWER_BOOK', id=list(chunk))
-        log.debug(f'{r} - {r.content}')
+            r = ts.api._metadata.delete(type='PINBOARD_ANSWER_BOOK', id=list(chunk))
+            log.debug(f'{r} - {r.content}')
 
-    #
-    # Delete Answers
-    #
-    guids = [_['guid'] for _ in data if ReversibleSystemType.to_friendly(_['type']) == 'saved answer']
+    if answers:
+        console.print(f'deleting {len(answers)} total answers')
 
-    if guids:
-        console.print(f'deleting {len(guids)} answers')
+        for chunk in chunks(answers, n=batchsize):
+            if batchsize > 1:
+                console.print(f'\tdeleting {len(chunk)} answers:\n{chunk}')
 
-    for chunk in chunks(guids, n=batchsize):
-        if batchsize > 1:
-            console.print(f'    deleting {len(chunk)} answers')
-            log.debug(f'    guids: {chunk}')
-
-        r = ts.api._metadata.delete(type='QUESTION_ANSWER_BOOK', id=list(chunk))
-        log.debug(f'{r} - {r.content}')
+            r = ts.api._metadata.delete(type='QUESTION_ANSWER_BOOK', id=list(chunk))
+            log.debug(f'{r} - {r.content}')
