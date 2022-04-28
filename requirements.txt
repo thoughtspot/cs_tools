@@ -18,6 +18,7 @@ httpx
 Jinja2
 lxml
 openpyxl
+pendulum
 pydantic
 oyaml
 rich

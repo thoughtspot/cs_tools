@@ -1,5 +1,6 @@
 from typing import List, Tuple, Optional
 import itertools as it
+import datetime as dt
 import logging
 import sys
 import re
@@ -8,6 +9,7 @@ from click.exceptions import UsageError
 from rich.console import Console
 from click.core import iter_params_for_processing
 from gettext import ngettext
+import pendulum
 import typer
 import click
 import toml
@@ -48,6 +50,32 @@ class CommaSeparatedValuesType(click.ParamType):
             value = (value, )
 
         return list(it.chain.from_iterable(v.split(',') for v in value))
+
+
+class TZAwareDateTimeType(click.ParamType):
+    """
+    Convert argument to a timezone-aware date.
+    """
+    name = 'datetime'
+
+    def convert(
+        self,
+        value: dt.datetime,
+        param: click.Parameter = None,
+        ctx: click.Context = None,
+        locality: str = 'local'  # one of: local, utc, server
+    ) -> List[str]:
+        if value is None:
+            return None
+
+        LOCALITY = {
+            'server': ctx.obj.thoughtspot.platform.timezone,
+            'local': pendulum.local_timezone(),
+            'utc': 'UTC'
+        }
+
+        tz = LOCALITY[locality]
+        return pendulum.instance(value, tz=tz)
 
 
 class SyncerProtocolType(click.ParamType):
