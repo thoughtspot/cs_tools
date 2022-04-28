@@ -4,13 +4,15 @@ import zipfile
 import logging
 
 from typer import Argument as A_, Option as O_  # noqa
+import pendulum
 import typer
 import oyaml as yaml
 
 from cs_tools.cli.tools.common import setup_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import SyncerProtocolType, TZAwareDateTimeType
 
 from ._version import __version__
 from . import transform
@@ -149,6 +151,62 @@ def bi_server(
         ]
 
         export.dump('ts_bi_server', data=renamed)
+
+
+@app.command(cls=CSToolsCommand, hidden=True)
+@depends(
+    thoughtspot=setup_thoughtspot,
+    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
+    enter_exit=True
+)
+def event_logs(
+    ctx: typer.Context,
+    # Note:
+    # really this is a SyncerProtocolType type,
+    # but typer does not yet support click.ParamType,
+    # so we can fake it with a callback :~)
+    # export: str = A_(
+    #     ...,
+    #     help='protocol and path for options to pass to the syncer',
+    #     metavar='protocol://DEFINITION.toml',
+    #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+    # ),
+    from_date: dt.datetime = O_(
+        None,
+        metavar='YYYY-MM-DD',
+        help='lower bound of logs to retrieve',
+        callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
+    ),
+    to_date: dt.datetime = O_(
+        None,
+        metavar='YYYY-MM-DD',
+        help='upper bound of logs to retrieve',
+        callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
+    )
+):
+    """
+    Collect security audit events.
+
+    [yellow]You must have administrator access to query security logs.[/]
+    """
+    ts = ctx.obj.thoughtspot
+
+    t = ''
+
+    if from_date is not None:
+        t += f' from {from_date.to_datetime_string()}'
+        from_date = from_date.timestamp() * 1000
+
+    if to_date is not None:
+        t += f', to {to_date.to_datetime_string()}'
+        to_date = to_date.timestamp() * 1000
+
+    with console.status(f'[bold green]getting security logs{t}..'):
+        r = ts.api.logs.topics(fromEpoch=from_date, toEpoch=to_date)
+        # data = r.json()
+        print(r, r.content)
+
+    # export.dump(data)
 
 
 @app.command(cls=CSToolsCommand)
