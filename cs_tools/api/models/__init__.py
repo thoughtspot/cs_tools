@@ -6,4 +6,5 @@ from .metadata import _Metadata, Metadata
 from .security import _Security, Security
 from .session import _Session
 from .data import Data
+from .logs import Logs
 from .user import User
