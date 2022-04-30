@@ -4,9 +4,8 @@ import zipfile
 import logging
 
 from typer import Argument as A_, Option as O_  # noqa
-import pendulum
-import typer
 import oyaml as yaml
+import typer
 
 from cs_tools.cli.tools.common import setup_thoughtspot
 from cs_tools.cli.dependency import depends
@@ -39,7 +38,9 @@ def spotapp(
     ctx: typer.Context,
     directory: pathlib.Path = A_(
         ...,
-        help='location on your machine to copy the SpotApp to'
+        help='location on your machine to copy the SpotApp to',
+        file_okay=False,
+        resolve_path=True
     ),
     connection_guid: str = O_(
         ...,
@@ -81,23 +82,25 @@ def spotapp(
     )
 
     HERE = pathlib.Path(__file__).parent
-    NAME = f'CS Tools Searchable SpotApp (v{__version__})'
     tml = {}
 
     with zipfile.ZipFile(HERE / 'mfs.zip', mode='r') as z:
         for file in z.infolist():
             with z.open(file, 'r') as f:
                 data = yaml.safe_load(f)
-                data['guid'] = None
                 data['table']['connection']['name'] = connection_name
                 data['table']['connection']['fqn'] = connection_guid
                 data['table']['db'] = database
                 data['table']['schema'] = schema
                 tml[file] = data
 
+    NAME = f'CS Tools Searchable SpotApp (v{__version__})'
+
     with zipfile.ZipFile(directory / f'{NAME}.zip', mode='w') as z:
         for file, content in tml.items():
             z.writestr(file, yaml.safe_dump(content))
+
+    console.print(f'moved the [blue]{NAME}[/] to {directory}')
 
 
 @app.command(cls=CSToolsCommand)
