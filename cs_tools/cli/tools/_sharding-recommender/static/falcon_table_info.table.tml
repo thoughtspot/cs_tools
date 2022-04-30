@@ -1,5 +1,7 @@
+guid: null
 table:
   name: falcon_table_info
+  description: Output from an internal service which is used for health probes.
   db: cs_tools
   schema: falcon_default_schema
   db_table: falcon_table_info
@@ -8,85 +10,145 @@ table:
     db_column_name: database_name
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
   - name: Schema
     db_column_name: schema_name
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
   - name: Table
     db_column_name: table_name
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
   - name: Table GUID
     db_column_name: table_guid
     properties:
       column_type: ATTRIBUTE
-  - name: Table State
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Sage Status
     db_column_name: state
     properties:
       column_type: ATTRIBUTE
-  - name: Database Version
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Version (Database)
     db_column_name: database_version
     properties:
       column_type: ATTRIBUTE
-  - name: Serving Version
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Version (Serving)
     db_column_name: serving_version
     properties:
       column_type: ATTRIBUTE
-  - name: Building Version
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Version (Building)
     db_column_name: building_version
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
   - name: Build Duration (s)
     db_column_name: build_duration_s
     properties:
       column_type: MEASURE
       aggregation: SUM
-  - name: Known
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Is Known
     db_column_name: is_known
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: BOOL
   - name: Database Status
     db_column_name: database_status
     properties:
       column_type: ATTRIBUTE
-  - name: Uploaded At
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Last Uploaded At
     db_column_name: last_uploaded_at
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: DATE_TIME
   - name: Rows
+    description: number of rows in the database table
     db_column_name: num_of_rows
     properties:
-      column_type: MEASURE
-      aggregation: SUM
-  - name: Estimated Size (B)
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Volume - Approximate (B)
     db_column_name: approx_bytes_size
     properties:
       column_type: MEASURE
       aggregation: SUM
-  - name: Uncompressed Size (B)
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Volume - Uncompressed (B)
     db_column_name: uncompressed_bytes_size
     properties:
       column_type: MEASURE
       aggregation: SUM
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
   - name: Row Skew
     db_column_name: row_skew
     properties:
       column_type: ATTRIBUTE
-  - name: Shard Amount
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Shards
     db_column_name: num_shards
     properties:
       column_type: ATTRIBUTE
-  - name: Replicated CSV Size (MB)
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Volume - Replicated (MB)
     db_column_name: csv_size_with_replication_mb
     properties:
       column_type: MEASURE
       aggregation: SUM
-  - name: Replicated
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: DOUBLE
+  - name: Is Replicated
     db_column_name: replicated
     properties:
       column_type: ATTRIBUTE
-  - name: IP
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: BOOL
+  - name: Node IP
+    description: address of the node where the table is stored
     db_column_name: ip
     properties:
       column_type: ATTRIBUTE
-guid: dccb1395-7b3a-4714-83ee-b2c31d62c0b5
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR

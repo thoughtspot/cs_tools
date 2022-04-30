@@ -11,7 +11,7 @@ icon: format-list-bulleted
 
 This solution allows the customer to extract key data about their Falcon tables to help
 guide on the optimal number of shards for each table. Ideally, the customer will
-implement this solution to run on a regular basis, with a plan to review the pinboard
+implement this solution to run on a regular basis, with a plan to review the liveboard
 once every few months (depending on data volume growth).
 
 __Currently, this solution does not consider co-sharding as part of the output.__
@@ -19,16 +19,16 @@ __Currently, this solution does not consider co-sharding as part of the output._
 If your customer is not comfortable with sharding, please have them schedule an
 Office Hours session and a CSA will be able to help guide them through the process.
 
-## Pinboard preview
+## Liveboard preview
 
-![pinboard](./pinboard.png)
+![liveboard](./liveboard.png)
 
 ## CLI preview
 
 === "sharding-recommender --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools sharding-recommender --help
-    Usage: cs_tools tools sharding-recommender [--version, --help] <command>
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cstools tools sharding-recommender --help
+    Usage: cstools tools sharding-recommender [--version, --help] <command>
 
       Gather data on your existing Falcon tables for sharding.
 
@@ -50,38 +50,45 @@ Office Hours session and a CSA will be able to help guide them through the proce
       -h, --help, --helpfull  Show this message and exit.
 
     Commands:
-      gather   Gather and optionally, insert data into Falcon.
+      gather   Extract Falcon table info from your ThoughtSpot platform.
       spotapp  Exports the SpotApp associated with this tool.
     ```
 
 === "sharding-recommender gather"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools sharding-recommender gather --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cstools tools sharding-recommender gather --help
 
-    Usage: cs_tools tools sharding-recommender gather --config IDENTIFIER [--option, ..., --help]
+    Usage: cstools tools sharding-recommender gather --config IDENTIFIER [--option, ..., --help] protocol://DEFINITION.toml
 
-      Gather and optionally, insert data into Falcon.
+      Extract Falcon table info from your ThoughtSpot platform.
 
-      By default, data is automatically gathered and inserted into the platform. If --export argument is used, data will not be inserted
-      and will instead be dumped to the location specified.
+    Arguments:
+      protocol://DEFINITION.toml  protocol and path for options to pass to the syncer  (required)
 
     Options:
-      --export protocol://DEFINITION.toml
-                                      protocol and path for options to pass to the syncer
-      --config IDENTIFIER             config file identifier  (required)
-      -h, --help, --helpfull          Show this message and exit.
+      --config IDENTIFIER     config file identifier  (required)
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 === "sharding-recommender spotapp"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools sharding-recommender spotapp --help
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cstools tools sharding-recommender spotapp --help
 
-    Usage: cs_tools tools sharding-recommender spotapp [--option, ..., --help]
+    Usage: cstools tools sharding-recommender spotapp [--option, ..., --help] DIRECTORY
 
       Exports the SpotApp associated with this tool.
 
+    Arguments:
+      DIRECTORY  location on your machine to copy the SpotApp to  (required)
+
     Options:
-      --export DIRECTORY      directory to save the spot app to
+      --nodes INTEGER         number of nodes serving your ThoughtSpot cluster  (required)
+      --cpu-per-node INTEGER  number of CPUs serving each node  (default: 56)
+      --threshold INTEGER     unsharded row threshold, once exceeded a table will be a candidate for sharding  (default:
+                              55000000)
+      --ideal-rows INTEGER    ideal rows per shard  (default: 20000000)
+      --min-rows INTEGER      minumum rows per shard  (default: 15000000)
+      --max-rows INTEGER      maximum rows per shard  (default: 20000000)
       -h, --help, --helpfull  Show this message and exit.
     ```
 
@@ -90,6 +97,9 @@ Office Hours session and a CSA will be able to help guide them through the proce
 ## Changelog
 
 !!! tldr ":octicons-tag-16: v1.2.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
+
+    === ":hammer_and_wrench: &nbsp; Added"
+        - SpotApp parameters, customize the spot app to your specific ThoughtSpot instance
 
     === ":wrench: &nbsp; Modified"
         - input/output using syncers! [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
@@ -113,6 +123,4 @@ Office Hours session and a CSA will be able to help guide them through the proce
         === ":hammer_and_wrench: &nbsp; Added"
             - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
-[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
-[semver]: https://semver.org/spec/v2.0.0.html
 [contrib-boonhapus]: https://github.com/boonhapus

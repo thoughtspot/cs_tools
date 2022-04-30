@@ -1,8 +1,10 @@
 from typing import List
+import logging
 import pathlib
-import shutil
+import zipfile
 
-from typer import Option as O_
+from typer import Argument as A_, Option as O_
+import oyaml as yaml
 import typer
 
 from cs_tools.cli.dependency import depends
@@ -13,8 +15,11 @@ from cs_tools.util import to_datetime
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.cli.tools import common
 
+from ._version import __version__
+
 
 HERE = pathlib.Path(__file__).parent
+log = logging.getLogger(__name__)
 
 
 def _format_table_info_data(data: List[dict]) -> List[dict]:
@@ -80,13 +85,63 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 def spotapp(
-    export: pathlib.Path = O_(None, help='directory to save the spot app to', file_okay=False, resolve_path=True)
+    directory: pathlib.Path = A_(
+        ...,
+        help='location on your machine to copy the SpotApp to',
+        file_okay=False,
+        resolve_path=True
+    ),
+    nodes: int = O_(..., help='number of nodes serving your ThoughtSpot cluster'),
+    cpu_per_node: int = O_(56, help='number of CPUs serving each node'),
+    threshold: int = O_(
+        55_000_000,
+        help=(
+            'unsharded row threshold, once exceeded a table will be a candidate for '
+            'sharding'
+        )
+    ),
+    ideal_rows: int = O_(20_000_000, help='ideal rows per shard'),
+    min_rows: int = O_(15_000_000, help='minumum rows per shard'),
+    max_rows: int = O_(20_000_000, help='maximum rows per shard')
 ):
     """
     Exports the SpotApp associated with this tool.
     """
-    shutil.copy(HERE / 'static' / 'spotapps.zip', export)
-    console.print(f'moved the SpotApp to {export}')
+    parameters = {
+        'parameter: CPU per Node': str(cpu_per_node),
+        'parameter: Ideal Rows per Shard': str(ideal_rows),
+        'parameter: Maximum Rows per Shard': str(max_rows),
+        'parameter: Minimum Rows per Shard': str(min_rows),
+        'parameter: Number of ThoughtSpot Nodes': str(nodes),
+        'parameter: Unsharded Row Threshold': str(threshold)
+    }
+    tml = {}
+
+    with zipfile.ZipFile(HERE / 'static' / 'spotapp_answer_v1.zip', mode='r') as z:
+        for i, file in enumerate(z.infolist()):
+            with z.open(file, 'r') as f:
+                data = yaml.safe_load(f)
+
+            data['guid'] = f'B07DFACE-F001-C0DE-ACED-BA5EBA11{i:04}'
+
+            if file.filename == 'falcon_table_sharding.worksheet.tml':
+                for formula in data['worksheet']['formulas']:
+
+                    # process overrides
+                    try:
+                        formula['expr'] = parameters[formula['name']]
+                    except KeyError:
+                        pass
+
+            tml[file] = data
+
+    NAME = f'CS Tools Sharding Recommender SpotApp (v{__version__})'
+
+    with zipfile.ZipFile(directory / f'{NAME}.zip', mode='w') as z:
+        for file, content in tml.items():
+            z.writestr(file, yaml.safe_dump(content))
+
+    console.print(f'moved the [blue]{NAME}[/] to {directory}')
 
 
 @app.command(cls=CSToolsCommand)
@@ -97,19 +152,15 @@ def spotapp(
 )
 def gather(
     ctx: typer.Context,
-    export: str = O_(
-        None,
+    export: str = A_(
+        ...,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     )
 ):
     """
-    Gather and optionally, insert data into Falcon.
-
-    By default, data is automatically gathered and inserted into the
-    platform. If --export argument is used, data will not be inserted
-    and will instead be dumped to the location specified.
+    Extract Falcon table info from your ThoughtSpot platform.
     """
     ts = ctx.obj.thoughtspot
     syncer = export if export is not None else Falcon()
@@ -117,9 +168,39 @@ def gather(
     with console.status('[bold green]getting falcon table info'):
         data = _format_table_info_data(ts.api._periscope.sage_combinedtableinfo().json())
 
-    if isinstance(syncer, Falcon):
+    if syncer.name == 'falcon':
         with console.status('[bold green]creating tables with remote TQL'):
             ts.tql.script(HERE / 'static' / 'create_tables.tql')
+    elif hasattr(syncer, '__is_database__'):
+        console.log(
+            f'attempting to dump to database that is not Falcon! see the log file for '
+            f'schema if the table FALCON_TABLE_INFO is not created in {syncer.name}.'
+        )
+        log.debug("""
+
+            CREATE TABLE falcon_table_info (
+                  database_name                 VARCHAR(255)
+                , schema_name                   VARCHAR(255)
+                , table_name                    VARCHAR(255)
+                , table_guid                    VARCHAR(255)
+                , state                         VARCHAR(255)
+                , database_version              BIGINT
+                , serving_version               BIGINT
+                , building_version              BIGINT
+                , build_duration_s              BIGINT
+                , is_known                      BOOL
+                , database_status               VARCHAR(255)
+                , last_uploaded_at              DATETIME
+                , num_of_rows                   BIGINT
+                , approx_bytes_size             BIGINT
+                , uncompressed_bytes_size       BIGINT
+                , row_skew                      BIGINT
+                , num_shards                    BIGINT
+                , csv_size_with_replication_mb  DOUBLE
+                , replicated                    BOOL
+                , ip                            VARCHAR(255)
+            );
+        """)
 
     with console.status(f'[bold green]loading data to {syncer.name}..'):
         syncer.dump('falcon_table_info', data=data)
