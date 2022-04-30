@@ -91,9 +91,12 @@ class ThoughtSpot:
                 rememberme=True,
                 disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
             )
-        except httpx.ConnectError:
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
             host = self.config.thoughtspot.host
-            rzn = f'cannot see url [blue]{host}[/] from the current machine'
+            rzn = (
+                f'cannot see url [blue]{host}[/] from the current machine\n\n'
+                f'>>> [yellow]{e}[/]'
+            )
             raise ThoughtSpotUnreachable(rzn) from None
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
