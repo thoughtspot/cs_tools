@@ -40,14 +40,14 @@ class TSLoadServiceUnreachable(CSToolsException):
     """
     Raised when the etl_http_server service cannot be reached.
     """
-    def __init__(self, message, http_error):
+    def __init__(self, reason, http_error):
         self.http_error = http_error
-        self.message = message
+        self.reason = reason
         super().__init__(self.cli_message)
 
     @property
     def cli_message(self) -> str:
-        return self.message
+        return f'The remote tsload service (etl_http_server) is unreachable: {self.reason}'
 
 
 class ContentDoesNotExist(CSToolsException):

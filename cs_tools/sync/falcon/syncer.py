@@ -6,8 +6,10 @@ import csv
 from pydantic.dataclasses import dataclass
 from pydantic import Field
 import sqlalchemy as sa
+import httpx
 import click
 
+from cs_tools.errors import TSLoadServiceUnreachable
 from . import compiler, sanitize
 
 
@@ -31,13 +33,10 @@ class Falcon:
         ctx = click.get_current_context()
         self.engine = sa.engine.create_mock_engine('sqlite://', self.intercept_create_table)
         self.cnxn = self.engine.connect()
-        self._thoughtspot = ctx.obj.thoughtspot
-
-        # create the database and schema if it doesn't exist
-        self.ts.tql.command(command=f'CREATE DATABASE {self.database};')
-        self.ts.tql.command(command=f'CREATE SCHEMA {self.database}.{self.schema_};')
+        self._thoughtspot = getattr(ctx.obj, 'thoughtspot', '')
 
         # decorators must be declared here, SQLAlchemy doesn't care about instances
+        sa.event.listen(sa.schema.MetaData, 'before_create', self.ensure_setup)
         sa.event.listen(sa.schema.MetaData, 'after_create', self.capture_metadata)
 
     @property
@@ -53,6 +52,11 @@ class Falcon:
             return
 
         self.ts.tql.command(command=f'{q};', database=self.database)
+
+    def ensure_setup(self, metadata, cnxn, **kw):
+        # create the database and schema if it doesn't exist
+        self.ts.tql.command(command=f'CREATE DATABASE {self.database};')
+        self.ts.tql.command(command=f'CREATE SCHEMA {self.database}.{self.schema_};')
 
     def capture_metadata(self, metadata, cnxn, **kw):
         self.metadata = metadata
@@ -91,9 +95,25 @@ class Falcon:
             # writer.writeheader()
             writer.writerows(data)
             fd.seek(0)
-            self.ts.tsload.upload(
-                fd,
-                database=self.database,
-                table=table,
-                empty_target=self.empty_target
-            )
+            try:
+                self.ts.tsload.upload(
+                    fd,
+                    database=self.database,
+                    table=table,
+                    empty_target=self.empty_target
+                )
+            except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+                h = self.ts.api.ts_dataservice._tsload_node
+                p = self.ts.api.ts_dataservice._tsload_port
+                m = f'could not connect at [blue]{h}:{p}[/]'
+
+                if h != self.ts.config.thoughtspot.host:
+                    m += (
+                        '\n\n[yellow]If that url is surprising to you, you likely have '
+                        'the tsload service load balancer turned on (the default '
+                        'setting) and the local machine cannot directly send files to '
+                        'that node.\n\nConsider turning on your VPN or working with a '
+                        'ThoughtSpot Support Engineer to disable the etl_http_server '
+                        '(tsload connector service) load balancer.'
+                    )
+                raise TSLoadServiceUnreachable(m, http_error=e)
