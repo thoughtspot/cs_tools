@@ -77,6 +77,9 @@ def deep_update(old: dict, new: dict, *, ignore: Any=None) -> dict:
         if isinstance(v, collections.abc.Mapping):
             v = deep_update(old.get(k, {}), v, ignore=ignore)
 
+        if old is None:
+            old = {}
+
         old[k] = v
 
     return old
