@@ -22,6 +22,7 @@ class CSV:
     delimiter: str = '|'
     escape_character: str = None
     zipped: bool = False
+    # line_ending: str = '\r\n'
 
     def __post_init_post_parse__(self):
         self.directory = self.directory.resolve()

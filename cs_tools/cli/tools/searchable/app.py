@@ -29,7 +29,7 @@ app = typer.Typer(
 )
 
 
-@app.command(cls=CSToolsCommand, hidden=True)
+@app.command(cls=CSToolsCommand)
 @depends(
     thoughtspot=setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
@@ -37,13 +37,39 @@ app = typer.Typer(
 )
 def spotapp(
     ctx: typer.Context,
-    directory: pathlib.Path = A_(..., help=''),
-    connection_guid: str = O_(..., help=''),
-    database: str = O_(..., help=''),
-    schema: str = O_(..., help='')
+    directory: pathlib.Path = A_(
+        ...,
+        help='location on your machine to copy the SpotApp to'
+    ),
+    connection_guid: str = O_(
+        ...,
+        help=(
+            'TML details: find your connection guid by going to Data > '
+            'Connections > your connection, and copying the GUID in the URL'
+        )
+    ),
+    database: str = O_(
+        ...,
+        help=(
+            'TML details: find your database by editing an existing Table in '
+            'your connection, and look at the path TABLE:DB'
+        )
+    ),
+    schema: str = O_(
+        ...,
+        help=(
+            'TML details: find your database by editing an existing Table in '
+            'your connection, and look at the path TABLE:SCHEMA'
+        )
+    )
 ):
     """
-    Copy the Searchable Spot App to your machine.
+    Copy the Searchable SpotApp to your machine.
+
+    [yellow]This SpotApp is in beta! It will grow and get better over time.[/]
+
+    Currently the SpotApp performs the Modeling for Search aspect of the entire data
+    model and that is it.
     """
     ts = ctx.obj.thoughtspot
 
@@ -93,9 +119,19 @@ def bi_server(
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
     compact: bool = O_(True, '--compact / --full', help='if compact, exclude NULL and INVALID user actions'),
-    from_date: dt.datetime = O_(None, metavar='YYYY-MM-DD', help='lower bound of rows to select from TS: BI Server'),
-    to_date: dt.datetime = O_(None, metavar='YYYY-MM-DD', help='upper bound of rows to select from TS: BI Server'),
-    include_today: bool = O_(False, '--include-today', help='if set, pull partial day data', show_default=False),
+    from_date: dt.datetime = O_(
+        None,
+        metavar='YYYY-MM-DD',
+        help='lower bound of rows to select from TS: BI Server',
+        callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
+    ),
+    to_date: dt.datetime = O_(
+        None,
+        metavar='YYYY-MM-DD',
+        help='upper bound of rows to select from TS: BI Server',
+        callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
+    ),
+    include_today: bool = O_(False, '--include-today', help='pull partial day data', show_default=False),
 ):
     """
     Extract usage statistics from your ThoughtSpot platform.

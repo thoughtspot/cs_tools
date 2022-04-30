@@ -1,3 +1,4 @@
+from typing import List
 import pathlib
 
 from typer import Argument as A_, Option as O_
@@ -8,6 +9,7 @@ import typer
 import toml
 
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import SyncerProtocolType
 from cs_tools.settings import TSConfig, _meta_config
 from cs_tools.util import deep_update
 from cs_tools.const import APP_DIR
@@ -68,8 +70,7 @@ def show(
 
         console.print(f"  - {name}")
 
-from typing import List
-from cs_tools.cli.ux import SyncerProtocolType
+
 @app.command(cls=CSToolsCommand)
 def create(
     config: str = O_(..., help='config file identifier', prompt=True),
@@ -103,7 +104,7 @@ def create(
     """
     Create a new config file.
     """
-    if password is None:
+    if password is None or password == 'prompt':
         password = Prompt.ask('[yellow](your input is hidden)[/]\nPassword', console=console, password=True)
 
     args = {

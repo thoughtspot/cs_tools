@@ -114,7 +114,7 @@ class _RESTAPIv1:
             secure = copy.deepcopy({k: v for k, v in kw.items() if k not in ('file', 'files')})
 
         secure.get('data', {}).pop('password', None)
-        log.debug(f'>> {endpoint} with data:\n\tkwargs={secure}')
+        log.debug(f'{method} >> {endpoint} with data:\n\tkwargs={secure}')
 
         meth = getattr(self._http, method.lower())
         r = meth(endpoint, **kw)
