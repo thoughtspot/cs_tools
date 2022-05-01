@@ -115,4 +115,4 @@ function setup_venv ($install_type = 'local') {
 
 check_python 3 6 8
 setup_venv $INSTALL_TYPE
-./windows_activate.ps1
+powershell -ExecutionPolicy Bypass ./windows_activate.ps1
