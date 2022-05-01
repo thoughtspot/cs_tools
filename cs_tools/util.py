@@ -1,5 +1,5 @@
 from base64 import urlsafe_b64encode as b64e, urlsafe_b64decode as b64d
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Callable, Dict, Iterable, Optional
 import collections.abc
 import datetime as dt
 import zlib
@@ -110,6 +110,28 @@ def reveal(obscured: bytes) -> bytes:
         return
 
     return zlib.decompress(b64d(obscured))
+
+
+def find(predicate: Callable[[Any], Any], seq: Iterable) -> Optional[Any]:
+    """
+    Return the first element in the sequence which meets the predicate.
+
+    If an entry is not found, then None is returned.
+
+    This is different from python's filter due to the fact it stops the
+    moment it finds a valid entry.
+
+    Parameters
+    -----------
+    predicate
+        a function that returns a boolean-like result
+    seq
+        an iterable to search through
+    """
+    for element in seq:
+        if predicate(element):
+            return element
+    return None
 
 
 class State:
