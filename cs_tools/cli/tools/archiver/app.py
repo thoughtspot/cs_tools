@@ -1,9 +1,9 @@
 from typing import Any, Dict, List, Tuple
-import datetime as dt
 import logging
 import pathlib
 
 from typer import Argument as A_, Option as O_  # noqa
+import pendulum
 import click
 import typer
 
@@ -11,7 +11,8 @@ from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.tools import common
 from cs_tools.cli.util import base64_to_file
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import CommaSeparatedValuesType, SyncerProtocolType
 from cs_tools.errors import ContentDoesNotExist
 
 from .enums import ContentType, UserActions
@@ -28,21 +29,21 @@ def _get_content(ts, *, tags) -> Tuple[List[Dict[str, Any]]]:
         answers = []
 
     try:
-        pinboards = [{'content_type': 'pinboard', **_} for _ in ts.pinboard.all(tags=tags)]
+        liveboard = [{'content_type': 'liveboard', **_} for _ in ts.liveboard.all(tags=tags)]
     except ContentDoesNotExist:
-        pinboards = []
+        liveboard = []
 
-    return answers, pinboards
+    return answers, liveboard
 
 
 app = typer.Typer(
     help="""
     Manage stale answers and pinboards within your platform.
 
-    As your platform grows, users will create and use answers and pinboards.
-    Sometimes, users will create content for temporary exploratory purpopses
-    and then abandon it for newer pursuits. Archiver enables you to identify,
-    tag, export, and remove that potentially abandoned content.
+    As your platform grows, user-generated content will naturally grow. Sometimes, users
+    will create content for temporary exploratory purposes and then abandon it for newer
+    pursuits. Archiver enables you to identify, tag, export, and remove that potentially
+    abandoned content.
     """,
     cls=CSToolsGroup,
     options_metavar='[--version, --help]'
@@ -57,36 +58,37 @@ app = typer.Typer(
 )
 def identify(
     ctx: click.Context,
-    tag: str=O_('TO BE ARCHIVED', help='tag name to use for labeling objects to archive'),
-    content: ContentType=O_('all', help='type of content to archive'),
-    usage_months: int=O_(
-        999,
-        show_default=False,
-        help='months to consider for user activity (default: all user history)'
+    tag_name: str = O_(
+        'TO BE ARCHIVED',
+        '--tag',
+        help='tag name to use for labeling objects to archive (case sensitive)'
     ),
-    ignore_recent: int=O_(
-        30,
-        help='window of days to ignore for newly created or modified content'
+    content: ContentType = O_('all', help='type of content to archive'),
+    recent_activity: int = O_(
+        3650,
+        help='days to IGNORE for content viewed or access (default: all history)',
+        show_default=False
     ),
-    # TODO?
-    #
-    # ignore_tags: List[str]=O_(
-    #     None,
-    #     callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-    #     help='content with these tags will be ignored',
-    # ),
-    dry_run: bool=O_(
+    recent_modified: int = O_(
+        100,
+        help='days to IGNORE for content created or modified',
+    ),
+    ignore_tag: List[str] = O_(
+        None,
+        help='tagged content to ignore (case sensitive), can be specified multiple times',
+        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+    ),
+    dry_run: bool = O_(
         False,
         '--dry-run',
+        help='test your selection criteria, doesn\'t apply tags',
         show_default=False,
-        help='test selection criteria, do not apply tags and instead output '
-             'information to console on content to be archived'
     ),
-    no_prompt: bool=O_(
+    no_prompt: bool = O_(
         False,
         '--no-prompt',
-        show_default=False,
-        help='disable the confirmation prompt'
+        help='disable the confirmation prompt',
+        show_default=False
     ),
     report: str = O_(
         None,
@@ -101,75 +103,95 @@ def identify(
     [yellow]Identification criteria will skip content owned by "System User" (system)
     and "Administrator" (tsadmin)[/]
 
-    ThoughtSpot stores usage activity (by default, 6 months of interactions) by user in
-    the platform. If a user views, edits, or creates an Answer or Pinboard, ThoughtSpot
+    ThoughtSpot stores usage activity (default: 6 months of interactions) by user in the
+    platform. If a user views, edits, or creates an Answer or Liveboard, ThoughtSpot
     knows about it. This can be used as a proxy to understanding what content is
     actively being used.
     """
     ts = ctx.obj.thoughtspot
+    tz = ts.platform.tz
     actions = UserActions.strigified(sep="', '", context=content)
-
-    recently = dt.datetime.now(tz=ts.platform.tz) - dt.timedelta(days=ignore_recent)
 
     with console.status('[bold green]retrieving objects usage..[/]'):
         data = ts.search(
             f"[user action] = '{actions}' "
-            f"[timestamp].'last {usage_months} months' "
-            r"[timestamp].'this month' "
+            f"[timestamp].'last {recent_activity} days' "
+            r"[timestamp].'today' "
             r"[answer book guid]",
             worksheet='TS: BI Server'
         )
 
-    # Currently used GUIDs (within the past {months} months ...)
-    usage = set(_['Answer Book GUID'] for _ in data)
-
-    # Repository of all available GUIDs
-    data = []
+    # SELECTION LOGIC
+    # 1. Get all existing GUIDs in the platform.  (metadata/list)
+    # 2. Filter out recently modified GUIDs.      (object.created , object.modified)
+    # 3. Filter out recently accessed GUIDs.      (TS: BI Server)
+    #
+    content_in_platform = 0
+    to_archive = []
+    seen_recently = set(obj['Answer Book GUID'] for obj in data)
+    recently = pendulum.now(tz=tz).subtract(days=recent_modified)
+    tags_to_ignore = [t.casefold() for t in ignore_tag]
 
     if content.value in ('all', 'answer'):
         with console.status('[bold green]retrieving existing answers..[/]'):
-            try:
-                data.extend({**a, 'content_type': 'answer'} for a in ts.answer.all())
-            except ContentDoesNotExist:
-                pass
+            for answer in ts.answer.all():
+                content_in_platform += 1
+                add = pendulum.from_timestamp(answer['created'] / 1000, tz=tz)
+                mod = pendulum.from_timestamp(answer['modified'] / 1000, tz=tz)
+                tag = [t['name'].casefold() for t in answer['tags']]
 
-    if content.value in ('all', 'pinboard'):
-        with console.status('[bold green]retrieving existing pinboards..[/]'):
-            try:
-                data.extend({**p, 'content_type': 'pinboard'} for p in ts.pinboard.all())
-            except ContentDoesNotExist:
-                pass
+                if (
+                    add >= recently
+                    or mod >= recently
+                    or set(tag).intersection(tags_to_ignore)
+                    or answer['id'] in seen_recently
+                ):
+                    continue
 
-    archive = set(_['id'] for _ in data) - usage
+                to_archive.append({
+                    'content_type': 'answer',
+                    'guid': answer['id'],
+                    'name': answer['name'],
+                    'created_at': add.diff_for_humans(),
+                    'modified_at': mod.diff_for_humans(),
+                    'author': answer['authorName']
+                })
 
-    to_archive = [
-        {
-            'content_type': _['content_type'],
-            'guid': _['id'],
-            'name': _['name'],
-            'created_at': to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
-            'last_modified': to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
-            'by': _['authorName']
-        }
-        for _ in data
-        # ignore recent content
-        if to_datetime(_['created'], tz=ts.platform.timezone) <= recently
-        if to_datetime(_['modified'], tz=ts.platform.timezone) <= recently
-        # only include content found in the metadata snapshot
-        if _['id'] in archive
-    ]
+    if content.value in ('all', 'liveboard'):
+        with console.status('[bold green]retrieving existing liveboards..[/]'):
+            for liveboard in ts.liveboard.all():
+                content_in_platform += 1
+                add = pendulum.from_timestamp(liveboard['created'] / 1000, tz=tz)
+                mod = pendulum.from_timestamp(liveboard['modified'] / 1000, tz=tz)
+                tag = [t['name'].casefold() for t in liveboard['tags']]
+
+                if (
+                    add >= recently
+                    or mod >= recently
+                    or set(tag).intersection(tags_to_ignore)
+                    or liveboard['id'] in seen_recently
+                ):
+                    continue
+
+                to_archive.append({
+                    'content_type': 'liveboard',
+                    'guid': liveboard['id'],
+                    'name': liveboard['name'],
+                    'created_at': add.diff_for_humans(),
+                    'modified_at': mod.diff_for_humans(),
+                    'author': liveboard['authorName']
+                })
 
     if not to_archive:
         console.log('no stale content found')
         raise typer.Exit()
 
-    table = DataTable(
-                to_archive,
-                title=f"[green]Archive Results[/]: Tagging content with [cyan]'{tag}'[/]",
-                caption=f'Total of {len(to_archive)} items tagged.. ({len(data)} in platform)'
-            )
+    table_kw = {
+        'title': f"[green]Archive Results[/]: Tagging content with [cyan]{tag_name}",
+        'caption': f'{len(to_archive)} items tagged ({content_in_platform} in cluster)'
+    }
 
-    console.log('\n', table, justify='center')
+    console.log(DataTable(to_archive, **table_kw), justify='center')
 
     if report is not None:
         to_archive = [{**_, 'operation': 'identify'} for _ in to_archive]
@@ -178,10 +200,9 @@ def identify(
     if dry_run:
         raise typer.Exit(-1)
 
-    tag = ts.tag.get(tag, create_if_not_exists=True)
-
-    answers = [_['guid'] for _ in to_archive if _['content_type'] == 'answer']
-    pinboards = [_['guid'] for _ in to_archive if _['content_type'] == 'pinboard']
+    tag = ts.tag.get(tag_name, create_if_not_exists=True)
+    contents = {'answer': [], 'liveboard': []}
+    [contents[c['content_type']].append(c['guid']) for c in to_archive]
 
     # PROMPT FOR INPUT
     if not no_prompt:
@@ -190,18 +211,18 @@ def identify(
             abort=True
         )
 
-    if answers:
+    if contents['answer']:
         ts.api._metadata.assigntag(
-            id=answers,
-            type=['QUESTION_ANSWER_BOOK' for _ in answers],
-            tagid=[tag['id'] for _ in answers]
+            id=contents['answer'],
+            type=['QUESTION_ANSWER_BOOK'] * len(contents['answer']),
+            tagid=[tag['id']] * len(contents['answer'])
         )
 
-    if pinboards:
+    if contents['liveboard']:
         ts.api._metadata.assigntag(
-            id=pinboards,
-            type=['PINBOARD_ANSWER_BOOK' for _ in pinboards],
-            tagid=[tag['id'] for _ in pinboards]
+            id=contents['liveboard'],
+            type=['PINBOARD_ANSWER_BOOK'] * len(contents['liveboard']),
+            tagid=[tag['id']] * len(contents['liveboard'])
         )
 
 
@@ -213,21 +234,24 @@ def identify(
 )
 def revert(
     ctx: typer.Context,
-    tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
-    delete_tag: bool=O_(
+    tag_name: str = O_(
+        'TO BE ARCHIVED',
+        '--tag',
+        help='tag name to revert on labeled content (case sensitive)'
+    ),
+    delete_tag: bool = O_(
         False,
         '--delete-tag',
-        show_default=False,
-        help='remove the tag itself, after untagging identified objects'
+        help='remove the tag itself, after untagging identified content',
+        show_default=False
     ),
-    dry_run: bool=O_(
+    dry_run: bool = O_(
         False,
         '--dry-run',
         show_default=False,
-        help='test selection criteria, do not remove tags and instead output '
-             'information on content to be unarchived'
+        help='test your selection criteria, doesn\'t revert tags'
     ),
-    no_prompt: bool=O_(
+    no_prompt: bool = O_(
         False,
         '--no-prompt',
         show_default=False,
@@ -236,7 +260,7 @@ def revert(
     report: str = O_(
         None,
         metavar='protocol://DEFINITION.toml',
-        help='generates a list of content to be archived, utilizes protocol syntax',
+        help='generates a list of content to be reverted, utilizes protocol syntax',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     )
 ):
@@ -244,65 +268,65 @@ def revert(
     Remove objects from the temporary archive.
     """
     ts = ctx.obj.thoughtspot
+    tz = ts.platform.tz
 
     to_unarchive = []
-    answers, pinboards = _get_content(ts, tags=tag)
+    answers, liveboards = _get_content(ts, tags=tag_name)
 
-    to_unarchive.extend(
-        {
-            'content_type': _['content_type'],
-            'guid': _['id'],
-            'name': _['name'],
-            'created_at': to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
-            'last_modified': to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
-            'by': _['authorName']
-        }
-        for _ in (*answers, *pinboards)
-    )
+    for content in (*answers, *liveboards):
+        add = pendulum.from_timestamp(content['created'] / 1000, tz=tz)
+        mod = pendulum.from_timestamp(content['modified'] / 1000, tz=tz)
+        to_unarchive.append({
+            'content_type': content['content_type'],
+            'guid': content['id'],
+            'name': content['name'],
+            'created_at': add.diff_for_humans(),
+            'modified_at': mod.diff_for_humans(),
+            'author': content['authorName']
+        })
 
     if not to_unarchive:
-        console.log(f"no content found with the tag '{tag}'")
+        console.log(f"no content found with the tag '{tag_name}'")
         raise typer.Exit()
 
-    table = DataTable(
-                to_unarchive,
-                title=f"[green]Unarchive Results[/]: Untagging content with [cyan]'{tag}'[/]",
-                caption=f'Total of {len(to_unarchive)} items tagged..'
-            )
+    table_kw = {
+        'title': f"[green]Unarchive Results[/]: Untagging content with [cyan]{tag_name}",
+        'caption': f'Total of {len(to_unarchive)} items tagged..'
+    }
 
-    console.log('\n', table, justify='center')
+    console.log(DataTable(to_unarchive, **table_kw), justify='center')
 
     if report is not None:
-        to_archive = [{**_, 'operation': 'revert'} for _ in to_unarchive]
-        report.dump('archiver_report', data=to_archive)
+        to_unarchive = [{**_, 'operation': 'revert'} for _ in to_unarchive]
+        report.dump('archiver_report', data=to_unarchive)
 
     if dry_run:
         raise typer.Exit()
 
-    tag = ts.tag.get(tag)
+    tag = ts.tag.get(tag_name)
 
-    answers = [content['guid'] for content in to_unarchive if content['content_type'] == 'answer']
-    pinboards = [content['guid'] for content in to_unarchive if content['content_type'] == 'pinboard']
+    contents = {'answer': [], 'liveboard': []}
+    [contents[c['content_type']].append(c['guid']) for c in to_unarchive]
 
     # PROMPT FOR INPUT
     if not no_prompt:
         typer.confirm(
-            f'\nWould you like to continue with untagging {len([*answers, *pinboards])} objects?',
+            f'\nWould you like to continue with untagging {len(to_unarchive)} objects?',
             abort=True
         )
 
-    if answers:
+    if contents['answer']:
         ts.api._metadata.unassigntag(
-            id=answers,
-            type=['QUESTION_ANSWER_BOOK' for _ in answers],
-            tagid=[tag['id'] for _ in answers]
+            id=contents['answer'],
+            type=['QUESTION_ANSWER_BOOK'] * len(contents['answer']),
+            tagid=[tag['id']] * len(contents['answer'])
         )
 
-    if pinboards:
+    if contents['liveboard']:
         ts.api._metadata.unassigntag(
-            id=pinboards,
-            type=['QUESTION_ANSWER_BOOK' for _ in pinboards],
-            tagid=[tag['id'] for _ in pinboards]
+            id=contents['liveboard'],
+            type=['PINBOARD_ANSWER_BOOK'] * len(contents['liveboard']),
+            tagid=[tag['id']] * len(contents['liveboard'])
         )
 
     if delete_tag:
@@ -317,36 +341,37 @@ def revert(
 )
 def remove(
     ctx: typer.Context,
-    tag: str=O_('TO BE ARCHIVED', help='tag name to remove on labeled objects'),
-    export_tml: pathlib.Path=O_(
+    tag_name: str = O_(
+        'TO BE ARCHIVED',
+        '--tag',
+        help='tag name to use to remove objects (case sensitive)'
+    ),
+    export_tml: pathlib.Path = O_(
         None,
-        help='if set, path to export tagged objects as a zipfile',
         metavar='FILE.zip',
         dir_okay=False,
-        resolve_path=True
+        resolve_path=True,
+        help='if set, path to export tagged objects as a zipfile',
     ),
-    delete_tag: bool=O_(
+    delete_tag: bool = O_(
         False,
         '--delete-tag',
         show_default=False,
-        help='remove the tag after deleting identified objects'
+        help='remove the tag itself, after deleting identified content',
     ),
-    export_only: bool=O_(
+    export_only: bool = O_(
         False,
         '--export-only',
         show_default=False,
         help='export all tagged content, but do not remove it from that platform'
     ),
-    dry_run: bool=O_(
+    dry_run: bool = O_(
         False,
         '--dry-run',
         show_default=False,
-        help=(
-            'test selection criteria, does not export/delete content and instead '
-            'output information to console on content to be unarchived'
-        )
+        help='test your selection criteria, doesn\'t delete content'
     ),
-    no_prompt: bool=O_(
+    no_prompt: bool = O_(
         False,
         '--no-prompt',
         show_default=False,
@@ -355,7 +380,7 @@ def remove(
     report: str = O_(
         None,
         metavar='protocol://DEFINITION.toml',
-        help='generates a list of content to be archived, utilizes protocol syntax',
+        help='generates a list of content to be reverted, utilizes protocol syntax',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     )
 ):
@@ -363,60 +388,61 @@ def remove(
     Remove objects from the ThoughtSpot platform.
     """
     ts = ctx.obj.thoughtspot
+    tz = ts.platform.tz
 
     if export_tml is not None:
         if not export_tml.as_posix().endswith('zip'):
-            console.log(
-                f"[b red]TML export path must be a zip file! Got, '{export_tml}'"
-            )
+            console.print(f'[error]Path must be a valid zipfile! Got: [blue]{export_tml}')
             raise typer.Exit(-1)
 
         if export_tml.exists():
-            console.log(f'[b red]Zip file "{export_tml}" already exists!')
+            console.print(f'[yellow]Zipfile [blue]{export_tml}[/] already exists!')
             typer.confirm('Would you like to overwrite it?', abort=True)
 
     to_unarchive = []
-    answers, pinboards = _get_content(ts, tags=tag)
+    answers, liveboards = _get_content(ts, tags=tag_name)
 
-    to_unarchive.extend(
-        {
-            'content_type': _['content_type'],
-            'guid': _['id'],
-            'name': _['name'],
-            'created_at': to_datetime(_['created'], tz=ts.platform.timezone, friendly=True),
-            'last_modified': to_datetime(_['modified'], tz=ts.platform.timezone, friendly=True),
-            'by': _['authorName']
-        }
-        for _ in (*answers, *pinboards)
-    )
+    for content in (*answers, *liveboards):
+        add = pendulum.from_timestamp(content['created'] / 1000, tz=tz)
+        mod = pendulum.from_timestamp(content['modified'] / 1000, tz=tz)
+        to_unarchive.append({
+            'content_type': content['content_type'],
+            'guid': content['id'],
+            'name': content['name'],
+            'created_at': add.diff_for_humans(),
+            'modified_at': mod.diff_for_humans(),
+            'author': content['authorName']
+        })
 
     if not to_unarchive:
-        console.log(f"no content found with the tag '{tag}'")
+        console.log(f'no content found with the tag [blue]{tag_name}')
         raise typer.Exit()
 
-    _mod = '' if export_tml is None else ' and exporting '
-    table = DataTable(
-                to_unarchive,
-                title=f"[green]Remove Results[/]: Removing{_mod} content with [cyan]'{tag}'[/]",
-                caption=f'Total of {len(to_unarchive)} items tagged..'
-            )
+    table_kw = {
+        'title': (
+            "[green]Remove Results[/]: Removing"
+            + ('' if export_tml is None else ' and exporting')
+            + f" content with [cyan]{tag_name}"
+        ),
+        'caption': f'Total of {len(to_unarchive)} items tagged..'
+    }
 
-    console.log('\n', table, justify='center')
+    console.log(DataTable(to_unarchive, **table_kw), justify='center')
 
     if report is not None:
-        to_archive = [{**_, 'operation': 'remove'} for _ in to_unarchive]
-        report.dump('archiver_report', data=to_archive)
+        to_unarchive = [{**_, 'operation': 'remove'} for _ in to_unarchive]
+        report.dump('archiver_report', data=to_unarchive)
 
     if dry_run:
         raise typer.Exit()
 
-    tag = ts.tag.get(tag)
-    answers = [_['guid'] for _ in to_unarchive if _['content_type'] == 'answer']
-    pinboards = [_['guid'] for _ in to_unarchive if _['content_type'] == 'pinboard']
+    tag = ts.tag.get(tag_name)
+
+    contents = {'answer': [], 'liveboard': []}
+    [contents[c['content_type']].append(c['guid']) for c in to_unarchive]
 
     # PROMPT FOR INPUT
     if not no_prompt:
-
         if export_only:
             op = 'exporting'
         elif export_tml:
@@ -425,7 +451,7 @@ def remove(
             op = 'removing'
 
         typer.confirm(
-            f'\nWould you like to continue with {op} {len([*answers, *pinboards])} objects?',
+            f'\nWould you like to continue with {op} {len(to_unarchive)} objects?',
             abort=True
         )
 
@@ -433,8 +459,8 @@ def remove(
         r = ts.api._metadata.edoc_export_epack(
                 request={
                     'object': [
-                        *[{'id': id, 'type': 'QUESTION_ANSWER_BOOK'} for id in answers],
-                        *[{'id': id, 'type': 'PINBOARD_ANSWER_BOOK'} for id in pinboards]
+                        *[{'id': id, 'type': 'QUESTION_ANSWER_BOOK'} for id in contents['answer']],
+                        *[{'id': id, 'type': 'PINBOARD_ANSWER_BOOK'} for id in contents['liveboard']]
                     ],
                     'export_dependencies': False
                 }
@@ -442,9 +468,8 @@ def remove(
 
         if not r.json().get('zip_file'):
             console.log(
-                '[b red]attempted to export TML, but the API response failed, '
-                'please re-run the command with --verbose flag to capture more log '
-                'details'
+                '[error]attempted to export TML, but the API response failed, please '
+                're-run the command with --verbose flag to capture more log details'
             )
             raise typer.Exit(-1)
 
@@ -454,10 +479,10 @@ def remove(
         raise typer.Exit()
 
     if answers:
-        ts.api._metadata.delete(id=answers, type='QUESTION_ANSWER_BOOK')
+        ts.api._metadata.delete(id=contents['answer'], type='QUESTION_ANSWER_BOOK')
 
-    if pinboards:
-        ts.api._metadata.delete(id=pinboards, type='PINBOARD_ANSWER_BOOK')
+    if liveboards:
+        ts.api._metadata.delete(id=contents['liveboard'], type='PINBOARD_ANSWER_BOOK')
 
     if delete_tag:
         ts.tag.delete(tag['name'])
