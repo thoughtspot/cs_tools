@@ -30,7 +30,8 @@ class Dependency:
             else:
                 name = values['name']
 
-            param = ParamMeta(name=name.strip('-'), default=option, annotation=str)
+            annotation = str if isinstance(option.default, type(...)) else type(option.default)
+            param = ParamMeta(name=name.strip('-'), default=option, annotation=annotation)
             click_param, _ = get_click_param(param)
             params.append(click_param)
 
