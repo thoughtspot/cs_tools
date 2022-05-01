@@ -53,7 +53,7 @@ follow the instructions down the page.
 
             ++option+left-button++ the option `Copy "unix_install.sh" as Pathname`
 
-            open Termanal (++option+spacebar++ , type "terminal" , ++enter++)
+            open Terminal (++option+space++ , type `terminal` , ++enter++)
 
             type `source ` and paste the installer path (++command+v++)
 
@@ -81,7 +81,15 @@ follow the instructions down the page.
         4. Move into the newly created /cs_tools-platform-installer folder
         5. Run `windows_install.ps1`
 
-            ++shift+right-button++ on `windows_install.ps1`
+            open Powershell (++lctrl+l++ , type `powershell` , ++enter++)
+
+            type `powershell -ExecutionPolicy bypass ./windows_install.ps1`
+
+        ??? tip "For the best experience..."
+
+            Change your Powershell theme for the best experience with `cs_tools`
+
+            ![change-pwsh-theme](change-pwsh-theme.png)
 
 ??? example ":octicons-terminal-24: Terminal-friendly instructions"
 
@@ -106,16 +114,18 @@ follow the instructions down the page.
         # 1. Download cs_tools-platform-installer.zip
         # 2. Unzip cs_tools-platform-installer.zip
         # 3. Navigate to the folder cs_tools-platform-installer/
-        # 4. Right-click windows_install.ps1, select "Run with Powershell"
+        # 4. Run with       powershell -ExecutionPolicy bypass ./windows_activate.ps1
 
         # To activate the environment later (for interactive or automation needs)
         # the path to windows_activate.ps1 must be a valid relative or full path!
-        powershell -file ./windows_activate.ps1
-
-          -or-
-
-        # Right-click windows_activate.ps1, select "Run with Powershell"
+        powershell -ExecutionPolicy bypass ./windows_activate.ps1
         ```
+
+        ??? tip "For the best experience..."
+
+            Change your Powershell theme for the best experience with `cs_tools`
+
+            ![change-pwsh-theme](change-pwsh-theme.png)
 
 ---
 
