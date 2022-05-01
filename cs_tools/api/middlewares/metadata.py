@@ -4,7 +4,8 @@ import logging
 from pydantic import validate_arguments
 
 from cs_tools.data.enums import (
-    DownloadableContent, GUID, MetadataCategory, MetadataObject, MetadataObjectSubtype, PermissionType,
+    DownloadableContent, GUID, MetadataCategory, MetadataObject, MetadataObjectSubtype,
+    PermissionType
 )
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.util import chunks
@@ -18,6 +19,10 @@ class MetadataMiddleware:
     """
     def __init__(self, ts):
         self.ts = ts
+        self.cache = {
+            'calendar_type': {},
+            'currency_type': {},
+        }
 
     @validate_arguments
     def all(
@@ -129,13 +134,13 @@ class MetadataMiddleware:
                         'hidden': column['header']['isHidden'],
                         'synonyms': column['synonyms'],
                         'index_type': column['indexType'],
-                        'geo_config': column.get('geoConfig'),
+                        'geo_config': self._lookup_geo_config(column),
                         'index_priority': column['indexPriority'],
                         'format_pattern': column.get('formatPattern'),
-                        'currency_type': None,  # not implemented in api
+                        'currency_type': self._lookup_currency_type(column),
                         'attribution_dimension': column['isAttributionDimension'],
                         'spotiq_preference': column['spotiqPreference'],
-                        'calendar_type': None,  # not implemented in api
+                        'calendar_type': self._lookup_calendar_guid(column),
                         'is_formula': 'formulaId' in column,
                     })
 
@@ -320,7 +325,7 @@ class MetadataMiddleware:
 
     @classmethod
     @validate_arguments
-    def map_subtype_to_type(self, subtype: Union[str,None]) -> str:
+    def map_subtype_to_type(self, subtype: Union[str, None]) -> str:
         """
         Takes a string subtype and maps to a type.  Only LOGICAL_TABLES have sub-types.
         :param subtype: The subtype to map, such as WORKSHEET
@@ -330,3 +335,56 @@ class MetadataMiddleware:
             return DownloadableContent.logical_table.value
 
         return subtype
+
+    def _lookup_geo_config(self, column_details) -> str:
+        try:
+            config = column_details['geoConfig']
+        except KeyError:
+            return None
+
+        if config['type'] in ('LATITUDE', 'LONGITUDE'):
+            return config['type'].title()
+        elif config['type'] == 'ZIP_CODE':
+            return 'Zipcode'
+        elif config['type'] == 'ADMIN_DIV_0':
+            return 'Country'
+        # things get messy here....
+        elif config['type'] in ('ADMIN_DIV_1', 'ADMIN_DIV_2'):
+            return 'Sub-nation Region'
+
+        return 'Unknown'
+
+    def _lookup_calendar_guid(self, column_details) -> str:
+        try:
+            ccal_guid = column_details['calendarTableGUID']
+        except KeyError:
+            return None
+
+        if ccal_guid not in self.cache['calendar_type']:
+            r = self.ts.api._metadata.list(type='LOGICAL_TABLE', showhidden=True, fetchids=[ccal_guid])
+            d = r.json()['headers'][0]
+            self.cache['calendar_type'][ccal_guid] = d['name']
+
+        return self.cache['calendar_type'][ccal_guid]
+
+    def _lookup_currency_type(self, column_details) -> str:
+        try:
+            currency_info = column_details['currencyTypeInfo']
+        except KeyError:
+            return None
+
+        if currency_info['setting'] == 'FROM_USER_LOCALE':
+            name = 'Infer From Browser'
+        elif currency_info['setting'] == 'FROM_ISO_CODE':
+            name = f'Specify ISO Code: {currency_info["isoCode"]}'
+        elif currency_info['setting'] == 'FROM_COLUMN':
+            g = currency_info['columnGuid']
+
+            if g not in self.cache['currency_type']:
+                r = self.ts.api._metadata.list(type='LOGICAL_COLUMN', showhidden=True, fetchids=[g])
+                d = r.json()['headers'][0]
+                self.cache['currency_type'][g] = name = f'From a column: {d["name"]}'
+            else:
+                name = self.cache['currency_type'][g]
+
+        return name

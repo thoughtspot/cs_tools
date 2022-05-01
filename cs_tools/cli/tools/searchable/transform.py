@@ -37,6 +37,13 @@ def to_metadata_column(data) -> models.MetadataColumn:
     return [models.MetadataColumn.from_api_v1(d).dict() for d in data]
 
 
+def to_column_synonym(data) -> models.ColumnSynonym:
+    return [
+        _.dict()
+        for _ in it.chain.from_iterable(models.ColumnSynonym.from_api_v1(d) for d in data if d['synonyms'])
+    ]
+
+
 def to_tagged_object(data) -> models.TaggedObject:
     return [
         _.dict()

@@ -319,8 +319,13 @@ def gather(
         data = ts.metadata.columns(guids, include_hidden=True)
 
     with console.status(f'[bold green]writing columns to {export.name}..'):
-        data = transform.to_metadata_column(data)
-        export.dump('ts_metadata_column', data=data)
+        col_ = transform.to_metadata_column(data)
+        export.dump('ts_metadata_column', data=col_)
+        # del cdata
+
+    with console.status(f'[bold green]writing synonyms to {export.name}..'):
+        syn_ = transform.to_column_synonym(data)
+        export.dump('ts_column_synonym', data=syn_)
 
     with console.status('[bold green]getting dependents..'):
         types = ('LOGICAL_COLUMN', 'FORMULA', 'CALENDAR_TABLE')

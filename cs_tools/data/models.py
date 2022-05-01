@@ -222,15 +222,15 @@ class MetadataColumn(SQLModel, table=True):
     additive: bool
     aggregation: str
     hidden: bool
-    # synonyms: association
+    # synonyms
     index_type: str
-    # geo_config: Optional[str]
+    geo_config: Optional[str]
     index_priority: int
     format_pattern: Optional[str]
-    # currency_type: Optional[str]
+    currency_type: Optional[str]
     attribution_dimension: bool
     spotiq_preference: str
-    # calendar_type: str  # DNE: might be a javascript setting?
+    calendar_type: Optional[str]
     is_formula: bool
 
     # parent: 'MetadataColumn' = Relationship(back_populates='columns')
@@ -238,6 +238,16 @@ class MetadataColumn(SQLModel, table=True):
     @classmethod
     def from_api_v1(cls, data) -> 'MetadataColumn':
         return cls(**data)
+
+
+class ColumnSynonym(SQLModel, table=True):
+    __tablename__ = 'ts_column_synonym'
+    column_guid: str = Field(primary_key=True, foreign_key='ts_metadata_column.column_guid')
+    synonym: str = Field(primary_key=True)
+
+    @classmethod
+    def from_api_v1(cls, data) -> 'ColumnSynonym':
+        return [cls(column_guid=data['column_guid'], synonym=s) for s in data.get('synonyms', [])]
 
 
 class TaggedObject(SQLModel, table=True):
