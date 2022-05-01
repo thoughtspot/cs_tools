@@ -180,6 +180,7 @@ class _Metadata:
                     'batchsize': batchsize,
                     'tagname': [tagname] if tagname is not None else None,
                     'pattern': pattern,
+                    'showhidden': showhidden,
                     'skipids': stringified_array([_ for _ in skipids or ()]),
                     'fetchids': stringified_array([_ for _ in fetchids or ()]),
                     'auto_created': auto_created
