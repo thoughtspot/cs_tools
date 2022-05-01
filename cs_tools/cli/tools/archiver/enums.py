@@ -3,7 +3,7 @@ import enum
 
 class ContentType(enum.Enum):
     answer = 'answer'
-    pinboard = 'pinboard'
+    liveboard = 'liveboard'
     all = 'all'
 
 
@@ -22,7 +22,7 @@ class UserActions(enum.Enum):
                 'ANSWER_VIEW',
                 'ANSWER_SAVED'
             ],
-            'pinboard': [
+            'liveboard': [
                 'PINBOARD_VIEW',
                 'PINBOARD_EMBED_VIEW',
                 'PINBOARD_TSPUBLIC_RUNTIME_FILTER',

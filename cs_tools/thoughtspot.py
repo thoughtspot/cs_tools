@@ -38,7 +38,7 @@ class ThoughtSpot:
         # self.group
         # self.tml
         self.metadata = MetadataMiddleware(self)
-        self.pinboard = PinboardMiddleware(self)
+        self.pinboard = self.liveboard = PinboardMiddleware(self)
         self.answer = AnswerMiddleware(self)
         self.connection = ConnectionMiddleware(self)
         # self.worksheet

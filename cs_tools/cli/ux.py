@@ -97,8 +97,9 @@ class SyncerProtocolType(click.ParamType):
 
         proto, definition = value.split('://')
 
-        if definition == 'default':
+        if definition in ('default', ''):
             ts_config = ctx.obj.thoughtspot.config
+
             try:
                 definition = ts_config.syncer[proto]
             except (TypeError, KeyError):

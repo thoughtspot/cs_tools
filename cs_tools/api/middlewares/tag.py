@@ -107,13 +107,10 @@ class TagMiddleware:
         ContentDoesNotExist
           raised when a tag does not exist and is not to be autocreated
         """
-        # url param: 'pattern' doesn't work for tags
+        # api parameter: 'pattern' doesn't work for tags
         r = self.ts.api._metadata.list(type='TAG')
-
-        tag = util.find(
-                  lambda e: e['name'].casefold() == tag_name.casefold(),
-                  r.json()['headers']
-              )
+        data = r.json()['headers']
+        tag = util.find(lambda e: e['name'].casefold() == tag_name.casefold(), data)
 
         if create_if_not_exists and tag is None:
             tag = self.create(tag_name)
