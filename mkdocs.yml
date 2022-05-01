@@ -108,10 +108,10 @@ nav:
     - Google BigQuery: syncer/bigquery.md
     # - Amazon Redshift: syncer/redshift.md
     - Google Sheets: syncer/gsheets.md
-    - Microsoft Excel: syncer/excel.md
+    # - Microsoft Excel: syncer/excel.md
     - CSV: syncer/csv.md
-    - SQLite: syncer/sqlite.md
-    - JSON: syncer/json.md
+    # - SQLite: syncer/sqlite.md
+    # - JSON: syncer/json.md
   - How-to:
     - "Set up a Configuration File": how-to/configuration-file.md
     - "Scheduling Tools": how-to/scheduling-tool-commands.md
