@@ -375,7 +375,7 @@ class TSDataService:
         except KeyError:
             records = ''
 
-        return f'[magenta]{header}\n{divider}\n{records}[/]'
+        return f'[orange1]{header}\n{divider}\n{records}[/]'
 
     @staticmethod
     def _parse_api_messages(messages: List[str]) -> str:

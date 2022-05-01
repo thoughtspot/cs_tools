@@ -283,6 +283,7 @@ class InteractiveTQL:
             self.update_tokens('dynamic')
 
         self.console.clear()
+        self.console.clear()
 
         self.print(
             '\nWelcome to the ThoughtSpot SQL command line interface, '
