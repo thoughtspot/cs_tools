@@ -1,7 +1,3 @@
----
-icon: format-list-bulleted
----
-
 # Sharding Recommender
 
 !!! caution "USE AT YOUR OWN RISK!"
@@ -9,15 +5,16 @@ icon: format-list-bulleted
     *__This tool uses private API calls!__ These could change with any version update and
     break the provided functionality.*
 
-This solution allows the customer to extract key data about their Falcon tables to help
-guide on the optimal number of shards for each table. Ideally, the customer will
-implement this solution to run on a regular basis, with a plan to review the liveboard
-once every few months (depending on data volume growth).
+This solution allows you to extract key data about Falcon tables to help guide on the
+optimal number of shards for each table. Ideally, once implemented, you will run it on a
+regular basis, with a plan to review the liveboard once every few months (depending on 
+data volume growth).
 
-__Currently, this solution does not consider co-sharding as part of the output.__
+__Currently, this solution does not consider co-sharding as part of the output.__{ .fc-coral }
 
-If your customer is not comfortable with sharding, please have them schedule an
-Office Hours session and a CSA will be able to help guide them through the process.
+If you are not comfortable with the sharding, or want to learn more about what benefit
+sharding brings you, please reach out to your CSM or [schedule an Office Hours][office-hours]{ .external-link }
+session through the community page and we'll help guide you through the process.
 
 ## Liveboard preview
 
@@ -123,4 +120,5 @@ Office Hours session and a CSA will be able to help guide them through the proce
         === ":hammer_and_wrench: &nbsp; Added"
             - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
+[office-hours]: https://thoughtspotcs-officehours.youcanbook.me/
 [contrib-boonhapus]: https://github.com/boonhapus
