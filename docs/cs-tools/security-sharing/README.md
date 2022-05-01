@@ -1,6 +1,6 @@
 # Security Sharing
 
-This solution allows the customer to manage column-level and table-level security models
+This solution allows you to quickly manage column-level and table-level security models
 within an easy to manipulate user interface.
 
 Setting up Column Level Security (especially on larger tables) can be time-consuming
@@ -88,6 +88,4 @@ the appropriate security settings for those group-table combinations.
 
 ---
 
-[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
-[semver]: https://semver.org/spec/v2.0.0.html
 [contrib-misha]: https://github.com/MishaThoughtSpot

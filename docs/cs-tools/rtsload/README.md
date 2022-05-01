@@ -1,8 +1,8 @@
 # Remote tsload
 
-This solution allows the customer to interact with the tsload utility from a remote
-machine. Loading data to ThoughtSpot using this tool happens over an HTTPS connection
-and thus, all traffic is encrypted.
+This solution allows you to interact with the tsload utility from a remote machine.
+Loading data to ThoughtSpot using this tool happens over an HTTPS connection and thus,
+all traffic is encrypted.
 
 Data loads happen asynchronously. This means that the `file` command will begin a data
 load and return once the data has been sent over to the remote server. This data must be
@@ -10,10 +10,15 @@ then committed to Falcon (which can take time depending on data size). The `file
 command will take care of all of this for you. You may check the status of the data load
 with the returned cycle id and the `status` command.
 
-A benefit of using remote tsload is that it encourages and enforces security. If you are
-running tsload within the software command line, you are most likely signed in under the
-`admin` account. Remote tsload enforces privileges: the logged in user __must__ have at
-least the "Can Manage Data" privilege in ThoughtSpot.
+??? important "Remote tsload enforces privileges"
+
+    <span class=fc-coral>You __must__ have at least the __`Can Manage Data`__ privilege
+    in ThoughtSpot to use this tool.</span>
+
+    If you are running `tsload` within on the backend command line, you are most likely
+    signed in under the `admin` account. __CS Tools__ enhances this security by
+    enforcing privileges based on what user is logged in.
+
 
 ## CLI preview
 
@@ -118,6 +123,4 @@ least the "Can Manage Data" privilege in ThoughtSpot.
 
 ---
 
-[keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
-[semver]: https://semver.org/spec/v2.0.0.html
 [contrib-boonhapus]: https://github.com/boonhapus
