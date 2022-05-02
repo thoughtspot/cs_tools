@@ -150,7 +150,7 @@ def _write_tml_obj_to_file(path: pathlib.Path, tml: str) -> None:
         fn = f"{path}/{fn}"
 
     console.log(f'writing {name} to {fn}')
-    with open (fn, "w") as f:
+    with open(fn, "w") as f:
         f.write(tml['edoc'])
 
 
@@ -201,7 +201,14 @@ def import_(
         force_create: bool = O_(False,
                                 help="If true, will force a new object to be created."),
         connection: Optional[GUID] = O_(None,
-                             help="GUID for the target connection if tables need to be mapped to a new connection."),
+                                        help="GUID for the target connection if tables need to be mapped to a new connection."),
+        guid_file: pathlib.Path = O_(
+            ...,
+            help='Existing or new mapping file to map GUIDs from source instance to target instance.',
+            metavar='FILE_OR_DIR',
+            dir_okay=False,
+            resolve_path=True
+        )
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -216,6 +223,9 @@ def import_(
         console.log(f"[bold green]validating {path.name}.[/]")
     else:
         console.log(f"[bold green]importing {path.name} with policy {import_policy.value}.[/]")
+
+    if guid_file:
+        guid_mappings: Dict = _read_guid_mappings(guid_file=guid_file)
 
     tml = []  # array of TML to update
     files = []
@@ -243,6 +253,38 @@ def import_(
             else:
                 console.log(f"{files[fcnt]} {_['status_code']}: {_['name']} ({_['metadata_type']}::{_['guid']})")
             fcnt += 1
+
+
+def _read_guid_mappings(guid_file: pathlib.Path) -> Dict:
+    """
+    Reads the guid mapping file and creates a dictionary of old -> new mappings.
+    :param guid_file: The path to a file that may or may not exist.
+    :return: A mapping of old to new GUIDs.
+    """
+    guid_mappings = {}
+    if not guid_file.exists():
+        mapping_header = ("# GUID mapping file that maps guids from and source instance to a target instance.\n"
+                          "# The format is <old_guid>=<new_guid>\n"
+                          "# GUIDs will be in UUID format with no spaces or additional characters.\n"
+                          "# You can add additional comments anywhere in the file using '#' before the comment.\n")
+        with guid_file.open(mode='w') as f:
+            f.write(mapping_header)
+    else:
+        with guid_file.open(mode='r') as f:
+            for line in f:
+                if '=' in line:  # has a mapping, otherwise ignore
+                    line = line.split('#')[0]  # Strips out any comments.
+                    parts = line.split('=')
+                    if len(parts) < 2:
+                        console.log(f"ignoring line: {line}.  Doesn't appear to be of form old_guid = new_guid")
+                        continue
+                    old_guid = parts[0].strip()
+                    new_guid = parts[1].strip()
+                    # note that old GUIDs can get overwritten.  For now having multiple new GUIDs map to new
+                    # isn't support.  Use different mapping files and loads for this scenario.
+                    guid_mappings[old_guid] = new_guid
+
+    return guid_mappings
 
 
 def _load_and_append_tml_file(
