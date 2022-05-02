@@ -1,0 +1,5 @@
+{
+    "name": "gsheets",
+    "syncer_class": "GoogleSheets",
+    "requirements": ["gspread>=5.2.0"]
+}

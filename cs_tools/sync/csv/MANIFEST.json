@@ -1,0 +1,4 @@
+{
+    "name": "csv",
+    "syncer_class": "CSV"
+}

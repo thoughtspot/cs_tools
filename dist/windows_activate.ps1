@@ -63,7 +63,7 @@ function activate ($py_args = 'interactive') {
     # window.
     #
     if ( $py_args -eq 'interactive' ) {
-        Start-Process cmd "/k $_ACTIVATE.bat && cs_tools"
+        Start powershell -ArgumentList "-ExecutionPolicy Bypass -NoExit $_ACTIVATE.ps1; cs_tools"
     }
     # TODO: augment with the ability to use in Task Scheduler.
     #       - should accept args list and pass to $_ACTIVATE appropriately.

@@ -1,27 +1,46 @@
 <p align="center">
   <a href="https://www.thoughtspot.com/">
-    <img width="350" src="docs/assets/logo_black.svg" alt='ThoughtSpot'>
+    <img width="400" src="docs/assets/cs_tools logo black.png" alt='ThoughtSpot | CS Tools'>
   </a>
 </p>
 
-<p align="center"><strong>CS Tools</strong> <em>- field engineering tooling tuned for
-customer delight.</em></p>
 
-CS Tools is an initiative by the CS/PS team to collect, organize, analyze, improve, and
-streamline various field engineering tools existing today. This repository was
-introduced to form consistency in how we design and distribute our tools.
+<p align="center">
+  CS Tools is a command line utility written by the ThoughtSpot Professional Services &
+  Customer Success teams, meant to augment built-in platform tools, help with
+  administration of and enhance adoption within your ThoughtSpot environment.
+</p>
+
+<p align="center">
+  <b>Learn more about the tools in our documentation</b>:
+  <br/>
+  <a href="https://thoughtspot.github.io/cs_tools/">
+    https://cs_tools.thoughtspot.com
+  </a>
+</p>
+
+## Features
+- Low-fuss distribution and installation on MacOS, Linux, and Windows
+- Supports Software version 7.1.1+ and the latest Cloud release
+- Enhanced security with remote TQL and tsload workflows
+- Multiple-cluster support (Dev, QA, Prod)
+- Scheduler-friendly execution
+- ThoughtSpot Spot App
 
 ---
 
-<center>
+<p align="center">
+  <b>Install</b>: 
+  <a href="https://thoughtspot.github.io/cs_tools/how-to/install-upgrade-cs-tools/">
+    https://cs_tools.thoughtspot.com/install-upgrade-cs-tools
+  </a>
+</p>
 
-  __Documentation__: [https://cs_tools.thoughtspot.com/][this]
-
-  __Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
-
-</center>
+<p align="center">
+  <b>Source Code</b>: 
+  <a href="https://github.com/thoughtspot/cs_tools">
+    https://github.com/thoughtspot/cs_tools
+  </a>
+</p>
 
 ---
-
-[this]: https://thoughtspot.github.io/cs_tools/
-[gh-main]: https://github.com/thoughtspot/cs_tools/

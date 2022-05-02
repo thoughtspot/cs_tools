@@ -31,7 +31,7 @@ setup(
     author='Customer Success @ ThoughtSpot',
     author_email='ps-na@thoughtspot.com',
     url='https://github.com/thoughtspot/cs_tools',
-    license='MIT',
+    license='Proprietary',
     packages=find_packages(),
     include_package_data=True,
     install_requires=REQUIRED,

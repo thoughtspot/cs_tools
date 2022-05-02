@@ -57,6 +57,10 @@
     color: var(--ts-color-mint);
 }
 
+.fc-purple {
+    color: var(--ts-color-purple);
+}
+
 /* Make the page wider than default, but only slightly. */
 .md-grid {
     max-width: 80%;

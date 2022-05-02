@@ -1,0 +1,381 @@
+guid: null
+pinboard:
+  name: 'TS: Sharding Recommender'
+  visualizations:
+  - id: Viz_1
+    answer:
+      name: '# of ThoughtSpot Nodes'
+      tables:
+      - id: 'TS: Falcon Table Sharding'
+        name: 'TS: Falcon Table Sharding'
+      search_query: '[Node IP] [Number of ThoughtSpot Nodes]'
+      answer_columns:
+      - name: Node IP
+      - name: Number of ThoughtSpot Nodes
+      table:
+        table_columns:
+        - column_id: Node IP
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Number of ThoughtSpot Nodes
+          headline_aggregation: MAX
+        ordered_column_ids:
+        - Node IP
+        - Number of ThoughtSpot Nodes
+        client_state: ''
+        client_state_v2: '{"tableVizPropVersion": "V1","wrapTableHeader": true}'
+      chart:
+        type: SCATTER
+        chart_columns:
+        - column_id: Node IP
+        - column_id: Number of ThoughtSpot Nodes
+        axis_configs:
+        - x:
+          - Node IP
+          y:
+          - Number of ThoughtSpot Nodes
+        client_state: ''
+        client_state_v2: '{"version": "V4DOT1","chartProperties": {"gridLines": {},"responsiveLayoutPreference":
+          "USER_PREFERRED_ON","chartSpecific": {}},"columnProperties": [{"columnId":
+          "Number of ThoughtSpot Nodes","columnProperty": {}},{"columnId": "Node IP","columnProperty":
+          {}}],"axisProperties": [{"id": "1324fc8e-c838-4c3f-bdbf-bb2c6675f5e1","properties":
+          {"axisType": "Y","linkedColumns": ["Number of ThoughtSpot Nodes"],"isOpposite":
+          false}},{"id": "13d3ff43-67c3-4e1d-8780-892c4e054343","properties": {"axisType":
+          "X","linkedColumns": ["Node IP"]}}]}'
+      display_mode: TABLE_MODE
+      client_state: '{"version":"V2"}'
+    display_headline_column: Number of ThoughtSpot Nodes
+  - id: Viz_2
+    answer:
+      name: Unsharded Row Threshold
+      tables:
+      - id: 'TS: Falcon Table Sharding'
+        name: 'TS: Falcon Table Sharding'
+      search_query: '[Node IP] [Unsharded Row Threshold]'
+      answer_columns:
+      - name: Unsharded Row Threshold
+      - name: Node IP
+      table:
+        table_columns:
+        - column_id: Node IP
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Unsharded Row Threshold
+          headline_aggregation: MAX
+        ordered_column_ids:
+        - Node IP
+        - Unsharded Row Threshold
+        client_state: ''
+        client_state_v2: '{"tableVizPropVersion": "V1","wrapTableHeader": true}'
+      chart:
+        type: SCATTER
+        chart_columns:
+        - column_id: Unsharded Row Threshold
+        - column_id: Node IP
+        axis_configs:
+        - x:
+          - Unsharded Row Threshold
+          y:
+          - Node IP
+        client_state: ''
+        client_state_v2: '{"version": "V4DOT1","chartProperties": {"gridLines": {},"responsiveLayoutPreference":
+          "USER_PREFERRED_ON","chartSpecific": {}},"columnProperties": [{"columnId":
+          "Unsharded Row Threshold","columnProperty": {}},{"columnId": "Node IP","columnProperty":
+          {}}],"axisProperties": [{"id": "0eef6c57-3a27-4367-9274-003f81a7fc75","properties":
+          {"axisType": "Y","linkedColumns": ["Node IP"],"isOpposite": false}},{"id":
+          "ee50411e-0294-4931-a045-1ca3b27a4246","properties": {"axisType": "X","linkedColumns":
+          ["Unsharded Row Threshold"]}}]}'
+      display_mode: TABLE_MODE
+      client_state: '{"version":"V2"}'
+    display_headline_column: Unsharded Row Threshold
+  - id: Viz_3
+    answer:
+      name: Ideal Rows per Shard
+      tables:
+      - id: 'TS: Falcon Table Sharding'
+        name: 'TS: Falcon Table Sharding'
+      search_query: '[Node IP] [Ideal Rows per Shard]'
+      answer_columns:
+      - name: Node IP
+      - name: Ideal Rows per Shard
+      table:
+        table_columns:
+        - column_id: Node IP
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Ideal Rows per Shard
+          headline_aggregation: MAX
+        ordered_column_ids:
+        - Node IP
+        - Ideal Rows per Shard
+        client_state: ''
+        client_state_v2: '{"tableVizPropVersion": "V1","wrapTableHeader": true}'
+      chart:
+        type: SCATTER
+        chart_columns:
+        - column_id: Node IP
+        - column_id: Ideal Rows per Shard
+        axis_configs:
+        - x:
+          - Ideal Rows per Shard
+          y:
+          - Node IP
+        client_state: ''
+        client_state_v2: '{"version": "V4DOT1","chartProperties": {"gridLines": {},"responsiveLayoutPreference":
+          "USER_PREFERRED_ON","chartSpecific": {}},"columnProperties": [{"columnId":
+          "Node IP","columnProperty": {}},{"columnId": "Ideal Rows per Shard","columnProperty":
+          {}}],"axisProperties": [{"id": "eb5c21e4-81ad-4cf2-9aca-3f7c0f56cb0f","properties":
+          {"axisType": "Y","linkedColumns": ["Node IP"],"isOpposite": false}},{"id":
+          "4798ee95-d152-4696-bda1-a569d002c2c0","properties": {"axisType": "X","linkedColumns":
+          ["Ideal Rows per Shard"]}}]}'
+      display_mode: TABLE_MODE
+      client_state: '{"version":"V2"}'
+    display_headline_column: Ideal Rows per Shard
+  - id: Viz_4
+    answer:
+      name: '# of CPUs per Shard'
+      tables:
+      - id: 'TS: Falcon Table Sharding'
+        name: 'TS: Falcon Table Sharding'
+      search_query: '[Node IP] [CPU per Node]'
+      answer_columns:
+      - name: Node IP
+      - name: CPU per Node
+      table:
+        table_columns:
+        - column_id: Node IP
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: CPU per Node
+          headline_aggregation: MAX
+        ordered_column_ids:
+        - Node IP
+        - CPU per Node
+        client_state: ''
+        client_state_v2: '{"tableVizPropVersion": "V1","wrapTableHeader": true}'
+      chart:
+        type: SCATTER
+        chart_columns:
+        - column_id: Node IP
+        - column_id: CPU per Node
+        axis_configs:
+        - x:
+          - CPU per Node
+          y:
+          - Node IP
+        client_state: ''
+        client_state_v2: '{"version": "V4DOT1","chartProperties": {"gridLines": {},"responsiveLayoutPreference":
+          "USER_PREFERRED_ON","chartSpecific": {}},"columnProperties": [{"columnId":
+          "Node IP","columnProperty": {}},{"columnId": "CPU per Node","columnProperty":
+          {}}],"axisProperties": [{"id": "07b862e5-cb3c-4d71-a2ef-ab4fa7cf2e82","properties":
+          {"axisType": "Y","linkedColumns": ["Node IP"],"isOpposite": false}},{"id":
+          "103bb10e-5f56-46cb-a0c3-54dda0c6e043","properties": {"axisType": "X","linkedColumns":
+          ["CPU per Node"]}}]}'
+      display_mode: TABLE_MODE
+      client_state: '{"version":"V2"}'
+    display_headline_column: CPU per Node
+  - id: Viz_5
+    answer:
+      name: '% Platform Requiring a Reshard'
+      tables:
+      - id: 'TS: Falcon Table Sharding'
+        name: 'TS: Falcon Table Sharding'
+      formulas:
+      - id: '% Platform Reshard'
+        name: '% Platform Reshard'
+        expr: 'sum ( [alert condition: Reshard Required] ) / count ( [Fully Qualified
+          Tablename] ) * 100'
+      search_query: '[% Platform Reshard]'
+      answer_columns:
+      - name: '% Platform Reshard'
+      table:
+        table_columns:
+        - column_id: '% Platform Reshard'
+          headline_aggregation: TABLE_AGGR
+        ordered_column_ids:
+        - '% Platform Reshard'
+        client_state: ''
+        client_state_v2: '{"tableVizPropVersion": "V1","wrapTableHeader": true}'
+      display_mode: TABLE_MODE
+      client_state: '{"version":"V2"}'
+    display_headline_column: '% Platform Reshard'
+  - id: Viz_6
+    answer:
+      name: '# of  Tables Requiring a Reshard'
+      tables:
+      - id: 'TS: Falcon Table Sharding'
+        name: 'TS: Falcon Table Sharding'
+      formulas:
+      - id: '% Platform Reshard'
+        name: '% Platform Reshard'
+        expr: 'sum ( [alert condition: Reshard Required] ) / count ( [Fully Qualified
+          Tablename] ) * 100'
+      search_query: '[alert condition: Reshard Required]'
+      answer_columns:
+      - name: 'Total alert condition: Reshard Required'
+      table:
+        table_columns:
+        - column_id: 'Total alert condition: Reshard Required'
+          headline_aggregation: TABLE_AGGR
+        ordered_column_ids:
+        - 'Total alert condition: Reshard Required'
+        client_state: ''
+        client_state_v2: '{"tableVizPropVersion": "V1","wrapTableHeader": true}'
+      display_mode: TABLE_MODE
+      client_state: '{"version":"V2"}'
+    display_headline_column: 'Total alert condition: Reshard Required'
+  - id: Viz_7
+    answer:
+      name: '# of Tables in Falcon'
+      tables:
+      - id: 'TS: Falcon Table Sharding'
+        name: 'TS: Falcon Table Sharding'
+      formulas:
+      - id: '% Platform Reshard'
+        name: '% Platform Reshard'
+        expr: 'sum ( [alert condition: Reshard Required] ) / count ( [Fully Qualified
+          Tablename] ) * 100'
+      search_query: count [Fully Qualified Tablename]
+      answer_columns:
+      - name: Number of Fully Qualified Tablename
+      table:
+        table_columns:
+        - column_id: Number of Fully Qualified Tablename
+          headline_aggregation: TABLE_AGGR
+        ordered_column_ids:
+        - Number of Fully Qualified Tablename
+        client_state: ''
+        client_state_v2: '{"tableVizPropVersion": "V1","wrapTableHeader": true}'
+      display_mode: TABLE_MODE
+      client_state: '{"version":"V2"}'
+    display_headline_column: Number of Fully Qualified Tablename
+  - id: Viz_8
+    answer:
+      name: '# of Tables causing Undersizing'
+      tables:
+      - id: 'TS: Falcon Table Sharding'
+        name: 'TS: Falcon Table Sharding'
+      formulas:
+      - id: '% Platform Reshard'
+        name: '% Platform Reshard'
+        expr: 'sum ( [alert condition: Reshard Required] ) / count ( [Fully Qualified
+          Tablename] ) * 100'
+      search_query: '[alert condition: Environment Size]'
+      answer_columns:
+      - name: 'Total alert condition: Environment Size'
+      table:
+        table_columns:
+        - column_id: 'Total alert condition: Environment Size'
+          headline_aggregation: TABLE_AGGR
+        ordered_column_ids:
+        - 'Total alert condition: Environment Size'
+        client_state: ''
+        client_state_v2: '{"tableVizPropVersion": "V1","wrapTableHeader": true}'
+      display_mode: TABLE_MODE
+      client_state: '{"version":"V2"}'
+    display_headline_column: 'Total alert condition: Environment Size'
+  - id: Viz_9
+    answer:
+      name: Sharding Analysis Summary
+      tables:
+      - id: 'TS: Falcon Table Sharding'
+        name: 'TS: Falcon Table Sharding'
+      search_query: '[Fully Qualified Tablename] [Sharding State] [Reshard Required]
+        [Environment Size] [Shards] [Recommended Total Shards] [Rows] [Row Skew] [Table
+        GUID]'
+      answer_columns:
+      - name: Environment Size
+      - name: Rows
+      - name: Fully Qualified Tablename
+      - name: Shards
+      - name: Recommended Total Shards
+        custom_name: Recommended Shards
+      - name: Sharding State
+      - name: Row Skew
+      - name: Reshard Required
+      - name: Table GUID
+      table:
+        table_columns:
+        - column_id: Fully Qualified Tablename
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Sharding State
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Reshard Required
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Environment Size
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Shards
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Row Skew
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Recommended Total Shards
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Table GUID
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Rows
+          headline_aggregation: COUNT_DISTINCT
+        ordered_column_ids:
+        - Fully Qualified Tablename
+        - Sharding State
+        - Reshard Required
+        - Environment Size
+        - Shards
+        - Row Skew
+        - Recommended Total Shards
+        - Table GUID
+        - Rows
+        client_state: ''
+        client_state_v2: '{"tableVizPropVersion": "V1","widthState": [{"columnId":
+          "Sharding State","width": 129.0},{"columnId": "Reshard Required","width":
+          146.0},{"columnId": "Environment Size","width": 213.0},{"columnId": "Row
+          Skew","width": 102.0},{"columnId": "Recommended Total Shards","width": 177.0},{"columnId":
+          "Table GUID","width": 264.0},{"columnId": "Fully Qualified Tablename","width":
+          414.0}],"wrapTableHeader": true,"orderedColumnIds": ["Fully Qualified Tablename","Sharding
+          State","Reshard Required","Environment Size","Shards","Recommended Total
+          Shards","Rows","Row Skew","Table GUID"],"columnProperties": [{"columnId":
+          "Fully Qualified Tablename","columnProperty": {"wrapColumnText": false}}]}'
+      chart:
+        type: SCATTER
+        chart_columns:
+        - column_id: Sharding State
+        - column_id: Row Skew
+        - column_id: Table GUID
+        - column_id: Reshard Required
+        - column_id: Environment Size
+        axis_configs:
+        - x:
+          - Row Skew
+          y:
+          - Table GUID
+          color:
+          - Reshard Required
+          - Environment Size
+          - Sharding State
+        client_state: ''
+        client_state_v2: '{"version": "V4DOT1","chartProperties": {"gridLines": {},"responsiveLayoutPreference":
+          "USER_PREFERRED_ON","chartSpecific": {}},"columnProperties": [{"columnId":
+          "Environment Size","columnProperty": {}},{"columnId": "Table GUID","columnProperty":
+          {}},{"columnId": "Row Skew","columnProperty": {}},{"columnId": "Reshard
+          Required","columnProperty": {}},{"columnId": "Sharding State","columnProperty":
+          {}}],"axisProperties": [{"id": "049dc286-6c9d-4289-b37c-974313ee3994","properties":
+          {"axisType": "Y","linkedColumns": ["Table GUID"],"isOpposite": false}},{"id":
+          "df1d2714-59f7-41d2-9404-d4cf8d43b273","properties": {"axisType": "X","linkedColumns":
+          ["Row Skew"]}}]}'
+      display_mode: TABLE_MODE
+      client_state: '{"version":"V2"}'
+  layout:
+    tiles:
+    - visualization_id: Viz_1
+      size: EXTRA_SMALL
+    - visualization_id: Viz_4
+      size: EXTRA_SMALL
+    - visualization_id: Viz_2
+      size: EXTRA_SMALL
+    - visualization_id: Viz_3
+      size: EXTRA_SMALL
+    - visualization_id: Viz_5
+      size: EXTRA_SMALL
+    - visualization_id: Viz_6
+      size: EXTRA_SMALL
+    - visualization_id: Viz_7
+      size: EXTRA_SMALL
+    - visualization_id: Viz_8
+      size: EXTRA_SMALL
+    - visualization_id: Viz_9
+      size: LARGE

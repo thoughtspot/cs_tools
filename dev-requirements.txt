@@ -1,6 +1,13 @@
+# core requirements
 -r requirements.txt
 
-mkdocs-material==8.1.0
-ward==0.63.0
-coverage==6.0
+# docs
+mkdocs-material
+
+# test
+ward
+coverage
+nox
+
+# editable
 -e .
