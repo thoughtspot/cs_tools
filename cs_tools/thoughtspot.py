@@ -1,18 +1,21 @@
 import datetime as dt
 import platform
 import logging
+import json
 import sys
 
+import httpx
 import click
 
-from .helpers.secrets import reveal
-from ._rest_api_v1 import _RESTAPIv1
-from ._version import __version__
-from .middlewares import (
-    AnswerMiddleware, PinboardMiddleware, SearchMiddleware, TagMiddleware,
-    UserMiddleware
+from cs_tools.errors import ThoughtSpotUnreachable, AuthenticationError
+from cs_tools.util import reveal
+from cs_tools.api._rest_api_v1 import _RESTAPIv1
+from cs_tools._version import __version__
+from cs_tools.api.middlewares import (
+    AnswerMiddleware, ConnectionMiddleware, MetadataMiddleware, PinboardMiddleware, SearchMiddleware,
+    TagMiddleware, TQLMiddleware, TSLoadMiddleware, UserMiddleware
 )
-from ._schema import ThoughtSpotPlatform, LoggedInUser
+from cs_tools.data.models import ThoughtSpotPlatform, LoggedInUser
 
 
 log = logging.getLogger(__name__)
@@ -24,6 +27,8 @@ class ThoughtSpot:
     def __init__(self, config):
         self.config = config
         self._rest_api = _RESTAPIv1(config, ts=self)
+        self._logged_in_user = None
+        self._platform = None
 
         # Middleware endpoints. These are logically grouped interactions within
         # ThoughtSpot so that working with the REST and GraphQL apis is simpler
@@ -32,12 +37,15 @@ class ThoughtSpot:
         self.user = UserMiddleware(self)
         # self.group
         # self.tml
-        self.pinboard = PinboardMiddleware(self)
+        self.metadata = MetadataMiddleware(self)
+        self.pinboard = self.liveboard = PinboardMiddleware(self)
         self.answer = AnswerMiddleware(self)
-        # self.connection
+        self.connection = ConnectionMiddleware(self)
         # self.worksheet
         # self.table
         self.tag = TagMiddleware(self)
+        self.tql = TQLMiddleware(self)
+        self.tsload = TSLoadMiddleware(self)
 
     @property
     def api(self) -> _RESTAPIv1:
@@ -76,15 +84,38 @@ class ThoughtSpot:
         """
         Log in to ThoughtSpot.
         """
-        r = self.api._session.login(
-            username=self.config.auth['frontend'].username,
-            password=reveal(self.config.auth['frontend'].password).decode(),
-            rememberme=True,
-            disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
-        )
+        try:
+            r = self.api._session.login(
+                username=self.config.auth['frontend'].username,
+                password=reveal(self.config.auth['frontend'].password).decode(),
+                rememberme=True,
+                disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
+            )
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            host = self.config.thoughtspot.host
+            rzn = (
+                f'cannot see url [blue]{host}[/] from the current machine\n\n'
+                f'>>> [yellow]{e}[/]'
+            )
+            raise ThoughtSpotUnreachable(rzn) from None
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == httpx.codes.UNAUTHORIZED:
+                raise AuthenticationError(self.config, original=e) from None
+            raise e
 
-        self._logged_in_user = LoggedInUser.from_session_info(r.json())
-        self._this_platform = ThoughtSpotPlatform.from_session_info(r.json())
+        # got a response, but couldn't make sense of it
+        try:
+            data = r.json()
+        except json.JSONDecodeError:
+            if 'Enter the activation code to enable service' in r.text:
+                rzn = 'it is in eco mode, please go activate it!'
+            else:
+                rzn = 'for an unknown reason.'
+
+            raise ThoughtSpotUnreachable(rzn) from None
+
+        self._logged_in_user = LoggedInUser.from_session_info(data)
+        self._this_platform = ThoughtSpotPlatform.from_session_info(data)
 
         log.debug(f"""execution context...
 
@@ -102,7 +133,7 @@ class ThoughtSpot:
         cluster: {self._this_platform.cluster_name}
         url: {self._this_platform.url}
         timezone: {self._this_platform.timezone}
-        codebase: {self._this_platform.deployment}
+        branch: {self._this_platform.deployment}
         version: {self._this_platform.version}
 
         [LOGGED IN USER]
@@ -123,4 +154,5 @@ class ThoughtSpot:
         return self
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
-        self.logout()
+        if self._logged_in_user is not None:
+            self.logout()

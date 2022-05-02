@@ -8,7 +8,7 @@ However, these data are not always accessible for your individual use case and c
 
 A common workflow for many of our tools is to capture some data from the ThoughtSpot API, feed it into your database backend, and ingest that data back into ThoughtSpot to later be consumed in Search.
 
-You can use various the [advanced tools][adv-tools]{ target='secondary' .external-link } in `cs_tools` to do exactly this, and pair it up with your favorite scheduling utility like `cron` or Windows's own Task Scheduler. Below are some examples on how to schedule the [Searchable: Users & Groups][tool-sug]{ target='secondary' .external-link } tool to pull user and group data out of ThoughtSpot and push it directly into Falcon[^1].
+You can use various the [advanced tools][adv-tools]{ target='secondary' .external-link } in `cs_tools` to do exactly this, and pair it up with your favorite scheduling utility like `cron` or Windows's own Task Scheduler. Below are some examples on how to schedule the [Searchable][tool-search]{ target='secondary' .external-link } tool to pull metadata out of ThoughtSpot and push it directly into Falcon[^1].
 
 
 === ":fontawesome-brands-apple:, :fontawesome-brands-linux: crontab"
@@ -21,10 +21,10 @@ You can use various the [advanced tools][adv-tools]{ target='secondary' .externa
     
     ```cron
     # Daily at 3:05am
-     5   3   *   *   *  source /full/path/to/unix_activate.sh && cs_tools tools searchable-user-groups --config ts-namey
+     5   3   *   *   *  source /full/path/to/unix_activate.sh && cs_tools tools searchable gather falcon://default --config ts-namey
 
     # Every 2hrs at 15 minutes past the hour
-    15  */2  *   *   *  source /full/path/to/unix_activate.sh && cs_tools tools searchable-user-groups --config ts-namey
+    15  */2  *   *   *  source /full/path/to/unix_activate.sh && cs_tools tools searchable gather falcon://default --config ts-namey
     ```
 
 === ":fontawesome-brands-windows: Task Scheduler"
@@ -41,7 +41,7 @@ You can use various the [advanced tools][adv-tools]{ target='secondary' .externa
              /tn cs_tools ^
              /sc DAILY    ^
              /st 03:05    ^
-             /tr \\full\path\to\windows_activate.ps1 && cs_tools tools searchable-user-groups gather --config trial
+             /tr \\full\path\to\windows_activate.ps1 && cs_tools tools searchable gather falcon://default --config trial
 
     # Every 2hrs at 15 minutes past the hour
     schtasks /create ^
@@ -49,7 +49,7 @@ You can use various the [advanced tools][adv-tools]{ target='secondary' .externa
              /sc MINUTE   ^
              /mo 120      ^
              /st 00:15    ^
-             /tr \\full\path\to\windows_activate.ps1 && cs_tools tools searchable-user-groups gather --config trial
+             /tr \\full\path\to\windows_activate.ps1 && cs_tools tools searchable gather falcon://default --config trial
     ```
 
 
@@ -63,4 +63,4 @@ You can use various the [advanced tools][adv-tools]{ target='secondary' .externa
 [cronguru]: https://crontab.guru/
 [schtasks]: https://docs.microsoft.com/en-us/previous-versions/orphan-topics/ws.10/cc772785(v=ws.10)?redirectedfrom=MSDN
 [sw-sys-ws]: https://docs.thoughtspot.com/latest/admin/system-monitor/worksheets.html
-[tool-sug]: ../../searchable-user-groups
+[tool-search]: ../../searchable

@@ -1,6 +1,6 @@
 # Security Sharing
 
-This solution allows the customer to manage column-level and table-level security models
+This solution allows you to quickly manage column-level and table-level security models
 within an easy to manipulate user interface.
 
 Setting up Column Level Security (especially on larger tables) can be time-consuming
@@ -75,3 +75,17 @@ the appropriate security settings for those group-table combinations.
       --helpfull                      Show the full help message and exit.
       -h, --help                      Show this message and exit.
     ```
+
+---
+
+## Changelog
+
+
+!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-08-17"
+
+    === ":hammer_and_wrench: &nbsp; Added"
+        - Initial release from [@mishathoughtspot][contrib-misha]{ target='secondary' .external-link }.
+
+---
+
+[contrib-misha]: https://github.com/MishaThoughtSpot

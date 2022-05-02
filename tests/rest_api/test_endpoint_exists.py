@@ -16,7 +16,7 @@ PARAMETERS = {
     'private': [
         ('POST', 'dependency/listdependents'),
         ( 'GET', 'metadata/edoc/THIS_IS_A_FAKE_TYPE/this-is-a-fake-guid'),
-        ('POST', 'metadata/edoc/exportepack'),
+        ('POST', 'metadata/edoc/exportEPack'),
         ('POST', 'metadata/create'),
         ('POST', 'metadata/assigntag'),
         ('POST', 'metadata/unassigntag'),

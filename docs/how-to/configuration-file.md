@@ -4,70 +4,62 @@ For example, the details you put into the login screen that's presented when you
 
 ![thoughtspot-ui-login](login_screen.png)
 
-If you do not supply all the required arguments to properly authenticate to ThoughtSpot, each CS Tool will interactively ask for the remaining ones. To bypass the interactive feature, you can supply the `--config` argument to an already set up configuration.
+??? note "Arguments on every CS Tool Command"
 
-??? note "Arguments on every CS Tool"
+    Each tool utilizes the ThoughtSpot API, so a configuration must be set. You can see a listing of all available arguments at any time, using the `--helpfull` option.
 
-    Since each tool utilizes the API, they all take the following arguments. You can see a listing of these arguments at any time, using the `--helpfull` option.
-
-    === "Required"
+    === "On every Command"
         ```
           Name              Type      Description
           --------------------------------------------------------------
-          --host        |   TEXT    |  thoughtspot server
-          --username    |   TEXT    |  username when logging into ThoughtSpot
-          --password    |   TEXT    |  password when logging into ThoughtSpot
-        ```
-
-    === "Optional"
-        ```
-          Name              Type      Description
-          ------------------------------------------------------------------------
-          --port        |  INTEGER  |  optional, port of the thoughtspot server
-          --disable_ssl |   FLAG    |  disable SSL verification
-          --disable_sso |   FLAG    |  disable automatic SAML redirect
+          --config       |   TEXT    |  config file identifier
           --temp_dir    | DIRECTORY |  filepath to save large temporary files to
           --verbose     |   FLAG    |  enable verbose logging for this run only
         ```
 
-    === "Recommended"
+    === "Defined by --config"
         ```
-          Name              Type      Description
-          --------------------------------------------------------------
-          --config      |   TEXT    |  config file identifier
+          Name              Type         Description
+          ---------------------------------------------------------------------------
+          --host        |   TEXT       |  thoughtspot server
+          --username    |   TEXT       |  username when logging into ThoughtSpot
+          --password    |   TEXT       |  password when logging into ThoughtSpot
+          --port        |  INTEGER     |  optional, port of the thoughtspot server
+          --disable_ssl |   FLAG       |  disable SSL verification
+          --disable_sso |   FLAG       |  disable automatic SAML redirect
+          --temp_dir    | DIRECTORY    |  filepath to save large temporary files to
+          --syncer      | proto://PATH |  default definition for the syncer protocol
+          --verbose     |   FLAG       |  enable verbose logging for this run only
         ```
-
-    *If any of these options are supplied in addition to *`--config`*, they override what's set in the configuration.*
 
 
 ## Config File Commands
 
-The top level `cs_tools config` command has a few subcommands. There can be any number of config files saved on your machine. There can also be any number of config files set up against a target instance.
-
-!!! info "`--config / --name`"
-    
-    For commands that require you to pass the `--config` or `--name` option, the name is simply a unique identifier for a configuration.
+The top level `cs_tools config` command has a few subcommands. There can be any number of config files saved on your machine. There can also be any number of config files set up against a target instance. Additionally, you may set a default configuration if you choose not to pass `--config` to each command.
 
 === "config create"
 
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config create --help
 
-    Usage: cs_tools config create [--option, ..., --help]
+    Usage: cs_tools config create --config IDENTIFIER [--option, ..., --help]
 
       Create a new config file.
 
     Options:
-      --name TEXT           config file identifier  (required)
-      --host TEXT           thoughtspot server  (required)
-      --port INTEGER        optional, port of the thoughtspot server
-      --username TEXT       username when logging into ThoughtSpot  (required)
-      --password TEXT       password when logging into ThoughtSpot  (required)
-      --temp_dir DIRECTORY  location on disk to save temporary files
-      --disable_ssl         disable SSL verification
-      --disable_sso         disable automatic SAML redirect
-      --verbose             enable verbose logging by default
-      -h, --help            Show this message and exit.
+      --config TEXT                   config file identifier  (required)
+      --host TEXT                     thoughtspot server  (required)
+      --port INTEGER                  optional, port of the thoughtspot server
+      --username TEXT                 username when logging into ThoughtSpot  (required)
+      --password TEXT                 password when logging into ThoughtSpot, if "prompt" then hide input
+      --temp_dir DIRECTORY            location on disk to save temporary files
+      --disable_ssl                   disable SSL verification
+      --disable_sso                   disable automatic SAML redirect
+      --syncer protocol://DEFINITION.toml
+                                      default definition for the syncer protocol, may be provided multiple times
+      --verbose                       enable verbose logging by default
+      --default                       set as the default configuration
+      -h, --help, --helpfull          Show this message and exit.
     ```
 
 === "config modify"
@@ -75,62 +67,78 @@ The top level `cs_tools config` command has a few subcommands. There can be any 
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config modify --help
 
-    Usage: cs_tools config modify [--option, ..., --help]
+    Usage: cs_tools config modify --config IDENTIFIER [--option, ..., --help]
 
       Modify an existing config file.
 
+      To modify the default syncers configured, you must supply all target syncers at once. eg. if you had 3 defaults set
+      up initially, and want to remove 1, supply the two which are to remain.
+
     Options:
-      --name TEXT                     config file identifier  (required)
+      --config TEXT                   config file identifier  (required)
       --host TEXT                     thoughtspot server
       --port INTEGER                  optional, port of the thoughtspot server
       --username TEXT                 username when logging into ThoughtSpot
-      --password TEXT                 password when logging into ThoughtSpot
+      --password TEXT                 password when logging into ThoughtSpot, if "prompt" then hide input
       --temp_dir DIRECTORY            location on disk to save temporary files
       --disable_ssl / --no-disable_ssl
                                       disable SSL verification
       --disable_sso / --no-disable_sso
                                       disable automatic SAML redirect
+      --syncer protocol://DEFINITION.toml
+                                      default definition for the syncer protocol, may be provided multiple times
       --verbose / --normal            enable verbose logging by default
-      -h, --help                      Show this message and exit.
+      --default                       set as the default configuration
+      -h, --help, --helpfull          Show this message and exit.
     ```
 
 === "config delete"
 
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config delete --help
+    (.cs_tools) C:\work\thoughtspot>cs_tools config delete --help
 
-    Usage: cs_tools config delete [--option, ..., --help]
+    Usage: cs_tools config delete --config IDENTIFIER [--option, ..., --help]
 
       Delete a config file.
 
     Options:
-      --name TEXT  config file identifier  (required)
-      -h, --help   Show this message and exit.
+      --config TEXT           config file identifier  (required)
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 === "config show"
 
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools config show --help
+    (.cs_tools) C:\work\thoughtspot>cs_tools config show --help
 
-    Usage: cs_tools config show [--option, ..., --help]
+    Usage: cs_tools config show --config IDENTIFIER [--option, ..., --help]
 
-      Show the location of the currently saved config files.
+      Display the currently saved config files.
 
     Options:
-      -h, --help  Show this message and exit.
+      --config TEXT           optionally, display the contents of a particular config
+      -h, --help, --helpfull  Show this message and exit.
     ```
 
 ## Example Configuration File
 
-You can view all the currently configured environments by using the `cs_tools config show` command and following the directory path shown in your terminal.
+You can view all the currently configured environments by using the `cs_tools config show` command. If a particular configuration is specified, you can view the contents of that file.
 
 ??? danger "What happens with my password?"
     
     For security reasons, your password lives obfuscated both in memory and the configuration file upon being captured by `cs_tools`. It is only decrypted once per run, when authorizing with your ThoughtSpot platform.
 
+`> cs_tools config show --config production`
+
 ```toml
-verbose = False
+
+Cluster configs located at: ~/.config/cs_tools
+
+[default]
+~/.config/cs_tools/cluster-cfg_production.toml
+
+name = "production"
+verbose = false
 temp_dir = "/export/sdbc1/data/dump"
 
 [thoughtspot]

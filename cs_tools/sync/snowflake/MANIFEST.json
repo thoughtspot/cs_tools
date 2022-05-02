@@ -1,0 +1,5 @@
+{
+    "name": "snowflake",
+    "syncer_class": "Snowflake",
+    "requirements": ["snowflake-sqlalchemy>=1.3.3"]
+}

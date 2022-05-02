@@ -11,30 +11,29 @@ hide:
   /* Skinny down and center the page */
   .md-content { max-width: 75%; margin: auto; }
   /* Indent Features list, replace bullet point with check mark */
-  #features { margin-bottom: 0; margin-left: 10%; }
-  .md-typeset ul { margin-left: 10%; }
+  #features { margin-bottom: 0; margin-left: 30%; }
+  [dir=ltr] .md-typeset ul li { margin-left: 20%; }
   ::marker { content: "✔️ "; }
 </style>
 
-<figure><img src="assets/logo_black.svg" width="350"/></figure>
+<figure><img src="assets/cs_tools logo black.png" width="400"/></figure>
 
 <center>
-CS Tools is a utility written by the __ThoughtSpot__ Professional Services & Customer
-Success organizations, meant to augment built-in platform tools, help with
-administration of and enhance adoption within your ThoughtSpot environment. The tools
-are a collection of different scripts to perform a variety of functions which aren't
-native to ThoughtSpot or advanced functionality for clients who have a well-adopted
-platform.
+__CS Tools__ is a command line utility written by the __ThoughtSpot__ Professional
+Services & Customer Success teams, meant to augment built-in platform tools, help with
+administration of and enhance adoption within your ThoughtSpot environment.
 </center>
 
+<span>
 # Features
 
-- Low-fuss distribution and installation
+- Low-fuss distribution and installation on MacOS, Linux, and Windows
+- Supports Software version 7.1.1+ and the latest Cloud release
 - Enhanced security with remote TQL and tsload workflows
-- Installs and runs on MacOS, Linux, and Windows
 - Multiple-cluster support (Dev, QA, Prod)
-- SpotApps distribution for data tools
 - Scheduler-friendly execution
+- ThoughtSpot Spot App
+</span>
 
 ---
 
@@ -47,10 +46,11 @@ __Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
 
 ---
 
-##### *Should you find anything lacking about the docs or* `cs_tools` *itself, [please submit an issue][gh-issue]{ target='secondary' }!*
+##### *Got a question? Ask us on [GitHub][gh-issue]{ target='secondary' } or fill out [this form][gf-issue]{ target='secondary' }!*
 </center>
 
 [help]: https://forms.gle/sh6hyBSS2mnrwWCa9
 [this]: https://thoughtspot.github.io/cs_tools/
 [gh-main]: https://github.com/thoughtspot/cs_tools/
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new
+[gf-issue]: https://forms.gle/Tmbs6ZhsZa2DMFsU9
