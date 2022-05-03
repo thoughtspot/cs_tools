@@ -223,6 +223,7 @@ def import_(
     else:
         console.log(f"[bold green]importing {path.name} with policy {import_policy.value}.[/]")
 
+    guid_mappings = {}
     if guid_file:
         guid_mappings: Dict = _read_guid_mappings(guid_file=guid_file)
 
@@ -232,10 +233,12 @@ def import_(
         for p in list(f for f in path.iterdir() if f.match("*.tml")):
             if not p.is_dir():  # don't currently support sub-folders.  Might add later.
                 files.append(p)
-                _load_and_append_tml_file(ts=ts, path=p, connection=connection, force_create=force_create, tml_list=tml)
+                _load_and_append_tml_file(ts=ts, path=p, connection=connection, guid_mappings=guid_mappings,
+                                          force_create=force_create, tml_list=tml)
     else:
         files.append(path)
-        _load_and_append_tml_file(ts=ts, path=path, connection=connection, force_create=force_create, tml_list=tml)
+        _load_and_append_tml_file(ts=ts, path=path, connection=connection, guid_mappings=guid_mappings,
+                                  force_create=force_create, tml_list=tml)
 
     for f in files:
         console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
@@ -290,6 +293,7 @@ def _load_and_append_tml_file(
         ts: ThoughtSpot,
         path: pathlib.Path,
         connection: GUID,
+        guid_mappings: Dict,
         force_create: bool,
         tml_list: List[str]) -> None:
     """
@@ -297,6 +301,7 @@ def _load_and_append_tml_file(
     :param ts: The ThoughtSpot interface.
     :param path:  The file path.
     :param connection:  The connection to map to (optional).
+    :param guid_mappings: The dictionary that maps from old GUID to new GUID.
     :param force_create: If true, files are being created.
     :param tml_list: A list that is being appended to.  Might get updated.
     :return: None
@@ -309,6 +314,9 @@ def _load_and_append_tml_file(
         console.log("[bold red]Only TML (.tml) files are supported.[/]")
 
     tmlobj = _load_tml_from_file(ts=ts, path=path, connection=connection)
+
+    tml = _map_guids(tml=tmlobj, guid_mappings=guid_mappings)
+
     if tmlobj.content_type == TMLContentType.table:
         console.log("[bold red]Table import not currently selected.  Ignoring file.[/]")
     else:
@@ -342,6 +350,37 @@ def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path, connection: GUID = 
         tmlobj.remap_tables_to_new_fqn(name_to_fqn_map=table_map)
 
     return tmlobj
+
+
+def _map_guids(tml: TML, guid_mappings: Dict) -> TML:
+    """
+    Updates the TML to map any known GUIDs to new GUIDs.  If the old GUID (guid in file) is in the mapping as a key,
+    it will be replaced with the value.
+    :param tml: A TML object to replace mappings on.
+    :param guid_mappings: The mapping dictionary of the form guid_mapping[<old_guid>] => <new_guid>
+    """
+
+    # check all entries in the tml to see if they are GUID or FQN.
+    # If yes, try to change the value.
+    # If no, try mapping, but at the next level down.  Ruturn when there are no child levels.
+    __find_and_map_guids(tml=tml.tml, guid_mappings=guid_mappings)
+    return tml
+
+
+def __find_and_map_guids(tml: Dict, guid_mappings: Dict) -> None:
+    """
+    Recursively finds GUIDs (guid or fqn entries) and replaces if the GUID is mapped.  This shouldn't get too deep.
+    :param tml: The TML fragment to check.
+    :param guid_mappings: The mapping to use.
+    """
+    guid_key_names = ('guid', 'fqn')
+    for k in tml.keys():
+        if k in guid_key_names:
+            v = tml.get(k, None)
+            if v and v in guid_mappings.keys():
+                tml[k] = guid_mappings[v]
+        elif isinstance(tml[k], dict):
+            __find_and_map_guids(tml=tml[k], guid_mappings=guid_mappings)
 
 
 def _flatten_tml_response(r: Dict) -> [Dict]:
