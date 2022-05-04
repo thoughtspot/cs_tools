@@ -1,11 +1,12 @@
 # Setup and install the CS Tools virtual environment.
 #
 # Written by: Nick Cooper <nicholas.cooper@thoughtspot.com>
-# Last Modified: 2021/05/18
-# Version: 0.1.0
+# Last Modified: 2022/04/28
+# Version: 0.2.0
 #
 # CHANGELOG
 # v0.1.0 - INITIAL RELEASE
+# v0.2.0 - activate from .bat --> .ps1
 #
 param ($INSTALL_TYPE = 'local')
 
