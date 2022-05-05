@@ -12,6 +12,7 @@ import datetime
 import json
 import pathlib
 import click
+import toml
 from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
 from typer import Argument as A_, Option as O_  # noqa
@@ -19,15 +20,15 @@ from typing import Dict, List, Optional
 import typer
 from zipfile import ZipFile
 
-from cs_tools import util
 from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType
-from cs_tools.api.middlewares import ConnectionMiddleware
-from cs_tools.cli.ux import _csv, console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
+from cs_tools.cli.ux import console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
 from cs_tools.cli.tools import common
 from cs_tools.cli.util import base64_to_file
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+
+from . import __version__
 
 
 def strip_blanks(inp: List[str]) -> List[str]:
@@ -177,7 +178,7 @@ def _write_tml_package_to_file(path: pathlib.Path, contents: str) -> None:
                         with open(tml_outfile, 'w') as outfile:
                             outfile.write(YAMLTML.dump_tml_object(tml_obj))
     except Exception as err:
-        console.stderr(f"[bold red]{err}[/]")
+        console.log(f"[bold red]{err}[/]")
 
 
 @app.command(name='import', cls=CSToolsCommand)
@@ -259,34 +260,34 @@ def import_(
 
 def _read_guid_mappings(guid_file: pathlib.Path) -> Dict:
     """
-    Reads the guid mapping file and creates a dictionary of old -> new mappings.
+    Reads the guid mapping file and creates a dictionary of old -> new mappings.  Note that the GUID file _must_ be
+    a valid TOML file of the format used by the scriptability tool.
     :param guid_file: The path to a file that may or may not exist.
     :return: A mapping of old to new GUIDs.
     """
-    guid_mappings = {}
     if not guid_file.exists():
-        mapping_header = ("# GUID mapping file that maps guids from and source instance to a target instance.\n"
-                          "# The format is <old_guid>=<new_guid>\n"
-                          "# GUIDs will be in UUID format with no spaces or additional characters.\n"
-                          "# You can add additional comments anywhere in the file using '#' before the comment.\n")
+        mapping_header = ('# Automatically generated from cstools scriptability.'
+                          'name="generated mapping file"'
+                          'source="Source ThoughtSpot"'
+                          'destination="Destination ThoughtSpot'
+                          'description=""'
+                          ''
+                          '[mappings]'
+                          f'version="{__version__}"'
+                          )
         with guid_file.open(mode='w') as f:
             f.write(mapping_header)
     else:
-        with guid_file.open(mode='r') as f:
-            for line in f:
-                if '=' in line:  # has a mapping, otherwise ignore
-                    line = line.split('#')[0]  # Strips out any comments.
-                    parts = line.split('=')
-                    if len(parts) < 2:
-                        console.log(f"ignoring line: {line}.  Doesn't appear to be of form old_guid = new_guid")
-                        continue
-                    old_guid = parts[0].strip()
-                    new_guid = parts[1].strip()
-                    # note that old GUIDs can get overwritten.  For now having multiple new GUIDs map to new
-                    # isn't support.  Use different mapping files and loads for this scenario.
-                    guid_mappings[old_guid] = new_guid
+        try:
+            toml_content = toml.load(str(guid_file))
+            if not toml_content.get('mappings'):
+                console.log(f"f[bold yellow]Warning: No mappings provided in {guid_file}.[/]")
 
-    return guid_mappings
+            return toml_content.get('mappings', {})  # press on if no mappings in the file.
+
+        except toml.decoder.TomlDecodeError as err:
+            console.log(f"[bold red]Error reading the mapping file: {err}[/]")
+            raise typer.Exit(-1)  # could also ignore, but would likely fail.
 
 
 def _load_and_append_tml_file(
