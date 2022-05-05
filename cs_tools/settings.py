@@ -137,6 +137,12 @@ class TSConfig(Settings):
     verbose: bool = False
     temp_dir: DirectoryPath = APP_DIR
 
+    @validator('syncer')
+    def resolve_path(v: Any) -> str:
+        if v is None or isinstance(v, dict):
+            return v
+        return {k: pathlib.Path(f).resolve() for k, f in v.items()}
+
     def dict(self) -> Any:
         """
         Wrapper around model.dict to handle path types.

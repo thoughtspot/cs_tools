@@ -167,6 +167,7 @@ def modify(
     """
     Modify an existing config file.
 
+    \f
     To modify the default syncers configured, you must supply all target syncers at
     once. eg. if you had 3 defaults set up initially, and want to remove 1, supply the
     two which are to remain.
