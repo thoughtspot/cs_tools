@@ -5,7 +5,6 @@ from pydantic import validate_arguments
 
 from cs_tools.data.enums import (
     DownloadableContent, GUID, MetadataCategory, MetadataObject, MetadataObjectSubtype,
-    PermissionType
 )
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.util import chunks
@@ -344,7 +343,7 @@ class MetadataMiddleware:
 
         return subtype
 
-    def _lookup_geo_config(self, column_details) -> str:
+    def _lookup_geo_config(self, column_details) -> Union[str, None]:
         try:
             config = column_details['geoConfig']
         except KeyError:
@@ -362,7 +361,7 @@ class MetadataMiddleware:
 
         return 'Unknown'
 
-    def _lookup_calendar_guid(self, column_details) -> str:
+    def _lookup_calendar_guid(self, column_details) -> Union[str, None]:
         try:
             ccal_guid = column_details['calendarTableGUID']
         except KeyError:
@@ -375,12 +374,13 @@ class MetadataMiddleware:
 
         return self.cache['calendar_type'][ccal_guid]
 
-    def _lookup_currency_type(self, column_details) -> str:
+    def _lookup_currency_type(self, column_details) -> Union[str, None]:
         try:
             currency_info = column_details['currencyTypeInfo']
         except KeyError:
             return None
 
+        name = None
         if currency_info['setting'] == 'FROM_USER_LOCALE':
             name = 'Infer From Browser'
         elif currency_info['setting'] == 'FROM_ISO_CODE':
