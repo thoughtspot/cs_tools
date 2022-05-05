@@ -43,6 +43,17 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
+def dos2unix(fp: pathlib.Path):
+    """
+    """
+    with fp.open('r') as in_:
+        data = in_.read()
+
+    with fp.open('w') as out:
+        out.write(data.replace('\r\n', '\n'))
+
+
+@app.command(cls=CSToolsCommand)
 def develop_docs():
     """
     """
