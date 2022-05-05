@@ -183,7 +183,6 @@ if __name__ == '__main__':
 
             for stem in (
                 'setup.py', 'requirements.txt', 'README.md', 'LICENSE', 'MANIFEST.in',
-                'ThoughtSpot_Dev_Tools_EULA.pdf'
             ):
                 file = dir_ / stem
                 z.write(file, file.relative_to(dir_))

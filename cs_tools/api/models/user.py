@@ -32,7 +32,7 @@ class User:
         self,
         fromUserName: str,
         toUserName: str,
-        objectid: List[GUID] = None
+        objectsID: List[GUID] = None
     ) -> httpx.Response:
         """
         Transfer ownership of all objects from one user to another.
@@ -46,7 +46,7 @@ class User:
                     'toUserName': toUserName,
                     # technically not available until ts7.sep.cl-109 or greater, but
                     # query parameters don't usually cause 4xx or 5xx errors
-                    'objectid': stringified_array(objectid or ())
+                    'objectsID': stringified_array(objectsID or ())
                 }
             )
         return r
