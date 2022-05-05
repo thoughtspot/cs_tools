@@ -126,6 +126,7 @@ class SyncerProtocolType(click.ParamType):
 
         if getattr(syncer, '__is_database__', False):
             models.SQLModel.metadata.create_all(syncer.cnxn)
+            models.SQLModel.metadata.reflect(syncer.cnxn, views=True)
 
         return syncer
 
