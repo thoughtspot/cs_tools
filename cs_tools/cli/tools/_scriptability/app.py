@@ -12,6 +12,7 @@ import datetime
 import json
 import pathlib
 import click
+import toml
 from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
 from typer import Argument as A_, Option as O_  # noqa
@@ -20,13 +21,14 @@ import typer
 from zipfile import ZipFile
 
 from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType
-from cs_tools.cli.types import CommaSeparatedValuesType
-from cs_tools.cli.ux import console, CSToolsCommand, CSToolsGroup
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
+from cs_tools.cli.ux import console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
+from cs_tools.cli.tools import common
 from cs_tools.cli.util import base64_to_file
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+
+from . import __version__
 
 
 def strip_blanks(inp: List[str]) -> List[str]:
@@ -56,10 +58,9 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    'thoughtspot',
-    setup_thoughtspot,
+    thoughtspot=common.setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
+    enter_exit=True
 )
 def export(
         ctx: click.Context,
@@ -81,6 +82,8 @@ def export(
         #                  help=f'if specified, format to export, either {TMLType.yaml.value} or {TMLType.json.value}'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
+        set_fqns: bool = O_(False,
+                            help='if set, then the content in the TML will have FQNs (GUIDs) added.')
 ):
     """
     Exports TML as YAML from ThoughtSpot.
@@ -93,24 +96,24 @@ def export(
     export_ids = strip_blanks(export_ids)
     tags = strip_blanks(tags)
 
-    # Options:
-    #    guids, no associated
-    #    guids, associated
-    #    tag, associated
-    #    tag, not associated
-    # if associated - get all the guids, then get the mapping of types, then call to use edoc
-    # if not associated - get all the guids, then call export
+    # Scenarios to support
+    # GUID/tags only - download the content and save
+    # With associated - download content with associated and save
+    # With fqns - download content with associated, map FQNs, save content specified (original or with FQNs)
 
     if tags:
         export_ids.extend(ts.metadata.get_object_ids_with_tags(tags))
 
-    if not export_associated:
-        with console.status(f"[bold green]exporting {export_ids} without associated content.[/]"):
-            r = ts.api.metadata.tml_export(export_ids=export_ids,
+    for id in export_ids:
+        with console.status((f"[bold green]exporting {id} {'with' if export_associated else 'without' }"
+                             f"associated content.[/]")):
+
+            r = ts.api.metadata.tml_export(export_ids=[id],  # only doing one at a time to account for FQN mapping
                                            formattype=TMLType.yaml.value,  # formattype=formattype
-                                           export_associated=export_associated)
+                                           export_associated=(export_associated or set_fqns))
 
             objects = r.json().get('object', [])
+            tml_objects = []
             for _ in objects:
                 status = _['info']['status']
                 if not status['status_code'] == 'OK':  # usually access errors.
@@ -118,74 +121,61 @@ def export(
 
                 else:
                     console.log(f"{_['info']['filename']} (OK)")
-                    _write_tml_obj_to_file(path=path, tml=_)
+                    tmlobj = YAMLTML.get_tml_object(tml_yaml_str=_['edoc'])
+                    tml_objects.append(tmlobj)
 
-    else:  # getting associated, so get the full pack.
-        with console.status(f"[bold green]exporting {export_ids} with associated content.[/]"):
-            object_list = ts.metadata.get_edoc_object_list(export_ids)
-            r = ts.api._metadata.edoc_export_epack(
-                {
-                    "object": object_list,
-                    "export_dependencies": True
-                }
-            )
-            console.log(r)
-            _write_tml_package_to_file(path=path, contents=r.json()['zip_file'])
+            if set_fqns:
+                # getting associated, this will also get the additional FQNs for the objects and add to the TML.
+                _add_fqns_to_tml(tml_list=tml_objects)
+
+            # if the export_associated was specified, write all, else just write the requested.
+            for _ in filter(lambda tml: export_associated or tml.guid == id, tml_objects):
+                _write_tml_obj_to_file(path=path, tml=_)
 
 
-def _write_tml_obj_to_file(path: pathlib.Path, tml: str) -> None:
+def _add_fqns_to_tml(tml_list: List[TML]) -> None:
+    """
+    Looks up and adds the FQNs to the TML content.
+    :param tml_list: List of TML types.
+    """
+
+    # First map all the names to GUIDs.  Names should be unique if starting with a single source object.
+    name_guid_map = {}
+    for _ in tml_list:
+        name_guid_map[_.content_name] = _.guid
+
+    # Now for each edoc, create a TML object and then add FQNs to each table.
+    for _ in tml_list:
+        _.add_fqns_from_name_guid_map(name_guid_map=name_guid_map)
+
+
+def _write_tml_obj_to_file(path: pathlib.Path, tml: TML) -> None:
     """
     Writes the TML to a file.
     :param path: The path to write to.  Can be a directory or filename.  If it's a directory, the file will be saved
     in the form <GUI>.<type>.TML
-    :param TML:  The TML as a JSON object returned from ThoughtSpot
+    :param TML:  The TML object to write to a file.
     :return: None
     """
-    guid = tml['info']['id']
-    type = tml['info']['type']
-    name = tml['info']['name']
+    guid = tml.guid
+    type = tml.content_type
+    name = tml.content_name
 
     fn = f"{guid}.{type}.tml"
     if path:
         fn = f"{path}/{fn}"
 
     console.log(f'writing {name} to {fn}')
+    tmlstr = YAMLTML.dump_tml_object(tml_obj=tml)
     with open(fn, "w") as f:
-        f.write(tml['edoc'])
-
-
-def _write_tml_package_to_file(path: pathlib.Path, contents: str) -> None:
-    """
-    :param path: The path to write to.  Can be a directory or filename.  If it's a directory, the file will be saved
-    in the form <GUI>.<type>.TML
-    :param contents: The contents to write to the zip file.
-    :return: None
-    """
-    now = datetime.datetime.now().strftime("_%Y%m%d_%H%M%S")
-    filepath = path / f"{now}.scriptability.zip"
-    base64_to_file(contents, filepath=filepath)
-
-    try:
-        with ZipFile(filepath, 'r') as zippy:
-            for info in zippy.infolist():
-                with zippy.open(info.filename) as tml_file:
-                    if (info.filename.endswith('tml')):
-                        (filename, tml_type, _) = info.filename.split('.', maxsplit=3)
-                        console.log(f'writing {filename}')
-                        tml_obj = YAMLTML.get_tml_object(tml_file.read().decode('utf-8'))
-                        tml_outfile = path / f"{tml_obj.guid}.{tml_obj.content_type}.tml"
-                        with open(tml_outfile, 'w') as outfile:
-                            outfile.write(YAMLTML.dump_tml_object(tml_obj))
-    except Exception as err:
-        console.stderr(f"[bold red]{err}[/]")
+        f.write(tmlstr)
 
 
 @app.command(name='import', cls=CSToolsCommand)
 @depends(
-    'thoughtspot',
-    setup_thoughtspot,
+    thoughtspot=common.setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
+    enter_exit=True
 )
 def import_(
         ctx: click.Context,
@@ -260,34 +250,34 @@ def import_(
 
 def _read_guid_mappings(guid_file: pathlib.Path) -> Dict:
     """
-    Reads the guid mapping file and creates a dictionary of old -> new mappings.
+    Reads the guid mapping file and creates a dictionary of old -> new mappings.  Note that the GUID file _must_ be
+    a valid TOML file of the format used by the scriptability tool.
     :param guid_file: The path to a file that may or may not exist.
     :return: A mapping of old to new GUIDs.
     """
-    guid_mappings = {}
     if not guid_file.exists():
-        mapping_header = ("# GUID mapping file that maps guids from and source instance to a target instance.\n"
-                          "# The format is <old_guid>=<new_guid>\n"
-                          "# GUIDs will be in UUID format with no spaces or additional characters.\n"
-                          "# You can add additional comments anywhere in the file using '#' before the comment.\n")
+        mapping_header = ('# Automatically generated from cstools scriptability.'
+                          'name="generated mapping file"'
+                          'source="Source ThoughtSpot"'
+                          'destination="Destination ThoughtSpot'
+                          'description=""'
+                          ''
+                          '[mappings]'
+                          f'version="{__version__}"'
+                          )
         with guid_file.open(mode='w') as f:
             f.write(mapping_header)
     else:
-        with guid_file.open(mode='r') as f:
-            for line in f:
-                if '=' in line:  # has a mapping, otherwise ignore
-                    line = line.split('#')[0]  # Strips out any comments.
-                    parts = line.split('=')
-                    if len(parts) < 2:
-                        console.log(f"ignoring line: {line}.  Doesn't appear to be of form old_guid = new_guid")
-                        continue
-                    old_guid = parts[0].strip()
-                    new_guid = parts[1].strip()
-                    # note that old GUIDs can get overwritten.  For now having multiple new GUIDs map to new
-                    # isn't support.  Use different mapping files and loads for this scenario.
-                    guid_mappings[old_guid] = new_guid
+        try:
+            toml_content = toml.load(str(guid_file))
+            if not toml_content.get('mappings'):
+                console.log(f"f[bold yellow]Warning: No mappings provided in {guid_file}.[/]")
 
-    return guid_mappings
+            return toml_content.get('mappings', {})  # press on if no mappings in the file.
+
+        except toml.decoder.TomlDecodeError as err:
+            console.log(f"[bold red]Error reading the mapping file: {err}[/]")
+            raise typer.Exit(-1)  # could also ignore, but would likely fail.
 
 
 def _load_and_append_tml_file(
