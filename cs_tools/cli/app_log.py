@@ -5,6 +5,7 @@ from typer import Argument as A_, Option as O_
 import typer
 
 from cs_tools.cli.ux import CSToolsGroup, CSToolsCommand
+from cs_tools.errors import PathNotFound
 from cs_tools.const import APP_DIR
 
 
@@ -34,7 +35,11 @@ def export(
     """
     Grab logs to share with ThoughtSpot.
     """
-    save_path.mkdir(parents=True, exist_ok=True)
+    try:
+        save_path.mkdir(parents=True, exist_ok=True)
+    except FileNotFoundError:
+        raise PathNotFound(f'cannot create the path [blue]{save_path.parent}')
+
     log_dir = APP_DIR / 'logs'
     sorted_newest = sorted(log_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
 

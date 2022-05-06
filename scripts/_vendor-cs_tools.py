@@ -152,6 +152,10 @@ if __name__ == '__main__':
             *v, _ = platform.python_version_tuple()
             v = ('3', '6', '8') if v == ('3', '6') else v
             SUPPORTED_PYTHON_VERSIONS = ('.'.join(v),)
+        else:
+            for file in (DIST / platform_name).glob('*'):
+                if file.is_file() and file.name != '.gitdontignore':
+                    file.unlink()
 
         log.info(f'downloading packages for {platform_name}..')
 
@@ -160,21 +164,20 @@ if __name__ == '__main__':
         # complains but it's literally the only package like that..
         #
         # i hate it.
+        _ = [
+            '--dest', (DIST / platform_name).as_posix(),
+            '--only-binary=:all:', '--implementation', 'cp',
+            *it.chain.from_iterable(('--platform', f'{a}') for a in architectures)
+        ]
+        pip('download', 'pip>=20.3', *_)
         pip('download', 'contextvars', '--dest', (DIST / platform_name).as_posix())
-        # also pip, for good measure
-        pip('download', 'pip>=20.3', '--dest', (DIST / platform_name).as_posix())
+        pip('download', 'async-generator', '--python-version', '3.6', *_)
+        pip('download', 'dataclasses', '--python-version', '3.6', *_)
+        pip('download', 'immutables', '--python-version', '3.6', *_)
 
         for py_version in SUPPORTED_PYTHON_VERSIONS:
             log.info(f'\t on  py{py_version: <5}')
-            pip(
-                'download',
-                '-r', reqs.as_posix(),
-                '--dest', (DIST / platform_name).as_posix(),
-                '--only-binary=:all:',
-                '--implementation', 'cp',
-                *it.chain.from_iterable(('--platform', f'{a}') for a in architectures),
-                '--python-version', py_version
-            )
+            pip('download', '-r', reqs.as_posix(), *_, '--python-version', py_version)
 
         # vendor cs_tools itself
         log.info(f'\t vendoring cs_tools=={__version__}\n')
