@@ -158,9 +158,16 @@ class CertificateVerifyFailure(CSToolsException):
         )
 
 
-class TableAlreadyExists(Exception):
+class TableAlreadyExists(CSToolsException):
     """
     """
+
+    @property
+    def cli_message(self) -> str:
+        return str(self)
+
+
+class PathNotFound(CSToolsException):
 
     @property
     def cli_message(self) -> str:

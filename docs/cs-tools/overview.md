@@ -50,4 +50,4 @@ Tools:
 
 [docs-install]: ../../how-to/install-upgrade-cs-tools
 [docs-howto-config]: ../../how-to/configuration-file
-[gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new
+[gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new/choose

@@ -41,6 +41,7 @@ def show(
     configs = [f for f in APP_DIR.iterdir() if f.name.startswith('cluster-cfg_')]
     s = 's' if (len(configs) > 1 or len(configs) == 0) else ''
     meta = _meta_config()
+    meta_cfg = None if meta is None else meta['default']['config']
 
     console.print(f'\nCluster configs located at: {APP_DIR}\n')
 
@@ -54,7 +55,7 @@ def show(
             raise typer.Exit()
 
         console.print(
-            ('[green]\\[default]\n' if meta['default']['config'] == config else '') +
+            ('[green]\\[default]\n' if meta_cfg == config else '') +
             f'[yellow]{fp}\n\n'
             f'[blue]{contents}'
         )
@@ -65,7 +66,7 @@ def show(
     for file in configs:
         name = file.stem[len('cluster-cfg_'):]
 
-        if meta and name == meta['default']['config']:
+        if meta_cfg == name:
             name += '\t[green]<-- default[/]'
 
         console.print(f"  - {name}")
@@ -166,6 +167,7 @@ def modify(
     """
     Modify an existing config file.
 
+    \f
     To modify the default syncers configured, you must supply all target syncers at
     once. eg. if you had 3 defaults set up initially, and want to remove 1, supply the
     two which are to remain.
