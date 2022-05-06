@@ -82,6 +82,8 @@ def export(
         #                  help=f'if specified, format to export, either {TMLType.yaml.value} or {TMLType.json.value}'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
+        set_fqns: bool = O_(False,
+                            help='if set, then the content in the TML will have FQNs (GUIDs) added.')
 ):
     """
     Exports TML as YAML from ThoughtSpot.
@@ -94,24 +96,24 @@ def export(
     export_ids = strip_blanks(export_ids)
     tags = strip_blanks(tags)
 
-    # Options:
-    #    guids, no associated
-    #    guids, associated
-    #    tag, associated
-    #    tag, not associated
-    # if associated - get all the guids, then get the mapping of types, then call to use edoc
-    # if not associated - get all the guids, then call export
+    # Scenarios to support
+    # GUID/tags only - download the content and save
+    # With associated - download content with associated and save
+    # With fqns - download content with associated, map FQNs, save content specified (original or with FQNs)
 
     if tags:
         export_ids.extend(ts.metadata.get_object_ids_with_tags(tags))
 
-    if not export_associated:
-        with console.status(f"[bold green]exporting {export_ids} without associated content.[/]"):
-            r = ts.api.metadata.tml_export(export_ids=export_ids,
+    for id in export_ids:
+        with console.status((f"[bold green]exporting {id} {'with' if export_associated else 'without' }"
+                             f"associated content.[/]")):
+
+            r = ts.api.metadata.tml_export(export_ids=[id],  # only doing one at a time to account for FQN mapping
                                            formattype=TMLType.yaml.value,  # formattype=formattype
-                                           export_associated=export_associated)
+                                           export_associated=(export_associated or set_fqns))
 
             objects = r.json().get('object', [])
+            tml_objects = []
             for _ in objects:
                 status = _['info']['status']
                 if not status['status_code'] == 'OK':  # usually access errors.
@@ -119,66 +121,54 @@ def export(
 
                 else:
                     console.log(f"{_['info']['filename']} (OK)")
-                    _write_tml_obj_to_file(path=path, tml=_)
+                    tmlobj = YAMLTML.get_tml_object(tml_yaml_str=_['edoc'])
+                    tml_objects.append(tmlobj)
 
-    else:  # getting associated, so get the full pack.
-        with console.status(f"[bold green]exporting {export_ids} with associated content.[/]"):
-            object_list = ts.metadata.get_edoc_object_list(export_ids)
-            r = ts.api._metadata.edoc_export_epack(
-                {
-                    "object": object_list,
-                    "export_dependencies": True
-                }
-            )
-            console.log(r)
-            _write_tml_package_to_file(path=path, contents=r.json()['zip_file'])
+            if set_fqns:
+                # getting associated, this will also get the additional FQNs for the objects and add to the TML.
+                _add_fqns_to_tml(tml_list=tml_objects)
+
+            # if the export_associated was specified, write all, else just write the requested.
+            for _ in filter(lambda tml: export_associated or tml.guid == id, tml_objects):
+                _write_tml_obj_to_file(path=path, tml=_)
 
 
-def _write_tml_obj_to_file(path: pathlib.Path, tml: str) -> None:
+def _add_fqns_to_tml(tml_list: List[TML]) -> None:
+    """
+    Looks up and adds the FQNs to the TML content.
+    :param tml_list: List of TML types.
+    """
+
+    # First map all the names to GUIDs.  Names should be unique if starting with a single source object.
+    name_guid_map = {}
+    for _ in tml_list:
+        name_guid_map[_.content_name] = _.guid
+
+    # Now for each edoc, create a TML object and then add FQNs to each table.
+    for _ in tml_list:
+        _.add_fqns_from_name_guid_map(name_guid_map=name_guid_map)
+
+
+def _write_tml_obj_to_file(path: pathlib.Path, tml: TML) -> None:
     """
     Writes the TML to a file.
     :param path: The path to write to.  Can be a directory or filename.  If it's a directory, the file will be saved
     in the form <GUI>.<type>.TML
-    :param TML:  The TML as a JSON object returned from ThoughtSpot
+    :param TML:  The TML object to write to a file.
     :return: None
     """
-    guid = tml['info']['id']
-    type = tml['info']['type']
-    name = tml['info']['name']
+    guid = tml.guid
+    type = tml.content_type
+    name = tml.content_name
 
     fn = f"{guid}.{type}.tml"
     if path:
         fn = f"{path}/{fn}"
 
     console.log(f'writing {name} to {fn}')
+    tmlstr = YAMLTML.dump_tml_object(tml_obj=tml)
     with open(fn, "w") as f:
-        f.write(tml['edoc'])
-
-
-def _write_tml_package_to_file(path: pathlib.Path, contents: str) -> None:
-    """
-    :param path: The path to write to.  Can be a directory or filename.  If it's a directory, the file will be saved
-    in the form <GUI>.<type>.TML
-    :param contents: The contents to write to the zip file.
-    :return: None
-    """
-    now = datetime.datetime.now().strftime("_%Y%m%d_%H%M%S")
-    filepath = path / f"{now}.scriptability.zip"
-    base64_to_file(contents, filepath=filepath)
-
-    try:
-        with ZipFile(filepath, 'r') as zippy:
-            for info in zippy.infolist():
-                with zippy.open(info.filename) as tml_file:
-                    if (info.filename.endswith('tml')):
-                        (filename, tml_type, _) = info.filename.split('.', maxsplit=3)
-                        console.log(f'writing {filename}')
-                        tml_obj = YAMLTML.get_tml_object(tml_file.read().decode('utf-8'))
-                        tml_outfile = path / f"{tml_obj.guid}.{tml_obj.content_type}.tml"
-                        with open(tml_outfile, 'w') as outfile:
-                            outfile.write(YAMLTML.dump_tml_object(tml_obj))
-    except Exception as err:
-        console.log(f"[bold red]{err}[/]")
+        f.write(tmlstr)
 
 
 @app.command(name='import', cls=CSToolsCommand)
