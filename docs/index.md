@@ -52,5 +52,5 @@ __Source Code__: [https://github.com/thoughtspot/cs_tools/][gh-main]
 [help]: https://forms.gle/sh6hyBSS2mnrwWCa9
 [this]: https://thoughtspot.github.io/cs_tools/
 [gh-main]: https://github.com/thoughtspot/cs_tools/
-[gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new
+[gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new/choose
 [gf-issue]: https://forms.gle/Tmbs6ZhsZa2DMFsU9
