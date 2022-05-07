@@ -4,7 +4,7 @@ import enum
 
 from pydantic.dataclasses import dataclass
 from snowflake.sqlalchemy import URL, snowdialect
-from pydantic import Field
+from pydantic import Field, root_validator
 import sqlalchemy as sa
 
 from cs_tools import __version__
@@ -32,13 +32,21 @@ class Snowflake:
     warehouse: str
     role: str
     database: str
-    schema_: str = Field('PUBLIC', alias='schema')
+    schema_: str = 'PUBLIC'  # Field(default='PUBLIC', alias='schema')
     auth_type: AuthType = AuthType.local
     truncate_on_load: bool = True
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
     metadata = None
+
+    @root_validator(pre=True)
+    def prepare_aliases(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # for some reason, Field(..., alias='...') doesn't work with dataclass but also
+        # if we don't use pydantic, we don't get easy post-init setup. Whatever.
+        if 'schema' in values:
+            values['schema_'] = values.pop('schema')
+        return values
 
     def __post_init_post_parse__(self):
         # silence the noise that snowflake dialect creates
@@ -68,12 +76,7 @@ class Snowflake:
 
         self.engine = sa.create_engine(url, connect_args=connect_args)
         self.cnxn = self.engine.connect()
-
-        # decorators must be declared here, SQLAlchemy doesn't care about instances
-        sa.event.listen(sa.schema.MetaData, 'after_create', self.capture_metadata)
-
-    def capture_metadata(self, metadata, cnxn, **kw):
-        self.metadata = metadata
+        self.metadata = sa.MetaData(schema=self.schema_)
 
     def __repr__(self):
         u = self.username
@@ -88,7 +91,7 @@ class Snowflake:
         return 'snowflake'
 
     def load(self, table: str) -> List[Dict[str, Any]]:
-        t = self.metadata.tables[table]
+        t = self.metadata.tables[f'{self.schema_}.{table}']
 
         with self.cnxn.begin():
             r = self.cnxn.execute(t.select())
@@ -96,7 +99,7 @@ class Snowflake:
         return [dict(_) for _ in r]
 
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
-        t = self.metadata.tables[table]
+        t = self.metadata.tables[f'{self.schema_}.{table}']
 
         if self.truncate_on_load:
             with self.cnxn.begin():
