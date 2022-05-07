@@ -38,7 +38,6 @@ class Snowflake:
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
-    metadata = None
 
     @root_validator(pre=True)
     def prepare_aliases(cls, values: Dict[str, Any]) -> Dict[str, Any]:

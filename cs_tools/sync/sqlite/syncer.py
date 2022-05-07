@@ -19,7 +19,6 @@ class SQLite:
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
-    metadata = None
 
     def __post_init_post_parse__(self):
         self.database_path = path = self.database_path.resolve()
