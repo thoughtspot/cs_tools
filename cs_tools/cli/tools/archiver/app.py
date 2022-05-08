@@ -16,7 +16,7 @@ from cs_tools.cli.ux import CommaSeparatedValuesType, SyncerProtocolType
 from cs_tools.errors import ContentDoesNotExist
 
 from .enums import ContentType, UserActions
-from .util import DataTable, to_datetime
+from .util import DataTable
 
 
 log = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def _get_content(ts, *, tags) -> Tuple[List[Dict[str, Any]]]:
 
 app = typer.Typer(
     help="""
-    Manage stale answers and pinboards within your platform.
+    Manage stale answers and liveboards within your platform.
 
     As your platform grows, user-generated content will naturally grow. Sometimes, users
     will create content for temporary exploratory purposes and then abandon it for newer

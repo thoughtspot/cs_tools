@@ -172,3 +172,10 @@ class PathNotFound(CSToolsException):
     @property
     def cli_message(self) -> str:
         return str(self)
+
+
+class SyncerError(CSToolsException):
+
+    @property
+    def cli_message(self) -> str:
+        return str(self)

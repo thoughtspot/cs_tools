@@ -37,7 +37,7 @@ A CSV file typically stores tabular data in plain text, in which case each line 
 <br/>*<span class=fc-mint>default</span>:* `false`
 
 
-??? info "Usage in commands"
+??? question "How do I use the CSV syncer in commands?"
 
     === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
 
@@ -50,6 +50,8 @@ A CSV file typically stores tabular data in plain text, in which case each line 
         `cs_tools tools searchable bi-server csv://C:\Users\%USERNAME%\Downloads\csv-definition.toml --compact`
 
         `cs_tools tools searchable bi-server csv://default --compact`
+
+    *Learn how to register a default for syncers in [How-to: Setup a Configuration File][how-to-config].*
 
 
 ## Full Definition Example
@@ -65,3 +67,4 @@ zipped = true
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
 [syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/csv/syncer.py
+[how-to-config]: ../how-to/configuration-file.md

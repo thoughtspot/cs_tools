@@ -9,7 +9,7 @@ holding references to all of these objects as well.
 
     Archiver is a tool that can perform mass modification and deletion of content in
     your platform! If not used appropriately, you could remove worthwhile answers and
-    pinboards. __Your users trust you__, use this tool carefully.
+    liveboards. __Your users trust you__, use this tool carefully.
 
 
 ## CLI preview
@@ -19,7 +19,7 @@ holding references to all of these objects as well.
     (.cs_tools) C:\work\thoughtspot\cs_tools>cstools tools archiver --help
     Usage: cstools tools archiver [--version, --help] <command>
 
-      Manage stale answers and pinboards within your platform.
+      Manage stale answers and liveboards within your platform.
 
       As your platform grows, user-generated content will naturally grow. Sometimes, users will create content for temporary exploratory
       purposes and then abandon it for newer pursuits. Archiver enables you to identify, tag, export, and remove that potentially

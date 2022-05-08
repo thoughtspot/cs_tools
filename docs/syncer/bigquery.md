@@ -56,7 +56,7 @@ __BigQuery__ is a serverless, cost-effective and multicloud data warehouse desig
 <br/>*<span class=fc-mint>default</span>:* `true`
 
 
-??? info "Usage in commands"
+??? question "How do I use the BigQuery syncer in commands?"
 
     === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
 
@@ -69,6 +69,8 @@ __BigQuery__ is a serverless, cost-effective and multicloud data warehouse desig
         `cs_tools tools searchable bi-server bigquery://C:\Users\%USERNAME%\Downloads\bigquery-definition.toml --compact`
 
         `cs_tools tools searchable bi-server bigquery://default --compact`
+
+    *Learn how to register a default for syncers in [How-to: Setup a Configuration File][how-to-config].*
 
 
 ## Full Definition Example
@@ -86,3 +88,4 @@ truncate_on_load = true
 [syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/bigquery/syncer.py
 [gc-dev-console]: https://console.cloud.google.com/apis/dashboard
 [gc-service-account]: https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account
+[how-to-config]: ../how-to/configuration-file.md

@@ -37,7 +37,6 @@ class Redshift:
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
-    metadata = None
 
     def __post_init_post_parse__(self):
         if self.auth_type == AuthType.local:

@@ -5,13 +5,13 @@
 # Searchable Content
 
 As your platform grows, it can oftentimes be useful to keep track of how much content
-is created within the system. For example, tracking the amount of answers or pinboards
+is created within the system. For example, tracking the amount of answers or liveboards
 created over time can help you understand how your Users interact with __ThoughtSpot__.
 
-Another use case might be to set up a pinboard gating conditions based on when or how
+Another use case might be to set up a liveboard gating conditions based on when or how
 often a user uploads data (eg. a combination of metadata type of "imported data", the 
 metadata object's modified/created time and the __ThoughtSpot__ datetime function
-`now()`). This could give you early warning when a user is missing a dataset that could
+`today()`). This could give you early warning when a user is missing a dataset that could
 provide value to others in your platform.
 
 ??? info "__ThoughtSpot__ Data Model"

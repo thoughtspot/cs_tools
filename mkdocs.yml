@@ -110,7 +110,7 @@ nav:
     - Google Sheets: syncer/gsheets.md
     # - Microsoft Excel: syncer/excel.md
     - CSV: syncer/csv.md
-    # - SQLite: syncer/sqlite.md
+    - SQLite: syncer/sqlite.md
     # - JSON: syncer/json.md
   - How-to:
     - "Set up a Configuration File": how-to/configuration-file.md
