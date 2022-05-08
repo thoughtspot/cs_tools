@@ -54,7 +54,7 @@ With Google Sheets, you can create and edit spreadsheets directly in your web br
 <br/>*you can find the cs_tools app directory by running `cs_tools config show`*
 
 
-??? info "Usage in commands"
+??? question "How do I use the Google Sheets syncer in commands?"
 
     === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
 
@@ -67,6 +67,8 @@ With Google Sheets, you can create and edit spreadsheets directly in your web br
         `cs_tools tools searchable bi-server gsheets://C:\Users\%USERNAME%\Downloads\google-sheets-definition.toml --compact`
 
         `cs_tools tools searchable bi-server gsheets://default --compact`
+
+    *Learn how to register a default for syncers in [How-to: Setup a Configuration File][how-to-config].*
 
 
 ## Full Definition Example
@@ -82,3 +84,4 @@ credentials_file = 'C:\Users\NameyNamerson\Downloads\syncers\<project-name>.json
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
 [syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/gsheets/syncer.py
 [gc-dev-console]: https://console.cloud.google.com/apis/dashboard
+[how-to-config]: ../how-to/configuration-file.md
