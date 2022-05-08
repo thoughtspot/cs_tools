@@ -9,6 +9,7 @@ from click.exceptions import UsageError
 from rich.console import Console
 from click.core import iter_params_for_processing
 from gettext import ngettext
+import sqlalchemy as sa
 import pendulum
 import typer
 import click
@@ -125,8 +126,14 @@ class SyncerProtocolType(click.ParamType):
             return value
 
         if getattr(syncer, '__is_database__', False):
-            models.SQLModel.metadata.create_all(syncer.cnxn)
-            models.SQLModel.metadata.reflect(syncer.cnxn, views=True)
+            if getattr(syncer, 'metadata') is not None:
+                metadata = syncer.metadata
+                [t.to_metadata(metadata) for t in models.SQLModel.metadata.sorted_tables]
+            else:
+                metadata = models.SQLModel.metadata
+
+            metadata.create_all(syncer.cnxn)
+            metadata.reflect(syncer.cnxn, views=True)
 
         return syncer
 

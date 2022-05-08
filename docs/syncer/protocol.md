@@ -13,8 +13,8 @@ hide:
     either comment on [#25][gh-issue25] or create a new issue.
 
 If your use case for interacting with the ThoughtSpot API data isn't supported by the
-built-in syncers in CS Tools, we've exposed an interface for defining a custom syncer so
-that you can inject your own.
+built-in syncers in __CS Tools__, we've exposed an interface for defining a custom
+syncer so that you can inject your own.
 
 ---
 
@@ -34,8 +34,8 @@ To follow the Syncer protocol, you must provide at least..
 ```
 
 Outside of these two file requirements, you are free to augment the interface in any way
-you want! Custom Syncers are simply ad-hoc pure python packages, so you're able to
-leverage the full python ecosystem.
+you want! Custom Syncers are pure python packages, so you're able to leverage the full
+python ecosystem.
 
 !!! hint "Tip"
 
@@ -103,9 +103,11 @@ class SyncerProtocol:
     capture the metadata during table creation.
 
     ```python
+    from dataclasses import dataclass
     import sqlalchemy as sa
 
 
+    @dataclass
     class FooSyncer:
         __is_database__ = True
         name = 'foo_syncer'
@@ -119,7 +121,7 @@ class SyncerProtocol:
             self.metadata = metadata
     ```
 
-Data is expressed to and from the syncer in standardized json format. The data should
+Data is expressed to and from the syncer in standardized JSON format. The data should
 behave like a list of flat dictionaries. This format is most similar to how you would
 receive data back from many REST and DB-APIs.
 
@@ -134,13 +136,13 @@ data = [
 
 !!! tip "Tip"
 
-    It's highly recommended to either the standard library's or pydantic's `dataclass`
-    paradigm for your Syncer. This will easily allow you to set up your syncer without
-    overriding the `__init__` method.
+    It's highly recommended to use either the standard library's or pydantic's
+    `dataclass` paradigm for your custom Syncer. This will easily allow you to set up
+    your syncer without overriding the `__init__` method.
 
     If you're using `dataclasses`, leverage the `__post_init__` method.
 
-    If you're using `pydantic`, leverage the `__post_init__post_parse__` method.
+    If you're using `pydantic`, leverage the `__post_init_post_parse__` method.
 
     **See below references for more information.**
      
@@ -151,7 +153,7 @@ data = [
 
 The other required file is a MANIFEST which tells CS Tools how to utilize your Syncer.
 This JSON file should live in same directory as your `syncer.py`. It should contain 
-top-level keys in order to inform CS Tools how to set it up.
+top-level keys in order to inform __CS Tools__ how to set it up.
 
 > `name`: the name of your custom syncer protocol
 

@@ -30,7 +30,6 @@ class BigQuery:
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
-    metadata = None
 
     @property
     def bq(self) -> bigquery.Client:

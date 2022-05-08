@@ -9,7 +9,7 @@ import sqlalchemy as sa
 import httpx
 import click
 
-from cs_tools.errors import TSLoadServiceUnreachable
+from cs_tools.errors import SyncerError, TSLoadServiceUnreachable
 from . import compiler, sanitize
 
 
@@ -34,6 +34,12 @@ class Falcon:
         self.engine = sa.engine.create_mock_engine('sqlite://', self.intercept_create_table)
         self.cnxn = self.engine.connect()
         self._thoughtspot = getattr(ctx.obj, 'thoughtspot', '')
+
+        if self._thoughtspot.platform.deployment == 'cloud':
+            raise SyncerError(
+                'Falcon is not available for data load operations on TS Cloud '
+                'deployments'
+            )
 
         # decorators must be declared here, SQLAlchemy doesn't care about instances
         sa.event.listen(sa.schema.MetaData, 'before_create', self.ensure_setup)

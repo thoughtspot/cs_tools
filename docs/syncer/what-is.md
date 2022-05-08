@@ -4,8 +4,9 @@ hide:
 ---
 
 Syncers allow __CS Tools__ to interact with a data storage layer without having to know
-the explicit details of how to do so. We've implemented syncers to many popular data
-storage formats.
+the explicit details of how to do so.
+
+We've implemented syncers to many popular data storage formats.
 
 !!! attention "In Beta"
 
@@ -45,23 +46,22 @@ graph LR
 ## __How do I use Syncers?__ { .fc-blue }
 
 In order to interact with your external data source, users are required to supply a `definition.toml` file. This is a
-file which tells your Syncer how to behave.
+file which tells your Syncer how to behave. Think of the `DEFINITION.toml` as a mini configuration file.
 
 For example if you are to use the Excel syncer, you might specify a filepath to the target workbook. On the other hand
 if you use the Database syncer, you could be asked to provide database connection or authentication details.
 
-__Each Syncer has different requirements__ and should document them clearly. Think of the `DEFINITION.toml` as a mini
-configuration file.
+__Each Syncer has different requirements__ and should document them clearly.
 
 !!! info "some examples of `DEFINITION.toml`"
 
     === ":fontawesome-solid-file-csv: CSV"
         ```toml
         [configuration]
-        directory: 'C:\Users\NameyNamerson\Downloads\thoughtspot'
-        delimiter: str = '|'
-        escape_character: str = '\'
-        zipped: bool = true
+        directory = 'C:\Users\NameyNamerson\Downloads\thoughtspot'
+        delimiter = '|'
+        escape_character = '\'
+        zipped = true
         ```
 
     === ":material-database: SQLite"
@@ -100,7 +100,7 @@ configuration file.
         __custom syncers are an advanced feature!__{ .fc-coral } users must supply both
         the path to the MANIFEST.json and the configuration all at once*
 
-Once you have have a definition file, you can supply it to any cs_tool command which
+Once you have have a definition file, you can supply it to any `cs_tools `command which
 documents that it interfaces with Syncers. The syntax for this looks like..
 
    ```console
