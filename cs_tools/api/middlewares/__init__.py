@@ -1,4 +1,5 @@
 from .connection import ConnectionMiddleware
+from .group import GroupMiddleware
 from .metadata import MetadataMiddleware
 from .pinboard import PinboardMiddleware
 from .answer import AnswerMiddleware

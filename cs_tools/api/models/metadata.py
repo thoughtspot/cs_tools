@@ -294,6 +294,37 @@ class Metadata:
         self.rest_api = rest_api
 
     @validate_arguments
+    def assigntag(
+            self,
+            id: List[GUID],
+            type: List[MetadataObject],
+            tagid: List[GUID] = None,
+            tagname: List[str] = None
+    ) -> httpx.Response:
+        """
+        Assign tags to metadata objects; types[i] corresponds to ids[i].
+        """
+
+        data={
+            # NOTE: This is an API data parsing error ... data shouldn't need to
+            # be stringified.
+            'id': stringified_array(id),
+            'type': stringified_array([_.value for _ in type]),
+        }
+        if tagid:
+            data['tagid'] = stringified_array(tagid)
+        if tagname:
+            data['tagname'] = stringified_array(tagname)
+
+        r = self.rest_api.request(
+            'POST',
+            'metadata/assigntag',
+            privacy='public',
+            data=data
+        )
+        return r
+
+    @validate_arguments
     def list_viz_headers(self, id: GUID) -> httpx.Response:
         """
         Get the visualization headers from the ThoughtSpot system.
