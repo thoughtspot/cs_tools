@@ -20,7 +20,7 @@ from typing import Dict, List, Optional
 import typer
 from zipfile import ZipFile
 
-from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType
+from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType, AccessLevel
 from cs_tools.cli.ux import console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
 from cs_tools.cli.tools import common
 from cs_tools.cli.util import base64_to_file
@@ -105,7 +105,7 @@ def export(
         export_ids.extend(ts.metadata.get_object_ids_with_tags(tags))
 
     for id in export_ids:
-        with console.status((f"[bold green]exporting {id} {'with' if export_associated else 'without' }"
+        with console.status((f"[bold green]exporting {id} {'with' if export_associated else 'without'}"
                              f"associated content.[/]")):
 
             r = ts.api.metadata.tml_export(export_ids=[id],  # only doing one at a time to account for FQN mapping
@@ -192,13 +192,19 @@ def import_(
                                 help="If true, will force a new object to be created."),
         connection: Optional[GUID] = O_(None,
                                         help="GUID for the target connection if tables need to be mapped to a new connection."),
-        guid_file: pathlib.Path = O_(
-            ...,
+        guid_file: Optional[pathlib.Path] = O_(
+            None,
             help='Existing or new mapping file to map GUIDs from source instance to target instance.',
             metavar='FILE_OR_DIR',
             dir_okay=False,
             resolve_path=True
-        )
+        ),
+        tags: List[str] = O_([], metavar='TAGS',
+                             callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+                             help='One or more tags to add to the imported content.'),
+        share_with: List[str] = O_([], metavar='GROUPS',
+                                   callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+                                   help='One or more groups to share the uploaded content with.'),
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -234,6 +240,7 @@ def import_(
     for f in files:
         console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
 
+    good_resp = []  # responses for each item that didn't error.  Use for mapping and tagging.
     with console.status(f"[bold green]importing {path.name}[/]"):
         r = ts.api.metadata.tml_import(import_objects=tml,
                                        import_policy=import_policy.value,
@@ -246,6 +253,46 @@ def import_(
             else:
                 console.log(f"{files[fcnt]} {_['status_code']}: {_['name']} ({_['metadata_type']}::{_['guid']})")
             fcnt += 1
+            good_resp.append(_)
+
+    if import_policy != TMLImportPolicy.validate_only:
+        if tags:
+            with console.status(f"[bold green]adding tags: {tags}[/]"):
+                ids = []
+                types = []
+                for _ in good_resp:
+                    ids.append(_['guid'])
+                    types.append(_['metadata_type'])
+                if ids:  # might all be errors
+                    console.log(f'Adding tags {tags} to {ids}')
+                    ts.api.metadata.assigntag(id=ids, type=types, tagname=tags)
+
+        if share_with:
+            with console.status(f"[bold green]sharing with: {share_with}[/]"):
+                groups = []
+                for _ in share_with:
+                    try:
+                        groups.append(ts.group.get_group_id(_))
+                    except Exception as e:
+                        console.log(f"[bold red]unable to get ID for group {_}: {e}")
+
+                if groups:  # make sure some mapped
+
+                    # Bundling by type to save on calls.
+                    type_bundles = {}
+                    for _ in good_resp:
+                        l = type_bundles.get(_['metadata_type'], [])
+                        if not l:
+                            type_bundles[_['metadata_type']] = l
+                        l.append(_['guid'])
+
+                    permissions = {}
+                    for g in groups:
+                        permissions[g] = AccessLevel.read_only
+
+                    for type in type_bundles.keys():
+                        objectids = type_bundles[type]
+                        ts.api.security.share(type=type, id=objectids, permissions=permissions)
 
 
 def _read_guid_mappings(guid_file: pathlib.Path) -> Dict:
