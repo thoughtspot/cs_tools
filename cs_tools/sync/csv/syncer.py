@@ -49,8 +49,9 @@ class CSV:
         Handle open-close on a file, potentially in a zip archive.
         """
         file_opts = {
-            'newline': '',
-            'mode': 'r' if mode == 'r' else 'w'
+            'mode': 'r' if mode == 'r' else 'w',
+            'encoding': 'utf-8',
+            'newline': ''
         }
 
         if self.zipped:
