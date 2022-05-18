@@ -125,7 +125,10 @@ class SyncerProtocolType(click.ParamType):
         if validate_only:
             return value
 
-        if getattr(syncer, '__is_database__', False):
+        is_database_check = getattr(syncer, '__is_database__', False)
+        is_tools_cmd = 'tools' in sys.argv[1:]
+
+        if is_database_check or not is_tools_cmd:
             if getattr(syncer, 'metadata') is not None:
                 metadata = syncer.metadata
                 [t.to_metadata(metadata) for t in models.SQLModel.metadata.sorted_tables]
@@ -133,7 +136,10 @@ class SyncerProtocolType(click.ParamType):
                 metadata = models.SQLModel.metadata
 
             metadata.create_all(syncer.cnxn)
-            metadata.reflect(syncer.cnxn, views=True)
+
+            # DEV NOTE: conditionally expose ability to grab views
+            if syncer.name != 'falcon':
+                metadata.reflect(syncer.cnxn, views=True)
 
         return syncer
 
