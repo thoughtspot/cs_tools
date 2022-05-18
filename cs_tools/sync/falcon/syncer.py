@@ -9,7 +9,7 @@ import sqlalchemy as sa
 import httpx
 import click
 
-from cs_tools.errors import SyncerError, TSLoadServiceUnreachable
+from cs_tools.errors import SyncerError, ThoughtSpotUnreachable, TSLoadServiceUnreachable
 from . import compiler, sanitize
 
 
@@ -33,13 +33,7 @@ class Falcon:
         ctx = click.get_current_context()
         self.engine = sa.engine.create_mock_engine('sqlite://', self.intercept_create_table)
         self.cnxn = self.engine.connect()
-        self._thoughtspot = getattr(ctx.obj, 'thoughtspot', '')
-
-        if self._thoughtspot.platform.deployment == 'cloud':
-            raise SyncerError(
-                'Falcon is not available for data load operations on TS Cloud '
-                'deployments'
-            )
+        self._thoughtspot = getattr(ctx.obj, 'thoughtspot', None)
 
         # decorators must be declared here, SQLAlchemy doesn't care about instances
         sa.event.listen(sa.schema.MetaData, 'before_create', self.ensure_setup)
@@ -60,6 +54,20 @@ class Falcon:
         self.ts.tql.command(command=f'{q};', database=self.database)
 
     def ensure_setup(self, metadata, cnxn, **kw):
+
+        if self.ts is None:
+            # DEV NOTE:
+            # I think we can realistically only reach here if Falcon is meant to be
+            # active AND we are attempting to run a tools command, so that's not the 
+            # case, @boonhapus has gotta take a better look.
+            raise ThoughtSpotUnreachable('unknown reason')
+
+        if self.ts.platform.deployment == 'cloud':
+            raise SyncerError(
+                'Falcon is not available for data load operations on TS Cloud '
+                'deployments'
+            )
+
         # create the database and schema if it doesn't exist
         self.ts.tql.command(command=f'CREATE DATABASE {self.database};')
         self.ts.tql.command(command=f'CREATE SCHEMA {self.database}.{self.schema_};')
