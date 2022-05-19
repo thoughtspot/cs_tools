@@ -89,7 +89,8 @@ class Falcon:
         q = t.select().compile(dialect=self.engine.dialect)
         q = str(q).strip()
         r = self.ts.tql.query(statement=f'{q};', database=self.database)
-        return r
+        d = next(_['data'] for _ in r if 'data' in _)  # there will be only 1 response
+        return d
 
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
         if not data:
