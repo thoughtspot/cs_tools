@@ -17,6 +17,15 @@ REQUIRED_PRIVILEGES = set([
 ])
 
 
+def _to_table(headers, rows=None):
+    if rows is None:
+        rows = []
+
+    header = [column['name'] for column in headers]
+    data = [dict(zip(header, row['v'])) for row in rows]
+    return data
+
+
 class TQLMiddleware:
     """
     """
@@ -73,10 +82,18 @@ class TQLMiddleware:
         }
 
         r = self.ts.api.ts_dataservice.query(data, timeout=http_timeout)
-        d = [json.loads(_) for _ in r.iter_lines() if _]
-        print(d)
-        raise
-        return d['result']['message']
+        i = [json.loads(_) for _ in r.iter_lines() if _]
+
+        out = []
+
+        for row in i:
+            if 'table' in row['result']:
+                out.append({'data': _to_table(**row['result']['table'])})
+
+            if 'message' in row['result']:
+                out.append({'messages': row['result']['message']})
+
+        return out
 
     @validate_arguments
     def command(
@@ -84,13 +101,16 @@ class TQLMiddleware:
         command: str,
         *,
         database: str = None,
-        schema_: Annotated[str, Field(alias='schema')] = 'falcon_default_schema',
+        schema_: str = 'falcon_default_schema',
         raise_errors: bool = False,
         http_timeout: int = 5.0
     ) -> List[Dict[str, Any]]:
         """
         """
         self._check_privileges()
+
+        if not command.strip().endswith(';'):
+            command = f'{command.strip()};'
 
         data = {
             'context': {
@@ -104,11 +124,18 @@ class TQLMiddleware:
         }
 
         r = self.ts.api.ts_dataservice.query(data, timeout=http_timeout)
+        i = [json.loads(_) for _ in r.iter_lines() if _]
 
-        d = [json.loads(_) for _ in r.iter_lines() if _]
-        d = r.json()
-        log.debug(d)
-        return d['result']['message']
+        out = []
+
+        for row in i:
+            if 'table' in row['result']:
+                out.append({'data': _to_table(**row['result']['table'])})
+
+            if 'message' in row['result']:
+                out.append({'messages': row['result']['message']})
+
+        return out
 
     @validate_arguments
     def script(
@@ -133,18 +160,15 @@ class TQLMiddleware:
             }
 
         r = self.ts.api.ts_dataservice.script(data, timeout=http_timeout)
-        d = [json.loads(_) for _ in r.iter_lines() if _]
+        i = [json.loads(_) for _ in r.iter_lines() if _]
 
-        for _ in d:
-            if 'message' in _['result']:
-                m = self.ts.api.ts_dataservice._parse_api_messages(_['result']['message'])
-            if 'table' in _['result']:
-                m = self.ts.api.ts_dataservice._parse_tql_query(_['result']['table'])
-            
-            log.debug(m)
+        out = []
 
-            if raise_errors and 'returned error' in m:
-                if 'create table' in m.lower():
-                    raise TableAlreadyExists()
-                else:
-                    raise ValueError(m)
+        for row in i:
+            if 'table' in row['result']:
+                out.append({'data': _to_table(**row['result']['table'])})
+
+            if 'message' in row['result']:
+                out.append({'messages': row['result']['message']})
+
+        return out

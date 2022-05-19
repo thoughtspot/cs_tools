@@ -3,6 +3,7 @@ import sys
 
 from typer import Argument as A_, Option as O_
 import typer
+import rich
 
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
@@ -78,7 +79,30 @@ def file(
             cat create-schema.sql | tql
     """
     ts = ctx.obj.thoughtspot
-    ts.tql.script(file)
+    r = ts.tql.script(file)
+
+    color_map = {
+        'INFO': '[white]',
+        'ERROR': '[red]'
+    }
+
+    for response in r:
+        if 'messages' in response:
+            for message in response['messages']:
+                c = color_map.get(message['type'], '[yellow]')
+                m = message['value']
+
+                if m.strip() == 'Statement executed successfully.':
+                    c = '[bold green]'
+                if m.strip().endswith(';'):
+                    c = '[cyan]'
+
+                console.print(c + m, end='')
+
+        if 'data' in response:
+            t = rich.table.Table(*response['data'][0].keys(), box=rich.box.HORIZONTALS)
+            [t.add_row(*_.values()) for _ in response['data']]
+            console.print('\n', t)
 
 
 @app.command(cls=CSToolsCommand)
@@ -116,4 +140,27 @@ def command(
         console.print('[red]no valid input given to rtql command')
         raise typer.Exit()
 
-    ts.tql.command(command, schema=schema)
+    r = ts.tql.command(command, schema_=schema)
+
+    color_map = {
+        'INFO': '[white]',
+        'ERROR': '[red]'
+    }
+
+    for response in r:
+        if 'messages' in response:
+            for message in response['messages']:
+                c = color_map.get(message['type'], '[yellow]')
+                m = message['value']
+
+                if m.strip() == 'Statement executed successfully.':
+                    c = '[bold green]'
+                if m.strip().endswith(';'):
+                    c = '[cyan]'
+
+                console.print(c + m, end='')
+
+        if 'data' in response:
+            t = rich.table.Table(*response['data'][0].keys(), box=rich.box.HORIZONTALS)
+            [t.add_row(*_.values()) for _ in response['data']]
+            console.print('\n', t)

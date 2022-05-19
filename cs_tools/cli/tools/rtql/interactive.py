@@ -3,6 +3,7 @@ import logging
 import json
 
 from rich.console import Console
+import rich
 import httpx
 import typer
 
@@ -13,6 +14,16 @@ from .const import TQL_HELP
 
 
 log = logging.getLogger(__name__)
+
+
+def _to_table(headers, rows=None):
+    header = [column['name'] for column in headers]
+
+    if rows is None:
+        rows = [{'v': (' ',) * len(header)}]
+
+    data = [dict(zip(header, row['v'])) for row in rows]
+    return data
 
 
 class InteractiveTQL:
@@ -150,6 +161,11 @@ class InteractiveTQL:
         """
 
         """
+        color_map = {
+            'INFO': '[white]',
+            'WARNING': '[yellow]',
+            'ERROR': '[red]'
+        }
         new_ctx = {}
 
         for line in lines:
@@ -172,12 +188,22 @@ class InteractiveTQL:
                 continue
 
             if 'message' in data['result']:
-                msg = self.ts.api.ts_dataservice._parse_api_messages(data['result']['message'])
-                self.print(msg)
+                for message in data['result']['message']:
+                    c = color_map.get(message['type'], '[yellow]')
+                    m = message['value']
+
+                    if m.strip() == 'Statement executed successfully.':
+                        c = '[bold green]'
+                    if m.strip().endswith(';'):
+                        c = '[cyan]'
+
+                    self.print(c + m + '[/]', end='')
 
             if 'table' in data['result']:
-                msg = self.ts.api.ts_dataservice._parse_tql_query(data['result']['table'])
-                self.print(msg)
+                d = _to_table(**data['result']['table'])
+                t = rich.table.Table(*d[0].keys(), box=rich.box.HORIZONTALS)
+                [t.add_row(*_.values()) for _ in d]
+                self.print(t)
 
         return new_ctx
 
