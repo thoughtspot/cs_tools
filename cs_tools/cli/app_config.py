@@ -41,7 +41,7 @@ def show(
     configs = [f for f in APP_DIR.iterdir() if f.name.startswith('cluster-cfg_')]
     s = 's' if (len(configs) > 1 or len(configs) == 0) else ''
     meta = _meta_config()
-    meta_cfg = None if meta is None else meta['default']['config']
+    meta_cfg = meta['default']['config'] if meta else {}
 
     console.print(f'\nCluster configs located at: {APP_DIR}\n')
 
