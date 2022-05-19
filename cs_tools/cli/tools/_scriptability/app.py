@@ -1,14 +1,12 @@
 # DEV NOTE:
 #
 # Future enhancements:
-#   - add tags on import
 #   - add support for GUID mapping across instances of ThoughtSpot
 #   - ability to manipulate objects, such as renaming references to worksheets and tables, token replacement, etc.
-#   - add support for importing .zip files
 #   - add support for tables and connections
+#   - add support for importing .zip files
 #
 
-import datetime
 import json
 import pathlib
 import click
@@ -18,12 +16,10 @@ from thoughtspot_tml.tml import TML
 from typer import Argument as A_, Option as O_  # noqa
 from typing import Dict, List, Optional
 import typer
-from zipfile import ZipFile
 
-from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType, AccessLevel
+from cs_tools.data.enums import AccessLevel, GUID, StatusCode, TMLImportPolicy, TMLType, TMLContentType
 from cs_tools.cli.ux import console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
 from cs_tools.cli.tools import common
-from cs_tools.cli.util import base64_to_file
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
@@ -171,6 +167,21 @@ def _write_tml_obj_to_file(path: pathlib.Path, tml: TML) -> None:
         f.write(tmlstr)
 
 
+class TMLResponseReference:
+    """
+    Keeps track of the TML object including status of upload.
+    """
+    def _init_(self):
+        self.status_code = StatusCode.unknown
+        self.guid = None
+        self.name = None
+        self.type = None
+        self.metadata_type = None
+        self.original_guid = None
+        self.error_code = None
+        self.error_message = None
+
+
 @app.command(name='import', cls=CSToolsCommand)
 @depends(
     thoughtspot=common.setup_thoughtspot,
@@ -220,11 +231,9 @@ def import_(
     else:
         console.log(f"[bold green]importing {path.name} with policy {import_policy.value}.[/]")
 
-    guid_mappings = {}
-    if guid_file:
-        guid_mappings: Dict = _read_guid_mappings(guid_file=guid_file)
+    guid_mappings = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
 
-    tml = []  # array of TML to update
+    tml: [TML] = []  # array of TML to update
     files = []
     if path.is_dir():
         for p in list(f for f in path.iterdir() if f.match("*.tml")):
@@ -237,62 +246,45 @@ def import_(
         _load_and_append_tml_file(ts=ts, path=path, connection=connection, guid_mappings=guid_mappings,
                                   force_create=force_create, tml_list=tml)
 
+    # remember the old guids in case we need to update the mapping.
+    old_guids = [_.guid for _ in tml]
+
+    # strip GUIDs if doing force create and convert to a list of TML string.
+    if force_create:
+        [_.remove_guid() for _ in tml]
+
     for f in files:
         console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
 
-    good_resp = []  # responses for each item that didn't error.  Use for mapping and tagging.
+    ok_resp = []  # responses for each item that didn't error.  Use for mapping and tagging.
     with console.status(f"[bold green]importing {path.name}[/]"):
+        tml = [YAMLTML.dump_tml_object(_) for _ in tml]
         r = ts.api.metadata.tml_import(import_objects=tml,
                                        import_policy=import_policy.value,
                                        force_create=force_create)
         resp = _flatten_tml_response(r)
         fcnt = 0
         for _ in resp:
-            if _['status_code'] == 'ERROR':
-                console.log(f"[bold red]{files[fcnt]} {_['status_code']}: {_['error_message']} ({_['error_code']})[/]")
+            if _.status_code == 'ERROR':
+                console.log(f"[bold red]{files[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
             else:
-                console.log(f"{files[fcnt]} {_['status_code']}: {_['name']} ({_['metadata_type']}::{_['guid']})")
+                console.log(f"{files[fcnt]} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
+                # if the object was loaded successfully and guid mappings are being used, make sure the mapping is there
+                if guid_file:
+                    guid_mappings[old_guids[fcnt]] = _.guid
+
             fcnt += 1
-            good_resp.append(_)
+            ok_resp.append(_)
 
     if import_policy != TMLImportPolicy.validate_only:
         if tags:
-            with console.status(f"[bold green]adding tags: {tags}[/]"):
-                ids = []
-                types = []
-                for _ in good_resp:
-                    ids.append(_['guid'])
-                    types.append(_['metadata_type'])
-                if ids:  # might all be errors
-                    console.log(f'Adding tags {tags} to {ids}')
-                    ts.api.metadata.assigntag(id=ids, type=types, tagname=tags)
+            _add_tags(ts, ok_resp, tags)
 
         if share_with:
-            with console.status(f"[bold green]sharing with: {share_with}[/]"):
-                groups = []
-                for _ in share_with:
-                    try:
-                        groups.append(ts.group.get_group_id(_))
-                    except Exception as e:
-                        console.log(f"[bold red]unable to get ID for group {_}: {e}")
+            _share_with(ts, ok_resp, share_with)
 
-                if groups:  # make sure some mapped
-
-                    # Bundling by type to save on calls.
-                    type_bundles = {}
-                    for _ in good_resp:
-                        l = type_bundles.get(_['metadata_type'], [])
-                        if not l:
-                            type_bundles[_['metadata_type']] = l
-                        l.append(_['guid'])
-
-                    permissions = {}
-                    for g in groups:
-                        permissions[g] = AccessLevel.read_only
-
-                    for type in type_bundles.keys():
-                        objectids = type_bundles[type]
-                        ts.api.security.share(type=type, id=objectids, permissions=permissions)
+        if guid_file:
+            _write_guid_mappings(guid_file=guid_file, guid_mappings=guid_mappings)
 
 
 def _read_guid_mappings(guid_file: pathlib.Path) -> Dict:
@@ -301,6 +293,44 @@ def _read_guid_mappings(guid_file: pathlib.Path) -> Dict:
     a valid TOML file of the format used by the scriptability tool.
     :param guid_file: The path to a file that may or may not exist.
     :return: A mapping of old to new GUIDs.
+    """
+    did_exist = _create_guid_file_if_not_exists(guid_file=guid_file)
+
+    try:
+        toml_content = toml.load(str(guid_file))
+        mappings = toml_content.get('mappings', {})
+        if not mappings:
+            console.log(f"[bold yellow]Warning: No mappings provided in {guid_file}.[/]")
+
+        return mappings
+
+    except toml.decoder.TomlDecodeError as err:
+        console.log(f"[bold red]Error reading the mapping file: {err}[/]")
+        raise typer.Exit(-1)  # could also ignore, but would likely fail.
+
+
+def _write_guid_mappings(guid_file: pathlib.Path, guid_mappings) -> None:
+    """
+    Writes the GUID mappings out to the mapping file.
+    :param guid_file:
+    :param guid_mappings:
+    """
+    _create_guid_file_if_not_exists(guid_file=guid_file)  # just to make sure.
+
+    try:
+        toml_content = toml.load(str(guid_file))
+        toml_content["mappings"] = guid_mappings
+        with open(guid_file, "w") as f:
+            toml.dump(toml_content, f)
+
+    except toml.decoder.TomlDecodeError as err:
+        console.log(f"[bold red]Error writing to the mapping file: {err}[/]")
+        raise typer.Exit(-1)  # could also ignore, but would likely fail.
+
+
+def _create_guid_file_if_not_exists(guid_file: pathlib.Path) -> bool:
+    """
+    Creates a GUID file with a standard header if one doesn't exist.
     """
     if not guid_file.exists():
         mapping_header = ('# Automatically generated from cstools scriptability.'
@@ -312,19 +342,16 @@ def _read_guid_mappings(guid_file: pathlib.Path) -> Dict:
                           '[mappings]'
                           f'version="{__version__}"'
                           )
-        with guid_file.open(mode='w') as f:
-            f.write(mapping_header)
-    else:
         try:
-            toml_content = toml.load(str(guid_file))
-            if not toml_content.get('mappings'):
-                console.log(f"f[bold yellow]Warning: No mappings provided in {guid_file}.[/]")
+            with guid_file.open(mode='w') as f:
+                f.write(mapping_header)
+        except Exception as e:
+            console.log(f"[bold red]Unable to open file {guid_file}: {e}[/]")
+            raise typer.Exit(-1)
 
-            return toml_content.get('mappings', {})  # press on if no mappings in the file.
+        return False
 
-        except toml.decoder.TomlDecodeError as err:
-            console.log(f"[bold red]Error reading the mapping file: {err}[/]")
-            raise typer.Exit(-1)  # could also ignore, but would likely fail.
+    return True  # exists already
 
 
 def _load_and_append_tml_file(
@@ -333,7 +360,7 @@ def _load_and_append_tml_file(
         connection: GUID,
         guid_mappings: Dict,
         force_create: bool,
-        tml_list: List[str]) -> None:
+        tml_list: List[TML]) -> GUID:
     """
     Loads a TML file from the path, getting table mappings if needed.  Then strip GUID if creating new.
     :param ts: The ThoughtSpot interface.
@@ -342,25 +369,27 @@ def _load_and_append_tml_file(
     :param guid_mappings: The dictionary that maps from old GUID to new GUID.
     :param force_create: If true, files are being created.
     :param tml_list: A list that is being appended to.  Might get updated.
-    :return: None
+    :return: The old GUID or none if didn't get added
     """
 
     if path.is_dir():
-        return
+        return None
 
     if not path.name.endswith(".tml"):
         console.log("[bold red]Only TML (.tml) files are supported.[/]")
 
     tmlobj = _load_tml_from_file(ts=ts, path=path, connection=connection)
 
+    old_guid = tmlobj.guid
+
     tml = _map_guids(tml=tmlobj, guid_mappings=guid_mappings)
 
     if tmlobj.content_type == TMLContentType.table:
         console.log("[bold red]Table import not currently selected.  Ignoring file.[/]")
     else:
-        if force_create:
-            tmlobj.remove_guid()
-        tml_list.append(YAMLTML.dump_tml_object(tmlobj))
+        tml_list.append(tmlobj)
+
+    return old_guid
 
 
 def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path, connection: GUID = None) -> TML:
@@ -401,11 +430,11 @@ def _map_guids(tml: TML, guid_mappings: Dict) -> TML:
     # check all entries in the tml to see if they are GUID or FQN.
     # If yes, try to change the value.
     # If no, try mapping, but at the next level down.  Ruturn when there are no child levels.
-    __find_and_map_guids(tml=tml.tml, guid_mappings=guid_mappings)
+    _find_and_map_guids(tml=tml.tml, guid_mappings=guid_mappings)
     return tml
 
 
-def __find_and_map_guids(tml: Dict, guid_mappings: Dict) -> None:
+def _find_and_map_guids(tml: Dict, guid_mappings: Dict) -> None:
     """
     Recursively finds GUIDs (guid or fqn entries) and replaces if the GUID is mapped.  This shouldn't get too deep.
     :param tml: The TML fragment to check.
@@ -418,10 +447,10 @@ def __find_and_map_guids(tml: Dict, guid_mappings: Dict) -> None:
             if v and v in guid_mappings.keys():
                 tml[k] = guid_mappings[v]
         elif isinstance(tml[k], dict):
-            __find_and_map_guids(tml=tml[k], guid_mappings=guid_mappings)
+            _find_and_map_guids(tml=tml[k], guid_mappings=guid_mappings)
 
 
-def _flatten_tml_response(r: Dict) -> [Dict]:
+def _flatten_tml_response(r: Dict) -> [TMLResponseReference]:
     """
     Flattens a response to return key fields as an array of dictionaries for easier use.
     :param r: The response as a JSON object.
@@ -434,18 +463,72 @@ def _flatten_tml_response(r: Dict) -> [Dict]:
     text = json.loads(r.text)
     if text:
         for _ in text['object']:
-            resp = {'status_code': _['response']['status']['status_code']}
-            if resp['status_code'] == 'OK':
+            trr = TMLResponseReference()
+            trr.status_code = _['response']['status']['status_code']
+            if trr.status_code == 'OK':
                 h = _['response']['header']
-                resp['guid'] = h.get('id_guid', 'UNKNOWN')
-                resp['name'] = h.get('name', 'UNKNOWN')
-                resp['type'] = h.get('type', 'UNKNOWN')
-                resp['metadata_type'] = h.get('metadata_type', 'UNKNOWN')
+                trr.guid = h.get('id_guid', 'UNKNOWN')
+                trr.name = h.get('name', 'UNKNOWN')
+                trr.type = h.get('type', 'UNKNOWN')
+                trr.metadata_type = h.get('metadata_type', 'UNKNOWN')
             else:
                 status = _['response']['status']
-                resp['error_code'] = status.get('error_code', '')
-                resp['error_message'] = status['error_message'].replace('<br/>', '')
+                trr.error_code = status.get('error_code', '')
+                trr.error_message = status['error_message'].replace('<br/>', '')
 
-            flat.append(resp)
+            flat.append(trr)
 
     return flat
+
+
+def _add_tags(ts: ThoughtSpot, objects: List[TMLResponseReference], tags: List[str]) -> None:
+   """
+   Adds the tags to the items in the response.
+   :param ts: The ThoughtSpot object.
+   :param objects: List of the objects to add the tags to.
+   :param tags: List of tags to create.
+   """
+   with console.status(f"[bold green]adding tags: {tags}[/]"):
+       ids = []
+       types = []
+       for _ in objects:
+           ids.append(_.guid)
+           types.append(_.metadata_type)
+       if ids:  # might all be errors
+           console.log(f'Adding tags {tags} to {ids}')
+           ts.api.metadata.assigntag(id=ids, type=types, tagname=tags)
+
+
+def _share_with(ts: ThoughtSpot, objects: List[TMLResponseReference], share_with: List[str]) -> None:
+    """
+    Shares the objects with the groups.
+    :param ts: The ThoughtSpot interface object.
+    :param objects: Objects to share with.
+    :param share_with: The list of group names to share with.
+    :return:
+    """
+    with console.status(f"[bold green]sharing with: {share_with}[/]"):
+        groups = []
+        for _ in share_with:
+            try:
+                groups.append(ts.group.get_group_id(_))
+            except Exception as e:
+                console.log(f"[bold red]unable to get ID for group {_}: {e}")
+
+        if groups:  # make sure some mapped
+
+            # Bundling by type to save on calls.
+            type_bundles = {}
+            for _ in objects:
+                l = type_bundles.get(_.metadata_type, [])
+                if not l:
+                    type_bundles[_.metadata_type] = l
+                l.append(_.guid)
+
+            permissions = {}
+            for g in groups:
+                permissions[g] = AccessLevel.read_only
+
+            for type in type_bundles.keys():
+                objectids = type_bundles[type]
+                ts.api.security.share(type=type, id=objectids, permissions=permissions)

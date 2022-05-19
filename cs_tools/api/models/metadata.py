@@ -303,6 +303,8 @@ class Metadata:
     ) -> httpx.Response:
         """
         Assign tags to metadata objects; types[i] corresponds to ids[i].
+        Note that the assigntag will automatically create a new tag if the tagname doesn't currently exist.
+        It might be desired to check and block in the future.
         """
 
         data={
