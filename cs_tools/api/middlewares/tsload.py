@@ -1,7 +1,8 @@
 from typing import Any, Dict, List, Union
-from io import BufferedIOBase
+from io import BufferedIOBase, TextIOWrapper
 from tempfile import _TemporaryFileWrapper
 import logging
+import time
 
 from pydantic import validate_arguments
 
@@ -38,7 +39,7 @@ class TSLoadMiddleware:
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
     def upload(
         self,
-        fd: Union[BufferedIOBase, _TemporaryFileWrapper],
+        fd: Union[BufferedIOBase, TextIOWrapper, _TemporaryFileWrapper],
         *,
         database: str,
         table: str,
@@ -154,21 +155,29 @@ class TSLoadMiddleware:
         self.ts.api.ts_dataservice.load_commit(cycle_id)
         return cycle_id
 
-    # @validate_arguments
-    # def status(self, cycle_id: str, *, wait_for_complete: bool = False):
-    #     """
-    #     """
-    #     self._check_privileges()
+    @validate_arguments
+    def status(self, cycle_id: str, *, wait_for_complete: bool = False):
+        """
+        """
+        self._check_privileges()
 
-    #     while True:
-    #         r = self.ts.api.ts_dataservice.load_status(cycle_id)
-    #         data = r.json()
+        while True:
+            r = self.ts.api.ts_dataservice.load_status(cycle_id)
+            data = r.json()
 
-    #         if not wait_for_complete:
-    #             break
+            if not wait_for_complete:
+                break
 
-    #         print(data)
-    #         raise
+            if data['internal_stage'] == 'COMMITTING':
+                pass
+            elif data['internal_stage'] == 'DONE':
+                break
+            elif data['status']['message'] != 'OK':
+                break
+
+            time.sleep(1)
+
+        return data
 
     # @validate_arguments
     # def bad_records(self, cycle_id: str) -> List[Dict[str, Any]]:

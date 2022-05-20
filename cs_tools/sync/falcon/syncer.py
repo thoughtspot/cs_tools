@@ -24,12 +24,14 @@ class Falcon:
     database: str = 'cs_tools'
     schema_: str = Field('falcon_default_schema', alias='schema')
     empty_target: bool = True
+    timeout: float = 60.0
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
     metadata = None
 
     def __post_init_post_parse__(self):
+        self.timeout = self.timeout or None
         ctx = click.get_current_context()
         self.engine = sa.engine.create_mock_engine('sqlite://', self.intercept_create_table)
         self.cnxn = self.engine.connect()
@@ -51,7 +53,11 @@ class Falcon:
         if 'ts_bi_server' in q:
             return
 
-        self.ts.tql.command(command=f'{q};', database=self.database)
+        self.ts.tql.command(
+            command=f'{q};',
+            database=self.database,
+            http_timeout=self.timeout
+        )
 
     def ensure_setup(self, metadata, cnxn, **kw):
 
@@ -69,8 +75,14 @@ class Falcon:
             )
 
         # create the database and schema if it doesn't exist
-        self.ts.tql.command(command=f'CREATE DATABASE {self.database};')
-        self.ts.tql.command(command=f'CREATE SCHEMA {self.database}.{self.schema_};')
+        self.ts.tql.command(
+            command=f'CREATE DATABASE {self.database};', http_timeout=self.timeout
+        )
+
+        self.ts.tql.command(
+            command=f'CREATE SCHEMA {self.database}.{self.schema_};',
+            http_timeout=self.timeout
+        )
 
     def capture_metadata(self, metadata, cnxn, **kw):
         self.metadata = metadata
@@ -88,7 +100,11 @@ class Falcon:
         t = self.metadata.tables[table]
         q = t.select().compile(dialect=self.engine.dialect)
         q = str(q).strip()
-        r = self.ts.tql.query(statement=f'{q};', database=self.database)
+        r = self.ts.tql.query(
+            statement=f'{q};',
+            database=self.database,
+            http_timeout=self.timeout
+        )
         d = next(_['data'] for _ in r if 'data' in _)  # there will be only 1 response
         return d
 

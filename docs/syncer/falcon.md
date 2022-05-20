@@ -36,6 +36,10 @@ Falcon is __ThoughtSpot__'s proprietary in-memory database that exists as part o
 <br/>*<span class=fc-mint>default</span>:* `true`
 <br/>*a* `TRUNCATE` *statement will be issued prior to loading any data loads if* `true` *is used*
 
+> __timeout__{ .fc-blue }: <span class=fc-coral>optional</span>, number of seconds to wait for individual commands to Falcon
+<br/>*<span class=fc-mint>default</span>:* `60.0`
+<br/>*if the timeout value is set to* `0` *then calls over to Falcon will never reach a timeout threshold*
+
 
 ??? question "How do I use the Falcon syncer in commands?"
 
@@ -62,6 +66,7 @@ Falcon is __ThoughtSpot__'s proprietary in-memory database that exists as part o
 database = 'cs_tools'
 schema = 'falcon_default_schema'
 empty_target = true
+timeout = 5.0
 ```
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
