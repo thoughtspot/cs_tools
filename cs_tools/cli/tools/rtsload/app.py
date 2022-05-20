@@ -37,13 +37,13 @@ app = typer.Typer(
 def status(
     ctx: typer.Context,
     cycle_id: str=A_(..., help='data load cycle id'),
-    bad_records: str = O_(
-        None,
-        '--bad_records_file',
-        help='file to use for storing rows that failed to load',
-        metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    )
+    # bad_records: str = O_(
+    #     None,
+    #     '--bad_records_file',
+    #     help='file to use for storing rows that failed to load',
+    #     metavar='protocol://DEFINITION.toml',
+    #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+    # )
 ):
     """
     Get the status of a data load.
@@ -59,17 +59,20 @@ def status(
             f'\nIgnored rows: {data["ignored_row_count"]}'
         )
 
-    if data['ignored_row_count'] > 0:
-        now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
-        fp = f'BAD_RECORDS_{now}_{cycle_id}'
-        console.print(
-            f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
-        )
-        data = ts.tsload.bad_records(cycle_id)
-        bad_records.dump(fp, data=data)
+    # if int(data['ignored_row_count']) > 0:
+    #     now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
+    #     fp = f'BAD_RECORDS_{now}_{cycle_id}'
+    #     console.print(
+    #         f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
+    #     )
+    #     data = ts.tsload.bad_records(cycle_id)
+    #     bad_records.dump(fp, data=data)
 
     if data['status']['code'] == 'LOAD_FAILED':
         console.print(f'\nFailure reason:\n  [red]{data["status"]["message"]}[/]')
+
+    if data.get('parsing_errors', False):
+        console.print(f'[red]{data["parsing_errors"]}')
 
 
 @app.command(cls=CSToolsCommand)
@@ -96,13 +99,13 @@ def file(
     has_header_row: bool = O_(False, '--has_header_row', show_default=False, help='indicates that the input file contains a header row'),
     escape_character: str = O_('"', '--escape_character', help='specifies the escape character used in the input file'),
     enclosing_character: str = O_('"', '--enclosing_character', help='enclosing character in csv source format'),
-    bad_records: str = O_(
-        None,
-        '--bad_records_file',
-        help='file to use for storing rows that failed to load',
-        metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    ),
+    # bad_records: str = O_(
+    #     None,
+    #     '--bad_records_file',
+    #     help='file to use for storing rows that failed to load',
+    #     metavar='protocol://DEFINITION.toml',
+    #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+    # ),
     flexible: bool = O_(False, '--flexible', show_default=False, help='whether input data file exactly matches target schema', hidden=True)
 ):
     """
@@ -120,9 +123,9 @@ def file(
     #
 
     opts = {
-        'target_database': target_database,
-        'target_table': target_table,
-        'target_schema': target_schema,
+        'database': target_database,
+        'table': target_table,
+        'schema_': target_schema,
         'empty_target': empty_target,
         'max_ignored_rows': max_ignored_rows,
         'date_format': date_format,
@@ -138,10 +141,11 @@ def file(
         'enclosing_character': enclosing_character
     }
 
-    with console.status(f'[bold green]Loading {file} to ThoughtSpot..'):
-        cycle_id = ts.tsload.upload(ts, fp=file, **opts, verbose=True)
+    with console.status(f'[bold green]Loading [yellow]{file}[/] to ThoughtSpot..'):
+        with file.open('r', encoding='utf-8', newline='') as fd:
+            cycle_id = ts.tsload.upload(fd, **opts)
 
-    console.log(f'Data load cycle_id: {cycle_id}')
+    console.log(f'Data load cycle_id: [cyan]{cycle_id}')
 
     # if bad_records is None:
     #     return
