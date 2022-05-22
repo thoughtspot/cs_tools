@@ -26,6 +26,9 @@ def _hidden_options(
     private: bool = O_(False, hidden=True),
     beta: bool = O_(False, hidden=True)
 ):
+    if ctx.invoked_subcommand is not None:
+        return
+
     for tool_name, click_group in ctx.command.commands.items():
         cs_tool = ctx.obj.tools[tool_name]
 
