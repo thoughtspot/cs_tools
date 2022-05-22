@@ -1,19 +1,22 @@
+from typing import Any, Dict
 import logging.config
 import datetime as dt
 import platform
 import logging
 
 from typer import Argument as A_, Option as O_  # noqa
+import pendulum
 import typer
 
 from cs_tools.cli.tools.common import setup_thoughtspot
 from cs_tools.cli.dependency import depends
-from cs_tools.cli._loader import _gather_tools
 from cs_tools.cli.options import CONFIG_OPT
+from cs_tools.cli.loader import CSTool
 from cs_tools._version import __version__
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 from cs_tools.errors import CSToolsException
-from cs_tools.const import APP_DIR
+from cs_tools.const import APP_DIR, TOOLS_DIR
+from cs_tools.util import State
 
 from .app_config import app as cfg_app
 from .app_log import app as log_app
@@ -47,6 +50,7 @@ app = typer.Typer(
     context_settings={
         # global settings
         'help_option_names': ['--help', '-h', '--helpfull'],
+        'obj': State(),
 
         # allow responsive console design
         'max_content_width':
@@ -71,11 +75,11 @@ def _platform(ctx: typer.Context):
     """
     ts = ctx.obj.thoughtspot
 
-    console.print(f"""[yellow]
+    console.print(f"""[b yellow]
         [PLATFORM DETAILS]
         system: {platform.system()} (detail: {platform.platform()})
         python: {platform.python_version()}
-        ran at: {dt.datetime.now(dt.timezone.utc).astimezone().strftime('%Y-%m-%d %H:%M:%S%z')}
+        ran at: {pendulum.now().format('dddd, MMMM Do YYYY @ HH:mm:ss A (zz)')}
         cs_tools: v{__version__}
 
         [THOUGHTSPOT]
@@ -94,30 +98,8 @@ def _platform(ctx: typer.Context):
     """)
 
 
-def _clean_logs(now):
-    logs_dir = APP_DIR / 'logs'
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
-    # keep only the last 25 logfiles
-    lifo = sorted(logs_dir.iterdir(), reverse=True)
-
-    for idx, log in enumerate(lifo):
-        if idx > 25:
-            log.unlink()
-
-
-def run():
-    """
-    Entrypoint into cs_tools.
-    """
-    _gather_tools(tools_app)
-    app.add_typer(tools_app)
-    app.add_typer(cfg_app)
-    app.add_typer(log_app)
-
-    # SETUP LOGGING
+def _setup_logging() -> None:
     now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
-    _clean_logs(now)
 
     logging.config.dictConfig({
         'version': 1,
@@ -155,8 +137,54 @@ def run():
         }
     })
 
+    # ROTATE LOGS
+    logs_dir = APP_DIR / 'logs'
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    # keep only the last 25 logfiles
+    lifo = sorted(logs_dir.iterdir(), reverse=True)
+
+    for idx, log in enumerate(lifo):
+        if idx > 25:
+            log.unlink()
+
+    # SILENCE NOISY LOGS
     logging.getLogger('urllib3').setLevel(logging.ERROR)
     logging.getLogger('httpx').setLevel(logging.ERROR)
+
+
+def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
+    ctx_settings['obj'].tools = {}
+
+    for path in TOOLS_DIR.iterdir():
+        if path.is_dir():
+            tool = CSTool(path)
+
+            if tool.privacy == 'unknown':
+                continue
+
+            # add tool to the global state
+            ctx_settings['obj'].tools[tool.name] = tool
+
+            # add tool to the cli
+            tools_app.add_typer(
+                tool.app,
+                name=tool.name,
+                context_settings=ctx_settings,
+                hidden=tool.privacy != 'public',
+            )
+
+
+def run():
+    """
+    Entrypoint into cs_tools.
+    """
+    _setup_logging()
+    _setup_tools(tools_app, ctx_settings=app.info.context_settings)
+
+    app.add_typer(tools_app)
+    app.add_typer(cfg_app)
+    app.add_typer(log_app)
 
     try:
         app()
