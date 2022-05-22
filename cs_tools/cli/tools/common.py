@@ -1,8 +1,7 @@
-from typing import List, Dict, Any
 import logging
 import pathlib
-import csv
 
+from click.exceptions import BadParameter
 import click
 
 from cs_tools.thoughtspot import ThoughtSpot
@@ -17,20 +16,33 @@ def setup_thoughtspot(
     *,
     config: str = 'CHECK_FOR_DEFAULT',
     verbose: bool = None,
-    temp_dir: pathlib.Path = None
+    temp_dir: pathlib.Path = None,
+    login: bool = True
 ) -> ThoughtSpot:
     """
     Returns the ThoughtSpot object.
     """
+    if hasattr(ctx.obj, 'thoughtspot'):
+        return ctx.obj.thoughtspot
+
     if config == 'CHECK_FOR_DEFAULT':
-        config = _meta_config()['default']['config']
         try:
             config = _meta_config()['default']['config']
         except KeyError:
-            raise click.exceptions.BadParameter('no --config specified', ctx=ctx) from None
+            raise BadParameter('no --config specified', ctx=ctx) from None
 
-    if not hasattr(ctx.obj, 'thoughtspot'):
-        cfg = TSConfig.from_command(config, verbose=verbose, temp_dir=temp_dir)
-        ctx.obj.thoughtspot = ThoughtSpot(cfg)
+    cfg = TSConfig.from_command(config, verbose=verbose, temp_dir=temp_dir)
+    ctx.obj.thoughtspot = ts = ThoughtSpot(cfg)
 
-    return ctx.obj.thoughtspot
+    if login:
+        ts.login()
+
+    return ts
+
+
+def teardown_thoughtspot(ctx: click.Context):
+    """
+    Destroys the ThoughtSpot object.
+    """
+    if hasattr(ctx.obj, 'thoughtspot'):
+        ctx.obj.thoughtspot.logout()
