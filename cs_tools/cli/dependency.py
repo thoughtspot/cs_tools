@@ -55,7 +55,7 @@ class Dependency:
     def setup(self, ctx: click.Context, **forwarded) -> Any:
         return self.dependency(ctx, **forwarded)
 
-    def teardown(self, ctx: click.Context) -> Any:
+    def terminate(self, ctx: click.Context) -> Any:
         if self.teardown is None:
             return
         return self.teardown(ctx)

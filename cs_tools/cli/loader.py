@@ -83,6 +83,7 @@ class CSTool:
             beta - an unreleased tool
             private - a released tool which uses internal APIs
             public - a released tool which uses no internal APIs
+            unknown - a catch-all for invalid tools
 
         Only public tools show up in the default cli help text. Other classes
         of tools may be shown with additional undocumented flags.

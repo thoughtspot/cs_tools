@@ -365,7 +365,7 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
 
         for dependency in self.dependencies:
             try:
-                dependency.teardown(ctx)
+                dependency.terminate(ctx)
             except Exception as e:
                 log.debug(e, exc_info=True)
                 log.warning(f'error while tearing down dependency: {dependency.name}')

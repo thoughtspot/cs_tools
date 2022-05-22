@@ -1,5 +1,6 @@
 from typing import Any, Dict
 import logging.config
+import functools as ft
 import datetime as dt
 import platform
 import logging
@@ -8,7 +9,7 @@ from typer import Argument as A_, Option as O_  # noqa
 import pendulum
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
+from cs_tools.cli.tools.common import setup_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT
 from cs_tools.cli.loader import CSTool
@@ -66,9 +67,8 @@ app = typer.Typer(
 @app.command('platform', cls=CSToolsCommand, hidden=True)
 @depends(
     'thoughtspot',
-    setup_thoughtspot,
+    ft.partial(setup_thoughtspot, login=False),
     options=[CONFIG_OPT],
-    teardown=teardown_thoughtspot,
 )
 def _platform(ctx: typer.Context):
     """
@@ -76,13 +76,25 @@ def _platform(ctx: typer.Context):
     """
     ts = ctx.obj.thoughtspot
 
-    console.print(f"""[b yellow]
+    m = f"""[b yellow]
         [PLATFORM DETAILS]
         system: {platform.system()} (detail: {platform.platform()})
         python: {platform.python_version()}
         ran at: {pendulum.now().format('dddd, MMMM Do YYYY @ HH:mm:ss A (zz)')}
         cs_tools: v{__version__}
+    """
 
+    try:
+        ts.login()
+    except Exception as e:
+        exc = type(e).__name__
+        msg = str(e).replace('\n', '\n      ')
+        m += f"""
+        [LOGIN ERROR]
+        {exc}: {msg}
+        """
+    else:
+        m += f"""
         [THOUGHTSPOT]
         cluster id: {ts.platform.cluster_id}
         cluster: {ts.platform.cluster_name}
@@ -96,7 +108,10 @@ def _platform(ctx: typer.Context):
         username: {ts.me.name}
         display_name: {ts.me.display_name}
         privileges: {list(map(lambda e: e.name, ts.me.privileges))}
-    """)
+        """
+        ts.logout()
+
+    console.print(m)
 
 
 def _setup_logging() -> None:
