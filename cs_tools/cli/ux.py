@@ -17,9 +17,8 @@ import toml
 from cs_tools.sync.protocol import SyncerProtocol
 from cs_tools.cli.loader import CSTool
 from cs_tools.const import CONSOLE_THEME, PACKAGE_DIR
-from cs_tools.data import models
 from cs_tools.sync import register
-from cs_tools.util import State
+from cs_tools.data import models
 from cs_tools import __version__
 
 
@@ -334,8 +333,8 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
     """
     """
     def __init__(self, **kw):
-        self._dependencies = getattr(kw['callback'], '_dependencies', [])
-        self._extra_params = [o for d in self._dependencies for o in (d.options or [])]
+        self.dependencies = getattr(kw['callback'], 'dependencies', [])
+        self._extra_params = [o for d in self.dependencies for o in (d.options or [])]
         kw['params'].extend(self._extra_params)
 
         if kw['options_metavar'] == '[OPTIONS]':
@@ -348,25 +347,28 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
             kw['options_metavar'] = metavar
 
         super().__init__(**kw)
-        # self.no_args_is_help = True
 
     def _setup_dependencies(self, ctx, opts):
-        ctx.ensure_object(State)
-        ctx.call_on_close(self.teardown)
+        ctx.call_on_close(self._teardown_dependencies)
 
-        for dep in self._dependencies:
+        for dependency in self.dependencies:
             overrides = {}
 
             for k, v in opts.items():
-                if k in [o.name for o in dep.options]:
+                if k in [o.name for o in dependency.options]:
                     overrides[k] = v
 
-            dep.setup(ctx, **overrides)
+            dependency.setup(ctx, **overrides)
 
-    def teardown(self):
-        for dependency in self._dependencies:
-            if dependency.enter_exit:
-                dependency.close()
+    def _teardown_dependencies(self):
+        ctx = click.get_current_context()
+
+        for dependency in self.dependencies:
+            try:
+                dependency.teardown(ctx)
+            except Exception as e:
+                log.debug(e, exc_info=True)
+                log.warning(f'error while tearing down dependency: {dependency.name}')
 
     # OVERRIDES
 
