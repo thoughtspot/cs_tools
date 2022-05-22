@@ -9,14 +9,13 @@ from click.exceptions import UsageError
 from rich.console import Console
 from click.core import iter_params_for_processing
 from gettext import ngettext
-import sqlalchemy as sa
 import pendulum
 import typer
 import click
 import toml
 
 from cs_tools.sync.protocol import SyncerProtocol
-from cs_tools.cli._loader import CSTool
+from cs_tools.cli.loader import CSTool
 from cs_tools.const import CONSOLE_THEME, PACKAGE_DIR
 from cs_tools.data import models
 from cs_tools.sync import register
@@ -536,14 +535,3 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
             callback=show_version,
             help="Show the version and exit."
         )
-
-
-def _csv(ctx: click.Context, param: click.Parameter, value: Tuple[str]) -> List[str]:
-    """
-    Convert arguments to a list of strings.
-    Arguments can be supplied on the CLI like..
-      --tables table1,table2 --tables table3
-    ..and will output as a flattened list of strings.
-      ['table1', 'table2', 'table3']
-    """
-    return list(it.chain.from_iterable([v.split(',') for v in value]))
