@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional
+from typing import Any, List, Optional
 import itertools as it
 import datetime as dt
 import logging
@@ -358,7 +358,7 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
                 if k in [o.name for o in dependency.options]:
                     overrides[k] = v
 
-            dependency.setup(ctx, **overrides)
+            _: Any = dependency.setup(ctx, **overrides)
 
     def _teardown_dependencies(self):
         ctx = click.get_current_context()
