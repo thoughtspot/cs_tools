@@ -8,7 +8,7 @@ import typer
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
-from cs_tools.cli.tools.common import setup_thoughtspot
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.util import chunks
 
 
@@ -81,9 +81,10 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def single(
     ctx: typer.Context,
@@ -109,9 +110,10 @@ def single(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def from_tabular(
     ctx: typer.Context,

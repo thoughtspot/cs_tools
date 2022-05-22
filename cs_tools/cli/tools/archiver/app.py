@@ -8,8 +8,8 @@ import click
 import typer
 
 from cs_tools.cli.dependency import depends
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.tools import common
 from cs_tools.cli.util import base64_to_file
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 from cs_tools.cli.ux import CommaSeparatedValuesType, SyncerProtocolType
@@ -52,9 +52,10 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=common.setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def identify(
     ctx: click.Context,
@@ -228,9 +229,10 @@ def identify(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=common.setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def revert(
     ctx: typer.Context,
@@ -335,9 +337,10 @@ def revert(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=common.setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def remove(
     ctx: typer.Context,

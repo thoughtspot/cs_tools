@@ -1,3 +1,4 @@
+import functools as ft
 import pathlib
 import sys
 
@@ -8,7 +9,7 @@ import rich
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
-from cs_tools.cli.tools.common import setup_thoughtspot
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot, teardown_thoughtspot
 from .interactive import InteractiveTQL
 
 
@@ -31,9 +32,10 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    ft.partial(setup_thoughtspot, login=False),
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def interactive(
     ctx: typer.Context,
@@ -57,9 +59,10 @@ def interactive(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def file(
     ctx: typer.Context,
@@ -107,9 +110,10 @@ def file(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def command(
     ctx: typer.Context,

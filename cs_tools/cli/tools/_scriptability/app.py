@@ -19,11 +19,9 @@ from typing import Dict, List, Optional
 import typer
 from zipfile import ZipFile
 
-from cs_tools import util
 from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType
-from cs_tools.api.middlewares import ConnectionMiddleware
-from cs_tools.cli.ux import _csv, console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
-from cs_tools.cli.tools import common
+from cs_tools.cli.ux import console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.util import base64_to_file
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.dependency import depends
@@ -57,9 +55,10 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=common.setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def export(
         ctx: click.Context,
@@ -182,9 +181,10 @@ def _write_tml_package_to_file(path: pathlib.Path, contents: str) -> None:
 
 @app.command(name='import', cls=CSToolsCommand)
 @depends(
-    thoughtspot=common.setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def import_(
         ctx: click.Context,

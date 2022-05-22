@@ -13,7 +13,7 @@ from cs_tools.sync.falcon import Falcon
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
 from cs_tools.util import to_datetime
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.cli.tools import common
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 
 from ._version import __version__
 
@@ -146,9 +146,10 @@ def spotapp(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=common.setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def gather(
     ctx: typer.Context,

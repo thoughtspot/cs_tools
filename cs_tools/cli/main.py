@@ -8,7 +8,7 @@ from typer import Argument as A_, Option as O_  # noqa
 import pendulum
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT
 from cs_tools.cli.loader import CSTool
@@ -65,9 +65,10 @@ app = typer.Typer(
 
 @app.command('platform', cls=CSToolsCommand, hidden=True)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def _platform(ctx: typer.Context):
     """
