@@ -13,6 +13,7 @@ CONSOLE_THEME = Theme({
     'error'  : 'bold red',
 })
 PACKAGE_DIR = pathlib.Path(__file__).parent
+TOOLS_DIR = PACKAGE_DIR / 'cli' / 'tools'
 
 # ISO datetime format
 FMT_TSLOAD_DATE = '%Y-%m-%d'
