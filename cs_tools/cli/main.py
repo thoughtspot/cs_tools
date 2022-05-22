@@ -214,7 +214,7 @@ def run():
             GH = 'https://github.com/thoughtspot/cs_tools/issues/new/choose'
 
             log.exception(
-                '[yellow]This is an unhandled error!! 😅'
+                '[yellow]This is an unhandled error!! :cold_sweat:'
                 '\n\nIf you encounter this message more than once, please help by '
                 'letting us know at one of the links below:'
                 f'\n\n  Google Forms: [link={GF}]{GF}[/link]'
