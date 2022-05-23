@@ -30,6 +30,7 @@ RE_DEFAULT = re.compile(r'\(.*(?P<tok>default:) .*?\)')
 console = Console(theme=CONSOLE_THEME)
 
 
+# TODO: move to cs_tools.cli.types
 class CommaSeparatedValuesType(click.ParamType):
     """
     Convert arguments to a list of strings.
@@ -51,6 +52,7 @@ class CommaSeparatedValuesType(click.ParamType):
         return list(it.chain.from_iterable(v.split(',') for v in value))
 
 
+# TODO: move to cs_tools.cli.types
 class TZAwareDateTimeType(click.ParamType):
     """
     Convert argument to a timezone-aware date.
@@ -77,6 +79,7 @@ class TZAwareDateTimeType(click.ParamType):
         return pendulum.instance(value, tz=tz)
 
 
+# TODO: move to cs_tools.cli.types
 class SyncerProtocolType(click.ParamType):
     """
     Convert a path string to a syncer and defintion file.
