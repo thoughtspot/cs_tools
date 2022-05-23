@@ -16,8 +16,10 @@ click
 fastapi
 httpx
 Jinja2
+locust
 lxml
 openpyxl
+pendulum
 pydantic
 oyaml
 rich
