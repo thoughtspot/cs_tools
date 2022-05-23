@@ -185,23 +185,23 @@ def show_version(ctx: click.Context, param: click.Parameter, value: str):
     raise typer.Exit()
 
 
-def show_error(error: UsageError):
-    """
-    Show an error on the CLI.
-    """
-    msg = ''
+# def show_error(error: UsageError):
+#     """
+#     Show an error on the CLI.
+#     """
+#     msg = ''
 
-    if error.ctx is not None:
-        msg = error.ctx.get_usage()
+#     if error.ctx is not None:
+#         msg = error.ctx.get_usage()
 
-        if error.ctx.command.get_help_option(error.ctx) is not None:
-            msg += (
-                f'\n[warning]Try \'{error.ctx.command_path} '
-                f'{error.ctx.help_option_names[0]}\' for help.[/]'
-            )
+#         if error.ctx.command.get_help_option(error.ctx) is not None:
+#             msg += (
+#                 f'\n[warning]Try \'{error.ctx.command_path} '
+#                 f'{error.ctx.help_option_names[0]}\' for help.[/]'
+#             )
 
-    msg += f'\n\n[error]Error: {error.format_message()}[/]'
-    console.print(msg)
+#     msg += f'\n\n[error]Error: {error.format_message()}[/]'
+#     console.print(msg)
 
 
 def show_full_help(ctx: click.Context, param: click.Parameter, value: str):
@@ -211,8 +211,6 @@ def show_full_help(ctx: click.Context, param: click.Parameter, value: str):
     If --helpfull is passed, show all parameters, even if they're
     normally hidden.
     """
-    ctx = click.get_current_context()
-
     if '--helpfull' in sys.argv[1:]:
         for p in ctx.command.params:
             if p.name == 'private':
@@ -228,108 +226,165 @@ def show_full_help(ctx: click.Context, param: click.Parameter, value: str):
         raise typer.Exit()
 
 
-def prettify_params(params: List[str], *, default_prefix: str='~!'):
-    """
-    Sort command options in the help menu.
+# def prettify_params(params: List[str], *, default_prefix: str='~!'):
+#     """
+#     Sort command options in the help menu.
 
-    Options:
-      --options native to the command
-      --default options
-      --help
+#     Options:
+#       --options native to the command
+#       --default options
+#       --help
 
-    Each set of options will be ordered as well, with required options being
-    sent to the top of the list.
-    """
-    options = []
-    default = []
+#     Each set of options will be ordered as well, with required options being
+#     sent to the top of the list.
+#     """
+#     options = []
+#     default = []
 
-    for option, help_text in params:
-        if help_text.startswith(default_prefix):
-            help_text = help_text[len(default_prefix):].lstrip()
-            target = default
-        else:
-            target = options
+#     for option, help_text in params:
+#         if help_text.startswith(default_prefix):
+#             help_text = help_text[len(default_prefix):].lstrip()
+#             target = default
+#         else:
+#             target = options
 
-        # rich and typer/click don't play nicely together.
-        # - rich's color spec is square-braced
-        # - click's default|required spec is square-braced
-        #
-        # if a command has a default or required option, rich thinks it's part
-        # of the color spec and will swallow it. So we'll convert click's spec
-        # from [] to () to fix that.
+#         # rich and typer/click don't play nicely together.
+#         # - rich's color spec is square-braced
+#         # - click's default|required spec is square-braced
+#         #
+#         # if a command has a default or required option, rich thinks it's part
+#         # of the color spec and will swallow it. So we'll convert click's spec
+#         # from [] to () to fix that.
 
-        # match options
-        matches = RE_CLICK_SPECIFIER.findall(option)
+#         # match options
+#         matches = RE_CLICK_SPECIFIER.findall(option)
 
-        if matches:
-            for match in matches:
-                option = option.replace(f'[{match}]', f'[info]({match})[/]')
+#         if matches:
+#             for match in matches:
+#                 option = option.replace(f'[{match}]', f'[info]({match})[/]')
 
-        # match options' help text
-        matches = RE_CLICK_SPECIFIER.findall(help_text)
+#         # match options' help text
+#         matches = RE_CLICK_SPECIFIER.findall(help_text)
 
-        if matches:
-            for match in matches:
-                help_text = help_text.replace(f'[{match}]', f'[info]({match})[/]')
+#         if matches:
+#             for match in matches:
+#                 help_text = help_text.replace(f'[{match}]', f'[info]({match})[/]')
 
-        # highlight environment variables in warning color
-        match = RE_ENVVAR.search(help_text)
+#         # highlight environment variables in warning color
+#         match = RE_ENVVAR.search(help_text)
 
-        if match:
-            match = match.group('tok')
-            help_text = help_text.replace(match, f'[warning]{match}[/]')
+#         if match:
+#             match = match.group('tok')
+#             help_text = help_text.replace(match, f'[warning]{match}[/]')
 
-        # highlight defaults in green color
-        match = RE_DEFAULT.search(help_text)
+#         # highlight defaults in green color
+#         match = RE_DEFAULT.search(help_text)
 
-        if match:
-            match = match.group('tok')
-            help_text = help_text.replace(match, f'[green]{match}[/]')
+#         if match:
+#             match = match.group('tok')
+#             help_text = help_text.replace(match, f'[green]{match}[/]')
 
-        # highlight required in error color
-        match = RE_REQUIRED.search(help_text)
+#         # highlight required in error color
+#         match = RE_REQUIRED.search(help_text)
 
-        if match:
-            match = match.group('tok')
-            help_text = help_text.replace(match, f'[error]{match}[/]')
+#         if match:
+#             match = match.group('tok')
+#             help_text = help_text.replace(match, f'[error]{match}[/]')
 
-        to_add = (option, help_text)
-        getattr(target, 'append')(to_add)
+#         to_add = (option, help_text)
+#         getattr(target, 'append')(to_add)
 
-    return [*options, *default]
+#     return [*options, *default]
 
 
 class CSToolsPrettyMixin:
+    # context_class = CSToolsContext
 
-    def get_help(self, ctx: click.Context) -> str:
+    def show_help_and_exit(
+        self,
+        ctx: click.Context,
+        param: click.Parameter = None,
+        value: bool = None
+    ) -> None:
         """
-        Formats the help into a string and returns it.
+        Show help, then exit.
         """
-        formatter = ctx.make_formatter()
-        self.format_help(ctx, formatter)
+        console.print(ctx.get_help())
+        ctx.exit()
 
-        with console.capture() as c:
-            console.print(formatter.getvalue().rstrip())
+    def show_error_and_exit(self, error: click.ClickException) -> None:
+        """
+        Show error, then exit.
+        """
+        ctx = error.ctx
 
-        return c.get()
+        if error.ctx is not None:
+            msg = error.ctx.get_usage()
 
-    def format_options(self, ctx, formatter):
-        options = []
+            if error.ctx.command.get_help_option(error.ctx) is not None:
+                msg += (
+                    f'\n[warning]Try \'{error.ctx.command_path} '
+                    f'{error.ctx.help_option_names[0]}\' for help.[/]'
+                )
 
-        for p in self.get_params(ctx):
-            r = p.get_help_record(ctx)
+        msg += f'\n\n[error]Error: {error.format_message()}[/]'
+        console.print(msg)
+        ctx.exit(-1)
 
-            if r is not None and isinstance(p, click.Option):
-                options.append(r)
+    def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
+        if not args and self.no_args_is_help and not ctx.resilient_parsing:
+            self.show_help_and_exit(ctx)
 
-        if options:
-            *params, (help_names, help_desc) = options
-            help_names = sorted(help_names.split(', '), key=len)
-            help_ = (', '.join(help_names), help_desc)
-            options = [*prettify_params(params), help_]
+        if set(args).issubset(self.get_help_option_names(ctx)):
+            self.show_help_and_exit(ctx)
 
-            with formatter.section('Options'):
-                formatter.write_dl(options)
+        try:
+            r = super().parse_args(ctx, args)
+        except UsageError as e:
+            self.show_error_and_exit(e)
+
+        return r
+
+    def format_usage(self, ctx, formatter) -> None:
+        pieces = self.collect_usage_pieces(ctx)
+        args = ' '.join(pieces)
+        formatter.write_usage(f'[cyan][b]{ctx.command_path}[/][/]', f'[cyan]{args}[/]')
+
+    # def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+    #     """
+    #     Writes the help into the formatter if it exists.
+    #     """
+    #     formatter.write('\n')
+    #     self.format_usage(ctx, formatter)
+    #     self.format_help_text(ctx, formatter)
+
+    #     if not isinstance(self, click.MultiCommand):
+    #         self.format_arguments(ctx, formatter)
+
+    #     self.format_options(ctx, formatter)
+
+    #     # if isinstance(self, click.MultiCommand):
+    #     #     self.format_commands(ctx, formatter)
+
+    #     self.format_epilog(ctx, formatter)
+
+    # def format_options(self, ctx, formatter):
+    #     options = []
+
+    #     for p in self.get_params(ctx):
+    #         r = p.get_help_record(ctx)
+
+    #         if r is not None and isinstance(p, click.Option):
+    #             options.append(r)
+
+    #     if options:
+    #         *params, (help_names, help_desc) = options
+    #         help_names = sorted(help_names.split(', '), key=len)
+    #         help_ = (', '.join(help_names), help_desc)
+    #         options = [*prettify_params(params), help_]
+
+    #         with formatter.section('Options'):
+    #             formatter.write_dl(options)
 
 
 class CSToolsCommand(CSToolsPrettyMixin, click.Command):
@@ -407,32 +462,21 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
         ctx.args = args
         return args
 
-    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-        """
-        Writes the help into the formatter if it exists.
-        """
-        formatter.write('\n')
-        self.format_usage(ctx, formatter)
-        self.format_help_text(ctx, formatter)
-        self.format_arguments(ctx, formatter)
-        self.format_options(ctx, formatter)
-        self.format_epilog(ctx, formatter)
+    # def format_arguments(self, ctx, formatter):
+    #     arguments = []
 
-    def format_arguments(self, ctx, formatter):
-        arguments = []
+    #     for param in self.get_params(ctx):
+    #         r = param.get_help_record(ctx)
 
-        for param in self.get_params(ctx):
-            r = param.get_help_record(ctx)
+    #         if r is not None:
+    #             if isinstance(param, click.Argument):
+    #                 arguments.append(r)
 
-            if r is not None:
-                if isinstance(param, click.Argument):
-                    arguments.append(r)
+    #     if arguments:
+    #         arguments = prettify_params(arguments)
 
-        if arguments:
-            arguments = prettify_params(arguments)
-
-            with formatter.section('Arguments'):
-                formatter.write_dl(arguments)
+    #         with formatter.section('Arguments'):
+    #             formatter.write_dl(arguments)
 
 
 class CSToolsGroup(CSToolsPrettyMixin, click.Group):
@@ -453,14 +497,6 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
 
     # OVERRIDES
 
-    def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
-
-        try:
-            super().parse_args(ctx, args)
-        except UsageError as e:
-            show_error(e)
-            raise typer.Exit(-1)
-
     def get_params(self, ctx: click.Context) -> List[click.Parameter]:
         rv = self.params
         help_option = self.get_help_option(ctx)
@@ -480,51 +516,47 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
 
         return rv
 
-    def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-        """
-        Extra format methods for multi methods that
-        adds all the commands after the options.
+    # def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+    #     """
+    #     Extra format methods for multi methods that
+    #     adds all the commands after the options.
 
-        Nearly direct copy from source:
-            https://github.com/pallets/click/blob/main/src/click/core.py#L1571
+    #     Nearly direct copy from source:
+    #         https://github.com/pallets/click/blob/main/src/click/core.py#L1571
 
-        ... with the only change being the section name change (at the end of
-        this method), to "Tools" instead of "Commands"
-        """
-        commands = []
-        for subcommand in self.list_commands(ctx):
-            cmd = self.get_command(ctx, subcommand)
-            # What is this, the tool lied about a command.  Ignore it
-            if cmd is None:
-                continue
-            if cmd.hidden:
-                continue
+    #     ... with the only change being the section name change (at the end of
+    #     this method), to "Tools" instead of "Commands"
+    #     """
+    #     commands = []
+    #     for subcommand in self.list_commands(ctx):
+    #         cmd = self.get_command(ctx, subcommand)
+    #         # What is this, the tool lied about a command.  Ignore it
+    #         if cmd is None:
+    #             continue
+    #         if cmd.hidden:
+    #             continue
 
-            commands.append((subcommand, cmd))
+    #         commands.append((subcommand, cmd))
 
-        # allow for 3 times the default spacing
-        if len(commands):
-            limit = formatter.width - 6 - max(len(cmd[0]) for cmd in commands)
+    #     # allow for 3 times the default spacing
+    #     if len(commands):
+    #         limit = formatter.width - 6 - max(len(cmd[0]) for cmd in commands)
 
-            rows = []
-            for subcommand, cmd in commands:
-                help = cmd.get_short_help_str(limit)
-                rows.append((subcommand, help))
+    #         rows = []
+    #         for subcommand, cmd in commands:
+    #             help = cmd.get_short_help_str(limit)
+    #             rows.append((subcommand, help))
 
-            if rows:
-                args = sys.argv[1:]
+    #         if rows:
+    #             args = sys.argv[1:]
 
-                if args == ['tools'] or args == ['tools', '--help']:
-                    section = 'Tools'
-                else:
-                    section = 'Commands'
+    #             if args == ['tools'] or args == ['tools', '--help']:
+    #                 section = 'Tools'
+    #             else:
+    #                 section = 'Commands'
 
-                with formatter.section(section):
-                    formatter.write_dl(rows)
-
-    def format_options(self, ctx, formatter):
-        super().format_options(ctx, formatter)
-        self.format_commands(ctx, formatter)
+    #             with formatter.section(section):
+    #                 formatter.write_dl(rows)
 
     # EXTRA METHODS
 
