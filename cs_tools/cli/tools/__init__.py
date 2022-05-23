@@ -3,6 +3,8 @@ import typer
 
 from cs_tools.cli.ux import console, CSToolsGroup
 
+from .common import setup_thoughtspot, teardown_thoughtspot
+
 
 app = typer.Typer(
     cls=CSToolsGroup,
