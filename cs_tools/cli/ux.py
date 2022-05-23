@@ -338,6 +338,8 @@ class CSToolsPrettyMixin:
         if set(args).issubset(self.get_help_option_names(ctx)):
             self.show_help_and_exit(ctx)
 
+        raise NotImplementedError('need to prettify parameters now')
+
         try:
             r = super().parse_args(ctx, args)
         except UsageError as e:
