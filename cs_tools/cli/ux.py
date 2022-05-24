@@ -148,62 +148,6 @@ class SyncerProtocolType(click.ParamType):
 #
 
 
-def show_version(ctx: click.Context, param: click.Parameter, value: str):
-    """
-    Show version.
-    """
-    args = sys.argv[1:]
-
-    if '--version' not in args:
-        return
-
-    # top-level --version command
-    if len(args) <= 2:
-        version = __version__
-        name = 'cs_tools'
-    else:
-        # either ..
-        # ['tools', 'rtql', '--version']
-        # or..
-        # ['tools', 'rtql', 'interactive', '--version']
-        # but both mean the same thing
-        group, *cmds, _ = args
-        name, *_ = cmds
-
-        if group != 'tools':
-            console.print('[b red]--version is not available for this command')
-            raise typer.Exit(-1)
-
-        for path in (PACKAGE_DIR / 'cli' / 'tools').iterdir():
-            if path.name.endswith(name):
-                tool = CSTool(path)
-                version = tool.version
-                name = tool.name
-                break
-
-    console.print(f'{name} ({version})')
-    raise typer.Exit()
-
-
-# def show_error(error: UsageError):
-#     """
-#     Show an error on the CLI.
-#     """
-#     msg = ''
-
-#     if error.ctx is not None:
-#         msg = error.ctx.get_usage()
-
-#         if error.ctx.command.get_help_option(error.ctx) is not None:
-#             msg += (
-#                 f'\n[warning]Try \'{error.ctx.command_path} '
-#                 f'{error.ctx.help_option_names[0]}\' for help.[/]'
-#             )
-
-#     msg += f'\n\n[error]Error: {error.format_message()}[/]'
-#     console.print(msg)
-
-
 def show_full_help(ctx: click.Context, param: click.Parameter, value: str):
     """
     Show help.
@@ -300,6 +244,15 @@ def show_full_help(ctx: click.Context, param: click.Parameter, value: str):
 class CSToolsPrettyMixin:
     # context_class = CSToolsContext
 
+    def help_in_args(self, ctx: click.Context, *, args: List[str] = None) -> bool:
+        """
+        Determine if any variation of --help was given.
+        """
+        if args is None:
+            args = sys.argv[1:]
+
+        return set(ctx.help_option_names).intersection(set(args))
+
     def show_help_and_exit(
         self,
         ctx: click.Context,
@@ -338,8 +291,6 @@ class CSToolsPrettyMixin:
         if set(args).issubset(self.get_help_option_names(ctx)):
             self.show_help_and_exit(ctx)
 
-        raise NotImplementedError('need to prettify parameters now')
-
         try:
             r = super().parse_args(ctx, args)
         except UsageError as e:
@@ -347,46 +298,31 @@ class CSToolsPrettyMixin:
 
         return r
 
-    def format_usage(self, ctx, formatter) -> None:
+    def format_usage(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         pieces = self.collect_usage_pieces(ctx)
         args = ' '.join(pieces)
         formatter.write_usage(f'[cyan][b]{ctx.command_path}[/][/]', f'[cyan]{args}[/]')
 
-    # def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-    #     """
-    #     Writes the help into the formatter if it exists.
-    #     """
-    #     formatter.write('\n')
-    #     self.format_usage(ctx, formatter)
-    #     self.format_help_text(ctx, formatter)
+    def format_options(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        options = []
 
-    #     if not isinstance(self, click.MultiCommand):
-    #         self.format_arguments(ctx, formatter)
+        for p in self.get_params(ctx):
+            r = p.get_help_record(ctx)
 
-    #     self.format_options(ctx, formatter)
+            if r is not None and isinstance(p, click.Option):
+                options.append(r)
 
-    #     # if isinstance(self, click.MultiCommand):
-    #     #     self.format_commands(ctx, formatter)
+        # print(options)
+        # raise
 
-    #     self.format_epilog(ctx, formatter)
+        if options:
+            *params, (help_names, help_desc) = options
+            help_names = sorted(help_names.split(', '), key=len)
+            help_ = (', '.join(help_names), help_desc)
+            options = [*prettify_params(params), help_]
 
-    # def format_options(self, ctx, formatter):
-    #     options = []
-
-    #     for p in self.get_params(ctx):
-    #         r = p.get_help_record(ctx)
-
-    #         if r is not None and isinstance(p, click.Option):
-    #             options.append(r)
-
-    #     if options:
-    #         *params, (help_names, help_desc) = options
-    #         help_names = sorted(help_names.split(', '), key=len)
-    #         help_ = (', '.join(help_names), help_desc)
-    #         options = [*prettify_params(params), help_]
-
-    #         with formatter.section('Options'):
-    #             formatter.write_dl(options)
+            with formatter.section('Options'):
+                formatter.write_dl(options)
 
 
 class CSToolsCommand(CSToolsPrettyMixin, click.Command):
@@ -435,7 +371,7 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
     def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
         """
         """
-        if set(ctx.help_option_names).intersection(set(args)):
+        if self.help_in_args(ctx, args=args):
             show_full_help(ctx, None, True)
 
         try:
@@ -458,8 +394,7 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
                     ).format(args=" ".join(map(str, args)))
                 )
         except UsageError as e:
-            show_error(e)
-            raise typer.Exit(-1)
+            self.show_error_and_exit(e)
 
         ctx.args = args
         return args
@@ -488,31 +423,63 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
     group_class = type
 
     def __init__(self, **kw):
-        if kw['options_metavar'] == '[OPTIONS]':
-            kw['options_metavar'] = '[--help]'
-
-        if kw['subcommand_metavar'] is None:
-            kw['subcommand_metavar'] = '<command>'
-
+        kw['options_metavar'].replace('[OPTIONS]', '[--help]')
+        kw['subcommand_metavar'] = kw.get('subcommand_metavar', '<command>')
         super().__init__(**kw)
-        self.no_args_is_help = True
+        self.no_args_is_help = True  # override
+
+    def show_version_and_exit(
+        self,
+        ctx: click.Context,
+        param: click.Parameter = None,
+        value: bool = None
+    ) -> None:
+        """
+        Show version and exit.
+        """
+        args = sys.argv[1:]
+
+        if not value:
+            return
+
+        # --help is the universal override
+        if self.help_in_args(ctx, args=args):
+            self.show_help_and_exit(ctx)
+
+        # cs_tools tools --version
+        # cs_tools --version
+        if args in (['--version'], ['tools', '--version']):
+            name = 'cs_tools'
+            version = __version__
+
+        # cs_tools tools <tool> --version
+        if len(args) > 2:
+            _, tool_name, *_ = args
+            tool = ctx.obj.tools[tool_name]
+            name = f'cs_tools {tool.name}'
+            version = tool.version
+
+        console.print(f'{name} ({version})')
+        ctx.exit(0)
 
     # OVERRIDES
 
     def get_params(self, ctx: click.Context) -> List[click.Parameter]:
         rv = self.params
         help_option = self.get_help_option(ctx)
-        version_option = self.get_version_option(ctx)
 
         args = sys.argv[1:]
 
+        # when do we include --version?
         if (
             not args                                 # cs_tools
             or args[0].startswith('--')              # cs_tools --version
             or args[0] == 'tools' and len(args) > 1  # cs_tools tools * --version
         ):
+            version_option = self.get_version_option(ctx)
             rv = [*rv, version_option]
 
+        # --help option should always be last in the list
         if help_option is not None:
             rv = [*rv, help_option]
 
@@ -565,12 +532,14 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
     def get_version_option(self, ctx: click.Context) -> Optional[click.Option]:
         """
         Returns the version option.
+
+        --version is only allowed on top-level cs_tools and tools themselves.
         """
         return click.Option(
             ['--version'],
             is_flag=True,
             is_eager=True,
             expose_value=False,
-            callback=show_version,
+            callback=self.show_version_and_exit,
             help="Show the version and exit."
         )
