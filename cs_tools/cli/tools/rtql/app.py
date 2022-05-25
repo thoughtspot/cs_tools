@@ -39,10 +39,15 @@ app = typer.Typer(
 )
 def interactive(
     ctx: typer.Context,
-    autocomplete: bool=O_(True, '--autocomplete', help='toggle auto complete feature'),
-    schema: str=O_('falcon_default_schema', help='schema name to use'),
-    debug: bool=O_(False, '--debug', help='print the entire response to console'),
-    http_timeout: int=O_(5.0, '--timeout', help='network call timeout threshold')
+    debug: bool = O_(False, '--debug', help='print the entire response to console'),
+    autocomplete: bool = O_(
+        False,
+        '--autocomplete',
+        help='toggle auto complete feature',
+        show_default=False
+    ),
+    schema: str = O_('falcon_default_schema', help='schema name to use'),
+    http_timeout: int = O_(5.0, '--timeout', help='network call timeout threshold')
 ):
     """
     Run an interactive TQL session as if you were on the cluster.
