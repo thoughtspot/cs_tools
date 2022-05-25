@@ -175,13 +175,13 @@ class CSToolsPrettyMixin:
         If --helpfull is passed, show and colorize hidden options.
         """
         if '--helpfull' in sys.argv[1:]:
-            cstools_variant, _, _ = ctx.command_path.partition(' ')
+            cs_tools_variant, _, _ = ctx.command_path.partition(' ')
 
             for p in ctx.command.params:
                 # truly hidden options
                 if f'{ctx.command_path} --{p.name}' in (
-                    f'{cstools_variant} tools --private',
-                    f'{cstools_variant} tools --beta',
+                    f'{cs_tools_variant} tools --private',
+                    f'{cs_tools_variant} tools --beta',
                 ):
                     continue
 
@@ -394,18 +394,21 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
         themselves will have a version number attached. These are both
         represented as a click.Group.
         """
-        args = sys.argv[1:]
-
         if not value:
             return
+
+        args = sys.argv[1:]
 
         # --help is the universal override
         if self.help_in_args(ctx, args=args):
             self.show_help_and_exit(ctx)
 
-        # cs_tools tools --version
-        # cs_tools --version
-        if args in (['--version'], ['tools', '--version']):
+        cs_tools_variant, _, _ = ctx.command_path.partition(' ')
+
+        if f'{ctx.command_path} --version' in (
+            f'{cs_tools_variant} tools --version',
+            f'{cs_tools_variant} --version',
+        ):
             name = 'cs_tools'
             version = __version__
 
@@ -425,14 +428,11 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
         rv = self.params
         help_option = self.get_help_option(ctx)
 
-        args = sys.argv[1:]
-
         # this block decides when we include the --version option
-        if (
-            # TOP-LEVEL   :: cs_tools , cs_tools --version , cs_tools --help
-            not args or args[0].startswith('--')
-            # TOOLS-LEVEL :: cs_tools tools <tool-name> --version
-            or args[0] == 'tools' and len(args) > 1  # cs_tools tools * --version
+        if ' '.join(sys.argv[1:]) in (
+            '', '--version', '--help',  # aka top-level commands
+            f'tools {next(iter(sys.argv[-2:]), 0)} --version',
+            f'tools {next(iter(sys.argv[-2:]), 0)} --help',
         ):
             version_option = self.get_version_option(ctx)
             rv = [*rv, version_option]
