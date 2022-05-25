@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 import itertools as it
 import datetime as dt
 import logging
@@ -148,100 +148,10 @@ class SyncerProtocolType(click.ParamType):
 #
 
 
-def show_full_help(ctx: click.Context, param: click.Parameter, value: str):
-    """
-    Show help.
-
-    If --helpfull is passed, show all parameters, even if they're
-    normally hidden.
-    """
-    if '--helpfull' in sys.argv[1:]:
-        for p in ctx.command.params:
-            if p.name == 'private':
-                continue
-            if 'backwards-compat' in p.help:
-                continue
-
-            p.hidden = False
-            p.show_envvar = True
-
-    if value and not ctx.resilient_parsing:
-        console.print(ctx.get_help())
-        raise typer.Exit()
-
-
-# def prettify_params(params: List[str], *, default_prefix: str='~!'):
-#     """
-#     Sort command options in the help menu.
-
-#     Options:
-#       --options native to the command
-#       --default options
-#       --help
-
-#     Each set of options will be ordered as well, with required options being
-#     sent to the top of the list.
-#     """
-#     options = []
-#     default = []
-
-#     for option, help_text in params:
-#         if help_text.startswith(default_prefix):
-#             help_text = help_text[len(default_prefix):].lstrip()
-#             target = default
-#         else:
-#             target = options
-
-#         # rich and typer/click don't play nicely together.
-#         # - rich's color spec is square-braced
-#         # - click's default|required spec is square-braced
-#         #
-#         # if a command has a default or required option, rich thinks it's part
-#         # of the color spec and will swallow it. So we'll convert click's spec
-#         # from [] to () to fix that.
-
-#         # match options
-#         matches = RE_CLICK_SPECIFIER.findall(option)
-
-#         if matches:
-#             for match in matches:
-#                 option = option.replace(f'[{match}]', f'[info]({match})[/]')
-
-#         # match options' help text
-#         matches = RE_CLICK_SPECIFIER.findall(help_text)
-
-#         if matches:
-#             for match in matches:
-#                 help_text = help_text.replace(f'[{match}]', f'[info]({match})[/]')
-
-#         # highlight environment variables in warning color
-#         match = RE_ENVVAR.search(help_text)
-
-#         if match:
-#             match = match.group('tok')
-#             help_text = help_text.replace(match, f'[warning]{match}[/]')
-
-#         # highlight defaults in green color
-#         match = RE_DEFAULT.search(help_text)
-
-#         if match:
-#             match = match.group('tok')
-#             help_text = help_text.replace(match, f'[green]{match}[/]')
-
-#         # highlight required in error color
-#         match = RE_REQUIRED.search(help_text)
-
-#         if match:
-#             match = match.group('tok')
-#             help_text = help_text.replace(match, f'[error]{match}[/]')
-
-#         to_add = (option, help_text)
-#         getattr(target, 'append')(to_add)
-
-#     return [*options, *default]
-
-
 class CSToolsPrettyMixin:
+    """
+    Handles core formatting that are common to both Commands and Groups.
+    """
     # context_class = CSToolsContext
 
     def help_in_args(self, ctx: click.Context, *, args: List[str] = None) -> bool:
@@ -261,7 +171,27 @@ class CSToolsPrettyMixin:
     ) -> None:
         """
         Show help, then exit.
+
+        If --helpfull is passed, show and colorize hidden options.
         """
+        if '--helpfull' in sys.argv[1:]:
+            cstools_variant, _, _ = ctx.command_path.partition(' ')
+
+            for p in ctx.command.params:
+                # truly hidden options
+                if f'{ctx.command_path} --{p.name}' in (
+                    f'{cstools_variant} tools --private',
+                    f'{cstools_variant} tools --beta',
+                ):
+                    continue
+
+                # colorize revealed options
+                if p.hidden:
+                    p.help = f'[yellow3]{p.help}[/]'
+
+                p.hidden = False
+                p.show_envvar = True
+
         console.print(ctx.get_help())
         ctx.exit()
 
@@ -276,11 +206,11 @@ class CSToolsPrettyMixin:
 
             if error.ctx.command.get_help_option(error.ctx) is not None:
                 msg += (
-                    f'\n[warning]Try \'{error.ctx.command_path} '
+                    f'\n[yellow3]Try \'{error.ctx.command_path} '
                     f'{error.ctx.help_option_names[0]}\' for help.[/]'
                 )
 
-        msg += f'\n\n[error]Error: {error.format_message()}[/]'
+        msg += f'\n\n[red1]Error: {error.format_message()}[/]'
         console.print(msg)
         ctx.exit(-1)
 
@@ -298,12 +228,38 @@ class CSToolsPrettyMixin:
 
         return r
 
+    def format_rich(self, option_name: str, option_help: str) -> Tuple[str, str]:
+        """
+        Adds some color to --options with the help of rich.
+
+        Required options will be annotated with some RED.
+        Defaulted options will be annotated with some YELLOW & GREEN.
+        """
+        if '[required]' in option_help:
+            option_help.replace('[required]', r'[red]\[required][/]')
+
+        if '[default: ' in option_help:
+            option_help, _, default_value = option_help[:-1].partition('[default: ')
+            option_help += fr'[yellow3]\[default: [green1]{default_value}[/]][/]'
+
+        return (option_name, option_help)
+
     def format_usage(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """
+        Writes the usage line into the formatter.
+
+        Adds some color to the usage text with the help of rich.
+        """
         pieces = self.collect_usage_pieces(ctx)
         args = ' '.join(pieces)
         formatter.write_usage(f'[cyan][b]{ctx.command_path}[/][/]', f'[cyan]{args}[/]')
 
     def format_options(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """
+        Writes all the options into the formatter if they exist.
+
+        Adds some color to the options text with the help of rich.
+        """
         options = []
 
         for p in self.get_params(ctx):
@@ -312,14 +268,11 @@ class CSToolsPrettyMixin:
             if r is not None and isinstance(p, click.Option):
                 options.append(r)
 
-        # print(options)
-        # raise
-
         if options:
             *params, (help_names, help_desc) = options
             help_names = sorted(help_names.split(', '), key=len)
             help_ = (', '.join(help_names), help_desc)
-            options = [*prettify_params(params), help_]
+            options = [*(self.format_rich(*p) for p in params), help_]
 
             with formatter.section('Options'):
                 formatter.write_dl(options)
@@ -372,7 +325,7 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
         """
         """
         if self.help_in_args(ctx, args=args):
-            show_full_help(ctx, None, True)
+            self.show_help_and_exit(ctx)
 
         try:
             parser = self.make_parser(ctx)
@@ -436,6 +389,10 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
     ) -> None:
         """
         Show version and exit.
+
+        In CS Tools, only the top-level CLI object, as well as individual tools
+        themselves will have a version number attached. These are both
+        represented as a click.Group.
         """
         args = sys.argv[1:]
 
@@ -470,10 +427,11 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
 
         args = sys.argv[1:]
 
-        # when do we include --version?
+        # this block decides when we include the --version option
         if (
-            not args                                 # cs_tools
-            or args[0].startswith('--')              # cs_tools --version
+            # TOP-LEVEL   :: cs_tools , cs_tools --version , cs_tools --help
+            not args or args[0].startswith('--')
+            # TOOLS-LEVEL :: cs_tools tools <tool-name> --version
             or args[0] == 'tools' and len(args) > 1  # cs_tools tools * --version
         ):
             version_option = self.get_version_option(ctx)
