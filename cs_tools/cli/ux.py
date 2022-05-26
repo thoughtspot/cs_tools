@@ -299,6 +299,7 @@ class CSToolsPrettyMixin:
 class CSToolsCommand(CSToolsPrettyMixin, click.Command):
     """
     """
+
     def __init__(self, **kw):
         self.dependencies = getattr(kw['callback'], 'dependencies', [])
         self._extra_params = [o for d in self.dependencies for o in (d.options or [])]
@@ -314,6 +315,9 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
             kw['options_metavar'] = metavar
 
         super().__init__(**kw)
+        self.no_args_is_help = True  # override
+
+    # ADDITIONAL METHODS
 
     def _setup_dependencies(self, ctx, opts):
         ctx.call_on_close(self._teardown_dependencies)
@@ -337,7 +341,27 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
                 log.debug(e, exc_info=True)
                 log.warning(f'error while tearing down dependency: {dependency.name}')
 
-    # OVERRIDES
+    def format_arguments(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """
+        Writes all the arguments into the formatter if they exist.
+
+        Adds some color to the options text with the help of rich.
+        """
+        arguments = []
+
+        for param in self.get_params(ctx):
+            r = param.get_help_record(ctx)
+
+            if r is not None and isinstance(param, click.Argument):
+                arguments.append(r)
+
+        if arguments:
+            # arguments = prettify_params(arguments)
+
+            with formatter.section('Arguments'):
+                formatter.write_dl(arguments)
+
+    # INHERITANCE OVERRIDES
 
     def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
         """
@@ -370,25 +394,33 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
         ctx.args = args
         return args
 
-    # def format_arguments(self, ctx, formatter):
-    #     arguments = []
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """
+        Writes the help into the formatter if it exists.
 
-    #     for param in self.get_params(ctx):
-    #         r = param.get_help_record(ctx)
+        This is a low-level method called by self.get_help().
 
-    #         if r is not None:
-    #             if isinstance(param, click.Argument):
-    #                 arguments.append(r)
-
-    #     if arguments:
-    #         arguments = prettify_params(arguments)
-
-    #         with formatter.section('Arguments'):
-    #             formatter.write_dl(arguments)
+        This calls the following methods:
+          - self.format_usage()
+          - self.format_help_text()
+          - self.format_arguments()
+          - self.format_options()
+          - self.format_epilog()
+        """
+        self.format_usage(ctx, formatter)
+        self.format_help_text(ctx, formatter)
+        self.format_arguments(ctx, formatter)
+        self.format_options(ctx, formatter)
+        self.format_epilog(ctx, formatter)
 
 
 class CSToolsGroup(CSToolsPrettyMixin, click.Group):
     """
+    Represent a CS Tools multi-command.
+
+    CS Tools are each defined as a module within the larger cs_tools.cli
+    package. Each tool represents a specific domain, bundling commands
+    together.
     """
     command_class = CSToolsCommand
     group_class = type
