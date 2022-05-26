@@ -381,6 +381,25 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
         super().__init__(**kw)
         self.no_args_is_help = True  # override
 
+    # ADDITIONAL OPTIONS
+
+    def get_version_option(self, ctx: click.Context) -> Optional[click.Option]:
+        """
+        Returns the version option.
+
+        --version is only allowed on top-level cs_tools and tools themselves.
+        """
+        return click.Option(
+            ['--version'],
+            is_flag=True,
+            is_eager=True,
+            expose_value=False,
+            callback=self.show_version_and_exit,
+            help="Show the version and exit."
+        )
+
+    # ADDITIONAL METHODS
+
     def show_version_and_exit(
         self,
         ctx: click.Context,
@@ -422,9 +441,13 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
         console.print(f'{name} ({version})')
         ctx.exit(0)
 
-    # OVERRIDES
+    # INHERITANCE OVERRIDES
 
     def get_params(self, ctx: click.Context) -> List[click.Parameter]:
+        # this is called by click.. in cli, in execution order
+        # 1. Command.make_parser
+        # 2. BaseCommand.parse_args
+        # 3. Context.make_parser
         rv = self.params
         help_option = self.get_help_option(ctx)
 
@@ -443,61 +466,58 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
 
         return rv
 
-    # def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-    #     """
-    #     Extra format methods for multi methods that
-    #     adds all the commands after the options.
-
-    #     Nearly direct copy from source:
-    #         https://github.com/pallets/click/blob/main/src/click/core.py#L1571
-
-    #     ... with the only change being the section name change (at the end of
-    #     this method), to "Tools" instead of "Commands"
-    #     """
-    #     commands = []
-    #     for subcommand in self.list_commands(ctx):
-    #         cmd = self.get_command(ctx, subcommand)
-    #         # What is this, the tool lied about a command.  Ignore it
-    #         if cmd is None:
-    #             continue
-    #         if cmd.hidden:
-    #             continue
-
-    #         commands.append((subcommand, cmd))
-
-    #     # allow for 3 times the default spacing
-    #     if len(commands):
-    #         limit = formatter.width - 6 - max(len(cmd[0]) for cmd in commands)
-
-    #         rows = []
-    #         for subcommand, cmd in commands:
-    #             help = cmd.get_short_help_str(limit)
-    #             rows.append((subcommand, help))
-
-    #         if rows:
-    #             args = sys.argv[1:]
-
-    #             if args == ['tools'] or args == ['tools', '--help']:
-    #                 section = 'Tools'
-    #             else:
-    #                 section = 'Commands'
-
-    #             with formatter.section(section):
-    #                 formatter.write_dl(rows)
-
-    # EXTRA METHODS
-
-    def get_version_option(self, ctx: click.Context) -> Optional[click.Option]:
+    def format_options(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         """
-        Returns the version option.
+        Writes all the options into the formatter if they exist.
 
-        --version is only allowed on top-level cs_tools and tools themselves.
+        But also call .format_commands()
         """
-        return click.Option(
-            ['--version'],
-            is_flag=True,
-            is_eager=True,
-            expose_value=False,
-            callback=self.show_version_and_exit,
-            help="Show the version and exit."
-        )
+        super().format_options(ctx, formatter)
+        self.format_commands(ctx, formatter)
+
+    def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """
+        Extra format methods for multi methods that adds all the
+        commands after the options.
+
+        Nearly direct copy from source:
+          https://github.com/pallets/click/blob/main/src/click/core.py#L1571
+
+        Changes include:
+          - reassignment of section name from Commands --> Tools
+          - inclusion of all possible help optoin names
+        """
+        commands = []
+
+        for subcommand in self.list_commands(ctx):
+            cmd = self.get_command(ctx, subcommand)
+
+            # What is this, the tool lied about a command.  Ignore it
+            if cmd is None:
+                continue
+
+            if cmd.hidden:
+                continue
+
+            commands.append((subcommand, cmd))
+
+        # allow for 3 times the default spacing
+        if commands:
+            limit = formatter.width - 6 - max(len(cmd[0]) for cmd in commands)
+            rows = []
+
+            for subcommand, cmd in commands:
+                help = cmd.get_short_help_str(limit)
+                rows.append((subcommand, help))
+
+            if rows:
+                if ' '.join(sys.argv[1:]) in (
+                    'tools',
+                    *(f'tools {help_opt}' for help_opt in ctx.help_option_names)
+                ):
+                    section = 'Tools'
+                else:
+                    section = 'Commands'
+
+                with formatter.section(section):
+                    formatter.write_dl(rows)
