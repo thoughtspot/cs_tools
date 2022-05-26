@@ -153,6 +153,24 @@ class CSToolsPrettyMixin:
     Handles core formatting that are common to both Commands and Groups.
     """
     # context_class = CSToolsContext
+    from typing import Sequence
+
+    def main(self, **passthru) -> Any:
+        """
+        This is the way to invoke a script with all the bells and
+        whistles as a command line application. This will always
+        terminate the application after a call.
+
+        We override this in CS Tools to prevent "standalone mode". In
+        standalone mode, Click will then handle exceptions and convert
+        them into error messages. If this is set to `False`, errors
+        will be propagated to the caller.
+
+        We WANT errors to propogate in this case, because in CS Tools,
+        we are overriding the default stdout printer to allow for pretty
+        color to be included. :)
+        """
+        return super().main(**passthru, standalone_mode=False)
 
     def help_in_args(self, ctx: click.Context, *, args: List[str] = None) -> bool:
         """
