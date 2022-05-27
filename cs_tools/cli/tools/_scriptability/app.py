@@ -20,7 +20,8 @@ import typer
 from zipfile import ZipFile
 
 from cs_tools.data.enums import GUID, TMLImportPolicy, TMLType, TMLContentType
-from cs_tools.cli.ux import console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
+from cs_tools.cli.types import CommaSeparatedValuesType
+from cs_tools.cli.ux import console, CSToolsCommand, CSToolsGroup
 from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.util import base64_to_file
 from cs_tools.thoughtspot import ThoughtSpot

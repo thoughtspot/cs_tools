@@ -4,13 +4,13 @@ import pathlib
 from typer import Argument as A_, Option as O_
 import typer
 
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 )
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 
 
 app = typer.Typer(

@@ -7,13 +7,14 @@ from typer import Argument as A_, Option as O_
 import oyaml as yaml
 import typer
 
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.sync.falcon import Falcon
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
-from cs_tools.util import to_datetime
+from cs_tools.cli.types import SyncerProtocolType
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
+from cs_tools.util import to_datetime
 
 from ._version import __version__
 

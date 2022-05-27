@@ -10,7 +10,6 @@ import click
 import toml
 
 from cs_tools.sync.protocol import SyncerProtocol
-from cs_tools.cli.loader import CSTool
 from cs_tools.const import PACKAGE_DIR
 from cs_tools.sync import register
 from cs_tools.data import models
@@ -116,7 +115,7 @@ class SyncerProtocolType(click.ParamType):
         is_tools_cmd = 'tools' in sys.argv[1:]
 
         if is_database_check or not is_tools_cmd:
-            if getattr(syncer, 'metadata') is not None:
+            if getattr(syncer, 'metadata', None) is not None:
                 metadata = syncer.metadata
                 [t.to_metadata(metadata) for t in models.SQLModel.metadata.sorted_tables]
             else:
