@@ -9,19 +9,18 @@ from typer import Argument as A_, Option as O_  # noqa
 import pendulum
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT
 from cs_tools.cli.loader import CSTool
+from cs_tools.cli.tools import console, CSToolsGroup, CSToolsCommand, setup_thoughtspot
 from cs_tools._version import __version__
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 from cs_tools.errors import CSToolsException
 from cs_tools.const import APP_DIR, TOOLS_DIR
 from cs_tools.util import State
 
+from .tools.app_tools import app as tools_app
 from .app_config import app as cfg_app
 from .app_log import app as log_app
-from .tools import app as tools_app
 
 
 log = logging.getLogger(__name__)
