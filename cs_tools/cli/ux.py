@@ -50,14 +50,13 @@ class CSToolsPrettyMixin:
         except click.exceptions.Exit as e:
             raise SystemExit(e.exit_code)
 
-    def help_in_args(self, ctx: click.Context, *, args: List[str] = None) -> bool:
+    def help_cmd_or_no_input(self, args: List[str], *, ctx: click.Context) -> bool:
         """
-        Determine if any variation of --help was given.
         """
-        if args is None:
-            args = sys.argv[1:]
-
-        return set(ctx.help_option_names).intersection(set(args))
+        help_in_args = set(args).issubset(self.get_help_option_names(ctx))
+        no_input = not args and self.no_args_is_help
+        tab_completion = ctx.resilient_parsing
+        return help_in_args or (no_input and not tab_completion)
 
     def show_help_and_exit(
         self,
@@ -111,10 +110,7 @@ class CSToolsPrettyMixin:
         ctx.exit(-1)
 
     def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
-        if not args and self.no_args_is_help and not ctx.resilient_parsing:
-            self.show_help_and_exit(ctx)
-
-        if set(args).issubset(self.get_help_option_names(ctx)):
+        if self.help_cmd_or_no_input(args, ctx=ctx):
             self.show_help_and_exit(ctx)
 
         try:
@@ -244,7 +240,7 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
     def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
         """
         """
-        if self.help_in_args(ctx, args=args):
+        if self.help_cmd_or_no_input(args, ctx=ctx):
             self.show_help_and_exit(ctx)
 
         try:
@@ -259,12 +255,13 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
                 value, args = param.handle_parse_result(ctx, opts, args)
 
             if args and not ctx.allow_extra_args and not ctx.resilient_parsing:
+                args_str = " ".join(map(str, args))
                 ctx.fail(
                     ngettext(
-                        "Got unexpected extra argument ({args})",
-                        "Got unexpected extra arguments ({args})",
+                        f"Got unexpected extra argument ({args_str})",
+                        f"Got unexpected extra arguments ({args_str})",
                         len(args),
-                    ).format(args=" ".join(map(str, args)))
+                    )
                 )
         except UsageError as e:
             self.show_error_and_exit(e)
@@ -345,11 +342,6 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
             return
 
         args = sys.argv[1:]
-
-        # --help is the universal override
-        if self.help_in_args(ctx, args=args):
-            self.show_help_and_exit(ctx)
-
         cs_tools_variant, _, _ = ctx.command_path.partition(' ')
 
         if f'{ctx.command_path} --version' in (
