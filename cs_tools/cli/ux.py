@@ -39,7 +39,16 @@ class CSToolsPrettyMixin:
         we are overriding the default stdout printer to allow for pretty
         color to be included. :)
         """
-        return super().main(**passthru, standalone_mode=False)
+        try:
+            try:
+                return super().main(**passthru, standalone_mode=False)
+            except (click.Abort, KeyboardInterrupt):
+                console.print('[yellow]You cancelled the currently running command..')
+            except click.UsageError as e:
+                self.show_error_and_exit(e)
+
+        except click.exceptions.Exit as e:
+            raise SystemExit(e.exit_code)
 
     def help_in_args(self, ctx: click.Context, *, args: List[str] = None) -> bool:
         """
@@ -93,8 +102,8 @@ class CSToolsPrettyMixin:
 
             if error.ctx.command.get_help_option(error.ctx) is not None:
                 msg += (
-                    f'\n[yellow3]Try \'{error.ctx.command_path} '
-                    f'{error.ctx.help_option_names[0]}\' for help.[/]'
+                    f"\n[b yellow]Try '[b cyan]{error.ctx.command_path} "
+                    f"{error.ctx.help_option_names[0]}[/]' for help.[/]"
                 )
 
         msg += f'\n\n[red1]Error: {error.format_message()}[/]'

@@ -202,26 +202,8 @@ def run():
     app.add_typer(cfg_app)
     app.add_typer(log_app)
 
-    import click
-
     try:
         app()
-
-    # handle cli usage errors
-    except click.UsageError as e:
-        hint = ''
-
-        if (e.ctx is not None and e.ctx.command.get_help_option(e.ctx) is not None):
-            command = e.ctx.command_path
-            option  = e.ctx.help_option_names[0]
-            hint = f"[b yellow]Try '[b cyan]{command} {option}[/]' for help.[/]\n"
-
-        if e.ctx is not None:
-            hint = f'{e.ctx.get_usage()}\n\n{hint}'
-
-        console.print(f'{hint}\n[error]{e.format_message()}')
-
-    # handle all other unaccounted-for errors
     except Exception as e:
         log.debug('whoopsie, something went wrong!', exc_info=True)
 
