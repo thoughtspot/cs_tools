@@ -17,12 +17,28 @@ log = logging.getLogger(__name__)
 console = Console(theme=CONSOLE_THEME)
 
 
+class CSToolsContext(click.Context):
+    """
+    The context is a special internal object that holds state relevant for the
+    script execution at every single level.  It's normally invisible to
+    commands unless they opt-in to getting access to it.
+    """
+
+    def get_help(self) -> str:
+        """
+        Helper method to get formatted help page for the current context
+        and command.
+
+        Just tacking on a newline.
+        """
+        return self.command.get_help(self) + '\n'
+
+
 class CSToolsPrettyMixin:
     """
     Handles core formatting that are common to both Commands and Groups.
     """
-    # context_class = CSToolsContext
-    from typing import Sequence
+    context_class = CSToolsContext
 
     def main(self, **passthru) -> Any:
         """
