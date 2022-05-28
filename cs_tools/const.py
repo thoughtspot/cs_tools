@@ -8,9 +8,13 @@ import typer
 # remove colorization from repr styles
 CONSOLE_THEME = Theme({
     **{n: s.from_color() for n, s in DEFAULT_STYLES.items() if 'repr' in n},
-    'info'   : 'white',
-    'warning': 'yellow',
-    'error'  : 'bold red',
+    'primary': 'b medium_purple3',
+    'secondary': 'b green',
+    'url': 'b blue',
+    'error': 'b red',
+    'hint': 'b yellow',
+    'arg': 'b red',
+    'opt': 'gold3',
 })
 PACKAGE_DIR = pathlib.Path(__file__).parent
 TOOLS_DIR = PACKAGE_DIR / 'cli' / 'tools'
