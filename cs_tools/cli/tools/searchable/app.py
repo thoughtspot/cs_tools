@@ -274,6 +274,7 @@ def gather(
     """
     Extract metadata from your ThoughtSpot platform.
 
+    \b
     See the full data model extract at the link below:
       https://thoughtspot.github.io/cs_tools/cs-tools/searchable
     """

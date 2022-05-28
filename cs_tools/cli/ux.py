@@ -73,10 +73,10 @@ class CSToolsPrettyMixin:
         """
         Identify cli inputs which require helptext.
         """
-        help_in_args = set(args).issubset(self.get_help_option_names(ctx))
         no_input = not args and self.no_args_is_help
         tab_completion = ctx.resilient_parsing
-        return help_in_args or (no_input and not tab_completion)
+        help_in_args = set(args).issubset(self.get_help_option_names(ctx))
+        return (no_input and self.no_args_is_help and not tab_completion) or help_in_args
 
     def show_help_and_exit(
         self,
@@ -152,6 +152,7 @@ class CSToolsPrettyMixin:
         Adds some color to --options with the help of rich.
 
         cs_tools additions:
+          - bracketed help text is escaped
           - required options will be annotated with some ARG | REQUIRED.
           - defaulted options will be annotated with some HINT & SECONDARY.
         """
@@ -198,6 +199,7 @@ class CSToolsPrettyMixin:
             if param.name in ('help', 'helpfull'):
                 continue
 
+            # special formatting for the command-global option, --config
             if param.name == 'config' and param.param_type_name == 'option':
                 default = _meta_config().get('default', {}).get('config', None)
                 cfg_name = param.metavar if default is None else f'[secondary]{default}[/]'
