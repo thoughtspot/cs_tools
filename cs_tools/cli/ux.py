@@ -5,10 +5,10 @@ import sys
 from click.exceptions import UsageError
 from rich.console import Console
 from click.core import iter_params_for_processing
-from gettext import ngettext
+import gevent
 import click
 
-from cs_tools.cli.loader import CSTool
+from cs_tools.settings import _meta_config
 from cs_tools.const import CONSOLE_THEME
 from cs_tools import __version__
 
@@ -55,11 +55,14 @@ class CSToolsPrettyMixin:
         we are overriding the default stdout printer to allow for pretty
         color to be included. :)
         """
+        # gevent complains when users cancel running programs, but cs_tools shouldn't...
+        gevent.get_hub().NOT_ERROR += (KeyboardInterrupt,)
+
         try:
             try:
                 return super().main(**passthru, standalone_mode=False)
-            except (click.Abort, KeyboardInterrupt):
-                console.print('[yellow]You cancelled the currently running command..')
+            except click.Abort:
+                console.print('[hint]You cancelled the currently running command..\n')
             except click.UsageError as e:
                 self.show_error_and_exit(e)
 
@@ -68,6 +71,7 @@ class CSToolsPrettyMixin:
 
     def help_cmd_or_no_input(self, args: List[str], *, ctx: click.Context) -> bool:
         """
+        Identify cli inputs which require helptext.
         """
         help_in_args = set(args).issubset(self.get_help_option_names(ctx))
         no_input = not args and self.no_args_is_help
@@ -83,7 +87,8 @@ class CSToolsPrettyMixin:
         """
         Show help, then exit.
 
-        If --helpfull is passed, show and colorize hidden options.
+        cs_tools additions:
+          - if --helpfull is passed, show and colorize hidden options.
         """
         if '--helpfull' in sys.argv[1:]:
             cs_tools_variant, _, _ = ctx.command_path.partition(' ')
@@ -98,13 +103,13 @@ class CSToolsPrettyMixin:
 
                 # colorize revealed options
                 if p.hidden:
-                    p.help = f'[yellow3]{p.help}[/]'
+                    p.help = f'[hint]{p.help}[/]'
 
                 p.hidden = False
                 p.show_envvar = True
 
         console.print(ctx.get_help())
-        ctx.exit()
+        ctx.exit(0)
 
     def show_error_and_exit(self, error: click.ClickException) -> None:
         """
@@ -117,15 +122,21 @@ class CSToolsPrettyMixin:
 
             if error.ctx.command.get_help_option(error.ctx) is not None:
                 msg += (
-                    f"\n[b yellow]Try '[b cyan]{error.ctx.command_path} "
+                    f"\n[hint]Try '[primary]{error.ctx.command_path} "
                     f"{error.ctx.help_option_names[0]}[/]' for help.[/]"
                 )
 
-        msg += f'\n\n[red1]Error: {error.format_message()}[/]'
-        console.print(msg)
+        msg += f'\n\n[error]Error: {error.format_message()}[/]'
+        console.print(msg + '\n')
         ctx.exit(-1)
 
     def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
+        """
+        Base case for argument parsing.
+
+        cs_tools additions:
+          - introduce the standard help and error messages.
+        """
         if self.help_cmd_or_no_input(args, ctx=ctx):
             self.show_help_and_exit(ctx)
 
@@ -140,15 +151,18 @@ class CSToolsPrettyMixin:
         """
         Adds some color to --options with the help of rich.
 
-        Required options will be annotated with some RED.
-        Defaulted options will be annotated with some YELLOW & GREEN.
+        cs_tools additions:
+          - required options will be annotated with some ARG | REQUIRED.
+          - defaulted options will be annotated with some HINT & SECONDARY.
         """
-        if '[required]' in option_help:
-            option_help.replace('[required]', r'[red]\[required][/]')
+        option_name = option_name.replace('[', r'\[')
 
+        if '[required]' in option_help:
+            option_help.replace('[required]', r'[arg]\[required][/]')
+        
         if '[default: ' in option_help:
             option_help, _, default_value = option_help[:-1].partition('[default: ')
-            option_help += fr'[yellow3]\[default: [green1]{default_value}[/]][/]'
+            option_help += fr'[hint]\[default: [secondary]{default_value}[/]][/]'
 
         return (option_name, option_help)
 
@@ -156,17 +170,68 @@ class CSToolsPrettyMixin:
         """
         Writes the usage line into the formatter.
 
-        Adds some color to the usage text with the help of rich.
+        cs_tools additions:
+          - adds some color to the usage text with the help of rich.
         """
         pieces = self.collect_usage_pieces(ctx)
         args = ' '.join(pieces)
-        formatter.write_usage(f'[cyan][b]{ctx.command_path}[/][/]', f'[cyan]{args}[/]')
+        formatter.write_usage(f'[primary]{ctx.command_path}[/]', args)
+
+    def collect_usage_pieces(self, ctx: click.Context) -> List[str]:
+        """
+        Returns all the pieces that go into the usage
+        line and returns it as a list of strings.
+
+        cs_tools additions:
+          - adds color to usage pieces.
+        """
+        OPTIONS_METAVAR_IS_DEFAULT = self.options_metavar == '[OPTIONS]'
+
+        rv = [] if OPTIONS_METAVAR_IS_DEFAULT else [f'[opt]{self.options_metavar}[/]']
+        cfg  = ''
+        opts = []
+        args = []
+
+        for param in self.get_params(ctx):
+            if param.hidden:
+                continue
+            if param.name in ('help', 'helpfull'):
+                continue
+
+            if param.name == 'config' and param.param_type_name == 'option':
+                default = _meta_config().get('default', {}).get('config', None)
+                cfg_name = param.metavar if default is None else f'[secondary]{default}[/]'
+                cfg = f'--config {cfg_name}'
+                continue
+
+            if param.param_type_name == 'argument':
+                args.extend(param.get_usage_pieces(ctx))
+
+            if param.param_type_name == 'option':
+                opts.extend(param.opts)
+
+        if args:
+            rv.append(f"[arg]{' '.join(args)}[/]")
+
+        if OPTIONS_METAVAR_IS_DEFAULT:
+            if not opts:
+                truncated = ['--help']
+            elif len(opts) == 1:
+                truncated = [opts[0], '--help']
+            else:
+                truncated = [opts[0], '...', '--help']
+            
+            joined = ', '.join(truncated)
+            rv.append(fr"[opt]\[{joined}][/]")
+
+        return [*rv, cfg]
 
     def format_options(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         """
         Writes all the options into the formatter if they exist.
 
-        Adds some color to the options text with the help of rich.
+        cs_tools additions:
+         - adds color to the options text with the help of rich.
         """
         options = []
 
@@ -182,28 +247,41 @@ class CSToolsPrettyMixin:
             help_ = (', '.join(help_names), help_desc)
             options = [*(self.format_rich(*p) for p in params), help_]
 
-            with formatter.section('Options'):
+            with formatter.section('[opt]Options[/]'):
                 formatter.write_dl(options)
+
+    def get_help_option(self, ctx: click.Context) -> Optional[click.Option]:
+        """
+        Returns the help option object.
+        """
+        help_options = self.get_help_option_names(ctx)
+
+        if not help_options or not self.add_help_option:
+            return None
+
+        def show_help(ctx: click.Context, param: click.Parameter, value: str) -> None:
+            if value and not ctx.resilient_parsing:
+                self.show_help_and_exit(ctx)
+
+        return click.Option(
+            help_options,
+            is_flag=True,
+            is_eager=True,
+            expose_value=False,
+            callback=show_help,
+            help='Show this message and exit.',
+        )
 
 
 class CSToolsCommand(CSToolsPrettyMixin, click.Command):
     """
+    Represent a CS Tools command.
     """
 
     def __init__(self, **kw):
         self.dependencies = getattr(kw['callback'], 'dependencies', [])
         self._extra_params = [o for d in self.dependencies for o in (d.options or [])]
         kw['params'].extend(self._extra_params)
-
-        if kw['options_metavar'] == '[OPTIONS]':
-            metavar = ''
-
-            if any(1 for _ in kw['params'] if _.name == 'config'):
-                metavar += '--config IDENTIFIER '
-
-            metavar += '[--option, ..., --help]'
-            kw['options_metavar'] = metavar
-
         super().__init__(**kw)
         self.no_args_is_help = True  # override
 
@@ -235,7 +313,8 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
         """
         Writes all the arguments into the formatter if they exist.
 
-        Adds some color to the options text with the help of rich.
+        cs_tools additions:
+          - add color to the options text with the help of rich.
         """
         arguments = []
 
@@ -246,15 +325,19 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
                 arguments.append(r)
 
         if arguments:
-            # arguments = prettify_params(arguments)
-
-            with formatter.section('Arguments'):
+            with formatter.section('[arg]Arguments[/]'):
                 formatter.write_dl(arguments)
 
     # INHERITANCE OVERRIDES
 
     def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
         """
+        Argument parsing with extras.
+
+        cs_tools additions:
+          - guard against cli inputs which require helptext.
+          - inject dependencies prior to command execution.
+          - handle errors
         """
         if self.help_cmd_or_no_input(args, ctx=ctx):
             self.show_help_and_exit(ctx)
@@ -271,14 +354,9 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
                 value, args = param.handle_parse_result(ctx, opts, args)
 
             if args and not ctx.allow_extra_args and not ctx.resilient_parsing:
-                args_str = " ".join(map(str, args))
-                ctx.fail(
-                    ngettext(
-                        f"Got unexpected extra argument ({args_str})",
-                        f"Got unexpected extra arguments ({args_str})",
-                        len(args),
-                    )
-                )
+                args_str = ' '.join(map(str, args))
+                s = 's' if len(args) > 1 else ''
+                ctx.fail(f'Got unexpected extra argument{s} ({args_str})')
         except UsageError as e:
             self.show_error_and_exit(e)
 
@@ -317,8 +395,7 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
     group_class = type
 
     def __init__(self, **kw):
-        kw['options_metavar'].replace('[OPTIONS]', '[--help]')
-        kw['subcommand_metavar'] = kw.get('subcommand_metavar', '<command>')
+        kw['subcommand_metavar'] = kw['subcommand_metavar'] or '<command>'
         super().__init__(**kw)
         self.no_args_is_help = True  # override
 
@@ -402,11 +479,25 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
 
         return rv
 
+    def collect_usage_pieces(self, ctx: click.Context) -> List[str]:
+        """
+        Returns all the pieces that go into the usage
+        line and returns it as a list of strings.
+
+        cs_tools additions:
+          - Adds color to usage pieces.
+          - Add the subcommand_metavar.
+        """
+        rv = super().collect_usage_pieces(ctx)
+        rv.insert(0, f'[arg]{self.subcommand_metavar}[/]')
+        return rv
+
     def format_options(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         """
         Writes all the options into the formatter if they exist.
 
-        But also call .format_commands()
+        cs_tools additions:
+          - also call .format_commands()
         """
         super().format_options(ctx, formatter)
         self.format_commands(ctx, formatter)
@@ -419,7 +510,7 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
         Nearly direct copy from source:
           https://github.com/pallets/click/blob/main/src/click/core.py#L1571
 
-        Changes include:
+        cs_tools additions:
           - reassignment of section name from Commands --> Tools
           - inclusion of all possible help optoin names
         """
@@ -455,5 +546,5 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
                 else:
                     section = 'Commands'
 
-                with formatter.section(section):
+                with formatter.section(f'[arg]{section}[/]'):
                     formatter.write_dl(rows)
