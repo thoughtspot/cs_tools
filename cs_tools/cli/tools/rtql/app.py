@@ -122,7 +122,7 @@ def file(
 )
 def command(
     ctx: typer.Context,
-    command: str=A_('-', help='TQL query to execute'),
+    command: str=A_('-', help='TQL query to execute', metavar='"SELECT ..."'),
     schema: str=O_('falcon_default_schema', help='schema name to use')
 ):
     """

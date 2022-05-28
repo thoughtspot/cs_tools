@@ -39,27 +39,26 @@ app = typer.Typer(
     test and certify use of these tools in the various supported
     ThoughtSpot deployments, each environment is different!
 
-    [bold yellow]You should ALWAYS take a snapshot before you make any
+    [hint]You should ALWAYS take a snapshot before you make any
     significant changes to your environment![/]
 
     \b
-    [green]For additional help, please visit our documentation![/]
-    [blue]https://thoughtspot.github.io/cs_tools/[/]
+    [secondary]For additional help, please visit our documentation![/]
+    [url][link=https://thoughtspot.github.io/cs_tools/]https://thoughtspot.github.io/cs_tools/[/link][/]
     """,
     add_completion=False,
     context_settings={
         # global settings
-        'help_option_names': ['--help', '-h', '--helpfull'],
+        'help_option_names': ['--help', '--helpfull'],
         'obj': State(),
 
         # allow responsive console design
-        'max_content_width':
-            console.width if console.width <= 120 else max(120, console.width * .65),
+        'max_content_width': console.width,
 
         # allow case-insensitive commands
         'token_normalize_func': lambda x: x.lower()
     },
-    options_metavar='[--version, --help]'
+    options_metavar='[--version, --help]',
 )
 
 
@@ -220,3 +219,4 @@ def run():
                 f'\n        GitHub: [link={GH}]{GH}[/link]'
                 '\n\n[/][error]'
             )
+            console.print('')
