@@ -352,7 +352,7 @@ def sync(
 
         r = ts.api.user.sync(
                 principals=principals,
-                applyChanges=False,
+                applyChanges=apply_changes,
                 removeDeleted=dont_remove_deleted,
                 password=new_user_password
             )
