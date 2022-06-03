@@ -1,11 +1,12 @@
 # before py37
 async-generator; python_version < "3.7"
-contextvars; python_version < "3.7"
+contextlib2; python_version < "3.7"
+contextvars; python_version < "3.7"  # uncomment this one for distribution
 dataclasses; python_version < "3.7"
 immutables; python_version < "3.7"
-
 # before py38
-typing-extensions; python_version < "3.8"
+typing-extensions==4.1.1; python_version < "3.8"
+importlib-metadata==4.8.3; python_version < "3.8"
 
 # windows only
 pyreadline3; sys_platform == "win32" or sys_platform == "win64"
@@ -16,12 +17,10 @@ click
 fastapi
 httpx
 Jinja2
-locust
-lxml
-openpyxl
+oyaml
 pendulum
 pydantic
-oyaml
+python-dateutil
 rich
 starlette
 sqlmodel
@@ -29,7 +28,6 @@ thoughtspot-tml
 toml
 typer
 uvicorn
-python-dateutil
 
 # this package
 cs_tools

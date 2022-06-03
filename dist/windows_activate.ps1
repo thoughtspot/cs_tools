@@ -1,12 +1,13 @@
 # Activate the CS Tools virtual environment.
 #
 # Written by: Nick Cooper <nicholas.cooper@thoughtspot.com>
-# Last Modified: 2022/04/28
-# Version: 0.2.0
+# Last Modified: 2022/06/02
+# Version: 0.3.0
 #
 # CHANGELOG
 # v0.1.0 - INITIAL RELEASE
 # v0.2.0 - activate from .bat --> .ps1
+# v0.3.0 - care for py36 installs
 #
 $NL = [Environment]::NewLine
 $SCRIPT_DIR = $PSScriptRoot
@@ -39,15 +40,24 @@ function setup_venv ($install_type = 'local') {
     # install_type : str , default 'local'
     #   either local or remote, where to source install packages from
     #
+    $python_version = (&{python -c "import sys;print(f'{sys.version_info.major}.{sys.version_info.minor}')"})
+    $pip_install = "$APP_DIR\.cs_tools\Scripts\python.exe -m pip install --upgrade --no-cache-dir --force-reinstall"
     mkdir $APP_DIR -ErrorAction SilentlyContinue
     python -m venv "$APP_DIR\.cs_tools"
     & "$_ACTIVATE.ps1"
 
+    if ( $python_version -eq '3.6' ) {
+        $py = "py36-"
+    }
+    else {
+        $py = ""
+    }
+
     if ( $install_type -eq 'local' ) {
-        pip install --upgrade -r $SCRIPT_DIR/reqs/offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-cache-dir --no-index
+        Invoke-Expression "$pip_install -r $SCRIPT_DIR/reqs/" + $py + "offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-index"
     }
     elseif ( $install_type -eq 'remote' ) {
-        pip install --upgrade -r $SCRIPT_DIR/reqs/requirements.txt --no-cache-dir
+        Invoke-Expression "$pip_install -r $SCRIPT_DIR/reqs/" + $py + "requirements.txt"
     }
     else {
         error 'no option like $install_type, type either "local" or "remote"'

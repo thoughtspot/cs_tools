@@ -47,7 +47,10 @@ HERE = pathlib.Path(__file__).parent
 DIST = HERE.parent / 'dist'
 ON_GITHUB = 'GITHUB_ACTIONS' in os.environ
 
-SUPPORTED_PYTHON_VERSIONS = ('3.6.8', '3.7', '3.8', '3.9', '3.10')
+SUPPORTED_PYTHON_VERSIONS = (
+    '3.6.8',
+    '3.7', '3.8', '3.9', '3.10'
+)
 SUPPORTED_ARCHITECTURES = {
     'linux': (
         # more info: https://github.com/pypa/manylinux
@@ -106,6 +109,7 @@ def pip(*args) -> str:
     Full discourse here:
       https://pip.pypa.io/en/stable/user_guide/#using-pip-from-your-program
     """
+    print('python -m pip ', ' '.join(args))
     r = sp.check_output([sys.executable, '-m', 'pip', *args])
     return r.decode()
 
@@ -169,15 +173,21 @@ if __name__ == '__main__':
             '--only-binary=:all:', '--implementation', 'cp',
             *it.chain.from_iterable(('--platform', f'{a}') for a in architectures)
         ]
-        pip('download', 'pip>=20.3', *_)
-        pip('download', 'contextvars', '--dest', (DIST / platform_name).as_posix())
-        pip('download', 'async-generator', '--python-version', '3.6', *_)
-        pip('download', 'dataclasses', '--python-version', '3.6', *_)
-        pip('download', 'immutables', '--python-version', '3.6', *_)
+        pip('download', 'importlib-metadata==4.8.3', '--python-version', '3.6', *_)
 
         for py_version in SUPPORTED_PYTHON_VERSIONS:
             log.info(f'\t on  py{py_version: <5}')
-            pip('download', '-r', reqs.as_posix(), *_, '--python-version', py_version)
+            if py_version == '3.6.8':
+                pip('download', 'pip==20.3', *_)
+                pip('download', 'contextvars', '--dest', (DIST / platform_name).as_posix())
+                pip('download', 'async-generator', '--python-version', '3.6', *_)
+                pip('download', 'contextlib2==21.6.0', '--python-version', '3.6', *_)
+                pip('download', 'dataclasses', '--python-version', '3.6', *_)
+                pip('download', 'immutables', '--python-version', '3.6', *_)
+                pip('download', '-r', (reqs.parent / 'py36-requirements.txt').as_posix(), *_, '--python-version', py_version)
+            else:
+                pip('download', 'pip>=20.3', *_)
+                pip('download', '-r', reqs.as_posix(), *_, '--python-version', py_version)
 
         # vendor cs_tools itself
         log.info(f'\t vendoring cs_tools=={__version__}\n')
