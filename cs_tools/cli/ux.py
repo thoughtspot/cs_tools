@@ -8,7 +8,6 @@ from click.core import iter_params_for_processing
 import gevent
 import click
 
-from cs_tools.settings import _meta_config
 from cs_tools.const import CONSOLE_THEME
 from cs_tools import __version__
 
@@ -75,7 +74,7 @@ class CSToolsPrettyMixin:
         """
         no_input = not args and self.no_args_is_help
         tab_completion = ctx.resilient_parsing
-        help_in_args = set(args).issubset(self.get_help_option_names(ctx))
+        help_in_args = set(args or {False}).issubset(self.get_help_option_names(ctx))
         return (no_input and self.no_args_is_help and not tab_completion) or help_in_args
 
     def show_help_and_exit(
