@@ -157,7 +157,7 @@ class TSDataService:
         d = r.json()
 
         # if we're told to redirect from the load balancer, we'll need to re-auth.
-        if d['node_address']:  # != {}, not empty
+        if d.get('node_address'):
             self._tsload_logged_in = False
             self._cache(
                 cycle_id=d['cycle_id'],

@@ -303,7 +303,7 @@ class InteractiveTQL:
         This method is purely functional.
         """
         with self.console.status('[bold green]starting remote TQL client..[/]'):
-            self.ts.__enter__()
+            self.ts.login()
             self._check_privileges()
             self.update_tokens('static')
             self.update_tokens('dynamic')
@@ -344,3 +344,5 @@ class InteractiveTQL:
             r   = self._query()
             ctx = self._handle_query(r)
             self.reset_context(ctx)
+
+        self.ts.logout()

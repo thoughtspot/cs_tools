@@ -4,7 +4,7 @@ from typer.testing import CliRunner
 from ward import fixture
 
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.cli._loader import _gather_tools
+from cs_tools.cli.main import _setup_tools
 from cs_tools.settings import TSConfig
 
 from cs_tools.cli.app_config import app as cfg_app
@@ -28,7 +28,7 @@ def app_runner():
 
 @fixture(scope='global')
 def app():
-    _gather_tools(tools_app)
+    _setup_tools(tools_app, ctx_settings=app_.info.context_settings)
     app_.add_typer(tools_app)
     app_.add_typer(cfg_app)
     app_.add_typer(log_app)

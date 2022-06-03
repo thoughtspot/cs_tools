@@ -130,6 +130,7 @@ def vendor_pkgs():
         with zipfile.ZipFile(dist / f'{arch}-cs_tools-{__version__}.zip', mode='w') as z:
             for file in (dist / arch).iterdir():
                 z.write(file, f'pkgs/{file.name}')
+                file.unlink()
 
             z.write(dist / 'reqs/offline-install.txt', 'reqs/offline-install.txt')
             z.write(dist / 'reqs/requirements.txt', 'reqs/requirements.txt')

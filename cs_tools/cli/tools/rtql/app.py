@@ -1,3 +1,4 @@
+import functools as ft
 import pathlib
 import sys
 
@@ -8,7 +9,7 @@ import rich
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
-from cs_tools.cli.tools.common import setup_thoughtspot
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot, teardown_thoughtspot
 from .interactive import InteractiveTQL
 
 
@@ -31,16 +32,22 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    ft.partial(setup_thoughtspot, login=False),
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def interactive(
     ctx: typer.Context,
-    autocomplete: bool=O_(True, '--autocomplete', help='toggle auto complete feature'),
-    schema: str=O_('falcon_default_schema', help='schema name to use'),
-    debug: bool=O_(False, '--debug', help='print the entire response to console'),
-    http_timeout: int=O_(5.0, '--timeout', help='network call timeout threshold')
+    debug: bool = O_(False, '--debug', help='print the entire response to console'),
+    autocomplete: bool = O_(
+        False,
+        '--autocomplete',
+        help='toggle auto complete feature',
+        show_default=False
+    ),
+    schema: str = O_('falcon_default_schema', help='schema name to use'),
+    http_timeout: int = O_(5.0, '--timeout', help='network call timeout threshold')
 ):
     """
     Run an interactive TQL session as if you were on the cluster.
@@ -57,9 +64,10 @@ def interactive(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def file(
     ctx: typer.Context,
@@ -107,13 +115,14 @@ def file(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def command(
     ctx: typer.Context,
-    command: str=A_('-', help='TQL query to execute'),
+    command: str=A_('-', help='TQL query to execute', metavar='"SELECT ..."'),
     schema: str=O_('falcon_default_schema', help='schema name to use')
 ):
     """
