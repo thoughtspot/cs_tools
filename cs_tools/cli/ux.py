@@ -201,9 +201,7 @@ class CSToolsPrettyMixin:
 
             # special formatting for the command-global option, --config
             if param.name == 'config' and param.param_type_name == 'option':
-                default = _meta_config().get('default', {}).get('config', None)
-                cfg_name = param.metavar if default is None else f'[secondary]{default}[/]'
-                cfg = f'--config {cfg_name}'
+                cfg = '--config NAME'
                 continue
 
             if param.param_type_name == 'argument':
@@ -284,8 +282,8 @@ class CSToolsCommand(CSToolsPrettyMixin, click.Command):
         self.dependencies = getattr(kw['callback'], 'dependencies', [])
         self._extra_params = [o for d in self.dependencies for o in (d.options or [])]
         kw['params'].extend(self._extra_params)
+        kw['no_args_is_help'] = True if kw.get('no_args_is_help') is False else bool(kw.get('no_args_is_help'))
         super().__init__(**kw)
-        self.no_args_is_help = True  # override
 
     # ADDITIONAL METHODS
 
@@ -398,8 +396,8 @@ class CSToolsGroup(CSToolsPrettyMixin, click.Group):
 
     def __init__(self, **kw):
         kw['subcommand_metavar'] = kw['subcommand_metavar'] or '<command>'
+        kw['no_args_is_help'] = True if kw.get('no_args_is_help') is False else bool(kw.get('no_args_is_help'))
         super().__init__(**kw)
-        self.no_args_is_help = True  # override
 
     # ADDITIONAL OPTIONS
 

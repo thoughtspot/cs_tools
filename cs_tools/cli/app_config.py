@@ -27,9 +27,13 @@ app = typer.Typer(
 )
 
 
-@app.command(cls=CSToolsCommand)
+@app.command(cls=CSToolsCommand, no_args_is_help=0)  # this is abuse, pay it no mind
 def show(
-    config: str = O_(None, help='optionally, display the contents of a particular config')
+    config: str = O_(
+        None,
+        help='optionally, display the contents of a particular config',
+        metavar='NAME'
+    )
 ):
     """
     Display the currently saved config files.
@@ -74,7 +78,7 @@ def show(
 
 @app.command(cls=CSToolsCommand)
 def create(
-    config: str = O_(..., help='config file identifier', prompt=True),
+    config: str = O_(..., help='config file identifier', prompt=True, metavar='NAME'),
     host: str = O_(..., help='thoughtspot server', prompt=True),
     port: int = O_(None, help='optional, port of the thoughtspot server'),
     username: str = O_(..., help='username when logging into ThoughtSpot', prompt=True),
@@ -136,7 +140,7 @@ def create(
 
 @app.command(cls=CSToolsCommand)
 def modify(
-    config: str = O_(..., help='config file identifier', prompt=True),
+    config: str = O_(..., help='config file identifier', prompt=True, metavar='NAME'),
     host: str = O_(None, help='thoughtspot server'),
     port: int = O_(None, help='optional, port of the thoughtspot server'),
     username: str = O_(None, help='username when logging into ThoughtSpot'),
@@ -205,7 +209,7 @@ def modify(
 
 @app.command(cls=CSToolsCommand)
 def delete(
-    config: str = O_(..., help='config file identifier')
+    config: str = O_(..., help='config file identifier', metavar='NAME')
 ):
     """
     Delete a config file.
