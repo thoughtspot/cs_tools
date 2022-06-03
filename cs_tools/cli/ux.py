@@ -5,7 +5,7 @@ import sys
 from click.exceptions import UsageError
 from rich.console import Console
 from click.core import iter_params_for_processing
-import gevent
+# import gevent
 import click
 
 from cs_tools.const import CONSOLE_THEME
@@ -55,7 +55,7 @@ class CSToolsPrettyMixin:
         color to be included. :)
         """
         # gevent complains when users cancel running programs, but cs_tools shouldn't...
-        gevent.get_hub().NOT_ERROR += (KeyboardInterrupt,)
+        # gevent.get_hub().NOT_ERROR += (KeyboardInterrupt,)
 
         try:
             try:

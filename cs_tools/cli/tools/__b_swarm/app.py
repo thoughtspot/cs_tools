@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 import logging
 
-from locust.stats import stats_printer, stats_history
-from locust.env import Environment
+# from locust.stats import stats_printer, stats_history
+# from locust.env import Environment
 from typer import Argument as A_, Option as O_
-import gevent
+# import gevent
 import typer
 
 from cs_tools.cli.tools import setup_thoughtspot, teardown_thoughtspot
@@ -14,7 +14,7 @@ from cs_tools.cli import (
     console, CSToolsGroup, CSToolsCommand
 )
 
-from .strategies import AnswerUser
+# from .strategies import AnswerUser
 
 if TYPE_CHECKING:
     from typing import List

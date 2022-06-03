@@ -42,14 +42,22 @@ setup_venv () {
     #   either local or remote, where to source install packages from
     #
     install_type=${1:-local}
+    python_version=$(python3 -c "import sys;print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+    pip_install="$APP_DIR/.cs_tools/bin/python -m pip install --upgrade --no-cache-dir --force-reinstall"
     mkdir -p $APP_DIR
     python3 -m venv "${APP_DIR}/.cs_tools"
     source $_ACTIVATE
 
+    if [[ $python_version == '3.6' ]]; then
+        py="py36-"
+    else
+        py=""
+    fi
+
     if [[ $install_type == 'local' ]]; then
-        pip install --upgrade -r $SCRIPT_DIR/reqs/offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-cache-dir --no-index
+        $pip_install -r $SCRIPT_DIR/reqs/${py}offline-install.txt --find-links=$SCRIPT_DIR/pkgs/ --no-index
     elif [[ $install_type == 'remote' ]]; then
-        pip install --upgrade -r $SCRIPT_DIR/reqs/requirements.txt --no-cache-dir
+        $pip_install -r $SCRIPT_DIR/reqs/${py}requirements.txt --no-cache-dir
     else
         error "no option like ${install_type}, type either 'local' or 'remote'"
     fi

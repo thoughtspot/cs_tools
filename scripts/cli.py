@@ -132,6 +132,8 @@ def vendor_pkgs():
                 z.write(file, f'pkgs/{file.name}')
                 file.unlink()
 
+            z.write(dist / 'reqs/py36-offline-install.txt', 'reqs/py36-offline-install.txt')
+            z.write(dist / 'reqs/py36-requirements.txt', 'reqs/py36-requirements.txt')
             z.write(dist / 'reqs/offline-install.txt', 'reqs/offline-install.txt')
             z.write(dist / 'reqs/requirements.txt', 'reqs/requirements.txt')
 
