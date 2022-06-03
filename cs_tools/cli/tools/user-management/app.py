@@ -9,10 +9,10 @@ from typer import Argument as A_, Option as O_
 import httpx
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.ux import CommaSeparatedValuesType, SyncerProtocolType
+from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.data.enums import GUID
@@ -135,9 +135,10 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def transfer(
     ctx: typer.Context,
@@ -192,9 +193,10 @@ def transfer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def rename(
     ctx: typer.Context,
@@ -275,9 +277,10 @@ def rename(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def sync(
     ctx: typer.Context,
@@ -349,7 +352,7 @@ def sync(
 
         r = ts.api.user.sync(
                 principals=principals,
-                applyChanges=False,
+                applyChanges=apply_changes,
                 removeDeleted=dont_remove_deleted,
                 password=new_user_password
             )

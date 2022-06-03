@@ -7,11 +7,11 @@ from typer import Argument as A_, Option as O_  # noqa
 import oyaml as yaml
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
-from cs_tools.cli.ux import SyncerProtocolType, TZAwareDateTimeType
 
 from ._version import __version__
 from . import transform
@@ -30,9 +30,10 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def spotapp(
     ctx: typer.Context,
@@ -105,9 +106,10 @@ def spotapp(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def bi_server(
     ctx: typer.Context,
@@ -194,9 +196,10 @@ def bi_server(
 
 @app.command(cls=CSToolsCommand, hidden=True)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def event_logs(
     ctx: typer.Context,
@@ -250,9 +253,10 @@ def event_logs(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def gather(
     ctx: typer.Context,
@@ -270,6 +274,7 @@ def gather(
     """
     Extract metadata from your ThoughtSpot platform.
 
+    \b
     See the full data model extract at the link below:
       https://thoughtspot.github.io/cs_tools/cs-tools/searchable
     """

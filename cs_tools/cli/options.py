@@ -7,7 +7,7 @@ CONFIG_OPT = O_(
     ...,
     '--config',
     help='config file identifier',
-    metavar='IDENTIFIER'
+    metavar='NAME'
 )
 
 VERBOSE_OPT = O_(

@@ -5,9 +5,9 @@
 mkdocs-material
 
 # test
-ward
 coverage
 nox
+ward
 
 # editable
 -e .

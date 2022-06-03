@@ -3,10 +3,11 @@ import logging
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand, SyncerProtocolType
-from cs_tools.cli.tools import common
+from cs_tools.cli.types import SyncerProtocolType
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 
 from .enums import RecordsetType
 
@@ -25,9 +26,10 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=common.setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def search(
     ctx: typer.Context,
