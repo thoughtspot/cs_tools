@@ -1,0 +1,78 @@
+[tool.poetry]
+name = "cs_tools"
+version = "1.3.1"
+description = """\
+	Tools created by the ThoughtSpot PS/CS organization to assist \
+	implementation and administration of your platform.\
+"""
+authors = [
+	"boonhapus <nicholas.cooper@thoughtspot.com>",
+	"billdback-ts <bill.back@thoughtspot.com>",
+	"devinmcpherson-ts <devin.mcpherson@thoughtspot.com>",
+	"mishathoughtspot <misha.beek@thoughtspot.com>"
+]
+maintainers = [
+	"boonhapus <nicholas.cooper@thoughtspot.com>"
+]
+license = "Proprietary"
+readme = "README.md"
+homepage = "https://thoughtspot.github.io/cs_tools/"
+repository = "https://github.com/thoughtspot/cs_tools"
+documentation = "https://thoughtspot.github.io/cs_tools/"
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+packages = [
+    { include = "cs_tools" }
+]
+# include = []
+# exclude = []
+
+[tool.poetry.dependencies]
+# Accept new incoming python versions
+python = ">=3.6.8,<4.0.0"
+
+# Upgrades here require removing support for py36
+click = "< 8.1.0"
+httpx = "< 0.23.0"
+Jinja2 = "< 3.1.0"
+starlette = "< 0.20.0"
+uvicorn = "< 0.17.0"
+
+# Platform locked dependencies
+pyreadline3 = { version = "*" , markers = "sys_platform == 'win32'" }
+
+# Accept updates on core dependencies, as long as they support py36
+fastapi = "*"
+oyaml = "*"
+pendulum = "*"
+pydantic = "*"
+python-dateutil = "*"
+rich = "*"
+sqlmodel = "*"
+thoughtspot-tml = "*"
+toml = "*"
+typer = "*"
+
+
+[tool.poetry.dev-dependencies]
+mkdocs-material = "*"
+coverage = "*"
+isort = "*"
+black = "*"
+nox = "*"
+ward = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
