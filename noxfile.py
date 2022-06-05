@@ -1,55 +1,47 @@
-import platform
 import pathlib
+import shutil
 import os
 
-import nox
+import nox_poetry as nox
 
 
 ON_GITHUB = 'GITHUB_ACTIONS' in os.environ
-HERE = pathlib.Path(__file__).parent
-DIST = HERE / 'dist'
+PY_VERSIONS = ["3.6.8", "3.7", "3.8", "3.9", "3.10"]
+DIST_PKGS = pathlib.Path(__file__).parent / 'dist' / 'pkgs'
 
 
-nox.options.reuse_existing_virtualenvs = False
-
-
-def get_system_name() -> str:
+@nox.session(python="3.10", reuse_venv=not ON_GITHUB)
+def vendor_packages(session):
     """
-    Translate `this` system into a friendlier name.
-
-    Returns
-    -------
-    system: str
-        one of.. windows, linux, mac
+    Build offline distributable installer.
     """
-    translate = {'Windows': 'windows', 'Linux': 'linux', 'Darwin': 'mac'}
-    return translate[platform.uname().system]
-
-
-@nox.session()
-def ensure_working_local_install(session: nox.Session):
-    """
-    """
-    # install cs_tools    
-    session.install('install', '-e', '.', silent=True)
-    
-    # vendor packages across architectures
-    session.run('python', f'{HERE.as_posix()}/scripts/_vendor-cs_tools.py', silent=True)
-
-    # reset the environment    
-    if ON_GITHUB:
-        p = pathlib.Path('_current_requirements.txt')
-        with p.open('w') as in_:
-            session.run('pip', 'freeze', stdout=in_)
-            session.run('pip', 'uninstall', '-r', p.as_posix(), '-y', silent=True)
-        p.unlink()
-
-    session.install(
-        '-r',
-        f'{DIST.as_posix()}/reqs/offline-install.txt',
-        f'--find-links={DIST.as_posix()}/{get_system_name()}/',
-        '--no-cache-dir',
-        '--no-index'
+    session.run("poetry", "install", external=True)
+    session.run(
+        "poetry", "export",
+        "-f", "requirements.txt",
+        "--output", (DIST_PKGS / "requirements.txt").as_posix(),
+        "--without-hashes",
+        external=True
     )
 
-    session.run('cs_tools', '--version')
+    _common = ('--dest', DIST_PKGS.as_posix(), '--no-cache-dir')
+
+    session.run("pip", "download", "-r", "requirements.txt", *_common)
+    session.run("pip", "download", "poetry-core", *_common)
+    session.run("poetry", "build", "--format", "wheel")
+    whl = pathlib.Path(next(DIST_PKGS.parent.glob('cs_tools*.whl')))
+    shutil.move(whl, DIST_PKGS / whl.name)
+
+
+@nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
+def tests(session):
+    """
+    Ensure we test our code.
+    """
+    session.run("poetry", "install", external=True)
+    session.run("ward")
+
+
+# @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
+# def code_quality(session):
+#     session.run("poetry", "install", external=True)
