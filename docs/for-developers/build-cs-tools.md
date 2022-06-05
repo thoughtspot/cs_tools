@@ -7,6 +7,15 @@
   - Python Versions: py368, py37, py39, py310, soon: py311
   - Platforms: OSX, Linux, Windows
 
+# Development setup
+  - consider pyenv (or pyenv-win)
+  - consider installing nox globally
+      https://github.com/wntrblm/nox
+      https://medium.com/@cjolowicz/nox-is-a-part-of-your-global-developer-environment-like-poetry-pre-commit-pyenv-or-pipx-1cdeba9198bd
+      if you want to be really careful,
+            python3 -m pip install --user nox
+            python -m pip install --user nox
+
 # Install
   - get poetry | python -
   - poetry install
@@ -47,6 +56,8 @@
     --path  Install from a given path (file or directory) instead of fetching the latest version of Poetry available online.
     can vendor the latest releases: https://github.com/python-poetry/poetry/releases/tag/1.1.13
 
-
 # CI / CD
   - https://github.com/python-poetry/poetry/blob/master/.github/workflows/main.yml
+
+# Plugins eventually ?
+  - https://www.youtube.com/watch?v=fY3Y_xPKWNA
