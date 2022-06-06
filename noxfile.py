@@ -41,6 +41,21 @@ SUPPORTED_PLATFORM_MATRIX = {
 
 def zip_it(dir_: pathlib.Path, *, name: str, path: str = None, new: bool = True) -> None:
     """
+    Zip a directory up.
+
+    Parameters
+    ----------
+    dir_ : pathlib.Path
+      directory to be zipped
+
+    name :  str
+      name of the zipfile
+
+    path : str  [default: None]
+      directory structure within the zipfile to enforce
+
+    new: bool  [default: True]
+      whether or not to create a new zipfile
     """
     if path is not None and path.endswith('/'):
         path = pathlib.Path(path).name
@@ -74,7 +89,7 @@ def vendor_packages(session):
     # --ensure-install :: run the poetry-install step
     # --no-cleanup     :: don't remove files
 
-    # session.run("poetry", "install", external=True, silent=not ON_GITHUB)
+    session.run("poetry", "install", external=True, silent=not ON_GITHUB)
     session.run(
         # fmt: off
         "poetry", "export",
@@ -93,7 +108,7 @@ def vendor_packages(session):
         dest = DIST_PKGS / platform
 
         # session.log(f'cleaning {dest}..')
-        # shutil.rmtree(dest, ignore_errors=True)
+        shutil.rmtree(dest, ignore_errors=True)
 
         # download our dependencies
         # - since poetry found and resolved our dependencies, --no-deps is fine to use
@@ -118,22 +133,25 @@ def vendor_packages(session):
             archive = DIST / f"{platform}-cs_tools-{version}.zip"
             zip_it(dest, name=archive, path='pkgs/')
             zip_it(DIST / 'bootstrap', name=archive, path='bootstrap/', new=False)
-            # shutil.rmtree(dest, ignore_errors=True)
+            shutil.rmtree(dest, ignore_errors=True)
 
-    # if not ON_GITHUB:
-    #     session.log('cleaning temporary files..')
-    #     WHL_FILE.unlink()
-    #     REQS_TXT.unlink()
+    if not ON_GITHUB:
+        session.log('cleaning temporary files..')
+        WHL_FILE.unlink()
+        REQS_TXT.unlink()
 
 
-# @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
+# @nox.session(reuse_venv=not ON_GITHUB)
 # def version_bump(session):
 #     # TODO: use argparse for the following args
 #     # --major          :: False
 #     # --minor          :: False
 #     # --patch          :: False
 #     # --beta           :: False
-#     session.run("poetry", "version")
+#     # 1. get_version
+#     # 2. bump version based on major, minor, or patch
+#     # 3. if beta, add "-beta.1"
+#     # 4. poetry version {version}
 
 
 @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)

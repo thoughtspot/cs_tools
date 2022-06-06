@@ -10,7 +10,10 @@ def main():
     """
     Entrypoint.
     """
-    parser = argparse.ArgumentParser(description="Installs the latest version of cs_tools")
+    parser = argparse.ArgumentParser(
+        prog="CS Tools Bootstrapper",
+        description="Installs, updates, or activates the latest version of cs_tools"
+    )
     parser.add_argument(
         "-f",
         "--fetch-remote",
