@@ -44,10 +44,11 @@ packages = [
 
 [tool.poetry.dependencies]
 # Accept new incoming python versions
-python = ">=3.6.8,<4.0.0"
+python = ">= 3.6.8 , < 4.0.0"
 
-# Lock our build backend, we can intentionally update it if it's necessary
-poetry-core = ">= 1.0.0a"
+# Poetry doesn't solve for itself, so we need to keep this guy around
+# possibly a bug? poetry#5004
+poetry-core = "^1.0.0a0"
 
 # Upgrades here require removing support for py36
 click = "< 8.1.0"
@@ -74,7 +75,7 @@ typer = "*"
 
 [tool.poetry.dev-dependencies]
 # Upgrades here require removing support for py36
-mkdocs-material = ">= 8.2.0, < 8.2.13"
+mkdocs-material = ">= 8.2.0 , < 8.2.13"
 
 # Accept updates on dev dependencies, as long as they support py36
 flake8 = "*"
