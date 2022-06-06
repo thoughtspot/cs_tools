@@ -8,13 +8,36 @@
   - Platforms: OSX, Linux, Windows
 
 # Development setup
+
   - consider pyenv (or pyenv-win)
-  - consider installing nox globally
-      https://github.com/wntrblm/nox
-      https://medium.com/@cjolowicz/nox-is-a-part-of-your-global-developer-environment-like-poetry-pre-commit-pyenv-or-pipx-1cdeba9198bd
-      if you want to be really careful,
-            python3 -m pip install --user nox
-            python -m pip install --user nox
+      - what is pyenv? it's a way to manage multiple python versions on your local machine
+      - this does not replace virtual environments!
+      - think of this as a way to have multiple global python environments on the same box
+      - priority order:  SHELL --> LOCAL --> GLOBAL --> SYSTEM
+      - useful commands
+          pyenv versions  :: show all installed versions & active version
+          pyenv shell     :: set your python version for this shell session
+          pyenv local     :: set your default python version for this directory
+          pyenv global    :: set your default python version across the system
+
+  - consider poetry
+      - what is poetry? it's a way to manage dependencies for python projects, dependency resolution is HARD
+      - py37+ as of poetry==1.2.0
+      - useful commands
+          peotry add      :: add a package to your dependencies, --dev for dev dependencies
+          peotry install  :: read, resolve, and install dependencies, generate a lockfile after resolution
+          poetry update   :: get the latest versions of the dependencies and to update the lockfile
+          poetry shell    :: spawn a shell, if a virtual env doesn't exist, create one from your current python version
+          poetry build    :: --format wheel, build a distributable .whl file
+
+  - consider global packages
+      - nox       <--- automation across multiple python versions
+      - flake8    <--- linting
+      - mypy      <--- static type-checking
+      - black     <--- code formatting
+
+  https://medium.com/@cjolowicz/nox-is-a-part-of-your-global-developer-environment-like-poetry-pre-commit-pyenv-or-pipx-1cdeba9198bd
+
 
 # Install
   - get poetry | python -
