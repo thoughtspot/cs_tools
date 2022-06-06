@@ -10,7 +10,9 @@ import nox_poetry as nox
 ON_GITHUB = "GITHUB_ACTIONS" in os.environ
 PY_VERSIONS = [
     "3.6.8",
-    "3.7", "3.8", "3.9", "3.10"
+    "3.7", "3.8",
+    "3.9",
+    "3.10"
 ]
 DIST = pathlib.Path(__file__).parent / "dist"
 DIST_PKGS = DIST / "pkgs"
@@ -37,6 +39,21 @@ SUPPORTED_PLATFORM_MATRIX = {
     ),
     # fmt: on
 }
+
+
+def _manual_resolver_fixes(requirements: pathlib.Path) -> None:
+    # For some reason, the dependency solver produces an unreachable typing-extensions
+    # marker. We're going to rewrite it.
+    fixes = {
+        'typing-extensions': 'typing-extensions==4.1.1; python_full_version >= "3.6.2" and python_full_version < "4.0.0"'
+    }
+    lines = []
+    for line in requirements.read_text().split('\n'):
+        if line.startswith(tuple(fixes)):
+            package, _, _ = line.partition('==')
+            line = fixes[package]
+        lines.append(line)
+    requirements.write_text('\n'.join(lines))
 
 
 def zip_it(dir_: pathlib.Path, *, name: str, path: str = None, new: bool = True) -> None:
@@ -84,6 +101,8 @@ def vendor_packages(session):
     python versions in the PY_VERSIONS constraint. Consider using pyenv
     or docker to build.
     """
+    first_run = session.python == '3.6.8'
+
     # TODO: use argparse for the following args
     # --silent         :: defaults to ON_GITHUB
     # --ensure-install :: run the poetry-install step
@@ -107,7 +126,7 @@ def vendor_packages(session):
     for platform, platforms in SUPPORTED_PLATFORM_MATRIX.items():
         dest = DIST_PKGS / platform
 
-        # session.log(f'cleaning {dest}..')
+        session.log(f'cleaning {dest}..')
         shutil.rmtree(dest, ignore_errors=True)
 
         # download our dependencies
@@ -124,14 +143,19 @@ def vendor_packages(session):
             # fmt: on
         )
 
+        _manual_resolver_fixes(REQS_TXT)
+
         session.log(f'adding {WHL_FILE.name} to {platform}/')
         shutil.copyfile(WHL_FILE, dest / WHL_FILE.name)
+
+        session.log(f'adding {REQS_TXT.name} to {platform}/')
+        shutil.copyfile(REQS_TXT, dest / REQS_TXT.name)
 
         if not ON_GITHUB:
             session.log(f'zipping {platform}/ for distribution..')
             _, version, *_ = WHL_FILE.stem.split('-')
             archive = DIST / f"{platform}-cs_tools-{version}.zip"
-            zip_it(dest, name=archive, path='pkgs/')
+            zip_it(dest, name=archive, path='pkgs/', new=first_run)
             zip_it(DIST / 'bootstrap', name=archive, path='bootstrap/', new=False)
             shutil.rmtree(dest, ignore_errors=True)
 
