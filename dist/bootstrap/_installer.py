@@ -89,15 +89,18 @@ class Installer:
     def get_versions(self) -> Tuple[str, str]:
         self._write("Retrieving CS Tools metadata..")
 
-        if (self._bin_dir / "activate").exists():
-            exe = self._bin_dir / 'cs_tools.exe' if WINDOWS else self._bin_dir / 'cs_tools'
-            cp = sp.run([exe.as_posix(), '--version'], stdout=sp.PIPE, stderr=sp.STDOUT)
+        try:
+            if (self._bin_dir / "activate").exists():
+                exe = self._bin_dir / 'cs_tools.exe' if WINDOWS else self._bin_dir / 'cs_tools'
+                cp = sp.run([exe.as_posix(), '--version'], stdout=sp.PIPE, stderr=sp.STDOUT)
 
-            if cp.returncode != 0:
-                raise CSToolsInstallationError(return_code=cp.returncode, log=cp.stdout.decode())
-
-            _, _, local_version = cp.stdout.decode().partition('(')
-        else:
+                if cp.returncode == 0:
+                    _, _, local_version = cp.stdout.decode().partition('(')
+                else:
+                    local_version = "0.0.0"
+            else:
+                local_version = "0.0.0"
+        except Exception:
             local_version = "0.0.0"
 
         if self._offline_install:
@@ -111,11 +114,15 @@ class Installer:
             metadata = json.loads(http_get(self.LATEST_RELEASE_METADTA).decode())
             remote_version = metadata["tag_name"]
 
-        x = VERSION_REGEX.match(local_version).groups()[:3]
-        y = VERSION_REGEX.match(remote_version).groups()[:3]
+        xm = VERSION_REGEX.match(local_version)
+        x = (*xm.groups()[:3], xm.groups()[4])
+
+        ym = VERSION_REGEX.match(remote_version)
+        y = (*ym.groups()[:3], ym.groups()[4])
+
         self._cursor.move_up()
         self._cursor.clear_line()
-        return 'v{}'.format('.'.join(x)), 'v{}'.format('.'.join(y))
+        return '{}'.format('.'.join(x)), '{}'.format('.'.join(y))
 
     def ensure_directories(self) -> None:
         self._config_dir.mkdir(parents=True, exist_ok=True)
@@ -155,15 +162,12 @@ class Installer:
         self._install_comment(version, "Installing CS Tools")
 
         if self._offline_install:
-            specification = f"cs_tools=={version}"
-            # reqs = (Path(PKGS_DIR) / 'requirements.txt').as_posix()
-            args = ["--find-links", PKGS_DIR.as_posix(), "--no-index"]#, "-r", reqs]
-        else:
-            ...
-            specification = f"cs_tools=={version}"
-            args = []
+            reqs = (Path(PKGS_DIR) / 'requirements.txt').as_posix()
+            args = ["--find-links", PKGS_DIR.as_posix(), "--no-index", "--no-deps", "-r", reqs]
+            env.pip("install", *args)
 
-        env.pip("install", specification, *args)
+        args = [f"cs_tools=={version}", "--find-links", PKGS_DIR.as_posix(), "--no-index", "--no-deps"]
+        env.pip("install", *args)
 
     # CLI INTERACTION
 
