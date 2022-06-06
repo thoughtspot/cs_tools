@@ -4,7 +4,7 @@ import os
 import re
 
 
-PKGS_DIR = (pathlib.Path(__file__).parent.parent / 'pkgs').as_posix()
+PKGS_DIR = pathlib.Path(__file__).parent.parent / 'pkgs'
 WINDOWS = sys.platform.startswith("win") or (sys.platform == "cli" and os.name == "nt")
 MACOS = sys.platform == "darwin"
 

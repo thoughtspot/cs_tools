@@ -17,9 +17,7 @@ from contextlib import contextmanager
 from typing import Tuple
 from pathlib import Path
 import subprocess as sp
-import traceback
-import tempfile
-import argparse
+
 import shutil
 import json
 import sys
@@ -27,7 +25,7 @@ import sys
 from _virtual_env import VirtualEnvironment
 from _terminal import Cursor, is_decorated
 from _errors import CSToolsInstallationError
-from _const import WINDOWS, PRE_MESSAGE, PKGS_DIR, VERSION_REGEX
+from _const import WINDOWS, MACOS, PRE_MESSAGE, PKGS_DIR, VERSION_REGEX
 from _util import app_dir, bin_dir, compare_versions, http_get
 
 
@@ -83,7 +81,6 @@ class Installer:
 
         with self.make_env(version) as env:
             self.install_cs_tools(version, env)
-            # self.make_bin(version, env)
             self._install_comment(version, "Done")
             return 0
 
@@ -104,8 +101,12 @@ class Installer:
             local_version = "0.0.0"
 
         if self._offline_install:
-            fp = next((Path(__file__).parent.parent / 'pkgs').glob('cs_tools*.whl'))
-            _, remote_version, *_ = fp.name.split('-')
+            fp = next(PKGS_DIR.glob('cs_tools*.whl'))
+            # reliable because whl files have name conformity
+            # <snake_case_pkg_name>-<version>-<platform-triplet>.whl
+            # where platform triplet is <pyversion>-<abi>-<platform>
+            # dots (.) in filename represent an OR relationship
+            _, remote_version, *_ = fp.stem.split('-')
         else:
             metadata = json.loads(http_get(self.LATEST_RELEASE_METADTA).decode())
             remote_version = metadata["tag_name"]
@@ -156,7 +157,7 @@ class Installer:
         if self._offline_install:
             specification = f"cs_tools=={version}"
             # reqs = (Path(PKGS_DIR) / 'requirements.txt').as_posix()
-            args = ["--find-links", PKGS_DIR, "--no-index"]#, "-r", reqs]
+            args = ["--find-links", PKGS_DIR.as_posix(), "--no-index"]#, "-r", reqs]
         else:
             ...
             specification = f"cs_tools=={version}"
@@ -192,52 +193,3 @@ class Installer:
     #         return self.display_post_message_fish(version)
 
     #     return self.display_post_message_unix(version)
-
-
-#
-#
-#
-
-
-def main() -> ReturnCode:
-    parser = argparse.ArgumentParser(description="Installs the latest version of cs_tools")
-    parser.add_argument(
-        "-f",
-        "--fetch-remote",
-        help="fetching the latest version of cs_tools available online",
-        dest="fetch_remote",
-        action="store_true",
-        default=False
-    )
-    parser.add_argument(
-        "-r",
-        "--reinstall",
-        help="install on top of existing version",
-        dest="reinstall",
-        action="store_true",
-        default=False,
-    )
-
-    args = parser.parse_args()
-
-    installer = Installer(
-        offline_install=not args.fetch_remote,
-        reinstall=args.reinstall,
-    )
-
-    try:
-        return installer.run()
-    except CSToolsInstallationError as e:
-        installer._write("[ERROR] CSTools installation failed.")
-
-        if e.log is not None:
-            _, path = tempfile.mkstemp(suffix=".log", prefix="cs_tools-installer-error-", dir=str(Path.cwd()), text=True)
-            installer._write(f"[ERROR] See {path} for error logs.")
-            tb = ''.join(traceback.format_tb(e.__traceback__))
-            Path(path).write_text(f"{e.log}\n\nTraceback:\n{tb}")
-
-        return e.return_code
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

@@ -3,6 +3,7 @@ from contextlib import closing
 from pathlib import Path
 import sys
 import os
+
 from _const import WINDOWS, VERSION_REGEX
 
 
