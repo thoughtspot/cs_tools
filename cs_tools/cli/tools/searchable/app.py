@@ -354,6 +354,11 @@ def gather(
 
         data = []
 
+        # NOTE:
+        #    In the case the ThoughtSpot cluster has a high number of users, this block
+        #    will take an incredibly long amount of time to complete. We can probably
+        #    find a better algorithm.
+        #
         for type_, subtypes in types.items():
             guids = [_['id'] for _ in content if _['type'] in subtypes]
             r = ts.metadata.permissions(guids, type=type_)
