@@ -1,7 +1,10 @@
 
 
-class CSToolsInstallationError(RuntimeError):
+class CSToolsActivatorError(RuntimeError):
+    """
+    Raised when something goes wrong in the activator script.
+    """
     def __init__(self, return_code: int = 0, log: str = None):
-        super(CSToolsInstallationError, self).__init__()
+        super().__init__()
         self.return_code = return_code
         self.log = log

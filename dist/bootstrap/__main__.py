@@ -1,3 +1,10 @@
+"""
+This is the entrypoint guard for the CS Tools Activator.
+
+Linux/Mac environments may accidentally run this from the global python
+environment, which is occasionally still py-2.7 , we need this script to
+stay compatible so it can warn users and ask them re-run with python3.
+"""
 import argparse
 import platform
 import sys

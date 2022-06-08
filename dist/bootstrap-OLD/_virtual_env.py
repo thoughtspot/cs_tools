@@ -3,9 +3,8 @@ from pathlib import Path
 import subprocess as sp
 import tempfile
 import sys
-import os
 
-from _errors import CSToolsActivatorError
+from _errors import CSToolsInstallationError
 from _const import WINDOWS
 
 
@@ -13,42 +12,21 @@ class VirtualEnvironment:
     def __init__(self, path: Path) -> None:
         self._path = path
 
+        # str() is required for compatibility with subprocess run on <= py3.7 on Windows
+        self._python = str(
+            self._path.joinpath("Scripts/python.exe" if WINDOWS else "bin/python")
+        )
+
     @property
-    def path(self) -> Path:
+    def path(self):
         return self._path
-
-    @property
-    def shell(self):
-        shell = None
-
-        # NEED TO GET PATH OF WINDOWS SHELL
-
-        if os.name == "posix":
-            shell = os.environ.get("SHELL")
-        elif os.name == "nt":
-            shell = os.environ.get("COMSPEC")   # this doesn't perform well
-
-        if not shell:
-            raise RuntimeError("Unable to detect the current shell.")
-
-        return Path(shell)
-
-    @property
-    def bin_dir(self) -> Path:
-        dir_ = "Scripts" if WINDOWS else "bin"
-        return self.path / dir_
-
-    @property
-    def exe(self) -> Path:
-        py_exe = "python.exe" if WINDOWS else "python"
-        return self.bin_dir / py_exe
 
     @classmethod
     def make(cls, target: Path) -> "VirtualEnvironment":
         try:
             import venv
 
-            builder = venv.EnvBuilder(clear=True, with_pip=True, symlinks=not WINDOWS)
+            builder = venv.EnvBuilder(clear=True, with_pip=True, symlinks=False)
             builder.ensure_directories(target)
             builder.create(target)
         except ImportError:
@@ -77,6 +55,7 @@ class VirtualEnvironment:
         # we do this here to ensure that outdated system default pip does not trigger
         # older bugs
         env.pip("install", "--disable-pip-version-check", "--upgrade", "pip")
+
         return env
 
     @staticmethod
@@ -84,41 +63,12 @@ class VirtualEnvironment:
         cp = sp.run(args, stdout=sp.PIPE, stderr=sp.STDOUT, **kwargs)
 
         if cp.returncode != 0:
-            raise CSToolsActivatorError(return_code=cp.returncode, log=cp.stdout.decode())
+            raise CSToolsInstallationError(return_code=cp.returncode, log=cp.stdout.decode())
 
         return cp
 
     def python(self, *args, **kwargs) -> sp.CompletedProcess:
-        # str() is required for compatibility with subprocess run on <= py3.7 on Windows
-        return self.run(str(self.exe), *args, **kwargs)
+        return self.run(self._python, *args, **kwargs)
 
     def pip(self, *args, **kwargs) -> sp.CompletedProcess:
         return self.python("-m", "pip", "--isolated", *args, **kwargs)
-
-    def activate(self) -> int:
-        if self.shell.stem in ("powershell", "pwsh"):
-            suffix = ".ps1"
-        elif self.shell.stem == "cmd":
-            suffix = ".bat"
-        else:
-            suffix = ""
-
-        activate_path = f'{self.bin_dir}/activate{suffix}'
-
-        if WINDOWS:
-            if self.shell.stem in ("powershell", "pwsh"):
-                args = ["-NoExit", "-File", str(activate_path)]
-            else:
-                # /K will execute the bat file and keep the cmd process from terminating
-                args = ["/K", str(activate_path)]
-
-            completed_proc = sp.run([self.shell, *args])
-        else:
-            completed_proc = sp.run([self.shell, "-i"])
-
-        return completed_proc.returncode
-
-    def _get_source_command(self) -> str:
-        if self.shell in ("fish", "csh", "tcsh"):
-            return "source"
-        return "."

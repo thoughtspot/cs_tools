@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 import os
 
-from _const import WINDOWS, VERSION_REGEX
+from _const import WINDOWS, MACOSX, VERSION_REGEX
 
 
 def _posixify(name: str) -> str:
@@ -22,7 +22,7 @@ def _posixify(name: str) -> str:
     return "-".join(name.split()).lower()
 
 
-def app_dir(app_name: str = 'cs_tools') -> str:
+def app_dir(app_name: str) -> Path:
     r"""
     Return the config folder for the application.
 
@@ -48,34 +48,25 @@ def app_dir(app_name: str = 'cs_tools') -> str:
           C:\Users\<user>\AppData\Roaming\Foo Bar
     """
     if WINDOWS:
-        folder = os.environ.get("APPDATA")
-        if folder is None:
-            folder = os.path.expanduser("~")
-        return os.path.join(folder, app_name)
+        folder = os.environ.get("APPDATA") or os.path.expanduser("~")
+        return Path(folder).joinpath(app_name)
 
-    if sys.platform == "darwin":
-        return os.path.join(
-            os.path.expanduser("~/Library/Application Support"), app_name
-        )
+    if MACOSX:
+        home_app_support = os.path.expanduser("~/Library/Application Support")
+        return Path(home_app_support).joinpath(app_name)
 
-    return os.path.join(
-        os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
-        _posixify(app_name),
-    )
+    home_config = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+    return Path(home_config).joinpath(_posixify(app_name))
 
 
-def bin_dir(base_dir: Path) -> Path:
+def compare_versions(x: str, y: str) -> int:
     """
+    Determine the relationship between two version strings.
+
+    -1 means the source version is less than the target
+     0 means the source and target versions are equal
+     1 means the source version is greater than the target
     """
-    if WINDOWS:
-        bin_dir = os.path.join(base_dir, "." + base_dir.name, "Scripts")
-    else:
-        bin_dir = os.path.join(base_dir, "." + base_dir.name, "bin")
-
-    return Path(bin_dir)
-
-
-def compare_versions(x, y):
     mx = VERSION_REGEX.match(x)
     my = VERSION_REGEX.match(y)
 

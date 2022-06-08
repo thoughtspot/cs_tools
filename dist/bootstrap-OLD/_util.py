@@ -64,6 +64,17 @@ def app_dir(app_name: str = 'cs_tools') -> str:
     )
 
 
+def bin_dir(base_dir: Path) -> Path:
+    """
+    """
+    if WINDOWS:
+        bin_dir = os.path.join(base_dir, "." + base_dir.name, "Scripts")
+    else:
+        bin_dir = os.path.join(base_dir, "." + base_dir.name, "bin")
+
+    return Path(bin_dir)
+
+
 def compare_versions(x, y):
     mx = VERSION_REGEX.match(x)
     my = VERSION_REGEX.match(y)
