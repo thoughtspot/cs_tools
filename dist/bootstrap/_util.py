@@ -1,10 +1,13 @@
 from urllib.request import Request, urlopen
 from contextlib import closing
 from pathlib import Path
+from typing import List
+import zipfile
+import site
 import sys
 import os
 
-from _const import WINDOWS, MACOSX, VERSION_REGEX
+from _const import WINDOWS, VERSION_REGEX
 
 
 def _posixify(name: str) -> str:
@@ -22,7 +25,7 @@ def _posixify(name: str) -> str:
     return "-".join(name.split()).lower()
 
 
-def app_dir(app_name: str) -> Path:
+def app_dir(app_name: str = 'cs_tools') -> str:
     r"""
     Return the config folder for the application.
 
@@ -48,25 +51,31 @@ def app_dir(app_name: str) -> Path:
           C:\Users\<user>\AppData\Roaming\Foo Bar
     """
     if WINDOWS:
-        folder = os.environ.get("APPDATA") or os.path.expanduser("~")
-        return Path(folder).joinpath(app_name)
+        folder = os.environ.get("APPDATA")
+        if folder is None:
+            folder = os.path.expanduser("~")
+        return Path(os.path.join(folder, app_name))
 
-    if MACOSX:
-        home_app_support = os.path.expanduser("~/Library/Application Support")
-        return Path(home_app_support).joinpath(app_name)
+    if sys.platform == "darwin":
+        return Path(os.path.join(
+            os.path.expanduser("~/Library/Application Support"), app_name
+        ))
 
-    home_config = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
-    return Path(home_config).joinpath(_posixify(app_name))
+    return Path(os.path.join(
+        os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
+        _posixify(app_name),
+    ))
 
 
-def compare_versions(x: str, y: str) -> int:
-    """
-    Determine the relationship between two version strings.
+def bin_dir() -> Path:
+    # if os.getenv("POETRY_HOME"):
+    #     return Path(os.getenv("POETRY_HOME"), "bin").expanduser()
 
-    -1 means the source version is less than the target
-     0 means the source and target versions are equal
-     1 means the source version is greater than the target
-    """
+    user_base = site.getuserbase()
+    return Path(user_base).joinpath("Scripts" if WINDOWS else "bin")
+
+
+def compare_versions(x, y):
     mx = VERSION_REGEX.match(x)
     my = VERSION_REGEX.match(y)
 
@@ -86,3 +95,24 @@ def http_get(url: str) -> bytes:
 
     with closing(urlopen(request)) as r:
         return r.read()
+
+
+def entrypoints_from_whl(fp: Path) -> List[str]:
+    entrypoints = []
+    with zipfile.ZipFile(fp, mode="r") as zip_:
+        file = next((f for f in zip_.namelist() if f.endswith('entry_points.txt')), None)
+
+        if file is None:
+            return []
+
+        with zip_.open(file, mode='r') as f:
+            for line in f:
+                if '[console_scripts]' in line.decode():
+                    continue
+
+                command, _, _ = line.decode().strip().partition('=')
+
+                if command:
+                    entrypoints.append(command)
+
+    return entrypoints

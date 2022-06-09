@@ -6,8 +6,8 @@ import json
 
 from _virtual_env import VirtualEnvironment
 from _errors import CSToolsActivatorError
-from _const import PKGS_DIR, VERSION_REGEX
-from _util import app_dir, compare_versions, http_get
+from _const import PKGS_DIR, VERSION_REGEX, WINDOWS
+from _util import app_dir, bin_dir, compare_versions, http_get, entrypoints_from_whl
 
 
 class Activator:
@@ -31,6 +31,7 @@ class Activator:
         self._offline_install = offline_install
         self._reinstall = reinstall
         self._cs_tools_cfg_dir = app_dir('cs_tools')
+        self._executable_dir = bin_dir()
 
         # todo
         self._write = lambda *args: print(*args)
@@ -38,7 +39,7 @@ class Activator:
 
     @property
     def venv_path(self) -> str:
-        return self._cs_tools_cfg_dir / ".cs_tools"
+        return self._cs_tools_cfg_dir.joinpath(".cs_tools")
 
     @contextmanager
     def make_env(self, version: str) -> VirtualEnvironment:
@@ -77,7 +78,10 @@ class Activator:
 
         if self.venv_path.exists():
             env = VirtualEnvironment(self.venv_path)
-            cp  = env.python("-c", "import cs_tools;print(cs_tools.__version__)")
+            cp  = env.python(
+                      "-c", "import cs_tools;print(cs_tools.__version__)",
+                      raise_on_failure=False
+                  )
 
             if cp.returncode == 0:
                 local_version = cp.stdout.decode().strip()
@@ -107,6 +111,7 @@ class Activator:
         """
         """
         self._cs_tools_cfg_dir.mkdir(parents=True, exist_ok=True)
+        self._executable_dir.mkdir(parents=True, exist_ok=True)
 
     def install_cs_tools(self, version, env):
         """
@@ -127,6 +132,32 @@ class Activator:
         common = ["--find-links", PKGS_DIR.as_posix(), "--no-index", "--no-deps"]
         env.pip("install", "-r", (PKGS_DIR / "requirements.txt").as_posix(), *common)
         env.pip("install", f"cs_tools=={version}", *common)
+
+    def create_executable(self, version, env):
+        """
+        """
+        self._install_comment(version, "Creating script")
+
+        for script in entrypoints_from_whl(next(PKGS_DIR.glob('cs_tools*.whl'))):
+            # script = "cs_tools"
+            script_bin = "bin"
+
+            if WINDOWS:
+                script += ".exe"
+                script_bin = "Scripts"
+
+            target_script = env.path.joinpath(script_bin, script)
+
+            if self._executable_dir.joinpath(script).exists():
+                self._executable_dir.joinpath(script).unlink()
+
+            try:
+                print(self._executable_dir.joinpath(script))
+                self._executable_dir.joinpath(script).symlink_to(target_script)
+            except OSError:
+                # This can happen if the user
+                # does not have the correct permission on Windows
+                shutil.copy(target_script, self._executable_dir.joinpath(script))
 
     def run(self) -> int:
         """
@@ -162,9 +193,12 @@ class Activator:
 
         with self.make_env(version) as env:
             self.install_cs_tools(version, env)
-            # self.create_executable(version, env)
+            self.create_executable(version, env)
             self._install_comment(version, "Done")
             return 0
+
+    # def uninstall(self) -> int:
+    #     ...
 
     def activate(self) -> int:
         """
