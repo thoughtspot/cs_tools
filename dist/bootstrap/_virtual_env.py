@@ -3,7 +3,6 @@ from pathlib import Path
 import subprocess as sp
 import tempfile
 import sys
-import os
 
 from _errors import CSToolsActivatorError
 from _const import WINDOWS
@@ -16,22 +15,6 @@ class VirtualEnvironment:
     @property
     def path(self) -> Path:
         return self._path
-
-    @property
-    def shell(self):
-        shell = None
-
-        # NEED TO GET PATH OF WINDOWS SHELL
-
-        if os.name == "posix":
-            shell = os.environ.get("SHELL")
-        elif os.name == "nt":
-            shell = os.environ.get("COMSPEC")   # this doesn't perform well
-
-        if not shell:
-            raise RuntimeError("Unable to detect the current shell.")
-
-        return Path(shell)
 
     @property
     def bin_dir(self) -> Path:
@@ -68,10 +51,6 @@ class VirtualEnvironment:
                     sys.executable, virtualenv_pyz, "--clear", "--always-copy", target
                 )
 
-        # We add a special file so that Poetry can detect its own virtual environment
-        # just in case
-        target.joinpath("poetry_env").touch()
-
         env = cls(target)
 
         # we do this here to ensure that outdated system default pip does not trigger
@@ -80,10 +59,10 @@ class VirtualEnvironment:
         return env
 
     @staticmethod
-    def run(*args, **kwargs) -> sp.CompletedProcess:
+    def run(*args, raise_on_failure: bool = True, **kwargs) -> sp.CompletedProcess:
         cp = sp.run(args, stdout=sp.PIPE, stderr=sp.STDOUT, **kwargs)
 
-        if cp.returncode != 0:
+        if raise_on_failure and cp.returncode != 0:
             raise CSToolsActivatorError(return_code=cp.returncode, log=cp.stdout.decode())
 
         return cp
@@ -94,31 +73,3 @@ class VirtualEnvironment:
 
     def pip(self, *args, **kwargs) -> sp.CompletedProcess:
         return self.python("-m", "pip", "--isolated", *args, **kwargs)
-
-    def activate(self) -> int:
-        if self.shell.stem in ("powershell", "pwsh"):
-            suffix = ".ps1"
-        elif self.shell.stem == "cmd":
-            suffix = ".bat"
-        else:
-            suffix = ""
-
-        activate_path = f'{self.bin_dir}/activate{suffix}'
-
-        if WINDOWS:
-            if self.shell.stem in ("powershell", "pwsh"):
-                args = ["-NoExit", "-File", str(activate_path)]
-            else:
-                # /K will execute the bat file and keep the cmd process from terminating
-                args = ["/K", str(activate_path)]
-
-            completed_proc = sp.run([self.shell, *args])
-        else:
-            completed_proc = sp.run([self.shell, "-i"])
-
-        return completed_proc.returncode
-
-    def _get_source_command(self) -> str:
-        if self.shell in ("fish", "csh", "tcsh"):
-            return "source"
-        return "."

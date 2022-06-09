@@ -37,14 +37,6 @@ def main():
         action="store_true",
         default=False,
     )
-    parser.add_argument(
-        "-a",
-        "--activate",
-        help="activate the CS Tools command line",
-        dest="activate",
-        action="store_true",
-        default=False
-    )
 
     args = parser.parse_args()
 
