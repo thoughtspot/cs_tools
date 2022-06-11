@@ -4,8 +4,7 @@ import tempfile
 import logging
 
 from _const import WINDOWS
-
-LOG_LEVEL = int
+from _types import LogLevel
 
 
 def add_logging_level(level_name: str, level_number: int) -> None:
@@ -80,6 +79,9 @@ class ColorSupportedFormatter(logging.Formatter):
     skip_common_time: bool  [default: True]
       whether or not to repeat the same time format for each line
 
+    indent_amount: int  [default: 2]
+      number of spaces to indent child messages by
+
     **passthru
       keywords to send to logging.Formatter
     """
@@ -91,16 +93,18 @@ class ColorSupportedFormatter(logging.Formatter):
         logging.DEBUG: _create_color_code("black", bold=True),
     }
 
-    def __init__(self, skip_common_time: bool = True, **passthru):
+    def __init__(self, skip_common_time: bool = True, indent_amount: int = 2, **passthru):
         fmt = passthru.get('fmt', logging.BASIC_FORMAT)
+        fmt = fmt.replace("%(message)s", "%(indent)s%(message)s")
         passthru['fmt'] = f'%(color_code)s{fmt}%(color_reset)s'
         super().__init__(**passthru)
         self._skip_common_time = skip_common_time
+        self._indent_amount = indent_amount
         self._last_time = None
         self._original_datefmt = str(self.datefmt)
         self._try_enable_ansi_terminal_mode()
 
-    def add_color_level(self, level: LOG_LEVEL, *, color: str, bold: bool = False) -> None:
+    def add_color_level(self, level: LogLevel, *, color: str, bold: bool = False) -> None:
         """
         Colorizes the logging level.
 
@@ -130,7 +134,9 @@ class ColorSupportedFormatter(logging.Formatter):
         color = self.COLOR_CODES.get(record.levelno, "\033[0;37m")  # default to white
         record.color_code = color
         record.color_reset = "\033[0m"
+        record.indent = ""
 
+        # skip repeating the time format if it hasn't changed since last log
         if self._skip_common_time:
             formatted_time = self.formatTime(record, self._original_datefmt)
 
@@ -139,6 +145,12 @@ class ColorSupportedFormatter(logging.Formatter):
             else:
                 self.datefmt = self._original_datefmt
                 self._last_time = formatted_time
+
+        # add indentations
+        if 'parent' in record.__dict__:
+            parents = record.__dict__['parent'].count(".") + 1
+            indents = parents * self._indent_amount * " "
+            record.indent = indents
 
         return super().format(record, *a, **kw)
 

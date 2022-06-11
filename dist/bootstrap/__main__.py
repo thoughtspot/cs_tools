@@ -9,18 +9,27 @@ import argparse
 import platform
 import sys
 
+try:
+    from _types import ReturnCode
+except ImportError:
+    pass
 
+
+_YELLOW = '\033[33m'
+_BLUE = '\033[1;34m'
+_MAGENTA = '\033[1;35m'
+_RESET = '\033[0m'
 SUPPORTED_MINIMUM_PYTHON = (3, 6, 8)
 
 UNSUPPORTED_VERSION_MESSAGE = """
-It looks like you are running Python {version}!
+    {y}It looks like you are running {m}Python v{version}{y}!{c}
 
-CS Tools only supports python version {min_python} or greater.
+    {b}CS Tools only supports python version {min_python} or greater.{c}
 {submessage}
 """
 
 
-def main():
+def main():  # type: () -> ReturnCode
     """
     Entrypoint.
     """
@@ -44,6 +53,14 @@ def main():
         action="store_true",
         default=False,
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="increase terminal output level",
+        dest="verbose",
+        action="store_true",
+        default=False,
+    )
 
     args = parser.parse_args()
     py_version = tuple(map(int, platform.python_version().split('.')))
@@ -56,14 +73,18 @@ def main():
     if py_version <= (2, 7, 99):
         args = ' '.join(map(str, sys.argv))
         msg = """
-        Please re-run the following command..
+        {b}Please re-run the following command..{c}
 
         python3 {args}
-        """.format(args=args)
+        """.format(args=args, b=_BLUE, c=_RESET)
     else:
         msg = ''
 
     template = {
+        'b': _BLUE,
+        'c': _RESET,
+        'm': _MAGENTA,
+        'y': _YELLOW,
         'version': '.'.join(map(str, py_version)),
         'min_python': '.'.join(map(str, SUPPORTED_MINIMUM_PYTHON)),
         'submessage': msg

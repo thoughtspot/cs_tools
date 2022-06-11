@@ -27,7 +27,7 @@ def run(args: Tuple[str]) -> int:
     format_ = ColorSupportedFormatter(fmt="%(asctime)s | %(message)s", datefmt="%H:%M:%S")
     format_.add_color_level(logging.NOTE, color="blue", bold=True)
     handler.setFormatter(format_)
-    handler.setLevel(logging.INFO)
+    handler.setLevel(logging.INFO if not args.verbose else logging.DEBUG)
     root.addHandler(handler)
 
     # FILE LOGGER IS VERBOSE
