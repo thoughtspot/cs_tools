@@ -1,6 +1,9 @@
 from urllib.request import Request, urlopen
 from contextlib import closing
 from pathlib import Path
+from typing import List
+import zipfile
+import site
 import sys
 import os
 
@@ -51,28 +54,25 @@ def app_dir(app_name: str = 'cs_tools') -> str:
         folder = os.environ.get("APPDATA")
         if folder is None:
             folder = os.path.expanduser("~")
-        return os.path.join(folder, app_name)
+        return Path(os.path.join(folder, app_name))
 
     if sys.platform == "darwin":
-        return os.path.join(
+        return Path(os.path.join(
             os.path.expanduser("~/Library/Application Support"), app_name
-        )
+        ))
 
-    return os.path.join(
+    return Path(os.path.join(
         os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
         _posixify(app_name),
-    )
+    ))
 
 
-def bin_dir(base_dir: Path) -> Path:
-    """
-    """
-    if WINDOWS:
-        bin_dir = os.path.join(base_dir, "." + base_dir.name, "Scripts")
-    else:
-        bin_dir = os.path.join(base_dir, "." + base_dir.name, "bin")
+def bin_dir() -> Path:
+    # if os.getenv("POETRY_HOME"):
+    #     return Path(os.getenv("POETRY_HOME"), "bin").expanduser()
 
-    return Path(bin_dir)
+    user_base = site.getuserbase()
+    return Path(user_base).joinpath("Scripts" if WINDOWS else "bin")
 
 
 def compare_versions(x, y):
@@ -95,3 +95,24 @@ def http_get(url: str) -> bytes:
 
     with closing(urlopen(request)) as r:
         return r.read()
+
+
+def entrypoints_from_whl(fp: Path) -> List[str]:
+    entrypoints = []
+    with zipfile.ZipFile(fp, mode="r") as zip_:
+        file = next((f for f in zip_.namelist() if f.endswith('entry_points.txt')), None)
+
+        if file is None:
+            return []
+
+        with zip_.open(file, mode='r') as f:
+            for line in f:
+                if '[console_scripts]' in line.decode():
+                    continue
+
+                command, _, _ = line.decode().strip().partition('=')
+
+                if command:
+                    entrypoints.append(command)
+
+    return entrypoints

@@ -143,6 +143,14 @@ class TSConfig(Settings):
             return v
         return {k: pathlib.Path(f).resolve() for k, f in v.items()}
 
+    # @validator('syncer')
+    # def ensure_exists(v: Any) -> str:
+    #     if v is None:
+    #         return v
+
+    #     for name, syncer_defintion_fp in v.items():
+    #         if 
+
     def dict(self) -> Any:
         """
         Wrapper around model.dict to handle path types.

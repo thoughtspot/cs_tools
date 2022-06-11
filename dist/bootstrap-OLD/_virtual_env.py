@@ -4,7 +4,7 @@ import subprocess as sp
 import tempfile
 import sys
 
-from _errors import CSToolsInstallationError
+from _errors import CSToolsActivatorError
 from _const import WINDOWS
 
 
@@ -12,21 +12,26 @@ class VirtualEnvironment:
     def __init__(self, path: Path) -> None:
         self._path = path
 
-        # str() is required for compatibility with subprocess run on <= py3.7 on Windows
-        self._python = str(
-            self._path.joinpath("Scripts/python.exe" if WINDOWS else "bin/python")
-        )
+    @property
+    def path(self) -> Path:
+        return self._path
 
     @property
-    def path(self):
-        return self._path
+    def bin_dir(self) -> Path:
+        dir_ = "Scripts" if WINDOWS else "bin"
+        return self.path / dir_
+
+    @property
+    def exe(self) -> Path:
+        py_exe = "python.exe" if WINDOWS else "python"
+        return self.bin_dir / py_exe
 
     @classmethod
     def make(cls, target: Path) -> "VirtualEnvironment":
         try:
             import venv
 
-            builder = venv.EnvBuilder(clear=True, with_pip=True, symlinks=False)
+            builder = venv.EnvBuilder(clear=True, with_pip=True, symlinks=not WINDOWS)
             builder.ensure_directories(target)
             builder.create(target)
         except ImportError:
@@ -46,29 +51,25 @@ class VirtualEnvironment:
                     sys.executable, virtualenv_pyz, "--clear", "--always-copy", target
                 )
 
-        # We add a special file so that Poetry can detect its own virtual environment
-        # just in case
-        target.joinpath("poetry_env").touch()
-
         env = cls(target)
 
         # we do this here to ensure that outdated system default pip does not trigger
         # older bugs
         env.pip("install", "--disable-pip-version-check", "--upgrade", "pip")
-
         return env
 
     @staticmethod
-    def run(*args, **kwargs) -> sp.CompletedProcess:
+    def run(*args, raise_on_failure: bool = True, **kwargs) -> sp.CompletedProcess:
         cp = sp.run(args, stdout=sp.PIPE, stderr=sp.STDOUT, **kwargs)
 
-        if cp.returncode != 0:
-            raise CSToolsInstallationError(return_code=cp.returncode, log=cp.stdout.decode())
+        if raise_on_failure and cp.returncode != 0:
+            raise CSToolsActivatorError(return_code=cp.returncode, log=cp.stdout.decode())
 
         return cp
 
     def python(self, *args, **kwargs) -> sp.CompletedProcess:
-        return self.run(self._python, *args, **kwargs)
+        # str() is required for compatibility with subprocess run on <= py3.7 on Windows
+        return self.run(str(self.exe), *args, **kwargs)
 
     def pip(self, *args, **kwargs) -> sp.CompletedProcess:
         return self.python("-m", "pip", "--isolated", *args, **kwargs)

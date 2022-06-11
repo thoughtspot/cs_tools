@@ -41,83 +41,6 @@ class Activator:
     def venv_path(self) -> str:
         return self._cs_tools_cfg_dir.joinpath(".cs_tools")
 
-    def run(self) -> int:
-        self._write("Retrieving CS Tools metadata..")
-        local, remote = self._get_versions()
-
-        if compare_versions(local, remote) >= 0 and not self._reinstall:
-            self._write("CS Tools is already up to date!")
-            return 0
-
-        # self._display_pre_message()
-        self._ensure_directories()
-
-        try:
-            self._install_comment("Installing {} ({})".format("CS Tools", remote))
-            self._install(remote)
-        except sp.CalledProcessError as e:
-            raise CSToolsActivatorError(return_code=e.returncode, log=e.output.decode())
-        else:
-            self._install_comment(remote, "Done")
-
-        # self._display_post_message()
-        return 0
-
-    def _get_upgrade_version(self, version: str = None) -> Tuple[str, str]:
-        # can expand ArgParser to this allow prerelase, or older version install
-        if version is not None:
-            return version
-
-        local_version = "0.0.0"
-
-        # retrieve for an existing install
-        if self.venv_path.exists():
-            env = VirtualEnvironment(self.venv_path)
-            cmd = "import cs_tools;print(cs_tools.__version__)"
-            cp  = env.python("-c", cmd, raise_on_failure=False)
-
-            if cp.returncode == 0:
-                local_version = cp.stdout.decode().strip()
-
-        if self._offline_install:
-            fp = next(PKGS_DIR.glob('cs_tools*.whl'))
-            # reliable because whl files have name conformity
-            # <snake_case_pkg_name>-<version>-<platform-triplet>.whl
-            # where platform triplet is <pyversion>-<abi>-<platform>
-            # dots (.) in filename represent an OR relationship
-            _, remote_version, *_ = fp.stem.split('-')
-        else:
-            metadata = json.loads(http_get(self.LATEST_RELEASE_METADTA).decode())
-            remote_version = metadata["tag_name"]
-
-        xm = VERSION_REGEX.match(local_version)
-        x = (*xm.groups()[:3], xm.groups()[4])
-
-        ym = VERSION_REGEX.match(remote_version)
-        y = (*ym.groups()[:3], ym.groups()[4])
-
-        # self._cursor.move_up()
-        # self._cursor.clear_line()
-        return '{}'.format('.'.join(x)), '{}'.format('.'.join(y))
-
-    # def _display_pre_message(self, version: str) -> None:
-    #     pass
-
-    def _ensure_directories(self) -> None:
-        self._cs_tools_cfg_dir.mkdir(parents=True, exist_ok=True)
-        # self._executable_dir.mkdir(parents=True, exist_ok=True)
-
-    def _install(self, version: str) -> int:
-        with self.make_env(version) as env:
-            self._install_comment(version, "Installing CS Tools")
-            self._install_cs_tools(env)
-            self._install_comment(version, "Creating script")
-            self._set_path(env)
-            self._symlink_exe(env)
-            self._update_shell_profiles(env)
-
-        return 0
-
     @contextmanager
     def make_env(self, version: str) -> VirtualEnvironment:
         env_path_saved = self.venv_path.with_suffix(".save")
@@ -145,9 +68,56 @@ class Activator:
             if env_path_saved.exists():
                 shutil.rmtree(env_path_saved, ignore_errors=True)
 
-    def _install_cs_tools(self, env):
+    def get_versions(self) -> Tuple[str, str]:
         """
         """
+        self._write("Retrieving CS Tools metadata..")
+
+        # retrieve for an existing install
+        local_version = "0.0.0"
+
+        if self.venv_path.exists():
+            env = VirtualEnvironment(self.venv_path)
+            cp  = env.python(
+                      "-c", "import cs_tools;print(cs_tools.__version__)",
+                      raise_on_failure=False
+                  )
+
+            if cp.returncode == 0:
+                local_version = cp.stdout.decode().strip()
+
+        if self._offline_install:
+            fp = next(PKGS_DIR.glob('cs_tools*.whl'))
+            # reliable because whl files have name conformity
+            # <snake_case_pkg_name>-<version>-<platform-triplet>.whl
+            # where platform triplet is <pyversion>-<abi>-<platform>
+            # dots (.) in filename represent an OR relationship
+            _, remote_version, *_ = fp.stem.split('-')
+        else:
+            metadata = json.loads(http_get(self.LATEST_RELEASE_METADTA).decode())
+            remote_version = metadata["tag_name"]
+
+        xm = VERSION_REGEX.match(local_version)
+        x = (*xm.groups()[:3], xm.groups()[4])
+
+        ym = VERSION_REGEX.match(remote_version)
+        y = (*ym.groups()[:3], ym.groups()[4])
+
+        # self._cursor.move_up()
+        # self._cursor.clear_line()
+        return '{}'.format('.'.join(x)), '{}'.format('.'.join(y))
+
+    def ensure_directories(self) -> None:
+        """
+        """
+        self._cs_tools_cfg_dir.mkdir(parents=True, exist_ok=True)
+        self._executable_dir.mkdir(parents=True, exist_ok=True)
+
+    def install_cs_tools(self, version, env):
+        """
+        """
+        self._install_comment(version, "Installing CS Tools")
+
         if not self._offline_install:
             # fetch latest version from github
             # do some notifying that user is installing/upgrading their tools
@@ -159,21 +129,17 @@ class Activator:
         # installation, but not cs_tools itself (since poetry itself handles that bit).
         # take a 2-step process of installing all the dependencies, and then install
         # the cs_tools package.
-        common = [
-            "--find-links", PKGS_DIR.as_posix(),
-            "--ignore-installed",
-            "--no-index",
-            "--no-deps"
-        ]
+        common = ["--find-links", PKGS_DIR.as_posix(), "--no-index", "--no-deps"]
         env.pip("install", "-r", (PKGS_DIR / "requirements.txt").as_posix(), *common)
-        env.pip("install", "cs_tools", *common)
+        env.pip("install", f"cs_tools=={version}", *common)
 
-    def _set_path(self, env):
-        if WINDOWS:
-            return
+    def create_executable(self, version, env):
+        """
+        """
+        self._install_comment(version, "Creating script")
 
-    def _symlink_exe(self, env):
         for script in entrypoints_from_whl(next(PKGS_DIR.glob('cs_tools*.whl'))):
+            # script = "cs_tools"
             script_bin = "bin"
 
             if WINDOWS:
@@ -193,9 +159,49 @@ class Activator:
                 # does not have the correct permission on Windows
                 shutil.copy(target_script, self._executable_dir.joinpath(script))
 
-    def _update_shell_profiles(self, env):
-        if WINDOWS:
-            return
+    def run(self) -> int:
+        """
+        """
+        self._write("")
+        local, remote = self.get_versions()
+
+        if self._reinstall:
+            pass
+        elif compare_versions(local, remote) >= 0:
+            self._write('You have the latest version of CS Tools already!\n')
+            return 0
+
+        # self.display_pre_message()
+        self.ensure_directories()
+
+        try:
+            self.install(remote)
+        except sp.CalledProcessError as e:
+            raise CSToolsActivatorError(
+                return_code=e.returncode,
+                log=e.output.decode()
+            )
+
+        self._write("")
+        # self.display_post_message(local)
+        return 0
+
+    def install(self, version: str) -> int:
+        """
+        """
+        self._write("Installing {} ({})".format("CS Tools", version))
+
+        with self.make_env(version) as env:
+            self.install_cs_tools(version, env)
+            self.create_executable(version, env)
+            self._install_comment(version, "Done")
+            return 0
 
     # def uninstall(self) -> int:
     #     ...
+
+    def activate(self) -> int:
+        """
+        Activate the virtual environment.
+        """
+        return VirtualEnvironment(self.venv_path).activate()
