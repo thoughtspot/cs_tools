@@ -5,6 +5,71 @@ import logging
 
 from _const import WINDOWS
 
+LOG_LEVEL = int
+
+
+def add_logging_level(level_name: str, level_number: int) -> None:
+    """
+    Adds a new logging level to the `logging` module.
+
+    Parameters
+    ----------
+    level_name: str
+      text logging level
+
+    level_number: int
+      numeric logging level
+    """
+    method__name__ = level_name.lower()
+
+    if hasattr(logging, level_name):
+        raise AttributeError('{} already defined in logging module'.format(level_name))
+
+    if hasattr(logging, method__name__):
+        raise AttributeError('{} already defined in logging module'.format(method__name__))
+
+    if hasattr(logging.getLoggerClass(), method__name__):
+        raise AttributeError('{} already defined in logger class'.format(method__name__))
+
+    # This method was inspired by the answers to Stack Overflow post
+    #   http://stackoverflow.com/q/2183233/2988730, especially
+    #   http://stackoverflow.com/a/13638084/2988730
+    def logForLevel(self, message: str, *args, **kwargs) -> None:
+        if self.isEnabledFor(level_number):
+            self._log(level_number, message, args, **kwargs)
+
+    def logToRoot(message: str, *args, **kwargs) -> None:
+        logging.log(level_number, message, *args, **kwargs)
+
+    logging.addLevelName(level_number, level_name)
+    setattr(logging, level_name, level_number)
+    setattr(logging.getLoggerClass(), method__name__, logForLevel)
+    setattr(logging, method__name__, logToRoot)
+
+
+def _create_color_code(color: str, *, bold: bool = False) -> str:
+    # See: https://stackoverflow.com/a/33206814
+    escape_sequence = '\033['
+    end_sequence = 'm'
+
+    foreground_color_map = {
+        "black": 30,  # dark gray
+        "red": 31,
+        "green": 32,
+        "yellow": 33,
+        "blue": 34,
+        "magenta": 35,
+        "cyan": 36,
+        "white": 37,
+    }
+
+    if color not in foreground_color_map:
+        raise ValueError(f"invalid terminal color code: '{color}'")
+
+    to_bold = int(bold)  # 0 = reset , 1 = bold
+    to_color = foreground_color_map[color]
+    return f'{escape_sequence}{to_bold};{to_color}{end_sequence}'
+
 
 class ColorSupportedFormatter(logging.Formatter):
     """
@@ -19,11 +84,11 @@ class ColorSupportedFormatter(logging.Formatter):
       keywords to send to logging.Formatter
     """
     COLOR_CODES = {
-        logging.CRITICAL: "\033[1;35m",  # bold magenta
-        logging.ERROR: "\033[1;31m",     # bold red
-        logging.WARNING: "\033[1;33m",   # bold yellow
-        logging.INFO: "\033[0;37m",      # white
-        logging.DEBUG: "\033[1;30m"      # bold dark gray
+        logging.CRITICAL: _create_color_code("magenta", bold=True),
+        logging.ERROR: _create_color_code("red", bold=True),
+        logging.WARNING: _create_color_code("yellow", bold=True),
+        logging.INFO: _create_color_code("white"),
+        logging.DEBUG: _create_color_code("black", bold=True),
     }
 
     def __init__(self, skip_common_time: bool = True, **passthru):
@@ -34,6 +99,23 @@ class ColorSupportedFormatter(logging.Formatter):
         self._last_time = None
         self._original_datefmt = str(self.datefmt)
         self._try_enable_ansi_terminal_mode()
+
+    def add_color_level(self, level: LOG_LEVEL, *, color: str, bold: bool = False) -> None:
+        """
+        Colorizes the logging level.
+
+        Parameters
+        ----------
+        level: int
+          logging module's levelNo to colorize
+
+        color: str
+          name of the color to use
+
+        bold: bool  [default: False]
+          whether or not to bold the color
+        """
+        self.COLOR_CODES[level] = _create_color_code(color, bold=bold)
 
     def _try_enable_ansi_terminal_mode(self) -> None:
         # See: https://stackoverflow.com/a/36760881

@@ -6,7 +6,7 @@ from typing import Tuple
 import logging
 
 from _activator import Activator
-from _logging import ColorSupportedFormatter, InMemoryUntilErrorHandler
+from _logging import ColorSupportedFormatter, InMemoryUntilErrorHandler, add_logging_level
 from _errors import CSToolsActivatorError
 
 
@@ -20,9 +20,12 @@ def run(args: Tuple[str]) -> int:
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
 
+    add_logging_level('NOTE', logging.INFO + 5)
+
     # CONSOLE LOGGER IS PRETTY
     handler = logging.StreamHandler()
     format_ = ColorSupportedFormatter(fmt="%(asctime)s | %(message)s", datefmt="%H:%M:%S")
+    format_.add_color_level(logging.NOTE, color="blue", bold=True)
     handler.setFormatter(format_)
     handler.setLevel(logging.INFO)
     root.addHandler(handler)
@@ -33,6 +36,12 @@ def run(args: Tuple[str]) -> int:
     handler.setFormatter(format_)
     handler.setLevel(logging.DEBUG)
     root.addHandler(handler)
+
+    # TODO
+    # - fetch_remote will allow us to grab the latest release from github
+    if args.fetch_remote:
+        log.note("This operation is not yet supported. It's coming soon..!")
+        return 1
 
     log.info('Welcome to the CS Tools Installation script!')
 
@@ -54,6 +63,6 @@ def run(args: Tuple[str]) -> int:
         log.debug('full traceback..', exc_info=True)
 
     if rc != 0:
-        log.error(f"See '{handler.baseFilename}' for error logs.")
+        log.warning(f"See '{handler.baseFilename}' for error logs.")
 
     return rc

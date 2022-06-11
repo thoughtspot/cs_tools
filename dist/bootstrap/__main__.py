@@ -46,13 +46,9 @@ def main():
     )
 
     args = parser.parse_args()
-
-    if args.fetch_remote:
-        print ("This operation is not yet supported. It's coming soon..!")
-        return 1
-
     py_version = tuple(map(int, platform.python_version().split('.')))
 
+    # short circuit and run the cli if we're in a supported environment
     if py_version >= SUPPORTED_MINIMUM_PYTHON:
         import _main
         return _main.run(args)
