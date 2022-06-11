@@ -68,7 +68,7 @@ pydantic = "*"
 python-dateutil = "*"
 rich = "*"
 sqlmodel = "*"
-thoughtspot-tml = "*"
+thoughtspot-tml = ">= 1.1.0"
 toml = "*"
 typer = "*"
 
