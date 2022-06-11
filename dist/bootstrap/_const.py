@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+import os
 import re
 
 # CS ACTIVATOR DIRECTORY STRUCTURE LOOKS LIKE
@@ -16,10 +17,12 @@ import re
 #     ├─ ...
 #     └─ cs_tools-{__version__}-py3-none-any.whl
 #
-PKGS_DIR = Path(__file__).parent.parent / 'pkgs'
+HOME = Path("~").expanduser()
+PKGS = Path(__file__).parent.parent / 'pkgs'
 
 WINDOWS = sys.platform == "win32"
 MACOSX  = sys.platform == "darwin"
+SHELL   = os.getenv("SHELL", "")
 
 VERSION_REGEX = re.compile(
     r"v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?"
@@ -30,3 +33,33 @@ VERSION_REGEX = re.compile(
     ")?"
     r"(?:\+[^\s]+)?"
 )
+
+POST_MESSAGE = """CS Tools ({version}) is installed now. Great!
+
+You can test that everything is set up by executing:
+
+  {green}cs_tools --version{reset}
+"""
+
+POST_MESSAGE_NOT_IN_PATH = """CS Tools ({version}) is installed now. Great!
+
+To get started you need CS Tools's bin directory ({sys_exe_dir}) in your `PATH`
+environment variable.
+
+{configure_message}
+
+Alternatively, you can call CS Tools explicitly with `{executable}`.
+You can test that everything is set up by executing:
+
+  {green}cs_tools --version{reset}
+"""
+
+POST_MESSAGE_CONFIGURE_UNIX = """
+You might first try running {green}exec "$SHELL"{reset} to refresh your shell.
+
+If that doesn't work, add {green}export PATH="{sys_exe_dir}:$PATH"{reset} to your shell configuration file.
+"""
+
+POST_MESSAGE_CONFIGURE_FISH = """
+You can execute {green}set -U fish_user_paths {sys_exe_dir} $fish_user_paths{reset}
+"""
