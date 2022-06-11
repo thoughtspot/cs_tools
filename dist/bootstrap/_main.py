@@ -54,8 +54,9 @@ def run(args: Tuple[str]) -> int:
         rc = activator.run()
 
     except CSToolsActivatorError as e:
-        rc = e.returncode
+        rc = e.return_code
         log.error("CSTools installation failed.")
+        log.debug(f'full traceback..\n{e.log}')
 
     except Exception as e:
         rc = 1
