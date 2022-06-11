@@ -95,8 +95,10 @@ class ColorSupportedFormatter(logging.Formatter):
 
     def __init__(self, skip_common_time: bool = True, indent_amount: int = 2, **passthru):
         fmt = passthru.get('fmt', logging.BASIC_FORMAT)
-        fmt = fmt.replace("%(message)s", "%(indent)s%(message)s")
-        passthru['fmt'] = f'%(color_code)s{fmt}%(color_reset)s'
+        passthru['fmt'] = fmt.replace(
+            "%(message)s",
+            "%(color_code)s%(indent)s%(message)s%(color_reset)s"
+        )
         super().__init__(**passthru)
         self._skip_common_time = skip_common_time
         self._indent_amount = indent_amount
@@ -137,9 +139,9 @@ class ColorSupportedFormatter(logging.Formatter):
         record.indent = ""
 
         # skip repeating the time format if it hasn't changed since last log
-        if self._skip_common_time:
-            formatted_time = self.formatTime(record, self._original_datefmt)
+        formatted_time = self.formatTime(record, self._original_datefmt)
 
+        if self._skip_common_time:
             if self._last_time == formatted_time:
                 self.datefmt = len(formatted_time) * " "
             else:
@@ -151,6 +153,14 @@ class ColorSupportedFormatter(logging.Formatter):
             parents = record.__dict__['parent'].count(".") + 1
             indents = parents * self._indent_amount * " "
             record.indent = indents
+
+        # force newlines to respect indentation
+        record.message = record.getMessage()
+        record.asctime = formatted_time
+        s = self.formatMessage(record)
+        prefix, _, _ = s.partition(record.msg[:10])
+        prefix = prefix.replace(formatted_time, len(formatted_time) * " ")
+        record.msg = record.msg.replace("\n", f"\n{prefix}")
 
         return super().format(record, *a, **kw)
 
