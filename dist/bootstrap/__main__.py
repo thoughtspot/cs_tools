@@ -12,6 +12,13 @@ import sys
 
 SUPPORTED_MINIMUM_PYTHON = (3, 6, 8)
 
+UNSUPPORTED_VERSION_MESSAGE = """
+It looks like you are running Python {version}!
+
+CS Tools only supports python version {min_python} or greater.
+{submessage}
+"""
+
 
 def main():
     """
@@ -50,13 +57,6 @@ def main():
         import _main
         return _main.run(args)
 
-    UNSUPPORTED_VERSION_MESSAGE = """
-    It looks like you are running Python {version}!
-
-    CS Tools only supports python version {min_python} or greater.
-    {submessage}
-    """
-
     if py_version <= (2, 7, 99):
         args = ' '.join(map(str, sys.argv))
         msg = """
@@ -65,7 +65,7 @@ def main():
         python3 {args}
         """.format(args=args)
     else:
-        pass
+        msg = ''
 
     template = {
         'version': '.'.join(map(str, py_version)),

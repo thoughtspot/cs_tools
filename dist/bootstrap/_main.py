@@ -3,28 +3,57 @@ Making it here ensures we have a python 3.6.8-enabled installation.
 """
 from pathlib import Path
 from typing import Tuple
-import traceback
-import tempfile
+import logging
 
 from _activator import Activator
+from _logging import ColorSupportedFormatter, InMemoryUntilErrorHandler
 from _errors import CSToolsActivatorError
 
 
-def run(args: Tuple[str]):
+log = logging.getLogger(__name__)
+
+
+def run(args: Tuple[str]) -> int:
+    """
+    Run the CS Tools installer.
+    """
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    # CONSOLE LOGGER IS PRETTY
+    handler = logging.StreamHandler()
+    format_ = ColorSupportedFormatter(fmt="%(asctime)s | %(message)s", datefmt="%H:%M:%S")
+    handler.setFormatter(format_)
+    handler.setLevel(logging.INFO)
+    root.addHandler(handler)
+
+    # FILE LOGGER IS VERBOSE
+    handler = InMemoryUntilErrorHandler(directory=Path.cwd(), prefix="cs_tools-installer-error-")
+    format_ = logging.Formatter(fmt="%(levelname)-8s | %(asctime)s | %(filename)s:%(lineno)d | %(message)s")
+    handler.setFormatter(format_)
+    handler.setLevel(logging.DEBUG)
+    root.addHandler(handler)
+
+    log.info('Welcome to the CS Tools Installation script!')
+
     activator = Activator(
         offline_install=not args.fetch_remote,
         reinstall=args.reinstall,
     )
 
     try:
-        return activator.run()
+        rc = activator.run()
+
     except CSToolsActivatorError as e:
-        activator._write("[ERROR] CSTools installation failed.")
+        rc = e.returncode
+        log.error("CSTools installation failed.")
 
-        if e.log is not None:
-            _, path = tempfile.mkstemp(suffix=".log", prefix="cs_tools-installer-error-", dir=str(Path.cwd()), text=True)
-            activator._write(f"[ERROR] See {path} for error logs.")
-            tb = ''.join(traceback.format_tb(e.__traceback__))
-            Path(path).write_text(f"{e.log}\n\nTraceback:\n{tb}")
+    except Exception as e:
+        rc = 1
+        log.error(f'Unplanned error: {e}')
+        log.debug('full traceback..', exc_info=True)
 
-        return e.return_code
+    if rc != 0:
+        log.error(f"See '{handler.baseFilename}' for error logs.")
+
+    return rc
