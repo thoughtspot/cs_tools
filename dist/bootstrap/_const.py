@@ -18,11 +18,11 @@ import re
 #     └─ cs_tools-{__version__}-py3-none-any.whl
 #
 HOME = Path("~").expanduser()
-PKGS = Path(__file__).parent.parent / 'pkgs'
+PKGS = Path(__file__).parent.parent / "pkgs"
 
 WINDOWS = sys.platform == "win32"
-MACOSX  = sys.platform == "darwin"
-SHELL   = os.getenv("SHELL", "")
+MACOSX = sys.platform == "darwin"
+SHELL = os.getenv("SHELL", "")
 
 VERSION_REGEX = re.compile(
     r"v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?"

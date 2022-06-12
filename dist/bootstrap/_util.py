@@ -25,16 +25,16 @@ def _posixify(name: str) -> str:
     return "-".join(name.split()).lower()
 
 
-def app_dir(app_name: str = 'cs_tools') -> str:
+def app_dir(app_name: str = "cs_tools") -> str:
     r"""
     Return the config folder for the application.
 
     The default behavior is to return whatever is most appropriate for
     the operating system.
-    
+
     To give you an idea, for an app called ``"Foo Bar"``, something like
     the following folders could be returned:
-    
+
         Mac OS X:
           ~/Library/Application Support/Foo Bar
 
@@ -53,23 +53,19 @@ def app_dir(app_name: str = 'cs_tools') -> str:
     if WINDOWS:
         folder = os.environ.get("APPDATA")
         if folder is None:
-            folder = os.path.expanduser("~")
-        return Path(os.path.join(folder, app_name))
+            folder = Path("~").expanduser()
+        return Path(folder).joinpath(app_name)
 
     if sys.platform == "darwin":
-        return Path(os.path.join(
-            os.path.expanduser("~/Library/Application Support"), app_name
-        ))
+        return Path("~/Library/Application Support").expanduser().joinpath(app_name)
 
-    return Path(os.path.join(
-        os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
-        _posixify(app_name),
-    ))
+    home = os.environ.get("XDG_CONFIG_HOME", Path("~/.config").expanduser())
+    return Path(home).joinpath(_posixify(app_name))
 
 
 def bin_dir() -> Path:
-    # if os.getenv("POETRY_HOME"):
-    #     return Path(os.getenv("POETRY_HOME"), "bin").expanduser()
+    # if os.getenv("CS_TOOLS_HOME"):
+    #     return Path(os.getenv("CS_TOOLS_HOME"), "bin").expanduser()
 
     user_base = site.getuserbase()
     return Path(user_base).joinpath("Scripts" if WINDOWS else "bin")
@@ -100,17 +96,17 @@ def http_get(url: str) -> bytes:
 def entrypoints_from_whl(fp: Path) -> List[str]:
     entrypoints = []
     with zipfile.ZipFile(fp, mode="r") as zip_:
-        file = next((f for f in zip_.namelist() if f.endswith('entry_points.txt')), None)
+        file = next((f for f in zip_.namelist() if f.endswith("entry_points.txt")), None)
 
         if file is None:
             return []
 
-        with zip_.open(file, mode='r') as f:
+        with zip_.open(file, mode="r") as f:
             for line in f:
-                if '[console_scripts]' in line.decode():
+                if "[console_scripts]" in line.decode():
                     continue
 
-                command, _, _ = line.decode().strip().partition('=')
+                command, _, _ = line.decode().strip().partition("=")
 
                 if command:
                     entrypoints.append(command)

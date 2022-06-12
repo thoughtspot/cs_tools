@@ -1,4 +1,3 @@
-
 # logging.levelNo
 LogLevel = int
 

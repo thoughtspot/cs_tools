@@ -22,13 +22,13 @@ def add_logging_level(level_name: str, level_number: int) -> None:
     method__name__ = level_name.lower()
 
     if hasattr(logging, level_name):
-        raise AttributeError('{} already defined in logging module'.format(level_name))
+        raise AttributeError("{} already defined in logging module".format(level_name))
 
     if hasattr(logging, method__name__):
-        raise AttributeError('{} already defined in logging module'.format(method__name__))
+        raise AttributeError("{} already defined in logging module".format(method__name__))
 
     if hasattr(logging.getLoggerClass(), method__name__):
-        raise AttributeError('{} already defined in logger class'.format(method__name__))
+        raise AttributeError("{} already defined in logger class".format(method__name__))
 
     # This method was inspired by the answers to Stack Overflow post
     #   http://stackoverflow.com/q/2183233/2988730, especially
@@ -48,8 +48,8 @@ def add_logging_level(level_name: str, level_number: int) -> None:
 
 def _create_color_code(color: str, *, bold: bool = False) -> str:
     # See: https://stackoverflow.com/a/33206814
-    escape_sequence = '\033['
-    end_sequence = 'm'
+    escape_sequence = "\033["
+    end_sequence = "m"
 
     foreground_color_map = {
         "black": 30,  # dark gray
@@ -67,7 +67,7 @@ def _create_color_code(color: str, *, bold: bool = False) -> str:
 
     to_bold = int(bold)  # 0 = reset , 1 = bold
     to_color = foreground_color_map[color]
-    return f'{escape_sequence}{to_bold};{to_color}{end_sequence}'
+    return f"{escape_sequence}{to_bold};{to_color}{end_sequence}"
 
 
 class ColorSupportedFormatter(logging.Formatter):
@@ -96,6 +96,7 @@ class ColorSupportedFormatter(logging.Formatter):
     **passthru
       keywords to send to logging.Formatter
     """
+
     COLOR_CODES = {
         logging.CRITICAL: _create_color_code("magenta", bold=True),
         logging.ERROR: _create_color_code("red", bold=True),
@@ -105,7 +106,7 @@ class ColorSupportedFormatter(logging.Formatter):
     }
 
     def __init__(self, skip_common_time: bool = True, indent_amount: int = 2, **passthru):
-        passthru['fmt'] = "%(asctime)s %(color_code)s| %(indent)s%(message)s%(color_reset)s"
+        passthru["fmt"] = "%(asctime)s %(color_code)s| %(indent)s%(message)s%(color_reset)s"
         super().__init__(**passthru)
         self._skip_common_time = skip_common_time
         self._indent_amount = indent_amount
@@ -136,6 +137,7 @@ class ColorSupportedFormatter(logging.Formatter):
             return
 
         import ctypes
+
         kernel32 = ctypes.windll.kernel32
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
@@ -156,8 +158,8 @@ class ColorSupportedFormatter(logging.Formatter):
                 self._last_time = formatted_time
 
         # add indentations
-        if 'parent' in record.__dict__:
-            parents = record.__dict__['parent'].count(".") + 1
+        if "parent" in record.__dict__:
+            parents = record.__dict__["parent"].count(".") + 1
             indents = parents * self._indent_amount * " "
             record.indent = indents
 
@@ -192,8 +194,9 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
     **passthru
       keywords to send to logging.FileHandler
     """
+
     def __init__(self, directory: Path, prefix: str, **passthru):
-        super().__init__(**passthru, filename='NULL.log', delay=True)
+        super().__init__(**passthru, filename="NULL.log", delay=True)
         self._buffer = []
         self._found_error = False
         self._dir = directory
@@ -211,12 +214,7 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
         self._found_error = True
 
         # "baseFilename" is how the FileHandler calls it
-        _, self.baseFilename = tempfile.mkstemp(
-            suffix=".log",
-            prefix=self._prefix,
-            dir=self._dir,
-            text=True
-        )
+        _, self.baseFilename = tempfile.mkstemp(suffix=".log", prefix=self._prefix, dir=self._dir, text=True)
 
         for prior_record in self._buffer:
             super().emit(prior_record)

@@ -39,6 +39,7 @@ class Activator:
     reinstall: bool [default, False]
       whether or not to rebuild the virtual environment
     """
+
     def __init__(self, offline_install: bool = True, reinstall: bool = False):
         self._offline_install = offline_install
         self._reinstall = reinstall
@@ -86,7 +87,7 @@ class Activator:
             log.debug("found (.cs_tools) virtual environment", extra={"parent": "metadata"})
             env = VirtualEnvironment(self.venv_dir)
             cmd = "import cs_tools;print(cs_tools.__version__)"
-            cp  = env.python("-c", cmd, raise_on_failure=False)
+            cp = env.python("-c", cmd, raise_on_failure=False)
             out = cp.stdout.decode().strip()
 
             if cp.returncode == 0:
@@ -101,10 +102,7 @@ class Activator:
             try:
                 fp = next(PKGS.glob("cs_tools*.whl"))
             except StopIteration as e:
-                raise CSToolsActivatorError(
-                    return_code=1,
-                    log='offline installer contains no cs_tools wheel'
-                ) from e
+                raise CSToolsActivatorError(return_code=1, log="offline installer contains no cs_tools wheel") from e
             # reliable because whl files have name conformity
             # <snake_case_pkg_name>-<version>-<platform-triplet>.whl
             # where platform triplet is <pyversion>-<abi>-<platform tag>
@@ -123,7 +121,7 @@ class Activator:
         ym = VERSION_REGEX.match(remote_version)
         y = (*ym.groups()[:3], ym.groups()[4])
 
-        local  = "{}".format(".".join(x))
+        local = "{}".format(".".join(x))
         log.debug(f"final local  = v{local}", extra={"parent": "metadata"})
         remote = "{}".format(".".join(y))
         log.debug(f"final remote = v{remote}", extra={"parent": "metadata"})
@@ -187,10 +185,12 @@ class Activator:
         # take a 2-step process of installing all the dependencies, and then install
         # the cs_tools package.
         common = [
+            # fmt: off
             "--find-links", PKGS.as_posix(),
             "--ignore-installed",
             "--no-index",
             "--no-deps"
+            # fmt: on
         ]
         log.info("Installing requirements via pip.", extra={"parent": "install"})
         cp = env.pip("install", "-r", (PKGS / "requirements.txt").as_posix(), *common)
@@ -233,9 +233,11 @@ class Activator:
 
         # Updating any profile we can on UNIX systems
         addition = (
+            # fmt: off
             f"\n# absolute path to ThoughtSpot's CS Tools"
             f'\nexport PATH="{env.bin_dir}:$PATH"'
             f"\n"
+            # fmt: on
         )
 
         for profile in self._get_unix_profiles():
@@ -249,7 +251,7 @@ class Activator:
     def _get_windows_path_var(self) -> Optional[str]:
         import winreg
 
-        log.debug('attempting to get windows PATH variable')
+        log.debug("attempting to get windows PATH variable")
         with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER) as root:
             with winreg.OpenKey(root, "Environment", 0, winreg.KEY_ALL_ACCESS) as key:
                 path, _ = winreg.QueryValueEx(key, "PATH")
@@ -338,7 +340,7 @@ class Activator:
 
     def _display_post_message_windows(self, version: str) -> None:
         path = self._get_windows_path_var()
-        path_s = "\n>> ".join(path.split(';'))
+        path_s = "\n>> ".join(path.split(";"))
         log.debug(f"$PATH\n>> {path_s}")
         message = POST_MESSAGE_NOT_IN_PATH
 

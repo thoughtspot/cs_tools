@@ -37,19 +37,13 @@ class VirtualEnvironment:
         except ImportError:
             # fallback to using virtualenv package if venv is not available, eg: ubuntu
             python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
-            virtualenv_bootstrap_url = (
-                f"https://bootstrap.pypa.io/virtualenv/{python_version}/virtualenv.pyz"
-            )
+            virtualenv_bootstrap_url = f"https://bootstrap.pypa.io/virtualenv/{python_version}/virtualenv.pyz"
 
             with tempfile.TemporaryDirectory(prefix="cstools-installer") as temp_dir:
                 virtualenv_pyz = Path(temp_dir) / "virtualenv.pyz"
-                request = Request(
-                    virtualenv_bootstrap_url, headers={"User-Agent": "CS Tools"}
-                )
+                request = Request(virtualenv_bootstrap_url, headers={"User-Agent": "CS Tools"})
                 virtualenv_pyz.write_bytes(urlopen(request).read())
-                cls.run(
-                    sys.executable, virtualenv_pyz, "--clear", "--always-copy", target
-                )
+                cls.run(sys.executable, virtualenv_pyz, "--clear", "--always-copy", target)
 
         env = cls(target)
 

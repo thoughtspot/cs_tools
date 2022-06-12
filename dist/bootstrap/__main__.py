@@ -18,11 +18,11 @@ except ImportError:
     pass
 
 
-_BLUE = '\033[1;34m'
-_GREEN = '\033[1;32m'
-_RED = '\033[1;31m'
-_YELLOW = '\033[33m'
-_RESET = '\033[0m'
+_BLUE = "\033[1;34m"
+_GREEN = "\033[1;32m"
+_RED = "\033[1;31m"
+_YELLOW = "\033[33m"
+_RESET = "\033[0m"
 SUPPORTED_MINIMUM_PYTHON = (3, 6, 8)
 
 UNSUPPORTED_VERSION_MESSAGE = """
@@ -40,12 +40,16 @@ def main():  # type: () -> ReturnCode
     parser = argparse.ArgumentParser(
         prog="CS Tools Bootstrapper",
         formatter_class=RawTextHelpFormatter,
-        description=textwrap.dedent("""
+        description=textwrap.dedent(
+            """
         Installs, removes, or updates to the latest version of cs_tools
         
         Feeling lost? Try our tutorial!
         {c}https://thoughtspot.github.io/cs_tools/tutorial/{x}
-        """.format(c=_BLUE, x=_RESET)),
+        """.format(
+                c=_BLUE, x=_RESET
+            )
+        ),
     )
     # parser.add_argument(
     #     "-f",
@@ -98,33 +102,36 @@ def main():  # type: () -> ReturnCode
     )
 
     args = parser.parse_args()
-    py_version = tuple(map(int, platform.python_version().split('.')))
+    py_version = tuple(map(int, platform.python_version().split(".")))
 
     # short circuit and run the cli if we're in a supported environment
     if py_version >= SUPPORTED_MINIMUM_PYTHON:
         import _main
+
         return _main.run(args)
 
-    if py_version <= (2, 7, 99) and os.environ.get('SHELL', False):
-        args = ' '.join(map(str, sys.argv))
+    if py_version <= (2, 7, 99) and os.environ.get("SHELL", False):
+        args = " ".join(map(str, sys.argv))
         msg = """
         {b}Please re-run the following command..{x}
 
         python3 {args}
-        """.format(args=args, b=_BLUE, x=_RESET)
+        """.format(
+            args=args, b=_BLUE, x=_RESET
+        )
     else:
-        msg = ''
+        msg = ""
 
     template = {
-        'b': _BLUE,
-        'r': _RED,
-        'y': _YELLOW,
-        'x': _RESET,
-        'version': '.'.join(map(str, py_version)),
-        'min_python': '.'.join(map(str, SUPPORTED_MINIMUM_PYTHON)),
-        'submessage': msg
+        "b": _BLUE,
+        "r": _RED,
+        "y": _YELLOW,
+        "x": _RESET,
+        "version": ".".join(map(str, py_version)),
+        "min_python": ".".join(map(str, SUPPORTED_MINIMUM_PYTHON)),
+        "submessage": msg,
     }
-    print (UNSUPPORTED_VERSION_MESSAGE.format(**template))
+    print (UNSUPPORTED_VERSION_MESSAGE.format(**template))  # fmt: skip
     return 1
 
 
