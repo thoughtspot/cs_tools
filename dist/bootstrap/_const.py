@@ -45,21 +45,20 @@ POST_MESSAGE_NOT_IN_PATH = """CS Tools ({version}) is installed now. Great!
 
 To get started you need CS Tools's bin directory ({sys_exe_dir}) in your `PATH`
 environment variable.
-
 {configure_message}
+Alternatively, you can call CS Tools explicitly with {green}{executable}{note}.
 
-Alternatively, you can call CS Tools explicitly with `{executable}`.
 You can test that everything is set up by executing:
 
   {green}cs_tools --version{reset}
 """
 
 POST_MESSAGE_CONFIGURE_UNIX = """
-You might first try running {green}exec "$SHELL"{reset} to refresh your shell.
+{yellow}You might first try running {green}exec "$SHELL"{yellow} to refresh your shell.{note}
 
-If that doesn't work, add {green}export PATH="{sys_exe_dir}:$PATH"{reset} to your shell configuration file.
+If that doesn't work, add {green}export PATH="{sys_exe_dir}:$PATH"{note} to your shell configuration file.
 """
 
 POST_MESSAGE_CONFIGURE_FISH = """
-You can execute {green}set -U fish_user_paths {sys_exe_dir} $fish_user_paths{reset}
+You can execute {green}set -U fish_user_paths {sys_exe_dir} $fish_user_paths
 """
