@@ -202,13 +202,15 @@ class Activator:
             source_script = env.bin_dir.joinpath(script)
             target_script = self._sys_exe_dir.joinpath(script)
 
-            if target_script.exists():
+            try:
                 target_script.unlink()
+            except FileNotFoundError:
+                pass
 
             log.info(f"Attempting to symlink '{source_script}' to '{target_script}'", extra={"parent": "install"})
 
             try:
-                target_script.symlink_to(target_script)
+                source_script.symlink_to(target_script)
             except OSError:
                 # This can happen if the user does not have the correct permissions
                 # on Windows
