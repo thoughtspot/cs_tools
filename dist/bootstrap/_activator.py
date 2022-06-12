@@ -98,10 +98,16 @@ class Activator:
 
         if self._offline_install:
             log.debug("extracting version from cs_tools wheel", extra={"parent": "metadata"})
-            fp = next(PKGS.glob("cs_tools*.whl"))
+            try:
+                fp = next(PKGS.glob("cs_tools*.whl"))
+            except StopIteration as e:
+                raise CSToolsActivatorError(
+                    return_code=1,
+                    log='offline installer contains no cs_tools wheel'
+                ) from e
             # reliable because whl files have name conformity
             # <snake_case_pkg_name>-<version>-<platform-triplet>.whl
-            # where platform triplet is <pyversion>-<abi>-<platform>
+            # where platform triplet is <pyversion>-<abi>-<platform tag>
             # dots (.) in filename represent an OR relationship
             _, remote_version, *_ = fp.stem.split("-")
             log.debug(f"raw version -> {remote_version}", extra={"parent": "metadata.offline"})
