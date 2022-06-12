@@ -3,6 +3,9 @@ Making it here ensures we have a python 3.6.8-enabled installation.
 """
 from pathlib import Path
 from typing import Tuple
+import datetime as dt
+import sysconfig
+import platform
 import logging
 
 from _activator import Activator
@@ -44,6 +47,14 @@ def run(args: Tuple[str]) -> int:
         return 1
 
     log.info('Welcome to the CS Tools Installation script!')
+    log.debug(f"""
+
+    [PLATFORM DETAILS]
+    system: {platform.system()} (detail: {platform.platform()})
+    platform tag '{sysconfig.get_platform()}'
+    python: {platform.python_version()}
+    ran at: {dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S %z')}
+    """)
 
     activator = Activator(
         offline_install=not args.fetch_remote,
@@ -55,8 +66,8 @@ def run(args: Tuple[str]) -> int:
 
     except CSToolsActivatorError as e:
         rc = e.return_code
-        log.error("CSTools installation failed.")
-        log.debug(f'full traceback..\n{e.log}')
+        log.error("CS Tools installation failed.")
+        log.debug(f'full traceback..\nReason: {e.log}---\n\n', exc_info=True)
 
     except Exception as e:
         rc = 1
