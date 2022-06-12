@@ -336,7 +336,8 @@ class Activator:
         log.debug(f"$PATH\n>> {path_s}")
         message = POST_MESSAGE_NOT_IN_PATH
 
-        if path and str(self._sys_exe_dir) in path:
+        # if path and str(self._sys_exe_dir) in path:
+        if path and "cs_tools" in path:
             message = POST_MESSAGE
 
         log.note(
@@ -346,6 +347,7 @@ class Activator:
                 executable=self._sys_exe_dir.joinpath("cs_tools.exe"),
                 configure_message="""""",
                 green="\033[0;32m",
+                note="\033[1;34m",
                 reset="\033[0m",
             )
         )
@@ -354,7 +356,8 @@ class Activator:
         fish_user_paths = sp.check_output(["fish", "-c", "echo $fish_user_paths"]).decode()
         message = POST_MESSAGE_NOT_IN_PATH
 
-        if fish_user_paths and str(self._bin_dir) in fish_user_paths:
+        # if fish_user_paths and str(self._sys_exe_dir) in fish_user_paths:
+        if fish_user_paths and "cs_tools" in fish_user_paths:
             message = POST_MESSAGE
 
         log.note(
@@ -363,9 +366,13 @@ class Activator:
                 sys_exe_dir=self._sys_exe_dir,
                 executable=self._sys_exe_dir.joinpath("cs_tools"),
                 configure_message=POST_MESSAGE_CONFIGURE_FISH.format(
-                    sys_exe_dir=self._sys_exe_dir
+                    sys_exe_dir=self._sys_exe_dir,
+                    green="\033[0;32m",
+                    note="\033[1;34m",
+                    reset="\033[0m",
                 ),
                 green="\033[0;32m",
+                note="\033[1;34m",
                 reset="\033[0m",
             )
         )
@@ -374,7 +381,8 @@ class Activator:
         paths = os.getenv("PATH", "").split(":")
         message = POST_MESSAGE_NOT_IN_PATH
 
-        if paths and str(self._bin_dir) in paths:
+        # if paths and str(self._sys_exe_dir) in paths:
+        if paths and "cs_tools" in paths:
             message = POST_MESSAGE
 
         log.note(
@@ -383,9 +391,13 @@ class Activator:
                 sys_exe_dir=self._sys_exe_dir,
                 executable=self._sys_exe_dir.joinpath("cs_tools"),
                 configure_message=POST_MESSAGE_CONFIGURE_UNIX.format(
-                    sys_exe_dir=self._sys_exe_dir
+                    sys_exe_dir=self._sys_exe_dir,
+                    green="\033[0;32m",
+                    note="\033[1;34m",
+                    yellow="\033[1;33m",
                 ),
                 green="\033[0;32m",
+                note="\033[1;34m",
                 reset="\033[0m",
             )
         )
