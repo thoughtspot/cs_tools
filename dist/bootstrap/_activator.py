@@ -51,7 +51,7 @@ class Activator:
 
     def run(self) -> int:
         log.info("Retrieving CS Tools metadata.")
-        local, remote = self._get_versions()
+        local, remote = self.get_versions()
 
         if compare_versions(local, remote) >= 0 and not self._reinstall:
             log.note("CS Tools is already up to date!")
@@ -74,7 +74,7 @@ class Activator:
     # def uninstall(self) -> int:
     #     ...
 
-    def _get_versions(self, version: str = None) -> Tuple[str, str]:
+    def get_versions(self, version: str = None) -> Tuple[str, str]:
         # can expand ArgParser to this allow prerelase, or older version install
         if version is not None:
             return version

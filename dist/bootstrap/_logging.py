@@ -74,6 +74,17 @@ class ColorSupportedFormatter(logging.Formatter):
     """
     Fancy formatter, intended for output to a terminal.
 
+    The log record format itself is fairly locked to look like..
+
+     11:13:51 | Welcome to the CS Tools Installation script!
+              |
+              |     [PLATFORM DETAILS]
+              |     system: Windows (detail: Windows-10-10.0.19041-SP0)
+              |     platform tag 'win-amd64'
+              |     python: 3.10.4
+              |     ran at: 2022-06-12 11:13:51
+              |
+
     Parameters
     ----------
     skip_common_time: bool  [default: True]
@@ -94,11 +105,7 @@ class ColorSupportedFormatter(logging.Formatter):
     }
 
     def __init__(self, skip_common_time: bool = True, indent_amount: int = 2, **passthru):
-        fmt = passthru.get('fmt', logging.BASIC_FORMAT)
-        passthru['fmt'] = fmt.replace(
-            "%(message)s",
-            "%(color_code)s%(indent)s%(message)s%(color_reset)s"
-        )
+        passthru['fmt'] = "%(asctime)s %(color_code)s| %(indent)s%(message)s%(color_reset)s"
         super().__init__(**passthru)
         self._skip_common_time = skip_common_time
         self._indent_amount = indent_amount
