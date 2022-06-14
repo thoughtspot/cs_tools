@@ -33,9 +33,9 @@ SUPPORTED_PLATFORM_MATRIX = {
     # PEP571: manylinux2010_<arch> --> CentOS6 [EOL 2020.11.30]
     # PEP513: manylinux1_<arch> -----> CentOS5 [EOL 2017.03.31]
     "linux": (
-        "manylinux_2_17_x86_64", "manylinux2014_x86_64",  # alias, strict
-        "manylinux_2_12_x86_64", "manylinux2010_x86_64",  # alias, strict
-        "manylinux_2_5_x86_64", "manylinux1_x86_64",      # alias, strict
+        "manylinux2014_x86_64", "manylinux_2_17_x86_64",  # strict, alias
+        "manylinux2010_x86_64", "manylinux_2_12_x86_64",  # strict, alias
+        "manylinux1_x86_64", "manylinux_2_5_x86_64",      # strict, alias
     ),
     # fmt: on
 }
