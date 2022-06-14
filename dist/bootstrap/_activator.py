@@ -213,10 +213,10 @@ class Activator:
             except FileNotFoundError:
                 pass
 
-            log.info(f"Attempting to symlink '{source_script}' to '{target_script}'", extra={"parent": "install"})
+            log.info(f"Attempting to symlink: '{target_script}' -> '{source_script}'", extra={"parent": "install"})
 
             try:
-                source_script.symlink_to(target_script)
+                target_script.symlink_to(source_script)
             except OSError:
                 # This can happen if the user does not have the correct permissions
                 # on Windows
