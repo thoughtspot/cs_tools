@@ -65,7 +65,7 @@ def run(args: argparse.Namespace) -> ReturnCode:
         if args.check_version:
             local, remote = activator.get_versions()
             local = "none installed" if local == "0.0.0." else local
-            loc = "offline" if activator._offline_install else "online"
+            loc = "offline" if activator._offline_install else " online"
             log.note(f"Your installed version: {local}\nLatest {loc} version: {remote}")
             return 0
 

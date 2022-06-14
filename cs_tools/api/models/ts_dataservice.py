@@ -35,8 +35,9 @@ class TSDataService:
         # its own load balancer. If an external load balancer is used, the tsload
         # requests must be sticky, and the tsload load balancer should be disabled.
         #
-        # To turn off the load balancer, issue this tscli command
+        # To turn off the load balancer, issue the following tscli commands
         #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_enable_load_balancer false
+        #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_always_expose_node_ip true
         #
         # Further reading:
         #   https://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html
