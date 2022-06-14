@@ -236,6 +236,10 @@ class Activator:
             # fmt: off
             f"\n# absolute path to ThoughtSpot's CS Tools"
             f'\nexport PATH="{env.bin_dir}:$PATH"'
+            # You are dealing with an environment where Python thinks you are restricted to ASCII data.
+            # https://click.palletsprojects.com/en/8.1.x/unicode-support/
+            f"\nexport LC_ALL=en_US.utf-8"
+            f"\nexport LANG=en_US.utf-8"
             f"\n"
             # fmt: on
         )
