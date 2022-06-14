@@ -322,10 +322,13 @@ class Activator:
             zdotdir = Path(os.getenv("ZDOTDIR", HOME))
             profiles.append(zdotdir.joinpath(".zshrc"))
 
-        bash_profile = HOME.joinpath(".bash_profile")
+        # .bash_profile is for login shells
+        # .bashrc is for interactive shells
+        for profile in ['.bash_profile', '.bashrc']:
+            bash_profile = HOME.joinpath(profile)
 
-        if bash_profile.exists():
-            profiles.append(bash_profile)
+            if bash_profile.exists():
+                profiles.append(bash_profile)
 
         return profiles
 
