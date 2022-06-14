@@ -132,7 +132,7 @@ class Activator:
 
     def _ensure_directories(self) -> None:
         self._cs_tools_cfg_dir.mkdir(parents=True, exist_ok=True)
-        # self._sys_exe_dir.mkdir(parents=True, exist_ok=True)
+        self._sys_exe_dir.mkdir(parents=True, exist_ok=True)
 
     def _install(self, version: str) -> int:
         with self.make_env(version) as env:
