@@ -235,7 +235,8 @@ class Activator:
         addition = (
             # fmt: off
             f"\n# absolute path to ThoughtSpot's CS Tools"
-            f'\nexport PATH="{env.bin_dir}:$PATH"'
+            # append to PATH (instead of prepend) in case of global python environment requiring common packages
+            f'\nexport PATH="$PATH:{env.bin_dir}"'
             # You are dealing with an environment where Python thinks you are restricted to ASCII data.
             # https://click.palletsprojects.com/en/8.1.x/unicode-support/
             f"\nexport LC_ALL=en_US.utf-8"
