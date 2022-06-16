@@ -1,14 +1,10 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 from io import BufferedIOBase
-import datetime as dt
 import logging
-import json
 
 from pydantic import validate_arguments
 import httpx
 
-from cs_tools.api.requirement import requires
-from cs_tools.const import APP_DIR
 from cs_tools.util import reveal
 
 
@@ -25,28 +21,8 @@ class TSDataService:
     """
     def __init__(self, rest_api):
         self.rest_api = rest_api
-
-        # The load server resides on a different port compared to standard ThoughtSpot
-        # services. This is because the service tends to carry heavy file-load
-        # operations, and having a separate web server creates the needed isolation
-        # between standard ThoughtSpot services and tsload operations. By default, this
-        # service runs on all nodes of a ThoughtSpot cluster. This provides load
-        # distribution to address possible simultaneous loads. The tsload server uses
-        # its own load balancer. If an external load balancer is used, the tsload
-        # requests must be sticky, and the tsload load balancer should be disabled.
-        #
-        # To turn off the load balancer, issue the following tscli commands
-        #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_enable_load_balancer false
-        #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_always_expose_node_ip true
-        #
-        # Further reading:
-        #   https://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html
         self._tsload_node = rest_api._config.thoughtspot.fullpath
         self._tsload_port = 8442
-        self._tsload_logged_in = False
-
-        (APP_DIR / '.cache').mkdir(parents=True, exist_ok=True)
-        self._cache_fp = APP_DIR / '.cache/cycle-id-nodes.json'
 
     @property
     def etl_server_fullpath(self) -> str:
@@ -60,7 +36,6 @@ class TSDataService:
 
         return f'{host}:{self._tsload_port}/ts_dataservice/v1/public'
 
-    @requires(software='6.2.1', cloud='*')
     def tokens_static(self) -> httpx.Response:
         """
         Get tokens for static autocomplete.
@@ -70,7 +45,6 @@ class TSDataService:
         r = self.rest_api.request('GET', 'tql/tokens/static', privacy='dataservice')
         return r
 
-    @requires(software='6.2.1', cloud='*')
     def tokens_dynamic(self) -> httpx.Response:
         """
         Get tokens for dynamic autocomplete.
@@ -80,7 +54,6 @@ class TSDataService:
         r = self.rest_api.request('GET', 'tql/tokens/dynamic', privacy='dataservice')
         return r
 
-    @requires(software='6.2.1', cloud='*')
     @validate_arguments
     def query(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
         """
@@ -100,7 +73,6 @@ class TSDataService:
 
         return r
 
-    @requires(software='6.2.1', cloud='*')
     @validate_arguments
     def script(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
         """
@@ -120,8 +92,7 @@ class TSDataService:
 
         return r
 
-    @requires(software='6.2.1', cloud=None)
-    def _load_auth(self) -> httpx.Response:
+    def load_auth(self) -> httpx.Response:
         """
         Remote tsload service login.
         """
@@ -134,10 +105,8 @@ class TSDataService:
                 }
             )
 
-        self._tsload_logged_in = True
         return r
 
-    @requires(software='6.2.1', cloud=None)
     @validate_arguments
     def load_init(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
         """
@@ -145,9 +114,6 @@ class TSDataService:
         """
         # NOTE: all options data can be found here
         #   https://docs.thoughtspot.com/software/6.2/tsload-service-api-ref.html#_example_use_of_parameters
-        if not self._tsload_logged_in:
-            self._load_auth()
-
         r = self.rest_api.request(
                 'POST',
                 f'{self.etl_server_fullpath}/loads',
@@ -155,20 +121,8 @@ class TSDataService:
                 json=data
             )
 
-        d = r.json()
-
-        # if we're told to redirect from the load balancer, we'll need to re-auth.
-        if d.get('node_address'):
-            self._tsload_logged_in = False
-            self._cache(
-                cycle_id=d['cycle_id'],
-                node=d['node_address']['host'],
-                port=d['node_address']['port']
-            )
-
         return r
 
-    @requires(software='6.2.1', cloud=None)
     @validate_arguments(config={'arbitrary_types_allowed': True})
     def load_start(
         self,
@@ -192,18 +146,6 @@ class TSDataService:
         fd : BinaryIO
           a file-like object to load to Falcon
         """
-        try:
-            cache = self._cache(cycle_id)
-            self._tsload_node = cache[cycle_id]['node']
-            self._tsload_port = cache[cycle_id]['port']
-            log.debug(f'redirecting to: {self.etl_server_fullpath}')
-        except KeyError:
-            # happens when etl_http_server loadbalancer is not running
-            pass
-
-        if not self._tsload_logged_in:
-            self._load_auth()
-
         r = self.rest_api.request(
                 'POST',
                 f'{self.etl_server_fullpath}/loads/{cycle_id}',
@@ -212,7 +154,6 @@ class TSDataService:
 
         return r
 
-    @requires(software='6.2.1', cloud=None)
     @validate_arguments
     def load_commit(self, cycle_id: str) -> httpx.Response:
         """
@@ -225,18 +166,6 @@ class TSDataService:
         cycle_id : str
           unique identifier of a load cycle
         """
-        try:
-            cache = self._cache(cycle_id)
-            self._tsload_node = cache[cycle_id]['node']
-            self._tsload_port = cache[cycle_id]['port']
-            log.debug(f'redirecting to: {self.etl_server_fullpath}')
-        except KeyError:
-            # happens when etl_http_server loadbalancer is not running
-            pass
-
-        if not self._tsload_logged_in:
-            self._load_auth()
-
         r = self.rest_api.request(
                 'POST',
                 f'{self.etl_server_fullpath}/loads/{cycle_id}/commit',
@@ -244,7 +173,6 @@ class TSDataService:
 
         return r
 
-    @requires(software='6.2.1', cloud=None)
     @validate_arguments
     def load_status(self, cycle_id: str) -> httpx.Response:
         """
@@ -255,22 +183,10 @@ class TSDataService:
         cycle_id : str
           unique identifier of a load cycle
         """
-        try:
-            cache = self._cache(cycle_id)
-            self._tsload_node = cache[cycle_id]['node']
-            self._tsload_port = cache[cycle_id]['port']
-            log.debug(f'redirecting to: {self.etl_server_fullpath}')
-        except KeyError:
-            # happens when etl_http_server loadbalancer is not running
-            pass
-
-        if not self._tsload_logged_in:
-            self._load_auth()
-
         r = self.rest_api.request('GET', f'{self.etl_server_fullpath}/loads/{cycle_id}')
+
         return r
 
-    @requires(software='6.2.1', cloud=None)
     @validate_arguments
     def load_params(self, cycle_id: str) -> httpx.Response:
         """
@@ -281,22 +197,13 @@ class TSDataService:
         cycle_id : str
           unique identifier of a load cycle
         """
-        try:
-            cache = self._cache(cycle_id)
-            self._tsload_node = cache[cycle_id]['node']
-            self._tsload_port = cache[cycle_id]['port']
-            log.debug(f'redirecting to: {self.etl_server_fullpath}')
-        except KeyError:
-            # happens when etl_http_server loadbalancer is not running
-            pass
+        r = self.rest_api.request(
+            'GET',
+            f'{self.etl_server_fullpath}/loads/{cycle_id}/input_summary'
+        )
 
-        if not self._tsload_logged_in:
-            self._load_auth()
-
-        r = self.rest_api.request('GET', f'{self.etl_server_fullpath}/loads/{cycle_id}/input_summary')
         return r
 
-    @requires(software='6.2.1', cloud=None)
     @validate_arguments
     def bad_records(self, cycle_id: str) -> httpx.Response:
         """
@@ -307,117 +214,8 @@ class TSDataService:
         cycle_id : str
           unique identifier of a load cycle
         """
-        try:
-            cache = self._cache(cycle_id)
-            self._tsload_node = cache[cycle_id]['node']
-            self._tsload_port = cache[cycle_id]['port']
-            log.debug(f'redirecting to: {self.etl_server_fullpath}')
-        except KeyError:
-            # happens when etl_http_server loadbalancer is not running
-            pass
-
-        if not self._tsload_logged_in:
-            self._load_auth()
-
-        r = self.rest_api.request('GET', f'{self.etl_server_fullpath}/loads/{cycle_id}/bad_records_file')
+        r = self.rest_api.request(
+                'GET',
+                f'{self.etl_server_fullpath}/loads/{cycle_id}/bad_records_file'
+            )
         return r
-
-    # Not sure where to put these.. they're attached to the ts data service
-    # API, but only in the sense that the api produces predictable output, and
-    # not part of the model itself.
-
-    def _cache(
-        self,
-        cycle_id: str,
-        *,
-        node: str = None,
-        port: int = None
-    ) -> Dict[str, str]:
-        """
-        Small local filestore for managing the load balancer re-route.
-
-        Further reading:
-        https://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html#api-workflow
-        https://docs.thoughtspot.com/latest/reference/tsload-service-api-ref.html#response-1
-        """
-        try:
-            with self._cache_fp.open(mode='r') as j:
-                cache = json.load(j)
-        except FileNotFoundError:
-            cache = {}
-
-        # read from cache
-        if node is None:
-            return cache
-
-        # write to cache
-        now = dt.datetime.utcnow().timestamp()
-        cache[cycle_id] = {'node': node, 'port': port, 'load_datetime': now}
-
-        # keep only recent data
-        cache = {
-            cycle: details
-            for cycle, details in cache.items()
-            if (now - details['load_datetime']) <= (10 * 86400)  # 10 days
-        }
-
-        with self._cache_fp.open(mode='w') as j:
-            json.dump(cache, j, indent=4, sort_keys=True)
-
-        return cache
-
-    @staticmethod
-    def _parse_tql_query(table: Dict) -> str:
-        header  = '|'.join(h['name'] for h in table['headers'])
-        divider = '-' * len(header)
-
-        try:
-            records = '\n'.join('|'.join(r['v']) for r in table['rows'])
-        except KeyError:
-            records = ''
-
-        return f'[orange1]{header}\n{divider}\n{records}[/]'
-
-    @staticmethod
-    def _parse_api_messages(messages: List[str]) -> str:
-        messages_ = []
-
-        for msg_data in messages:
-            level = msg_data['type']
-            text = msg_data['value'].strip()
-
-            if level == 'ERROR':
-                color = 'red'
-
-            if level == 'WARNING':
-                color = 'yellow'
-
-            if level == 'INFO':
-                color = 'white'
-
-            if text == 'Statement executed successfully.':
-                color = 'green'
-
-            messages_.append(f'[{color}]{text}[/]')
-
-        return '\n'.join(messages_)
-
-    @staticmethod
-    def _parse_tsload_status(status: Dict) -> str:
-        if status.get('status', {}).get('code', False) == 'LOAD_FAILED':
-            msg = (
-                f'\nCycle ID: {status["cycle_id"]}'
-                f'\nStage: {status["internal_stage"]}'
-                f'\nStatus: {status["status"]["code"]}'
-                f'\n[red]{status["status"]["message"]}[/]'
-                f'\n[red]{status["parsing_errors"]}[/]' if 'parsing_errors' in status else ''
-            )
-        else:
-            msg = (
-                f'\nCycle ID: {status["cycle_id"]}'
-                f'\nStage: [green]{status["internal_stage"]}[/]'
-                f'\nRows written: {status["rows_written"]}'
-                f'\nIgnored rows: {status["ignored_row_count"]}'
-            )
-
-        return msg

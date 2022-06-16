@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Union
 from io import BufferedIOBase, TextIOWrapper
 from tempfile import _TemporaryFileWrapper
+import datetime as dt
 import logging
+import json
 import time
 
 from pydantic import validate_arguments
@@ -9,7 +11,8 @@ from pydantic import validate_arguments
 from cs_tools.data.enums import Privilege
 from cs_tools.errors import InsufficientPrivileges, TSLoadServiceUnreachable
 from cs_tools.const import (
-    FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
+    FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE,
+    APP_DIR
 )
 
 
@@ -25,9 +28,82 @@ class TSLoadMiddleware:
     """
     def __init__(self, ts):
         self.ts = ts
+        # The load server resides on a different port compared to standard ThoughtSpot
+        # services. This is because the service tends to carry heavy file-load
+        # operations, and having a separate web server creates the needed isolation
+        # between standard ThoughtSpot services and tsload operations. By default, this
+        # service runs on all nodes of a ThoughtSpot cluster. This provides load
+        # distribution to address possible simultaneous loads. The tsload server uses
+        # its own load balancer. If an external load balancer is used, the tsload
+        # requests must be sticky, and the tsload load balancer should be disabled.
+        #
+        # To turn off the load balancer, issue the following tscli commands
+        #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_enable_load_balancer false
+        #   tscli --adv service add-gflag etl_http_server.etl_http_server etl_server_always_expose_node_ip true
+        #
+        #   DEV NOTE
+        #     On each public method in this middleware, a keyword argument called
+        #     `ignore_node_redirect` which will remove the redirection logic from
+        #     further calls to the tsload service api. Since this is handled on a
+        #     client-by-client basis with no input from the API itself, we expose it as
+        #     a kwarg.
+        #
+        # Further reading:
+        #   https://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html
+        #
+        self._cache_fp = APP_DIR / '.cache/tsload-node-redirect-by-cycle-id.json'
+
+    def _cache_node_redirect(self, cycle_id: str, *, node_info: Dict = None) -> Dict[str, Dict]:
+        """
+        Method is a total hack.
+        """
+        try:
+            with self._cache_fp.open(mode='r') as j:
+                cache = json.load(j)
+        except FileNotFoundError:
+            cache = {}
+
+        # nothing to write, or we should be reading
+        if node_info is None:
+            return cache
+
+        # write to cache
+        now = dt.datetime.utcnow().timestamp()
+        cache[cycle_id] = {**node_info, 'load_datetime': now}
+
+        # keep only recent data
+        cache = {
+            cycle: details
+            for cycle, details in cache.items()
+            if (now - details['load_datetime']) <= (10 * 86400)  # 10 days
+        }
+
+        with self._cache_fp.open(mode='w') as j:
+            json.dump(cache, j, indent=4, sort_keys=True)
+
+        return cache
+
+    def _check_for_redirect_auth(self, cycle_id: str) -> None:
+        """
+        Attempt a login.
+
+        By default, the tsload service API sits behind a load balancer. When we first
+        init a new load cycle, the balancer will respond with the proper node (if 
+        applicable) to submit file uploads to. If that node is not the main node, then
+        we will be required to authorize again.
+        """
+        cache = self._cache_node_redirect(cycle_id)
+
+        if cycle_id in cache:
+            ds = self.ts.api.ts_dataservice
+            ds._tsload_node = cache[cycle_id]['host']
+            ds._tsload_port = cache[cycle_id]['port']
+            log.debug(f'redirecting to: {ds.etl_server_fullpath}')
+            ds.load_auth()
 
     def _check_privileges(self) -> None:
         """
+        Determine if the user has necessary Data Manager privileges.
         """
         if not set(self.ts.me.privileges).intersection(REQUIRED_PRIVILEGES):
             raise InsufficientPrivileges(
@@ -41,6 +117,7 @@ class TSLoadMiddleware:
         self,
         fd: Union[BufferedIOBase, TextIOWrapper, _TemporaryFileWrapper],
         *,
+        ignore_node_redirect: bool = False,
         database: str,
         table: str,
         schema_: str = 'falcon_default_schema',
@@ -84,6 +161,11 @@ class TSLoadMiddleware:
         ----------
         fp : pathlib.Path
           file to load to thoughtspot
+
+        ignore_node_redirect : bool  [default: False]
+          whether or not to ignore node redirection
+
+        **tsload_options
 
         Returns
         -------
@@ -150,16 +232,42 @@ class TSLoadMiddleware:
                 http_error=e
             )
 
-        cycle_id = r.json()['cycle_id']
-        self.ts.api.ts_dataservice.load_start(cycle_id, fd=fd)
-        self.ts.api.ts_dataservice.load_commit(cycle_id)
-        return cycle_id
+        data = r.json()
+        self._cache_node_redirect(data['cycle_id'], node_info=data.get('node_address', None))
+
+        if not ignore_node_redirect:
+            self._check_for_redirect_auth(data['cycle_id'])
+
+        self.ts.api.ts_dataservice.load_start(data['cycle_id'], fd=fd)
+        self.ts.api.ts_dataservice.load_commit(data['cycle_id'])
+        return data['cycle_id']
 
     @validate_arguments
-    def status(self, cycle_id: str, *, wait_for_complete: bool = False):
+    def status(
+        self,
+        cycle_id: str,
+        *,
+        ignore_node_redirect: bool = False,
+        wait_for_complete: bool = False
+    ) -> Dict[str, Any]:
         """
+        Get the status of a previously started data load.
+
+        Parameters
+        ----------
+        cycle_id : str
+          data load to check on
+
+        ignore_node_redirect : bool  [default: False]
+          whether or not to ignore node redirection
+
+        wait_for_complete: bool  [default: False]
+          poll the load server until it responds with OK or ERROR
         """
         self._check_privileges()
+
+        if not ignore_node_redirect:
+            self._check_for_redirect_auth(cycle_id=cycle_id)
 
         while True:
             r = self.ts.api.ts_dataservice.load_status(cycle_id)
