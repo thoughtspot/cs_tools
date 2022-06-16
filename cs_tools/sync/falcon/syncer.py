@@ -25,6 +25,7 @@ class Falcon:
     schema_: str = Field('falcon_default_schema', alias='schema')
     empty_target: bool = True
     timeout: float = 60.0
+    ignore_load_balancer_redirect: bool = False
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
@@ -128,6 +129,7 @@ class Falcon:
             try:
                 self.ts.tsload.upload(
                     fd,
+                    ignore_node_redirect=self.ignore_load_balancer_redirect,
                     database=self.database,
                     table=table,
                     empty_target=self.empty_target

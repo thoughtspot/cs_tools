@@ -40,6 +40,10 @@ Falcon is __ThoughtSpot__'s proprietary in-memory database that exists as part o
 <br/>*<span class=fc-mint>default</span>:* `60.0`
 <br/>*if the timeout value is set to* `0` *then calls over to Falcon will never reach a timeout threshold*
 
+> __ignore_load_balancer_redirect__{ .fc-blue }: <span class=fc-coral>optional</span>
+<br/>*<span class=fc-mint>default</span>:* `false`
+<br/>*it's unlikely you need to change this, consult with your ThoughtSpot Customer Success Manager if you think it's necessary*
+
 
 ??? question "How do I use the Falcon syncer in commands?"
 
