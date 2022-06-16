@@ -2,8 +2,6 @@ import json
 
 import httpx
 
-from cs_tools.settings import TSConfig
-
 
 class CSToolsException(Exception):
     """
@@ -116,7 +114,7 @@ class AuthenticationError(CSToolsException):
     """
     Raised when the ThoughtSpot platform is unreachable.
     """
-    def __init__(self, ts_config: TSConfig, *, original: httpx.HTTPStatusError):
+    def __init__(self, ts_config: "TSConfig", *, original: httpx.HTTPStatusError):
         self.ts_config = ts_config
         self.original_exception = original
         super().__init__(self.cli_message)
@@ -179,3 +177,14 @@ class SyncerError(CSToolsException):
     @property
     def cli_message(self) -> str:
         return str(self)
+
+
+class ConfigDoesNotExist(CSToolsException):
+
+    def __init__(self, fp):
+        self.fp = fp
+        self.config_name = fp.stem.replace('cluster-cfg_', '')
+
+    @property
+    def cli_message(self) -> str:
+        return f'cluster configuration: [blue]{self.name}[/] does not exist'

@@ -8,8 +8,9 @@ from pydantic.types import DirectoryPath, FilePath
 from pydantic import BaseModel, AnyHttpUrl, validator
 import toml
 
-from cs_tools.util import obscure
+from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.const import APP_DIR
+from cs_tools.util import obscure
 
 
 def _meta_config(config_name: str = None) -> Union[str, Dict[str, Any]]:
@@ -178,7 +179,10 @@ class TSConfig(Settings):
         verbose, temp_dir
           overrides the settings found in the config file
         """
-        data = toml.load(fp)
+        try:
+            data = toml.load(fp)
+        except FileNotFoundError:
+            raise ConfigDoesNotExist(fp=fp)
 
         if data.get('name') is None:
             data['name'] = fp.stem.replace('cluster-cfg_', '')
