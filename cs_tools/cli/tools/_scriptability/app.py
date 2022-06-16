@@ -14,7 +14,7 @@ import toml
 from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
 from typer import Argument as A_, Option as O_  # noqa
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import typer
 
 from cs_tools.data.enums import AccessLevel, GUID, StatusCode, TMLImportPolicy, TMLType, TMLContentType
@@ -23,8 +23,10 @@ from cs_tools.cli.tools import common
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+from cs_tools.cli.util import TSDependencyTree
 
 from . import __version__
+from .util import TMLFileBundle
 
 
 def strip_blanks(inp: List[str]) -> List[str]:
@@ -216,6 +218,13 @@ def import_(
         share_with: List[str] = O_([], metavar='GROUPS',
                                    callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                    help='One or more groups to share the uploaded content with.'),
+        tml_logs: Optional[pathlib.Path] = O_(
+            None,
+            help='full path to the directory to log sent TML.  TML can change during load.',
+            metavar='DIR',
+            dir_okay=True,
+            resolve_path=True
+        ),
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -223,71 +232,188 @@ def import_(
     ts = ctx.obj.thoughtspot
 
     if not path.exists():
-        console.stderr(f"[bold red]Error: {path} doesn't exist[/]")
+        console.log(f"[bold red]Error: {path} doesn't exist[/]")
         raise typer.Exit(-1)
 
+    if tml_logs and not tml_logs.is_dir():
+        console.log(f"[bold red]Error: Log directory {tml_logs} doesn't exist[/]")
+        raise typer.Exit(-1)
+
+    if path.is_dir():  # individual files are listed as they are loaded so just show directory.
+        if import_policy == TMLImportPolicy.validate_only:
+            console.log(f"[bold green]validating from {path}.[/]")
+        else:
+            console.log(f"[bold green]importing from {path} with policy {import_policy.value}.[/]")
+
     if import_policy == TMLImportPolicy.validate_only:
-        console.log(f"[bold green]validating {path.name}.[/]")
+        _import_and_validate(ts, path, force_create, connection, guid_file, tml_logs)
     else:
-        console.log(f"[bold green]importing {path.name} with policy {import_policy.value}.[/]")
+        _import_and_create(ts, path, import_policy, force_create, connection, guid_file, tags, share_with, tml_logs)
 
-    guid_mappings = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
 
-    tml: [TML] = []  # array of TML to update
-    files = []
-    if path.is_dir():
-        for p in list(f for f in path.iterdir() if f.match("*.tml")):
-            if not p.is_dir():  # don't currently support sub-folders.  Might add later.
-                files.append(p)
-                _load_and_append_tml_file(ts=ts, path=p, connection=connection, guid_mappings=guid_mappings,
-                                          force_create=force_create, tml_list=tml)
-    else:
-        files.append(path)
-        _load_and_append_tml_file(ts=ts, path=path, connection=connection, guid_mappings=guid_mappings,
-                                  force_create=force_create, tml_list=tml)
+def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool,
+                         connection: GUID, guid_file: pathlib.Path, tml_logs: pathlib.Path) -> None:
+    """
+    Does a validation import.  No content is created.  If FQNs map, they will be used.  If they don't, they will be
+    removed.
+    :param ts: The ThoughtSpot connection.
+    :param path: Path to the directory or file.
+    :param force_create: If true, all GUIDs are removed from content (but not FQNs that map)
+    :param connection: The connection to use for getting table IDs.
+    :param guid_file: The file of GUID mappings.
+    :param tml_logs: Directory to log imported content to.
+    """
+    guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
 
-    # remember the old guids in case we need to update the mapping.
-    old_guids = [_.guid for _ in tml]
+    tml_file_bundles = _load_tml_from_files(ts, path, connection, guid_mappings, delete_unmapped_fqns=True)
+    filenames = [tfb.file.name for tfb in tml_file_bundles.values()]
 
     # strip GUIDs if doing force create and convert to a list of TML string.
     if force_create:
-        [_.remove_guid() for _ in tml]
+        [_.tml.remove_guid() for _ in tml_file_bundles.values()]
 
-    for f in files:
-        console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
+    for f in filenames:
+        console.log(f'validating {f}')
 
     ok_resp = []  # responses for each item that didn't error.  Use for mapping and tagging.
     with console.status(f"[bold green]importing {path.name}[/]"):
-        tml = [YAMLTML.dump_tml_object(_) for _ in tml]
-        r = ts.api.metadata.tml_import(import_objects=tml,
-                                       import_policy=import_policy.value,
+        tml_to_load = [YAMLTML.dump_tml_object(tbf.tml) for tbf in tml_file_bundles.values()]
+
+        if tml_logs:
+            original_filenames = [tbf.file.name for tbf in tml_file_bundles.values()]
+            fcnt = 0
+            for tmlstr in tml_to_load:
+                fn = f"{tml_logs}/{original_filenames[fcnt]}.imported"
+                with open(fn, "w") as f:
+                    f.write(tmlstr)
+                fcnt +=1
+
+        r = ts.api.metadata.tml_import(import_objects=tml_to_load,
+                                       import_policy=TMLImportPolicy.validate_only.value,
                                        force_create=force_create)
+
         resp = _flatten_tml_response(r)
+
         fcnt = 0
         for _ in resp:
             if _.status_code == 'ERROR':
-                console.log(f"[bold red]{files[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                console.log(f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
             else:
-                console.log(f"{files[fcnt]} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
-                # if the object was loaded successfully and guid mappings are being used, make sure the mapping is there
-                if guid_file:
-                    guid_mappings[old_guids[fcnt]] = _.guid
+                console.log(f"{filenames[fcnt]} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
 
-            fcnt += 1
             ok_resp.append(_)
-
-    if import_policy != TMLImportPolicy.validate_only:
-        if guid_file:
-            _write_guid_mappings(guid_file=guid_file, guid_mappings=guid_mappings)
-
-        if tags:
-            _add_tags(ts, ok_resp, tags)
-
-        if share_with:
-            _share_with(ts, ok_resp, share_with)
+            fcnt += 1
 
 
-def _read_guid_mappings(guid_file: pathlib.Path) -> Dict:
+def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLImportPolicy, force_create: bool,
+                       connection: GUID, guid_file: pathlib.Path, tags: List[str], share_with: List[str],
+                       tml_logs: pathlib.Path) -> None:
+    """
+    Attempts to create new content.  Content is created in phases based on dependency, worksheets before
+    liveboards, etc.  If a mapping is not found, then an assumption is made that the mapping is correct.
+    :param ts: The ThoughtSpot connection.
+    :param path: Path to the directory or file.
+    :param import_policy: The policy to either do all or none or the imports that fail.  Note that it's possible for
+                          on level of the content to be successfully created an lower level content fail.
+    :param force_create: If true, all GUIDs are removed from content (but not FQNs that map)
+    :param connection: The connection to use for getting table IDs.
+    :param guid_file: The file of GUID mappings.
+    :param tags: List of tags to apply.  Tags will be created if they don't exist.
+    :param share_with: Shares with the groups of the given name, e.g. "Business Users"
+    :param tml_logs: Directory to log uploaded TML to.
+    """
+    guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
+
+    tml_file_bundles = _load_tml_from_files(ts, path, connection, guid_mappings, delete_unmapped_fqns=False)
+
+    # remember the old guids in case we need to update the mapping.
+    old_guids: List[GUID] = [tfb.tml.guid for tfb in tml_file_bundles.values()]
+
+    dt = _build_dependency_tree([tfb.tml for tfb in tml_file_bundles.values()])
+
+    # strip GUIDs if doing force create and convert to a list of TML string.
+    if force_create:
+        [_.tml.remove_guid() for _ in tml_file_bundles.values()]
+
+    # This is noisy.  Maybe add back later.
+    # for f in files:
+    #     console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
+
+    ok_resp = []  # responses for each item that didn't error.  Use for mapping and tagging.
+    with console.status(f"[bold green]importing {path.name}[/]"):
+        for level in dt.levels:
+            if level:
+                level_tml_bundles = [tml_file_bundles[guid] for guid in level]  # get the content for this level.
+                [_map_guids(tfb.tml, guid_mappings, False) for tfb in level_tml_bundles]  # update GUIDs to catch changes.
+                tml_to_load = [YAMLTML.dump_tml_object(_.tml) for _ in level_tml_bundles]  # get the JSON to load
+                filenames = [tfb.file.name for tfb in level_tml_bundles]
+
+                if tml_logs:
+                    fcnt = 0
+
+                    for tmlstr in tml_to_load:
+                        fn = f"{tml_logs}/{filenames[fcnt]}.imported"
+                        with open(fn, "w") as f:
+                            f.write(tmlstr)
+                        fcnt +=1
+
+                r = ts.api.metadata.tml_import(import_objects=tml_to_load,
+                                               import_policy=import_policy.value,
+                                               force_create=force_create)
+                resp = _flatten_tml_response(r)
+
+                fcnt = 0
+                for _ in resp:
+                    if _.status_code == 'ERROR':
+                        console.log(f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                    else:
+                        console.log(f"{level_tml_bundles[fcnt].file.name} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
+                        # if the object was loaded successfully and guid mappings are being used,
+                        # make sure the mapping is there
+                        if guid_file:  # TODO - this looks wrong!
+                            guid_mappings[level[fcnt]] = _.guid
+                        ok_resp.append(_)
+
+                    fcnt += 1
+
+    if guid_file:
+        _write_guid_mappings(guid_file=guid_file, guid_mappings=guid_mappings)
+
+    if tags:
+        _add_tags(ts, ok_resp, tags)
+
+    if share_with:
+        _share_with(ts, ok_resp, share_with)
+
+
+def _load_tml_from_files(ts: ThoughtSpot, path: pathlib.Path, connection: GUID,
+                         guid_mappings: Dict[GUID, GUID], delete_unmapped_fqns) -> Dict[GUID, TMLFileBundle]:
+    """
+    Loads the TML files, returning a list of file names and the TML mapping from GUID to TML object.
+    :param ts: The ThoughtSpot connection.
+    :param path: The path to the TML files (either a file or directory)
+    :param connection: The connection to use for GUIDs for tables, if used.
+    :param guid_mappings: The mapping for for old to new GUIDs.
+    :param delete_unmapped_fqns: If true, delete FQNs that are not mapped.  Usually only when validating new.
+    :return: A dictionary of GUIDs to TML file bundles (path and TML object). Only files to be loaded will be included.
+    """
+    tml_file_bundles: Dict[GUID, TMLFileBundle] = {}
+
+    if path.is_dir():
+        for p in list(f for f in path.iterdir() if f.match("*.tml")):
+            if not p.is_dir():  # don't currently support sub-folders.  Might add later.
+                _load_and_append_tml_file(ts=ts, path=p, connection=connection,
+                                                 guid_mappings=guid_mappings, tml_file_bundles=tml_file_bundles,
+                                                 delete_unmapped_fqns=delete_unmapped_fqns)
+    else:
+        guid = _load_and_append_tml_file(ts=ts, path=path, connection=connection,
+                                     guid_mappings=guid_mappings, tml_file_bundles=tml_file_bundles,
+                                     delete_unmapped_fqns=delete_unmapped_fqns)
+
+    return tml_file_bundles
+
+
+def _read_guid_mappings(guid_file: pathlib.Path) -> Dict[GUID, TML]:
     """
     Reads the guid mapping file and creates a dictionary of old -> new mappings.  Note that the GUID file _must_ be
     a valid TOML file of the format used by the scriptability tool.
@@ -333,14 +459,14 @@ def _create_guid_file_if_not_exists(guid_file: pathlib.Path) -> bool:
     Creates a GUID file with a standard header if one doesn't exist.
     """
     if not guid_file.exists():
-        mapping_header = ('# Automatically generated from cstools scriptability.'
-                          'name="generated mapping file"'
-                          'source="Source ThoughtSpot"'
-                          'destination="Destination ThoughtSpot'
-                          'description=""'
-                          ''
-                          '[mappings]'
-                          f'version="{__version__}"'
+        mapping_header = ('# Automatically generated from cstools scriptability.\n'
+                          'name="generated mapping file"\n'
+                          'source="Source ThoughtSpot"\n'
+                          'destination="Destination ThoughtSpot"\n'
+                          'description=""\n'
+                          f'version="{__version__}"\n'
+                          '\n'
+                          '[mappings]\n'
                           )
         try:
             with guid_file.open(mode='w') as f:
@@ -359,21 +485,21 @@ def _load_and_append_tml_file(
         path: pathlib.Path,
         connection: GUID,
         guid_mappings: Dict,
-        force_create: bool,
-        tml_list: List[TML]) -> GUID:
+        tml_file_bundles: Dict[GUID, TMLFileBundle],
+        delete_unmapped_fqns) -> GUID:
     """
-    Loads a TML file from the path, getting table mappings if needed.  Then strip GUID if creating new.
+    Loads a TML file from the path, getting table mappings if needed.
     :param ts: The ThoughtSpot interface.
     :param path:  The file path.
     :param connection:  The connection to map to (optional).
     :param guid_mappings: The dictionary that maps from old GUID to new GUID.
-    :param force_create: If true, files are being created.
-    :param tml_list: A list that is being appended to.  Might get updated.
-    :return: The old GUID or none if didn't get added
+    :param tml_file_bundles: A mapping of GUID to a TML file and object.  Might get updated.
+    :param delete_unmapped_fqns: If true, GUIDs not in the mapping file will be deleted.
+    :return: The GUID for the file or none if didn't get added
     """
 
     if path.is_dir():
-        console.log(f"[bold red]Attempting to load a directory {path}.[/]")
+        console.log(f"[error]Attempting to load a directory {path}.[/]")
         return None
 
     if not path.name.endswith(".tml"):
@@ -382,16 +508,15 @@ def _load_and_append_tml_file(
 
     tmlobj = _load_tml_from_file(ts=ts, path=path, connection=connection)
 
-    old_guid = tmlobj.guid
-
-    tml = _map_guids(tml=tmlobj, guid_mappings=guid_mappings)
+    _map_guids(tml=tmlobj, guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
 
     if tmlobj.content_type == TMLContentType.table.value:
-        console.log(f"[bold red]Table import not currently selected.  Ignoring {path}.[/]")
+        console.log(f"[bold red]Table import not currently supported.  Ignoring {path.name}.[/]")
+        return None
     else:
-        tml_list.append(tmlobj)
+        tml_file_bundles[tmlobj.guid] = TMLFileBundle(file=path, tml=tmlobj)
 
-    return old_guid
+    return tmlobj.guid
 
 
 def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path, connection: GUID = None) -> TML:
@@ -410,7 +535,6 @@ def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path, connection: GUID = 
 
     if tmlobj.content_type == TMLContentType.worksheet.value and connection:
         tmlobj = tmlobj
-        console.log('map tables')
 
         tables = cnx.get_tables_for_connection(connection)
         table_map = {}  # name to FQN
@@ -421,35 +545,87 @@ def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path, connection: GUID = 
     return tmlobj
 
 
-def _map_guids(tml: TML, guid_mappings: Dict) -> TML:
+def _build_dependency_tree(tml_list: List[TML]) -> TSDependencyTree:
+    """
+    Builds a dependency tree for the TML to be loaded.
+    :param tml_list: List of TML to check.
+    :return: A dependency tree of content.  Loading can be done on the levels.
+    """
+    dt = TSDependencyTree()
+
+    for tml in tml_list:
+        depends_on = _find_depends_on(tml=tml.tml)
+        dt.add_dependency(tml.guid, depends_on=set(depends_on))
+
+    return dt
+
+
+def _find_depends_on(tml: dict) -> List[str]:
+    """
+    Returns a list of dependencies for the TML.  These are identified by any FQNs in the file.
+    :param tml: The TML dictionary content (tml.tml)
+    :return: A list of FQNs this TML depends on.  Note that missing FQNs mean a dependency is ignored.
+    """
+    depends_on = []
+
+    for k in tml.keys():
+        #  print(f"{k} == {tml[k]}")
+        if k.lower() == "fqn":
+            depends_on.append(tml[k])
+        elif isinstance(tml[k], dict):
+            depends_on.extend(_find_depends_on(tml[k]))
+        elif isinstance(tml[k], list):
+            for _ in tml[k]:
+                if isinstance(_, dict):
+                    depends_on.extend(_find_depends_on(_))
+
+    return depends_on
+
+
+def _map_guids(tml: TML, guid_mappings: Dict, delete_unmapped_fqns: bool) -> TML:
     """
     Updates the TML to map any known GUIDs to new GUIDs.  If the old GUID (guid in file) is in the mapping as a key,
     it will be replaced with the value.
     :param tml: A TML object to replace mappings on.
     :param guid_mappings: The mapping dictionary of the form guid_mapping[<old_guid>] => <new_guid>
+    :param delete_unmapped_fqns: If true, GUIDs and FQNs that don't have a mapping, will be deleted.
     """
 
     # check all entries in the tml to see if they are GUID or FQN.
     # If yes, try to change the value.
     # If no, try mapping, but at the next level down.  Ruturn when there are no child levels.
-    _find_and_map_guids(tml=tml.tml, guid_mappings=guid_mappings)
+    _find_and_map_guids(tml=tml.tml, guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
     return tml
 
 
-def _find_and_map_guids(tml: Dict, guid_mappings: Dict) -> None:
+def _find_and_map_guids(tml: Dict, guid_mappings: Dict, delete_unmapped_fqns: bool) -> None:
     """
     Recursively finds GUIDs (guid or fqn entries) and replaces if the GUID is mapped.  This shouldn't get too deep.
     :param tml: The TML fragment to check.
     :param guid_mappings: The mapping to use.
+    :param delete_unmapped_fqns: If true, GUIDs and FQNs that don't have a mapping, will be deleted.
     """
     guid_key_names = ('guid', 'fqn')
+    del_key = None
     for k in tml.keys():
         if k in guid_key_names:
             v = tml.get(k, None)
-            if v and v in guid_mappings.keys():
-                tml[k] = guid_mappings[v]
+            if v:
+                if v in guid_mappings.keys():  # if there is a mapping, replace it.
+                    tml[k] = guid_mappings[v]
+                # if there isn't a mapping and we are deleting unmapped, then delete the FQN.  Note that this checks
+                # to verify the value hasn't been set on either side.
+                elif delete_unmapped_fqns and k == 'fqn' and tml[k] not in guid_mappings.values():
+                    del_key = k  # this works because there is only one FQN for a given dictionary.
         elif isinstance(tml[k], dict):
-            _find_and_map_guids(tml=tml[k], guid_mappings=guid_mappings)
+            _find_and_map_guids(tml=tml[k], guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
+        elif isinstance(tml[k], list):
+            for _ in tml[k]:
+                if isinstance(_, dict):
+                    _find_and_map_guids(tml=_, guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
+
+    if del_key:
+        del(tml[del_key])
 
 
 def _flatten_tml_response(r: Dict) -> [TMLResponseReference]:
@@ -641,11 +817,23 @@ def __compare_list(f1: str, l1: list, f2: str, l2: list) -> bool:
                 console.log(f"[bold red]]\t{l1[cnt]} != {l2[cnt]}[/]")
                 same = False
 
-
     return same
 
 
-
-
-
-
+@app.command(name='create-mapping', cls=CSToolsCommand)
+def compare(
+        guid_file: pathlib.Path = A_(
+            ...,
+            help='Path to the new mapping file to be created.  Existing files will not be overwritten.',
+            metavar='FILE',
+            dir_okay=False,
+            resolve_path=True
+        ),
+):
+    """
+    Create a new, empty mapping file.
+    """
+    if _create_guid_file_if_not_exists(guid_file):
+        console.log(f"[bold yellow]File {guid_file} already exists.  Not creating a new one.[/]")
+    else:
+        console.log(f"[bold green]Created {guid_file}.[/]")

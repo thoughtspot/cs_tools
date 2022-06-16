@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 import json
+import urllib
 
 from pydantic import validate_arguments
 import httpx
@@ -305,18 +306,20 @@ class Metadata:
         Assign tags to metadata objects; types[i] corresponds to ids[i].
         Note that the assigntag will automatically create a new tag if the tagname doesn't currently exist.
         It might be desired to check and block in the future.
+        Also note that due to a problem in the API the tag has all spaces being replace with _
         """
 
         data={
             # NOTE: This is an API data parsing error ... data shouldn't need to
             # be stringified.
-            'id': stringified_array(id),
-            'type': stringified_array([_.value for _ in type]),
+            'id': stringified_array(id, unique=False),
+            'type': stringified_array([_.value for _ in type], unique=False),
         }
         if tagid:
             data['tagid'] = stringified_array(tagid)
         if tagname:
-            data['tagname'] = stringified_array(tagname)
+            # TODO - figure out why spaces aren't working
+            data['tagname'] = stringified_array(tagname).replace(' ', '_')
 
         r = self.rest_api.request(
             'POST',
