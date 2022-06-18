@@ -14,7 +14,7 @@ from cs_tools.cli.options import CONFIG_OPT
 from cs_tools.cli.loader import CSTool
 from cs_tools.cli.tools import console, CSToolsGroup, CSToolsCommand, setup_thoughtspot
 from cs_tools._version import __version__
-from cs_tools.errors import CSToolsException
+from cs_tools.errors import CSToolsError
 from cs_tools.const import APP_DIR, TOOLS_DIR
 from cs_tools.util import State
 
@@ -205,8 +205,8 @@ def run():
     except Exception as e:
         log.debug('whoopsie, something went wrong!', exc_info=True)
 
-        if isinstance(e, CSToolsException):
-            log.info(f'[error]{e.cli_message}')
+        if hasattr(e, 'cli_msg_template'):
+            log.info(f'[error]{e}\n')
         else:
             GF = 'https://forms.gle/sh6hyBSS2mnrwWCa9'
             GH = 'https://github.com/thoughtspot/cs_tools/issues/new/choose'

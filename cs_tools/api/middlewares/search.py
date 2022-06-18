@@ -118,12 +118,15 @@ class SearchMiddleware:
                    ).json()
 
             if not d['headers']:
-                raise ContentDoesNotExist(type='LOGICAL_TABLE', name=guid)
+                raise ContentDoesNotExist(
+                    type='LOGICAL_TABLE',
+                    reason="No table or worksheet found with the name [blue]{name}"
+                )
 
             d = [_ for _ in d['headers'] if _['name'].casefold() == guid.casefold()]
 
             if len(d) > 1:
-                raise AmbiguousContentError(name=guid, type='LOGICAL_TABLE')
+                raise AmbiguousContentError(type='LOGICAL_TABLE', name=guid)
 
             guid = d[0]['id']
 

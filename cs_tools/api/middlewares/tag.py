@@ -116,6 +116,9 @@ class TagMiddleware:
             tag = self.create(tag_name)
 
         if tag is None:
-            raise ContentDoesNotExist(type='TAG', name=tag_name)
+            raise ContentDoesNotExist(
+                type='tag',
+                reason=f"No tag found with the name [blue]{tag_name}"
+            )
 
         return tag

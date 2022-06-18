@@ -109,7 +109,7 @@ class TSLoadMiddleware:
             raise InsufficientPrivileges(
                 user=self.ts.me,
                 service='remote TQL',
-                required_privileges=REQUIRED_PRIVILEGES
+                required_privileges=', '.join(REQUIRED_PRIVILEGES)
             )
 
     @validate_arguments(config=dict(arbitrary_types_allowed=True))

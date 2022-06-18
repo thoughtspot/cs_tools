@@ -182,7 +182,7 @@ class TSConfig(Settings):
         try:
             data = toml.load(fp)
         except FileNotFoundError:
-            raise ConfigDoesNotExist(fp=fp)
+            raise ConfigDoesNotExist(name=fp.stem.replace('cluster-cfg_', ''))
 
         if data.get('name') is None:
             data['name'] = fp.stem.replace('cluster-cfg_', '')

@@ -7,7 +7,7 @@ import sys
 import httpx
 import click
 
-from cs_tools.errors import ThoughtSpotUnreachable, AuthenticationError
+from cs_tools.errors import ThoughtSpotUnavailable, AuthenticationError
 from cs_tools.util import reveal
 from cs_tools.api._rest_api_v1 import _RESTAPIv1
 from cs_tools._version import __version__
@@ -94,13 +94,18 @@ class ThoughtSpot:
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
             host = self.config.thoughtspot.host
             rzn = (
-                f'cannot see url [blue]{host}[/] from the current machine\n\n'
-                f'>>> [yellow]{e}[/]'
+                f'cannot see url [blue]{host}[/] from the current machine'
+                f'\n\n>>> [yellow]{e}[/]'
             )
-            raise ThoughtSpotUnreachable(rzn) from None
+            raise ThoughtSpotUnavailable(reason=rzn) from None
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
-                raise AuthenticationError(self.config, original=e) from None
+                raise AuthenticationError(
+                    config_name=self.config.name,
+                    config_username=self.config.auth['frontend'].username,
+                    debug=''.join(json.loads(e.response.json().get('debug', []))),
+                    incident_id=e.response.json().get('incident_id_guid', '<missing>')
+                )
             raise e
 
         # got a response, but couldn't make sense of it
@@ -108,11 +113,14 @@ class ThoughtSpot:
             data = r.json()
         except json.JSONDecodeError:
             if 'Enter the activation code to enable service' in r.text:
-                rzn = 'it is in eco mode, please go activate it!'
+                info = {
+                    'reason': "It is in 'Economy Mode'.",
+                    'mitigation': f'Activate it at [url]{self.config.thoughtspot.host}'
+                }
             else:
-                rzn = 'for an unknown reason.'
+                info = {'reason': 'for an unknown reason.'}
 
-            raise ThoughtSpotUnreachable(rzn) from None
+            raise ThoughtSpotUnavailable(**info) from None
 
         self._logged_in_user = LoggedInUser.from_session_info(data)
         self._this_platform = ThoughtSpotPlatform.from_session_info(data)
