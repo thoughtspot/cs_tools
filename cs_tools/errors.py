@@ -18,7 +18,8 @@ class CSToolsException(Exception):
         This is oftentimes meant to be a simplified message, friendlier UX, or
         offer a path for resolution.
         """
-        raise NotImplementedError('all cs_tools exceptions must add .cli_message')
+        return str(self)
+        # raise NotImplementedError('all cs_tools exceptions must add .cli_message')
 
 
 class ThoughtSpotUnreachable(CSToolsException):
