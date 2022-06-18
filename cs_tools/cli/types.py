@@ -5,10 +5,11 @@ import logging
 import sys
 
 import pendulum
-import typer
+import pydantic
 import click
 import toml
 
+from cs_tools.errors import CSToolsException
 from cs_tools.sync.protocol import SyncerProtocol
 from cs_tools.const import PACKAGE_DIR
 from cs_tools.sync import register
@@ -90,10 +91,18 @@ class SyncerProtocolType(click.ParamType):
             try:
                 definition = ts_config.syncer[proto]
             except (TypeError, KeyError):
-                log.error(f'[error]no default found for syncer protocol: [blue]{proto}')
-                raise typer.Exit(-1)
+                raise CSToolsException(f'no default found for syncer protocol: [blue]{proto}')
 
-        cfg = toml.load(definition)
+        try:
+            cfg = toml.load(definition)
+        except FileNotFoundError:
+            raise CSToolsException(f'no {proto} definition found at [blue]{definition}')
+        except toml.TomlDecodeError:
+            raise CSToolsException(
+                f'{proto} definition at [blue]{definition}[/] is not defined correctly'
+                f'\n\n[hint]Please visit the link below for a full configuration.'
+                f'\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example'
+            )
 
         if 'manifest' not in cfg:
             cfg['manifest'] = PACKAGE_DIR / 'sync' / proto / 'MANIFEST.json'
@@ -101,11 +110,21 @@ class SyncerProtocolType(click.ParamType):
         log.info(f'registering syncer: {proto}')
         Syncer = register.load_syncer(protocol=proto, manifest_path=cfg.pop('manifest'))
 
-        # sanitize input by accepting aliases
-        if hasattr(Syncer, '__pydantic_model__'):
-            cfg['configuration'] = Syncer.__pydantic_model__.parse_obj(cfg['configuration']).dict()
+        try:
+            # sanitize input by accepting aliases
+            if hasattr(Syncer, '__pydantic_model__'):
+                cfg['configuration'] = Syncer.__pydantic_model__.parse_obj(cfg['configuration']).dict()
 
-        syncer = Syncer(**cfg['configuration'])
+            syncer = Syncer(**cfg['configuration'])
+        except pydantic.ValidationError as e:
+            errors = '\n  '.join([f"[blue]{_['loc'][0]}[/]: {_['msg']}" for _ in e.errors()])
+            msg = (
+                f'{proto} definition at [blue]{definition}[/] is not defined correctly'
+                f'\n\n  {errors}'
+                f'\n\n[hint]Please visit the link below for a full configuration.'
+                f'\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example'
+            )
+            raise CSToolsException(msg)
 
         # don't actually make lasting changes, just ensure it initializes
         if validate_only:
