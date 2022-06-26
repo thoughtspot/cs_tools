@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+from typing import Any, List, Tuple
 import itertools
 import pathlib
 import zipfile
@@ -39,6 +41,24 @@ SUPPORTED_PLATFORM_MATRIX = {
     ),
     # fmt: on
 }
+
+
+def grouped(iterable: Iterable, n: int = 2) -> Iterable[Iterable[Any]]:
+    """
+    Groups elements of iterable together.
+
+      grouped('ABCDEFGH', n=2) --> AB CD EF GH
+      grouped('ABCDEFGH', n=4) --> ABCD DEFG
+
+    Parameters
+    ----------
+    iterable : Iterable
+      any collection of elements
+
+    n : int  [default, 2]
+      chunks of the iterable to return
+    """
+    return zip(*[iter(iterable)] * n)
 
 
 def _manual_resolver_fixes(requirements: pathlib.Path) -> None:
@@ -129,19 +149,25 @@ def vendor_packages(session):
         session.log(f'cleaning {dest}..')
         shutil.rmtree(dest, ignore_errors=True)
 
+        # CentOS 7 ships with pip vesion 9.x.x which doesn't understand PEP 571+
+        # standardization efforts. Current versions of pip will only use the aliased
+        # platform tags, so we'll have to ask for them separately. This is why we group
+        # the platform tags.
+
         # download our dependencies
         # - since poetry found and resolved our dependencies, --no-deps is fine to use
-        session.run(
-            # fmt: off
-            "pip", "download",
-            "-r", REQS_TXT.as_posix(),
-            "--dest", dest.as_posix(),
-            "--no-cache-dir",
-            "--no-deps",
-            *itertools.chain.from_iterable(["--platform", p] for p in platforms),
-            silent=not ON_GITHUB
-            # fmt: on
-        )
+        for platform_tags in grouped(platforms, n=2 if platform == "linux" else 1):
+            session.run(
+                # fmt: off
+                "pip", "download",
+                "-r", REQS_TXT.as_posix(),
+                "--dest", dest.as_posix(),
+                "--no-cache-dir",
+                "--no-deps",
+                *itertools.chain.from_iterable(["--platform", p] for p in platform_tags),
+                silent=not ON_GITHUB
+                # fmt: on
+            )
 
         _manual_resolver_fixes(REQS_TXT)
 
