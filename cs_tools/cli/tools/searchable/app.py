@@ -277,7 +277,7 @@ def gather(
 
     \b
     See the full data model extract at the link below:
-      https://thoughtspot.github.io/cs_tools/cs-tools/searchable
+      [url]https://thoughtspot.github.io/cs_tools/cs-tools/searchable[/]
     """
     ts = ctx.obj.thoughtspot
 
