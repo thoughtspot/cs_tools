@@ -128,7 +128,7 @@ def vendor_packages(session):
     # --ensure-install :: run the poetry-install step
     # --no-cleanup     :: don't remove files
 
-    session.run("poetry", "install", external=True, silent=not ON_GITHUB)
+    session.run("poetry", "install", "--no-dev", external=True, silent=not ON_GITHUB)
     session.run(
         # fmt: off
         "poetry", "export",

@@ -74,15 +74,12 @@ typer = "*"
 
 
 [tool.poetry.dev-dependencies]
-# Upgrades here require removing support for py36
-mkdocs-material = ">= 8.2.0 , < 8.2.13"
-
-# Accept updates on dev dependencies, as long as they support py36
-flake8 = "*"
-coverage = "*"
-isort = "*"
-black = "*"
-ward = "*"
+mkdocs-material = { version = "*", python = ">= 3.7 , < 4.0.0" }
+flake8 = { version = "*" , python = ">= 3.7 , < 4.0.0" }
+coverage = { version = "*" , python = ">= 3.7 , < 4.0.0" }
+isort = { version = "*" , python = ">= 3.7 , < 4.0.0" }
+black = { version = "*" , python = ">= 3.7 , < 4.0.0" }
+ward = { version = "*" , python = ">= 3.7 , < 4.0.0" }
 
 
 [tool.poetry.scripts]
