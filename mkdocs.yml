@@ -76,7 +76,7 @@ extra:
       name: find us on github
 
     - icon: fontawesome/solid/paper-plane
-      link: mailto:ps-na@thoughtspot.com
+      link: mailto:nicholas.cooper@thoughtspot.com
       name: email the team
 
 extra_css:
@@ -88,6 +88,13 @@ extra_javascript:
 nav:
   - Home: index.md
   - Install: how-to/install-upgrade-cs-tools.md
+  - Tutorial:
+    - "Getting Started": tutorial/intro.md
+    - "Install & Upgrade": tutorial/install.md
+    - "Setup a Config File": tutorial/config.md
+    - "Run the Archiver tool": tutorial/archiver.md
+    - "Define a Syncer": tutorial/syncer.md
+    - "Schedule the Archiver": tutorial/schedule.md
   - Tools:
     - cs-tools/overview.md
     - Archiver: cs-tools/archiver/README.md
