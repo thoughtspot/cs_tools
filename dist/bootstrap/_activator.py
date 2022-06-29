@@ -250,6 +250,7 @@ class Activator:
                 continue
 
             if addition not in profile.read_text():
+                log.info(f"Adding {env.bin_dir} to {profile}")
                 with profile.open(mode="a") as f:
                     f.write(addition)
 
@@ -301,6 +302,7 @@ class Activator:
             log.warning(f"PATH already contains '{value}' and thus was not modified.")
             return
 
+        log.info(f"Adding {value} to %PATH%")
         self._set_windows_path_var(f"{current_path};{value}")
 
     def _add_to_fish_path(self, value: str) -> None:
@@ -317,6 +319,7 @@ class Activator:
         user_paths = sp.check_output(["fish", "-c", "echo $fish_user_paths"]).decode("utf-8")
 
         if value not in user_paths:
+            log.info(f"Adding {value} to $fish_user_paths")
             cmd = f"set -U fish_user_paths {value} $fish_user_paths"
             sp.check_output(["fish", "-c", f"{cmd}"])
 
