@@ -88,7 +88,7 @@ an offline install. Follow the steps below to get __CS Tools__ installed on your
 To check your installation is successful, try running `cs_tools` in your terminal. If it doesn't pop up right away, you
 might need to restart your terminal in order to get the `PATH` variable to update.
 
----
+![cs_tools-output](./assets/terminal-screenshot.png)
 
 <center>
 ## A note on __Getting Help__{ .fc-mint }
