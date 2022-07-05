@@ -74,10 +74,8 @@ folder.
 === ":fontawesome-brands-windows: Windows"
 
     ```powershell
-    (
-      echo [configuration]
-      echo directory = "%USERPROFILE%\Downloads"
-    ) > %USERPROFILE%\Downloads\report.toml
+    echo "[configuration]" > $env:USERPROFILE\Downloads\report.toml
+    echo "directory = `"$env:USERPROFILE\Downloads\`"" >> $env:USERPROFILE\Downloads\report.toml
     ```
 
 === ":fontawesome-brands-apple: :fontawesome-brands-linux: Mac, Linux"
@@ -145,7 +143,7 @@ Let's set the CSV Syncer we created earlier to be the default for our current co
 === ":fontawesome-brands-windows: Windows"
 
     ```powershell
-    cs_tools config modify --config non-prod --syncer csv://$USERPROFILE%\Downloads\report.toml
+    cs_tools config modify --config non-prod --syncer csv://$env:USERPROFILE\Downloads\report.toml
     ```
 
 === ":fontawesome-brands-apple: :fontawesome-brands-linux: Mac, Linux"
