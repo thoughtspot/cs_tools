@@ -50,6 +50,7 @@ python-versions = ">=3.6.2"
 
 [package.dependencies]
 click = ">=8.0.0"
+dataclasses = {version = ">=0.6", markers = "python_version < \"3.7\""}
 mypy-extensions = ">=0.4.3"
 pathspec = ">=0.9.0"
 platformdirs = ">=2"
@@ -814,6 +815,7 @@ python-versions = ">=3.6"
 [package.dependencies]
 click = ">=7.0"
 colorama = ">=0.3.3"
+dataclasses = {version = ">=0.1", markers = "python_version < \"3.7\""}
 pprintpp = ">=0.4.0"
 pygments = ">=2.4.2"
 termcolor = ">=1.1.0"
