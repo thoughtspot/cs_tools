@@ -43,7 +43,7 @@ SUPPORTED_PLATFORM_MATRIX = {
 }
 
 
-def grouped(iterable: Iterable, n: int = 2) -> Iterable[Iterable[Any]]:
+def grouped(iterable: Iterable, n: int = 2) -> Iterable:
     """
     Groups elements of iterable together.
 
