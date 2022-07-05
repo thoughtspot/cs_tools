@@ -75,4 +75,4 @@ timeout = 5.0
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
 [syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/falcon/syncer.py
-[how-to-config]: ../how-to/configuration-file.md
+[how-to-config]: ../tutorial/config.md

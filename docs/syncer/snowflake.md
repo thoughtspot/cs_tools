@@ -90,4 +90,4 @@ truncate_on_load = true
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
 [syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/snowflake/syncer.py
 [browser-sso]: https://docs.snowflake.com/en/user-guide/admin-security-fed-auth-use.html#browser-based-sso
-[how-to-config]: ../how-to/configuration-file.md
+[how-to-config]: ../tutorial/config.md
