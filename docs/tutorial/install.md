@@ -110,6 +110,10 @@ Follow the steps below to get __CS Tools__ installed on your platform.
     python bootstrap --reinstall
     ```
 
+    ??? fail "command not found: python"
+
+        If you see this error in your terminal, try using `python3` instead of `python` above.
+
 Try running __CS Tools__ by typing..
 
 <center>*cs_tools* &#8203 &#8203 ++return++</center>
