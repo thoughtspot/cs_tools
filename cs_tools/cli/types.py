@@ -104,11 +104,12 @@ class SyncerProtocolType(click.ParamType):
 
         try:
             cfg = toml.load(definition)
-        except FileNotFoundError:
+        except (IsADirectoryError, FileNotFoundError):
             raise SyncerError(
                 proto=proto,
                 definition=definition,
                 reason="No {proto} definition found at [blue]{definition}",
+                mitigation="You must specify a valid path to a .toml definition file."
             )
         except toml.TomlDecodeError:
             raise SyncerError(
