@@ -173,8 +173,8 @@ cs_tools tools archiver identify
 --dry-run
 ```
 
-If we look at the contents of the file we defined in our CSV syncer, we'll find details about all the content that will
-be tagged and identified as inactive.
+If we look at the contents of the file that was dumped to our Downloads directory, we'll find details about all the
+content that will be tagged and identified as inactive.
 
 | content_type | guid        | name         | created_at   | modified_at  | author              | operation |
 | ------------ | ----------- | ------------ | ------------ | ------------ | ------------------- | --------- |

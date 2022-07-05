@@ -133,8 +133,8 @@ On all three __Archiver__{ .fc-purple } commands, you'll find a `--report` optio
 type of content that we'll tag or remove, as well as who owns it. This information can be incredibly helpful to inspect
 and even help you communicate with those Users directly.
 
-__In the next section__, we'll learn about __Syncers__ and how you can leverage them to manage all the information that
-__Archiver__{ .fc-purple } produces.
+__In the next section__, we'll learn about __Syncers__{ .fc-blue } and how you can leverage them to manage all the
+information that __Archiver__{ .fc-purple } produces.
 
 
 [cs-tools-docs]: https://thoughtspot.github.io/cs_tools/cs-tools/overview/

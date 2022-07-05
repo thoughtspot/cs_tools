@@ -128,6 +128,47 @@ cs_tools tools config create
 </figure>
 
 
+## Example Configuration File
+
+You can view all the currently configured environments by using the `cs_tools config show` command. If a particular configuration is specified, you can view the contents of that file.
+
+??? danger "What happens with my password?"
+
+    For security reasons, your password lives obfuscated both in memory and the configuration file upon being captured by `cs_tools`. It is only decrypted once per run, when authorizing with your ThoughtSpot platform.
+
+<center>
+*cs_tools config show --config production*
+</center>
+
+```toml
+
+Cluster configs located at: ~/.config/cs_tools
+
+[default]
+~/.config/cs_tools/cluster-cfg_non-prod.toml
+
+name = "non-prod"
+verbose = false
+temp_dir = "//172.16.0.10/cs_tools/tmp"
+
+[thoughtspot]
+host = "https://my-company.thoughtspot.cloud/"
+disable_ssl = false
+disable_sso = true
+
+[auth.frontend]
+username = "cs_tools"
+password = "aBcDEf1GhIJkLMnOPQRStuVx"
+```
+
+## Exploring the Tools
+
+With a configuration file set up, we're ready to explore all the utilities that come with __CS Tools__.
+
+__In the next section__, we'll learn about the __Archiver__{ .fc-purple } tool and see how we can leverage it to keep
+our __ThoughtSpot__ cluster clean while it grows.
+
+
 [^1]:
 
     The __CS Tools__ project supports many versions of __ThoughtSpot__, but usage of the REST APIs is restricted in

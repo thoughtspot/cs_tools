@@ -4,7 +4,7 @@
   .md-typeset .headerlink { display: none; }
 </style>
 
-# Installation & Upgrade
+# Installation & Upgrading the Tools
 
 __CS Tools__ is a command line application written in :fontawesome-brands-python: __Python__.
 
@@ -63,8 +63,10 @@ Click the __blue button__{ .fc-blue } below to fill out the Google Form[^1] and 
 
 ## After Downloading
 
-You'll get a zip file containing the __CS Tools__ bootstrapper and all of the python dependencies should you need to do
-an offline install. Follow the steps below to get __CS Tools__ installed on your platform.
+The __CS Tools__ bootstrapper will install or upgrade your isolated environment. If your target machine doesn't have
+internet, the bootstrapper also contains all the dependencies necessary to build the environment.
+
+Follow the steps below to get __CS Tools__ installed on your platform.
 
 === ":fontawesome-brands-windows: Windows"
 
@@ -85,10 +87,14 @@ an offline install. Follow the steps below to get __CS Tools__ installed on your
     python bootstrap
     ```
 
-To check your installation is successful, try running `cs_tools` in your terminal. If it doesn't pop up right away, you
-might need to restart your terminal in order to get the `PATH` variable to update.
+Try running __CS Tools__ by typing..
+
+<center>*cs_tools* &#8203 &#8203 ++return++</center>
+
+If it doesn't look like the image below, try restarting your terminal first.
 
 ![cs_tools-output](./assets/terminal-screenshot.png)
+
 
 <center>
 ## A note on __Getting Help__{ .fc-mint }
@@ -103,6 +109,20 @@ our customers!
 If you run into issues at any time, either reach out to your assigned Customer Success Manager, or submit feedback to
 the __CS Tools__ team directly in this [Google Form][google-form-help], or open an [issue on GitHub][github-help].
 </center>
+
+---
+
+## Configure CS Tools
+
+__CS Tools__ supports being run against many different platforms. Configuration files represent a way to define a
+specific user interacting with ThoughtSpot programmatically.
+
+This can be helpful if you maintain both a __Production__ and __Non-Production__ environment, or if you operate as a
+center of excellence and want to provide your domain managers with programmatic access to the portion of
+__ThoughtSpot__.
+
+__Read on to the next section__ to learn about how to set up a configuration file.
+
 
 [^1]:
 
