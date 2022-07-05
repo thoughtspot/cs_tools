@@ -1,35 +1,19 @@
-import os
-
-from typer.testing import CliRunner
 from ward import fixture
+import typer.testing
 
-from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.cli.main import _setup_tools
-from cs_tools.settings import TSConfig
-
-from cs_tools.cli.app_config import app as cfg_app
-from cs_tools.cli.app_log import app as log_app
-from cs_tools.cli.tools import app as tools_app
-from cs_tools.cli.main import app as app_
+import cs_tools.cli.main as main
 
 
-@fixture(scope='global')
-def thoughtspot():
-    cfg = TSConfig.from_command(config=os.environ.get('WARD_TS_CONFIG_NAME'))
-
-    with ThoughtSpot(config=cfg) as ts:
-        yield ts
+@fixture
+def runner():
+    return typer.testing.CliRunner()
 
 
-@fixture(scope='global')
-def app_runner():
-    return CliRunner()
-
-
-@fixture(scope='global')
-def app():
-    _setup_tools(tools_app, ctx_settings=app_.info.context_settings)
-    app_.add_typer(tools_app)
-    app_.add_typer(cfg_app)
-    app_.add_typer(log_app)
-    yield app_
+@fixture
+def entrypoint():
+    # setup work
+    main._setup_tools(main.tools_app, ctx_settings=main.app.info.context_settings)
+    main.app.add_typer(main.tools_app)
+    main.app.add_typer(main.cfg_app)
+    main.app.add_typer(main.log_app)
+    return main.app

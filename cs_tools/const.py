@@ -27,3 +27,4 @@ FMT_TSLOAD_TRUE_FALSE = 'True_False'
 
 APP_DIR = pathlib.Path(typer.get_app_dir('cs_tools'))
 APP_DIR.mkdir(parents=True, exist_ok=True)
+APP_DIR.joinpath('.cache').mkdir(parents=True, exist_ok=True)

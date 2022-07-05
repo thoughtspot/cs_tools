@@ -118,12 +118,15 @@ class SearchMiddleware:
                    ).json()
 
             if not d['headers']:
-                raise ContentDoesNotExist(type='LOGICAL_TABLE', name=guid)
+                raise ContentDoesNotExist(
+                    type='LOGICAL_TABLE',
+                    reason="No table or worksheet found with the name [blue]{name}"
+                )
 
             d = [_ for _ in d['headers'] if _['name'].casefold() == guid.casefold()]
 
             if len(d) > 1:
-                raise AmbiguousContentError(name=guid, type='LOGICAL_TABLE')
+                raise AmbiguousContentError(type='LOGICAL_TABLE', name=guid)
 
             guid = d[0]['id']
 
@@ -151,9 +154,9 @@ class SearchMiddleware:
 
             if offset % 500_000 == 0:
                 log.warning(
-                    f'using the Search API to extract >= {offset / 1000: >6,.0f}K rows '
-                    f'is not a scalable practice, please consider adding a filter or '
-                    f'extracting records directly from the underlying data source '
+                    f'using the Search API to extract >= {offset / 1_000_000: >3,.1f}M '
+                    f'rows is not a scalable practice, please consider adding a filter '
+                    f'or extracting records directly from the underlying data source '
                     f'instead!'
                 )
 

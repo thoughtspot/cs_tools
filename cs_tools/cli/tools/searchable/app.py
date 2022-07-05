@@ -150,14 +150,15 @@ def bi_server(
         - response size         - latency (us)          - database latency (us)
         - impressions
     """
+    SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
         "[incident id] [timestamp].'detailed' [url] [http response code] "
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions]"
         + ("" if compact else " [user action] != {null} 'invalid'")
-        + ("" if from_date is None else f" [timestamp] >= '{from_date.date()}'")
-        + ("" if to_date is None else f" [timestamp] <= '{to_date.date()}'")
+        + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
+        + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if include_today else " [timestamp] != 'today'")
     )
 
@@ -276,7 +277,7 @@ def gather(
 
     \b
     See the full data model extract at the link below:
-      https://thoughtspot.github.io/cs_tools/cs-tools/searchable
+      [url]https://thoughtspot.github.io/cs_tools/cs-tools/searchable[/]
     """
     ts = ctx.obj.thoughtspot
 
@@ -354,6 +355,11 @@ def gather(
 
         data = []
 
+        # NOTE:
+        #    In the case the ThoughtSpot cluster has a high number of users, this block
+        #    will take an incredibly long amount of time to complete. We can probably
+        #    find a better algorithm.
+        #
         for type_, subtypes in types.items():
             guids = [_['id'] for _ in content if _['type'] in subtypes]
             r = ts.metadata.permissions(guids, type=type_)

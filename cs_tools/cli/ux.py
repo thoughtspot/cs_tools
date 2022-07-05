@@ -4,6 +4,7 @@ import sys
 
 from click.exceptions import UsageError
 from rich.console import Console
+from rich.markup import escape
 from click.core import iter_params_for_processing
 # import gevent
 import click
@@ -107,6 +108,7 @@ class CSToolsPrettyMixin:
                 p.hidden = False
                 p.show_envvar = True
 
+        # print(ctx.get_help())
         console.print(ctx.get_help())
         ctx.exit(0)
 
@@ -153,16 +155,15 @@ class CSToolsPrettyMixin:
         cs_tools additions:
           - bracketed help text is escaped
           - required options will be annotated with some ARG | REQUIRED.
-          - defaulted options will be annotated with some HINT & SECONDARY.
+          - defaulted options will be annotated with some HINT.
         """
-        option_name = option_name.replace('[', r'\[')
-
         if '[required]' in option_help:
-            option_help.replace('[required]', r'[arg]\[required][/]')
-        
+            option_help.replace('[required]', f'[arg]{escape("[required]")}[/]')
+
         if '[default: ' in option_help:
             option_help, _, default_value = option_help[:-1].partition('[default: ')
-            option_help += fr'[hint]\[default: [secondary]{default_value}[/]][/]'
+            default = fr'[default: {default_value}]'
+            option_help += fr'[hint]{escape(default)}[/]'
 
         return (option_name, option_help)
 
@@ -221,7 +222,7 @@ class CSToolsPrettyMixin:
                 truncated = [opts[0], '...', '--help']
             
             joined = ', '.join(truncated)
-            rv.append(fr"[opt]\[{joined}][/]")
+            rv.append(fr"[opt][{joined}][/]")
 
         return [*rv, cfg]
 

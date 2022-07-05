@@ -60,14 +60,14 @@ app = typer.Typer(
 def identify(
     ctx: click.Context,
     tag_name: str = O_(
-        'TO BE ARCHIVED',
+        'INACTIVE',
         '--tag',
         help='tag name to use for labeling objects to archive (case sensitive)'
     ),
     content: ContentType = O_('all', help='type of content to archive'),
     recent_activity: int = O_(
         3650,
-        help='days to IGNORE for content viewed or access (default: all history)',
+        help='days to IGNORE for content viewed or access [default: all history]',
         show_default=False
     ),
     recent_modified: int = O_(
@@ -237,7 +237,7 @@ def identify(
 def revert(
     ctx: typer.Context,
     tag_name: str = O_(
-        'TO BE ARCHIVED',
+        'INACTIVE',
         '--tag',
         help='tag name to revert on labeled content (case sensitive)'
     ),
@@ -345,7 +345,7 @@ def revert(
 def remove(
     ctx: typer.Context,
     tag_name: str = O_(
-        'TO BE ARCHIVED',
+        'INACTIVE',
         '--tag',
         help='tag name to use to remove objects (case sensitive)'
     ),
