@@ -88,4 +88,4 @@ truncate_on_load = true
 [syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/bigquery/syncer.py
 [gc-dev-console]: https://console.cloud.google.com/apis/dashboard
 [gc-service-account]: https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account
-[how-to-config]: ../how-to/configuration-file.md
+[how-to-config]: ../tutorial/config.md

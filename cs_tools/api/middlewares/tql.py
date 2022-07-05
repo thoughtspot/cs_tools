@@ -7,7 +7,7 @@ from pydantic.typing import Annotated
 from pydantic import validate_arguments, Field
 
 from cs_tools.data.enums import Privilege
-from cs_tools.errors import InsufficientPrivileges, TableAlreadyExists
+from cs_tools.errors import InsufficientPrivileges
 
 
 log = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class TQLMiddleware:
             raise InsufficientPrivileges(
                 user=self.ts.me,
                 service='remote TQL',
-                required_privileges=REQUIRED_PRIVILEGES
+                required_privileges=', '.join(REQUIRED_PRIVILEGES)
             )
 
     @validate_arguments

@@ -8,6 +8,7 @@ import pydantic
 import typer
 import toml
 
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 from cs_tools.settings import TSConfig, _meta_config
@@ -223,3 +224,21 @@ def delete(
         raise typer.Exit()
 
     console.print(f'removed cluster configuration file "{config}"')
+
+
+@app.command(cls=CSToolsCommand)
+def check(
+    config: str = O_(..., help='config file identifier', metavar='NAME')
+):
+    """
+    Check your config file.
+    """
+    console.log(f'Checking cluster configuration [b blue]{config}')
+    cfg = TSConfig.from_command(config)
+
+    console.log(f'Logging into ThoughtSpot as [b blue]{cfg.auth["frontend"].username}')
+    ts = ThoughtSpot(cfg)
+    ts.login()
+    ts.logout()
+
+    console.log('[secondary]Success[/]!')

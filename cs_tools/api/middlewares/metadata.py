@@ -97,11 +97,19 @@ class MetadataMiddleware:
                     break
 
         if not content:
-            rzn  = f"'{category.value}' category ("
-            rzn += 'excluding ' if exclude_system_content else 'including '
-            rzn += 'admin-generated content)'
-            rzn += '' if tags is None else ' and tags: ' + ', '.join(tags)
-            raise ContentDoesNotExist(type=content, reason=rzn)
+            info = {
+                "incl": "exclude" if exclude_system_content else "include",
+                "category": category,
+                "tags": ", ".join(tags),
+                "reason": (
+                    "Zero {type} matched the following filters"
+                    "\n"
+                    "\n  - [blue]{category.value}[/] {type}"
+                    "\n  - [blue]{incl}[/] admin-generated {type}"
+                    "\n  - with tags [blue]{tags}"
+                )
+            }
+            raise ContentDoesNotExist(type="content", **info)
 
         return content
 

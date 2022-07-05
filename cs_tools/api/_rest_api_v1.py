@@ -34,7 +34,7 @@ class _RESTAPIv1:
         self._http = httpx.Client(
             headers={'X-Requested-By': 'ThoughtSpot'},
             verify=not config.thoughtspot.disable_ssl,
-            timeout=180.0,
+            timeout=5 * 60.0,
             base_url=config.thoughtspot.fullpath
         )
 

@@ -48,18 +48,16 @@ class CSV:
         """
         Handle open-close on a file, potentially in a zip archive.
         """
-        file_opts = {
-            'mode': 'r' if mode == 'r' else 'w',
-            'encoding': 'utf-8',
-            'newline': ''
-        }
-
         if self.zipped:
             p = self.directory.with_suffix('.zip')
             z = util.ZipFile(p, mode=mode, compression=zipfile.ZIP_DEFLATED)
-            f = z.open(file, **file_opts)
+            f = z.open(file, mode='r' if mode == 'r' else 'w')
         else:
-            f = (self.directory / file).open(**file_opts)
+            f = self.directory.joinpath(file).open(
+                    mode='r' if mode == 'r' else 'w',
+                    newline='',
+                    encoding='utf-8'
+                )
 
         try:
             yield f

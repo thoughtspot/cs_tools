@@ -84,4 +84,4 @@ credentials_file = 'C:\Users\NameyNamerson\Downloads\syncers\<project-name>.json
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
 [syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/gsheets/syncer.py
 [gc-dev-console]: https://console.cloud.google.com/apis/dashboard
-[how-to-config]: ../how-to/configuration-file.md
+[how-to-config]: ../tutorial/config.md

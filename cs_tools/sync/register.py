@@ -11,15 +11,10 @@ import os
 
 from cs_tools.sync.protocol import SyncerProtocol
 from cs_tools.sync._compat import version
+from cs_tools.errors import SyncerProtocolError
 
 
 log = logging.getLogger(__name__)
-
-
-class SyncerProtocolError(Exception):
-    """
-    Raised when a Custom Syncer breaks the contract.
-    """
 
 
 def is_installed(package: str) -> bool:
@@ -86,7 +81,6 @@ def module_from_fp(fp: pathlib.Path) -> ModuleType:
 
         from . import foo
     """
-    # __name__ = fp.stem
     __name__ = f'cs_tools_{fp.parent.stem}_syncer'
     __file__ = fp
     __path__ = [fp.parent.as_posix()]
@@ -114,7 +108,14 @@ def load_syncer(*, protocol: str, manifest_path: pathlib.Path) -> SyncerProtocol
         manifest['requirements'] = []
 
     if 'syncer_class' not in manifest:
-        raise SyncerProtocolError(f'{protocol} manifest is missing a top-level directive for "syncer_class"')
+        raise SyncerProtocolError(
+            protocol,
+            manifest_path=manifest_path,
+            reason=(
+                "manifest [blue]{manifest_path}[/] is missing a top-level directive "
+                "for [blue]syncer_class[/]"
+            )
+        )
 
     log.debug(f'manifest digest:\n\n{manifest}\n')
     ensure_dependencies(manifest['requirements'])
@@ -123,12 +124,33 @@ def load_syncer(*, protocol: str, manifest_path: pathlib.Path) -> SyncerProtocol
     cls = getattr(mod, manifest['syncer_class'])
 
     if not hasattr(cls, 'name'):
-        raise SyncerProtocolError(f'{protocol} syncer must define an attribute for "name"')
+        raise SyncerProtocolError(
+            protocol,
+            manifest_path=manifest_path,
+            reason=(
+                "[blue]{manifest_path.parent}/syncer.py[/] must define an attribute "
+                "for [blue]name[/]"
+            )
+        )
 
     if not hasattr(cls, 'load'):
-        raise SyncerProtocolError(f'{protocol} syncer does not define the "load" method')
+        raise SyncerProtocolError(
+            protocol,
+            manifest_path=manifest_path,
+            reason=(
+                "[blue]{manifest_path.parent}/syncer.py[/] must define the "
+                "[blue]load[/] method"
+            )
+        )
 
     if not hasattr(cls, 'dump'):
-        raise SyncerProtocolError(f'{protocol} syncer does not define the "dump" method')
+        raise SyncerProtocolError(
+            protocol,
+            manifest_path=manifest_path,
+            reason=(
+                "[blue]{manifest_path.parent}/syncer.py[/] must define the "
+                "[blue]dump[/] method"
+            )
+        )
 
     return cls

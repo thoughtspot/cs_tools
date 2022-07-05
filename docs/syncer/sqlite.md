@@ -58,4 +58,4 @@ database_path = '/home/user/ts-data/production.db'
 
 [gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
 [syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/sqlite/syncer.py
-[how-to-config]: ../how-to/configuration-file.md
+[how-to-config]: ../tutorial/config.md

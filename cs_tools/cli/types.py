@@ -5,10 +5,11 @@ import logging
 import sys
 
 import pendulum
-import typer
+import pydantic
 import click
 import toml
 
+from cs_tools.errors import CSToolsError, SyncerError
 from cs_tools.sync.protocol import SyncerProtocol
 from cs_tools.const import PACKAGE_DIR
 from cs_tools.sync import register
@@ -90,10 +91,36 @@ class SyncerProtocolType(click.ParamType):
             try:
                 definition = ts_config.syncer[proto]
             except (TypeError, KeyError):
-                log.error(f'[error]no default found for syncer protocol: [blue]{proto}')
-                raise typer.Exit(-1)
+                raise SyncerError(
+                    proto=proto,
+                    cfg=ts_config.name,
+                    reason="No default definition has been set for this cluster config.",
+                    mitigation=(
+                        "Pass the full path to [primary]{proto}://[/] or set a default "
+                        "with [primary]cs_tools config modify --config {cfg} --syncer "
+                        "{proto}://[blue]path/to/my/default.toml"
+                    )
+                )
 
-        cfg = toml.load(definition)
+        try:
+            cfg = toml.load(definition)
+        except (IsADirectoryError, FileNotFoundError):
+            raise SyncerError(
+                proto=proto,
+                definition=definition,
+                reason="No {proto} definition found at [blue]{definition}",
+                mitigation="You must specify a valid path to a .toml definition file."
+            )
+        except toml.TomlDecodeError:
+            raise SyncerError(
+                proto=proto,
+                definition=definition,
+                reason="Your definition file [blue]{definition}[/] is not correct.",
+                mitigation=(
+                    "Visit the link below to see a full example."
+                    "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example"
+                )
+            )
 
         if 'manifest' not in cfg:
             cfg['manifest'] = PACKAGE_DIR / 'sync' / proto / 'MANIFEST.json'
@@ -101,11 +128,33 @@ class SyncerProtocolType(click.ParamType):
         log.info(f'registering syncer: {proto}')
         Syncer = register.load_syncer(protocol=proto, manifest_path=cfg.pop('manifest'))
 
-        # sanitize input by accepting aliases
-        if hasattr(Syncer, '__pydantic_model__'):
-            cfg['configuration'] = Syncer.__pydantic_model__.parse_obj(cfg['configuration']).dict()
+        try:
+            # sanitize input by accepting aliases
+            if hasattr(Syncer, '__pydantic_model__'):
+                cfg['configuration'] = Syncer.__pydantic_model__.parse_obj(cfg['configuration']).dict()
 
-        syncer = Syncer(**cfg['configuration'])
+            syncer = Syncer(**cfg['configuration'])
+        except KeyError:
+            raise SyncerError(
+                proto=proto,
+                definition=definition,
+                reason="[blue]{definition}[/] is missing a top level marker.",
+                mitigation=(
+                    "The first line of your definition file should be.."
+                    "\n\n[white]\[configuration]"
+                )
+            )
+        except pydantic.ValidationError as e:
+            raise SyncerError(
+                proto=proto,
+                definition=definition,
+                errors='\n  '.join([f"[blue]{_['loc'][0]}[/]: {_['msg']}" for _ in e.errors()]),
+                reason="[blue]{definition}[/] has incorrect parameters.\n\n  {errors}",
+                mitigation=(
+                    "Visit the link below to see a full example."
+                    "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example"
+                )
+            )
 
         # don't actually make lasting changes, just ensure it initializes
         if validate_only:

@@ -86,11 +86,14 @@ class UserMiddleware:
         user = r.json()['headers']
 
         if not user:
-            raise ContentDoesNotExist(type='USER', name=principal)
+            raise ContentDoesNotExist(
+                type='USER',
+                reason=f"No user found with the name [blue]{principal}"
+            )
 
         if error_if_ambiguous:
             if len(user) > 1:
-                raise AmbiguousContentError(type='USER', name=principal)
+                raise AmbiguousContentError(type='user', name=principal)
             user = user[0]
 
         return user

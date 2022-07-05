@@ -64,11 +64,19 @@ class PinboardMiddleware:
             offset += len(data['headers'])
 
             if not data['headers'] and not pinboards:
-                rzn  = f"'{category.value}' category ("
-                rzn += 'excluding ' if exclude_system_content else 'including '
-                rzn += 'admin-generated pinboards)'
-                rzn += '' if tags is None else ' and tags: ' + ', '.join(tags)
-                raise ContentDoesNotExist(type='PINBOARD', reason=rzn)
+                info = {
+                    "incl": "exclude" if exclude_system_content else "include",
+                    "category": category,
+                    "tags": ", ".join(tags),
+                    "reason": (
+                        "Zero {type} matched the following filters"
+                        "\n"
+                        "\n  - [blue]{category.value}[/] {type}"
+                        "\n  - [blue]{incl}[/] admin-generated {type}"
+                        "\n  - with tags [blue]{tags}"
+                    )
+                }
+                raise ContentDoesNotExist(type="pinboards", **info)
 
             if data['isLastBatch']:
                 break

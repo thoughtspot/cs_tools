@@ -49,6 +49,10 @@
     color: var(--ts-color-blue);
 }
 
+.fc-cyan {
+    color: var(--ts-color-cyan);
+}
+
 .fc-coral {
     color: var(--ts-color-coral);
 }
@@ -59,6 +63,10 @@
 
 .fc-purple {
     color: var(--ts-color-purple);
+}
+
+.fc-yellow {
+    color: var(--ts-color-yellow);
 }
 
 /* Make the page wider than default, but only slightly. */

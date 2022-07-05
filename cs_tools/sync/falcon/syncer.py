@@ -9,7 +9,7 @@ import sqlalchemy as sa
 import httpx
 import click
 
-from cs_tools.errors import SyncerError, ThoughtSpotUnreachable, TSLoadServiceUnreachable
+from cs_tools.errors import SyncerError, ThoughtSpotUnavailable, TSLoadServiceUnreachable
 from . import compiler, sanitize
 
 
@@ -25,6 +25,7 @@ class Falcon:
     schema_: str = Field('falcon_default_schema', alias='schema')
     empty_target: bool = True
     timeout: float = 60.0
+    ignore_load_balancer_redirect: bool = False
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
@@ -65,7 +66,7 @@ class Falcon:
             # I think we can realistically only reach here if Falcon is meant to be
             # active AND we are attempting to run a tools command, so that's not the 
             # case, @boonhapus has gotta take a better look.
-            raise ThoughtSpotUnreachable('unknown reason')
+            raise ThoughtSpotUnavailable(reason='unknown reason')
 
         if self.ts.platform.deployment == 'cloud':
             raise SyncerError(
@@ -128,22 +129,24 @@ class Falcon:
             try:
                 self.ts.tsload.upload(
                     fd,
+                    ignore_node_redirect=self.ignore_load_balancer_redirect,
                     database=self.database,
                     table=table,
                     empty_target=self.empty_target
                 )
-            except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            except (httpx.ConnectError, httpx.ConnectTimeout):
                 h = self.ts.api.ts_dataservice._tsload_node
                 p = self.ts.api.ts_dataservice._tsload_port
-                m = f'could not connect at [blue]{h}:{p}[/]'
+                r = f'could not connect at {h}:{p}'
+                m = ''
 
                 if h != self.ts.config.thoughtspot.host:
-                    m += (
-                        '\n\n[yellow]If that url is surprising to you, you likely have '
+                    m = (
+                        '\n\nIf that url is surprising to you, you likely have '
                         'the tsload service load balancer turned on (the default '
                         'setting) and the local machine cannot directly send files to '
                         'that node.\n\nConsider turning on your VPN or working with a '
                         'ThoughtSpot Support Engineer to disable the etl_http_server '
                         '(tsload connector service) load balancer.'
                     )
-                raise TSLoadServiceUnreachable(m, http_error=e)
+                raise TSLoadServiceUnreachable(reason=r, mitigation=m)
