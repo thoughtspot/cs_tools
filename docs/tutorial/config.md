@@ -111,7 +111,7 @@ __Putting it all together..__{ .fc-blue }
 </center>
 
 ```console
-cs_tools tools config create
+cs_tools config create
 --config non-prod
 --host https://my-company.thoughtspot.cloud/
 --username cs_tools

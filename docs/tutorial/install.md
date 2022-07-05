@@ -70,21 +70,44 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 
 === ":fontawesome-brands-windows: Windows"
 
-    ```
-    unzip
-    open powershell
-    cd to directory
+    Open up __Windows Terminal__ or __Powershell__.
+
+    ```powershell
+    # Navigate to the Downloads directory
+    cd $env:USERPROFILE/Downloads
+
+    # Unzip the CS Tools bootstrapper
+    Expand-Archive windows-cs_tools-* -DestinationPath cs_tools-bootstrapper
+
+    # Navigate into the unzipped directory
+    cd cs_tools-bootstrapper
+
+    # Run the help command to see the CLI
     python bootstrap -h
-    python bootstrap
+
+    # Run the installer
+    python bootstrap --reinstall
     ```
 
 === ":fontawesome-brands-apple: :fontawesome-brands-linux: Mac, Linux"
 
-    ```
-    open terminal
-    cd to directory
+    Open up a new __Terminal__ window.
+
+    ```bash
+    # Navigate to the Downloads directory
+    cd $HOME/Downloads
+
+    # Unzip the CS Tools bootstrapper
+    unzip *-cs_tools-* -d cs_tools-bootstrapper
+
+    # Navigate into the unzipped directory
+    cd cs_tools-bootstrapper
+
+    # Run the help command to see the CLI
     python bootstrap -h
-    python bootstrap
+
+    # Run the installer
+    python bootstrap --reinstall
     ```
 
 Try running __CS Tools__ by typing..

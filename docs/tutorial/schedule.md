@@ -33,7 +33,7 @@ over time.
 
     ```powershell
     cs_tools tools archiver identify --report csv://default `
-    ; Select-String -Path %USERPROFILE%/Downloads/archiver-report.csv -Pattern '^answer' `
+    ; Select-String -Path $env:USERPROFILE/Downloads/archiver-report.csv -Pattern '^answer' `
     | Measure-Object -Line
     ```
 
@@ -73,12 +73,12 @@ Now that we've decided how to track our content, we're ready to schedule our com
 
     ```console
     # Weekly, on Monday at 3:05am
-    schtasks /create ^
+    schtasks /create      ^
              /tn cs_tools ^
              /sc WEEKLY   ^
              /d  MON      ^
              /st 03:05    ^
-             /tr %USERPROFILE%/Downloads/counter.ps1
+             /tr $env:USERPROFILE/Downloads/counter.ps1
     ```
 
 === ":fontawesome-brands-apple:, :fontawesome-brands-linux: crontab"
