@@ -85,7 +85,8 @@ class CSV:
         return data
 
     def dump(self, directive: str, *, data: List[Dict[str, Any]]) -> None:
-        header = data[0].keys()
+        # in case we have the first row not include some data
+        header = max([_.keys() for _ in data])
 
         with self.file_reference(f'{directive}.csv', mode='a') as f:
             writer = csv.DictWriter(f, fieldnames=header, **self.dialect_params())
