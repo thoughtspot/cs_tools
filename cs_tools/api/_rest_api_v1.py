@@ -1,3 +1,4 @@
+from typing import Any, Dict
 import logging
 import copy
 
@@ -119,14 +120,8 @@ class _RESTAPIv1:
             if privacy not in _privacy:
                 log.warning(f'using an undocumented api! :: {endpoint}')
 
-        # pop the password so it doesn't get logged
-        try:
-            secure = copy.deepcopy(kw)
-        except TypeError:
-            secure = copy.deepcopy({k: v for k, v in kw.items() if k not in ('file', 'files')})
-
-        secure.get('data', {}).pop('password', None)
-        log.debug(f'{method} >> {endpoint} with data:\n\tkwargs={secure}')
+        kw = filter_none(kw)
+        log.debug(f'{method} >> {endpoint} with data:\n\tkwargs={_secure_for_log(kw)}')
 
         meth = getattr(self._http, method.lower())
         r = meth(endpoint, **kw)
