@@ -17,16 +17,17 @@ from typer import Argument as A_, Option as O_  # noqa
 from typing import Dict, List, Optional, Tuple
 import typer
 
-from cs_tools.data.enums import AccessLevel, GUID, StatusCode, TMLImportPolicy, TMLType, TMLContentType
-from cs_tools.cli.ux import console, CommaSeparatedValuesType, CSToolsCommand, CSToolsGroup
-from cs_tools.cli.tools import common
-from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools.cli.tools.common import setup_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools.data.enums import AccessLevel, GUID, StatusCode, TMLImportPolicy, TMLType, TMLContentType
+from cs_tools.cli.types import CommaSeparatedValuesType
 from cs_tools.cli.util import TSDependencyTree
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 
-from . import __version__
 from .util import TMLFileBundle
+from . import __version__
 
 
 def strip_blanks(inp: List[str]) -> List[str]:
@@ -56,7 +57,7 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=common.setup_thoughtspot,
+    thoughtspot=setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
@@ -186,7 +187,7 @@ class TMLResponseReference:
 
 @app.command(name='import', cls=CSToolsCommand)
 @depends(
-    thoughtspot=common.setup_thoughtspot,
+    thoughtspot=setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
     enter_exit=True
 )
