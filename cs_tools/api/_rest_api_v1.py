@@ -17,9 +17,21 @@ from cs_tools.api.models import (
     TSDataService,
     User
 )
+from cs_tools.api.util import filter_none
 
 
 log = logging.getLogger(__name__)
+
+
+def _secure_for_log(kw) -> Dict[str, Any]:
+    # This doesn't need to be a formal utility.
+    # We're essentially just popping the password so it doesn't get logged
+    try:
+        secure = copy.deepcopy(kw)
+    except TypeError:
+        secure = copy.deepcopy({k: v for k, v in kw.items() if k not in ('file', 'files')})
+
+    return secure.get('data', {}).pop('password', None)
 
 
 class _RESTAPIv1:
