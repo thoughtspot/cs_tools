@@ -17,7 +17,7 @@ from typer import Argument as A_, Option as O_  # noqa
 from typing import Dict, List, Optional, Tuple
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.thoughtspot import ThoughtSpot
@@ -57,9 +57,10 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def export(
         ctx: click.Context,
@@ -185,11 +186,12 @@ class TMLResponseReference:
         self.error_message = None
 
 
-@app.command(name='import', cls=CSToolsCommand)
+@app.command(cls=CSToolsCommand)
 @depends(
-    thoughtspot=setup_thoughtspot,
+    'thoughtspot',
+    setup_thoughtspot,
     options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    enter_exit=True
+    teardown=teardown_thoughtspot,
 )
 def import_(
         ctx: click.Context,
@@ -661,24 +663,24 @@ def _flatten_tml_response(r: Dict) -> [TMLResponseReference]:
 
 
 def _add_tags(ts: ThoughtSpot, objects: List[TMLResponseReference], tags: List[str]) -> None:
-   """
-   Adds the tags to the items in the response.
-   :param ts: The ThoughtSpot object.
-   :param objects: List of the objects to add the tags to.
-   :param tags: List of tags to create.
-   """
-   with console.status(f"[bold green]adding tags: {tags}[/]"):
-       ids = []
-       types = []
-       for _ in objects:
-           ids.append(_.guid)
-           types.append(_.metadata_type)
-       if ids:  # might all be errors
-           console.log(f'Adding tags {tags} to {ids}')
-           try:
-               ts.api.metadata.assigntag(id=ids, type=types, tagname=tags)
-           except Exception as e:
-               console.log(f'[bold red]Error adding tags: {e}[/]')
+    """
+    Adds the tags to the items in the response.
+    :param ts: The ThoughtSpot object.
+    :param objects: List of the objects to add the tags to.
+    :param tags: List of tags to create.
+    """
+    with console.status(f"[bold green]adding tags: {tags}[/]"):
+        ids = []
+        types = []
+        for _ in objects:
+            ids.append(_.guid)
+            types.append(_.metadata_type)
+        if ids:  # might all be errors
+            console.log(f'Adding tags {tags} to {ids}')
+            try:
+                ts.api.metadata.assigntag(id=ids, type=types, tagname=tags)
+            except Exception as e:
+                console.log(f'[bold red]Error adding tags: {e}[/]')
 
 
 def _share_with(ts: ThoughtSpot, objects: List[TMLResponseReference], share_with: List[str]) -> None:
