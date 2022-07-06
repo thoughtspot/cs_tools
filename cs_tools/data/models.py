@@ -1,10 +1,14 @@
 from typing import Any, Dict, List, Optional, Union
 import datetime as dt
+import logging
 
 from sqlmodel import Field, Relationship, SQLModel
 from dateutil import tz
 
 from .enums import Privilege
+
+
+log = logging.getLogger(__name__)
 
 
 class ThoughtSpotPlatform(SQLModel):
@@ -173,9 +177,14 @@ class Tag(SQLModel, table=True):
 
     @classmethod
     def from_api_v1(cls, data) -> List['Tag']:
+        if 'clientState' not in data:
+            log.warning(
+                f"Tag '{data['name']}' is missing its color! There might be a problem with metadata in your cluster."
+            )
+
         return cls(
             tag_guid=data['id'], tag_name=data['name'],
-            color=data['clientState']['color'], author_guid=data['author'],
+            color=data.get('clientState', {}).get('color'), author_guid=data['author'],
             created=data['created'], modified=data['modified']
         )
 
