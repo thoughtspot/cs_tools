@@ -1,7 +1,7 @@
 """
 Utilities for when working with the Swagger API.
 """
-from typing import Iterable
+from typing import Any, Dict, Iterable
 import uuid
 
 from cs_tools.util import dedupe
@@ -29,6 +29,8 @@ def stringified_array(iterable: Iterable) -> str:
     This function corrects this by simply converting the input into a
     comma-separated string.
     """
+    if not iterable:
+        return None
     return '[' + ', '.join(list(dedupe(iterable))) + ']'
 
 
@@ -46,3 +48,28 @@ def is_valid_guid(to_test: str) -> bool:
     except ValueError:
         return False
     return str(guid) == to_test
+
+
+def filter_none(request_parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Filter None values out of request params.
+
+    Why? If you supply an incorrect or unexpected value to ThoughtSpot API parameters,
+    then the endpoint will silently ignore all parameters. Empty values included. None
+    is not a valid parameter value, so we can confidently use it as a sentinel.
+
+    Parameters
+    ----------
+    request_parameters : Dict[str, Any]
+      keywords passed to http.request
+    """
+    kw = {}
+
+    for k, v in request_parameters.items():
+        if isinstance(v, dict):
+            v = filter_none(v)
+        
+        if v is not None:
+            kw[k] = v
+
+    return kw

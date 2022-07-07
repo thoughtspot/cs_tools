@@ -67,7 +67,7 @@ class AnswerMiddleware:
                 to_extend = [
                     answer
                     for answer in to_extend
-                    if answer['authorName'] not in ('system', 'tsadmin', 'su')
+                    if answer.get('authorName') not in ('system', 'tsadmin', 'su')
                 ]
 
             answers.extend(to_extend)

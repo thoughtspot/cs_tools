@@ -155,7 +155,7 @@ def identify(
                     'name': answer['name'],
                     'created_at': add.diff_for_humans(),
                     'modified_at': mod.diff_for_humans(),
-                    'author': answer['authorName']
+                    'author': answer.get('authorName')
                 })
 
     if content.value in ('all', 'liveboard'):
@@ -180,7 +180,7 @@ def identify(
                     'name': liveboard['name'],
                     'created_at': add.diff_for_humans(),
                     'modified_at': mod.diff_for_humans(),
-                    'author': liveboard['authorName']
+                    'author': liveboard.get('authorName')
                 })
 
     if not to_archive:
@@ -284,7 +284,7 @@ def revert(
             'name': content['name'],
             'created_at': add.diff_for_humans(),
             'modified_at': mod.diff_for_humans(),
-            'author': content['authorName']
+            'author': content.get('authorName')
         })
 
     if not to_unarchive:
@@ -414,7 +414,7 @@ def remove(
             'name': content['name'],
             'created_at': add.diff_for_humans(),
             'modified_at': mod.diff_for_humans(),
-            'author': content['authorName']
+            'author': content.get('authorName')
         })
 
     if not to_unarchive:

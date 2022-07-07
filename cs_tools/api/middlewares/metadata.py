@@ -88,7 +88,7 @@ class MetadataMiddleware:
                     to_extend = [
                         answer
                         for answer in to_extend
-                        if answer['authorName'] not in ('system', 'tsadmin', 'su')
+                        if answer.get('authorName') not in ('system', 'tsadmin', 'su')
                     ]
 
                 content.extend(to_extend)
