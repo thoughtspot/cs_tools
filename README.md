@@ -4,19 +4,19 @@
   </a>
 </p>
 
-
 <p align="center">
   CS Tools is a command line utility written by the ThoughtSpot Professional Services &
-  Customer Success teams, meant to augment built-in platform tools, help with
+  Customer Success teams, meant to augment built-in platform tools, help with the
   administration of and enhance adoption within your ThoughtSpot environment.
 </p>
 
 <p align="center">
-  <b>Learn more about the tools in our documentation</b>:
+  <b>Learn more in our documentation
   <br/>
   <a href="https://thoughtspot.github.io/cs_tools/">
-    https://cs_tools.thoughtspot.com
+    Getting started with CS Tools
   </a>
+  </b>
 </p>
 
 ## Features
@@ -26,21 +26,3 @@
 - Multiple-cluster support (Dev, QA, Prod)
 - Scheduler-friendly execution
 - ThoughtSpot Spot App
-
----
-
-<p align="center">
-  <b>Install</b>: 
-  <a href="https://thoughtspot.github.io/cs_tools/how-to/install-upgrade-cs-tools/">
-    https://cs_tools.thoughtspot.com/install-upgrade-cs-tools
-  </a>
-</p>
-
-<p align="center">
-  <b>Source Code</b>: 
-  <a href="https://github.com/thoughtspot/cs_tools">
-    https://github.com/thoughtspot/cs_tools
-  </a>
-</p>
-
----

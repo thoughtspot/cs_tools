@@ -128,7 +128,7 @@ class ThoughtSpot:
         log.debug(f"""execution context...
 
         [CS TOOLS COMMAND]
-        {click.get_current_context().info_name} {' '.join(sys.argv[1:])}
+        cs_tools {' '.join(sys.argv[1:])}
 
         [PLATFORM DETAILS]
         system: {platform.system()} (detail: {platform.platform()})

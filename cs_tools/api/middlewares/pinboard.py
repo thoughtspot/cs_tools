@@ -85,7 +85,7 @@ class PinboardMiddleware:
             pinboards = [
                 pinboard
                 for pinboard in pinboards
-                if pinboard['authorName'] not in ('system', 'tsadmin', 'su')
+                if pinboard.get('authorName') not in ('system', 'tsadmin', 'su')
             ]
 
         return pinboards

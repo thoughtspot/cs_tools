@@ -109,9 +109,22 @@ class SearchMiddleware:
 
         guid = worksheet or table or view
 
+        if worksheet is not None:
+            friendly = "worksheet"
+            subtype = "WORKSHEET"
+
+        if table is not None:
+            friendly = "system table"
+            subtype = "ONE_TO_ONE_LOGICAL"
+
+        if view is not None:
+            friendly = "view"
+            subtype = "AGGR_WORKSHEET"
+
         if not util.is_valid_guid(guid):
             d = self.ts._rest_api._metadata.list(
                        type='LOGICAL_TABLE',
+                       subtypes=[subtype],
                        pattern=guid,
                        sort='CREATED',
                        sortascending=True
@@ -119,14 +132,14 @@ class SearchMiddleware:
 
             if not d['headers']:
                 raise ContentDoesNotExist(
-                    type='LOGICAL_TABLE',
-                    reason="No table or worksheet found with the name [blue]{name}"
+                    type=friendly,
+                    reason=f"No {friendly} found with the name [blue]{guid}"
                 )
 
             d = [_ for _ in d['headers'] if _['name'].casefold() == guid.casefold()]
 
             if len(d) > 1:
-                raise AmbiguousContentError(type='LOGICAL_TABLE', name=guid)
+                raise AmbiguousContentError(type=friendly, name=guid)
 
             guid = d[0]['id']
 

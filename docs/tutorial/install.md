@@ -54,6 +54,9 @@ Click the __blue button__{ .fc-blue } below to fill out the Google Form[^1] and 
 
         An alternative for installing multiple system-level python distributions could be [`pyenv`][pyenv].
 
+    === ":fontawesome-brands-centos: ThoughtSpot cluster"
+        Python is already installed here! You should be good to go.
+
 
 <center>
 [:material-tools: &nbsp; get the tools &nbsp;][google-form-install]{ target='secondary' .md-button .md-button--primary }
@@ -113,6 +116,41 @@ Follow the steps below to get __CS Tools__ installed on your platform.
     ??? fail "command not found: python"
 
         If you see this error in your terminal, try using `python3` instead of `python` above.
+
+=== ":fontawesome-brands-centos: ThoughtSpot cluster"
+    
+    __We strongly recommend against this option.__{ .fc-coral } __CS Tools__ should ideally run from another machine.
+
+    ```bash
+    # Navigate to the Downloads directory
+    cd $HOME/Downloads
+
+    # Unzip the CS Tools bootstrapper
+    unzip *-cs_tools-* -d cs_tools-bootstrapper
+
+    # Navigate into the unzipped directory
+    cd cs_tools-bootstrapper
+
+    # Run the help command to see the CLI
+    python bootstrap -h
+
+    # Run the installer
+    python bootstrap --reinstall
+    ```
+
+    ??? fail "I get a REALLY noisy error about locales!"
+
+        By default, some __ThoughtSpot__ Software builds limit the Python environment to where it thinks you are
+        restricted to ASCII data. The solution to this problem is to export your locale prior to executing __CS Tools__.
+
+        ```
+        export LC_ALL=C.UTF-8
+        export LANG=C.UTF-8
+        ```
+
+        The bootstrapper adds locale data to your shell profiles. Run `exec $SHELL` to reload the profile and capture
+        this information.
+
 
 Try running __CS Tools__ by typing..
 
