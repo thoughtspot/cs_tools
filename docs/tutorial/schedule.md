@@ -37,7 +37,7 @@ over time.
     | Measure-Object -Line
     ```
 
-=== ":fontawesome-brands-apple:, :fontawesome-brands-linux: Mac, Linux"
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
 
     For the sake of example, these are the contents of a bash script in your Downloads folder called `counter.sh`
 
@@ -65,7 +65,7 @@ Now that we've decided how to track our content, we're ready to schedule our com
 
 === ":fontawesome-brands-windows: Task Scheduler"
 
-    !!! info "Need help?"
+    !!! example "Need help?"
 
         [Windows Documentation][schtasks]{ target='secondary' .external-link }
 
@@ -81,7 +81,7 @@ Now that we've decided how to track our content, we're ready to schedule our com
              /tr $env:USERPROFILE/Downloads/counter.ps1
     ```
 
-=== ":fontawesome-brands-apple:, :fontawesome-brands-linux: crontab"
+=== ":fontawesome-brands-apple:, :fontawesome-brands-linux:, :fontawesome-brands-centos: crontab"
 
     !!! hint "Need help?"
 

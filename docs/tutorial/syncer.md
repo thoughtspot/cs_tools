@@ -78,7 +78,7 @@ folder.
     echo "directory = `"$env:USERPROFILE\Downloads\`"" >> $env:USERPROFILE\Downloads\report.toml
     ```
 
-=== ":fontawesome-brands-apple: :fontawesome-brands-linux: Mac, Linux"
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
 
     ```bash
     echo "[configuration]" >> $HOME/Downloads/report.toml
@@ -146,7 +146,7 @@ Let's set the CSV Syncer we created earlier to be the default for our current co
     cs_tools config modify --config non-prod --syncer csv://$env:USERPROFILE\Downloads\report.toml
     ```
 
-=== ":fontawesome-brands-apple: :fontawesome-brands-linux: Mac, Linux"
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
 
     ```bash
     cs_tools config modify --config non-prod --syncer csv://$HOME/Downloads/report.toml
