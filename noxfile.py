@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from typing import Any, List, Tuple
 import itertools
+import argparse
 import pathlib
 import zipfile
 import shutil
@@ -16,7 +17,8 @@ PY_VERSIONS = [
     "3.9",
     "3.10"
 ]
-DIST = pathlib.Path(__file__).parent / "dist"
+HERE = pathlib.Path(__file__).parent
+DIST = HERE / "dist"
 DIST_PKGS = DIST / "pkgs"
 REQS_TXT = DIST_PKGS / 'requirements.txt'
 SUPPORTED_PLATFORM_MATRIX = {
@@ -191,17 +193,87 @@ def vendor_packages(session):
         REQS_TXT.unlink()
 
 
-# @nox.session(reuse_venv=not ON_GITHUB)
-# def version_bump(session):
-#     # TODO: use argparse for the following args
-#     # --major          :: False
-#     # --minor          :: False
-#     # --patch          :: False
-#     # --beta           :: False
-#     # 1. get_version
-#     # 2. bump version based on major, minor, or patch
-#     # 3. if beta, add "-beta.1"
-#     # 4. poetry version {version}
+@nox.session(name="bump-version", reuse_venv=not ON_GITHUB)
+def bump_version(session):
+    # TODO: use argparse for the following args
+    # --major          :: False
+    # --minor          :: False
+    # --patch          :: False
+    # --beta           :: False
+    # 1. get_version
+    # 2. bump version based on major, minor, or patch
+    # 3. if beta, add "-beta.1"
+    # 4. poetry version {version}
+    """
+    """
+    parser = argparse.ArgumentParser(prog="nox -s version-bump")
+    parser.add_argument(
+        "--beta",
+        help="mark the release or bump the beta version",
+        dest="beta",
+        action="store_true",
+        default=False,        
+    )
+    ver = parser.add_mutually_exclusive_group()
+    ver.add_argument(
+        "--major",
+        help="bump the major version, resetting minor and patch to 0",
+        dest="major",
+        action="store_true",
+        default=False,
+    )
+    ver.add_argument(
+        "--minor",
+        help="bump the minor version, resetting patch to 0",
+        dest="minor",
+        action="store_true",
+        default=False,
+    )
+    ver.add_argument(
+        "--patch",
+        help="bump the patch version",
+        dest="patch",
+        action="store_true",
+        default=False,
+    )
+
+    args = parser.parse_args(args=session.posargs)
+
+    def _get_version() -> str:
+        local = {}
+        txt = (HERE / 'cs_tools' / '_version.py').read_text()
+        exec(txt, {}, local)
+        return local['__version__']
+
+    def _write_version(version: str) -> None:
+        (HERE / 'cs_tools' / '_version.py').write_text(f"__version__ = '{version}'")
+
+        import tomlkit
+        pyproject = (HERE / 'pyproject.toml').read_text()
+        doc = tomlkit.parse(pyproject)
+        doc['tool']['poetry']['version'] = version
+        txt = tomlkit.dumps(doc)
+        (HERE / 'pyproject.toml').write_text(txt)
+
+    __version__ = _get_version()
+    major, minor, patch = __version__.split('.')
+    patch, *in_beta = patch.split('b')
+
+    if args.major and not in_beta:
+        version = f'{int(major) + 1}.0.0'
+    elif args.minor and not in_beta:
+        version = f'{major}.{int(minor) + 1}.0'
+    elif args.patch and not in_beta:
+        version = f'{major}.{minor}.{int(patch) + 1}'
+
+    if args.beta:
+        # bump the patch only if we're not currently in a beta version
+        patch = patch if in_beta else int(patch) + 1
+        # always bump the beta version
+        beta = int(in_beta[0]) + 1 if in_beta else 1
+        version = f'{major}.{minor}.{patch}b{beta}'
+
+    _write_version(version)
 
 
 @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
