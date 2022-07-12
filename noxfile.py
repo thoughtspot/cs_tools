@@ -279,7 +279,7 @@ def bump_version(session):
 
     _write_version(version)
     session.run("git", "add", f"{HERE}/pyproject.toml", f"{HERE}/cs_tools/_version.py", external=True)
-    session.run("git", "commit", "-m", f"🤜 bump {v}", external=True)
+    session.run("git", "commit", "-m", f"bump {v} --> ({version})", external=True)
 
 
 @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
