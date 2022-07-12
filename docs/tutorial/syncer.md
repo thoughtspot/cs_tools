@@ -63,7 +63,7 @@ graph LR
 
 To keep things simple, let's define a definition file for the CSV Syncer. This will allow us to export data that various
 tools produce directly to a file. You can find all the configuration settings for syncers in [their section of the
-docuemtnation][syncer-csv].
+documentation][syncer-csv].
 
 The CSV syncer is simple, all that's __required__{ .fc-coral } is the directory location to export data to. Follow the
 instructions below to create a new CSV syncer.
