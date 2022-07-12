@@ -267,13 +267,19 @@ def bump_version(session):
         version = f'{major}.{minor}.{int(patch) + 1}'
 
     if args.beta:
+        v = "beta version"
+
         # bump the patch only if we're not currently in a beta version
         patch = patch if in_beta else int(patch) + 1
         # always bump the beta version
         beta = int(in_beta[0]) + 1 if in_beta else 1
         version = f'{major}.{minor}.{patch}b{beta}'
+    else:
+        v = "version"
 
     _write_version(version)
+    session.run("git", "add", f"{HERE}/pyproject.toml", f"{HERE}/cs_tools/_version.py", external=True)
+    session.run("git", "commit", "-m", f"🤜 bump {v}", external=True)
 
 
 @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
