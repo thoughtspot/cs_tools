@@ -47,8 +47,9 @@ def search(
     """
     Search a dataset from the command line.
 
-    Columns must be surrounded by square brackets. Search-level formulas are
-    not currently supported, but a formula defined as part of a data source is.
+    Columns must be surrounded by square brackets and fully enclosed by quotes.
+    Search-level formulas are not currently supported, but a formula defined as
+    part of a data source is.
     """
     ts = ctx.obj.thoughtspot
 
