@@ -32,7 +32,8 @@ def _secure_for_log(kw) -> Dict[str, Any]:
     except TypeError:
         secure = copy.deepcopy({k: v for k, v in kw.items() if k not in ('file', 'files')})
 
-    return secure.get('data', {}).pop('password', None)
+    secure.get('data', {}).pop('password', None)
+    return secure
 
 
 class _RESTAPIv1:
