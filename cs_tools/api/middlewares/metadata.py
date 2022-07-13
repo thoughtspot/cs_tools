@@ -396,3 +396,41 @@ class MetadataMiddleware:
                 name = self.cache['currency_type'][g]
 
         return name
+
+    @validate_arguments
+    def objects_exist(self, metadata_type: MetadataObject, guids: List[GUID]) -> Dict[GUID, bool]:
+        """
+        Checks if the list of objects exist.
+        :param metadata_type: The type to check for.  Must do one at a time.
+        :param guids: The list of GUIDs to check.
+        :return: A map of GUID to boolean, where True == it exists.
+        """
+        r = self.ts.api.metadata.list_object_headers(type=metadata_type, fetchids=guids)
+        content = r.json()
+
+        # The response is a list of objects that only include the ones that exist.  So check each GUID and add to the
+        # map.
+        returned_ids = [obj.get("id") for obj in content]
+        existence = {}
+        for guid in guids:
+            existence[guid] = guid in returned_ids
+
+        return existence
+
+    @classmethod
+    @validate_arguments
+    def tml_type_to_metadata_object(cls, tml_type: str) -> Union[MetadataObject, None]:
+        """
+        Converts a tml type (e.g. "worksheet") to a MetadataObject type, (e.g. MetadataObject.logical_table)
+        :param tml_type:  The TML type, such as None
+        """
+        mapping = {
+            "table": MetadataObject.logical_table,
+            "view": MetadataObject.logical_table,
+            "worksheet": MetadataObject.logical_table,
+            "pinboard": MetadataObject.pinboard,
+            "liveboard": MetadataObject.pinboard,
+            "answer": MetadataObject.saved_answer,
+        }
+
+        return mapping.get(tml_type, None)

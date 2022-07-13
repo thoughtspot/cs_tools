@@ -6,13 +6,14 @@
 #   - add support for tables and connections
 #   - add support for importing .zip files
 #
-
+import copy
 import json
 import pathlib
 import click
 import toml
 from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
+import time
 from typer import Argument as A_, Option as O_  # noqa
 from typing import Dict, List, Optional, Tuple
 import typer
@@ -26,7 +27,7 @@ from cs_tools.cli.types import CommaSeparatedValuesType
 from cs_tools.cli.util import TSDependencyTree
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
 
-from .util import TMLFileBundle
+from .util import MetadataTypeList, TMLFileBundle
 from . import __version__
 
 
@@ -186,7 +187,7 @@ class TMLResponseReference:
         self.error_message = None
 
 
-@app.command(cls=CSToolsCommand)
+@app.command(cls=CSToolsCommand, name="import")
 @depends(
     'thoughtspot',
     setup_thoughtspot,
@@ -365,6 +366,8 @@ def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLIm
                                                force_create=force_create)
                 resp = _flatten_tml_response(r)
 
+                metadata_list = MetadataTypeList()
+
                 fcnt = 0
                 for _ in resp:
                     if _.status_code == 'ERROR':
@@ -376,8 +379,13 @@ def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLIm
                         if guid_file:  # TODO - this looks wrong!
                             guid_mappings[level[fcnt]] = _.guid
                         ok_resp.append(_)
+                        metadata_list.add(
+                            ts.metadata.tml_type_to_metadata_object(level_tml_bundles[fcnt].tml.content_type),
+                            _.guid)
 
                     fcnt += 1
+
+                _wait_for_metadata(ts=ts, metadata_list=metadata_list)
 
     if guid_file:
         _write_guid_mappings(guid_file=guid_file, guid_mappings=guid_mappings)
@@ -716,6 +724,37 @@ def _share_with(ts: ThoughtSpot, objects: List[TMLResponseReference], share_with
             for type in type_bundles.keys():
                 objectids = type_bundles[type]
                 ts.api.security.share(type=type, id=objectids, permissions=permissions)
+
+
+def _wait_for_metadata(ts: ThoughtSpot, metadata_list: MetadataTypeList):
+    """
+    This call will wait for metadata to be created.  This is needed when creating content that relies on
+    recently created content.  It will eventually time out with an error after minute.
+    :param metadata_list: A metadata list.
+    :return:
+    """
+
+    # somewhat arbitrary wait times.  Don't go beyond a minute.
+    wait_time_secs = 5
+    max_wait_time_secs = 60
+
+    total_waited_secs = 0
+    items_to_wait_on = copy.copy(metadata_list)  # don't look for all the items every time.
+
+    while not items_to_wait_on.is_empty() and total_waited_secs < max_wait_time_secs:
+        console.log(f"Waiting on {items_to_wait_on} for {wait_time_secs} seconds.")
+        # always sleep first since the first call will (probably) be immediately.
+        time.sleep(wait_time_secs)
+
+        for type in items_to_wait_on.types():
+            guids = items_to_wait_on.guids_for_type(metadata_type=type)
+            existence = ts.metadata.objects_exist(metadata_type=type, guids=guids)
+            for k,v in existence.items():  # guid -> bool
+                if v:  # it exists
+                    items_to_wait_on.remove(type, k)
+
+    if not items_to_wait_on.is_empty():
+        raise TimeoutError( f"Still waiting on {items_to_wait_on} after {total_waited_secs} seconds. Check for errors.")
 
 
 @app.command(name='compare', cls=CSToolsCommand)

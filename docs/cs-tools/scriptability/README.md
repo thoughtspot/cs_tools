@@ -22,7 +22,7 @@ Note that this is v1.0.0 of the software and should be considered a first, minim
 The following are some limitations of the existing software:
 
 * Connections and tables cannot be imported
-* Content that is migrated to a new cluster is created as new unless GIUDs are manually modified in the TML files
+* Content that is migrated to a new cluster is created as new unless GUIDs are manually modified in the TML files
 
 The following additional features are planned for the near future:
 
