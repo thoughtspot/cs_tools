@@ -13,89 +13,151 @@ There are several use cases where extracting and importing TML is useful:
 2. Extract TML for migration to a different ThoughtSpot instance.
 3. Extract TML to modify and create copies, such as for different customers or in different languages.
 
-Note that this is v1.0.0 of the software and should be considered a first, minimal release.  It supports the following:
+This version supports the following scenarios:
 
 * Extract TML based on specific GUIDs (with and without related content)
 * Extract TML based on a ThoughtSpot TAG (with and without related content)
-* Import TML (update and create new)
+* Import TML (update and create new) with complex dependency handling
+* Support a mapping file of GUIDs with automatic updates for new content.
+* Compare two TML files for differences.
+* Generate an empty mapping file.
+* Share and tag content when importing.
 
 The following are some limitations of the existing software:
 
 * Connections and tables cannot be imported
-* Content that is migrated to a new cluster is created as new unless GUIDs are manually modified in the TML files
 
 The following additional features are planned for the near future:
 
-* Map GUIDs from the old instance to the new instance in order to update content
-* Share content with users
-* Add tags to the imported content
+* Export content based on the owner
+* Set the owner on import
+* Export and import SQL views
+* Create connections and tables
 
 ## CLI preview
 
 === "scriptability --help"
     ```console
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools scriptability --help
-    Usage: cs_tools tools scriptability [--version, --help] <command>
+    Usage: cs_tools tools scriptability <command>
+                                                [--version, --help]
 
-      Tool for easily migrating TML between clusters.
+    Tool for easily migrating TML between clusters.
 
-      USE AT YOUR OWN RISK! This tool uses private API calls which could change on any version update and break the
-      tool.
+    USE AT YOUR OWN RISK! This tool uses private API calls which
+    could change on any version update and break the tool.
 
-      ThoughtSpot provides the ability to extract object metadata (tables, worksheets, liveboards, etc.)  in ThoughtSpot Modeling
-      Language (TML) format, which is a text format based on YAML.   These files can then be modified and imported into another (or the
-      same) instance to either create  or modify objects.
+    ThoughtSpot provides the ability to extract object metadata (tables,
+    worksheets, liveboards, etc.)  in ThoughtSpot Modeling Language (TML)
+    format, which is a text format based on YAML.   These files can then be
+    modified and imported into another (or the same) instance to either 
+    create or modify objects.
 
-        cs_tools tools scriptability --help
+    cs_tools tools scriptability --help
 
     Options:
-      --version               Show the version and exit.
-      -h, --help, --helpfull  Show this message and exit.
+      --version           Show the version and exit.
+      --help, --helpfull  Show this message and exit.
 
     Commands:
-      export  Exports TML as YAML from ThoughtSpot.
-      import  Import TML from a file or directory into ThoughtSpot.
+      compare         Compares two TML files for differences.
+      create-mapping  Create a new, empty mapping file.
+      export          Exports TML as YAML from ThoughtSpot.
+      import          Import TML from a file or directory into ThoughtSpot.
+    ```
+
+=== "scriptability compare"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools scriptability export --help
+
+    Usage: cs_tools tools scriptability compare FILE1 FILE2
+                                                            [--help]
+
+      Compares two TML files for differences.
+
+    Arguments:
+      FILE1  full path to the first TML file to compare.  
+      FILE2  full path to the second TML file to compare.  
+
+    Options:
+      --help, --helpfull  Show this message and exit.
+    ```
+
+=== "scriptability create-mapping"
+    ```console
+    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools scriptability create-mapping --help
+
+    Usage: cs_tools tools scriptability create-mapping 
+               FILE [--help]
+    
+      Create a new, empty mapping file.
+    
+    Arguments:
+      FILE  Path to the new mapping file to be created.  Existing files will not be overwritten.  
+    
+    Options:
+      --help, --helpfull  Show this message and exit.
     ```
 
 === "scriptability export"
     ```console 
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools scriptability export --help
 
-    Usage: cs_tools tools scriptability export --config IDENTIFIER [--option, ..., --help] DIR
-
+    Usage: cs_tools tools scriptability export DIR
+                                                           [--tags, ...,
+                                                           --help] --config
+                                                           NAME
+    
       Exports TML as YAML from ThoughtSpot.
-
+    
     Arguments:
-      DIR  full path (directory) to save data set to  (required)
-
+      DIR  full path (directory) to save data set to  
+    
     Options:
       --tags TAGS                     comma separated list of tags to export
       --export-ids GUIDS              comma separated list of guids to export
       --export-associated / --no-export-associated
-                                      if specified, also export related content  (default: no-export-associated)
-      --config IDENTIFIER             config file identifier  (required)
-      -h, --help, --helpfull          Show this message and exit.
+                                      if specified, also export related content
+                                      [default: no-export-associated]
+      --set-fqns / --no-set-fqns      if set, then the content in the TML will
+                                      have FQNs (GUIDs) added.  \[default:
+                                      no-set-fqns]
+      --config NAME                   config file identifier  
+      --help, --helpfull              Show this message and exit.
     ```
 
 === "scriptability import"
     ```console 
     (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools scriptability import --help
 
-    Usage: cs_tools tools scriptability import --config IDENTIFIER [--option, ..., --help] FILE_OR_DIR
-
+    Usage: cs_tools tools scriptability import FILE_OR_DIR
+                                                           [--import-policy,
+                                                           ..., --help]
+                                                           --config NAME
+    
       Import TML from a file or directory into ThoughtSpot.
-
+    
     Arguments:
-      FILE_OR_DIR  full path to the TML file or directory to import.  (required)
-
+      FILE_OR_DIR  full path to the TML file or directory to import.  
+    
     Options:
-      --import-policy (PARTIAL|ALL_OR_NONE|VALIDATE_ONLY)
-                                      The import policy type  (default: VALIDATE_ONLY)
+      --import-policy [PARTIAL|ALL_OR_NONE|VALIDATE_ONLY]
+                                      The import policy type  \[default:
+                                      VALIDATE_ONLY]
       --force-create / --no-force-create
-                                      If true, will force a new object to be created.  (default: no-force-create)
-      --connection TEXT               GUID for the target connection if tables need to be mapped to a new connection.
-      --config IDENTIFIER             config file identifier  (required)
-      -h, --help, --helpfull          Show this message and exit.
+                                      If true, will force a new object to be
+                                      created.  \[default: no-force-
+                                      create]
+      --guid-file FILE_OR_DIR         Existing or new mapping file to map GUIDs
+                                      from source instance to target instance.
+      --tags TAGS                     One or more tags to add to the imported
+                                      content.
+      --share-with GROUPS             One or more groups to share the uploaded
+                                      content with.
+      --tml-logs DIR                  full path to the directory to log sent TML.
+                                      TML can change during load.
+      --config NAME                   config file identifier  
+      --help, --helpfull              Show this message and exit.
     ```
 
 ---
@@ -105,6 +167,16 @@ The following additional features are planned for the near future:
 !!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-15"
     === ":hammer_and_wrench: &nbsp; Added"
     - Initial release [@billdback-ts][contrib-billdback-ts]{ target='secondary' .external-link }.
+
+!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-15 "[@billdback-ts][contrib-billdback-ts]{ target='secondary' .external-link }.
+=== ":hammer_and_wrench: &nbsp; Added"
+Added the following capabilities:
+* Create an empty mapping file.
+* Compare two TML files.
+* Create content with automatic dependency handling.
+* Update content with automatic dependency handling.  
+* Allow new and updated content to be shared with groups during import.
+* Allow tags to be applied to new and updated content during import.
 
 ---
 

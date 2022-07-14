@@ -1,7 +1,6 @@
 # DEV NOTE:
 #
 # Future enhancements:
-#   - add support for GUID mapping across instances of ThoughtSpot
 #   - ability to manipulate objects, such as renaming references to worksheets and tables, token replacement, etc.
 #   - add support for tables and connections
 #   - add support for importing .zip files
@@ -207,8 +206,6 @@ def import_(
                                             help="The import policy type"),
         force_create: bool = O_(False,
                                 help="If true, will force a new object to be created."),
-        connection: Optional[GUID] = O_(None,
-                                        help="GUID for the target connection if tables need to be mapped to a new connection."),
         guid_file: Optional[pathlib.Path] = O_(
             None,
             help='Existing or new mapping file to map GUIDs from source instance to target instance.',
@@ -250,26 +247,25 @@ def import_(
             console.log(f"[bold green]importing from {path} with policy {import_policy.value}.[/]")
 
     if import_policy == TMLImportPolicy.validate_only:
-        _import_and_validate(ts, path, force_create, connection, guid_file, tml_logs)
+        _import_and_validate(ts, path, force_create, guid_file, tml_logs)
     else:
-        _import_and_create(ts, path, import_policy, force_create, connection, guid_file, tags, share_with, tml_logs)
+        _import_and_create(ts, path, import_policy, force_create, guid_file, tags, share_with, tml_logs)
 
 
 def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool,
-                         connection: GUID, guid_file: pathlib.Path, tml_logs: pathlib.Path) -> None:
+                         guid_file: pathlib.Path, tml_logs: pathlib.Path) -> None:
     """
     Does a validation import.  No content is created.  If FQNs map, they will be used.  If they don't, they will be
     removed.
     :param ts: The ThoughtSpot connection.
     :param path: Path to the directory or file.
     :param force_create: If true, all GUIDs are removed from content (but not FQNs that map)
-    :param connection: The connection to use for getting table IDs.
     :param guid_file: The file of GUID mappings.
     :param tml_logs: Directory to log imported content to.
     """
     guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
 
-    tml_file_bundles = _load_tml_from_files(ts, path, connection, guid_mappings, delete_unmapped_fqns=True)
+    tml_file_bundles = _load_tml_from_files(ts, path, guid_mappings, delete_unmapped_fqns=True)
     filenames = [tfb.file.name for tfb in tml_file_bundles.values()]
 
     # strip GUIDs if doing force create and convert to a list of TML string.
@@ -310,7 +306,7 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
 
 
 def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLImportPolicy, force_create: bool,
-                       connection: GUID, guid_file: pathlib.Path, tags: List[str], share_with: List[str],
+                       guid_file: pathlib.Path, tags: List[str], share_with: List[str],
                        tml_logs: pathlib.Path) -> None:
     """
     Attempts to create new content.  Content is created in phases based on dependency, worksheets before
@@ -320,7 +316,6 @@ def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLIm
     :param import_policy: The policy to either do all or none or the imports that fail.  Note that it's possible for
                           on level of the content to be successfully created an lower level content fail.
     :param force_create: If true, all GUIDs are removed from content (but not FQNs that map)
-    :param connection: The connection to use for getting table IDs.
     :param guid_file: The file of GUID mappings.
     :param tags: List of tags to apply.  Tags will be created if they don't exist.
     :param share_with: Shares with the groups of the given name, e.g. "Business Users"
@@ -328,7 +323,7 @@ def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLIm
     """
     guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
 
-    tml_file_bundles = _load_tml_from_files(ts, path, connection, guid_mappings, delete_unmapped_fqns=False)
+    tml_file_bundles = _load_tml_from_files(ts, path, guid_mappings, delete_unmapped_fqns=False)
 
     # remember the old guids in case we need to update the mapping.
     old_guids: List[GUID] = [tfb.tml.guid for tfb in tml_file_bundles.values()]
@@ -397,13 +392,12 @@ def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLIm
         _share_with(ts, ok_resp, share_with)
 
 
-def _load_tml_from_files(ts: ThoughtSpot, path: pathlib.Path, connection: GUID,
+def _load_tml_from_files(ts: ThoughtSpot, path: pathlib.Path,
                          guid_mappings: Dict[GUID, GUID], delete_unmapped_fqns) -> Dict[GUID, TMLFileBundle]:
     """
     Loads the TML files, returning a list of file names and the TML mapping from GUID to TML object.
     :param ts: The ThoughtSpot connection.
     :param path: The path to the TML files (either a file or directory)
-    :param connection: The connection to use for GUIDs for tables, if used.
     :param guid_mappings: The mapping for for old to new GUIDs.
     :param delete_unmapped_fqns: If true, delete FQNs that are not mapped.  Usually only when validating new.
     :return: A dictionary of GUIDs to TML file bundles (path and TML object). Only files to be loaded will be included.
@@ -413,11 +407,11 @@ def _load_tml_from_files(ts: ThoughtSpot, path: pathlib.Path, connection: GUID,
     if path.is_dir():
         for p in list(f for f in path.iterdir() if f.match("*.tml")):
             if not p.is_dir():  # don't currently support sub-folders.  Might add later.
-                _load_and_append_tml_file(ts=ts, path=p, connection=connection,
+                _load_and_append_tml_file(ts=ts, path=p,
                                                  guid_mappings=guid_mappings, tml_file_bundles=tml_file_bundles,
                                                  delete_unmapped_fqns=delete_unmapped_fqns)
     else:
-        guid = _load_and_append_tml_file(ts=ts, path=path, connection=connection,
+        guid = _load_and_append_tml_file(ts=ts, path=path,
                                      guid_mappings=guid_mappings, tml_file_bundles=tml_file_bundles,
                                      delete_unmapped_fqns=delete_unmapped_fqns)
 
@@ -494,7 +488,6 @@ def _create_guid_file_if_not_exists(guid_file: pathlib.Path) -> bool:
 def _load_and_append_tml_file(
         ts: ThoughtSpot,
         path: pathlib.Path,
-        connection: GUID,
         guid_mappings: Dict,
         tml_file_bundles: Dict[GUID, TMLFileBundle],
         delete_unmapped_fqns) -> GUID:
@@ -502,7 +495,6 @@ def _load_and_append_tml_file(
     Loads a TML file from the path, getting table mappings if needed.
     :param ts: The ThoughtSpot interface.
     :param path:  The file path.
-    :param connection:  The connection to map to (optional).
     :param guid_mappings: The dictionary that maps from old GUID to new GUID.
     :param tml_file_bundles: A mapping of GUID to a TML file and object.  Might get updated.
     :param delete_unmapped_fqns: If true, GUIDs not in the mapping file will be deleted.
@@ -517,7 +509,7 @@ def _load_and_append_tml_file(
         console.log(f"[bold red]{path} Only TML (.tml) files are supported.[/]")
         return None
 
-    tmlobj = _load_tml_from_file(ts=ts, path=path, connection=connection)
+    tmlobj = _load_tml_from_file(ts=ts, path=path)
 
     _map_guids(tml=tmlobj, guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
 
@@ -530,30 +522,16 @@ def _load_and_append_tml_file(
     return tmlobj.guid
 
 
-def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path, connection: GUID = None) -> TML:
+def _load_tml_from_file(ts: ThoughtSpot, path: pathlib.Path) -> TML:
     """
     Loads a TML object.  If it's a worksheet and the connection is provided, then the table FQNs will be modified.
     :param path: The path to the file.
-    :param connection: The connection GUID (optional)
     :return: A TML object.
     """
     with open(path, "r") as tmlfile:
         tmlstr = tmlfile.read()
 
-    tmlobj = YAMLTML.get_tml_object(tml_yaml_str=tmlstr)
-
-    cnx = ts.connection if connection else None
-
-    if tmlobj.content_type == TMLContentType.worksheet.value and connection:
-        tmlobj = tmlobj
-
-        tables = cnx.get_tables_for_connection(connection)
-        table_map = {}  # name to FQN
-        for _ in tables:
-            table_map[_['name']] = _['id']
-        tmlobj.remap_tables_to_new_fqn(name_to_fqn_map=table_map)
-
-    return tmlobj
+    return YAMLTML.get_tml_object(tml_yaml_str=tmlstr)
 
 
 def _build_dependency_tree(tml_list: List[TML]) -> TSDependencyTree:
