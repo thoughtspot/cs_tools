@@ -328,6 +328,7 @@ class Activator:
 
         if "zsh" in SHELL:
             zdotdir = Path(os.getenv("ZDOTDIR", HOME))
+            profiles.append(zdotdir.joinpath(".zprofile"))
             profiles.append(zdotdir.joinpath(".zshrc"))
 
         # .bash_profile is for login shells
