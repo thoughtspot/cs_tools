@@ -50,7 +50,7 @@ class TQLMiddleware:
         sample: int = 50,
         database: str = None,
         schema_: Annotated[str, Field(alias='schema')] = 'falcon_default_schema',
-        http_timeout: int = 5.0
+        http_timeout: int = 60.0
     ) -> Tuple[List[Dict[str, str]], List[Dict[str, Any]]]:
         """
 
@@ -103,7 +103,7 @@ class TQLMiddleware:
         database: str = None,
         schema_: str = 'falcon_default_schema',
         raise_errors: bool = False,
-        http_timeout: int = 5.0
+        http_timeout: int = 60.0
     ) -> List[Dict[str, Any]]:
         """
         """
@@ -143,7 +143,7 @@ class TQLMiddleware:
         fp: pathlib.Path,
         *,
         raise_errors: bool = False,
-        http_timeout: int = 5.0
+        http_timeout: int = 60.0
     ) -> List[Dict[str, Any]]:
         """
         """

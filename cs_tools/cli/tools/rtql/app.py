@@ -6,10 +6,10 @@ from typer import Argument as A_, Option as O_
 import typer
 import rich
 
+from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot, teardown_thoughtspot
 from .interactive import InteractiveTQL
 
 
@@ -47,7 +47,7 @@ def interactive(
         show_default=False
     ),
     schema: str = O_('falcon_default_schema', help='schema name to use'),
-    http_timeout: int = O_(5.0, '--timeout', help='network call timeout threshold')
+    http_timeout: int = O_(60.0, '--timeout', help='network call timeout threshold')
 ):
     """
     Run an interactive TQL session as if you were on the cluster.
@@ -58,7 +58,7 @@ def interactive(
     For a list of all commands, type "help" after invoking tql
     """
     ts = ctx.obj.thoughtspot
-    tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=console)
+    tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=console, http_timeout=http_timeout)
     tql.run()
 
 
@@ -75,7 +75,8 @@ def file(
         ...,
         metavar='FILE.tql',
         help='path to file to execute, default to stdin'
-    )
+    ),
+    http_timeout: int = O_(60.0, '--timeout', help='network call timeout threshold')
 ):
     """
     Run multiple commands within TQL on a remote server.
@@ -87,7 +88,7 @@ def file(
             cat create-schema.sql | tql
     """
     ts = ctx.obj.thoughtspot
-    r = ts.tql.script(file)
+    r = ts.tql.script(file, http_timeout=http_timeout)
 
     color_map = {
         'INFO': '[white]',
@@ -123,7 +124,8 @@ def file(
 def command(
     ctx: typer.Context,
     command: str=A_('-', help='TQL query to execute', metavar='"SELECT ..."'),
-    schema: str=O_('falcon_default_schema', help='schema name to use')
+    schema: str=O_('falcon_default_schema', help='schema name to use'),
+    http_timeout: int = O_(60.0, '--timeout', help='network call timeout threshold')
 ):
     """
     Run a single TQL command on a remote server.
@@ -149,7 +151,7 @@ def command(
         console.print('[red]no valid input given to rtql command')
         raise typer.Exit()
 
-    r = ts.tql.command(command, schema_=schema)
+    r = ts.tql.command(command, schema_=schema, http_timeout=http_timeout)
 
     color_map = {
         'INFO': '[white]',
