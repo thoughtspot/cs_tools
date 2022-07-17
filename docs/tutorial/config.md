@@ -110,14 +110,27 @@ below.
 __Putting it all together..__{ .fc-blue }
 </center>
 
-```console
-cs_tools config create
---config non-prod
---host https://my-company.thoughtspot.cloud/
---username cs_tools
---disable_sso
---default
-```
+=== ":fontawesome-brands-windows: Windows"
+
+    ```powershell
+    cs_tools config create `
+    --config non-prod `
+    --host https://my-company.thoughtspot.cloud/ `
+    --username cs_tools `
+    --disable_sso `
+    --default
+    ```
+
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
+
+    ```bash
+    cs_tools config create \
+    --config non-prod \
+    --host https://my-company.thoughtspot.cloud/ \
+    --username cs_tools \
+    --disable_sso \
+    --default
+    ```
 
 
 ## Check your config

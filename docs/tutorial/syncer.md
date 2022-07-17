@@ -74,13 +74,21 @@ folder.
 === ":fontawesome-brands-windows: Windows"
 
     ```powershell
-    echo "[configuration]" > $env:USERPROFILE\Downloads\report.toml
-    echo "directory = `"$env:USERPROFILE\Downloads\`"" >> $env:USERPROFILE\Downloads\report.toml
+    echo "[configuration]" > $env:USERPROFILE\\Downloads\\report.toml
+    echo "directory = `"$env:USERPROFILE\\Downloads\\`"" >> $env:USERPROFILE\\Downloads\\report.toml
     ```
 
 === ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
 
     ```bash
+    echo "[configuration]" >> $HOME/Downloads/report.toml
+    echo "directory = \"$HOME/Downloads\"" >> $HOME/Downloads/report.toml
+    ```
+
+=== ":fontawesome-brands-centos: ThoughtSpot cluster"
+
+    ```bash
+    mkdir $HOME/Downloads
     echo "[configuration]" >> $HOME/Downloads/report.toml
     echo "directory = \"$HOME/Downloads\"" >> $HOME/Downloads/report.toml
     ```
@@ -165,11 +173,21 @@ After we successfully modify our `non-prod` config, we can then specify the CSV 
 
 Now that we've learned everything about how to use our CSV Syncer, let's try the command from the diagram above.
 
-```
-cs_tools tools archiver identify
---report csv://default
---dry-run
-```
+=== ":fontawesome-brands-windows: Windows"
+
+    ```powershell
+    cs_tools tools archiver identify `
+    --report csv://default `
+    --dry-run
+    ```
+
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
+
+    ```bash
+    cs_tools tools archiver identify \
+    --report csv://default \
+    --dry-run
+    ```
 
 If we look at the contents of the file that was dumped to our Downloads directory, we'll find details about all the
 content that will be tagged and identified as inactive.
