@@ -841,7 +841,7 @@ def __compare_list(f1: str, l1: list, f2: str, l2: list) -> bool:
 
 
 @app.command(name='create-mapping', cls=CSToolsCommand)
-def compare(
+def _create_mapping(
         guid_file: pathlib.Path = A_(
             ...,
             help='Path to the new mapping file to be created.  Existing files will not be overwritten.',
