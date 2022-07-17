@@ -114,7 +114,7 @@ def zip_it(dir_: pathlib.Path, *, name: str, path: str = None, new: bool = True)
             zip_.write(file, arcname=arcname)
 
 
-@nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
+@nox.session(name="vendor-packages", python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
 def vendor_packages(session):
     """
     Build offline distributable installer.
@@ -194,17 +194,9 @@ def vendor_packages(session):
 
 
 @nox.session(name="bump-version", reuse_venv=not ON_GITHUB)
-def bump_version(session):
-    # TODO: use argparse for the following args
-    # --major          :: False
-    # --minor          :: False
-    # --patch          :: False
-    # --beta           :: False
-    # 1. get_version
-    # 2. bump version based on major, minor, or patch
-    # 3. if beta, add "-beta.1"
-    # 4. poetry version {version}
+def bump_version(session: nox.Session) -> None:
     """
+    Bump the package version.
     """
     parser = argparse.ArgumentParser(prog="nox -s version-bump")
     parser.add_argument(
@@ -283,7 +275,7 @@ def bump_version(session):
 
 
 @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
-def tests(session):
+def tests(session: nox.Session) -> None:
     """
     Ensure we test our code.
     """
