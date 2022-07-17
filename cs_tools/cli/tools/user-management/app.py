@@ -309,6 +309,7 @@ def sync(
     ),
     dont_remove_deleted: bool = O_(
         True,
+        '--dont-remove-deleted/--remove-deleted',
         help='whether to remove the deleted users and user groups',
         show_default=False
     ),

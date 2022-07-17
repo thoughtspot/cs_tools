@@ -81,7 +81,7 @@ activities when onboarding or offboarding many users at once.
       --associations TEXT             directive to find associations to sync at  (default: ts_auth_sync_xref)
       --apply-changes                 whether or not to sync the security strategy into ThoughtSpot
       --new-user-password TEXT        password for new users added during the sync operation
-      --dont-remove-deleted / --no-dont-remove-deleted
+      --dont-remove-deleted / --remove-deleted
                                       whether to remove the deleted users and user groups
       --export                        whether or not to dump data to the syncer
       --config IDENTIFIER             config file identifier  (required)
