@@ -30,7 +30,15 @@ SUPPORTED_PLATFORM_MATRIX = {
     # "macosx_11_x86_64",  # Big Sur   [released: 2020.11.12]
     # Catalina (10.15) ----------------------> [EOL tbd]
     # Mojave   (10.14) ----------------------> [EOL 2021.10.25]
-    "mac": ("macosx_10_15_x86_64", "macosx_10_14_x86_64"),
+    "mac": (
+        # Apple M1 Chip
+        "macosx_12_arm64",
+        # Intel x84-64
+        "macosx_12_x86_64",
+        "macosx_11_x86_64",
+        "macosx_10_15_x86_64",
+        "macosx_10_14_x86_64"
+    ),
 
     # PEP600: manylinux_x_y_<arch> based on glibc>=x.y  (future-proofed)
     # PEP599: manylinux2014_<arch> --> CentOS7 [EOL 2024.06.30]
