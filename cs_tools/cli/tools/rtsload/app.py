@@ -108,7 +108,8 @@ def file(
     #     metavar='protocol://DEFINITION.toml',
     #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     # ),
-    flexible: bool = O_(False, '--flexible', show_default=False, help='whether input data file exactly matches target schema', hidden=True)
+    flexible: bool = O_(False, '--flexible', show_default=False, help='whether input data file exactly matches target schema', hidden=True),
+    http_timeout: int = O_(False, '--timeout', help='network call timeout threshold'),
 ):
     """
     Load a file using the remote tsload service.
@@ -145,7 +146,7 @@ def file(
 
     with console.status(f'[bold green]Loading [yellow]{file}[/] to ThoughtSpot..'):
         with file.open('r', encoding='utf-8', newline='') as fd:
-            cycle_id = ts.tsload.upload(fd, **opts)
+            cycle_id = ts.tsload.upload(fd, **opts, http_timeout=http_timeout)
 
     console.log(f'Data load cycle_id: [cyan]{cycle_id}')
 
