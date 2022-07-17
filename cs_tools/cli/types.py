@@ -104,7 +104,6 @@ class SyncerProtocolType(click.ParamType):
 
         try:
             cfg = toml.load(definition)
-            raise UnicodeDecodeError('1', b'1', 1, 1, '1')
         except (IsADirectoryError, FileNotFoundError):
             raise SyncerError(
                 proto=proto,
