@@ -723,6 +723,7 @@ def _wait_for_metadata(ts: ThoughtSpot, metadata_list: MetadataTypeList):
         console.log(f"Waiting on {items_to_wait_on} for {wait_time_secs} seconds.")
         # always sleep first since the first call will (probably) be immediately.
         time.sleep(wait_time_secs)
+        total_waited_secs += wait_time_secs
 
         for type in items_to_wait_on.types():
             guids = items_to_wait_on.guids_for_type(metadata_type=type)
