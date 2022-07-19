@@ -36,7 +36,7 @@ def strip_blanks(inp: List[str]) -> List[str]:
 
 app = typer.Typer(
     help="""
-    Tool for easily migrating TML between clusters.
+    Tool for easily migrating TML between instance.
 
     [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
     could change on any version update and break the tool.[/]
@@ -76,7 +76,7 @@ def export(
                              help='comma separated list of tags to export'),
         export_ids: List[str] = O_([], metavar='GUIDS',
                                    callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-                                   help='comma separated list of guids to export'),
+                                   help='comma separated list of GUIDs to export'),
         # consider JSON format in the future.  Not currently needed.
         # formattype: TMLType = O_(TMLType.yaml.value,
         #                  help=f'if specified, format to export, either {TMLType.yaml.value} or {TMLType.json.value}'),
@@ -589,7 +589,7 @@ def _map_guids(tml: TML, guid_mappings: Dict, delete_unmapped_fqns: bool) -> TML
 
 def _find_and_map_guids(tml: Dict, guid_mappings: Dict, delete_unmapped_fqns: bool) -> None:
     """
-    Recursively finds GUIDs (guid or fqn entries) and replaces if the GUID is mapped.  This shouldn't get too deep.
+    Recursively finds GUIDs (GUID or fqn entries) and replaces if the GUID is mapped.  This shouldn't get too deep.
     :param tml: The TML fragment to check.
     :param guid_mappings: The mapping to use.
     :param delete_unmapped_fqns: If true, GUIDs and FQNs that don't have a mapping, will be deleted.
