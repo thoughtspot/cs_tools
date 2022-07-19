@@ -15,10 +15,10 @@ There are several use cases where extracting and importing TML is useful:
 2. Extract TML for migration to a different ThoughtSpot instance.
 3. Extract TML to modify and create copies, such as for different customers or in different languages.
 
-!!! danger "__This tool creates and updates content.  Regularly shapshots are recommended__"
+??? danger "__This tool creates and updates content.  Regular shapshots are recommended__"
 
     When importing content, it is possisible to accidentally overwrite content or create 
-    multipl copies of content when you didn't intend to, just by using the wrong parameters.
+    multiple copies of content when you didn't intend to, just by using the wrong parameters.
     You should make sure you have a snapshot or backup prior to making large changes.
 
 ??? important "Scriptability enforces content rules"
@@ -29,17 +29,11 @@ There are several use cases where extracting and importing TML is useful:
     When exporting the TML, you will need content permissions to the content to be exported.  
     When importing the TML it will be created as the authenticated user of the tool.
 
-!!! info "Helpful Links"
-
-    :gear: &nbsp; __[Scriptability documentation][https://docs.thoughtspot.com/cloud/latest/scriptability]{ .external-link }__
-
-    :material-github: &nbsp; __[Found a problem? Submit an issue.][gh-issue]{ target='secondary' .external-link }__</a>
-
 This version of cstools scriptability supports the following scenarios:
 
 * Extract TML based on specific GUIDs (with and without related content)
 * Extract TML based on a ThoughtSpot TAG (with and without related content)
-* :bring: Import TML (update and create new) with complex dependency handling (updated)
+* Import TML (update and create new) with complex dependency handling (updated)
 * :sparkles: Support a mapping file of GUIDs with automatic updates for new content (new)
 * :sparkles: Compare two TML files for differences (new)
 * :sparkles: Generate an empty mapping file (new)
@@ -47,23 +41,29 @@ This version of cstools scriptability supports the following scenarios:
 
 !!! warning "Limitations"
 
-    The following are some limitations of the existing tool:
     * Connections and tables cannot be imported
+    * The owner of new content is the user in the config file, not the original owner
 
-The following additional features are planned for an upcoming release:
+??? important "Planned features coming soon"
 
-* Export content based on the owner
-* Set the owner on import
-* Export and import SQL views (this might already work, but hasn't been tested)
-* Import connections and tables
+    The following features are planned for an upcoming release:
+
+    * Export content based on the owner
+    * Set the owner on import
+    * Export and import SQL views (this might already work, but hasn't been tested)
+    * Import connections and tables
+
+!!! info "Helpful Links"
+
+    :gear: &nbsp; __[Scriptability documentation](https://docs.thoughtspot.com/cloud/latest/scriptability){ target='secondary' .external-link }__
 
 ## Detailed scenarios
 
-### Exporting TML for backup or check into version control
+=== "Exporting TML"
 
-Some customers want to back up the metadata as TML in the file system or a version control system (VCS), such as `git`.  This is done simply by using the `scriptability --export` and saving the files to a directory.  Then you can use the VCS to add the TML. 
+    Some customers want to back up the metadata as TML in the file system or a version control system (VCS), such as `git`.  This is done simply by using the `scriptability --export` and saving the files to a directory.  Then you can use the VCS to add the TML. 
 
-=== Migrate content
+=== "Migrate content"
 
     Migrating content consist of exporting, (optionally) modifying, and then importing content.  You will want to do the following for this scenario:
 
@@ -75,7 +75,7 @@ Some customers want to back up the metadata as TML in the file system or a versi
 
     NOTE: To migrate changes, simply leave out the `--force-create` parameter.  New content will automatically be created and existing content (based on the mapping file) will be updated.
 
-=== Updating content
+=== "Updating content"
 
     Updating and reimporting is basically the same steps as migrating new content.  In this step you would:
 
@@ -83,7 +83,7 @@ Some customers want to back up the metadata as TML in the file system or a versi
     2. Modify the TML.
     3. Import the TML using `scriptability import` without the `--force-create` flag.  
 
-=== Making copies 
+=== "Making copies"
 
     One scenario that comes up is that a ThoughtSpot administrator is managing content for different customers or groups.  They have a set of common content, but want to make copies for each group.  This can be done similarly to the migration of content, though it's usually back to the same instance.
 
@@ -93,7 +93,7 @@ Some customers want to back up the metadata as TML in the file system or a versi
 
     In this scenario a mapping file _may_ be needed if the content comes from different connections.  In that case you may also want separate mapping files for each group to make a copy for.
 
-    NOTE: This technique can also be used to localize content.  The modification step is to localize the content.  
+    This technique can also be used to localize content.
 
 ## GUID mapping file
 
@@ -104,7 +104,7 @@ FQN in the TML file, you will get an error on import, because ThoughtSpot won't 
 The default name for the GUID mapping file is `guid.mapping`, but you can use whatever name you like since it's specified as a parameter.  The GUID mapping file is only used for importing TML.  When creating content, the GUID 
 mapping file is updated as content is created with new GUID mappings.  This allows it to be used later for updating content.
 
-The GUID mapping file is a [TOML](https://toml.io/en/) file with different sections.  The example below shows a starting file with mappings for tables.  
+The GUID mapping file is a [TOML](https://toml.io/en/) file with different sections.  The example below shows a starting file with mappings for tables.  The top section are values that tell the reader what the mapping file is for.  (Meaningful naming of the file is recommended.)  The `[mappings]` section contains mappings _from_ the old GUID _to_ the new GUID.  These would be from the source to the destination.
 
 ~~~
 name = "TML Import"
@@ -119,9 +119,10 @@ version = "1.1.0"
 "dace214a-b8d6-46fd-927f-d03c0e06e62f"="5d9bf47d-79b6-45e4-acff-f7d166d2dee0"
 ~~~
 
-The top section are values that tell the reader what the mapping file is for.  Note that good naming of the file is also recommended.  The `[mappings]` section contains mappings _from_ the old GUID _to_ the new GUID.  These would be from the source to the destination.  
 
-Note that the file is updated and rewritten as new content is created.  TOML allows comments, but reading and writing comments is not supported.  A future version will have the ability to add some type of content, such as table names for the mappings.
+??? warning "Comments are not retained"
+
+    The mapping file is updated and rewritten as new content is created.  TOML allows comments, but reading and writing comments is not supported.  A future version will have the ability to add some type of content, such as table names for the mappings.
 
 ## CLI preview
 
@@ -257,18 +258,18 @@ Note that the file is updated and rewritten as new content is created.  TOML all
     === ":hammer_and_wrench: &nbsp; Added"
     - Initial release [@billdback-ts][contrib-billdback-ts]{ target='secondary' .external-link }.
 
-!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-15 "[@billdback-ts][contrib-billdback-ts]{ target='secondary' .external-link }.
-=== ":hammer_and_wrench: &nbsp; Added"
-Added the following capabilities:
-* Create an empty mapping file.
-* Compare two TML files.
-* Create content with automatic dependency handling.
-* Update content with automatic dependency handling.  
-* Allow new and updated content to be shared with groups during import.
-* Allow tags to be applied to new and updated content during import.
+!!! tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2022-07-19"
+    === ":hammer_and_wrench: &nbsp; Added"
+    - Create an empty mapping file.
+    - Compare two TML files.
+    - Create content with automatic dependency handling.
+    - Update content with automatic dependency handling.  
+    - Allow new and updated content to be shared with groups during import.
+    - Allow tags to be applied to new and updated content during import.
 
 ---
 
 [keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
+[gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new/choose
 [semver]: https://semver.org/spec/v2.0.0.html
 [contrib-billdback-ts]: https://github.com/billdback-ts
