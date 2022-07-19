@@ -1,9 +1,11 @@
-# Searchable Content
+# Scriptability
 
 !!! caution "USE AT YOUR OWN RISK!"
 
     *__This tool uses private API calls!__ These could change with any version update and
     break the provided functionality.*
+
+## Overview
 
 This tool allows user to simplify and automate the extract and import of ThoughtSpot TML from and to the same or different instances.
 
@@ -13,26 +15,113 @@ There are several use cases where extracting and importing TML is useful:
 2. Extract TML for migration to a different ThoughtSpot instance.
 3. Extract TML to modify and create copies, such as for different customers or in different languages.
 
-This version supports the following scenarios:
+!!! danger "__This tool creates and updates content.  Regularly shapshots are recommended__"
+
+    When importing content, it is possisible to accidentally overwrite content or create 
+    multipl copies of content when you didn't intend to, just by using the wrong parameters.
+    You should make sure you have a snapshot or backup prior to making large changes.
+
+??? important "Scriptability enforces content rules"
+
+    <span class=fc-coral>You __must__ have at least the __`Can Manage Data`__ privilege
+    in ThoughtSpot to use this tool.</span>
+
+    When exporting the TML, you will need content permissions to the content to be exported.  
+    When importing the TML it will be created as the authenticated user of the tool.
+
+!!! info "Helpful Links"
+
+    :gear: &nbsp; __[Scriptability documentation][https://docs.thoughtspot.com/cloud/latest/scriptability]{ .external-link }__
+
+    :material-github: &nbsp; __[Found a problem? Submit an issue.][gh-issue]{ target='secondary' .external-link }__</a>
+
+This version of cstools scriptability supports the following scenarios:
 
 * Extract TML based on specific GUIDs (with and without related content)
 * Extract TML based on a ThoughtSpot TAG (with and without related content)
-* Import TML (update and create new) with complex dependency handling
-* Support a mapping file of GUIDs with automatic updates for new content.
-* Compare two TML files for differences.
-* Generate an empty mapping file.
-* Share and tag content when importing.
+* :bring: Import TML (update and create new) with complex dependency handling (updated)
+* :sparkles: Support a mapping file of GUIDs with automatic updates for new content (new)
+* :sparkles: Compare two TML files for differences (new)
+* :sparkles: Generate an empty mapping file (new)
+* :sparkles: Share and tag content when importing (new)
 
-The following are some limitations of the existing software:
+!!! warning "Limitations"
 
-* Connections and tables cannot be imported
+    The following are some limitations of the existing tool:
+    * Connections and tables cannot be imported
 
-The following additional features are planned for the near future:
+The following additional features are planned for an upcoming release:
 
 * Export content based on the owner
 * Set the owner on import
-* Export and import SQL views
-* Create connections and tables
+* Export and import SQL views (this might already work, but hasn't been tested)
+* Import connections and tables
+
+## Detailed scenarios
+
+### Exporting TML for backup or check into version control
+
+Some customers want to back up the metadata as TML in the file system or a version control system (VCS), such as `git`.  This is done simply by using the `scriptability --export` and saving the files to a directory.  Then you can use the VCS to add the TML. 
+
+=== Migrate content
+
+    Migrating content consist of exporting, (optionally) modifying, and then importing content.  You will want to do the following for this scenario:
+
+    1. Create the connection and tables if they don't exist.  This step is needed because the scriptability tool doesn't currently support connections and tables.
+    2. Create a mapping file for tables if one doesn't exist.  Note that you can use `scriptability create-mapping` to create a new, empty mapping file.
+    3. Export the TML to be migrated using `scriptability export`.
+    4. (Optional) Modify the TML as appropriate.  
+    5. Import the TML using `scriptability import --force-create`.  The `force-create` parameter will make sure the content is created as new and not updating existing content.
+
+    NOTE: To migrate changes, simply leave out the `--force-create` parameter.  New content will automatically be created and existing content (based on the mapping file) will be updated.
+
+=== Updating content
+
+    Updating and reimporting is basically the same steps as migrating new content.  In this step you would:
+
+    1. Extract the TML using `scriptability export`.
+    2. Modify the TML.
+    3. Import the TML using `scriptability import` without the `--force-create` flag.  
+
+=== Making copies 
+
+    One scenario that comes up is that a ThoughtSpot administrator is managing content for different customers or groups.  They have a set of common content, but want to make copies for each group.  This can be done similarly to the migration of content, though it's usually back to the same instance.
+
+    1. Extract the TML using `scriptability export`.
+    2. Modify the TML for the group, such as different column names.
+    3. Import the TML using `scriptability import` without the `--force-create` flag.
+
+    In this scenario a mapping file _may_ be needed if the content comes from different connections.  In that case you may also want separate mapping files for each group to make a copy for.
+
+    NOTE: This technique can also be used to localize content.  The modification step is to localize the content.  
+
+## GUID mapping file
+
+You will usually need to have an explicit mapping from one GUID to another.  This is particularly true of tables if 
+there are more than one with the same name in the system being imported to.  If you don't provide the GUID as an 
+FQN in the TML file, you will get an error on import, because ThoughtSpot won't know which table is being referred to.
+
+The default name for the GUID mapping file is `guid.mapping`, but you can use whatever name you like since it's specified as a parameter.  The GUID mapping file is only used for importing TML.  When creating content, the GUID 
+mapping file is updated as content is created with new GUID mappings.  This allows it to be used later for updating content.
+
+The GUID mapping file is a [TOML](https://toml.io/en/) file with different sections.  The example below shows a starting file with mappings for tables.  
+
+~~~
+name = "TML Import"
+source = "TS 1"
+destination = "TS 2"
+description = "Mapping file for TML migration."
+version = "1.1.0"
+
+[mappings]
+"7ba07f4c-8756-48ef-bef0-0acc74f361f4"="73bc24b6-d3ff-4dae-bf82-61ae80f03dab" 
+"a51f5b23-53c5-4703-ac0c-3bf5af649811"="11767209-e54d-4a26-ae63-92d1ab024051"
+"dace214a-b8d6-46fd-927f-d03c0e06e62f"="5d9bf47d-79b6-45e4-acff-f7d166d2dee0"
+~~~
+
+The top section are values that tell the reader what the mapping file is for.  Note that good naming of the file is also recommended.  The `[mappings]` section contains mappings _from_ the old GUID _to_ the new GUID.  These would be from the source to the destination.  
+
+Note that the file is updated and rewritten as new content is created.  TOML allows comments, but reading and writing comments is not supported.  A future version will have the ability to add some type of content, such as table names for the mappings.
 
 ## CLI preview
 
@@ -42,7 +131,7 @@ The following additional features are planned for the near future:
     Usage: cs_tools tools scriptability <command>
                                                 [--version, --help]
 
-    Tool for easily migrating TML between clusters.
+    Tool for easily migrating TML between instance.
 
     USE AT YOUR OWN RISK! This tool uses private API calls which
     could change on any version update and break the tool.
@@ -115,7 +204,7 @@ The following additional features are planned for the near future:
     
     Options:
       --tags TAGS                     comma separated list of tags to export
-      --export-ids GUIDS              comma separated list of guids to export
+      --export-ids GUIDS              comma separated list of GUIDs to export
       --export-associated / --no-export-associated
                                       if specified, also export related content
                                       [default: no-export-associated]
