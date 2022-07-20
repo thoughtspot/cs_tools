@@ -9,6 +9,7 @@ import copy
 import json
 import pathlib
 import click
+from rich.table import Table
 import toml
 from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
@@ -247,13 +248,15 @@ def import_(
             console.log(f"[bold green]importing from {path} with policy {import_policy.value}.[/]")
 
     if import_policy == TMLImportPolicy.validate_only:
-        _import_and_validate(ts, path, force_create, guid_file, tml_logs)
+        results = _import_and_validate(ts, path, force_create, guid_file, tml_logs)
     else:
-        _import_and_create(ts, path, import_policy, force_create, guid_file, tags, share_with, tml_logs)
+        results = _import_and_create(ts, path, import_policy, force_create, guid_file, tags, share_with, tml_logs)
+
+    _show_results_as_table(results)
 
 
 def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool,
-                         guid_file: pathlib.Path, tml_logs: pathlib.Path) -> None:
+                         guid_file: pathlib.Path, tml_logs: pathlib.Path) -> Dict[GUID, Tuple]:
     """
     Does a validation import.  No content is created.  If FQNs map, they will be used.  If they don't, they will be
     removed.
@@ -262,7 +265,10 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
     :param force_create: If true, all GUIDs are removed from content (but not FQNs that map)
     :param guid_file: The file of GUID mappings.
     :param tml_logs: Directory to log imported content to.
+    :returns: A dictionary with the results of the load.  The key is a GUID and the contents is a tuple with the
+    (type, filename, and status) in that order.
     """
+    results: Dict[GUID, Tuple] = {}
     guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
 
     tml_file_bundles = _load_tml_from_files(ts, path, guid_mappings, delete_unmapped_fqns=True)
@@ -298,16 +304,20 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
         for _ in resp:
             if _.status_code == 'ERROR':
                 console.log(f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], _.status_code)
             else:
                 console.log(f"{filenames[fcnt]} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
+                results[_.guid] = (_.metadata_type, filenames[fcnt], _.status_code)
 
             ok_resp.append(_)
             fcnt += 1
 
+    return results
+
 
 def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLImportPolicy, force_create: bool,
                        guid_file: pathlib.Path, tags: List[str], share_with: List[str],
-                       tml_logs: pathlib.Path) -> None:
+                       tml_logs: pathlib.Path) -> Dict[GUID, Tuple]:
     """
     Attempts to create new content.  Content is created in phases based on dependency, worksheets before
     liveboards, etc.  If a mapping is not found, then an assumption is made that the mapping is correct.
@@ -320,7 +330,10 @@ def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLIm
     :param tags: List of tags to apply.  Tags will be created if they don't exist.
     :param share_with: Shares with the groups of the given name, e.g. "Business Users"
     :param tml_logs: Directory to log uploaded TML to.
+    :returns: A dictionary with the results of the load.  The key is a GUID and the contents is a tuple with the
+    (type, filename, and status) in that order.
     """
+    results: Dict[GUID, Tuple] = {}
     guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
 
     tml_file_bundles = _load_tml_from_files(ts, path, guid_mappings, delete_unmapped_fqns=False)
@@ -340,47 +353,54 @@ def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLIm
 
     ok_resp = []  # responses for each item that didn't error.  Use for mapping and tagging.
     with console.status(f"[bold green]importing {path.name}[/]"):
-        for level in dt.levels:
-            if level:
-                level_tml_bundles = [tml_file_bundles[guid] for guid in level]  # get the content for this level.
-                [_map_guids(tfb.tml, guid_mappings, False) for tfb in level_tml_bundles]  # update GUIDs to catch changes.
-                tml_to_load = [YAMLTML.dump_tml_object(_.tml) for _ in level_tml_bundles]  # get the JSON to load
-                filenames = [tfb.file.name for tfb in level_tml_bundles]
+        try:
 
-                if tml_logs:
+            for level in dt.levels:
+                if level:
+                    level_tml_bundles = [tml_file_bundles[guid] for guid in level]  # get the content for this level.
+                    [_map_guids(tfb.tml, guid_mappings, False) for tfb in level_tml_bundles]  # update GUIDs to catch changes.
+                    tml_to_load = [YAMLTML.dump_tml_object(_.tml) for _ in level_tml_bundles]  # get the JSON to load
+                    filenames = [tfb.file.name for tfb in level_tml_bundles]
+
+                    if tml_logs:
+                        fcnt = 0
+
+                        for tmlstr in tml_to_load:
+                            fn = f"{tml_logs}/{filenames[fcnt]}.imported"
+                            with open(fn, "w") as f:
+                                f.write(tmlstr)
+                            fcnt +=1
+
+                    r = ts.api.metadata.tml_import(import_objects=tml_to_load,
+                                                   import_policy=import_policy.value,
+                                                   force_create=force_create)
+                    resp = _flatten_tml_response(r)
+
+                    metadata_list = MetadataTypeList()
+
                     fcnt = 0
+                    for _ in resp:
+                        if _.status_code == 'ERROR':
+                            console.log(f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                            results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], _.status_code)
+                        else:
+                            console.log(f"{level_tml_bundles[fcnt].file.name} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
+                            # if the object was loaded successfully and guid mappings are being used,
+                            # make sure the mapping is there
+                            if guid_file:  # TODO - this looks wrong but seems to work!
+                                guid_mappings[level[fcnt]] = _.guid
+                            ok_resp.append(_)
+                            results[_.guid] = (_.metadata_type, filenames[fcnt], _.status_code)
+                            metadata_list.add(
+                                ts.metadata.tml_type_to_metadata_object(level_tml_bundles[fcnt].tml.content_type),
+                                _.guid)
 
-                    for tmlstr in tml_to_load:
-                        fn = f"{tml_logs}/{filenames[fcnt]}.imported"
-                        with open(fn, "w") as f:
-                            f.write(tmlstr)
-                        fcnt +=1
+                        fcnt += 1
 
-                r = ts.api.metadata.tml_import(import_objects=tml_to_load,
-                                               import_policy=import_policy.value,
-                                               force_create=force_create)
-                resp = _flatten_tml_response(r)
+                    _wait_for_metadata(ts=ts, metadata_list=metadata_list)
 
-                metadata_list = MetadataTypeList()
-
-                fcnt = 0
-                for _ in resp:
-                    if _.status_code == 'ERROR':
-                        console.log(f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
-                    else:
-                        console.log(f"{level_tml_bundles[fcnt].file.name} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
-                        # if the object was loaded successfully and guid mappings are being used,
-                        # make sure the mapping is there
-                        if guid_file:  # TODO - this looks wrong!
-                            guid_mappings[level[fcnt]] = _.guid
-                        ok_resp.append(_)
-                        metadata_list.add(
-                            ts.metadata.tml_type_to_metadata_object(level_tml_bundles[fcnt].tml.content_type),
-                            _.guid)
-
-                    fcnt += 1
-
-                _wait_for_metadata(ts=ts, metadata_list=metadata_list)
+        except Exception as e:
+            console.log(f"[bold red]{e}[/]")
 
     if guid_file:
         _write_guid_mappings(guid_file=guid_file, guid_mappings=guid_mappings)
@@ -390,6 +410,8 @@ def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLIm
 
     if share_with:
         _share_with(ts, ok_resp, share_with)
+
+    return results
 
 
 def _load_tml_from_files(ts: ThoughtSpot, path: pathlib.Path,
@@ -734,6 +756,30 @@ def _wait_for_metadata(ts: ThoughtSpot, metadata_list: MetadataTypeList):
 
     if not items_to_wait_on.is_empty():
         raise TimeoutError( f"Still waiting on {items_to_wait_on} after {total_waited_secs} seconds. Check for errors.")
+
+
+def _show_results_as_table(results: Dict[GUID, Tuple]) -> None:
+    """
+    Writes a pretty results table to the console.
+    :param results: A dictionary with the results of the load.  The key is a GUID and the contents is a tuple with the
+    (type, filename, and status) in that order.
+    """
+    table = Table(title="Import Results")
+
+    # table.add_column("GUID", no_wrap=True)  <- Not showing GUID to reduce table width.
+    table.add_column("Filename", no_wrap=True)
+    table.add_column("Status", no_wrap=True)
+    table.add_column("Type", no_wrap=True)
+
+    for k in results:
+        v = results[k]
+        # Not displaying the GUID
+        # guid = 'N/A' if k.startswith('err') else k
+
+        # table.add_row(guid, v[1], v[2], v[0])
+        table.add_row(v[1], v[2], v[0])
+
+    console.print(table)
 
 
 @app.command(name='compare', cls=CSToolsCommand)
