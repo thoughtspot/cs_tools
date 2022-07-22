@@ -96,3 +96,8 @@ class MetadataTypeList:
         s += "}"
 
         return s
+
+
+def strip_blanks(inp: List[str]) -> List[str]:
+    """Strips blank out of a list."""
+    return [e for e in inp if e]
