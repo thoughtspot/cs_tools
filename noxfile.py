@@ -32,7 +32,7 @@ SUPPORTED_PLATFORM_MATRIX = {
     # Mojave   (10.14) ----------------------> [EOL 2021.10.25]
     "mac": (
         # Apple M1 Chip
-        "macosx_12_universal2",
+        # "macosx_12_universal2",
         # Intel x84-64
         "macosx_12_x86_64",
         "macosx_11_x86_64",

@@ -38,11 +38,20 @@ class Activator:
 
     reinstall: bool [default, False]
       whether or not to rebuild the virtual environment
+
+    setup: bool [default, False]
+      whether or not to run any install code
     """
 
-    def __init__(self, offline_install: bool = True, reinstall: bool = False):
+    def __init__(
+        self,
+        offline_install: bool = True,
+        reinstall: bool = False,
+        setup: bool = False
+    ):
         self._offline_install = offline_install
         self._reinstall = reinstall
+        self._setup = setup
         self._cs_tools_cfg_dir = app_dir("cs_tools")
         self._sys_exe_dir = bin_dir()
 
@@ -136,7 +145,10 @@ class Activator:
 
     def _install(self, version: str) -> int:
         with self.make_env(version) as env:
-            self._install_cs_tools(env)
+
+            if not self._setup:
+                self._install_cs_tools(env)
+
             self._symlink_exe(env)
             self._set_path(env)
 
@@ -144,6 +156,10 @@ class Activator:
 
     @contextmanager
     def make_env(self, version: str) -> VirtualEnvironment:
+        if self._setup:
+            yield VirtualEnvironment(self.venv_dir)
+            return
+
         env_path_saved = self.venv_dir.with_suffix(".save")
 
         if self.venv_dir.exists():
