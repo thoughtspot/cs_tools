@@ -39,10 +39,17 @@ This version of cstools scriptability supports the following scenarios:
 * :sparkles: Generate an empty mapping file (new)
 * :sparkles: Share and tag content when importing (new)
 
+!!! warning "TML is complex and this tool is new."
+
+    The scriptability tool has been tested in a number of complex scenarios.  But TML export and import is complex 
+    with a variety of different scenarios.  It is anticipated that some scenarios have not been tested for and 
+    won't work.  Please provide feedback on errors and unsupported scenarios by entering a [new issue][gh-issue].
+
 !!! warning "Limitations"
 
     * Connections and tables cannot be imported
     * The owner of new content is the user in the config file, not the original owner
+    * Deleting columns with dependencies probably won't work and give dependency errors.
 
 ??? important "Planned features coming soon"
 
@@ -50,7 +57,7 @@ This version of cstools scriptability supports the following scenarios:
 
     * Export content based on the owner
     * Set the owner on import
-    * Export and import SQL views (this might already work, but hasn't been tested)
+    * Export and import SQL views (probably won't work, but hasn't been tested)
     * Import connections and tables
 
 !!! info "Helpful Links"
