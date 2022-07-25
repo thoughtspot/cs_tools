@@ -1,6 +1,5 @@
 from typing import Any, Dict, List
 import json
-import urllib
 
 from pydantic import validate_arguments
 import httpx
