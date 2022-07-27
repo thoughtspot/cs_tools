@@ -48,8 +48,11 @@ This version of cstools scriptability supports the following scenarios:
 !!! warning "Limitations"
 
     * Connections and tables cannot be imported
-    * The owner of new content is the user in the config file, not the original owner
+    * Scriptability doesn't support removal or changes of joins.  These must be done manually.
     * Deleting columns with dependencies probably won't work and give dependency errors.
+    * The owner of new content is the user in the config file, not the original owner
+
+    In general, any changes with dependencies are likely to cause errors in the current version.  
 
 ??? important "Planned features coming soon"
 
@@ -74,7 +77,7 @@ This version of cstools scriptability supports the following scenarios:
 
     Migrating content consist of exporting, (optionally) modifying, and then importing content.  You will want to do the following for this scenario:
 
-    1. Create the connection and tables if they don't exist.  This step is needed because the scriptability tool doesn't currently support connections and tables.
+    1. Create the connection and tables manually if they don't exist.  This step is needed because the scriptability tool doesn't currently support connections and tables.
     2. Create a mapping file for tables if one doesn't exist.  Note that you can use `scriptability create-mapping` to create a new, empty mapping file.
     3. Export the TML to be migrated using `scriptability export`.
     4. (Optional) Modify the TML as appropriate.  
