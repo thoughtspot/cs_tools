@@ -12,6 +12,7 @@ from typer import Argument as A_, Option as O_
 
 from cs_tools.cli.types import CommaSeparatedValuesType
 from cs_tools.cli.ux import console
+from cs_tools.errors import CSToolsError
 from cs_tools.data.enums import TMLType
 from .util import strip_blanks
 
@@ -43,8 +44,9 @@ def export(
     Exports TML as YAML from ThoughtSpot.
     """
     if not path.is_dir():
-        console.stderr(f"[bold red]Only directories are supported for export.  {path} is not a directory.[/]")
-        raise typer.Exit(-1)
+        raise CSToolsError(error=f"{path} is not a directory.",
+                           reason=f"Only directories are supported for export.",
+                           mitigation="Rerun with a directory to export to.")
 
     ts = ctx.obj.thoughtspot
     export_ids = strip_blanks(export_ids)

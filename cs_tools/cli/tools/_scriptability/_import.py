@@ -19,6 +19,7 @@ from cs_tools.cli.types import CommaSeparatedValuesType
 from cs_tools.cli.util import TSDependencyTree
 from cs_tools.cli.ux import console
 from cs_tools.data.enums import AccessLevel, GUID, TMLImportPolicy, TMLContentType, StatusCode
+from cs_tools.errors import CSToolsError
 from cs_tools.thoughtspot import ThoughtSpot
 from ._create_mapping import create_guid_file_if_not_exists
 from .util import MetadataTypeList, TMLFileBundle
@@ -80,12 +81,14 @@ def import_(
     ts = ctx.obj.thoughtspot
 
     if not path.exists():
-        console.log(f"[bold red]Error: {path} doesn't exist[/]")
-        raise typer.Exit(-1)
+        raise CSToolsError(error=f"{path} doesn't exist",
+                           reason="You can only import from an existing directory.",
+                           mitigation="Check the --path argument to make sure it is correct.")
 
     if tml_logs and not tml_logs.is_dir():
-        console.log(f"[bold red]Error: Log directory {tml_logs} doesn't exist[/]")
-        raise typer.Exit(-1)
+        raise CSToolsError(error=f"{path} doesn't exist",
+                           reason="The logging directory must already exist.",
+                           mitigation="Check the --tml_logs argument to make sure it is correct.")
 
     if path.is_dir():  # individual files are listed as they are loaded so just show directory.
         if import_policy == TMLImportPolicy.validate_only:
@@ -402,8 +405,9 @@ def _read_guid_mappings(guid_file: pathlib.Path) -> Dict[GUID, TML]:
         return mappings
 
     except toml.decoder.TomlDecodeError as err:
-        console.log(f"[bold red]Error reading the mapping file: {err}[/]")
-        raise typer.Exit(-1)  # could also ignore, but would likely fail.
+        raise CSToolsError(error=f"File decode error: {err}",
+                           reason=f"Unable to load TOML from {guid_file}.",
+                           mitigation=f"Check {guid_file} to make sure it's valid TOML format.")
 
 
 def _write_guid_mappings(guid_file: pathlib.Path, guid_mappings) -> None:
@@ -421,8 +425,14 @@ def _write_guid_mappings(guid_file: pathlib.Path, guid_mappings) -> None:
             toml.dump(toml_content, f)
 
     except toml.decoder.TomlDecodeError as err:
-        console.log(f"[bold red]Error writing to the mapping file: {err}[/]")
-        raise typer.Exit(-1)  # could also ignore, but would likely fail.
+        raise CSToolsError(error=f"File decode error: {err}",
+                           reason=f"Unable to load TOML from {guid_file}.",
+                           mitigation=f"Check {guid_file} to make sure it's valid TOML format.")
+    except OSError as err:
+        raise CSToolsError(error=f"File error: {err}",
+                           reason=f"Unable to write to TOML file {guid_file}.",
+                           mitigation=f"Check {guid_file} to make sure it's valid TOML format and writeable.")
+
 
 
 def _load_and_append_tml_file(
@@ -671,7 +681,9 @@ def _wait_for_metadata(ts: ThoughtSpot, metadata_list: MetadataTypeList):
                     items_to_wait_on.remove(ctype, k)
 
     if not items_to_wait_on.is_empty():
-        raise TimeoutError(f"Still waiting on {items_to_wait_on} after {total_waited_secs} seconds. Check for errors.")
+        raise CSToolsError(error=f"Timing out on API call after {total_waited_secs} seconds",
+                           reason=f"Exceeded timeout on items: {items_to_wait_on}",
+                           mitigation=f"Check the connection and content to identify the issue.")
 
     # HACK ALERT!  It seems like you can create content and get confirmation it exists, but then it doesn't completely.
     time.sleep(3)

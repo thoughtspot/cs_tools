@@ -7,6 +7,7 @@ import typer
 from typer import Argument as A_
 
 from cs_tools.cli.ux import console
+from cs_tools.errors import CSToolsError
 from ._version import __version__
 
 
@@ -46,8 +47,8 @@ def create_guid_file_if_not_exists(guid_file: pathlib.Path) -> bool:
             with guid_file.open(mode='w') as f:
                 f.write(mapping_header)
         except OSError as e:
-            console.log(f"[bold red]Unable to open file {guid_file}: {e}[/]")
-            raise typer.Exit(-1)
+            raise CSToolsError(error=f"Unable to open file {guid_file}", reason=f"Error: {e}",
+                               mitigation="Verify the file exists and can be read.")
 
         return False
 
