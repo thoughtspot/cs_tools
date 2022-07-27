@@ -9,7 +9,6 @@ from typing import Dict, List, Optional, Tuple
 
 import click
 import toml
-import typer
 from rich.table import Table
 from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
@@ -100,7 +99,8 @@ def import_(
         results = _import_and_validate(ts, path, force_create, guid_file, tml_logs)
     else:
         # results = _import_and_create(ts, path, import_policy, force_create, guid_file, tags, share_with, tml_logs)
-        results = _import_and_create_bundle(ts, path, import_policy, force_create, guid_file, tags, share_with, tml_logs)
+        results = _import_and_create_bundle(ts, path, import_policy, force_create,
+                                            guid_file, tags, share_with, tml_logs)
 
     _show_results_as_table(results)
 
@@ -260,102 +260,104 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
     return results
 
 
-def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLImportPolicy, force_create: bool,
-                       guid_file: pathlib.Path, tags: List[str], share_with: List[str],
-                       tml_logs: pathlib.Path) -> Dict[GUID, Tuple]:
-    """
-    Attempts to create new content.  Content is created in phases based on dependency, worksheets before
-    liveboards, etc.  If a mapping is not found, then an assumption is made that the mapping is correct.
-    :param ts: The ThoughtSpot connection.
-    :param path: Path to the directory or file.
-    :param import_policy: The policy to either do all or none or the imports that fail.  Note that it's possible for
-                          on level of the content to be successfully created an lower level content fail.
-    :param force_create: If true, all GUIDs are removed from content (but not FQNs that map)
-    :param guid_file: The file of GUID mappings.
-    :param tags: List of tags to apply.  Tags will be created if they don't exist.
-    :param share_with: Shares with the groups of the given name, e.g. "Business Users"
-    :param tml_logs: Directory to log uploaded TML to.
-    :returns: A dictionary with the results of the load.  The key is a GUID and the contents is a tuple with the
-    (type, filename, and status) in that order.
-    """
-    results: Dict[GUID, Tuple] = {}
-    guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
-
-    tml_file_bundles = _load_tml_from_files(path, guid_mappings, delete_unmapped_fqns=False)
-
-    dt = _build_dependency_tree([tfb.tml for tfb in tml_file_bundles.values()])
-
-    # strip GUIDs if doing force create and convert to a list of TML string.
-    if force_create:
-        [_.tml.remove_guid() for _ in tml_file_bundles.values()]
-
-    # This is noisy.  Maybe add back later.
-    # for f in files:
-    #     console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
-
-    ok_resp = []  # responses for each item that didn't error.  Use for mapping and tagging.
-    with console.status(f"[bold green]importing {path.name}[/]"):
-        try:
-
-            for level in dt.levels:
-                if level:
-                    level_tml_bundles = [tml_file_bundles[guid] for guid in level]  # get the content for this level.
-                    [_map_guids(tfb.tml, guid_mappings, False) for tfb in level_tml_bundles]  # update GUIDs
-                    tml_to_load = [YAMLTML.dump_tml_object(_.tml) for _ in level_tml_bundles]  # get the JSON to load
-                    filenames = [tfb.file.name for tfb in level_tml_bundles]
-
-                    if tml_logs:
-                        fcnt = 0
-
-                        for tmlstr in tml_to_load:
-                            fn = f"{tml_logs}/{filenames[fcnt]}.imported"
-                            with open(fn, "w") as f:
-                                f.write(tmlstr)
-                            fcnt += 1
-
-                    r = ts.api.metadata.tml_import(import_objects=tml_to_load,
-                                                   import_policy=import_policy.value,
-                                                   force_create=force_create)
-                    resp = _flatten_tml_response(r)
-
-                    metadata_list = MetadataTypeList()
-
-                    fcnt = 0
-                    for _ in resp:
-                        if _.status_code == 'ERROR':
-                            console.log(
-                                f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
-                            results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], _.status_code)
-                        else:
-                            console.log(f"{level_tml_bundles[fcnt].file.name} {_.status_code}: {_.name} "
-                                        f"({_.metadata_type}::{_.guid})")
-                            # if the object was loaded successfully and guid mappings are being used,
-                            # make sure the mapping is there
-                            if guid_file:  # TODO - this looks wrong but seems to work!
-                                guid_mappings[level[fcnt]] = _.guid
-                            ok_resp.append(_)
-                            results[_.guid] = (_.metadata_type, filenames[fcnt], _.status_code)
-                            metadata_list.add(
-                                ts.metadata.tml_type_to_metadata_object(level_tml_bundles[fcnt].tml.content_type),
-                                _.guid)
-
-                        fcnt += 1
-
-                    _wait_for_metadata(ts=ts, metadata_list=metadata_list)
-
-        except Exception as e:
-            console.log(f"[bold red]{e}[/]")
-
-    if guid_file:
-        _write_guid_mappings(guid_file=guid_file, guid_mappings=guid_mappings)
-
-    if tags:
-        _add_tags(ts, ok_resp, tags)
-
-    if share_with:
-        _share_with(ts, ok_resp, share_with)
-
-    return results
+# No longer loading based on dependencies (see _import_and_create_bundle).  But don't want to delete yet in case
+# we discover edge cases that need the capabilities.
+# def _import_and_create(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLImportPolicy, force_create: bool,
+#                        guid_file: pathlib.Path, tags: List[str], share_with: List[str],
+#                        tml_logs: pathlib.Path) -> Dict[GUID, Tuple]:
+#     """
+#     Attempts to create new content.  Content is created in phases based on dependency, worksheets before
+#     liveboards, etc.  If a mapping is not found, then an assumption is made that the mapping is correct.
+#     :param ts: The ThoughtSpot connection.
+#     :param path: Path to the directory or file.
+#     :param import_policy: The policy to either do all or none or the imports that fail.  Note that it's possible for
+#                           on level of the content to be successfully created an lower level content fail.
+#     :param force_create: If true, all GUIDs are removed from content (but not FQNs that map)
+#     :param guid_file: The file of GUID mappings.
+#     :param tags: List of tags to apply.  Tags will be created if they don't exist.
+#     :param share_with: Shares with the groups of the given name, e.g. "Business Users"
+#     :param tml_logs: Directory to log uploaded TML to.
+#     :returns: A dictionary with the results of the load.  The key is a GUID and the contents is a tuple with the
+#     (type, filename, and status) in that order.
+#     """
+#     results: Dict[GUID, Tuple] = {}
+#     guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
+#
+#     tml_file_bundles = _load_tml_from_files(path, guid_mappings, delete_unmapped_fqns=False)
+#
+#     dt = _build_dependency_tree([tfb.tml for tfb in tml_file_bundles.values()])
+#
+#     # strip GUIDs if doing force create and convert to a list of TML string.
+#     if force_create:
+#         [_.tml.remove_guid() for _ in tml_file_bundles.values()]
+#
+#     # This is noisy.  Maybe add back later.
+#     # for f in files:
+#     #     console.log(f'{"validating" if import_policy == TMLImportPolicy.validate_only else "loading"} {f}')
+#
+#     ok_resp = []  # responses for each item that didn't error.  Use for mapping and tagging.
+#     with console.status(f"[bold green]importing {path.name}[/]"):
+#         try:
+#
+#             for level in dt.levels:
+#                 if level:
+#                     level_tml_bundles = [tml_file_bundles[guid] for guid in level]  # get the content for this level.
+#                     [_map_guids(tfb.tml, guid_mappings, False) for tfb in level_tml_bundles]  # update GUIDs
+#                     tml_to_load = [YAMLTML.dump_tml_object(_.tml) for _ in level_tml_bundles]  # get the JSON to load
+#                     filenames = [tfb.file.name for tfb in level_tml_bundles]
+#
+#                     if tml_logs:
+#                         fcnt = 0
+#
+#                         for tmlstr in tml_to_load:
+#                             fn = f"{tml_logs}/{filenames[fcnt]}.imported"
+#                             with open(fn, "w") as f:
+#                                 f.write(tmlstr)
+#                             fcnt += 1
+#
+#                     r = ts.api.metadata.tml_import(import_objects=tml_to_load,
+#                                                    import_policy=import_policy.value,
+#                                                    force_create=force_create)
+#                     resp = _flatten_tml_response(r)
+#
+#                     metadata_list = MetadataTypeList()
+#
+#                     fcnt = 0
+#                     for _ in resp:
+#                         if _.status_code == 'ERROR':
+#                             console.log(
+#                                 f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+#                             results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], _.status_code)
+#                         else:
+#                             console.log(f"{level_tml_bundles[fcnt].file.name} {_.status_code}: {_.name} "
+#                                         f"({_.metadata_type}::{_.guid})")
+#                             # if the object was loaded successfully and guid mappings are being used,
+#                             # make sure the mapping is there
+#                             if guid_file:
+#                                 guid_mappings[level[fcnt]] = _.guid
+#                             ok_resp.append(_)
+#                             results[_.guid] = (_.metadata_type, filenames[fcnt], _.status_code)
+#                             metadata_list.add(
+#                                 ts.metadata.tml_type_to_metadata_object(level_tml_bundles[fcnt].tml.content_type),
+#                                 _.guid)
+#
+#                         fcnt += 1
+#
+#                     _wait_for_metadata(ts=ts, metadata_list=metadata_list)
+#
+#         except Exception as e:
+#             console.log(f"[bold red]{e}[/]")
+#
+#     if guid_file:
+#         _write_guid_mappings(guid_file=guid_file, guid_mappings=guid_mappings)
+#
+#     if tags:
+#         _add_tags(ts, ok_resp, tags)
+#
+#     if share_with:
+#         _share_with(ts, ok_resp, share_with)
+#
+#     return results
 
 
 def _load_tml_from_files(path: pathlib.Path,
@@ -432,7 +434,6 @@ def _write_guid_mappings(guid_file: pathlib.Path, guid_mappings) -> None:
         raise CSToolsError(error=f"File error: {err}",
                            reason=f"Unable to write to TOML file {guid_file}.",
                            mitigation=f"Check {guid_file} to make sure it's valid TOML format and writeable.")
-
 
 
 def _load_and_append_tml_file(
