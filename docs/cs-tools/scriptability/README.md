@@ -51,6 +51,7 @@ This version of cstools scriptability supports the following scenarios:
     * Scriptability doesn't support removal or changes of joins.  These must be done manually.
     * Deleting columns with dependencies probably won't work and give dependency errors.
     * The owner of new content is the user in the config file, not the original owner
+    * Exporting by owner only works for ThoughtSpot 8.4+.  If you specify this value for earlier versions, it will be ignored.
 
     In general, any changes with dependencies are likely to cause errors in the current version.  
 
@@ -216,6 +217,9 @@ version = "1.1.0"
     Options:
       --tags TAGS                     comma separated list of tags to export
       --export-ids GUIDS              comma separated list of GUIDs to export
+      --owner USERNAME                username that owns the content to download
+                                      (TS version 8.4+ only)
+
       --export-associated / --no-export-associated
                                       if specified, also export related content
                                       [default: no-export-associated]

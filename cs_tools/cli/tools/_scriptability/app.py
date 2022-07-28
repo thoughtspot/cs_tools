@@ -68,7 +68,7 @@ def scriptability_export(
                                    callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                    help='comma separated list of GUIDs to export'),
         owner: str = O_('', metavar='USERNAME',
-                        help='username that owns the content to download'),
+                        help='username that owns the content to download (TS version 8.4+ only)'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
         set_fqns: bool = O_(False,
