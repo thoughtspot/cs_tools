@@ -301,10 +301,10 @@ class MetadataMiddleware:
         return mapped_guids
 
     @validate_arguments
-    def get_object_ids_with_tags_or_owner(self, tags: List[str] = None, owner: GUID = None) -> List[Dict[str,str]]:
+    def get_object_ids_with_tags_or_author(self, tags: List[str] = None, author: GUID = None) -> List[Dict[str,str]]:
         """
-        Gets a list of IDs for the associated tag and/or owner and returns as a list of object ID to type mapping.
-        Either the owner or the tag must be specified.  If both are specified, it will be the content owned by that
+        Gets a list of IDs for the associated tag and/or author and returns as a list of object ID to type mapping.
+        Either the author or the tag must be specified.  If both are specified, it will be the content owned by that
         person with the given tag.
 
         The return format looks like:
@@ -313,7 +313,7 @@ class MetadataMiddleware:
             {"id": "4bcaadb4-031a-4afd-b159-2c0c0f194c42", "type":"PINBOARD_ANSWER_BOOK"}
         ]
         :param tags: The list of tags to get ids for.
-        :param owner: The owner of the content.
+        :param author: The author of the content.
         """
 
         object_ids = []
@@ -322,12 +322,16 @@ class MetadataMiddleware:
 
             while True:
                 r = self.ts.api._metadata.list(type=metadata_type.value, batchsize=500,
-                                               offset=offset, tagname=tags, authorguid=owner)
+                                               offset=offset, tagname=tags, authorguid=author)
                 data = r.json()
                 offset += len(data)
 
                 for metadata in data['headers']:
-                    object_ids.append(metadata["id"])
+                    if author and metadata['author'] == author:  # workaround for 7.1/7.2
+                        object_ids.append(metadata["id"])
+                    elif not author:  # no author specified, so just add it.
+                        object_ids.append(metadata["id"])
+                    # else just ignore it.
 
                 if data['isLastBatch']:
                     break

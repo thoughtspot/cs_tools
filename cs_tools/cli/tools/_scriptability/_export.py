@@ -33,8 +33,8 @@ def export(
         export_ids: List[str] = O_([], metavar='GUIDS',
                                    callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                    help='comma separated list of GUIDs to export'),
-        owner: str = O_('', metavar='USERNAME',
-                        help='username that owns the content to download'),
+        author: str = O_('', metavar='USERNAME',
+                        help='username that is the author of the content to download'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
         set_fqns: bool = O_(False,
@@ -43,20 +43,20 @@ def export(
     """
     Exports TML as YAML from ThoughtSpot.  There are three different parameters that can impact content to download:
     - tags: only content with these tags will be downloaded.
-    - owner: only content owned by this owner will be downloaded.
+    - author: only content owned by this author will be downloaded.
     - GUIDs: only content with the specific GUIDs will be downloaded.
 
-    At least one needs to be specified.  If you specify GUIDs then you can't use tags or owner.  Only the objects for
-    the specific GUIDs.  Using GUIDs with tags or owner will give an error.
-    If you don't specify GUIDs, then you must specify a tag and/or owner.  If you specify both, only items with the
-    owner AND tag will be downloaded. For example, if you export for the "finance" tag and owner "user123", then
+    At least one needs to be specified.  If you specify GUIDs then you can't use tags or author.  Only the objects for
+    the specific GUIDs.  Using GUIDs with tags or author will give an error.
+    If you don't specify GUIDs, then you must specify a tag and/or author.  If you specify both, only items with the
+    author AND tag will be downloaded. For example, if you export for the "finance" tag and author "user123", then
     only content owned by that user with the "finance" tag will be exported.
     """
-    if export_ids and (tags or owner):
-        raise CSToolsError(error="GUID and owner/tag specified.",
-                           reason="You can only specify GUIDs or an owner or tag.",
-                           mitigation="Modify you parameters to have GUIDS or owner/tag.  "
-                                      "Note that tags and owner can be used together.")
+    if export_ids and (tags or author):
+        raise CSToolsError(error="GUID and author/tag specified.",
+                           reason="You can only specify GUIDs or an author or tag.",
+                           mitigation="Modify you parameters to have GUIDS or author/tag.  "
+                                      "Note that tags and author can be used together.")
 
     if not path.is_dir():
         raise CSToolsError(error=f"{path} is not a directory.",
@@ -68,17 +68,17 @@ def export(
     # do some basic cleanup to make sure we don't have extra spaces.
     export_ids = strip_blanks(export_ids)
     tags = strip_blanks(tags)
-    owner = owner.strip() if owner else None
+    author = author.strip() if author else None
 
     # Scenarios to support
-    # GUID/tags/owners - download the content and save
+    # GUID/tags/author - download the content and save
     # With associated - download content with associated and save
     # With fqns - download content with associated, map FQNs, save content specified (original or with FQNs)
 
-    # GUIDs vs. tags/owner have already been accounted for so this should only happen if GUIDs were not specified.
-    if tags or owner:
-        owner_guid = ts.user.get_guid(owner) if owner else None
-        export_ids.extend(ts.metadata.get_object_ids_with_tags_or_owner(tags=tags, owner=owner_guid))
+    # GUIDs vs. tags/author have already been accounted for so this should only happen if GUIDs were not specified.
+    if tags or author:
+        author_guid = ts.user.get_guid(author) if author else None
+        export_ids.extend(ts.metadata.get_object_ids_with_tags_or_author(tags=tags, author=author_guid))
 
     results = []  # (guid, status, name)
     for guid in export_ids:

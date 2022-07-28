@@ -67,14 +67,14 @@ def scriptability_export(
         export_ids: List[str] = O_([], metavar='GUIDS',
                                    callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                    help='comma separated list of GUIDs to export'),
-        owner: str = O_('', metavar='USERNAME',
-                        help='username that owns the content to download (TS version 8.4+ only)'),
+        author: str = O_('', metavar='USERNAME',
+                         help='username that is the author of the content to download'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
         set_fqns: bool = O_(False,
                             help='if set, then the content in the TML will have FQNs (GUIDs) added.')
 ):
-    export(ctx=ctx, path=path, tags=tags, export_ids=export_ids, owner=owner,
+    export(ctx=ctx, path=path, tags=tags, export_ids=export_ids, author=author,
            export_associated=export_associated, set_fqns=set_fqns)
 
 
