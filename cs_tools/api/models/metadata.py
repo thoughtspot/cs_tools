@@ -162,6 +162,7 @@ class _Metadata:
         skipids: List[GUID] = None,
         fetchids: List[GUID] = None,
         auto_created: bool = None,
+        authorguid: str = None
     ) -> httpx.Response:
         """
         List of metadata objects in the repository.
@@ -184,7 +185,8 @@ class _Metadata:
                     'showhidden': showhidden,
                     'skipids': stringified_array([_ for _ in skipids or ()]),
                     'fetchids': stringified_array([_ for _ in fetchids or ()]),
-                    'auto_created': auto_created
+                    'auto_created': auto_created,
+                    'authorguid': authorguid
                 }
             )
         return r

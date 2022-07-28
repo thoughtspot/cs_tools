@@ -67,15 +67,15 @@ def scriptability_export(
         export_ids: List[str] = O_([], metavar='GUIDS',
                                    callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                    help='comma separated list of GUIDs to export'),
-        # consider JSON format in the future.  Not currently needed.
-        # formattype: TMLType = O_(TMLType.yaml.value,
-        #                  help=f'if specified, format to export, either {TMLType.yaml.value} or {TMLType.json.value}'),
+        owner: str = O_('', metavar='USERNAME',
+                        help='username that owns the content to download'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
         set_fqns: bool = O_(False,
                             help='if set, then the content in the TML will have FQNs (GUIDs) added.')
 ):
-    export(ctx=ctx, path=path, tags=tags, export_ids=export_ids, export_associated=export_associated, set_fqns=set_fqns)
+    export(ctx=ctx, path=path, tags=tags, export_ids=export_ids, owner=owner,
+           export_associated=export_associated, set_fqns=set_fqns)
 
 
 @app.command(cls=CSToolsCommand, name="import")
