@@ -34,7 +34,7 @@ def export(
                                    callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                    help='comma separated list of GUIDs to export'),
         author: str = O_('', metavar='USERNAME',
-                        help='username that is the author of the content to download'),
+                         help='username that is the author of the content to download'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
         set_fqns: bool = O_(False,
@@ -54,7 +54,7 @@ def export(
     """
     if export_ids and (tags or author):
         raise CSToolsError(error="GUID and author/tag specified.",
-                           reason="You can only specify GUIDs or an author or tag.",
+                           reason="You can only specify GUIDs or a combination of author and/or tag.",
                            mitigation="Modify you parameters to have GUIDS or author/tag.  "
                                       "Note that tags and author can be used together.")
 
@@ -78,7 +78,8 @@ def export(
     # GUIDs vs. tags/author have already been accounted for so this should only happen if GUIDs were not specified.
     if tags or author:
         author_guid = ts.user.get_guid(author) if author else None
-        export_ids.extend(ts.metadata.get_object_ids_with_tags_or_author(tags=tags, author=author_guid))
+        export_ids.extend(ts.metadata.get_object_ids_with_tags_or_author(tags=tags, author=author_guid,
+                                                                         ignore_datasources=True))
 
     results = []  # (guid, status, name)
     for guid in export_ids:
@@ -117,7 +118,7 @@ def export(
 
             except HTTPStatusError as e:
                 # Sometimes getting 400 errors on the content.  Need to just log an error and continue.
-                console.log(f'Error exporting TML for GUID {guid}: {e}')
+                console.log(f'Error exporting TML for GUID {guid}: {e}.  Check for access permissions.')
                 results.append((guid, 'HTTP ERROR', 'UNK', f"{e}"))
 
     _show_results_as_table(results=results)
@@ -166,7 +167,7 @@ def _show_results_as_table(results: List[Tuple]) -> None:
     Writes a pretty results table to the console.
     :param results: A list with the results of the load.  The values are (guid, status, name, desc) in that order.
     """
-    table = Table(title="Import Results")
+    table = Table(title="Export Results")
 
     table.add_column("Status", no_wrap=True)
     table.add_column("GUID", no_wrap=True)

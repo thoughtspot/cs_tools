@@ -301,7 +301,11 @@ class MetadataMiddleware:
         return mapped_guids
 
     @validate_arguments
-    def get_object_ids_with_tags_or_author(self, tags: List[str] = None, author: GUID = None) -> List[Dict[str,str]]:
+    def get_object_ids_with_tags_or_author(
+            self, tags: List[str] = None,
+            author: GUID = None,
+            ignore_datasources: bool = False
+    ) -> List[Dict[str,str]]:
         """
         Gets a list of IDs for the associated tag and/or author and returns as a list of object ID to type mapping.
         Either the author or the tag must be specified.  If both are specified, it will be the content owned by that
@@ -314,10 +318,15 @@ class MetadataMiddleware:
         ]
         :param tags: The list of tags to get ids for.
         :param author: The author of the content.
+        :param ignore_datasources: If true, will ignore data sources.
         """
 
+        # testing - remove later
         object_ids = []
         for metadata_type in DownloadableContent:
+            if ignore_datasources and metadata_type == DownloadableContent.data_source:
+                continue
+
             offset = 0
 
             while True:
@@ -327,6 +336,7 @@ class MetadataMiddleware:
                 offset += len(data)
 
                 for metadata in data['headers']:
+
                     if author and metadata['author'] == author:  # workaround for 7.1/7.2
                         object_ids.append(metadata["id"])
                     elif not author:  # no author specified, so just add it.
@@ -337,6 +347,7 @@ class MetadataMiddleware:
                     break
 
         return list(set(object_ids))  # might have been duplicates
+
 
     @classmethod
     @validate_arguments
