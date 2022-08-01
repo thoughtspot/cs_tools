@@ -55,7 +55,7 @@ class TSDataService:
         return r
 
     @validate_arguments
-    def query(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
+    def query(self, data: Any, *, timeout: float = 15.0) -> httpx.Response:
         """
         Run a TQL query.
 
@@ -74,7 +74,7 @@ class TSDataService:
         return r
 
     @validate_arguments
-    def script(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
+    def script(self, data: Any, *, timeout: float = 15.0) -> httpx.Response:
         """
         Execute a series of queries against TQL.
 
@@ -108,7 +108,7 @@ class TSDataService:
         return r
 
     @validate_arguments
-    def load_init(self, data: Any, *, timeout: float = 5.0) -> httpx.Response:
+    def load_init(self, data: Any, *, timeout: float = 15.0) -> httpx.Response:
         """
         Initialize a tsload session, with options data.
         """
@@ -128,7 +128,8 @@ class TSDataService:
         self,
         cycle_id: str,
         *,
-        fd: Union[BufferedIOBase, Any]
+        fd: Union[BufferedIOBase, Any],
+        timeout: int = 60.0
     ) -> httpx.Response:
         """
         Begin loading data in this session.
@@ -149,7 +150,8 @@ class TSDataService:
         r = self.rest_api.request(
                 'POST',
                 f'{self.etl_server_fullpath}/loads/{cycle_id}',
-                files={'upload-file': fd}
+                timeout=timeout,
+                files={'upload-file': fd},
             )
 
         return r

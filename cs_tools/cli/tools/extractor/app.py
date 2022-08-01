@@ -42,16 +42,14 @@ def search(
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
     target: str = O_(..., help='syncer directive to load data to'),
-    data_type: RecordsetType = O_(
-        RecordsetType.worksheet,
-        help='type of object to search'
-    )
+    data_type: RecordsetType = O_('worksheet', help='type of object to search')
 ):
     """
     Search a dataset from the command line.
 
-    Columns must be surrounded by square brackets. Search-level formulas are
-    not currently supported, but a formula defined as part of a data source is.
+    Columns must be surrounded by square brackets and fully enclosed by quotes.
+    Search-level formulas are not currently supported, but a formula defined as
+    part of a data source is.
     """
     ts = ctx.obj.thoughtspot
 

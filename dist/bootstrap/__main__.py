@@ -84,6 +84,14 @@ def main():  # type: () -> ReturnCode
         action="store_true",
         default=False,
     )
+    operation.add_argument(
+        "-s",
+        "--setup",
+        help=argparse.SUPPRESS,
+        dest="setup",
+        action="store_true",
+        default=False
+    )
     # operation.add_argument(
     #     "-u",
     #     "--uninstall",

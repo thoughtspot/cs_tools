@@ -116,3 +116,9 @@ class DownloadableContent(enum.Enum):
     pinboard = 'PINBOARD_ANSWER_BOOK'
     logical_table = 'LOGICAL_TABLE'
     data_source = 'DATA_SOURCE'
+
+
+class StatusCode(enum.Enum):
+    none = "NONE"
+    ok = "OK"
+    unknown = "UNKNOWN"

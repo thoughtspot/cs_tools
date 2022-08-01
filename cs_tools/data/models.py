@@ -179,7 +179,8 @@ class Tag(SQLModel, table=True):
     def from_api_v1(cls, data) -> List['Tag']:
         if 'clientState' not in data:
             log.warning(
-                f"Tag '{data['name']}' is missing its color! There might be a problem with metadata in your cluster."
+                f"Tag '{data['name']}' ({data['id']}) is missing its color! There might be a problem with metadata in "
+                f"your cluster."
             )
 
         return cls(

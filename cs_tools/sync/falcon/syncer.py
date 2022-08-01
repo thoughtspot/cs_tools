@@ -76,7 +76,8 @@ class Falcon:
 
         # create the database and schema if it doesn't exist
         self.ts.tql.command(
-            command=f'CREATE DATABASE {self.database};', http_timeout=self.timeout
+            command=f'CREATE DATABASE {self.database};',
+            http_timeout=self.timeout
         )
 
         self.ts.tql.command(
@@ -132,7 +133,8 @@ class Falcon:
                     ignore_node_redirect=self.ignore_load_balancer_redirect,
                     database=self.database,
                     table=table,
-                    empty_target=self.empty_target
+                    empty_target=self.empty_target,
+                    http_timeout=self.timeout
                 )
             except (httpx.ConnectError, httpx.ConnectTimeout):
                 h = self.ts.api.ts_dataservice._tsload_node

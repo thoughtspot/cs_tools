@@ -12,7 +12,7 @@ from cs_tools.util import reveal
 from cs_tools.api._rest_api_v1 import _RESTAPIv1
 from cs_tools._version import __version__
 from cs_tools.api.middlewares import (
-    AnswerMiddleware, ConnectionMiddleware, MetadataMiddleware, PinboardMiddleware, SearchMiddleware,
+    AnswerMiddleware, ConnectionMiddleware, GroupMiddleware, MetadataMiddleware, PinboardMiddleware, SearchMiddleware,
     TagMiddleware, TQLMiddleware, TSLoadMiddleware, UserMiddleware
 )
 from cs_tools.data.models import ThoughtSpotPlatform, LoggedInUser
@@ -35,7 +35,7 @@ class ThoughtSpot:
         # to do.
         self.search = SearchMiddleware(self)
         self.user = UserMiddleware(self)
-        # self.group
+        self.group = GroupMiddleware(self)
         # self.tml
         self.metadata = MetadataMiddleware(self)
         self.pinboard = self.liveboard = PinboardMiddleware(self)
@@ -91,13 +91,6 @@ class ThoughtSpot:
                 rememberme=True,
                 disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
             )
-        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-            host = self.config.thoughtspot.host
-            rzn = (
-                f'cannot see url [blue]{host}[/] from the current machine'
-                f'\n\n>>> [yellow]{e}[/]'
-            )
-            raise ThoughtSpotUnavailable(reason=rzn) from None
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
                 raise AuthenticationError(
@@ -107,6 +100,13 @@ class ThoughtSpot:
                     incident_id=e.response.json().get('incident_id_guid', '<missing>')
                 )
             raise e
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            host = self.config.thoughtspot.host
+            rzn = (
+                f'cannot see url [blue]{host}[/] from the current machine'
+                f'\n\n>>> [yellow]{e}[/]'
+            )
+            raise ThoughtSpotUnavailable(reason=rzn) from None
 
         # got a response, but couldn't make sense of it
         try:

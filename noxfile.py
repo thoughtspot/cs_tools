@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from typing import Any, List, Tuple
 import itertools
+import argparse
 import pathlib
 import zipfile
 import shutil
@@ -16,7 +17,8 @@ PY_VERSIONS = [
     "3.9",
     "3.10"
 ]
-DIST = pathlib.Path(__file__).parent / "dist"
+HERE = pathlib.Path(__file__).parent
+DIST = HERE / "dist"
 DIST_PKGS = DIST / "pkgs"
 REQS_TXT = DIST_PKGS / 'requirements.txt'
 SUPPORTED_PLATFORM_MATRIX = {
@@ -28,7 +30,15 @@ SUPPORTED_PLATFORM_MATRIX = {
     # "macosx_11_x86_64",  # Big Sur   [released: 2020.11.12]
     # Catalina (10.15) ----------------------> [EOL tbd]
     # Mojave   (10.14) ----------------------> [EOL 2021.10.25]
-    "mac": ("macosx_10_15_x86_64", "macosx_10_14_x86_64"),
+    "mac": (
+        # Apple M1 Chip
+        # "macosx_12_universal2",
+        # Intel x84-64
+        "macosx_12_x86_64",
+        "macosx_11_x86_64",
+        "macosx_10_15_x86_64",
+        "macosx_10_14_x86_64"
+    ),
 
     # PEP600: manylinux_x_y_<arch> based on glibc>=x.y  (future-proofed)
     # PEP599: manylinux2014_<arch> --> CentOS7 [EOL 2024.06.30]
@@ -112,7 +122,7 @@ def zip_it(dir_: pathlib.Path, *, name: str, path: str = None, new: bool = True)
             zip_.write(file, arcname=arcname)
 
 
-@nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
+@nox.session(name="vendor-packages", python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
 def vendor_packages(session):
     """
     Build offline distributable installer.
@@ -191,21 +201,90 @@ def vendor_packages(session):
         REQS_TXT.unlink()
 
 
-# @nox.session(reuse_venv=not ON_GITHUB)
-# def version_bump(session):
-#     # TODO: use argparse for the following args
-#     # --major          :: False
-#     # --minor          :: False
-#     # --patch          :: False
-#     # --beta           :: False
-#     # 1. get_version
-#     # 2. bump version based on major, minor, or patch
-#     # 3. if beta, add "-beta.1"
-#     # 4. poetry version {version}
+@nox.session(name="bump-version", reuse_venv=not ON_GITHUB)
+def bump_version(session: nox.Session) -> None:
+    """
+    Bump the package version.
+    """
+    parser = argparse.ArgumentParser(prog="nox -s version-bump")
+    parser.add_argument(
+        "--beta",
+        help="mark the release or bump the beta version",
+        dest="beta",
+        action="store_true",
+        default=False,        
+    )
+    ver = parser.add_mutually_exclusive_group()
+    ver.add_argument(
+        "--major",
+        help="bump the major version, resetting minor and patch to 0",
+        dest="major",
+        action="store_true",
+        default=False,
+    )
+    ver.add_argument(
+        "--minor",
+        help="bump the minor version, resetting patch to 0",
+        dest="minor",
+        action="store_true",
+        default=False,
+    )
+    ver.add_argument(
+        "--patch",
+        help="bump the patch version",
+        dest="patch",
+        action="store_true",
+        default=False,
+    )
+
+    args = parser.parse_args(args=session.posargs)
+
+    def _get_version() -> str:
+        local = {}
+        txt = (HERE / 'cs_tools' / '_version.py').read_text()
+        exec(txt, {}, local)
+        return local['__version__']
+
+    def _write_version(version: str) -> None:
+        (HERE / 'cs_tools' / '_version.py').write_text(f"__version__ = '{version}'")
+
+        import tomlkit
+        pyproject = (HERE / 'pyproject.toml').read_text()
+        doc = tomlkit.parse(pyproject)
+        doc['tool']['poetry']['version'] = version
+        txt = tomlkit.dumps(doc)
+        (HERE / 'pyproject.toml').write_text(txt)
+
+    __version__ = _get_version()
+    major, minor, patch = __version__.split('.')
+    patch, *in_beta = patch.split('b')
+
+    if args.major and not in_beta:
+        major, minor, patch = int(major) + 1, 0, 0
+    elif args.minor and not in_beta:
+        minor, patch = int(minor) + 1, 0
+    elif args.patch and not in_beta:
+        patch = int(patch) + 1
+
+    if args.beta:
+        v = "beta version"
+        beta = f"b{int(in_beta[0]) + 1 if in_beta else 1}"
+
+        if not in_beta and not any(args.major, args.minor, args.patch):
+            patch = int(patch) + 1
+    else:
+        v = "version"
+        beta = ""
+
+    version = f'{major}.{minor}.{patch}{beta}'
+
+    _write_version(version)
+    session.run("git", "add", f"{HERE}/pyproject.toml", f"{HERE}/cs_tools/_version.py", external=True)
+    # session.run("git", "commit", "-m", f"bump {v} --> ({version})", external=True)
 
 
 @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
-def tests(session):
+def tests(session: nox.Session) -> None:
     """
     Ensure we test our code.
     """

@@ -161,6 +161,7 @@ class _Metadata:
         skipids: List[GUID] = None,
         fetchids: List[GUID] = None,
         auto_created: bool = None,
+        authorguid: str = None
     ) -> httpx.Response:
         """
         List of metadata objects in the repository.
@@ -183,7 +184,8 @@ class _Metadata:
                     'showhidden': showhidden,
                     'skipids': stringified_array([_ for _ in skipids or ()]),
                     'fetchids': stringified_array([_ for _ in fetchids or ()]),
-                    'auto_created': auto_created
+                    'auto_created': auto_created,
+                    'authorguid': authorguid
                 }
             )
         return r
@@ -292,6 +294,41 @@ class Metadata:
     """
     def __init__(self, rest_api):
         self.rest_api = rest_api
+
+    @validate_arguments
+    def assigntag(
+            self,
+            id: List[GUID],
+            type: List[MetadataObject],
+            tagid: List[GUID] = None,
+            tagname: List[str] = None
+    ) -> httpx.Response:
+        """
+        Assign tags to metadata objects; types[i] corresponds to ids[i].
+        Note that the assigntag will automatically create a new tag if the tagname doesn't currently exist.
+        It might be desired to check and block in the future.
+        Also note that due to a problem in the API the tag has all spaces being replace with _
+        """
+
+        data={
+            # NOTE: This is an API data parsing error ... data shouldn't need to
+            # be stringified.
+            'id': stringified_array(id, unique=False),
+            'type': stringified_array([_.value for _ in type], unique=False),
+        }
+        if tagid:
+            data['tagid'] = stringified_array(tagid)
+        if tagname:
+            # TODO - figure out why spaces aren't working
+            data['tagname'] = stringified_array(tagname).replace(' ', '_')
+
+        r = self.rest_api.request(
+            'POST',
+            'metadata/assigntag',
+            privacy='public',
+            data=data
+        )
+        return r
 
     @validate_arguments
     def list_viz_headers(self, id: GUID) -> httpx.Response:

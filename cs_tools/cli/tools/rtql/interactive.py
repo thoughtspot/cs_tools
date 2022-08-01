@@ -105,7 +105,7 @@ class InteractiveTQL:
             data['query']['prompt_responses'] = questions
             timeout = None
         else:
-            timeout = max(5.0, self.http_timeout)
+            timeout = max(15.0, self.http_timeout)
 
         with self.console.status('[bold green]running query[/]'):
             try:

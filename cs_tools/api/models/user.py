@@ -20,6 +20,28 @@ class User:
     def __init__(self, rest_api):
         self.rest_api = rest_api
 
+    @validate_arguments
+    def get(
+        self,
+        userid: str = None,
+        name: str = None,
+    ) -> httpx.Response:
+        """
+        API to get user details from the ThoughtSpot system.  Either the name or the userid must be provide.
+        :param userid: The GUID for the user.
+        :param name: The username.
+        """
+        r = self.rest_api.request(
+            'GET',
+            'user',
+            privacy='public',
+            params={
+                'userid': userid,
+                'name': name
+            }
+        )
+        return r
+
     def list(self) -> httpx.Response:
         """
         Fetch users and groups.

@@ -309,6 +309,7 @@ def sync(
     ),
     dont_remove_deleted: bool = O_(
         True,
+        '--dont-remove-deleted/--remove-deleted',
         help='whether to remove the deleted users and user groups',
         show_default=False
     ),
@@ -318,23 +319,32 @@ def sync(
         help='whether or not to dump data to the syncer',
         show_default=False
     ),
+    create_empty: bool = O_(
+        False,
+        '--create-empty',
+        help='write the structure of principals to your syncer without any data',
+        show_default=False
+    )
 ):
     """
     Sync your Users and Groups from an external data source.
 
     \b
     During this operation, Users and Groups..
-    - present in ThoughtSpot, but not present in Syncer are [red]deleted[/] in ThoughtSpot
-      - if using the --no-remove-deleted flag, users will not be deleted in this case
-    - not present in ThoughtSpot, but present in Syncer are [green]created[/] in ThoughtSpot
-    - present in ThoughtSpot, and in Syncer are [yellow]updated[/] by their attributes
-      - this includes group membership
+      - present in ThoughtSpot, but not present in Syncer are [red]deleted[/] in ThoughtSpot
+        - if using the --no-remove-deleted flag, users will not be deleted in this case
+      - not present in ThoughtSpot, but present in Syncer are [green]created[/] in ThoughtSpot
+      - present in ThoughtSpot, and in Syncer are [yellow]updated[/] by their attributes
+        - this includes group membership
     """
     ts = ctx.obj.thoughtspot
 
     if export:
         with console.status('[bold green]getting existing security strategy..'):
-            u, g, x = _get_current_security(ts)
+            if create_empty:
+                u, g, x = [], [], []
+            else:
+                u, g, x = _get_current_security(ts)
 
         with console.status(f'[bold green]writing security strategy to {syncer.name}..'):
             syncer.dump(users, data=u)

@@ -116,16 +116,14 @@ class CSToolsPrettyMixin:
         """
         Show error, then exit.
         """
-        ctx = error.ctx
+        ctx = error.ctx or click.get_current_context()
+        msg = ctx.get_usage()
 
-        if error.ctx is not None:
-            msg = error.ctx.get_usage()
-
-            if error.ctx.command.get_help_option(error.ctx) is not None:
-                msg += (
-                    f"\n[hint]Try '[primary]{error.ctx.command_path} "
-                    f"{error.ctx.help_option_names[0]}[/]' for help.[/]"
-                )
+        if ctx.command.get_help_option(ctx) is not None:
+            msg += (
+                f"\n[hint]Try '[primary]{ctx.command_path} "
+                f"{ctx.help_option_names[0]}[/]' for help.[/]"
+            )
 
         msg += f'\n\n[error]Error: {error.format_message()}[/]'
         console.print(msg + '\n')

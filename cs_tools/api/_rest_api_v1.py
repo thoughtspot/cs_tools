@@ -12,6 +12,7 @@ from cs_tools.api.models import (
     _Security,
     _Session,
     Data,
+    Group,
     Logs,
     Metadata,
     Security,
@@ -32,7 +33,8 @@ def _secure_for_log(kw) -> Dict[str, Any]:
     except TypeError:
         secure = copy.deepcopy({k: v for k, v in kw.items() if k not in ('file', 'files')})
 
-    return secure.get('data', {}).pop('password', None)
+    secure.get('data', {}).pop('password', None)
+    return secure
 
 
 class _RESTAPIv1:
@@ -56,6 +58,7 @@ class _RESTAPIv1:
 
         # public API endpoints
         self.data = Data(self)
+        self.group = Group(self)
         self.metadata = Metadata(self)
         self.security = Security(self)
         self.user = User(self)
@@ -75,6 +78,7 @@ class _RESTAPIv1:
         endpoint: str,
         *,
         privacy: str='public',
+        timeout: int=-1,
         **kw
     ) -> httpx.Response:
         """
@@ -107,6 +111,10 @@ class _RESTAPIv1:
         **kw
             passed into the httpx.request call
         """
+        # "httpx.Client.timeout = None" has meaning, -1 does not.
+        if timeout == -1:
+            timeout = self._http.timeout
+
         if httpx.URL(endpoint).is_relative_url:
             _privacy = {
                 # IF NOT FOUND IN THIS MAPPING, THEN IT'S AN UNDOCUMENTED API
@@ -124,7 +132,7 @@ class _RESTAPIv1:
         log.debug(f'{method} >> {endpoint} with data:\n\tkwargs={_secure_for_log(kw)}')
 
         meth = getattr(self._http, method.lower())
-        r = meth(endpoint, **kw)
+        r = meth(endpoint, **kw, timeout=timeout)
         r.raise_for_status()
         log.debug(f'<< HTTP: {r.status_code}')
 

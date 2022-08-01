@@ -139,3 +139,6 @@ dmypy.json
 dist/**/*.whl
 dist/**/*.zip
 dist/**/*.tar.gz
+
+tmlout/*
+tmlvalidate/*
