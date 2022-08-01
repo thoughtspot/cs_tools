@@ -117,7 +117,6 @@ class TSLoadMiddleware:
         self,
         fd: Union[BufferedIOBase, TextIOWrapper, _TemporaryFileWrapper],
         *,
-        ignore_node_redirect: bool = False,
         database: str,
         table: str,
         schema_: str = 'falcon_default_schema',
@@ -134,6 +133,9 @@ class TSLoadMiddleware:
         escape_character: str = '"',
         enclosing_character: str = '"',
         flexible: bool = False,
+        # not related to Remote TSLOAD API
+        ignore_node_redirect: bool = False,
+        http_timeout: int = 60.0
     ) -> List[Dict[str, Any]]:
         """
         Load a file via tsload on a remote server.
@@ -210,7 +212,7 @@ class TSLoadMiddleware:
         }
 
         try:
-            r = self.ts.api.ts_dataservice.load_init(flags)
+            r = self.ts.api.ts_dataservice.load_init(flags, timeout=http_timeout)
         except Exception as e:
             raise TSLoadServiceUnreachable(
                 f'[red]something went wrong trying to access tsload service: {e}[/]'
@@ -238,7 +240,7 @@ class TSLoadMiddleware:
         if not ignore_node_redirect:
             self._check_for_redirect_auth(data['cycle_id'])
 
-        self.ts.api.ts_dataservice.load_start(data['cycle_id'], fd=fd)
+        self.ts.api.ts_dataservice.load_start(data['cycle_id'], fd=fd, timeout=http_timeout)
         self.ts.api.ts_dataservice.load_commit(data['cycle_id'])
         return data['cycle_id']
 
@@ -276,13 +278,13 @@ class TSLoadMiddleware:
             if not wait_for_complete:
                 break
 
-            if data['internal_stage'] == 'COMMITTING':
-                pass
-            elif data['internal_stage'] == 'DONE':
+            if data['internal_stage'] == 'DONE':
                 break
-            elif data['status']['message'] != 'OK':
+            
+            if data['status']['message'] != 'OK':
                 break
 
+            log.debug(f'data load status:\n{data}')
             time.sleep(1)
 
         return data

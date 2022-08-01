@@ -97,3 +97,17 @@ class UserMiddleware:
             user = user[0]
 
         return user
+
+    @validate_arguments
+    def get_guid(
+        self,
+        name: str
+    ) -> Union[GUID, None]:
+        """
+        Returns the GUID for a user or None if the user wasn't found.
+        :param name: The user name, e.g. somebody@somecompany.com
+        :return: GUID or None
+        """
+        r = self.ts.api.user.get(name=name)
+        user = r.json()
+        return user['header']['id']

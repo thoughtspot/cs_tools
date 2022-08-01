@@ -43,6 +43,8 @@ def spotapp(
         file_okay=False,
         resolve_path=True
     ),
+
+    # NOTE: make optional for Falcon
     connection_guid: str = O_(
         ...,
         help=(

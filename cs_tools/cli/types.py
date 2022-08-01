@@ -111,6 +111,19 @@ class SyncerProtocolType(click.ParamType):
                 reason="No {proto} definition found at [blue]{definition}",
                 mitigation="You must specify a valid path to a .toml definition file."
             )
+        except UnicodeDecodeError:
+            raise SyncerError(
+                proto=proto,
+                definition=definition,
+                reason="Couldn't read the Syncer definition at [blue]{definition}[/]",
+                mitigation=(
+                    "If you're on Windows, you must escape the backslashes in your filepaths, or flip them the other "
+                    "way around.\n"
+                    "\n  :x: [red]" + r"C:\path\to\my\definition.toml" + "[/]"
+                    "\n  :white_heavy_check_mark: [green]" + r"C:\\path\\to\\my\\definition.toml" + "[/]"
+                    "\n  :white_heavy_check_mark: [green]" + r"C:/path/to/my/definition.toml" + "[/]"
+                )
+            )
         except toml.TomlDecodeError:
             raise SyncerError(
                 proto=proto,

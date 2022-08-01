@@ -5,7 +5,6 @@ from pydantic import validate_arguments
 
 from cs_tools.data.enums import (
     DownloadableContent, GUID, MetadataCategory, MetadataObject, MetadataObjectSubtype,
-    PermissionType
 )
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.util import chunks
@@ -302,9 +301,15 @@ class MetadataMiddleware:
         return mapped_guids
 
     @validate_arguments
-    def get_object_ids_with_tags(self, tags: List[str]) -> List[Dict[str,str]]:
+    def get_object_ids_with_tags_or_author(
+            self, tags: List[str] = None,
+            author: GUID = None,
+            ignore_datasources: bool = False
+    ) -> List[Dict[str,str]]:
         """
-        Gets a list of IDs for the associated tag and returns as a list of object ID to type mapping.
+        Gets a list of IDs for the associated tag and/or author and returns as a list of object ID to type mapping.
+        Either the author or the tag must be specified.  If both are specified, it will be the content owned by that
+        person with the given tag.
 
         The return format looks like:
         [
@@ -312,24 +317,37 @@ class MetadataMiddleware:
             {"id": "4bcaadb4-031a-4afd-b159-2c0c0f194c42", "type":"PINBOARD_ANSWER_BOOK"}
         ]
         :param tags: The list of tags to get ids for.
+        :param author: The author of the content.
+        :param ignore_datasources: If true, will ignore data sources.
         """
 
+        # testing - remove later
         object_ids = []
         for metadata_type in DownloadableContent:
+            if ignore_datasources and metadata_type == DownloadableContent.data_source:
+                continue
+
             offset = 0
 
             while True:
-                r = self.ts.api._metadata.list(type=metadata_type.value, batchsize=500, offset=offset, tagname=tags)
+                r = self.ts.api._metadata.list(type=metadata_type.value, batchsize=500,
+                                               offset=offset, tagname=tags, authorguid=author)
                 data = r.json()
                 offset += len(data)
 
                 for metadata in data['headers']:
-                    object_ids.append(metadata["id"])
+
+                    if author and metadata['author'] == author:  # workaround for 7.1/7.2
+                        object_ids.append(metadata["id"])
+                    elif not author:  # no author specified, so just add it.
+                        object_ids.append(metadata["id"])
+                    # else just ignore it.
 
                 if data['isLastBatch']:
                     break
 
         return list(set(object_ids))  # might have been duplicates
+
 
     @classmethod
     @validate_arguments
@@ -344,7 +362,7 @@ class MetadataMiddleware:
 
         return subtype
 
-    def _lookup_geo_config(self, column_details) -> str:
+    def _lookup_geo_config(self, column_details) -> Union[str, None]:
         try:
             config = column_details['geoConfig']
         except KeyError:
@@ -362,7 +380,7 @@ class MetadataMiddleware:
 
         return 'Unknown'
 
-    def _lookup_calendar_guid(self, column_details) -> str:
+    def _lookup_calendar_guid(self, column_details) -> Union[str, None]:
         try:
             ccal_guid = column_details['calendarTableGUID']
         except KeyError:
@@ -375,12 +393,13 @@ class MetadataMiddleware:
 
         return self.cache['calendar_type'][ccal_guid]
 
-    def _lookup_currency_type(self, column_details) -> str:
+    def _lookup_currency_type(self, column_details) -> Union[str, None]:
         try:
             currency_info = column_details['currencyTypeInfo']
         except KeyError:
             return None
 
+        name = None
         if currency_info['setting'] == 'FROM_USER_LOCALE':
             name = 'Infer From Browser'
         elif currency_info['setting'] == 'FROM_ISO_CODE':
@@ -396,3 +415,41 @@ class MetadataMiddleware:
                 name = self.cache['currency_type'][g]
 
         return name
+
+    @validate_arguments
+    def objects_exist(self, metadata_type: MetadataObject, guids: List[GUID]) -> Dict[GUID, bool]:
+        """
+        Checks if the list of objects exist.
+        :param metadata_type: The type to check for.  Must do one at a time.
+        :param guids: The list of GUIDs to check.
+        :return: A map of GUID to boolean, where True == it exists.
+        """
+        r = self.ts.api.metadata.list_object_headers(type=metadata_type, fetchids=guids)
+        content = r.json()
+
+        # The response is a list of objects that only include the ones that exist.  So check each GUID and add to the
+        # map.
+        returned_ids = [obj.get("id") for obj in content]
+        existence = {}
+        for guid in guids:
+            existence[guid] = guid in returned_ids
+
+        return existence
+
+    @classmethod
+    @validate_arguments
+    def tml_type_to_metadata_object(cls, tml_type: str) -> Union[MetadataObject, None]:
+        """
+        Converts a tml type (e.g. "worksheet") to a MetadataObject type, (e.g. MetadataObject.logical_table)
+        :param tml_type:  The TML type, such as None
+        """
+        mapping = {
+            "table": MetadataObject.logical_table,
+            "view": MetadataObject.logical_table,
+            "worksheet": MetadataObject.logical_table,
+            "pinboard": MetadataObject.pinboard,
+            "liveboard": MetadataObject.pinboard,
+            "answer": MetadataObject.saved_answer,
+        }
+
+        return mapping.get(tml_type, None)

@@ -1,14 +1,9 @@
-from typing import Any, Dict, List, Union
-import json
+from typing import List
 
 from pydantic import validate_arguments
 import httpx
 
-from cs_tools.api.util import stringified_array
-from cs_tools.data.enums import (
-    GUID,
-    SortOrder,
-)
+from cs_tools.data.enums import GUID, SortOrder
 
 
 class _Connection:
@@ -42,4 +37,3 @@ class _Connection:
                 }
             )
         return r
-

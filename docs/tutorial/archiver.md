@@ -95,15 +95,31 @@ We'll also ignore all of our __Training__ content, since we haven't run a new us
 __Certified__ datasets, even though it's unlikely that this content hasn't been viewed in the past 90 days.. but it's
 better to be safe than sorry!
 
-```console
-cs_tools tools archiver identify
---config non-prod
---tag clean-up
---recent-activity 90
---recent-modified 120
---ignore-tag certified
---ignore-tag training
-```
+
+=== ":fontawesome-brands-windows: Windows"
+
+    ```powershell
+    cs_tools tools archiver identify `
+    --config non-prod `
+    --tag clean-up `
+    --recent-activity 90 `
+    --recent-modified 120 `
+    --ignore-tag certified `
+    --ignore-tag training
+    ```
+
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
+
+    ```bash
+    cs_tools tools archiver identify \
+    --config non-prod \
+    --tag clean-up \
+    --recent-activity 90 \
+    --recent-modified 120 \
+    --ignore-tag certified \
+    --ignore-tag training
+    ```
+
 
 ??? info "Using --config"
     Since we set our `non-prod` configuration as the default, usage of `--config non-prod` is optional here.
