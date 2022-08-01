@@ -260,26 +260,27 @@ def bump_version(session: nox.Session) -> None:
     patch, *in_beta = patch.split('b')
 
     if args.major and not in_beta:
-        version = f'{int(major) + 1}.0.0'
+        major, minor, patch = int(major) + 1, 0, 0
     elif args.minor and not in_beta:
-        version = f'{major}.{int(minor) + 1}.0'
+        minor, patch = int(minor) + 1, 0
     elif args.patch and not in_beta:
-        version = f'{major}.{minor}.{int(patch) + 1}'
+        patch = int(patch) + 1
 
     if args.beta:
         v = "beta version"
+        beta = f"b{int(in_beta[0]) + 1 if in_beta else 1}"
 
-        # bump the patch only if we're not currently in a beta version
-        patch = patch if in_beta else int(patch) + 1
-        # always bump the beta version
-        beta = int(in_beta[0]) + 1 if in_beta else 1
-        version = f'{major}.{minor}.{patch}b{beta}'
+        if not in_beta and not any(args.major, args.minor, args.patch):
+            patch = int(patch) + 1
     else:
         v = "version"
+        beta = ""
+
+    version = f'{major}.{minor}.{patch}{beta}'
 
     _write_version(version)
     session.run("git", "add", f"{HERE}/pyproject.toml", f"{HERE}/cs_tools/_version.py", external=True)
-    session.run("git", "commit", "-m", f"bump {v} --> ({version})", external=True)
+    # session.run("git", "commit", "-m", f"bump {v} --> ({version})", external=True)
 
 
 @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
