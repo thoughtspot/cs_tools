@@ -91,13 +91,6 @@ class ThoughtSpot:
                 rememberme=True,
                 disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
             )
-        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-            host = self.config.thoughtspot.host
-            rzn = (
-                f'cannot see url [blue]{host}[/] from the current machine'
-                f'\n\n>>> [yellow]{e}[/]'
-            )
-            raise ThoughtSpotUnavailable(reason=rzn) from None
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
                 raise AuthenticationError(
@@ -107,6 +100,13 @@ class ThoughtSpot:
                     incident_id=e.response.json().get('incident_id_guid', '<missing>')
                 )
             raise e
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            host = self.config.thoughtspot.host
+            rzn = (
+                f'cannot see url [blue]{host}[/] from the current machine'
+                f'\n\n>>> [yellow]{e}[/]'
+            )
+            raise ThoughtSpotUnavailable(reason=rzn) from None
 
         # got a response, but couldn't make sense of it
         try:
