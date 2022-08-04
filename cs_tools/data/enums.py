@@ -13,6 +13,11 @@ class AccessLevel(enum.Enum):
     modify = 'MODIFY'
 
 
+class ConnectionCategory(enum.Enum):
+    all = 'All'
+    my = 'MY'
+
+
 class Principal(enum.Enum):
     user = 'USER'
     group = 'USER_GROUP'

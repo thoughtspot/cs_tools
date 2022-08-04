@@ -66,15 +66,27 @@ def scriptability_export(
                              help='comma separated list of tags to export'),
         export_ids: List[str] = O_([], metavar='GUIDS',
                                    callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-                                   help='comma separated list of GUIDs to export'),
-        author: str = O_('', metavar='USERNAME',
+                                   help='comma separated list of GUIDs to export ' 
+                                        'that cannot be combined with other filters'),
+        author: str = O_(None, metavar='USERNAME',
                          help='username that is the author of the content to download'),
+        pattern: str = O_(None, metavar='PATTERN',
+                          help="Pattern for name with % as a wildcard"),
+        include_types: List[str] = O_([], metavar='CONTENTTYPES',
+                                      callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+                                      help='list of types to include: answer, liveboard, view, sqlview, '
+                                           'table, connection'),
+        exclude_types: List[str] = O_([], metavar='CONTENTTYPES',
+                                      callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+                                      help='list of types to exclude (overrides include): answer, liveboard, view, '
+                                           'sqlview, table, connection'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
         set_fqns: bool = O_(False,
                             help='if set, then the content in the TML will have FQNs (GUIDs) added.')
 ):
-    export(ctx=ctx, path=path, tags=tags, export_ids=export_ids, author=author,
+    export(ctx=ctx, path=path, tags=tags, export_ids=export_ids,
+           author=author, pattern=pattern, include_types=include_types, exclude_types=exclude_types,
            export_associated=export_associated, set_fqns=set_fqns)
 
 
