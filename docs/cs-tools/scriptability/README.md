@@ -7,13 +7,13 @@
 
 ## Overview
 
-This tool allows user to simplify and automate the extract and import of ThoughtSpot TML from and to the same or different instances.
+This tool allows user to simplify and automate the export and import of ThoughtSpot TML from and to the same or different instances.
 
-There are several use cases where extracting and importing TML is useful:
+There are several use cases where exporting and importing TML is useful:
 
-1. Extract TML for version control.
-2. Extract TML for migration to a different ThoughtSpot instance.
-3. Extract TML to modify and create copies, such as for different customers or in different languages.
+1. Export TML for version control.
+2. Export TML for migration to a different ThoughtSpot instance.
+3. Export TML to modify and create copies, such as for different customers or in different languages.
 
 ??? danger "__This tool creates and updates content.  Regular shapshots are recommended__"
 
@@ -31,9 +31,10 @@ There are several use cases where extracting and importing TML is useful:
 
 This version of cstools scriptability supports the following scenarios:
 
-* Extract TML based on specific GUIDs (with and without related content)
-* Extract TML based on a ThoughtSpot TAG (with and without related content)
+* Export TML based on specific GUIDs (with and without related content)
+* Export TML based on a ThoughtSpot TAG (with and without related content)
 * Import TML (update and create new) with complex dependency handling (updated)
+* :sparkles: Supports exporting connections
 * :sparkles: Support a mapping file of GUIDs with automatic updates for new content (new)
 * :sparkles: Compare two TML files for differences (new)
 * :sparkles: Generate an empty mapping file (new)
@@ -52,6 +53,12 @@ This version of cstools scriptability supports the following scenarios:
     * Deleting columns with dependencies probably won't work and give dependency errors.
     * The author of new content is the user in the config file, not the original author.
 
+    The following are some known issues when using the tool:
+    * SQL Views give errors on export and cannot be imported.
+    * Connections and tables can only be exported and not imported.
+    * There are scenarios where there is content you can access, but not download.  In these cases you will get an 
+      error message.
+
     In general, any changes with dependencies are likely to cause errors in the current version.  
 
 ??? important "Planned features coming soon"
@@ -59,7 +66,7 @@ This version of cstools scriptability supports the following scenarios:
     The following features are planned for an upcoming release:
 
     * Set the author on import
-    * Export and import SQL views (probably won't work, but hasn't been tested)
+    * Export and import SQL views
     * Import connections and tables
 
 !!! info "Helpful Links"
@@ -88,7 +95,7 @@ This version of cstools scriptability supports the following scenarios:
 
     Updating and reimporting is basically the same steps as migrating new content.  In this step you would:
 
-    1. Extract the TML using `scriptability export`.
+    1. Export the TML using `scriptability export`.
     2. Modify the TML.
     3. Import the TML using `scriptability import` without the `--force-create` flag.  
 
@@ -96,7 +103,7 @@ This version of cstools scriptability supports the following scenarios:
 
     One scenario that comes up is that a ThoughtSpot administrator is managing content for different customers or groups.  They have a set of common content, but want to make copies for each group.  This can be done similarly to the migration of content, though it's usually back to the same instance.
 
-    1. Extract the TML using `scriptability export`.
+    1. Export the TML using `scriptability export`.
     2. Modify the TML for the group, such as different column names.
     3. Import the TML using `scriptability import` without the `--force-create` flag.
 
@@ -146,7 +153,7 @@ version = "1.1.0"
     USE AT YOUR OWN RISK! This tool uses private API calls which
     could change on any version update and break the tool.
 
-    ThoughtSpot provides the ability to extract object metadata (tables,
+    ThoughtSpot provides the ability to export object metadata (tables,
     worksheets, liveboards, etc.)  in ThoughtSpot Modeling Language (TML)
     format, which is a text format based on YAML.   These files can then be
     modified and imported into another (or the same) instance to either 
@@ -200,22 +207,28 @@ version = "1.1.0"
 
 === "scriptability export"
     ```console 
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools scriptability export --help
+    cs_tools tools scriptability export --help
 
     Usage: cs_tools tools scriptability export DIR
                                                            [--tags, ...,
                                                            --help] --config
                                                            NAME
-    
-      Exports TML as YAML from ThoughtSpot.
-    
+
     Arguments:
       DIR  full path (directory) to save data set to  
-    
+
     Options:
       --tags TAGS                     comma separated list of tags to export
-      --export-ids GUIDS              comma separated list of GUIDs to export
-      --author USERNAME               username that is the author of the content to download
+      --export-ids GUIDS              comma separated list of GUIDs to export that
+                                      cannot be combined with other filters
+      --author USERNAME               username that is the author of the content
+                                      to download
+      --pattern PATTERN               Pattern for name with % as a wildcard
+      --include-types CONTENTTYPES    list of types to include: answer, liveboard,
+                                      view, sqlview, table, connection
+      --exclude-types CONTENTTYPES    list of types to exclude (overrides
+                                      include): answer, liveboard, view, sqlview,
+                                      table, connection
       --export-associated / --no-export-associated
                                       if specified, also export related content
                                       [default: no-export-associated]

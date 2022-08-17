@@ -37,3 +37,15 @@ class _Connection:
                 }
             )
         return r
+
+    @validate_arguments
+    def export(self, id: GUID) -> httpx.Response:
+        """Export the yaml info for the connection."""
+        r = self.rest_api.request(
+            'GET',
+            f'connection/export',
+            params={
+                "id": id,
+            }
+        )
+        return r

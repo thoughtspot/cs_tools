@@ -4,17 +4,18 @@ This file contains the methods to execute the 'scriptability export' command.
 import click
 import pathlib
 from httpx import HTTPStatusError
-from typing import List, Tuple, Union
-
+from typing import Any, Dict, List, Tuple, Union
+import re
 from rich.table import Table
+from typer import Argument as A_, Option as O_
+
 from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
-from typer import Argument as A_, Option as O_
 
 from cs_tools.cli.types import CommaSeparatedValuesType
 from cs_tools.cli.ux import console
 from cs_tools.errors import CSToolsError
-from cs_tools.data.enums import TMLType, DownloadableContent, MetadataObjectSubtype
+from cs_tools.data.enums import DownloadableContent, GUID, MetadataObjectSubtype, TMLType
 from .util import strip_blanks
 
 
@@ -88,56 +89,41 @@ def export(
     exclude_types = [_.strip().lower() for _ in exclude_types]
     author = author.strip() if author else None
 
+    # [
+    #     {"id": "<GUID>", "type": DownloadableContent, "subtype": MetadataObjectSubtype | None},
+    #     {"id": "<GUID>", "type": DownloadableContent, "subtype": MetadataObjectSubtype | None},
+    # ]
+    export_objects: List[Dict[str, Any]] = []
+
     # GUIDs vs. filters have already been accounted for so this should only happen if GUIDs were not specified.
-    if not export_ids:
+    if export_ids:
+        export_objects = ts.metadata.get_object_types(export_ids)
+    else:
         author_guid = ts.user.get_guid(author) if author else None
 
         # convert  types to downloadable content types
         include_types = _convert_types_to_downloadable_content(include_types)
         exclude_types = _convert_types_to_downloadable_content(exclude_types)
 
-        export_ids = (ts.metadata.get_object_ids_filtered(tags=tags, author=author_guid, pattern=pattern,
-                                                          include_types=include_types, exclude_types=exclude_types))
+        export_objects = (ts.metadata.get_object_ids_filtered(tags=tags,
+                                                              author=author_guid,
+                                                              pattern=pattern,
+                                                              include_types=include_types,
+                                                              exclude_types=exclude_types))
 
-    results = []  # (guid, status, name)
-    for guid in export_ids:
-        with console.status((f"[bold green]exporting {guid} {'with' if export_associated else 'without'}"
+    results: List[Tuple[GUID, str, str, str]] = []  # (guid, status, name, message)
+    for obj in export_objects:
+        guid = obj['id']
+        metadata_type = obj['type']
+        with console.status((f"[bold green]exporting {guid} ({metadata_type}) {'with' if export_associated else 'without'}"
                              f"associated content.[/]")):
 
             try:
-                r = ts.api.metadata.tml_export(export_ids=[guid],  # only doing one at a time to account for FQN mapping
-                                               formattype=TMLType.yaml.value,  # formattype=formattype
-                                               export_associated=(export_associated or set_fqns))
-
-                objects = r.json().get('object', [])
-
-                tml_objects = []
-                for _ in objects:
-                    status = _['info']['status']
-                    if not status['status_code'] == 'OK':  # usually access errors.
-                        console.log(f"[bold red]unable to get {_['info']['name']}: {_['info']['status']}[/]")
-                        results.append((guid,
-                                        status['status_code'],
-                                        _['info']['name'],
-                                        f"{_['info']['status']['error_message']}"))
-
-                    else:
-                        console.log(f"{_['info']['filename']} (OK)")
-                        tmlobj = YAMLTML.get_tml_object(tml_yaml_str=_['edoc'])
-                        if tmlobj:  # some objects might not be supported
-                            tml_objects.append(tmlobj)
-                            results.append((guid, status['status_code'], _['info']['name'], ""))
-                        else:
-                            console.log(f"[bold red]Unable to convert {_['edoc']} to a TML object.  Ignoring.")
-                            results.append((guid, 'WARNING', _['info']['name'], "Unable to convert to TML object"))
-
-                if set_fqns:
-                    # getting associated, this will also get the additional FQNs for the objects and add to the TML.
-                    _add_fqns_to_tml(tml_list=tml_objects)
-
-                # if the export_associated was specified, write all, else just write the requested.
-                for _ in filter(lambda tml: export_associated or tml.guid == guid, tml_objects):
-                    _write_tml_obj_to_file(path=path, tml=_)
+                if metadata_type == DownloadableContent.data_source:
+                    results.extend(_download_connection(ts=ts, path=path, guid=guid))
+                else:  # everything except connections.
+                    results.extend(_download_tml(ts=ts, path=path, guid=guid,
+                                                 export_associated=export_associated, set_fqns=set_fqns))
 
             except HTTPStatusError as e:
                 # Sometimes getting 400 errors on the content.  Need to just log an error and continue.
@@ -145,6 +131,74 @@ def export(
                 results.append((guid, 'HTTP ERROR', 'UNK', f"{e}"))
 
     _show_results_as_table(results=results)
+
+
+def _download_connection(ts,
+                         path: pathlib.Path,
+                         guid: GUID,
+                         ) -> List[Tuple[GUID, str, str, str]]:
+    """Download a connection.  Connections aren't supported by TML yet."""
+    results: List[Tuple[GUID, str, str, str]] = []  # (guid, status, name, message)
+
+    r = ts.api._connection.export(guid)
+
+    fn = f"{path}/{guid}.connection.tml"
+    yaml = r.content.decode()
+    name = yaml.split('\n')[0].split(": ")[1]
+
+    try:
+        with open(fn, "w") as yamlfile:
+            yamlfile.write(yaml)
+        results.append((guid, 'OK', name, 'Success'))
+    except IOError as e:
+        results.append((guid, 'ERROR', name, f'Error writing to file {fn}'))
+
+    return results
+
+
+def _download_tml(ts,
+                  path: pathlib.Path,
+                  guid: GUID,
+                  export_associated: bool,
+                  set_fqns: bool
+                  ) -> List[Tuple[GUID, str, str, str]]:
+    results: List[Tuple[GUID, str, str, str]] = []  # (guid, status, name, message)
+
+    r = ts.api.metadata.tml_export(export_ids=[guid],  # only doing one at a time to account for FQN mapping
+                                   formattype=TMLType.yaml.value,  # formattype=formattype
+                                   export_associated=(export_associated or set_fqns))
+
+    objects = r.json().get('object', [])
+
+    tml_objects = []
+    for _ in objects:
+        status = _['info']['status']
+        if not status['status_code'] == 'OK':  # usually access errors.
+            console.log(f"[bold red]unable to get {_['info']['name']}: {_['info']['status']}[/]")
+            results.append((guid,
+                            status['status_code'],
+                            _['info']['name'],
+                            f"{_['info']['status']['error_message']}"))
+
+        else:
+            console.log(f"{_['info']['filename']} (OK)")
+            tmlobj = YAMLTML.get_tml_object(tml_yaml_str=_['edoc'])
+            if tmlobj:  # some objects might not be supported
+                tml_objects.append(tmlobj)
+                results.append((guid, status['status_code'], _['info']['name'], "Success"))
+            else:
+                console.log(f"[bold red]Unable to convert {_['edoc']} to a TML object.  Ignoring.")
+                results.append((guid, 'WARNING', _['info']['name'], "Unable to convert to TML object"))
+
+    if set_fqns:
+        # getting associated, this will also get the additional FQNs for the objects and add to the TML.
+        _add_fqns_to_tml(tml_list=tml_objects)
+
+    # if the export_associated was specified, write all, else just write the requested.
+    for _ in filter(lambda tml: export_associated or tml.guid == guid, tml_objects):
+        _write_tml_obj_to_file(path=path, tml=_)
+
+    return results
 
 
 def _add_fqns_to_tml(tml_list: List[TML]) -> None:
