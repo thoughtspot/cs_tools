@@ -338,8 +338,9 @@ class MetadataMiddleware:
             types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = \
                 [(_, None) for _ in DownloadableContent if _ != DownloadableContent.logical_table]
             types.append((DownloadableContent.logical_table,MetadataObjectSubtype.system_table))
-            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.system_table))
-            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.system_table))
+            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.view))
+            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.materialized_view))
+            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.sql_view))
 
         else:
             types = copy.copy(include_types)
