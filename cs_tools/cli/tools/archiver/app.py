@@ -213,14 +213,14 @@ def identify(
         )
 
     if contents['answer']:
-        ts.api._metadata.assigntag(
+        ts.api.metadata.assigntag(
             id=contents['answer'],
             type=['QUESTION_ANSWER_BOOK'] * len(contents['answer']),
             tagid=[tag['id']] * len(contents['answer'])
         )
 
     if contents['liveboard']:
-        ts.api._metadata.assigntag(
+        ts.api.metadata.assigntag(
             id=contents['liveboard'],
             type=['PINBOARD_ANSWER_BOOK'] * len(contents['liveboard']),
             tagid=[tag['id']] * len(contents['liveboard'])
@@ -318,14 +318,14 @@ def revert(
         )
 
     if contents['answer']:
-        ts.api._metadata.unassigntag(
+        ts.api.metadata.unassigntag(
             id=contents['answer'],
             type=['QUESTION_ANSWER_BOOK'] * len(contents['answer']),
             tagid=[tag['id']] * len(contents['answer'])
         )
 
     if contents['liveboard']:
-        ts.api._metadata.unassigntag(
+        ts.api.metadata.unassigntag(
             id=contents['liveboard'],
             type=['PINBOARD_ANSWER_BOOK'] * len(contents['liveboard']),
             tagid=[tag['id']] * len(contents['liveboard'])
