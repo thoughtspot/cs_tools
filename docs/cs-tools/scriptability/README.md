@@ -39,6 +39,7 @@ This version of cstools scriptability supports the following scenarios:
 * :sparkles: Compare two TML files for differences (new)
 * :sparkles: Generate an empty mapping file (new)
 * :sparkles: Share and tag content when importing (new)
+* :sparkles: Import tables via TML (new)
 
 !!! warning "TML is complex and this tool is new."
 
@@ -48,14 +49,14 @@ This version of cstools scriptability supports the following scenarios:
 
 !!! warning "Limitations"
 
-    * Connections and tables cannot be imported
+    * Connections cannot be imported
     * Scriptability doesn't support removal or changes of joins.  These must be done manually.
     * Deleting columns with dependencies probably won't work and give dependency errors.
     * The author of new content is the user in the config file, not the original author.
 
     The following are some known issues when using the tool:
     * SQL Views give errors on export and cannot be imported.
-    * Connections and tables can only be exported and not imported.
+    * Connections can only be exported and not imported.
     * There are scenarios where there is content you can access, but not download.  In these cases you will get an 
       error message.
 
@@ -67,7 +68,7 @@ This version of cstools scriptability supports the following scenarios:
 
     * Set the author on import
     * Export and import SQL views
-    * Import connections and tables
+    * Import connections
 
 !!! info "Helpful Links"
 
@@ -83,7 +84,7 @@ This version of cstools scriptability supports the following scenarios:
 
     Migrating content consist of exporting, (optionally) modifying, and then importing content.  You will want to do the following for this scenario:
 
-    1. Create the connection and tables manually if they don't exist.  This step is needed because the scriptability tool doesn't currently support connections and tables.
+    1. Create the connection and tables manually if they don't exist.  This step is needed because the scriptability tool doesn't currently support connections.
     2. Create a mapping file for tables if one doesn't exist.  Note that you can use `scriptability create-mapping` to create a new, empty mapping file.
     3. Export the TML to be migrated using `scriptability export`.
     4. (Optional) Modify the TML as appropriate.  
