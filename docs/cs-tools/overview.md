@@ -17,13 +17,12 @@ internal, API calls in your ThoughtSpot platform and thus ^^__could change with 
 version or release__^^{ .fc-coral }. You should not rely on them for production-critical
 workflows.
 
-!!! info "Helpful Links"
+!!! info "Don't know where to start?"
 
-    :smile: &nbsp; __[Installation Guide][docs-install]{ .internal-link }__
+    We've got a tutorial! It will help you get up and running with the tools and learn about all the cool features.
 
-    :gear: &nbsp; __[Setup a configuration file][docs-howto-config]{ .internal-link }__
+    [Follow the tutorial][docs-tutorial].
 
-    :material-github: &nbsp; __[Found a problem? Submit an issue.][gh-issue]{ target='secondary' .external-link }__</a>
 
 ```console
 (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools
@@ -48,6 +47,5 @@ Tools:
   user-management   Managing Users and Groups in bulk.
 ```
 
-[docs-install]: ../../how-to/install-upgrade-cs-tools
-[docs-howto-config]: ../../how-to/configuration-file
+[docs-tutorial]: ../../tutorial/intro.md
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new/choose
