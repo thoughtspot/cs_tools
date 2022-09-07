@@ -21,7 +21,7 @@ workflows.
 
     We've got a tutorial! It will help you get up and running with the tools and learn about all the cool features.
 
-    [Follow the tutorial][docs-tutorial].
+    Follow [the tutorial][docs-tutorial].
 
 
 ```console
@@ -47,5 +47,5 @@ Tools:
   user-management   Managing Users and Groups in bulk.
 ```
 
-[docs-tutorial]: ../../tutorial/intro.md
+[docs-tutorial]: ../tutorial/intro.md
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new/choose
