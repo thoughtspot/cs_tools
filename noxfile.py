@@ -24,7 +24,10 @@ REQS_TXT = DIST_PKGS / 'requirements.txt'
 SUPPORTED_PLATFORM_MATRIX = {
     # fmt: off
     # PEP425: Compatibility Tags for Built Distributions
-    "windows": ("win_amd64", ),
+    "windows": (
+        "win_amd64",
+        "win32"
+    ),
 
     # "macosx_12_x86_64",  # Moneterey [released: 2021.10.25]
     # "macosx_11_x86_64",  # Big Sur   [released: 2020.11.12]

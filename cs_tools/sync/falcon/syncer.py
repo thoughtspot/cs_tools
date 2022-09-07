@@ -31,7 +31,7 @@ class Falcon:
     __is_database__ = True
 
     def __post_init_post_parse__(self):
-        self.timeout = self.timeout or None
+        self.timeout = None if self.timeout == 0 else self.timeout
         ctx = click.get_current_context()
         self.engine = sa.engine.create_mock_engine('sqlite://', self.intercept_create_table)
         self.cnxn = self.engine.connect()

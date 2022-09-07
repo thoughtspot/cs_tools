@@ -152,14 +152,21 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
 
         fcnt = 0
         for _ in resp:
-            if _.status_code == 'ERROR':
-                console.log(f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
-                results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], _.status_code)
-            else:
-                console.log(f"{filenames[fcnt]} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
-                results[_.guid] = (_.metadata_type, filenames[fcnt], _.status_code)
+            try:
+                if _.status_code == 'ERROR':
+                    console.log(f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                    results[f"err-{fcnt}"] = ("", filenames[fcnt], _.status_code)
+                elif _.status_code == 'WARNING':
+                    console.log(f"[bold yellow]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                    results[f"warn-{fcnt}"] = ("", filenames[fcnt], _.status_code)
+                else:
+                    console.log(f"{filenames[fcnt]} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
+                    results[_.guid] = (_.metadata_type, filenames[fcnt], _.status_code)
 
-            ok_resp.append(_)
+                ok_resp.append(_)
+            except KeyError as ke:
+                console.log(f"Unexpected content: {_}")
+
             fcnt += 1
 
     return results
@@ -462,11 +469,13 @@ def _load_and_append_tml_file(
 
     _map_guids(tml=tmlobj, guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
 
-    if tmlobj.content_type == TMLContentType.table.value:
-        console.log(f"[bold red]Table import not currently supported.  Ignoring {path.name}.[/]")
-        return None
-    else:
-        tml_file_bundles[tmlobj.guid] = TMLFileBundle(file=path, tml=tmlobj)
+    # testing table imports
+    #  if tmlobj.content_type == TMLContentType.table.value:
+    #      console.log(f"[bold red]Table import not currently supported.  Ignoring {path.name}.[/]")
+    #      return None
+    #  else:
+    #      tml_file_bundles[tmlobj.guid] = TMLFileBundle(file=path, tml=tmlobj)
+    tml_file_bundles[tmlobj.guid] = TMLFileBundle(file=path, tml=tmlobj)
 
     return tmlobj.guid
 

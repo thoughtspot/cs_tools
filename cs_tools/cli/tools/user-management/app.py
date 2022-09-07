@@ -38,7 +38,14 @@ def _all_user_content(user: GUID, ts: ThoughtSpot):
         offset = 0
 
         while True:
-            r = ts.api._metadata.list(type=metadata_type, batchsize=500, offset=offset)
+            r = ts.api._metadata.list(
+                    type=metadata_type,
+                    batchsize=500,
+                    offset=offset,
+                    pattern=str(user),
+                    # authorguid=user,
+                )
+
             data = r.json()
             offset += len(data)
 

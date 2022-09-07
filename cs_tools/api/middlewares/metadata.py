@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Union
+import copy
+from typing import Any, Dict, List, Union, Tuple
 import logging
 
 from pydantic import validate_arguments
@@ -8,6 +9,7 @@ from cs_tools.data.enums import (
 )
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.util import chunks
+from cs_tools.cli.ux import console
 
 
 log = logging.getLogger(__name__)
@@ -301,53 +303,132 @@ class MetadataMiddleware:
         return mapped_guids
 
     @validate_arguments
-    def get_object_ids_with_tags_or_author(
-            self, tags: List[str] = None,
+    def get_object_ids_filtered(
+            self,
+            include_types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = None,
+            exclude_types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = None,
+            tags: List[str] = None,
             author: GUID = None,
-            ignore_datasources: bool = False
-    ) -> List[Dict[str,str]]:
+            pattern: str = None,
+    ) -> List[Dict[str, Any]]:
         """
-        Gets a list of IDs for the associated tag and/or author and returns as a list of object ID to type mapping.
-        Either the author or the tag must be specified.  If both are specified, it will be the content owned by that
-        person with the given tag.
+        Gets a list of IDs for the associated based on the (optional) filter values passed.  Multiple filters will
+        lead to smaller and smaller sets of IDs.  For example, if you specify a liveboard, a tag, and an owner, only
+        liveboard IDs from that owner that have the given tag are returned.  If no filter is provided, all IDs will
+        be returned that the authenticated user (not the owner) has access to.
+
+        If you specify the same type for include_types and exclude_types, it will be excluded.  If you don't specify
+        either, then all types will be exported (limited by other filters).
 
         The return format looks like:
         [
-            {"id": "0291f1cd-5f8e-4d96-80e2-e5ef1aa6c44f", "type":"QUESTION_ANSWER_BOOK"},
-            {"id": "4bcaadb4-031a-4afd-b159-2c0c0f194c42", "type":"PINBOARD_ANSWER_BOOK"}
+            {"id": "<GUID>", "type":DownloadableContent, "subtype": MetadataObjectSubtype | None},
+            {"id": "<GUID>", "type":DownloadableContent, "subtype": MetadataObjectSubtype | None},
         ]
+        :param include_types: A list of types to return.  All types if none is provided.
+        :param exclude_types: A list of types to exclude.  No types excluded if none is provided.
         :param tags: The list of tags to get ids for.
         :param author: The author of the content.
-        :param ignore_datasources: If true, will ignore data sources.
+        :param pattern: A name pattern to match.  % can be used as a wildcard.
         """
 
-        # testing - remove later
-        object_ids = []
-        for metadata_type in DownloadableContent:
-            if ignore_datasources and metadata_type == DownloadableContent.data_source:
-                continue
+        # if not include types are specified, start with all types.
+        if not include_types:
+            # tables have subtypes you have to specify.
+            types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = \
+                [(_, None) for _ in DownloadableContent if _ != DownloadableContent.logical_table]
+            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.system_table))
+            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.view))
+            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.materialized_view))
+            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.sql_view))
 
+        else:
+            types = copy.copy(include_types)
+
+        # if any types were excluded, take them back out.
+        updated_types = []
+        if exclude_types:
+            for xt in exclude_types:
+                for t in types:
+                    if not (xt[0] == t[0] and xt[1] == t[1]):
+                        updated_types.append((t[0],t[1]))
+
+            types = updated_types
+
+        object_ids = []
+        for metadata_type in types:
             offset = 0
 
             while True:
-                r = self.ts.api._metadata.list(type=metadata_type.value, batchsize=500,
-                                               offset=offset, tagname=tags, authorguid=author)
+                r = self.ts.api._metadata.list(type=metadata_type[0].value,
+                                               subtypes=[metadata_type[1].value] if metadata_type[1] else None,
+                                               batchsize=500, offset=offset,
+                                               tagname=tags, authorguid=author,
+                                               pattern=pattern)
                 data = r.json()
                 offset += len(data)
 
                 for metadata in data['headers']:
 
-                    if author and metadata['author'] == author:  # workaround for 7.1/7.2
-                        object_ids.append(metadata["id"])
-                    elif not author:  # no author specified, so just add it.
-                        object_ids.append(metadata["id"])
-                    # else just ignore it.
+                    # add if there is an author specified, or if there is not author.
+                    # workaround for 7.1/7.2, which don't support the authorguid filter.
+                    if (author and metadata['author'] == author) or not author:  # otherwise, ignore
+                        object_ids.append({"id": metadata["id"], "type": metadata_type[0], "subtype": metadata_type[1]})
 
                 if data['isLastBatch']:
                     break
 
-        return list(set(object_ids))  # might have been duplicates
+        return object_ids
 
+    @validate_arguments
+    def get_object_types(self,
+                         guids: List[GUID]
+                         ) -> List[Dict[str, Any]]:
+        """
+        For a given set of GUIDs determine the type and subtype (where appropriate).  Types that are not found will
+        not be included.
+        :param guids: The list of GUIDs to check.
+        :return: A list of the GUIDs with their type and value.  If a GUID isn't found, it's not returned.
+
+        The return format looks like:
+        [
+            {"id": "<GUID>", "type":DownloadableContent, "subtype": MetadataObjectSubtype | None},
+            {"id": "<GUID>", "type":DownloadableContent, "subtype": MetadataObjectSubtype | None},
+        ]
+        """
+        types = {
+            (DownloadableContent.data_source, None),
+            (DownloadableContent.logical_table, MetadataObjectSubtype.system_table),
+            (DownloadableContent.logical_table, MetadataObjectSubtype.sql_view),
+            (DownloadableContent.logical_table, MetadataObjectSubtype.view),
+            (DownloadableContent.logical_table, MetadataObjectSubtype.materialized_view),
+            (DownloadableContent.logical_table, MetadataObjectSubtype.user_upload),
+            (DownloadableContent.logical_table, MetadataObjectSubtype.worksheet),
+            (DownloadableContent.pinboard, None),
+            (DownloadableContent.saved_answer, None),
+        }
+
+        results = []
+        tmp_guids = copy.copy(guids)  # don't change the original list
+
+        for t in types:
+            if not tmp_guids:  # don't want to call when there're no GUIDs left.  Returns all content of a type.
+                break
+
+            r = self.ts.api.metadata.list_object_headers(type=t[0].value,
+                                                         subtypes=[t[1].value] if t[1] else None,
+                                                         fetchids=tmp_guids)
+            content = r.json()
+
+            # The response is a list of objects that only include the ones that exist.
+            # Add any that were round and then remove it from the list to look for.
+
+            returned_ids = [obj.get("id") for obj in content]
+            for id in returned_ids:
+                results.append({"id": id, "type": t[0], "subtype": t[1]})
+                tmp_guids.remove(id)
+
+        return results
 
     @classmethod
     @validate_arguments
@@ -415,6 +496,7 @@ class MetadataMiddleware:
                 name = self.cache['currency_type'][g]
 
         return name
+
 
     @validate_arguments
     def objects_exist(self, metadata_type: MetadataObject, guids: List[GUID]) -> Dict[GUID, bool]:
