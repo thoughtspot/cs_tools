@@ -291,6 +291,17 @@ version = "1.1.0"
     - Allow new and updated content to be shared with groups during import.
     - Allow tags to be applied to new and updated content during import.
 
+!!! tldr ":octicons-tag-16: v1.4.0 &nbsp; &nbsp; :material-calendar-text: 2022-09-01"
+    === ":hammer_and_wrench: &nbsp; Added"
+    - Download tables and connections.
+    - Upload tables
+    - Multiple bug fixes
+
+!!! tldr ":octicons-tag-16: v1.4.1 &nbsp; &nbsp; :material-calendar-text: 2022-09-12"
+    === ":hammer_and_wrench: &nbsp; Bug fixes"
+    - Fixed an error that would stop download if SQL views were used in earlier versions of ThoughtSpot.  A message will be displayed, but the export will continue.
+    - Fixed an error where worksheets weren't downloaded when exporting based on a filters, such as tags or owner.
+
 ---
 
 [keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
