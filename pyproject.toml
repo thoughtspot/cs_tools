@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "cs_tools"
-version = "1.3.3"
+version = "1.3.4"
 description = """\
 	Tools created by the ThoughtSpot PS/CS organization to assist implementation and \
     administration of your platform.\

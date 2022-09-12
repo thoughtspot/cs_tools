@@ -168,10 +168,10 @@ class Tag(SQLModel, table=True):
     __tablename__ = 'ts_tag'
     tag_guid: str = Field(primary_key=True)
     tag_name: str
-    color: str
     author_guid: str = Field(foreign_key='ts_user.user_guid')
     created: dt.datetime
     modified: dt.datetime
+    color: Optional[str]
 
     # tagged_objects: Optional[List['TaggedObject']] = Relationship(back_populates='tag')
 
