@@ -2,6 +2,7 @@ import copy
 from typing import Any, Dict, List, Union, Tuple
 import logging
 
+from httpx import HTTPStatusError
 from pydantic import validate_arguments
 
 from cs_tools.data.enums import (
@@ -341,6 +342,7 @@ class MetadataMiddleware:
             types.append((DownloadableContent.logical_table,MetadataObjectSubtype.view))
             types.append((DownloadableContent.logical_table,MetadataObjectSubtype.materialized_view))
             types.append((DownloadableContent.logical_table,MetadataObjectSubtype.sql_view))
+            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.worksheet))
 
         else:
             types = copy.copy(include_types)
@@ -360,22 +362,26 @@ class MetadataMiddleware:
             offset = 0
 
             while True:
-                r = self.ts.api._metadata.list(type=metadata_type[0].value,
-                                               subtypes=[metadata_type[1].value] if metadata_type[1] else None,
-                                               batchsize=500, offset=offset,
-                                               tagname=tags, authorguid=author,
-                                               pattern=pattern)
-                data = r.json()
-                offset += len(data)
+                try:
+                    r = self.ts.api._metadata.list(type=metadata_type[0].value,
+                                                   subtypes=[metadata_type[1].value] if metadata_type[1] else None,
+                                                   batchsize=500, offset=offset,
+                                                   tagname=tags, authorguid=author,
+                                                   pattern=pattern)
+                    data = r.json()
+                    offset += len(data)
 
-                for metadata in data['headers']:
+                    for metadata in data['headers']:
 
-                    # add if there is an author specified, or if there is not author.
-                    # workaround for 7.1/7.2, which don't support the authorguid filter.
-                    if (author and metadata['author'] == author) or not author:  # otherwise, ignore
-                        object_ids.append({"id": metadata["id"], "type": metadata_type[0], "subtype": metadata_type[1]})
+                        # add if there is an author specified, or if there is not author.
+                        # workaround for 7.1/7.2, which don't support the authorguid filter.
+                        if (author and metadata['author'] == author) or not author:  # otherwise, ignore
+                            object_ids.append({"id": metadata["id"], "type": metadata_type[0], "subtype": metadata_type[1]})
 
-                if data['isLastBatch']:
+                    if data['isLastBatch']:
+                        break
+                except HTTPStatusError as hse:
+                    console.log(f"[bold red]Error retrieving content for type {metadata_type}: {hse}")
                     break
 
         return object_ids
@@ -415,18 +421,21 @@ class MetadataMiddleware:
             if not tmp_guids:  # don't want to call when there're no GUIDs left.  Returns all content of a type.
                 break
 
-            r = self.ts.api.metadata.list_object_headers(type=t[0].value,
-                                                         subtypes=[t[1].value] if t[1] else None,
-                                                         fetchids=tmp_guids)
-            content = r.json()
+            try:
+                r = self.ts.api.metadata.list_object_headers(type=t[0].value,
+                                                             subtypes=[t[1].value] if t[1] else None,
+                                                             fetchids=tmp_guids)
+                content = r.json()
 
-            # The response is a list of objects that only include the ones that exist.
-            # Add any that were round and then remove it from the list to look for.
+                # The response is a list of objects that only include the ones that exist.
+                # Add any that were round and then remove it from the list to look for.
 
-            returned_ids = [obj.get("id") for obj in content]
-            for id in returned_ids:
-                results.append({"id": id, "type": t[0], "subtype": t[1]})
-                tmp_guids.remove(id)
+                returned_ids = [obj.get("id") for obj in content]
+                for id in returned_ids:
+                    results.append({"id": id, "type": t[0], "subtype": t[1]})
+                    tmp_guids.remove(id)
+            except HTTPStatusError as hse:
+                console.log(f"[bold red]Error retrieving content for type {t}: {hse}")
 
         return results
 
