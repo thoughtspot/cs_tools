@@ -128,6 +128,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
     cd $HOME/Downloads
 
     # Unzip the CS Tools bootstrapper
+    rm -r cs_tools-boot*
     unzip *-cs_tools-* -d cs_tools-bootstrapper
 
     # Navigate into the unzipped directory
