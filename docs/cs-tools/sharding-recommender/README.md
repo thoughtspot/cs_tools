@@ -13,8 +13,8 @@ data volume growth).
 __Currently, this solution does not consider co-sharding as part of the output.__{ .fc-coral }
 
 If you are not comfortable with the sharding, or want to learn more about what benefit
-sharding brings you, please reach out to your CSM or [schedule an Office Hours][office-hours]{ .external-link }
-session through the community page and we'll help guide you through the process.
+sharding brings you, please reach out to your __Customer Success Manager__ and we'll
+help guide you through the process.
 
 ## Liveboard preview
 

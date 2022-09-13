@@ -67,5 +67,5 @@ See [Components of a search query][search-components].
 ---
 
 [tsbi]: https://cloud-docs.thoughtspot.com/admin/system-monitor/worksheets.html#description-of-system-worksheets-and-views
-[search-components]: https://docs.thoughtspot.com/software/latest/search-data-api#components
+[search-components]: https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_search_data
 [contrib-boonhapus]: https://github.com/boonhapus
