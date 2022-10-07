@@ -164,7 +164,7 @@ class MetadataMiddleware:
         type: Union[MetadataObject, MetadataObjectSubtype],
         # release in 7.2.0+
         # permission_type: PermissionType = PermissionType.explicit,
-        chunksize: int = 15
+        chunksize: int = 2000
     ) -> List[Dict[str, Any]]:
         """
         """
@@ -184,7 +184,7 @@ class MetadataMiddleware:
         }
 
         sharing_access = []
-        user_guids = [user['id'] for user in self.ts.user.all()]
+        user_guids = [d["header"]['id'] for d in self.ts.api.request('GET', 'user', privacy='public').json()]
 
         for chunk in chunks(guids, n=chunksize):
             r = self.ts.api._security.defined_permission(type=types[type.value], id=chunk)
