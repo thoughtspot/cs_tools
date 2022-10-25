@@ -12,7 +12,7 @@ import nox_poetry as nox
 
 ON_GITHUB = "GITHUB_ACTIONS" in os.environ
 PY_VERSIONS = [
-    "3.6.8",
+    # "3.6.8",
     "3.7", "3.8",
     "3.9",
     "3.10"
@@ -243,10 +243,15 @@ def bump_version(session: nox.Session) -> None:
     args = parser.parse_args(args=session.posargs)
 
     def _get_version() -> str:
-        local = {}
-        txt = (HERE / 'cs_tools' / '_version.py').read_text()
-        exec(txt, {}, local)
-        return local['__version__']
+        """
+        Retrieve the version string.
+        """
+        import pathlib
+        import toml
+
+        package_dir = pathlib.Path(__file__).parent.parent
+        pyproject_toml = toml.load(package_dir / "pyproject.toml")
+        return pyproject_toml["tool"]["poetry"]["version"]
 
     def _write_version(version: str) -> None:
         (HERE / 'cs_tools' / '_version.py').write_text(f"__version__ = '{version}'")
