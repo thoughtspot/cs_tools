@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 import logging
 import sys
 import contextlib
@@ -21,17 +21,6 @@ WARNING_PRIVATE = "\n\n[b][yellow]USE AT YOUR OWN RISK![/][/b][cyan] This tool i
 ISSUES_NEW = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
 
 
-class CSToolsApp(typer.Typer):
-    """
-    """
-
-    def __init__(self, **passthru):
-        passthru["options_metavar"] = '[--version, --help]'
-        passthru["rich_help_panel"] = "Available Tools"
-        passthru["rich_markup_mode"] = "rich"
-        super().__init__(**passthru)
-
-
 class CSToolsCommand(typer.core.TyperCommand):
     """
     """
@@ -50,6 +39,42 @@ class CSToolsCommand(typer.core.TyperCommand):
             r = ctx.invoke(self.callback, **ctx.params)
 
         return r
+
+
+class CSToolsApp(typer.Typer):
+    """
+    """
+
+    def __init__(self, **passthru):
+        passthru["options_metavar"] = '[--version, --help]'
+        passthru["rich_help_panel"] = "Available Tools"
+        passthru["rich_markup_mode"] = "rich"
+        super().__init__(**passthru)
+
+    def command(
+        self,
+        name: Optional[str] = None,
+        *,
+        dependencies: Optional[List[Callable]] = None,
+        # typer kwargs
+        cls: Optional[CSToolsCommand] = CSToolsCommand,
+        **passthru
+    ):
+        """
+        """
+        if dependencies is None:
+            dependencies = []
+
+        def decorator(f: Callable):
+            if not hasattr(f, "dependencies"):
+                f.dependencies = []
+
+            f.dependencies.extend(dependencies)
+            info = typer.models.CommandInfo(name=name, cls=cls, callback=f, **passthru)
+            self.registered_commands.append(info)
+            return f
+
+        return decorator
 
 
 class CSToolsContext(click.Context):
