@@ -1,6 +1,7 @@
 from typing import Any, List, Optional, Tuple
 import logging
 import sys
+import contextlib
 
 from click.exceptions import UsageError
 from rich.console import Console
@@ -31,10 +32,24 @@ class CSToolsApp(typer.Typer):
         super().__init__(**passthru)
 
 
-# class CSToolsCommand(typer.core.TyperCommand):
+class CSToolsCommand(typer.core.TyperCommand):
+    """
+    """
+    def __init__(self, **passthru):
+        ctx_settings = passthru.pop("context_settings") or {}
+        # we need these to forward options to the dependencies
+        ctx_settings["allow_extra_args"] = True
+        ctx_settings["ignore_unknown_options"] = True
+        super().__init__(**passthru, context_settings=ctx_settings)
 
-#     def __init__(self, **passthru):
-#         super().__init__(**passthru)
+    def invoke(self, ctx: typer.Context) -> Any:
+        with contextlib.ExitStack() as stack:
+            if hasattr(self.callback, "dependencies"):
+                [stack.enter_context(dep(ctx)) for dep in self.callback.dependencies]
+    
+            r = ctx.invoke(self.callback, **ctx.params)
+
+        return r
 
 
 class CSToolsContext(click.Context):
@@ -291,7 +306,7 @@ class CSToolsPrettyMixin:
     #     )
 
 
-class CSToolsCommand(CSToolsPrettyMixin, typer.core.TyperCommand):
+# class CSToolsCommand(CSToolsPrettyMixin, typer.core.TyperCommand):
     """
     Represent a CS Tools command.
     """
