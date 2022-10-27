@@ -144,13 +144,16 @@ class TSConfig(Settings):
             return v
         return {k: pathlib.Path(f).resolve() for k, f in v.items()}
 
-    # @validator('syncer')
-    # def ensure_exists(v: Any) -> str:
-    #     if v is None:
-    #         return v
+    @classmethod
+    def check_for_default(cls) -> Dict[str, Any]:
+        """
+        """
+        try:
+            cfg_data = _meta_config()["default"]["config"]
+        except KeyError:
+            cfg_data = None
 
-    #     for name, syncer_defintion_fp in v.items():
-    #         if 
+        return cfg_data
 
     def dict(self) -> Any:
         """
