@@ -3,7 +3,7 @@ import logging
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
+from cs_tools.cli.tools.common import thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.types import SyncerProtocolType
@@ -25,22 +25,17 @@ app = CSToolsApp(
 
 
 @app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@depends('', thoughtspot)  # must test before promoting !!!!!!! need to see login/logout
 def search(
     ctx: typer.Context,
     query: str = O_(..., help='search terms to issue against the dataset'),
     dataset: str = O_(..., help='name of the worksheet, view, or table to search against'),
-    syncer: str = O_(
-        ...,
-        help='protocol and path for options to pass to the syncer',
-        metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    ),
+    # syncer: str = O_(
+    #     ...,
+    #     help='protocol and path for options to pass to the syncer',
+    #     metavar='protocol://DEFINITION.toml',
+    #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+    # ),
     target: str = O_(..., help='syncer directive to load data to'),
     data_type: RecordsetType = O_('worksheet', help='type of object to search')
 ):

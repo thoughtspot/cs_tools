@@ -178,6 +178,9 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
             if tool.privacy in ('unknown', "example"):
                 continue
 
+            if tool.name != "extractor":
+                continue
+
             # add tool to the global state
             ctx_settings['obj'].tools[tool.name] = tool
 
