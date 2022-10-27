@@ -9,11 +9,9 @@ from typer import Argument as A_, Option as O_
 import httpx
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+from cs_tools.cli.tools.common import thoughtspot
 from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.data.enums import GUID
 
@@ -140,13 +138,7 @@ app = CSToolsApp(
 )
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def transfer(
     ctx: typer.Context,
     from_: str = O_(..., '--from', help='username of the current content owner'),
@@ -198,13 +190,7 @@ def transfer(
             console.print(f'[green]Transferred {amt} objects from "{from_}" to "{to_}"')
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def rename(
     ctx: typer.Context,
     from_: str = O_(None, '--from', help='current username'),
@@ -282,13 +268,7 @@ def rename(
         console.print(f'\n[yellow]users not found in system:[/]\n  - {not_renamed}')
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def sync(
     ctx: typer.Context,
     # Note:

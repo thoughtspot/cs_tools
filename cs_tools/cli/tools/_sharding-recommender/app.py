@@ -7,12 +7,10 @@ from typer import Argument as A_, Option as O_
 import oyaml as yaml
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+from cs_tools.cli.tools.common import thoughtspot
 from cs_tools.sync.falcon import Falcon
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.util import to_datetime
 
@@ -84,7 +82,7 @@ app = CSToolsApp(
 )
 
 
-@app.command(cls=CSToolsCommand)
+@app.command()
 def spotapp(
     directory: pathlib.Path = A_(
         ...,
@@ -145,13 +143,7 @@ def spotapp(
     console.print(f'moved the [blue]{NAME}[/] to {directory}')
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
     export: str = A_(

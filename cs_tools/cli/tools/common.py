@@ -116,13 +116,11 @@ def thoughtspot(ctx: click.Context, *, login: bool = True) -> ThoughtSpot:
     ctx.obj.thoughtspot = ThoughtSpot(cfg)
 
     if login:
-        print('logging in')
         ctx.obj.thoughtspot.login()
 
     yield ctx.obj.thoughtspot
 
     try:
-        print('logging out')
         ctx.obj.thoughtspot.logout()
     except httpx.HTTPStatusError:
         pass

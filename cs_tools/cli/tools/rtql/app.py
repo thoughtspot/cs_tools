@@ -1,4 +1,3 @@
-import functools as ft
 import pathlib
 import sys
 
@@ -6,10 +5,8 @@ from typer import Argument as A_, Option as O_
 import typer
 import rich
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from .interactive import InteractiveTQL
 
 
@@ -30,13 +27,7 @@ app = CSToolsApp(
 )
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    ft.partial(setup_thoughtspot, login=False),
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[lambda ctx: thoughtspot(ctx, login=False)])
 def interactive(
     ctx: typer.Context,
     debug: bool = O_(False, '--debug', help='print the entire response to console'),
@@ -62,13 +53,7 @@ def interactive(
     tql.run()
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def file(
     ctx: typer.Context,
     file: pathlib.Path=A_(
@@ -114,13 +99,7 @@ def file(
             console.print('\n', t)
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def command(
     ctx: typer.Context,
     command: str=A_('-', help='TQL query to execute', metavar='"SELECT ..."'),

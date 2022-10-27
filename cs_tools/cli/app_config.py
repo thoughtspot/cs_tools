@@ -10,7 +10,7 @@ import toml
 
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from cs_tools.settings import TSConfig, _meta_config
 from cs_tools.util import deep_update
 from cs_tools.const import APP_DIR
@@ -28,7 +28,7 @@ app = typer.Typer(
 )
 
 
-@app.command(cls=CSToolsCommand, no_args_is_help=0)  # this is abuse, pay it no mind
+@app.command(no_args_is_help=0)  # this is abuse, pay it no mind
 def show(
     config: str = O_(
         None,
@@ -77,7 +77,7 @@ def show(
         console.print(f"  - {name}")
 
 
-@app.command(cls=CSToolsCommand)
+@app.command()
 def create(
     config: str = O_(..., help='config file identifier', prompt=True, metavar='NAME'),
     host: str = O_(..., help='thoughtspot server', prompt=True),
@@ -139,7 +139,7 @@ def create(
     console.print(message)
 
 
-@app.command(cls=CSToolsCommand)
+@app.command()
 def modify(
     config: str = O_(..., help='config file identifier', prompt=True, metavar='NAME'),
     host: str = O_(None, help='thoughtspot server'),
@@ -208,7 +208,7 @@ def modify(
     console.print(message)
 
 
-@app.command(cls=CSToolsCommand)
+@app.command()
 def delete(
     config: str = O_(..., help='config file identifier', metavar='NAME')
 ):
@@ -226,7 +226,7 @@ def delete(
     console.print(f'removed cluster configuration file "{config}"')
 
 
-@app.command(cls=CSToolsCommand)
+@app.command()
 def check(
     config: str = O_(..., help='config file identifier', metavar='NAME')
 ):

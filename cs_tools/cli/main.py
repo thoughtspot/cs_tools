@@ -1,6 +1,5 @@
 from typing import Any, Dict
 import logging.config
-import functools as ft
 import datetime as dt
 import platform
 import logging
@@ -9,10 +8,9 @@ from typer import Argument as A_, Option as O_  # noqa
 import pendulum
 import typer
 
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT
+from cs_tools.cli.tools.common import thoughtspot
 from cs_tools.cli.loader import CSTool
-from cs_tools.cli.tools import console, CSToolsGroup, CSToolsCommand, setup_thoughtspot
+from cs_tools.cli.ux import console, CSToolsGroup
 from cs_tools._version import __version__
 from cs_tools.errors import CSToolsError
 from cs_tools.const import APP_DIR, TOOLS_DIR
@@ -63,12 +61,7 @@ app = CSToolsApp(
 )
 
 
-@app.command('platform', cls=CSToolsCommand, hidden=True)
-@depends(
-    'thoughtspot',
-    ft.partial(setup_thoughtspot, login=False),
-    options=[CONFIG_OPT],
-)
+@app.command('platform', hidden=True, dependencies=[lambda ctx: thoughtspot(ctx, login=False)])
 def _platform(ctx: typer.Context):
     """
     Return details about this machine for debugging purposes.

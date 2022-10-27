@@ -5,11 +5,9 @@ import enum
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+from cs_tools.cli.tools.common import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from cs_tools.util import chunks
 
 
@@ -80,13 +78,7 @@ app = CSToolsApp(
 )
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def single(
     ctx: typer.Context,
     type: AcceptedObjectType = O_(..., help='type of the metadata to delete'),
@@ -109,13 +101,7 @@ def single(
     log.debug(f'{r} - {r.content}')
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def from_tabular(
     ctx: typer.Context,
     syncer: str = O_(

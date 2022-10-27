@@ -7,12 +7,10 @@ import pendulum
 import click
 import typer
 
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+from cs_tools.cli.tools.common import thoughtspot
 from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
 from cs_tools.cli.util import base64_to_file
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from cs_tools.errors import ContentDoesNotExist
 
 from .enums import ContentType, UserActions
@@ -50,13 +48,7 @@ app = CSToolsApp(
 )
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def identify(
     ctx: click.Context,
     tag_name: str = O_(
@@ -227,13 +219,7 @@ def identify(
         )
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def revert(
     ctx: typer.Context,
     tag_name: str = O_(
@@ -335,13 +321,7 @@ def revert(
         ts.tag.delete(tag['name'])
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def remove(
     ctx: typer.Context,
     tag_name: str = O_(

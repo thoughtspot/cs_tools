@@ -1,2 +1,2 @@
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup

@@ -7,11 +7,9 @@ from typer import Argument as A_, Option as O_  # noqa
 import oyaml as yaml
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+from cs_tools.cli.tools.common import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 
 from ._version import __version__
 from . import transform
@@ -28,13 +26,7 @@ app = CSToolsApp(
 )
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def spotapp(
     ctx: typer.Context,
     directory: pathlib.Path = A_(
@@ -106,13 +98,7 @@ def spotapp(
     console.print(f'moved the [blue]{NAME}[/] to {directory}')
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def bi_server(
     ctx: typer.Context,
     # Note:
@@ -197,13 +183,7 @@ def bi_server(
         export.dump('ts_bi_server', data=renamed)
 
 
-@app.command(cls=CSToolsCommand, hidden=True)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot], hidden=True)
 def event_logs(
     ctx: typer.Context,
     # Note:
@@ -254,13 +234,7 @@ def event_logs(
     # export.dump(data)
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
     # Note:

@@ -4,10 +4,8 @@ from typer import Argument as A_, Option as O_  # noqa
 import typer
 
 from cs_tools.cli.tools.common import thoughtspot
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 
 from .enums import RecordsetType
 
@@ -24,8 +22,7 @@ app = CSToolsApp(
 )
 
 
-@app.command(cls=CSToolsCommand)
-@depends('', thoughtspot)  # must test before promoting !!!!!!! need to see login/logout
+@app.command(dependencies=[thoughtspot])
 def search(
     ctx: typer.Context,
     query: str = O_(..., help='search terms to issue against the dataset'),
@@ -51,4 +48,4 @@ def search(
     with console.status(f'[bold green]retrieving data from {data_type.value} "{dataset}"..[/]'):
         data = ts.search(query, **{data_type.value: dataset})
 
-    syncer.dump(target, data=data)
+    # syncer.dump(target, data=data)
