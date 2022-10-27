@@ -10,7 +10,7 @@ from typer import Argument as A_, Option as O_  # noqa
 import oyaml as yaml
 import typer
 
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
 from cs_tools.const import PACKAGE_DIR
 from cs_tools import __version__
 

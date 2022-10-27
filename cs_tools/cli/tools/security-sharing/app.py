@@ -11,7 +11,7 @@ from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.data.enums import AccessLevel
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
 
 from .web_app import _scoped
 
@@ -118,7 +118,7 @@ def _permission_param_to_permission(permission: str) -> AccessLevel:
     return _mapping[permission]
 
 
-app = typer.Typer(
+app = CSToolsApp(
     help="""
     Scalably manage your table- and column-level security right in the browser.
 

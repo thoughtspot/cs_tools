@@ -10,7 +10,7 @@ import toml
 
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
 from cs_tools.settings import TSConfig, _meta_config
 from cs_tools.util import deep_update
 from cs_tools.const import APP_DIR

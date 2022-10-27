@@ -4,7 +4,7 @@ import shutil
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.cli.ux import CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import CSToolsApp, CSToolsGroup, CSToolsCommand
 from cs_tools.errors import CSToolsError
 from cs_tools.const import APP_DIR
 

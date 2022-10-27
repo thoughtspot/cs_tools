@@ -4,10 +4,10 @@
 from typer import Argument as A_, Option as O_  # noqa
 import typer
 
-from cs_tools.cli.ux import CSToolsGroup
+from cs_tools.cli.ux import CSToolsApp, CSToolsGroup
 
 
-app = typer.Typer(
+app = CSToolsApp(
     help="""
     One-liner describing the tool.
 

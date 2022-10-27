@@ -1,10 +1,14 @@
+from typing import List
 import importlib
 import pathlib
 import types
 
 from pydantic.dataclasses import dataclass
+from typer.testing import CliRunner, Result
+# from click import testing
 import typer
 
+from cs_tools.cli.ux import ISSUES_NEW, WARNING_BETA, WARNING_PRIVATE
 from cs_tools.const import PACKAGE_DIR
 
 
@@ -36,42 +40,20 @@ class CSTool:
     directory: pathlib.Path
     docs_base_path: pathlib.Path = PACKAGE_DIR / 'docs' / 'cs-tools'
 
-    @property
-    def app(self) -> typer.Typer:
-        """
-        Access a tool's underlying typer app.
-        """
-        return self.lib.app
+    def __post_init_post_parse__(self):
+        if self.privacy == "unknown":
+            return
 
-    @property
-    def lib(self) -> types.ModuleType:
-        """
-        The python code which represents a tool.
+        # Augment CLI Info
+        if self.privacy == "beta":
+            self.lib.app.rich_help_panel = f"[BETA Tools] [green]give feedback :point_right: [cyan][link={ISSUES_NEW}]GitHub"
+            self.lib.app.info.help += WARNING_BETA
 
-        Currently, all tools must reside within the library, under the path
-        cs_tools/cli/tools.. but we could expand this to customer created tools
-        in the future.
-        """
-        if not hasattr(self, '_lib'):
-            import_path = f'cs_tools.cli.tools.{self.directory.name}'
-            self._lib = importlib.import_module(import_path)
+        if self.privacy == "private":
+            self.lib.app.rich_help_panel = "[PRIVATE Tools] :yellow_circle: [yellow]use unstable APIs, your milegae may vary!"
+            self.lib.app.info.help += WARNING_PRIVATE
 
-        return self._lib
-
-    @property
-    def name(self) -> str:
-        """
-        Clean up and expose the tool's name.
-        """
-        to_trim = {
-            'example': len(''),
-            'beta': len('__b_'),
-            'private': len('_'),
-            'public': len(''),
-        }
-
-        n = to_trim[self.privacy]
-        return self.directory.stem[n:]
+        self.lib.app.info.epilog = f"version {self.version} :scroll: [link={self.docs_url}]Documentation"
 
     @property
     def privacy(self) -> str:
@@ -106,11 +88,65 @@ class CSTool:
         return 'unknown'
 
     @property
+    def name(self) -> str:
+        """
+        Clean up and expose the tool's name.
+        """
+        to_trim = {
+            'example': len(''),
+            'beta': len('__b_'),
+            'private': len('_'),
+            'public': len(''),
+        }
+
+        n = to_trim.get(self.privacy, 0)
+        return self.directory.stem[n:]
+
+    @property
+    def lib(self) -> types.ModuleType:
+        """
+        The python code which represents a tool.
+
+        Currently, all tools must reside within the library, under the path
+        cs_tools/cli/tools.. but we could expand this to customer created tools
+        in the future.
+        """
+        if not hasattr(self, '_lib'):
+            import_path = f'cs_tools.cli.tools.{self.directory.name}'
+            self._lib = importlib.import_module(import_path)
+
+        return self._lib
+
+    @property
+    def app(self) -> typer.Typer:
+        """
+        Access a tool's underlying typer app.
+        """
+        return self.lib.app
+
+    @property
+    def docs_url(self) -> str:
+        """
+        """
+        return f"https://thoughtspot.github.io/cs_tools/cs-tools/{self.name}/"
+
+    @property
     def version(self) -> str:
         """
         Show an app's version.
         """
         return self.lib.__version__
+
+    def invoke(self, command: str, args: List[str] = None) -> Result:
+        """
+        Run a command in this tool's app.
+        """
+        if args is None:
+            args = []
+
+        runner = CliRunner()
+        result = runner.invoke(self.lib.app, [command, *args])
+        return result
 
     def __repr__(self) -> str:
         return f'<{self.privacy.title()}Tool: {self.name}>'

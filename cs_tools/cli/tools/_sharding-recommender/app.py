@@ -12,7 +12,7 @@ from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.sync.falcon import Falcon
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.util import to_datetime
 
@@ -59,7 +59,7 @@ def _format_table_info_data(data: List[dict]) -> List[dict]:
     return data
 
 
-app = typer.Typer(
+app = CSToolsApp(
     help="""
     Gather data on your existing Falcon tables for sharding.
 

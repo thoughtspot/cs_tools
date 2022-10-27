@@ -9,7 +9,7 @@ from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
 from cs_tools.util import chunks
 
 
@@ -73,7 +73,7 @@ def _validate_objects_exist(ts, data):
     return new_data['QUESTION_ANSWER_BOOK'], new_data['PINBOARD_ANSWER_BOOK']
 
 
-app = typer.Typer(
+app = CSToolsApp(
     help="""Bulk delete metadata objects from your ThoughtSpot platform.""",
     cls=CSToolsGroup,
     options_metavar='[--version, --help]',

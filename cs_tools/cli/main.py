@@ -18,6 +18,7 @@ from cs_tools.errors import CSToolsError
 from cs_tools.const import APP_DIR, TOOLS_DIR
 from cs_tools.util import State
 
+from .ux import CSToolsApp
 from .tools.app_tools import app as tools_app
 from .app_config import app as cfg_app
 from .app_log import app as log_app
@@ -26,7 +27,7 @@ from .app_log import app as log_app
 log = logging.getLogger(__name__)
 
 
-app = typer.Typer(
+app = CSToolsApp(
     cls=CSToolsGroup,
     name="cs_tools",
     help="""
@@ -174,7 +175,7 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
         if path.is_dir():
             tool = CSTool(path)
 
-            if tool.privacy == 'unknown':
+            if tool.privacy in ('unknown', "example"):
                 continue
 
             # add tool to the global state
@@ -184,8 +185,8 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
             tools_app.add_typer(
                 tool.app,
                 name=tool.name,
-                context_settings=ctx_settings,
-                hidden=tool.privacy != 'public',
+                context_settings=ctx_settings, 
+                rich_help_panel=tool.app.rich_help_panel
             )
 
 

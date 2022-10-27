@@ -15,7 +15,7 @@ app = typer.Typer(
     clients who have a well-adopted platform.
     """,
     subcommand_metavar='<tool>',
-    invoke_without_command=True
+    invoke_without_command=True,
 )
 
 

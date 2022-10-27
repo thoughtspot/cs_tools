@@ -7,7 +7,7 @@ from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup, CSToolsCommand
 
 from .enums import RecordsetType
 
@@ -15,7 +15,7 @@ from .enums import RecordsetType
 log = logging.getLogger(__name__)
 
 
-app = typer.Typer(
+app = CSToolsApp(
     help="""
     Extract data from a worksheet, view, or table in your platform.
     """,
