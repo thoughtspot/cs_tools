@@ -48,7 +48,7 @@ app = CSToolsApp(
     add_completion=False,
     context_settings={
         # global settings
-        'help_option_names': ['--help', '--helpfull'],
+        'help_option_names': ['--help', '-h'],
         'obj': State(),
 
         # allow responsive console design

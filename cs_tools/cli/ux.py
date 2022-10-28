@@ -16,9 +16,16 @@ from cs_tools import __version__
 
 log = logging.getLogger(__name__)
 console = Console(theme=CONSOLE_THEME)
-WARNING_BETA = "\n\n[bold yellow]USE AT YOUR OWN RISK![/][cyan] This tool is currently in beta.[/]"
-WARNING_PRIVATE = "\n\n[b][yellow]USE AT YOUR OWN RISK![/][/b][cyan] This tool is currently in beta.[/]"
-ISSUES_NEW = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
+WARNING_BETA = (
+    "\n\n[bold yellow]USE AT YOUR OWN RISK![/] "
+    "This tool is currently in beta."
+)
+WARNING_PRIVATE = (
+    "\n\n[bold yellow]USE AT YOUR OWN RISK![/] "
+    "This tool utilized private / internal API calls. These API calls are not "
+    "[b]gauranteed[/] to be stable across ThoughtSpot version upgrades."
+)
+GH_ISSUES = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
 
 
 class CSToolsCommand(typer.core.TyperCommand):

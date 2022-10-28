@@ -8,7 +8,7 @@ from typer.testing import CliRunner, Result
 # from click import testing
 import typer
 
-from cs_tools.cli.ux import ISSUES_NEW, WARNING_BETA, WARNING_PRIVATE
+from cs_tools.cli.ux import GH_ISSUES, WARNING_BETA, WARNING_PRIVATE
 from cs_tools.const import PACKAGE_DIR
 
 
@@ -46,14 +46,14 @@ class CSTool:
 
         # Augment CLI Info
         if self.privacy == "beta":
-            self.lib.app.rich_help_panel = f"[BETA Tools] [green]give feedback :point_right: [cyan][link={ISSUES_NEW}]GitHub"
-            self.lib.app.info.help += WARNING_BETA
+            self.app.rich_help_panel = f"[BETA Tools] [green]give feedback :point_right: [cyan][link={GH_ISSUES}]GitHub"
+            self.app.info.help += WARNING_BETA
 
         if self.privacy == "private":
-            self.lib.app.rich_help_panel = "[PRIVATE Tools] :yellow_circle: [yellow]use unstable APIs, your milegae may vary!"
-            self.lib.app.info.help += WARNING_PRIVATE
+            self.app.rich_help_panel = "[PRIVATE Tools] :yellow_circle: [yellow]use internal APIs, use with caution!"
+            self.app.info.help += WARNING_PRIVATE
 
-        self.lib.app.info.epilog = f"version {self.version} :scroll: [link={self.docs_url}]Documentation"
+        self.app.info.epilog = f":bookmark: v{self.version} :scroll: [cyan][link={self.docs_url}]Documentation"
 
     @property
     def privacy(self) -> str:
