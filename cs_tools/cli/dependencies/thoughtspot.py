@@ -1,53 +1,44 @@
 from typing import Any, Dict, List, Tuple
+import contextlib
+import inspect
 import logging
-import pathlib
 
-from click.exceptions import BadParameter
+from typer.core import TyperOption
 import click
 import httpx
 
+from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.settings import TSConfig, _meta_config
-
+from cs_tools.settings import TSConfig
+from cs_tools.const import APP_DIR
 
 log = logging.getLogger(__name__)
 
 
-def setup_thoughtspot(
-    ctx: click.Context,
-    *,
-    config: str = 'CHECK_FOR_DEFAULT',
-    verbose: bool = None,
-    temp_dir: pathlib.Path = None,
-    login: bool = True
-) -> ThoughtSpot:
-    """
-    Returns the ThoughtSpot object.
-    """
-    if hasattr(ctx.obj, 'thoughtspot'):
-        return ctx.obj.thoughtspot
+CONFIG_OPT = TyperOption(
+    param_decls=["--config"],
+    help="config file identifier",
+    metavar="NAME",
+    required=True,
+    rich_help_panel="[ThoughtSpot Config Overrides]",
+)
 
-    if config == 'CHECK_FOR_DEFAULT':
-        try:
-            config = _meta_config()['default']['config']
-        except KeyError:
-            raise BadParameter('no --config specified', ctx=ctx) from None
+VERBOSE_OPT = TyperOption(
+    param_decls=["--verbose"],
+    help="enable verbose logging",
+    show_default=False,
+    is_flag=True,
+    rich_help_panel="[ThoughtSpot Config Overrides]",
+)
 
-    cfg = TSConfig.from_command(config, verbose=verbose, temp_dir=temp_dir)
-    ctx.obj.thoughtspot = ts = ThoughtSpot(cfg)
-
-    if login:
-        ts.login()
-
-    return ts
-
-
-def teardown_thoughtspot(ctx: click.Context):
-    """
-    Destroys the ThoughtSpot object.
-    """
-    if hasattr(ctx.obj, 'thoughtspot'):
-        ctx.obj.thoughtspot.logout()
+TEMP_DIR_OPT = TyperOption(
+    param_decls=['--temp_dir'],
+    default=APP_DIR.as_posix(),
+    help='location on disk to save temporary files',
+    show_default=False,
+    metavar="PATH",
+    rich_help_panel="[ThoughtSpot Config Overrides]",
+)
 
 
 def split_args_from_opts(extra_args: List[str]) -> Tuple[List[str], Dict[str, Any], List[str]]:
@@ -76,11 +67,8 @@ def split_args_from_opts(extra_args: List[str]) -> Tuple[List[str], Dict[str, An
     return args, opts, flag
 
 
-import contextlib
-import inspect
-from cs_tools.const import APP_DIR
 @contextlib.contextmanager
-def thoughtspot(ctx: click.Context, *, login: bool = True) -> ThoughtSpot:
+def thoughtspot_cm(ctx: click.Context, *, login: bool = True) -> ThoughtSpot:
     """
     """
     if hasattr(ctx.obj, "thoughtspot"):
@@ -97,10 +85,11 @@ def thoughtspot(ctx: click.Context, *, login: bool = True) -> ThoughtSpot:
             ctx.fail(f"Missing argument '{name.upper()}'")
 
     if config is None:
-        raise BadParameter("no --config specified", ctx=ctx) from None
+        ctx.fail("no environment specified for --config")
 
     sig = inspect.signature(TSConfig.from_toml).parameters
     extra = set(options).difference(sig)
+    flags = set(flags).difference(sig)
 
     if extra:
         extra_args = " ".join(f"--{k} {v}" for k, v in options.items() if k in extra)
@@ -124,3 +113,6 @@ def thoughtspot(ctx: click.Context, *, login: bool = True) -> ThoughtSpot:
         ctx.obj.thoughtspot.logout()
     except httpx.HTTPStatusError:
         pass
+
+
+thoughtspot = Dependency(callback=thoughtspot_cm, parameters=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT])
