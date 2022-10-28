@@ -5,7 +5,7 @@ from typer import Argument as A_, Option as O_
 import typer
 import rich
 
-from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from .interactive import InteractiveTQL
 

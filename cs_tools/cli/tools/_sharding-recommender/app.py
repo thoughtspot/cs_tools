@@ -7,7 +7,7 @@ from typer import Argument as A_, Option as O_
 import oyaml as yaml
 import typer
 
-from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.sync.falcon import Falcon
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup

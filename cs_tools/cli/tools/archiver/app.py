@@ -7,7 +7,7 @@ import pendulum
 import click
 import typer
 
-from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
 from cs_tools.cli.util import base64_to_file
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup

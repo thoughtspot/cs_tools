@@ -4,7 +4,7 @@ import pathlib
 from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from cs_tools.const import (
     FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE

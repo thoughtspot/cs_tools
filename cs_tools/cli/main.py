@@ -8,7 +8,7 @@ from typer import Argument as A_, Option as O_  # noqa
 import pendulum
 import typer
 
-from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.loader import CSTool
 from cs_tools.cli.ux import console, CSToolsGroup
 from cs_tools._version import __version__

@@ -7,7 +7,7 @@ from typer import Argument as A_, Option as O_  # noqa
 import oyaml as yaml
 import typer
 
-from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 

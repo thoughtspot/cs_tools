@@ -7,7 +7,7 @@ from typer import Argument as A_, Option as O_  # noqa
 import uvicorn
 import typer
 
-from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.data.enums import AccessLevel
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 

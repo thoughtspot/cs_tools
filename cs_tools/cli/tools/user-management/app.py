@@ -9,7 +9,7 @@ from typer import Argument as A_, Option as O_
 import httpx
 import typer
 
-from cs_tools.cli.tools.common import thoughtspot
+from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from cs_tools.thoughtspot import ThoughtSpot
