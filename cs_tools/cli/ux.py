@@ -26,6 +26,7 @@ WARNING_PRIVATE = (
     "[b]gauranteed[/] to be stable across ThoughtSpot version upgrades."
 )
 GH_ISSUES = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
+GH_SYNCER = "https://thoughtspot.github.io/cs_tools/syncer/what-is"
 
 
 class CSToolsCommand(typer.core.TyperCommand):
@@ -49,21 +50,38 @@ class CSToolsCommand(typer.core.TyperCommand):
 
     #
 
-    def get_params(self, ctx: click.Context) -> List[click.Parameter]:
+    def augment_help_text(self, ctx: click.Context, *, seen_params: List[click.Parameter]) -> List[click.Parameter]:
         """
+        Inject Dependency parameters and help text.
+
+        This action is performed for the --help commands only.
         """
-        rv = self.params
+        os_args = sys.argv[1:]
 
         # if we're issuing the HELP command, inject dependency's Parameters
-        if set(sys.argv[1:]).intersection(ctx.help_option_names):
-            for dependency in getattr(self.callback, "dependencies", []):
-                rv.extend([p for p in dependency.parameters if p not in rv])
+        if not set(os_args).intersection(ctx.help_option_names):
+            return seen_params
 
-        help_option = self.get_help_option(ctx)
+        for dependency in getattr(self.callback, "dependencies", []):
+            seen_params.extend([p for p in dependency.parameters if p not in seen_params])
 
-        if help_option is not None:
-            rv = [*rv, help_option]
+        if any("protocol" in str(p.metavar) for p in seen_params):
+            syncer = f" :floppy_disk: [cyan][link={GH_SYNCER}]How do I use a Syncer?"
 
+            if self.epilog is None:
+                self.epilog = ""
+
+            if syncer not in self.epilog:
+                self.epilog += syncer
+
+        return seen_params
+
+    def get_params(self, ctx: click.Context) -> List[click.Parameter]:
+        """
+        Override for augmentations.
+        """
+        rv = super().get_params(ctx)
+        rv = self.augment_help_text(ctx, seen_params=rv)
         return rv
 
 
@@ -87,6 +105,7 @@ class CSToolsApp(typer.Typer):
         **passthru
     ):
         """
+        Override to inject dependencies.
         """
         if dependencies is None:
             dependencies = []

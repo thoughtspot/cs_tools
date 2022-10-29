@@ -88,6 +88,9 @@ class SyncerProtocolType(click.ParamType):
 
         proto, definition = value.split('://')
 
+        print(ctx.command.callback.dependencies)
+        raise SystemExit(-1)
+
         if definition in ('default', ''):
             ts_config = ctx.obj.thoughtspot.config
 
