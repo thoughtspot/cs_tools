@@ -5,7 +5,7 @@ from typer import Argument as A_, Option as O_
 import typer
 import rich
 
-from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.dependencies.thoughtspot import thoughtspot, thoughtspot_nologin
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 from .interactive import InteractiveTQL
 
@@ -27,7 +27,7 @@ app = CSToolsApp(
 )
 
 
-@app.command(dependencies=[lambda ctx: thoughtspot(ctx, login=False)])
+@app.command(dependencies=[thoughtspot_nologin])
 def interactive(
     ctx: typer.Context,
     debug: bool = O_(False, '--debug', help='print the entire response to console'),

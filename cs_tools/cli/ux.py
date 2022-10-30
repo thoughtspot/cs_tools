@@ -42,7 +42,7 @@ class CSToolsCommand(typer.core.TyperCommand):
     def invoke(self, ctx: typer.Context) -> Any:
         with contextlib.ExitStack() as stack:
             if hasattr(self.callback, "dependencies"):
-                [stack.enter_context(dep.callback(ctx)) for dep in self.callback.dependencies]
+                [stack.enter_context(dep(ctx)) for dep in self.callback.dependencies]
     
             r = ctx.invoke(self.callback, **ctx.params)
 
