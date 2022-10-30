@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Tuple
-import contextlib
+from dataclasses import dataclass
 import inspect
 import logging
 
@@ -67,52 +67,58 @@ def split_args_from_opts(extra_args: List[str]) -> Tuple[List[str], Dict[str, An
     return args, opts, flag
 
 
-@contextlib.contextmanager
-def thoughtspot_cm(ctx: click.Context, *, login: bool = True) -> ThoughtSpot:
-    """
-    """
-    if hasattr(ctx.obj, "thoughtspot"):
-        return ctx.obj.thoughtspot
+@dataclass
+class DThoughtSpot(Dependency):
+    login: bool = True
 
-    args, options, flags = split_args_from_opts(ctx.args)
+    def __call__(self, ctx: click.Context):
+        if hasattr(ctx.obj, "thoughtspot"):
+            return ctx.obj.thoughtspot
+        return self
 
-    config = options.pop("config", TSConfig.check_for_default())
+    def __enter__(self):
+        ctx = click.get_current_context()
+        args, options, flags = split_args_from_opts(ctx.args)
 
-    # click interpreted `--config NAME` as an Argument value because the argument itself
-    # was missing.
-    for name, value in ctx.params.items():
-        if value == "--config":
-            ctx.fail(f"Missing argument '{name.upper()}'")
+        config = options.pop("config", TSConfig.check_for_default())
 
-    if config is None:
-        ctx.fail("no environment specified for --config")
+        # click interpreted `--config NAME` as an Argument value because the argument itself
+        # was missing.
+        for name, value in ctx.params.items():
+            if value == "--config":
+                ctx.fail(f"Missing argument '{name.upper()}'")
 
-    sig = inspect.signature(TSConfig.from_toml).parameters
-    extra = set(options).difference(sig)
-    flags = set(flags).difference(sig)
+        if config is None:
+            ctx.fail("no environment specified for --config")
 
-    if extra:
-        extra_args = " ".join(f"--{k} {v}" for k, v in options.items() if k in extra)
-        ctx.fail(f"Got unexpected extra arguments ({extra_args})")
+        sig = inspect.signature(TSConfig.from_toml).parameters
+        extra = set(options).difference(sig)
+        flags = set(flags).difference(sig)
 
-    if args:
-        log.warning(f"[yellow]Ignoring extra arguments ({' '.join(args)})")
+        if extra:
+            extra_args = " ".join(f"--{k} {v}" for k, v in options.items() if k in extra)
+            ctx.fail(f"Got unexpected extra arguments ({extra_args})")
 
-    if flags:
-        log.warning(f"[yellow]Ignoring extra flags ({' '.join(flags)})")
+        if args:
+            log.warning(f"[yellow]Ignoring extra arguments ({' '.join(args)})")
 
-    cfg = TSConfig.from_toml(APP_DIR / f'cluster-cfg_{config}.toml', **options)
-    ctx.obj.thoughtspot = ThoughtSpot(cfg)
+        if flags:
+            log.warning(f"[yellow]Ignoring extra flags ({' '.join(flags)})")
 
-    if login:
-        ctx.obj.thoughtspot.login()
+        cfg = TSConfig.from_toml(APP_DIR / f'cluster-cfg_{config}.toml', **options)
+        ctx.obj.thoughtspot = ThoughtSpot(cfg)
 
-    yield ctx.obj.thoughtspot
+        if self.login:
+            ctx.obj.thoughtspot.login()
 
-    try:
-        ctx.obj.thoughtspot.logout()
-    except httpx.HTTPStatusError:
-        pass
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+        ctx = click.get_current_context()
+
+        try:
+            ctx.obj.thoughtspot.logout()
+        except httpx.HTTPStatusError:
+            pass
 
 
-thoughtspot = Dependency(callback=thoughtspot_cm, parameters=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT])
+thoughtspot = DThoughtSpot(parameters=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT])
+thoughtspot_nologin = DThoughtSpot(login=False, parameters=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT])
