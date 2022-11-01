@@ -50,7 +50,19 @@ def pip_install(package: str) -> None:
         python -m pip install --quiet package==version
     """
     env = os.environ.copy()
-    args = [sys.executable, '-m', 'pip', 'install', '--quiet', package]
+    args = [
+        sys.executable, '-m', 'pip', 'install', package,
+        # silence output
+        '--quiet',
+        # disable caching
+        "--no-cache-dir",
+        # don't get for new versions of pip, because it doesn't matter and is noisy
+        "--disable-pip-version-check",
+        # trust installs from the official python package index
+        '--trusted-host', 'files.pythonhost.org',
+        '--trusted-host', 'pypi.org',
+        '--trusted-host', 'pypi.python.org',
+    ]
 
     with Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env) as proc:
         _, stderr = proc.communicate()

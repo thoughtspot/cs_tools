@@ -66,4 +66,16 @@ class VirtualEnvironment:
         return self.run(str(self.exe), *args, **kwargs)
 
     def pip(self, *args, **kwargs) -> sp.CompletedProcess:
-        return self.python("-m", "pip", "--isolated", *args, **kwargs)
+        required_general_args = (
+            # ignore environment variables and user configuration
+            "--isolated",
+            # disable caching
+            "--no-cache-dir",
+            # don't get for new versions of pip, because it doesn't matter and is noisy
+            "--disable-pip-version-check",
+            # trust installs from the official python package index
+            "--trusted-host", "files.pythonhost.org",
+            "--trusted-host", "pypi.org",
+            "--trusted-host", "pypi.python.org",
+        )
+        return self.python("-m", "pip", *required_general_args, *args, **kwargs)
