@@ -29,7 +29,12 @@ class _Periscope:
                 'GET',
                 'sage/combinedtableinfo',
                 privacy='periscope',
-                params={'nodes': nodes}
+                params={
+                    'nodes': nodes,
+                    # on big clusters, this call will time out in the callosum/nginx
+                    # layer.. so temporarily increase the timeout to 10 minutes
+                    "callosumTimeout": 60 * 10,
+                }
             )
         return r
 
