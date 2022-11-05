@@ -102,7 +102,7 @@ def create(
         '--syncer',
         metavar='protocol://DEFINITION.toml',
         help='default definition for the syncer protocol, may be provided multiple times',
-        callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx, validate_only=True) for _ in to]
+        callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx) for _ in to]
     ),
     verbose: bool = O_(False, '--verbose', help='enable verbose logging by default', show_default=False),
     is_default: bool = O_(False, '--default', help='set as the default configuration', show_default=False)
@@ -164,7 +164,7 @@ def modify(
         '--syncer',
         metavar='protocol://DEFINITION.toml',
         help='default definition for the syncer protocol, may be provided multiple times',
-        callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx, validate_only=True) for _ in to]
+        callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx) for _ in to]
     ),
     verbose: bool = O_(None, '--verbose/--normal', help='enable verbose logging by default', show_default=False),
     is_default: bool = O_(False, '--default', help='set as the default configuration', show_default=False)

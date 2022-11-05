@@ -1,19 +1,17 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 from dataclasses import dataclass
 import logging
 import pathlib
-import sys
 
-from typer.core import TyperOption
+import sqlmodel
 import pydantic
 import click
 import toml
 
 from cs_tools.cli.dependencies.base import Dependency
-from cs_tools.errors import CSToolsError, SyncerError
+from cs_tools.errors import SyncerError
 from cs_tools.const import PACKAGE_DIR
 from cs_tools.sync import register
-from cs_tools.data import models
 
 log = logging.getLogger(__name__)
 
@@ -22,21 +20,67 @@ log = logging.getLogger(__name__)
 class DSyncer(Dependency):
     protocol: str
     definition_fp: pathlib.Path
+    models: List[sqlmodel.SQLModel] = None
+
+    @property
+    def metadata(self) -> sqlmodel.MetaData:
+        """
+        Priority ->
+          1. metadata defined on the syncer instance
+          2. metadata defined in the SQLModel layer
+          3. fallback metadata
+        """
+        if hasattr(self._syncer, "metadata"):
+            return self._syncer.metadata
+
+        if self.models is not None:
+            return self.models[0].SQLModel.metadata
+
+        if not hasattr(self, "_metadata"):
+            self._metadata = sqlmodel.MetaData()
+
+        return self._metadata
 
     def __enter__(self):
         ctx = click.get_current_context()
-        proto = self.protocol
-        definition = self.definition_fp
+        cfg = self._read_config_from_definition(ctx.obj.thoughtspot, self.protocol, self.definition_fp)
 
+        if 'manifest' not in cfg:
+            cfg['manifest'] = PACKAGE_DIR / 'sync' / self.protocol / 'MANIFEST.json'
+
+        log.info(f'registering syncer: {self.protocol}')
+        Syncer = register.load_syncer(protocol=self.protocol, manifest_path=cfg.pop('manifest'))
+
+        log.debug(f'initializing syncer: {Syncer}')
+        self.__Syncer_init__(Syncer, **cfg["configuration"])
+
+        if hasattr(self._syncer, "__is_database__") and self.models is not None:
+            log.debug(f'creating tables: {self._syncer}')
+            [t.to_metadata(self.metadata) for t in self.models]
+            self.metadata.create_all(self._syncer.cnxn)
+
+            # If we want to define and create DB Views, we can do so...
+            # if self._syncer.name != "falcon":
+            #     tables = [t.name for t in metadata.sorted_tables]
+            #     views = ["VW_WORKSHEET_DEPENDENTS"]
+            #     metadata.reflect(self._syncer.cnxn, views=True, only=[*tables, *views])
+ 
+    def __exit__(self, *e):
+        # reserved for shutdown work if we need to tidy up the database?
+        return
+
+    #
+    #
+    #
+
+    def _read_config_from_definition(self, ts, proto, definition) -> Dict[str, Any]:
         if definition in ('default', ''):
-            ts_config = ctx.obj.thoughtspot.config
-
             try:
-                definition = ts_config.syncer[proto]
+                definition = ts.config.syncer[proto]
             except (TypeError, KeyError):
                 raise SyncerError(
                     proto=proto,
-                    cfg=ts_config.name,
+                    cfg=ts.config.name,
                     reason="No default definition has been set for this cluster config.",
                     mitigation=(
                         "Pass the full path to [primary]{proto}://[/] or set a default "
@@ -55,16 +99,18 @@ class DSyncer(Dependency):
                 mitigation="You must specify a valid path to a .toml definition file."
             )
         except UnicodeDecodeError:
+            back = r"C:\work\my\example\filepath".replace("\\", "\\\\")
+            fwds = r"C:\work\my\example\filepath".replace("\\", "/")
             raise SyncerError(
                 proto=proto,
                 definition=definition,
                 reason="Couldn't read the Syncer definition at [blue]{definition}[/]",
                 mitigation=(
-                    "If you're on Windows, you must escape the backslashes in your filepaths, or flip them the other "
-                    "way around.\n"
-                    "\n  :x: [red]" + r"C:\path\to\my\definition.toml" + "[/]"
-                    "\n  :white_heavy_check_mark: [green]" + r"C:\\path\\to\\my\\definition.toml" + "[/]"
-                    "\n  :white_heavy_check_mark: [green]" + r"C:/path/to/my/definition.toml" + "[/]"
+                    f"If you're on Windows, you must escape the backslashes in your filepaths, or flip them the other "
+                    f"way around.\n"
+                    r"\n  :x: [red]C:\work\my\example\filepath[/]"
+                    f"\n  :white_heavy_check_mark: [green]{back}[/]"
+                    f"\n  :white_heavy_check_mark: [green]{fwds}[/]"
                 )
             )
         except toml.TomlDecodeError:
@@ -78,22 +124,19 @@ class DSyncer(Dependency):
                 )
             )
 
-        if 'manifest' not in cfg:
-            cfg['manifest'] = PACKAGE_DIR / 'sync' / proto / 'MANIFEST.json'
+        return cfg
 
-        log.info(f'registering syncer: {proto}')
-        Syncer = register.load_syncer(protocol=proto, manifest_path=cfg.pop('manifest'))
-
+    def __Syncer_init__(self, Syncer, **syncer_config):
         try:
             # sanitize input by accepting aliases
             if hasattr(Syncer, '__pydantic_model__'):
-                cfg['configuration'] = Syncer.__pydantic_model__.parse_obj(cfg['configuration']).dict()
+                syncer_config = Syncer.__pydantic_model__.parse_obj(syncer_config).dict()
 
-            self._syncer = syncer = Syncer(**cfg['configuration'])
+            self._syncer = Syncer(**syncer_config)
         except KeyError:
             raise SyncerError(
-                proto=proto,
-                definition=definition,
+                proto=self.protocol,
+                definition=self.definition_fp,
                 reason="[blue]{definition}[/] is missing a top level marker.",
                 mitigation=(
                     "The first line of your definition file should be.."
@@ -102,8 +145,8 @@ class DSyncer(Dependency):
             )
         except pydantic.ValidationError as e:
             raise SyncerError(
-                proto=proto,
-                definition=definition,
+                proto=self.protocol,
+                definition=self.definition_fp,
                 errors='\n  '.join([f"[blue]{_['loc'][0]}[/]: {_['msg']}" for _ in e.errors()]),
                 reason="[blue]{definition}[/] has incorrect parameters.\n\n  {errors}",
                 mitigation=(
@@ -112,36 +155,18 @@ class DSyncer(Dependency):
                 )
             )
 
-        # don't actually make lasting changes, just ensure it initializes
-        # if validate_only:
-        #     return value
+    def __getattr__(self, member_name: str) -> Any:
+        # proxy calls to the underlying syncer first
+        try:
+            member = getattr(self._syncer, member_name)
+        except AttributeError:
+            try:
+                member = self.__dict__[member_name]
+            except KeyError:
+                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{member_name}'") from None
 
-        is_database_check = getattr(syncer, '__is_database__', False)
-        is_tools_cmd = 'tools' in sys.argv[1:]
-
-        if is_database_check or not is_tools_cmd:
-            if getattr(syncer, 'metadata', None) is not None:
-                metadata = syncer.metadata
-                [t.to_metadata(metadata) for t in models.SQLModel.metadata.sorted_tables]
-            else:
-                metadata = models.SQLModel.metadata
-
-            metadata.create_all(syncer.cnxn)
-
-            # DEV NOTE: conditionally expose ability to grab views
-            if syncer.name != 'falcon':
-                metadata.reflect(syncer.cnxn, views=True)
- 
-    def __exit__(self, *e):
-        return
-
-    # proxy calls to the underlying syncer
-
-    def dump(self, identifier: str, *, data):
-        return self._syncer.dump(identifier, data=data)
-
-    def load(self, identifier: str) -> None:
-        return self._syncer.load(identifier)
+        return member
 
     def __repr__(self) -> str:
+        # make the dependency look like the underlying Syncer
         return self._syncer.__repr__()

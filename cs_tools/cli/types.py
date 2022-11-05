@@ -2,15 +2,12 @@ from typing import List
 import itertools as it
 import datetime as dt
 import logging
-import sys
 
+import sqlalchemy
 import pendulum
-import pydantic
 import click
-import toml
 
 from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.sync.protocol import SyncerProtocol
 
 
 log = logging.getLogger(__name__)
@@ -22,12 +19,7 @@ class CommaSeparatedValuesType(click.ParamType):
     """
     name = 'string'
 
-    def convert(
-        self,
-        value: str,
-        param: click.Parameter = None,
-        ctx: click.Context = None
-    ) -> List[str]:
+    def convert(self, value: str, param: click.Parameter = None, ctx: click.Context = None) -> List[str]:
         if value is None:
             return None
 
@@ -78,12 +70,17 @@ class SyncerProtocolType(click.ParamType):
         param: click.Parameter = None,
         *,
         ctx: click.Context = None,
-        validate_only: bool = False
-    ) -> SyncerProtocol:
+        models: sqlalchemy.Table = None
+    ) -> DSyncer:
         if value is None:
             return value
 
         proto, definition = value.split('://')
-        syncer_dependency = DSyncer(protocol=proto, definition_fp=definition, parameters=[])
+        syncer_dependency = DSyncer(
+            protocol=proto,
+            definition_fp=definition,
+            parameters=[],
+            models=models
+        )
         ctx.command.callback.dependencies.append(syncer_dependency)
         return syncer_dependency
