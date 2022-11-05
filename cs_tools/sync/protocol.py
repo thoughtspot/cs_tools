@@ -5,7 +5,8 @@ from typing import Any, Dict, List
 from pydantic.dataclasses import dataclass
 
 
-RECORDS_FORMAT = List[Dict[str, Any]]
+DB_ROW = Dict[str, Any]
+RECORDS_FORMAT = List[DB_ROW]
 
 
 @dataclass
@@ -20,7 +21,7 @@ class SyncerProtocol:
     To follow the Syncer protocol, you must..
 
         - define a class in syncer.py with 3 members   .name, .load(), .dump()
-        - not override cls.__init__()
+        - not override the __init__() method
 
     Users will provide a DEFINITION.toml file to configure the behavior of a
     syncer. The details of each definition are relevant to which syncer is to

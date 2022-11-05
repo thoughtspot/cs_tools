@@ -30,8 +30,7 @@ GH_SYNCER = "https://thoughtspot.github.io/cs_tools/syncer/what-is"
 
 
 class CSToolsCommand(typer.core.TyperCommand):
-    """
-    """
+
     def __init__(self, **passthru):
         ctx_settings = passthru.pop("context_settings") or {}
         # we need these to forward options to the dependencies
@@ -86,8 +85,6 @@ class CSToolsCommand(typer.core.TyperCommand):
 
 
 class CSToolsApp(typer.Typer):
-    """
-    """
 
     def __init__(self, **passthru):
         passthru["options_metavar"] = '[--version, --help]'
