@@ -85,6 +85,10 @@ class CSV:
         return data
 
     def dump(self, directive: str, *, data: List[Dict[str, Any]]) -> None:
+        if not data:
+            log.warning(f"no data to write to syncer {self}")
+            return
+
         # in case we have the first row not include some data
         header = max([_.keys() for _ in data])
 

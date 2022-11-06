@@ -52,6 +52,10 @@ class JSON:
         return data[directive]
 
     def dump(self, directive: str, *, data: List[Dict[str, Any]]) -> None:
+        if not data:
+            log.warning(f"no data to write to syncer {self}")
+            return
+
         path = self.resolve_path(directive)
 
         if self.is_file:

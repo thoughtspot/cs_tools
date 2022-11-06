@@ -75,6 +75,10 @@ class GoogleSheets:
     def dump(self, tab_name: str, *, data: List[Dict[str, Any]]) -> None:
         t = self._get_or_create_tab(tab_name)
 
+        if not data:
+            log.warning(f"no data to write to syncer {self}")
+            return
+
         if self.mode == InsertMode.overwrite:
             XN = gspread.utils.rowcol_to_a1(t.row_count, t.col_count)
             t.batch_clear([f'A2:{XN}'])

@@ -100,6 +100,10 @@ class Redshift:
         return [dict(_) for _ in r]
 
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+        if not data:
+            log.warning(f"no data to write to syncer {self}")
+            return
+
         t = self.metadata.tables[table]
 
         if self.truncate_on_load:

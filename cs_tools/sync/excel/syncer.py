@@ -68,6 +68,10 @@ class Excel:
     def dump(self, tab_name: str, *, data: List[Dict[str, Any]]) -> None:
         t = self._get_or_create_tab(tab_name)
 
+        if not data:
+            log.warning(f"no data to write to syncer {self}")
+            return
+
         if self.mode == InsertMode.overwrite:
             t.delete_rows(0, t.max_row + 1)
 

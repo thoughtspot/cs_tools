@@ -111,6 +111,7 @@ class Falcon:
 
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
         if not data:
+            log.warning(f"no data to write to syncer {self}")
             return
 
         data = sanitize.clean_for_falcon(data)
