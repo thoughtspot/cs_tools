@@ -1,6 +1,6 @@
 import itertools as it
 
-from cs_tools.data import models
+from . import models
 
 
 def to_user(data) -> models.User:

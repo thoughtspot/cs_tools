@@ -12,6 +12,7 @@ from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
 
 from ._version import __version__
+from .models import BISERVER_MODELS, METADATA_MODELS
 from . import transform
 
 
@@ -109,7 +110,7 @@ def bi_server(
         ...,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx, models=BISERVER_MODELS)
     ),
     compact: bool = O_(True, '--compact / --full', help='if compact, exclude NULL and INVALID user actions'),
     from_date: dt.datetime = O_(
@@ -245,7 +246,7 @@ def gather(
         ...,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx, models=METADATA_MODELS)
     ),
 ):
     """
