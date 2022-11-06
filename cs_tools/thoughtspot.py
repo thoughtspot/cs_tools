@@ -158,11 +158,3 @@ class ThoughtSpot:
         Log out of ThoughtSpot.
         """
         self.api._session.logout()
-
-    def __enter__(self):
-        self.login()
-        return self
-
-    def __exit__(self, exception_type, exception_value, exception_traceback):
-        if self._logged_in_user is not None:
-            self.logout()

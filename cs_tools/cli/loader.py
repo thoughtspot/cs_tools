@@ -5,11 +5,10 @@ import types
 
 from pydantic.dataclasses import dataclass
 from typer.testing import CliRunner, Result
-# from click import testing
 import typer
 
-from cs_tools.cli.ux import GH_ISSUES, WARNING_BETA, WARNING_PRIVATE
-from cs_tools.const import PACKAGE_DIR
+from cs_tools.cli.ux import WARNING_BETA, WARNING_PRIVATE
+from cs_tools.const import PACKAGE_DIR, GH_ISSUES
 
 
 @dataclass
@@ -44,13 +43,15 @@ class CSTool:
         if self.privacy == "unknown":
             return
 
+        self.app.rich_help_panel = "Available Tools"
+
         # Augment CLI Info
         if self.privacy == "beta":
             self.app.rich_help_panel = f"[BETA Tools] [green]give feedback :point_right: [cyan][link={GH_ISSUES}]GitHub"
             self.app.info.help += WARNING_BETA
 
         if self.privacy == "private":
-            self.app.rich_help_panel = "[PRIVATE Tools] :yellow_circle: [yellow]use internal APIs, use with caution!"
+            self.app.rich_help_panel = "[PRIVATE Tools] :yellow_circle: [yellow]uses internal APIs, use with caution!"
             self.app.info.help += WARNING_PRIVATE
 
         self.app.info.epilog = f":bookmark: v{self.version} :scroll: [cyan][link={self.docs_url}]Documentation"

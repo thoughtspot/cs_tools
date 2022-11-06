@@ -15,66 +15,18 @@ from cs_tools.settings import TSConfig, _meta_config
 from cs_tools.util import deep_update
 from cs_tools.const import APP_DIR
 
-
 app = typer.Typer(
     cls=CSToolsGroup,
     name='config',
+    no_args_is_help=True,
     help="""
     Work with dedicated config files.
 
     Configuration files can be set and saved on a machine in order to eliminate
     passing cluster details and credentials to every tool.
-    """
+    """,
+    epilog=f":computer_disk: [green]{_meta_config()['default']['config']}[/] (default)",
 )
-
-
-@app.command(no_args_is_help=0)  # this is abuse, pay it no mind
-def show(
-    config: str = O_(
-        None,
-        help='optionally, display the contents of a particular config',
-        metavar='NAME'
-    )
-):
-    """
-    Display the currently saved config files.
-    """
-    if not APP_DIR.exists():
-        console.print('[yellow]no config files found just yet![/]')
-        raise typer.Exit()
-
-    configs = [f for f in APP_DIR.iterdir() if f.name.startswith('cluster-cfg_')]
-    s = 's' if (len(configs) > 1 or len(configs) == 0) else ''
-    meta = _meta_config()
-    meta_cfg = meta['default']['config'] if meta else {}
-
-    console.print(f'\nCluster configs located at: {APP_DIR}\n')
-
-    if config is not None:
-        fp = APP_DIR / f'cluster-cfg_{config}.toml'
-
-        try:
-            contents = escape(fp.open().read())
-        except FileNotFoundError:
-            console.print(f'[red]no config found with the name "{config}"!')
-            raise typer.Exit()
-
-        console.print(
-            ('[green]\\[default]\n' if meta_cfg == config else '') +
-            f'[yellow]{fp}\n\n'
-            f'[blue]{contents}'
-        )
-        raise typer.Exit()
-
-    console.print(f'\nFound {len(configs)} config{s}')
-
-    for file in configs:
-        name = file.stem[len('cluster-cfg_'):]
-
-        if meta_cfg == name:
-            name += '\t[green]<-- default[/]'
-
-        console.print(f"  - {name}")
 
 
 @app.command()
@@ -242,3 +194,52 @@ def check(
     ts.logout()
 
     console.log('[secondary]Success[/]!')
+
+
+@app.command(no_args_is_help=0)  # this is abuse, pay it no mind
+def show(
+    config: str = O_(
+        None,
+        help='optionally, display the contents of a particular config',
+        metavar='NAME'
+    )
+):
+    """
+    Display the currently saved config files.
+    """
+    if not APP_DIR.exists():
+        console.print('[yellow]no config files found just yet![/]')
+        raise typer.Exit()
+
+    configs = [f for f in APP_DIR.iterdir() if f.name.startswith('cluster-cfg_')]
+    s = 's' if (len(configs) > 1 or len(configs) == 0) else ''
+    meta = _meta_config()
+    meta_cfg = meta['default']['config'] if meta else {}
+
+    console.print(f'\nCluster configs located at: {APP_DIR}\n')
+
+    if config is not None:
+        fp = APP_DIR / f'cluster-cfg_{config}.toml'
+
+        try:
+            contents = escape(fp.open().read())
+        except FileNotFoundError:
+            console.print(f'[red]no config found with the name "{config}"!')
+            raise typer.Exit()
+
+        console.print(
+            ('[green]\\[default]\n' if meta_cfg == config else '') +
+            f'[yellow]{fp}\n\n'
+            f'[blue]{contents}'
+        )
+        raise typer.Exit()
+
+    console.print(f'\nFound {len(configs)} config{s}')
+
+    for file in configs:
+        name = file.stem[len('cluster-cfg_'):]
+
+        if meta_cfg == name:
+            name += '\t[green]<-- default[/]'
+
+        console.print(f"  - {name}")

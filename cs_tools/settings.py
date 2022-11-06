@@ -31,7 +31,7 @@ def _meta_config(config_name: str = None) -> Union[str, Dict[str, Any]]:
             else:
                 data = toml.load(j)
     except FileNotFoundError:
-        data = {}
+        data = {"default": {"config": None}}
 
     return data
 

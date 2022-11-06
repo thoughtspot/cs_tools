@@ -10,40 +10,32 @@ import typer
 
 from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin
 from cs_tools.cli.loader import CSTool
-from cs_tools.cli.ux import console, CSToolsGroup
 from cs_tools._version import __version__
-from cs_tools.errors import CSToolsError
+from cs_tools.settings import _meta_config
+from cs_tools.cli.ux import console, CSToolsApp
 from cs_tools.const import APP_DIR, TOOLS_DIR
+from cs_tools.const import DOCS_BASE_URL, GH_ISSUES, GDRIVE_FORM
 from cs_tools.util import State
 
-from .ux import CSToolsApp
-from .tools.app_tools import app as tools_app
 from .app_config import app as cfg_app
+from .app_tools import app as tools_app
 from .app_log import app as log_app
 
-
 log = logging.getLogger(__name__)
-
-
+cfg = _meta_config()['default']['config']
 app = CSToolsApp(
-    cls=CSToolsGroup,
     name="cs_tools",
-    help="""
-    Welcome to CS Tools!
-
-    These are scripts and utilities used to assist in the development,
-    implementation, and administration of your ThoughtSpot platform.
-
-    All tools are provided as-is. While every effort has been made to
-    test and certify use of these tools in the various supported
-    ThoughtSpot deployments, each environment is different!
-
-    [hint]You should ALWAYS take a snapshot before you make any
-    significant changes to your environment![/]
+    help=f"""
+    :wave: [green]Welcome[/] to [b]CS Tools[/]!
 
     \b
-    [secondary]For additional help, please visit our documentation![/]
-    [url][link=https://thoughtspot.github.io/cs_tools/]https://thoughtspot.github.io/cs_tools/[/link][/]
+    These are scripts and utilities used to assist in the development, implementation,
+    and administration of your ThoughtSpot platform.
+
+    Lost already? Check out our [cyan][link={DOCS_BASE_URL}/tutorial/intro/]Tutorial[/][/]!
+
+    :sparkles: [yellow]All tools are provided as-is[/] :sparkles:
+    :floppy_disk: [red]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
     """,
     add_completion=False,
     context_settings={
@@ -57,11 +49,17 @@ app = CSToolsApp(
         # allow case-insensitive commands
         'token_normalize_func': lambda x: x.lower()
     },
-    options_metavar='[--version, --help]',
+    epilog=(
+        f":bookmark: v{__version__} "
+        f":books: [cyan][link={DOCS_BASE_URL}]Documentation[/] "
+        f"🛟 [link={GH_ISSUES}]Get Help[/] "
+        f":memo: [link={GDRIVE_FORM}]Feedback[/][/] "
+        + (f":computer_disk: [green]{cfg}[/] (default)" if cfg is not None else "")
+    )
 )
 
 
-@app.command('platform', hidden=True, dependencies=[thoughtspot_nologin])
+@app.command("platform", hidden=True, dependencies=[thoughtspot_nologin])
 def _platform(ctx: typer.Context):
     """
     Return details about this machine for debugging purposes.
@@ -149,9 +147,9 @@ def _setup_logging() -> None:
     logs_dir = APP_DIR / 'logs'
     logs_dir.mkdir(parents=True, exist_ok=True)
 
-    # keep only the last 25 logfiles
     lifo = sorted(logs_dir.iterdir(), reverse=True)
 
+    # keep only the last 25 logfiles
     for idx, log in enumerate(lifo):
         if idx > 25:
             log.unlink()
@@ -171,9 +169,6 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
             if tool.privacy in ('unknown', "example"):
                 continue
 
-            if tool.name != "extractor":
-                continue
-
             # add tool to the global state
             ctx_settings['obj'].tools[tool.name] = tool
 
@@ -181,8 +176,8 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
             tools_app.add_typer(
                 tool.app,
                 name=tool.name,
-                context_settings=ctx_settings, 
-                rich_help_panel=tool.app.rich_help_panel
+                context_settings=ctx_settings,
+                rich_help_panel=tool.app.rich_help_panel,
             )
 
 
