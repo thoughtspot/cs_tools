@@ -56,7 +56,7 @@ class DSyncer(Dependency):
 
         if hasattr(self._syncer, "__is_database__") and self.models is not None:
             log.debug(f'creating tables: {self._syncer}')
-            [t.to_metadata(self.metadata) for t in self.models]
+            [t.__table__.to_metadata(self.metadata) for t in self.models]
             self.metadata.create_all(self._syncer.cnxn)
 
             # If we want to define and create DB Views, we can do so...
