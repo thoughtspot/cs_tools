@@ -9,7 +9,7 @@ import httpx
 
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.settings import TSConfig
+from cs_tools.settings import _meta_config, TSConfig
 from cs_tools.const import APP_DIR
 
 log = logging.getLogger(__name__)
@@ -18,16 +18,8 @@ log = logging.getLogger(__name__)
 CONFIG_OPT = TyperOption(
     param_decls=["--config"],
     help="config file identifier",
-    metavar="NAME",
+    metavar=f"{_meta_config()['default']['config'] or 'NAME'}",
     required=True,
-    rich_help_panel="[ThoughtSpot Config Overrides]",
-)
-
-VERBOSE_OPT = TyperOption(
-    param_decls=["--verbose"],
-    help="enable verbose logging",
-    show_default=False,
-    is_flag=True,
     rich_help_panel="[ThoughtSpot Config Overrides]",
 )
 
@@ -37,6 +29,14 @@ TEMP_DIR_OPT = TyperOption(
     help='location on disk to save temporary files',
     show_default=False,
     metavar="PATH",
+    rich_help_panel="[ThoughtSpot Config Overrides]",
+)
+
+VERBOSE_OPT = TyperOption(
+    param_decls=["--verbose"],
+    help="enable verbose logging",
+    show_default=False,
+    is_flag=True,
     rich_help_panel="[ThoughtSpot Config Overrides]",
 )
 
@@ -120,5 +120,5 @@ class DThoughtSpot(Dependency):
             pass
 
 
-thoughtspot = DThoughtSpot(parameters=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT])
-thoughtspot_nologin = DThoughtSpot(login=False, parameters=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT])
+thoughtspot = DThoughtSpot(parameters=[CONFIG_OPT, TEMP_DIR_OPT, VERBOSE_OPT])
+thoughtspot_nologin = DThoughtSpot(login=False, parameters=[CONFIG_OPT, TEMP_DIR_OPT, VERBOSE_OPT])
