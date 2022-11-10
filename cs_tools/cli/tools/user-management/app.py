@@ -5,13 +5,12 @@ import logging
 import json
 
 from rich.table import Table
-from typer import Argument as A_, Option as O_
 import httpx
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.data.enums import GUID
 
@@ -133,7 +132,6 @@ app = CSToolsApp(
     help="""
     Managing Users and Groups in bulk.
     """,
-    cls=CSToolsGroup,
     options_metavar='[--version, --help]'
 )
 
@@ -141,14 +139,14 @@ app = CSToolsApp(
 @app.command(dependencies=[thoughtspot])
 def transfer(
     ctx: typer.Context,
-    from_: str = O_(..., '--from', help='username of the current content owner'),
-    to_: str = O_(..., '--to', help='username to transfer content to'),
-    tag: List[str] = O_(
+    from_: str = Opt(..., '--from', help='username of the current content owner'),
+    to_: str = Opt(..., '--to', help='username to transfer content to'),
+    tag: List[str] = Opt(
         None,
         callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
         help='if specified, only move content marked with one or more of these tags'
     ),
-    guids: List[str] = O_(
+    guids: List[str] = Opt(
         None,
         callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
         help='if specified, only move specific objects'
@@ -193,15 +191,15 @@ def transfer(
 @app.command(dependencies=[thoughtspot])
 def rename(
     ctx: typer.Context,
-    from_: str = O_(None, '--from', help='current username'),
-    to_: str = O_(None, '--to', help='new username'),
-    syncer: str = O_(
+    from_: str = Opt(None, '--from', help='current username'),
+    to_: str = Opt(None, '--to', help='new username'),
+    syncer: str = Opt(
         None,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
-    remapping: str = O_(
+    remapping: str = Opt(
         None,
         help='if using --syncer, directive to find user remapping at'
     )
@@ -275,38 +273,38 @@ def sync(
     # really this is a SyncerProtocolType type,
     # but typer does not yet support click.ParamType,
     # so we can fake it with a callback :~)
-    syncer: str = A_(
+    syncer: str = Arg(
         ...,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
-    users: str = O_('ts_auth_sync_users', help='directive to find users to sync at'),
-    groups: str = O_('ts_auth_sync_groups', help='directive to find groups to sync at'),
-    associations: str = O_('ts_auth_sync_xref', help='directive to find associations to sync at'),
-    apply_changes: bool = O_(
+    users: str = Opt('ts_auth_sync_users', help='directive to find users to sync at'),
+    groups: str = Opt('ts_auth_sync_groups', help='directive to find groups to sync at'),
+    associations: str = Opt('ts_auth_sync_xref', help='directive to find associations to sync at'),
+    apply_changes: bool = Opt(
         False,
         '--apply-changes',
         help='whether or not to sync the security strategy into ThoughtSpot',
         show_default=False,
     ),
-    new_user_password: str = O_(
+    new_user_password: str = Opt(
         None,
         help='password for new users added during the sync operation',
     ),
-    dont_remove_deleted: bool = O_(
+    dont_remove_deleted: bool = Opt(
         True,
         '--dont-remove-deleted/--remove-deleted',
         help='whether to remove the deleted users and user groups',
         show_default=False
     ),
-    export: bool = O_(
+    export: bool = Opt(
         False,
         '--export',
         help='whether or not to dump data to the syncer',
         show_default=False
     ),
-    create_empty: bool = O_(
+    create_empty: bool = Opt(
         False,
         '--create-empty',
         help='write the structure of principals to your syncer without any data',

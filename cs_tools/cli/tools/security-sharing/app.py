@@ -9,7 +9,7 @@ import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.data.enums import AccessLevel
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 
 from .web_app import _scoped
 
@@ -126,15 +126,13 @@ app = CSToolsApp(
     given table across all columns, and as many groups as are in your platform. You may
     then set the appropriate security settings for those group-table combinations.
     """,
-    cls=CSToolsGroup,
-    options_metavar='[--version, --help]'
 )
 
 
 @app.command(dependencies=[thoughtspot])
 def run(
     ctx: typer.Context,
-    webserver_port: int=O_(5000, help='port to host the webserver on')
+    webserver_port: int=Opt(5000, help='port to host the webserver on')
 ):
     """
     Start the built-in webserver which runs the security management interface.
@@ -160,11 +158,11 @@ def run(
 @app.command(dependencies=[thoughtspot])
 def share(
     ctx: typer.Context,
-    group: str=O_(..., help='group to share with'),
-    permission: PermissionType=O_(..., help='permission type to assign'),
-    database: str=O_(..., help='name of database of tables to share'),
-    schema: str=O_('falcon_default_schema', help='name of schema of tables to share'),
-    table: str=O_(None, help='name of the table to share, if not provided then share all tables')
+    group: str=Opt(..., help='group to share with'),
+    permission: PermissionType=Opt(..., help='permission type to assign'),
+    database: str=Opt(..., help='name of database of tables to share'),
+    schema: str=Opt('falcon_default_schema', help='name of schema of tables to share'),
+    table: str=Opt(None, help='name of the table to share, if not provided then share all tables')
 ):
     """
     Share database tables with groups.

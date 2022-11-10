@@ -3,14 +3,13 @@ import logging
 import pathlib
 import zipfile
 
-from typer import Argument as A_, Option as O_
 import oyaml as yaml
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.sync.falcon import Falcon
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.const import FMT_TSLOAD_DATETIME
 from cs_tools.util import to_datetime
 
@@ -77,31 +76,29 @@ app = CSToolsApp(
     For further information on sharding, please refer to:
       https://docs.thoughtspot.com/latest/admin/loading/sharding.html
     """,
-    cls=CSToolsGroup,
-    options_metavar='[--version, --help]'
 )
 
 
 @app.command()
 def spotapp(
-    directory: pathlib.Path = A_(
+    directory: pathlib.Path = Arg(
         ...,
         help='location on your machine to copy the SpotApp to',
         file_okay=False,
         resolve_path=True
     ),
-    nodes: int = O_(..., help='number of nodes serving your ThoughtSpot cluster'),
-    cpu_per_node: int = O_(56, help='number of CPUs serving each node'),
-    threshold: int = O_(
+    nodes: int = Opt(..., help='number of nodes serving your ThoughtSpot cluster'),
+    cpu_per_node: int = Opt(56, help='number of CPUs serving each node'),
+    threshold: int = Opt(
         55_000_000,
         help=(
             'unsharded row threshold, once exceeded a table will be a candidate for '
             'sharding'
         )
     ),
-    ideal_rows: int = O_(20_000_000, help='ideal rows per shard'),
-    min_rows: int = O_(15_000_000, help='minumum rows per shard'),
-    max_rows: int = O_(20_000_000, help='maximum rows per shard')
+    ideal_rows: int = Opt(20_000_000, help='ideal rows per shard'),
+    min_rows: int = Opt(15_000_000, help='minumum rows per shard'),
+    max_rows: int = Opt(20_000_000, help='maximum rows per shard')
 ):
     """
     Exports the SpotApp associated with this tool.
@@ -146,7 +143,7 @@ def spotapp(
 @app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
-    export: str = A_(
+    export: str = Arg(
         ...,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',

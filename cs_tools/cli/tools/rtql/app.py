@@ -1,12 +1,11 @@
 import pathlib
 import sys
 
-from typer import Argument as A_, Option as O_
 import typer
 import rich
 
 from cs_tools.cli.dependencies.thoughtspot import thoughtspot, thoughtspot_nologin
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 from .interactive import InteractiveTQL
 
 
@@ -22,23 +21,21 @@ app = CSToolsApp(
       https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """,
-    cls=CSToolsGroup,
-    options_metavar='[--version, --help]'
 )
 
 
 @app.command(dependencies=[thoughtspot_nologin])
 def interactive(
     ctx: typer.Context,
-    debug: bool = O_(False, '--debug', help='print the entire response to console'),
-    autocomplete: bool = O_(
+    debug: bool = Opt(False, '--debug', help='print the entire response to console'),
+    autocomplete: bool = Opt(
         False,
         '--autocomplete',
         help='toggle auto complete feature',
         show_default=False
     ),
-    schema: str = O_('falcon_default_schema', help='schema name to use'),
-    http_timeout: int = O_(60.0, '--timeout', help='network call timeout threshold')
+    schema: str = Opt('falcon_default_schema', help='schema name to use'),
+    http_timeout: int = Opt(60.0, '--timeout', help='network call timeout threshold')
 ):
     """
     Run an interactive TQL session as if you were on the cluster.
@@ -56,12 +53,12 @@ def interactive(
 @app.command(dependencies=[thoughtspot])
 def file(
     ctx: typer.Context,
-    file: pathlib.Path=A_(
+    file: pathlib.Path=Arg(
         ...,
         metavar='FILE.tql',
         help='path to file to execute, default to stdin'
     ),
-    http_timeout: int = O_(60.0, '--timeout', help='network call timeout threshold')
+    http_timeout: int = Opt(60.0, '--timeout', help='network call timeout threshold')
 ):
     """
     Run multiple commands within TQL on a remote server.
@@ -102,9 +99,9 @@ def file(
 @app.command(dependencies=[thoughtspot])
 def command(
     ctx: typer.Context,
-    command: str=A_('-', help='TQL query to execute', metavar='"SELECT ..."'),
-    schema: str=O_('falcon_default_schema', help='schema name to use'),
-    http_timeout: int = O_(60.0, '--timeout', help='network call timeout threshold')
+    command: str=Arg('-', help='TQL query to execute', metavar='"SELECT ..."'),
+    schema: str=Opt('falcon_default_schema', help='schema name to use'),
+    http_timeout: int = Opt(60.0, '--timeout', help='network call timeout threshold')
 ):
     """
     Run a single TQL command on a remote server.

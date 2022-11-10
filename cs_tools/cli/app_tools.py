@@ -1,4 +1,3 @@
-from typer import Argument as A_, Option as O_
 import typer
 
 from cs_tools.cli.ux import console, CSToolsGroup

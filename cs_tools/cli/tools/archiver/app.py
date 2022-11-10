@@ -10,7 +10,7 @@ import typer
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
 from cs_tools.cli.util import base64_to_file
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.errors import ContentDoesNotExist
 
 from .enums import ContentType, UserActions
@@ -43,47 +43,45 @@ app = CSToolsApp(
     pursuits. Archiver enables you to identify, tag, export, and remove that potentially
     abandoned content.
     """,
-    cls=CSToolsGroup,
-    options_metavar='[--version, --help]'
 )
 
 
 @app.command(dependencies=[thoughtspot])
 def identify(
     ctx: click.Context,
-    tag_name: str = O_(
+    tag_name: str = Opt(
         'INACTIVE',
         '--tag',
         help='tag name to use for labeling objects to archive (case sensitive)'
     ),
-    content: ContentType = O_('all', help='type of content to archive'),
-    recent_activity: int = O_(
+    content: ContentType = Opt('all', help='type of content to archive'),
+    recent_activity: int = Opt(
         3650,
         help='days to IGNORE for content viewed or access [default: all history]',
         show_default=False
     ),
-    recent_modified: int = O_(
+    recent_modified: int = Opt(
         100,
         help='days to IGNORE for content created or modified',
     ),
-    ignore_tag: List[str] = O_(
+    ignore_tag: List[str] = Opt(
         None,
         help='tagged content to ignore (case sensitive), can be specified multiple times',
         callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
     ),
-    dry_run: bool = O_(
+    dry_run: bool = Opt(
         False,
         '--dry-run',
         help='test your selection criteria, doesn\'t apply tags',
         show_default=False,
     ),
-    no_prompt: bool = O_(
+    no_prompt: bool = Opt(
         False,
         '--no-prompt',
         help='disable the confirmation prompt',
         show_default=False
     ),
-    report: str = O_(
+    report: str = Opt(
         None,
         metavar='protocol://DEFINITION.toml',
         help='generates a list of content to be archived, utilizes protocol syntax',
@@ -222,30 +220,30 @@ def identify(
 @app.command(dependencies=[thoughtspot])
 def revert(
     ctx: typer.Context,
-    tag_name: str = O_(
+    tag_name: str = Opt(
         'INACTIVE',
         '--tag',
         help='tag name to revert on labeled content (case sensitive)'
     ),
-    delete_tag: bool = O_(
+    delete_tag: bool = Opt(
         False,
         '--delete-tag',
         help='remove the tag itself, after untagging identified content',
         show_default=False
     ),
-    dry_run: bool = O_(
+    dry_run: bool = Opt(
         False,
         '--dry-run',
         show_default=False,
         help='test your selection criteria, doesn\'t revert tags'
     ),
-    no_prompt: bool = O_(
+    no_prompt: bool = Opt(
         False,
         '--no-prompt',
         show_default=False,
         help='disable the confirmation prompt'
     ),
-    report: str = O_(
+    report: str = Opt(
         None,
         metavar='protocol://DEFINITION.toml',
         help='generates a list of content to be reverted, utilizes protocol syntax',
@@ -324,43 +322,43 @@ def revert(
 @app.command(dependencies=[thoughtspot])
 def remove(
     ctx: typer.Context,
-    tag_name: str = O_(
+    tag_name: str = Opt(
         'INACTIVE',
         '--tag',
         help='tag name to use to remove objects (case sensitive)'
     ),
-    export_tml: pathlib.Path = O_(
+    export_tml: pathlib.Path = Opt(
         None,
         metavar='FILE.zip',
         dir_okay=False,
         resolve_path=True,
         help='if set, path to export tagged objects as a zipfile',
     ),
-    delete_tag: bool = O_(
+    delete_tag: bool = Opt(
         False,
         '--delete-tag',
         show_default=False,
         help='remove the tag itself, after deleting identified content',
     ),
-    export_only: bool = O_(
+    export_only: bool = Opt(
         False,
         '--export-only',
         show_default=False,
         help='export all tagged content, but do not remove it from that platform'
     ),
-    dry_run: bool = O_(
+    dry_run: bool = Opt(
         False,
         '--dry-run',
         show_default=False,
         help='test your selection criteria, doesn\'t delete content'
     ),
-    no_prompt: bool = O_(
+    no_prompt: bool = Opt(
         False,
         '--no-prompt',
         show_default=False,
         help='disable the confirmation prompt'
     ),
-    report: str = O_(
+    report: str = Opt(
         None,
         metavar='protocol://DEFINITION.toml',
         help='generates a list of content to be reverted, utilizes protocol syntax',

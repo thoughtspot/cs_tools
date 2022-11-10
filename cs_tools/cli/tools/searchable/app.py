@@ -9,7 +9,7 @@ import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 
 from ._version import __version__
 from .models import BISERVER_MODELS, METADATA_MODELS
@@ -19,18 +19,13 @@ from . import transform
 log = logging.getLogger(__name__)
 
 
-app = CSToolsApp(
-    help="""
-    Explore your ThoughtSpot metadata, in ThoughtSpot!
-    """,
-    cls=CSToolsGroup
-)
+app = CSToolsApp(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 
 
 @app.command(dependencies=[thoughtspot])
 def spotapp(
     ctx: typer.Context,
-    directory: pathlib.Path = A_(
+    directory: pathlib.Path = Arg(
         ...,
         help='location on your machine to copy the SpotApp to',
         file_okay=False,
@@ -38,21 +33,21 @@ def spotapp(
     ),
 
     # NOTE: make optional for Falcon
-    connection_guid: str = O_(
+    connection_guid: str = Opt(
         ...,
         help=(
             'TML details: find your connection guid by going to Data > '
             'Connections > your connection, and copying the GUID in the URL'
         )
     ),
-    database: str = O_(
+    database: str = Opt(
         ...,
         help=(
             'TML details: find your database by editing an existing Table in '
             'your connection, and look at the path TABLE:DB'
         )
     ),
-    schema: str = O_(
+    schema: str = Opt(
         ...,
         help=(
             'TML details: find your database by editing an existing Table in '
@@ -106,26 +101,26 @@ def bi_server(
     # really this is a SyncerProtocolType type,
     # but typer does not yet support click.ParamType,
     # so we can fake it with a callback :~)
-    export: str = A_(
+    export: str = Arg(
         ...,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx, models=BISERVER_MODELS)
     ),
-    compact: bool = O_(True, '--compact / --full', help='if compact, exclude NULL and INVALID user actions'),
-    from_date: dt.datetime = O_(
+    compact: bool = Opt(True, '--compact / --full', help='if compact, exclude NULL and INVALID user actions'),
+    from_date: dt.datetime = Opt(
         None,
         metavar='YYYY-MM-DD',
         help='lower bound of rows to select from TS: BI Server',
         callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
     ),
-    to_date: dt.datetime = O_(
+    to_date: dt.datetime = Opt(
         None,
         metavar='YYYY-MM-DD',
         help='upper bound of rows to select from TS: BI Server',
         callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
     ),
-    include_today: bool = O_(False, '--include-today', help='pull partial day data', show_default=False),
+    include_today: bool = Opt(False, '--include-today', help='pull partial day data', show_default=False),
 ):
     """
     Extract usage statistics from your ThoughtSpot platform.
@@ -162,7 +157,7 @@ def bi_server(
             {
                 'sk_dummy': f'{seed}-{idx}',
                 'incident_id': _['Incident Id'],
-                'timestamp': dt.datetime.fromtimestamp(_['Timestamp'] or 0),
+                'timestamp': _['Timestamp'],
                 'url': _['URL'],
                 'http_response_code': _['HTTP Response Code'],
                 'browser_type': _['Browser Type'],
@@ -191,19 +186,19 @@ def event_logs(
     # really this is a SyncerProtocolType type,
     # but typer does not yet support click.ParamType,
     # so we can fake it with a callback :~)
-    # export: str = A_(
+    # export: str = Arg(
     #     ...,
     #     help='protocol and path for options to pass to the syncer',
     #     metavar='protocol://DEFINITION.toml',
     #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     # ),
-    from_date: dt.datetime = O_(
+    from_date: dt.datetime = Opt(
         None,
         metavar='YYYY-MM-DD',
         help='lower bound of logs to retrieve',
         callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
     ),
-    to_date: dt.datetime = O_(
+    to_date: dt.datetime = Opt(
         None,
         metavar='YYYY-MM-DD',
         help='upper bound of logs to retrieve',
@@ -242,7 +237,7 @@ def gather(
     # really this is a SyncerProtocolType type,
     # but typer does not yet support click.ParamType,
     # so we can fake it with a callback :~)
-    export: str = A_(
+    export: str = Arg(
         ...,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',

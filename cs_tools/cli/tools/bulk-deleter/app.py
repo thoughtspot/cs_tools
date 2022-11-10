@@ -7,7 +7,7 @@ import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.util import chunks
 
 
@@ -73,16 +73,14 @@ def _validate_objects_exist(ts, data):
 
 app = CSToolsApp(
     help="""Bulk delete metadata objects from your ThoughtSpot platform.""",
-    cls=CSToolsGroup,
-    options_metavar='[--version, --help]',
 )
 
 
 @app.command(dependencies=[thoughtspot])
 def single(
     ctx: typer.Context,
-    type: AcceptedObjectType = O_(..., help='type of the metadata to delete'),
-    guid: str = O_(..., help='guid to delete')
+    type: AcceptedObjectType = Opt(..., help='type of the metadata to delete'),
+    guid: str = Opt(..., help='guid to delete')
 ):
     """
     Removes a specific object from ThoughtSpot.
@@ -104,17 +102,17 @@ def single(
 @app.command(dependencies=[thoughtspot])
 def from_tabular(
     ctx: typer.Context,
-    syncer: str = O_(
+    syncer: str = Opt(
         None,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',
         callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     ),
-    deletion: str = O_(
+    deletion: str = Opt(
         None,
         help='if using --syncer, directive to find user deletion at'
     ),
-    batchsize: int = O_(1, help='maximum amount of objects to delete simultaneously')
+    batchsize: int = Opt(1, help='maximum amount of objects to delete simultaneously')
 ):
     """
     Remove many objects from ThoughtSpot.

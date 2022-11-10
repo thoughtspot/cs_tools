@@ -27,6 +27,22 @@ WARNING_PRIVATE = (
 )
 
 
+def CSToolsArgument(default, **passthru) -> typer.models.ArgumentInfo:
+    """
+    Typer does this with a function definition, even though they behave like classes.
+    """
+    passthru["show_default"] = default not in (..., None)
+    return typer.Argument(default, **passthru)
+
+
+def CSToolsOption(default, *param_decls, **passthru) -> typer.models.OptionInfo:
+    """
+    Typer does this with a function definition, even though they behave like classes.
+    """
+    passthru["show_default"] = default not in (..., None)
+    return typer.Option(default, *param_decls, **passthru)
+
+
 class CSToolsCommand(typer.core.TyperCommand):
 
     def __init__(self, **passthru):
@@ -85,6 +101,7 @@ class CSToolsCommand(typer.core.TyperCommand):
 class CSToolsApp(typer.Typer):
 
     def __init__(self, **passthru):
+        passthru["cls"] = CSToolsGroup
         passthru["rich_markup_mode"] = "rich"
         super().__init__(**passthru)
 

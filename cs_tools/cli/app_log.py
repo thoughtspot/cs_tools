@@ -1,10 +1,11 @@
 import pathlib
 import shutil
 
-from typer import Argument as A_, Option as O_
 import typer
 
-from cs_tools.cli.ux import CSToolsApp, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import (
+    CSToolsGroup, CSToolsCommand, CSToolsArgument as Arg, CSToolsOption as Opt
+)
 from cs_tools.errors import CSToolsError
 from cs_tools.const import APP_DIR
 
@@ -23,14 +24,14 @@ app = typer.Typer(
 
 @app.command(cls=CSToolsCommand)
 def export(
-    save_path: pathlib.Path = A_(
+    save_path: pathlib.Path = Arg(
         ...,
         help='location on disk to save logs to',
         metavar='DIRECTORY',
         file_okay=False,
         resolve_path=True
     ),
-    latest: int = O_(50, help='number of most recent logfiles to export', show_default=False)
+    latest: int = Opt(50, help='number of most recent logfiles to export', show_default=False)
 ):
     """
     Grab logs to share with ThoughtSpot.

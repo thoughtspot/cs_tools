@@ -1,7 +1,6 @@
 from typing import List
 import pathlib
 
-from typer import Argument as A_, Option as O_
 from rich.markup import escape
 from rich.prompt import Prompt, Confirm
 import pydantic
@@ -10,7 +9,7 @@ import toml
 
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsGroup
+from cs_tools.cli.ux import console, CSToolsGroup, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.settings import TSConfig, _meta_config
 from cs_tools.util import deep_update
 from cs_tools.const import APP_DIR
@@ -31,15 +30,15 @@ app = typer.Typer(
 
 @app.command()
 def create(
-    config: str = O_(..., help='config file identifier', prompt=True, metavar='NAME'),
-    host: str = O_(..., help='thoughtspot server', prompt=True),
-    port: int = O_(None, help='optional, port of the thoughtspot server'),
-    username: str = O_(..., help='username when logging into ThoughtSpot', prompt=True),
-    password: str = O_(
+    config: str = Opt(..., help='config file identifier', prompt=True, metavar='NAME'),
+    host: str = Opt(..., help='thoughtspot server', prompt=True),
+    port: int = Opt(None, help='optional, port of the thoughtspot server'),
+    username: str = Opt(..., help='username when logging into ThoughtSpot', prompt=True),
+    password: str = Opt(
         None,
         help='password when logging into ThoughtSpot, if "prompt" then hide input',
     ),
-    temp_dir: pathlib.Path = O_(
+    temp_dir: pathlib.Path = Opt(
         APP_DIR,
         '--temp_dir',
         help='location on disk to save temporary files',
@@ -47,17 +46,17 @@ def create(
         resolve_path=True,
         show_default=False
     ),
-    disable_ssl: bool = O_(False, '--disable_ssl', help='disable SSL verification', show_default=False),
-    disable_sso: bool = O_(False, '--disable_sso', help='disable automatic SAML redirect', show_default=False),
-    syncers: List[str] = O_(
+    disable_ssl: bool = Opt(False, '--disable_ssl', help='disable SSL verification', show_default=False),
+    disable_sso: bool = Opt(False, '--disable_sso', help='disable automatic SAML redirect', show_default=False),
+    syncers: List[str] = Opt(
         None,
         '--syncer',
         metavar='protocol://DEFINITION.toml',
         help='default definition for the syncer protocol, may be provided multiple times',
         callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx) for _ in to]
     ),
-    verbose: bool = O_(False, '--verbose', help='enable verbose logging by default', show_default=False),
-    is_default: bool = O_(False, '--default', help='set as the default configuration', show_default=False)
+    verbose: bool = Opt(False, '--verbose', help='enable verbose logging by default', show_default=False),
+    is_default: bool = Opt(False, '--default', help='set as the default configuration', show_default=False)
 ):
     """
     Create a new config file.
@@ -93,15 +92,15 @@ def create(
 
 @app.command()
 def modify(
-    config: str = O_(..., help='config file identifier', prompt=True, metavar='NAME'),
-    host: str = O_(None, help='thoughtspot server'),
-    port: int = O_(None, help='optional, port of the thoughtspot server'),
-    username: str = O_(None, help='username when logging into ThoughtSpot'),
-    password: str = O_(
+    config: str = Opt(..., help='config file identifier', prompt=True, metavar='NAME'),
+    host: str = Opt(None, help='thoughtspot server'),
+    port: int = Opt(None, help='optional, port of the thoughtspot server'),
+    username: str = Opt(None, help='username when logging into ThoughtSpot'),
+    password: str = Opt(
         None,
         help='password when logging into ThoughtSpot, if "prompt" then hide input',
     ),
-    temp_dir: pathlib.Path = O_(
+    temp_dir: pathlib.Path = Opt(
         None,
         '--temp_dir',
         help='location on disk to save temporary files',
@@ -109,17 +108,17 @@ def modify(
         resolve_path=True,
         show_default=False
     ),
-    disable_ssl: bool = O_(None, '--disable_ssl/--no-disable_ssl', help='disable SSL verification', show_default=False),
-    disable_sso: bool = O_(None, '--disable_sso/--no-disable_sso', help='disable automatic SAML redirect', show_default=False),
-    syncers: List[str] = O_(
+    disable_ssl: bool = Opt(None, '--disable_ssl/--no-disable_ssl', help='disable SSL verification', show_default=False),
+    disable_sso: bool = Opt(None, '--disable_sso/--no-disable_sso', help='disable automatic SAML redirect', show_default=False),
+    syncers: List[str] = Opt(
         None,
         '--syncer',
         metavar='protocol://DEFINITION.toml',
         help='default definition for the syncer protocol, may be provided multiple times',
         callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx) for _ in to]
     ),
-    verbose: bool = O_(None, '--verbose/--normal', help='enable verbose logging by default', show_default=False),
-    is_default: bool = O_(False, '--default', help='set as the default configuration', show_default=False)
+    verbose: bool = Opt(None, '--verbose/--normal', help='enable verbose logging by default', show_default=False),
+    is_default: bool = Opt(False, '--default', help='set as the default configuration', show_default=False)
 ):
     """
     Modify an existing config file.
@@ -162,7 +161,7 @@ def modify(
 
 @app.command()
 def delete(
-    config: str = O_(..., help='config file identifier', metavar='NAME')
+    config: str = Opt(..., help='config file identifier', metavar='NAME')
 ):
     """
     Delete a config file.
@@ -180,7 +179,7 @@ def delete(
 
 @app.command()
 def check(
-    config: str = O_(..., help='config file identifier', metavar='NAME')
+    config: str = Opt(..., help='config file identifier', metavar='NAME')
 ):
     """
     Check your config file.
@@ -198,7 +197,7 @@ def check(
 
 @app.command(no_args_is_help=0)  # this is abuse, pay it no mind
 def show(
-    config: str = O_(
+    config: str = Opt(
         None,
         help='optionally, display the contents of a particular config',
         metavar='NAME'
