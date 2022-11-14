@@ -19,20 +19,20 @@ hide:
 <figure><img src="assets/cs_tools logo black.png" width="400"/></figure>
 
 <center>
-__CS Tools__ is a command line utility written by the __ThoughtSpot__ Professional
-Services & Customer Success teams, meant to augment built-in platform tools, help with
-administration of and enhance adoption within your ThoughtSpot environment.
+__CS Tools__ is a command line utility written by the __ThoughtSpot__ Professional Services
+& Customer Success teams, meant to augment built-in platform functionality, and help
+with the administration of your __ThoughtSpot__ environment.
 </center>
 
 <span>
 # Features
 
 - Low-fuss distribution and installation on MacOS, Linux, and Windows
-- Supports Software version 7.1.1+ and the latest Cloud release
-- Enhanced security with remote TQL and tsload workflows
+- Supports Software version 7.2.1+ and the latest two Cloud releases
+- Enhanced security in Falcon with remote TQL and tsload workflows
 - Multiple-cluster support (Dev, QA, Prod)
 - Scheduler-friendly execution
-- ThoughtSpot Spot App
+- __ThoughtSpot__ Admin SpotApp
 </span>
 
 ---

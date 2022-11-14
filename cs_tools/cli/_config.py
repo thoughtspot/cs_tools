@@ -3,19 +3,21 @@ import pathlib
 
 from rich.markup import escape
 from rich.prompt import Prompt, Confirm
+from rich.rule import Rule
 import pydantic
 import typer
 import toml
 
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsArgument as Arg, CSToolsOption as Opt
+from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.settings import TSConfig, _meta_config
+from cs_tools.errors import CSToolsError
 from cs_tools.util import deep_update
 from cs_tools.const import APP_DIR
 
-app = typer.Typer(
-    cls=CSToolsGroup,
+meta = _meta_config.load()
+app = CSToolsApp(
     name='config',
     no_args_is_help=True,
     help="""
@@ -24,7 +26,7 @@ app = typer.Typer(
     Configuration files can be set and saved on a machine in order to eliminate
     passing cluster details and credentials to every tool.
     """,
-    epilog=f":computer_disk: [green]{_meta_config()['default']['config']}[/] (default)",
+    epilog=f":computer_disk: [green]{meta.default_config_name}[/] (default)" if meta.default_config_name is not None else "",
 )
 
 
@@ -153,7 +155,9 @@ def modify(
     message = f'saved cluster configuration file "{config}"'
 
     if is_default:
-        _meta_config(config)
+        meta = _meta_config.load()
+        meta.default_config_name = config
+        meta.save()
         message += ' as the default'
 
     console.print(message)
@@ -187,7 +191,7 @@ def check(
     console.log(f'Checking cluster configuration [b blue]{config}')
     cfg = TSConfig.from_command(config)
 
-    console.log(f'Logging into ThoughtSpot as [b blue]{cfg.auth["frontend"].username}')
+    console.log(f'Logging into [b]ThoughtSpot[/] as [b blue]{cfg.auth["frontend"].username}')
     ts = ThoughtSpot(cfg)
     ts.login()
     ts.logout()
@@ -206,16 +210,15 @@ def show(
     """
     Display the currently saved config files.
     """
-    if not APP_DIR.exists():
-        console.print('[yellow]no config files found just yet![/]')
-        raise typer.Exit()
-
     configs = [f for f in APP_DIR.iterdir() if f.name.startswith('cluster-cfg_')]
-    s = 's' if (len(configs) > 1 or len(configs) == 0) else ''
-    meta = _meta_config()
-    meta_cfg = meta['default']['config'] if meta else {}
 
-    console.print(f'\nCluster configs located at: {APP_DIR}\n')
+    if not configs:
+        raise CSToolsError(
+            error=NotImplementedError("[yellow]no config files found just yet!"),
+            mitigation="Run [blue]cs_tools config create --help[/] for more information",
+        )
+
+    meta = _meta_config.load()
 
     if config is not None:
         fp = APP_DIR / f'cluster-cfg_{config}.toml'
@@ -223,22 +226,39 @@ def show(
         try:
             contents = escape(fp.open().read())
         except FileNotFoundError:
-            console.print(f'[red]no config found with the name "{config}"!')
-            raise typer.Exit()
+            raise CSToolsError(
+                error=TypeError(f"could not find [blue]{config}"),
+                mitigation="Did you spell the cluster configuration name correctly?",
+            )
+
+        not_ = " not" if config == meta.default_config_name else ""
+        default = f"[b blue]{config}[/] is{not_} the [green]default[/] configuration"
+        link = f" :computer_disk: [white][link={fp}]{fp.name}"
 
         console.print(
-            ('[green]\\[default]\n' if meta_cfg == config else '') +
-            f'[yellow]{fp}\n\n'
-            f'[blue]{contents}'
+            f"\n:file_folder: [link={fp.parent}]{fp.parent}",
+            f"\n:page_facing_up: {default}",
+            "\n",
+            Rule(title="[green]" + "~" * 10 + link, characters="~", align="left"),
+            f"\n[b blue]{contents}"
         )
         raise typer.Exit()
 
-    console.print(f'\nFound {len(configs)} config{s}')
+    PREFIX = "cluster-cfg_"
+    cfg_list = []
 
     for file in configs:
-        name = file.stem[len('cluster-cfg_'):]
+        cfg_name = file.stem[len(PREFIX):]
 
-        if meta_cfg == name:
-            name += '\t[green]<-- default[/]'
+        if meta.default_config_name == cfg_name:
+            cfg_name += '\t[green]<-- default[/]'
 
-        console.print(f"  - {name}")
+        cfg_list.append(f"  - {cfg_name}")
+
+    console.print(
+        f"\n[b]ThoughtSpot[/] cluster configurations are located at"
+        f"\n  [b blue][link={APP_DIR}]{APP_DIR}[/][/]"
+        f"\n"
+        f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
+        f"\n" + "\n".join(cfg_list) + "\n"
+    )
