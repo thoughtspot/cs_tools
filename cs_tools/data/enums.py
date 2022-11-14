@@ -18,6 +18,24 @@ class ConnectionCategory(enum.Enum):
     my = 'MY'
 
 
+class ConnectionType(enum.Enum):
+    azure = 'RDBMS_AZURE_SQL_DATAWAREHOUSE'
+    big_query = 'RDBMS_GCP_BIGQUERY'
+    databricks = 'RDBMS_DATABRICKS'
+    oracle_adw = 'RDBMS_ORACLE_ADW'
+    presto = 'RDBMS_PRESTO'
+    redshift = 'RDBMS_REDSHIFT'
+    sap_hana = 'RDBMS_SAP_HANA'
+    snowflake = 'RDBMS_SNOWFLAKE'
+
+    @staticmethod
+    def from_str(stype):
+        for ct in ConnectionType:
+            if stype == ct.value:
+                return ct
+        raise ValueError(f'Unknown connection type: {stype}')
+
+
 class Principal(enum.Enum):
     user = 'USER'
     group = 'USER_GROUP'
@@ -113,7 +131,8 @@ class TMLContentType(enum.Enum):
     liveboard = 'liveboard'  # currently (as of 8.2) this will be pinboard, but future proofing.
     pinboard = 'pinboard'
     answer = 'answer'
-    view = 'sql_view'
+    view = 'view'
+    sql_view = 'sql_view'
 
 
 class DownloadableContent(enum.Enum):
@@ -124,6 +143,25 @@ class DownloadableContent(enum.Enum):
 
 
 class StatusCode(enum.Enum):
+    error = "ERROR"
     none = "NONE"
     ok = "OK"
     unknown = "UNKNOWN"
+    warning = "WARNING"
+
+    def __str__(self):
+        return str(self.value)
+
+    @staticmethod
+    def from_str(svalue):
+        """Converts a string status to an enum value"""
+        if isinstance(svalue, StatusCode):
+            return svalue
+
+        for s in StatusCode:
+            if s.value == svalue.upper():
+                return s
+
+        return StatusCode.unknown
+
+

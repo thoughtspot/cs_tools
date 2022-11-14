@@ -535,8 +535,10 @@ class MetadataMiddleware:
         :param tml_type:  The TML type, such as None
         """
         mapping = {
+            "connection": MetadataObject.data_source,
             "table": MetadataObject.logical_table,
             "view": MetadataObject.logical_table,
+            "sql_view": MetadataObject.logical_table,
             "worksheet": MetadataObject.logical_table,
             "pinboard": MetadataObject.pinboard,
             "liveboard": MetadataObject.pinboard,

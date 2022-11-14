@@ -108,3 +108,31 @@ class _Session:
         """
         r = self.rest_api.request('POST', 'session/logout', privacy='private')
         return r
+
+
+class Session:
+    """
+    Public API calls for sessions.
+    """
+
+    def __init__(self, rest_api):
+        self.rest_api = rest_api
+
+    @validate_arguments
+    def orgs_put(self,
+                 orgid: int
+                ) -> httpx.Response:
+        """
+        Sets the organization context for the logged-in user.  The user must be a valid member of the org.
+        :param org_id: The ID for the org.
+        """
+        r = self.rest_api.request(
+            'PUT',
+            'session/orgs',
+            privacy='public',
+            data={
+                'orgid': orgid
+            }
+        )
+
+        return r

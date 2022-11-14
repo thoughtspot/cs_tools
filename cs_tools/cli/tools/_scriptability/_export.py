@@ -5,7 +5,6 @@ import click
 import pathlib
 from httpx import HTTPStatusError
 from typing import Any, Dict, List, Tuple, Union
-import re
 from rich.table import Table
 from typer import Argument as A_, Option as O_
 
@@ -49,7 +48,8 @@ def export(
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
         set_fqns: bool = O_(False,
-                            help='if set, then the content in the TML will have FQNs (GUIDs) added.')
+                            help='if set, then the content in the TML will have FQNs (GUIDs) added.'),
+        org: str = O_(None, help='Name of org to export from.  The user must have access to that org.')
 ):
     """
     Exports TML as YAML from ThoughtSpot.  There are different parameters that can impact content to download:
@@ -76,6 +76,10 @@ def export(
                            mitigation="Rerun with a valid directory to export to.")
 
     ts = ctx.obj.thoughtspot
+
+    # if an org was passed, switch context to that org.
+    if org:
+        ts.api.session.orgs_put(ts.org.lookup_id_for_name(org_name=org))
 
     # Scenarios to support
     # GUID/filters - download the content and save

@@ -41,45 +41,37 @@ packages = [
 # include = []
 # exclude = []
 
-
 [tool.poetry.dependencies]
 # Accept new incoming python versions
-python = ">= 3.6.8 , < 4.0.0"
+python = ">= 3.7 , < 3.11"
 
 # Poetry doesn't solve for itself, so we need to keep this guy around
 # possibly a bug? poetry#5004
 poetry-core = "^1.0.0a0"
 
-# Upgrades here require removing support for py36
-click = "< 8.1.0"
-httpx = "< 0.23.0"
-Jinja2 = "< 3.1.0"
-starlette = "< 0.20.0"
-uvicorn = "< 0.17.0"
-
-# Platform locked dependencies
-pyreadline3 = { version = "*",  markers = "sys_platform == 'win32'" }
-
-# Accept updates on core dependencies, as long as they support py36
-fastapi = "*"
-oyaml = "*"
-pendulum = "*"
-pydantic = "*"
-python-dateutil = "*"
-rich = "*"
-sqlmodel = "*"
-thoughtspot-tml = ">= 1.1.0"
-toml = "*"
-typer = "*"
-
+# Windows version of readline
+pyreadline3 = { version = "^3.4.1",  markers = "sys_platform == 'win32'" }
+click = "^8.1.3"
+httpx = "^0.23.0"
+Jinja2 = "^3.1.2"
+uvicorn = "^0.19.0"
+fastapi = "0.85.1"
+typer = "0.5.0"
+pendulum = "^2.1.2"
+toml = "^0.10.2"
+sqlmodel = "^0.0.8"
+rich = "^12.6.0"
+pydantic = "^1.10.2"
+starlette = "0.20.4"
+thoughtspot-tml = "^1.2.0"
 
 [tool.poetry.dev-dependencies]
-mkdocs-material = { version = "*", python = ">= 3.7 , < 4.0.0" }
-flake8 = { version = "*",  python = ">= 3.7 , < 4.0.0" }
-coverage = { version = "*",  python = ">= 3.7 , < 4.0.0" }
-isort = { version = "*",  python = ">= 3.7 , < 4.0.0" }
-black = { version = "*",  python = ">= 3.7 , < 4.0.0" }
-ward = { version = "*",  python = ">= 3.7 , < 4.0.0" }
+mkdocs-material =  "*"
+flake8 =  "*"
+coverage =  "*"
+isort =  "*"
+black =  "*"
+ward =  "*"
 
 
 [tool.poetry.scripts]

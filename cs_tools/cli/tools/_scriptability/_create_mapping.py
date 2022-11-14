@@ -48,8 +48,9 @@ def create_guid_file_if_not_exists(guid_file: pathlib.Path) -> bool:
                 f.write(mapping_header)
         except OSError as e:
             raise CSToolsError(error=f"Unable to open file {guid_file}", reason=f"Error: {e}",
-                               mitigation="Verify the file exists and can be read.")
+                               mitigation=f"Verify the path {guid_file} exists and can be read.")
 
         return False
 
     return True  # exists already
+

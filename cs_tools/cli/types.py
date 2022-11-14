@@ -37,6 +37,9 @@ class CommaSeparatedValuesType(click.ParamType):
         if not isinstance(value, tuple):
             value = (value, )
 
+        if isinstance(value, list):
+            return value
+
         return list(it.chain.from_iterable(v.split(',') for v in value))
 
 

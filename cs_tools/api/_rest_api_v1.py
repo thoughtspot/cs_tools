@@ -8,6 +8,7 @@ from cs_tools.api.models import (
     _Connection,
     _Dependency,
     _Metadata,
+    _Org,
     _Periscope,
     _Security,
     _Session,
@@ -15,7 +16,9 @@ from cs_tools.api.models import (
     Group,
     Logs,
     Metadata,
+    Org,
     Security,
+    Session,
     TSDataService,
     User
 )
@@ -59,15 +62,18 @@ class _RESTAPIv1:
         # public API endpoints
         self.data = Data(self)
         self.group = Group(self)
-        self.metadata = Metadata(self)
-        self.security = Security(self)
-        self.user = User(self)
         self.logs = Logs(self)
+        self.metadata = Metadata(self)
+        self.org = Org(self)
+        self.security = Security(self)
+        self.session = Session(self)
+        self.user = User(self)
 
         # private API endpoints
         self._connection = _Connection(self)
         self._dependency = _Dependency(self)
         self._metadata = _Metadata(self)
+        self._org = _Org(self)
         self._periscope = _Periscope(self)
         self._security = _Security(self)
         self._session = _Session(self)

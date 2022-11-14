@@ -4,7 +4,7 @@ import pathlib
 from typing import List
 
 from thoughtspot_tml.tml import TML
-from cs_tools.data.enums import GUID
+from cs_tools.data.enums import GUID, MetadataObject
 
 
 class TMLFileBundle:
@@ -33,7 +33,7 @@ class MetadataTypeList:
         """
         self._mapping = {}  # key is the metadata type and the value is a list of GUIDs.
 
-    def add(self, metadata_type: str, guid: GUID) -> None:
+    def add(self, metadata_type: MetadataObject, guid: GUID) -> None:
         """
         Adds a GUID and type mapping.
         :param metadata_type: The type of metadata.
@@ -101,3 +101,13 @@ class MetadataTypeList:
 def strip_blanks(inp: List[str]) -> List[str]:
     """Strips blank out of a list."""
     return [e for e in inp if e]
+
+
+def get_guid_from_filename(fn: str) -> GUID:
+    """
+    Returns a GUID from the file name.  Assumes the filename is of the form <guid>.<type>.tml.  Anything before
+    the first period is assumed to be the GUID.
+    :param fn: The name of the file (not the full path, just the file).
+    :return: The GUID part of the file.
+    """
+    return fn.split('.')[0]

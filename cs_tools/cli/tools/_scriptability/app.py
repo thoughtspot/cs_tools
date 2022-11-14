@@ -62,10 +62,8 @@ def scriptability_export(
             resolve_path=True
         ),
         tags: List[str] = O_([], metavar='TAGS',
-                             callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                              help='comma separated list of tags to export'),
         export_ids: List[str] = O_([], metavar='GUIDS',
-                                   callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                    help='comma separated list of GUIDs to export ' 
                                         'that cannot be combined with other filters'),
         author: str = O_(None, metavar='USERNAME',
@@ -73,21 +71,20 @@ def scriptability_export(
         pattern: str = O_(None, metavar='PATTERN',
                           help="Pattern for name with % as a wildcard"),
         include_types: List[str] = O_([], metavar='CONTENTTYPES',
-                                      callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                       help='list of types to include: answer, liveboard, view, sqlview, '
                                            'table, connection'),
         exclude_types: List[str] = O_([], metavar='CONTENTTYPES',
-                                      callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                       help='list of types to exclude (overrides include): answer, liveboard, view, '
                                            'sqlview, table, connection'),
         export_associated: bool = O_(False,
                                      help='if specified, also export related content'),
         set_fqns: bool = O_(False,
-                            help='if set, then the content in the TML will have FQNs (GUIDs) added.')
+                            help='if set, then the content in the TML will have FQNs (GUIDs) added.'),
+        org: str = O_(None, help='Name of org to export from.  The user must have access to that org.')
 ):
     export(ctx=ctx, path=path, tags=tags, export_ids=export_ids,
            author=author, pattern=pattern, include_types=include_types, exclude_types=exclude_types,
-           export_associated=export_associated, set_fqns=set_fqns)
+           export_associated=export_associated, set_fqns=set_fqns, org=org)
 
 
 @app.command(cls=CSToolsCommand, name="import")
@@ -118,10 +115,8 @@ def scriptability_import(
             resolve_path=True
         ),
         tags: List[str] = O_([], metavar='TAGS',
-                             callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                              help='One or more tags to add to the imported content.'),
         share_with: List[str] = O_([], metavar='GROUPS',
-                                   callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
                                    help='One or more groups to share the uploaded content with.'),
         tml_logs: Optional[pathlib.Path] = O_(
             None,
@@ -130,9 +125,10 @@ def scriptability_import(
             dir_okay=True,
             resolve_path=True
         ),
+        org: str = O_(None, help='Name of org to import to.  The user must have access to that org.')
 ):
     import_(ctx=ctx, path=path, import_policy=import_policy, force_create=force_create, guid_file=guid_file, tags=tags,
-            share_with=share_with, tml_logs=tml_logs)
+            share_with=share_with, tml_logs=tml_logs, org=org)
 
 
 @app.command(name='compare', cls=CSToolsCommand)

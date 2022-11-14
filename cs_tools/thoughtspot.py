@@ -12,8 +12,8 @@ from cs_tools.util import reveal
 from cs_tools.api._rest_api_v1 import _RESTAPIv1
 from cs_tools._version import __version__
 from cs_tools.api.middlewares import (
-    AnswerMiddleware, ConnectionMiddleware, GroupMiddleware, MetadataMiddleware, PinboardMiddleware, SearchMiddleware,
-    TagMiddleware, TQLMiddleware, TSLoadMiddleware, UserMiddleware
+    AnswerMiddleware, ConnectionMiddleware, GroupMiddleware, MetadataMiddleware, OrgMiddleware, PinboardMiddleware,
+    SearchMiddleware, TagMiddleware, TQLMiddleware, TSLoadMiddleware, UserMiddleware
 )
 from cs_tools.data.models import ThoughtSpotPlatform, LoggedInUser
 
@@ -37,6 +37,7 @@ class ThoughtSpot:
         self.user = UserMiddleware(self)
         self.group = GroupMiddleware(self)
         # self.tml
+        self.org = OrgMiddleware(self)
         self.metadata = MetadataMiddleware(self)
         self.pinboard = self.liveboard = PinboardMiddleware(self)
         self.answer = AnswerMiddleware(self)
