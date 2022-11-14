@@ -97,10 +97,6 @@ def spotapp(
 @app.command(dependencies=[thoughtspot])
 def bi_server(
     ctx: typer.Context,
-    # Note:
-    # really this is a SyncerProtocolType type,
-    # but typer does not yet support click.ParamType,
-    # so we can fake it with a callback :~)
     export: str = Arg(
         ...,
         help='protocol and path for options to pass to the syncer',
@@ -182,10 +178,6 @@ def bi_server(
 @app.command(dependencies=[thoughtspot], hidden=True)
 def event_logs(
     ctx: typer.Context,
-    # Note:
-    # really this is a SyncerProtocolType type,
-    # but typer does not yet support click.ParamType,
-    # so we can fake it with a callback :~)
     # export: str = Arg(
     #     ...,
     #     help='protocol and path for options to pass to the syncer',
@@ -233,10 +225,6 @@ def event_logs(
 @app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
-    # Note:
-    # really this is a SyncerProtocolType type,
-    # but typer does not yet support click.ParamType,
-    # so we can fake it with a callback :~)
     export: str = Arg(
         ...,
         help='protocol and path for options to pass to the syncer',

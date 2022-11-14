@@ -1,7 +1,7 @@
-import base64
+from typing import Dict, Set, Union
 import logging
 import pathlib
-from typing import Dict, Set, Union
+import base64
 
 from cs_tools.data.enums import GUID
 

@@ -269,10 +269,6 @@ def rename(
 @app.command(dependencies=[thoughtspot])
 def sync(
     ctx: typer.Context,
-    # Note:
-    # really this is a SyncerProtocolType type,
-    # but typer does not yet support click.ParamType,
-    # so we can fake it with a callback :~)
     syncer: str = Arg(
         ...,
         help='protocol and path for options to pass to the syncer',
