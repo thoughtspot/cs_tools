@@ -73,11 +73,12 @@ coverage =  "*"
 isort =  "*"
 black =  "*"
 ward =  "*"
+snakeviz = "*"
 
 
 [tool.poetry.scripts]
-cs_tools = "cs_tools.cli:run"
-cstools = "cs_tools.cli:run"
+cs_tools = "cs_tools.cli.main:run"
+cstools = "cs_tools.cli.main:run"
 
 
 [tool.ward]
