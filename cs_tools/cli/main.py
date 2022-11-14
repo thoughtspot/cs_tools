@@ -4,7 +4,6 @@ import datetime as dt
 import platform
 import logging
 
-from typer import Argument as A_, Option as O_  # noqa
 import pendulum
 import typer
 
@@ -17,12 +16,12 @@ from cs_tools.const import APP_DIR, TOOLS_DIR
 from cs_tools.const import DOCS_BASE_URL, GH_ISSUES, GDRIVE_FORM
 from cs_tools.util import State
 
-from .app_config import app as cfg_app
-from .app_tools import app as tools_app
-from .app_log import app as log_app
+from cs_tools.cli import _config
+from cs_tools.cli import _tools
+from cs_tools.cli import _log
 
 log = logging.getLogger(__name__)
-cfg = _meta_config()['default']['config']
+meta = _meta_config.load()
 app = CSToolsApp(
     name="cs_tools",
     help=f"""
@@ -32,12 +31,15 @@ app = CSToolsApp(
     These are scripts and utilities used to assist in the development, implementation,
     and administration of your ThoughtSpot platform.
 
-    Lost already? Check out our [cyan][link={DOCS_BASE_URL}/tutorial/intro/]Tutorial[/][/]!
+    Lost already? Check out our [cyan][link={DOCS_BASE_URL}/tutorial/config/]Tutorial[/][/]!
+
+    {meta.newer_version_string()}
 
     :sparkles: [yellow]All tools are provided as-is[/] :sparkles:
     :floppy_disk: [red]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
     """,
     add_completion=False,
+    no_args_is_help=True,
     context_settings={
         # global settings
         'help_option_names': ['--help', '-h'],
@@ -54,7 +56,7 @@ app = CSToolsApp(
         f":books: [cyan][link={DOCS_BASE_URL}]Documentation[/] "
         f"🛟 [link={GH_ISSUES}]Get Help[/] "
         f":memo: [link={GDRIVE_FORM}]Feedback[/][/] "
-        + (f":computer_disk: [green]{cfg}[/] (default)" if cfg is not None else "")
+        + (f":computer_disk: [green]{meta.default_config_name}[/] (default)" if meta.default_config_name is not None else "")
     )
 )
 
@@ -163,22 +165,24 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
     ctx_settings['obj'].tools = {}
 
     for path in TOOLS_DIR.iterdir():
-        if path.is_dir():
-            tool = CSTool(path)
+        if path.name == "__pycache__" or not path.is_dir():
+            continue
 
-            if tool.privacy in ('unknown', "example"):
-                continue
+        tool = CSTool(path)
 
-            # add tool to the global state
-            ctx_settings['obj'].tools[tool.name] = tool
+        if tool.privacy == "unknown":
+            continue
 
-            # add tool to the cli
-            tools_app.add_typer(
-                tool.app,
-                name=tool.name,
-                context_settings=ctx_settings,
-                rich_help_panel=tool.app.rich_help_panel,
-            )
+        # add tool to the global state
+        ctx_settings['obj'].tools[tool.name] = tool
+
+        # add tool to the cli
+        tools_app.add_typer(
+            tool.app,
+            name=tool.name,
+            context_settings=ctx_settings,
+            rich_help_panel=tool.app.rich_help_panel,
+        )
 
 
 def run():
@@ -186,11 +190,11 @@ def run():
     Entrypoint into cs_tools.
     """
     _setup_logging()
-    _setup_tools(tools_app, ctx_settings=app.info.context_settings)
+    _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
 
-    app.add_typer(tools_app)
-    app.add_typer(cfg_app)
-    app.add_typer(log_app)
+    app.add_typer(_tools.app)
+    app.add_typer(_config.app)
+    app.add_typer(_log.app)
 
     try:
         app()

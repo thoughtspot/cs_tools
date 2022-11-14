@@ -1,17 +1,13 @@
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional
 import contextlib
 import logging
 import sys
 
-from click.exceptions import UsageError
 from rich.console import Console
-from rich.markup import escape
-from click.core import iter_params_for_processing
 import typer
 import click
 
 from cs_tools.const import CONSOLE_THEME, GH_SYNCER
-from cs_tools import __version__
 
 
 log = logging.getLogger(__name__)
@@ -69,17 +65,17 @@ class CSToolsCommand(typer.core.TyperCommand):
 
         This action is performed for the --help commands only.
         """
-        os_args = sys.argv[1:]
-
-        # if we're issuing the HELP command, inject dependency's Parameters
-        if not set(os_args).intersection(ctx.help_option_names):
+        # no help command was sent, pass back what we saw..
+        if not set(sys.argv[1:]).intersection(ctx.help_option_names):
             return seen_params
 
+        # inject dependency's Parameters
         for dependency in getattr(self.callback, "dependencies", []):
             seen_params.extend([p for p in dependency.parameters if p not in seen_params])
 
-        if any("protocol" in str(p.metavar) for p in seen_params):
-            syncer = f" :floppy_disk: [cyan][link={GH_SYNCER}]How do I use a Syncer?"
+        # add syncer documentation page help text
+        if any("protocol://" in str(p.metavar) for p in seen_params):
+            syncer = f" :floppy_disk: [cyan][link={GH_SYNCER}]How do I use a Syncer?[/][/]"
 
             if self.epilog is None:
                 self.epilog = ""

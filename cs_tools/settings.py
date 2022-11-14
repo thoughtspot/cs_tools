@@ -1,39 +1,100 @@
 from ipaddress import IPv4Address
 from typing import Union, Dict, Any
+import datetime as dt
 import pathlib
+import logging
 import json
 import re
 
 from pydantic.types import DirectoryPath, FilePath
+from packaging import version
 from pydantic import BaseModel, AnyHttpUrl, validator
+import httpx
 import toml
 
+from cs_tools._version import __version__
 from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.const import APP_DIR
 from cs_tools.util import obscure
 
+log = logging.getLogger(__name__)
 
-def _meta_config(config_name: str = None) -> Union[str, Dict[str, Any]]:
+
+class _meta_config(BaseModel):
     """
-    Read or write to the meta config.
-
-    The Meta Config file is pretty simple.
 
     [default]
     config = 'my-config-name'
+
+    [latest_release]
+    version = v104
+    published_at = 10202019210
     """
-    mode = 'r' if config_name is None else 'w'
+    default_config_name: str = None
+    latest_release_version: str = None
+    latest_release_date: dt.date = None
 
-    try:
-        with (APP_DIR / '.meta-config.toml').open(mode=mode) as j:
-            if config_name is not None:
-                data = toml.dump({'default': {'config': config_name}}, j)
-            else:
-                data = toml.load(j)
-    except FileNotFoundError:
-        data = {"default": {"config": None}}
+    @classmethod
+    def load(cls):
+        _filepath: pathlib.Path = APP_DIR / '.meta-config.toml'
+        data = {}
 
-    return data
+        try:
+            disk = toml.load(_filepath)
+            data["default_config_name"] = disk["default"]["config"]
+            data["latest_release_version"] = disk["latest_release"].get("version", None)
+            data["latest_release_date"] = disk["latest_release"].get("published_at", None)
+        except Exception:
+            log.debug("failed to load the full meta config", exc_info=True)
+
+        # fetch latest remote version
+        EPOCH = dt.date(2012, 6, 1)
+        NOW = dt.datetime.now()
+        ONE_DAY = 60 * 60 * 24
+
+        if (
+            # check at most, once daily
+            (NOW - dt.datetime.fromtimestamp(_filepath.stat().st_mtime)).total_seconds() > ONE_DAY
+            and
+            # the installed version is less than the remote version
+            version.parse(__version__) <= version.parse(data.get("latest_release_version", "9.9.9"))
+            and
+            # the release is at least 5 days old
+            (NOW - data.get("latest_release_date", EPOCH)).total_seconds() > ONE_DAY * 5
+        ):
+            release_url = "https://api.github.com/repos/thoughtspot/cs_tools/releases/latest"
+
+            try:
+                r = httpx.get(release_url, timeout=1).json()
+                data["latest_release_version"] = r["name"]
+                data["latest_release_date"] = dt.datetime.strptime(r["published_at"], "%Y-%m-%dT%H:%M:%SZ").date()
+                cls(**data).save()
+            except httpx.TimeoutException:
+                log.info("fetching latest CS Tools release version timed out")
+            except Exception as e:
+                log.info(f"could not fetch release url: {e}")
+
+        return cls(**data)
+
+    def save(self) -> None:
+        _filepath: pathlib.Path = APP_DIR / '.meta-config.toml'
+        data = {
+            "default": {
+                "config": self.default_config_name
+            },
+            "latest_release": {
+                "version": self.latest_release_version,
+                "published_at": self.latest_release_date
+            }
+        }
+
+        _filepath.write_text(toml.dumps(data))
+
+    def newer_version_string(self) -> str:
+        if version.parse(__version__) >= version.parse(self.latest_release_version):
+            return ""
+        url = f"https://github.com/thoughtspot/cs_tools/releases/tag/{self.latest_release_version}"
+        return f"[green]Newer version available![/] [cyan][link={url}]{self.latest_release_version}[/][/]"
 
 
 class Settings(BaseModel):

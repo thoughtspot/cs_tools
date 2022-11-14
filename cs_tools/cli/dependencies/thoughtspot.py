@@ -12,14 +12,15 @@ from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import _meta_config, TSConfig
 from cs_tools.const import APP_DIR
 
+meta = _meta_config.load()
 log = logging.getLogger(__name__)
 
 
 CONFIG_OPT = TyperOption(
     param_decls=["--config"],
-    help="config file identifier",
-    metavar=f"{_meta_config()['default']['config'] or 'NAME'}",
-    required=True,
+    help=f"config file identifier{' (default is set)' if meta.default_config_name is None else ''}",
+    metavar=f"{meta.default_config_name or 'NAME'}",
+    required=meta.default_config_name is None,
     rich_help_panel="[ThoughtSpot Config Overrides]",
 )
 

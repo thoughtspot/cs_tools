@@ -62,7 +62,6 @@ class CSTool:
         Determines the privacy level of a cs_tool.
 
         One of..
-            example - a template tool
             beta - an unreleased tool
             private - a released tool which uses internal APIs
             public - a released tool which uses no internal APIs
@@ -71,9 +70,6 @@ class CSTool:
         Only public tools show up in the default cli help text. Other classes
         of tools may be shown with additional undocumented flags.
         """
-        if self.directory.stem == '__example_app__':
-            return 'example'
-
         if self.directory.stem.startswith('__b_'):
             return 'beta'
 
@@ -93,13 +89,7 @@ class CSTool:
         """
         Clean up and expose the tool's name.
         """
-        to_trim = {
-            'example': len(''),
-            'beta': len('__b_'),
-            'private': len('_'),
-            'public': len(''),
-        }
-
+        to_trim = {'beta': len('__b_'), 'private': len('_'), 'public': len('')}
         n = to_trim.get(self.privacy, 0)
         return self.directory.stem[n:]
 
@@ -128,6 +118,7 @@ class CSTool:
     @property
     def docs_url(self) -> str:
         """
+        References the documentation page.
         """
         return f"https://thoughtspot.github.io/cs_tools/cs-tools/{self.name}/"
 
