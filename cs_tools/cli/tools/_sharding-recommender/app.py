@@ -11,49 +11,13 @@ from cs_tools.sync.falcon import Falcon
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.const import FMT_TSLOAD_DATETIME
-from cs_tools.util import to_datetime
 
 from ._version import __version__
+from .models import FalconTableInfo
 
 
 HERE = pathlib.Path(__file__).parent
 log = logging.getLogger(__name__)
-
-
-def _format_table_info_data(data: List[dict]) -> List[dict]:
-    """
-    Standardize data in an expected format.
-
-    This is a simple transformation layer, we are fitting our data to be
-    record-based and in the format that's expected for an eventual
-    tsload command.
-    """
-    data = [
-        {
-            'database_name': e.get('database'),
-            'schema_name': e.get('schema'),
-            'table_name': e.get('name'),
-            'table_guid': e['guid'],
-            'state': e.get('state'),
-            'database_version': e.get('databaseVersion'),
-            'serving_version': e.get('servingVersion'),
-            'building_version': e.get('buildingVersion'),
-            'build_duration_s': e.get('buildDuration'),
-            'is_known': e.get('isKnown'),
-            'database_status': e.get('databaseStatus'),
-            'last_uploaded_at': to_datetime(e.get('lastUploadedAt', 0), unit='us').strftime(FMT_TSLOAD_DATETIME),
-            'num_of_rows': e.get('numOfRows'),
-            'approx_bytes_size': e.get('approxByteSize'),
-            'uncompressed_bytes_size': e.get('uncompressedByteSize'),
-            'row_skew': e.get('rowSkew'),
-            'num_shards': e.get('numShards'),
-            'csv_size_with_replication_mb': e.get('csvSizeWithReplicationMB'),
-            'replicated': e.get('replicated'),
-            'ip': 'all' if e.get('ip') == -1 else e.get('ip', None)
-        }
-        for e in data['tables']
-    ]
-    return data
 
 
 app = CSToolsApp(
@@ -143,55 +107,20 @@ def spotapp(
 @app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
-    export: str = Arg(
+    syncer: str = Arg(
         ...,
         help='protocol and path for options to pass to the syncer',
         metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx, models=[FalconTableInfo])
     )
 ):
     """
     Extract Falcon table info from your ThoughtSpot platform.
     """
     ts = ctx.obj.thoughtspot
-    syncer = export if export is not None else Falcon()
 
     with console.status('[bold green]getting falcon table info'):
-        data = _format_table_info_data(ts.api._periscope.sage_combinedtableinfo().json())
-
-    if syncer.name == 'falcon':
-        with console.status('[bold green]creating tables with remote TQL'):
-            ts.tql.script(HERE / 'static' / 'create_tables.tql')
-    elif hasattr(syncer, '__is_database__'):
-        console.log(
-            f'attempting to dump to database that is not Falcon! see the log file for '
-            f'schema if the table FALCON_TABLE_INFO is not created in {syncer.name}.'
-        )
-        log.debug("""
-
-            CREATE TABLE falcon_table_info (
-                  database_name                 VARCHAR(255)
-                , schema_name                   VARCHAR(255)
-                , table_name                    VARCHAR(255)
-                , table_guid                    VARCHAR(255)
-                , state                         VARCHAR(255)
-                , database_version              BIGINT
-                , serving_version               BIGINT
-                , building_version              BIGINT
-                , build_duration_s              BIGINT
-                , is_known                      BOOL
-                , database_status               VARCHAR(255)
-                , last_uploaded_at              DATETIME
-                , num_of_rows                   BIGINT
-                , approx_bytes_size             BIGINT
-                , uncompressed_bytes_size       BIGINT
-                , row_skew                      BIGINT
-                , num_shards                    BIGINT
-                , csv_size_with_replication_mb  DOUBLE
-                , replicated                    BOOL
-                , ip                            VARCHAR(255)
-            );
-        """)
+        data = [FalconTableInfo.from_api_v1(_) for _ in ts.api._periscope.sage_combinedtableinfo().json()["tables"]]
 
     with console.status(f'[bold green]loading data to {syncer.name}..'):
-        syncer.dump('falcon_table_info', data=data)
+        syncer.dump('ts_falcon_table_info', data=data)
