@@ -278,29 +278,32 @@ version = "1.1.0"
 
 ## Changelog
 
-!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-15"
-    === ":hammer_and_wrench: &nbsp; Added"
-    - Initial release [@billdback-ts][contrib-billdback-ts]{ target='secondary' .external-link }.
-
-!!! tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2022-07-19"
-    === ":hammer_and_wrench: &nbsp; Added"
-    - Create an empty mapping file.
-    - Compare two TML files.
-    - Create content with automatic dependency handling.
-    - Update content with automatic dependency handling.  
-    - Allow new and updated content to be shared with groups during import.
-    - Allow tags to be applied to new and updated content during import.
-
-!!! tldr ":octicons-tag-16: v1.4.0 &nbsp; &nbsp; :material-calendar-text: 2022-09-01"
-    === ":hammer_and_wrench: &nbsp; Added"
-    - Download tables and connections.
-    - Upload tables
-    - Multiple bug fixes
-
 !!! tldr ":octicons-tag-16: v1.4.1 &nbsp; &nbsp; :material-calendar-text: 2022-09-12"
     === ":hammer_and_wrench: &nbsp; Bug fixes"
-    - Fixed an error that would stop download if SQL views were used in earlier versions of ThoughtSpot.  A message will be displayed, but the export will continue.
-    - Fixed an error where worksheets weren't downloaded when exporting based on a filters, such as tags or owner.
+        - Fixed an error that would stop download if SQL views were used in earlier versions of ThoughtSpot. A message will be displayed, but the export will continue.
+        - Fixed an error where worksheets weren't downloaded when exporting based on a filters, such as tags or owner.
+
+??? info "Changes History"
+
+    ??? tldr ":octicons-tag-16: v1.4.0 &nbsp; &nbsp; :material-calendar-text: 2022-09-01"
+        === ":hammer_and_wrench: &nbsp; Added"
+            - Download tables and connections.
+            - Upload tables
+            - Multiple bug fixes
+
+    ??? tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2022-07-19"
+        === ":hammer_and_wrench: &nbsp; Added"
+            - Create an empty mapping file.
+            - Compare two TML files.
+            - Create content with automatic dependency handling.
+            - Update content with automatic dependency handling.  
+            - Allow new and updated content to be shared with groups during import.
+            - Allow tags to be applied to new and updated content during import.
+
+    ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-15"
+        === ":hammer_and_wrench: &nbsp; Added"
+            - Initial release [@billdback-ts][contrib-billdback-ts]{ target='secondary' .external-link }.
+
 
 ---
 
