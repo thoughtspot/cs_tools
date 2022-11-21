@@ -1,4 +1,5 @@
 import json
+from httpx import HTTPStatusError
 
 from cs_tools.errors import CSToolsError
 
@@ -16,9 +17,25 @@ class OrgMiddleware:
         :return: The ID of the org.  Throws an error if the org name doesn't exist.
         """
         try:
-            r = self.ts.api.org.get(name=org_name)  # just look for the org with the given name
-            content = json.loads(r.content)
-            return int(content['orgId'])
-        except Exception as e:
-            print(e)
-            raise(CSToolsError(f'error getting org ID: {e}'))
+            # The following doesn't currently work and gives a 403 for all users.
+            # r = self.ts.api.org.get(name=org_name)  # just look for the org with the given name
+            # content = json.loads(r.content)
+            # return int(content['orgId'])
+
+            # The orgs get call will return the list of orgs the user has access to.
+            r = self.ts.api.session.orgs_get()
+            orgs = json.loads(r.text).get('orgs')
+            for o in orgs:
+                if o.get('orgName') == org_name:
+                    return o.get('orgId')
+
+            # org not in the results.
+            raise(CSToolsError(error=f"Unable to look up org {org_name}",
+                               reason=f"Unknown org or user doesn't have access.",
+                               mitigation="Verify org exists and user has access."
+                              )
+                  )
+
+        except HTTPStatusError as hse:
+            print(hse)
+            raise(CSToolsError(error=f'error getting org ID: {hse}'))

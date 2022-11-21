@@ -136,3 +136,15 @@ class Session:
         )
 
         return r
+
+    @validate_arguments
+    def orgs_get(self) -> httpx.Response:
+        """Returns the list of orgs the user has access to."""
+        r = self.rest_api.request(
+            'GET',
+            'session/orgs',
+            privacy='public'
+        )
+
+        return r
+

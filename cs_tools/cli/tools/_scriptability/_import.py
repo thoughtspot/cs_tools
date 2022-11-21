@@ -6,7 +6,7 @@ from httpx import HTTPStatusError
 import json
 import pathlib
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import click
 import toml
@@ -15,7 +15,6 @@ from thoughtspot_tml import YAMLTML
 from thoughtspot_tml.tml import TML
 from typer import Argument as A_, Option as O_  # noqa
 
-from cs_tools.cli.types import CommaSeparatedValuesType
 from cs_tools.cli.util import TSDependencyTree
 from cs_tools.cli.ux import console
 from cs_tools.data.enums import AccessLevel, ConnectionType, GUID, TMLImportPolicy, StatusCode, MetadataObject
@@ -72,7 +71,7 @@ def import_(
             dir_okay=True,
             resolve_path=True
         ),
-        org = O_(None, help='Name of org to export from.  The user must have access to that org.')
+        org: Union[str, int] = O_(None, help='Name or ID of org to import to.  The user must have access to that org.')
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -80,7 +79,8 @@ def import_(
     ts = ctx.obj.thoughtspot
 
     if org:
-        ts.api.session.orgs_put(ts.org.lookup_id_for_name(org_name=org))
+        # ts.api.session.orgs_put(ts.org.lookup_id_for_name(org_name=org))
+        ts.session.switch_org(org=org)
 
     if not path.exists():
         raise CSToolsError(error=f"{path} doesn't exist",
@@ -209,35 +209,39 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
     tml_file_bundles = {k: v for k, v in all_tml_bundles.items() if v.tml.content_type != "connection"}
     connection_file_bundles= {k: v for k, v in all_tml_bundles.items() if v.tml.content_type == "connection"}
 
-    # strip GUIDs if doing force create and convert to a list of TML string.
-    if force_create:
-        [_.tml.remove_guid() for _ in tml_file_bundles.values()]
+    all_resp = []
+    all_results = {}
 
-    connection_tables: Dict[str, List[str]] = {}  # have to init in case there aren't any connections.
-    with console.status(f"[bold green]importing {path.name}[/]"):
-        # if there are connections, do those first.
-        all_resp = []
-        all_results = {}
+    try:
 
-        if connection_file_bundles:
-            resp, results, connection_tables = _upload_connections(ts, guid_mappings, guid_file,
-                                                                   connection_file_bundles,
-                                                                   tml_logs, import_policy, force_create)
-            all_resp.extend(resp)
-            all_results.update(results)
+        # strip GUIDs if doing force create and convert to a list of TML string.
+        if force_create:
+            [_.tml.remove_guid() for _ in tml_file_bundles.values()]
 
-        # if there are TML, do those next.
-        if tml_file_bundles:
+        connection_tables: Dict[str, List[str]] = {}  # have to init in case there aren't any connections.
+        with console.status(f"[bold green]importing {path.name}[/]"):
+            # if there are connections, do those first.
+            if connection_file_bundles:
+                resp, results, connection_tables = _upload_connections(ts, guid_mappings, guid_file,
+                                                                       connection_file_bundles,
+                                                                       tml_logs, import_policy, force_create)
+                all_resp.extend(resp)
+                all_results.update(results)
 
-            # If there were connections, new mapping may have been created.
-            [_map_guids(tfb.tml, guid_mappings, True) for tfb in tml_file_bundles.values()]  # update GUIDs
+            # if there are TML, do those next.
+            if tml_file_bundles:
 
-            resp, results = _upload_tml(ts, guid_mappings, guid_file, tml_file_bundles,
-                                        tml_logs, import_policy, force_create, connection_tables)
-            all_resp.extend(resp)
-            all_results.update(results)
+                # If there were connections, new mapping may have been created.
+                [_map_guids(tfb.tml, guid_mappings, True) for tfb in tml_file_bundles.values()]  # update GUIDs
 
-    # TODO extract the OK results from the responses
+                resp, results = _upload_tml(ts, guid_mappings, guid_file, tml_file_bundles,
+                                            tml_logs, import_policy, force_create, connection_tables)
+                all_resp.extend(resp)
+                all_results.update(results)
+
+    except Exception as e:  # just log the error and then let any content that got sent still get tagged and shared.
+        console.log(f"[bold red]Error loading content: {e}")
+
     # responses for each item that didn't error.  Use for mapping and tagging.
     ok_resp = [_ for _ in all_resp if _.status_code == StatusCode.ok]
 
@@ -611,6 +615,7 @@ def _upload_connections(
             if _.metadata_type == MetadataObject.data_source:  # only update for data sources and not tables.
                 fcnt += 1
 
+        # connections are always partial, so wait for the ones that got created.
         _wait_for_metadata(ts=ts, metadata_list=metadata_list)
 
     except CSToolsError:
@@ -687,8 +692,10 @@ def _upload_tml(
         metadata_list = MetadataTypeList()
 
         fcnt = 0
+        error_free = True
         for _ in resp:
             if _.status_code == StatusCode.error:
+                error_free = False
                 console.log(
                     f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
                 results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], StatusCode.error)
@@ -706,7 +713,11 @@ def _upload_tml(
 
             fcnt += 1
 
-        _wait_for_metadata(ts=ts, metadata_list=metadata_list)
+        # if the import policy is all or none and there was an error, then nothing should have gotten created.
+        if import_policy != TMLImportPolicy.all_or_none or error_free:
+            _wait_for_metadata(ts=ts, metadata_list=metadata_list)
+        else:  # need to not return the OK ones in this scenario because they would attempt to be tagged and shared.
+            resp = []
 
     except Exception as e:
         console.log(f"[bold red]{e}[/]")

@@ -13,7 +13,7 @@ from cs_tools.api._rest_api_v1 import _RESTAPIv1
 from cs_tools._version import __version__
 from cs_tools.api.middlewares import (
     AnswerMiddleware, ConnectionMiddleware, GroupMiddleware, MetadataMiddleware, OrgMiddleware, PinboardMiddleware,
-    SearchMiddleware, TagMiddleware, TQLMiddleware, TSLoadMiddleware, UserMiddleware
+    SearchMiddleware, SessionMiddleware, TagMiddleware, TQLMiddleware, TSLoadMiddleware, UserMiddleware
 )
 from cs_tools.data.models import ThoughtSpotPlatform, LoggedInUser
 
@@ -34,6 +34,7 @@ class ThoughtSpot:
         # ThoughtSpot so that working with the REST and GraphQL apis is simpler
         # to do.
         self.search = SearchMiddleware(self)
+        self.session = SessionMiddleware(self)
         self.user = UserMiddleware(self)
         self.group = GroupMiddleware(self)
         # self.tml
