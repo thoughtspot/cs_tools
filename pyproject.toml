@@ -63,7 +63,8 @@ sqlmodel = "^0.0.8"
 rich = "^12.6.0"
 pydantic = "^1.10.2"
 starlette = "0.20.4"
-thoughtspot-tml = "^1.2.0"
+oyaml = "^1.0"
+thoughtspot-tml = {git = "https://github.com/thoughtspot/thoughtspot_tml.git", rev = "build-spec"}
 
 [tool.poetry.dev-dependencies]
 mkdocs-material =  "*"

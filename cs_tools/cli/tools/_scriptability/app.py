@@ -15,11 +15,9 @@ from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
 from cs_tools.cli.dependency import depends
 from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
 from cs_tools.data.enums import TMLImportPolicy
-from cs_tools.cli.types import CommaSeparatedValuesType
 from cs_tools.cli.ux import CSToolsGroup, CSToolsCommand
 
 from ._compare import compare
-from ._create_mapping import create_mapping
 from ._export import export
 from ._import import import_
 
@@ -114,6 +112,10 @@ def scriptability_import(
             dir_okay=False,
             resolve_path=True
         ),
+        from_env: str = O_(None,
+                           help="The environment name importing from, for GUID mapping."),
+        to_env: str = O_(None,
+                         help="The environment name importing to, for GUID mapping."),
         tags: List[str] = O_([], metavar='TAGS',
                              help='One or more tags to add to the imported content.'),
         share_with: List[str] = O_([], metavar='GROUPS',
@@ -127,8 +129,9 @@ def scriptability_import(
         ),
         org: str = O_(None, help='Name of org to import to.  The user must have access to that org.')
 ):
-    import_(ctx=ctx, path=path, import_policy=import_policy, force_create=force_create, guid_file=guid_file, tags=tags,
-            share_with=share_with, tml_logs=tml_logs, org=org)
+    import_(ctx=ctx, path=path, import_policy=import_policy, force_create=force_create,
+            guid_file=guid_file, from_env=from_env, to_env=to_env,
+            tags=tags, share_with=share_with, tml_logs=tml_logs, org=org)
 
 
 @app.command(name='compare', cls=CSToolsCommand)

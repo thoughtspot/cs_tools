@@ -407,6 +407,7 @@ class Metadata:
         export_ids: List[GUID],
         formattype: TMLType = TMLType.yaml,
         export_associated: bool = False,
+        export_fqn: bool = True
     ) -> httpx.Response:
         """
         Details of one or more metadata objects in the repository.
@@ -418,7 +419,8 @@ class Metadata:
                 data={
                     'export_ids': stringified_array(export_ids),
                     'formattype': formattype.value,
-                    'export_associated': export_associated
+                    'export_associated': export_associated,
+                    'export_fqn': export_fqn
                 }
             )
         return r

@@ -8,8 +8,9 @@ from typing import Any, Dict, List, Tuple, Union
 from rich.table import Table
 from typer import Argument as A_, Option as O_
 
-from thoughtspot_tml import YAMLTML
-from thoughtspot_tml.tml import TML
+from thoughtspot_tml.utils import determine_tml_type
+from thoughtspot_tml.types import TMLObject
+from thoughtspot_tml.exceptions import TMLDecodeError
 
 from cs_tools.cli.types import CommaSeparatedValuesType
 from cs_tools.cli.ux import console
@@ -63,6 +64,7 @@ def export(
     for the "finance" tag and author "user123", then only content owned by that user with the "finance" tag will be
     exported.
     """
+
     if export_ids and (tags or author or include_types or exclude_types or pattern):
         raise CSToolsError(error="GUID cannot be used with other filters.",
                            reason="You can only specify GUIDs or a combination of other filters, " 
@@ -76,6 +78,12 @@ def export(
                            mitigation="Rerun with a valid directory to export to.")
 
     ts = ctx.obj.thoughtspot
+
+    # As-of 11/30/22 - we can't support pre8.7.  Functionality needs to be added to the thoughtspot_tml library.
+    # do recent code version stuff
+    platform_main, platform_secondary, *other = ts.platform.version.split('.')
+    if int(platform_main) < 8 or (int(platform_main) == 8 and int(platform_secondary) < 7):
+        raise NotImplementedError('Only ThoughtSpot 8.7+ is currently supported')
 
     # if an org was passed, switch context to that org.
     if org:
@@ -168,9 +176,12 @@ def _download_tml(ts,
                   ) -> List[Tuple[GUID, str, str, str]]:
     results: List[Tuple[GUID, str, str, str]] = []  # (guid, status, name, message)
 
+    # 8.7.+ had export_fqn.  For previous versions we need to always get associated.  After we don't unless specified.
     r = ts.api.metadata.tml_export(export_ids=[guid],  # only doing one at a time to account for FQN mapping
                                    formattype=TMLType.yaml.value,  # formattype=formattype
-                                   export_associated=(export_associated or set_fqns))
+                                   # export_associated=(export_associated or set_fqns),  # pre-8.7
+                                   export_associated=export_associated,
+                                   export_fqn=True)
 
     objects = r.json().get('object', [])
 
@@ -185,18 +196,22 @@ def _download_tml(ts,
                             f"{_['info']['status']['error_message']}"))
 
         else:
-            console.log(f"{_['info']['filename']} (OK)")
-            tmlobj = YAMLTML.get_tml_object(tml_yaml_str=_['edoc'])
-            if tmlobj:  # some objects might not be supported
+            console.log(f"{_['info']['filename']} (Downloaded)")
+            try:
+                tml_type = determine_tml_type(info=_["info"])
+                tmlobj = tml_type.loads(tml_document=_["edoc"])
+                # tmlobj = YAMLTML.get_tml_object(tml_yaml_str=_['edoc'])
+
                 tml_objects.append(tmlobj)
                 results.append((guid, status['status_code'], _['info']['name'], "Success"))
-            else:
-                console.log(f"[bold red]Unable to convert {_['edoc']} to a TML object.  Ignoring.")
+            except TMLDecodeError as tde:  # some objects might not be supported
+                console.log(f"[bold red]Unable to convert {_['edoc']} to a TML object.  Ignoring. {tde}")
                 results.append((guid, 'WARNING', _['info']['name'], "Unable to convert to TML object"))
 
-    if set_fqns:
+    # pre-8.7 needs to be added back when we add support.
+    # if set_fqns:
         # getting associated, this will also get the additional FQNs for the objects and add to the TML.
-        _add_fqns_to_tml(tml_list=tml_objects)
+    #     _add_fqns_to_tml(tml_list=tml_objects)
 
     # if the export_associated was specified, write all, else just write the requested.
     for _ in filter(lambda tml: export_associated or tml.guid == guid, tml_objects):
@@ -205,7 +220,7 @@ def _download_tml(ts,
     return results
 
 
-def _add_fqns_to_tml(tml_list: List[TML]) -> None:
+def _add_fqns_to_tml(tml_list: List[TMLObject]) -> None:
     """
     Looks up and adds the FQNs to the TML content.
     :param tml_list: List of TML types.
@@ -214,14 +229,14 @@ def _add_fqns_to_tml(tml_list: List[TML]) -> None:
     # First map all the names to GUIDs.  Names should be unique if starting with a single source object.
     name_guid_map = {}
     for _ in tml_list:
-        name_guid_map[_.content_name] = _.guid
+        name_guid_map[_.name] = _.guid
 
     # Now for each edoc, create a TML object and then add FQNs to each table.
     for _ in tml_list:
         _.add_fqns_from_name_guid_map(name_guid_map=name_guid_map)
 
 
-def _write_tml_obj_to_file(path: pathlib.Path, tml: TML) -> None:
+def _write_tml_obj_to_file(path: pathlib.Path, tml: TMLObject) -> None:
     """
     Writes the TML to a file.
     :param path: The path to write to.  Can be a directory or filename.  If it's a directory, the file will be saved
@@ -230,17 +245,18 @@ def _write_tml_obj_to_file(path: pathlib.Path, tml: TML) -> None:
     :return: None
     """
     guid = tml.guid
-    ctype = tml.content_type
-    name = tml.content_name
+    ctype = type(tml).__name__.lower()  # class name has to match the format.
+    name = tml.name
 
     fn = f"{guid}.{ctype}.tml"
     if path:
         fn = f"{path}/{fn}"
 
     console.log(f'writing {name} to {fn}')
-    tmlstr = YAMLTML.dump_tml_object(tml_obj=tml)
-    with open(fn, "w") as f:
-        f.write(tmlstr)
+    tml.dump(fn)
+    # tmlstr = YAMLTML.dump_tml_object(tml_obj=tml)
+    # with open(fn, "w") as f:
+        # f.write(tmlstr)
 
 
 def _show_results_as_table(results: List[Tuple]) -> None:

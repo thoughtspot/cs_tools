@@ -1,27 +1,26 @@
 """
 This file contains the methods to execute the 'scriptability import' command.
 """
+import click
 import copy
-from httpx import HTTPStatusError
 import json
 import pathlib
 import time
+import traceback
+
+from httpx import HTTPStatusError
+from rich.table import Table
+from typer import Argument as A_, Option as O_  # noqa
 from typing import Dict, List, Optional, Tuple, Union
 
-import click
-import toml
-from rich.table import Table
-from thoughtspot_tml import YAMLTML
-from thoughtspot_tml.tml import TML
-from typer import Argument as A_, Option as O_  # noqa
+from thoughtspot_tml.utils import determine_tml_type
+from thoughtspot_tml.types import TMLObject
 
-from cs_tools.cli.util import TSDependencyTree
 from cs_tools.cli.ux import console
 from cs_tools.data.enums import AccessLevel, ConnectionType, GUID, TMLImportPolicy, StatusCode, MetadataObject
 from cs_tools.errors import CSToolsError
 from cs_tools.thoughtspot import ThoughtSpot
-from ._create_mapping import create_guid_file_if_not_exists
-from .util import MetadataTypeList, TMLFileBundle, get_guid_from_filename
+from .util import GUIDMapping, MetadataTypeList, TMLFileBundle, get_guid_from_filename
 
 
 class TMLResponseReference:
@@ -55,11 +54,16 @@ def import_(
                                 help="If true, will force a new object to be created."),
         guid_file: Optional[pathlib.Path] = O_(
             None,
-            help='Existing or new mapping file to map GUIDs from source instance to target instance.',
-            metavar='FILE_OR_DIR',
+            help='Existing or new mapping file to map GUIDs from source instance to target instance.  '
+                 'This file must conform with the GUID mapping structure defined in the thoughtspot_tml library.',
+            metavar='JSON_FILE',
             dir_okay=False,
             resolve_path=True
         ),
+        from_env: str = O_(None,
+                           help="The environment name importing from, for GUID mapping."),
+        to_env: str = O_(None,
+                           help="The environment name importing to, for GUID mapping."),
         tags: List[str] = O_([], metavar='TAGS',
                              help='One or more tags to add to the imported content.'),
         share_with: List[str] = O_([], metavar='GROUPS',
@@ -92,6 +96,15 @@ def import_(
                            reason="The logging directory must already exist.",
                            mitigation="Check the --tml_logs argument to make sure it is correct.")
 
+    guid_mapping: Union[GUIDMapping, None] = None
+    if guid_file:
+        if not (from_env and to_env):
+            raise CSToolsError(error=f"GUID files also require specifying the 'from' and 'to' environments.",
+                               reason="Insufficient information to perform GUID mapping.",
+                               mitigation="Set the --from-env and --to-env values.")
+        else:
+            guid_mapping = GUIDMapping(from_env=from_env, to_env=to_env, path=guid_file)
+
     if path.is_dir():  # individual files are listed as they are loaded so just show directory.
         if import_policy == TMLImportPolicy.validate_only:
             console.log(f"[bold green]validating from {path}.[/]")
@@ -99,35 +112,34 @@ def import_(
             console.log(f"[bold green]importing from {path} with policy {import_policy.value}.[/]")
 
     if import_policy == TMLImportPolicy.validate_only:
-        results = _import_and_validate(ts, path, force_create, guid_file, tml_logs)
+        results = _import_and_validate(ts, path, force_create, guid_mapping, tml_logs)
     else:
-        # results = _import_and_create(ts, path, import_policy, force_create, guid_file, tags, share_with, tml_logs)
+        # results = _import_and_create(ts, path, import_policy, force_create, guid_mapping, tags, share_with, tml_logs)
         results = _import_and_create_bundle(ts, path, import_policy, force_create,
-                                            guid_file, tags, share_with, tml_logs)
+                                            guid_mapping, tags, share_with, tml_logs)
 
     _show_results_as_table(results)
 
 
 def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool,
-                         guid_file: pathlib.Path, tml_logs: pathlib.Path) -> Dict[GUID, Tuple]:
+                         guid_mapping: GUIDMapping, tml_logs: pathlib.Path) -> Dict[GUID, Tuple]:
     """
     Does a validation import.  No content is created.  If FQNs map, they will be used.  If they don't, they will be
     removed.
     :param ts: The ThoughtSpot connection.
     :param path: Path to the directory or file.
     :param force_create: If true, all GUIDs are removed from content (but not FQNs that map)
-    :param guid_file: The file of GUID mappings.
+    :param guid_mapping: The GUID mapping details.
     :param tml_logs: Directory to log imported content to.
     :returns: A dictionary with the results of the load.  The key is a GUID and the contents is a tuple with the
     (type, filename, and status) in that order.
     """
     results: Dict[GUID, Tuple] = {}
-    guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
 
     all_tml_bundles = _load_tml_from_files(path)
-    tml_file_bundles = {k: v for k, v in all_tml_bundles.items() if v.tml.content_type != "connection"}
+    tml_file_bundles = {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name != "connection"}
 
-    connection_file_bundles= {k: v for k, v in all_tml_bundles.items() if v.tml.content_type == "connection"}
+    connection_file_bundles= {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name == "connection"}
     for cfb in connection_file_bundles.values():
         console.log(f'[bold yellow] Connection validation not supported.  Ignoring {cfb.file.name}')
 
@@ -135,13 +147,14 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
 
     # strip GUIDs if doing force create and convert to a list of TML string.
     if force_create:
-        [_.tml.remove_guid() for _ in tml_file_bundles.values()]
+        for _ in tml_file_bundles.values():
+            _.tml.guid = None
 
     for f in filenames:
         console.log(f'validating {f}')
 
     with console.status(f"[bold green]importing {path.name}[/]"):
-        tml_to_load = [YAMLTML.dump_tml_object(tbf.tml) for tbf in tml_file_bundles.values()]
+        tml_to_load = [_.tml.dumps() for _ in tml_file_bundles.values()]  # get the JSON to load
 
         if tml_logs:
             original_filenames = [tbf.file.name for tbf in tml_file_bundles.values()]
@@ -181,7 +194,7 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
 
 
 def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLImportPolicy, force_create: bool,
-                              guid_file: pathlib.Path, tags: List[str], share_with: List[str],
+                              guid_mapping: GUIDMapping, tags: List[str], share_with: List[str],
                               tml_logs: pathlib.Path) -> Dict[GUID, Tuple]:
     """
     Attempts to create new content.  If a mapping is not found, then an assumption is made that the mapping is correct.
@@ -190,7 +203,7 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
     :param import_policy: The policy to either do all or none or the imports that fail.  Note that it's possible for
                           on level of the content to be successfully created an lower level content fail.
     :param force_create: If true, all GUIDs are removed from content (but not FQNs that map)
-    :param guid_file: The file of GUID mappings.
+    :param guid_mapping: The GUID mapping between environments.
     :param tags: List of tags to apply.  Tags will be created if they don't exist.
     :param share_with: Shares with the groups of the given name, e.g. "Business Users"
     :param tml_logs: Directory to log uploaded TML to.
@@ -199,15 +212,14 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
     """
     results: Dict[GUID, Tuple] = {}
 
-    guid_mappings: Dict[GUID: GUID] = _read_guid_mappings(guid_file=guid_file) if guid_file else {}
     all_tml_bundles = _load_tml_from_files(path)  # all including connections.
 
     # split up by connection vs. not connection since connections use different APIs.
     tml_file_bundles: Dict[GUID, TMLFileBundle]
     connection_file_bundles: Dict[GUID, TMLFileBundle]
 
-    tml_file_bundles = {k: v for k, v in all_tml_bundles.items() if v.tml.content_type != "connection"}
-    connection_file_bundles= {k: v for k, v in all_tml_bundles.items() if v.tml.content_type == "connection"}
+    tml_file_bundles = {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name != "connection"}
+    connection_file_bundles= {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name == "connection"}
 
     all_resp = []
     all_results = {}
@@ -216,14 +228,14 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
 
         # strip GUIDs if doing force create and convert to a list of TML string.
         if force_create:
-            [_.tml.remove_guid() for _ in tml_file_bundles.values()]
+            for _ in tml_file_bundles.values():
+                _.tml.guid = None
 
         connection_tables: Dict[str, List[str]] = {}  # have to init in case there aren't any connections.
         with console.status(f"[bold green]importing {path.name}[/]"):
             # if there are connections, do those first.
             if connection_file_bundles:
-                resp, results, connection_tables = _upload_connections(ts, guid_mappings, guid_file,
-                                                                       connection_file_bundles,
+                resp, results, connection_tables = _upload_connections(ts, guid_mapping, connection_file_bundles,
                                                                        tml_logs, import_policy, force_create)
                 all_resp.extend(resp)
                 all_results.update(results)
@@ -232,9 +244,9 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
             if tml_file_bundles:
 
                 # If there were connections, new mapping may have been created.
-                [_map_guids(tfb.tml, guid_mappings, True) for tfb in tml_file_bundles.values()]  # update GUIDs
+                [guid_mapping.disambiguate(_.tml, delete_unmapped=True) for _ in tml_file_bundles.values()]
 
-                resp, results = _upload_tml(ts, guid_mappings, guid_file, tml_file_bundles,
+                resp, results = _upload_tml(ts, guid_mapping, tml_file_bundles,
                                             tml_logs, import_policy, force_create, connection_tables)
                 all_resp.extend(resp)
                 all_results.update(results)
@@ -243,10 +255,10 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
         console.log(f"[bold red]Error loading content: {e}")
 
     # responses for each item that didn't error.  Use for mapping and tagging.
-    ok_resp = [_ for _ in all_resp if _.status_code == StatusCode.ok]
+    ok_resp = [_ for _ in all_resp if (_.status_code == StatusCode.ok or _.status_code == StatusCode.warning)]
 
-    if guid_file:
-        _write_guid_mappings(guid_file=guid_file, guid_mappings=guid_mappings)
+    if guid_mapping:
+        guid_mapping.save()
 
     if tags:
         _add_tags(ts, ok_resp, tags)
@@ -266,7 +278,7 @@ def _load_tml_from_files(path: pathlib.Path) -> Dict[GUID, TMLFileBundle]:
     tml_file_bundles: Dict[GUID, TMLFileBundle] = {}
 
     if path.is_dir():
-        for p in list(f for f in path.iterdir() if f.match("*.tml")):
+        for p in list(f for f in path.iterdir() if (f.match("*.tml") or f.match("*.yaml"))):
             if not p.is_dir():  # don't currently support sub-folders.  Might add later.
                 _load_and_append_tml_file(path=p, tml_file_bundles=tml_file_bundles)
     else:
@@ -276,53 +288,6 @@ def _load_tml_from_files(path: pathlib.Path) -> Dict[GUID, TMLFileBundle]:
     console.log(f"Attempting to load: {log_bundle}")
 
     return tml_file_bundles
-
-
-def _read_guid_mappings(guid_file: pathlib.Path) -> Dict[GUID, TML]:
-    """
-    Reads the guid mapping file and creates a dictionary of old -> new mappings.  Note that the GUID file _must_ be
-    a valid TOML file of the format used by the scriptability tool.
-    :param guid_file: The path to a file that may or may not exist.
-    :return: A mapping of old to new GUIDs.
-    """
-    create_guid_file_if_not_exists(guid_file=guid_file)
-
-    try:
-        toml_content = toml.load(str(guid_file))
-        mappings = toml_content.get('mappings', {})
-        if not mappings:
-            console.log(f"[bold yellow]Warning: No mappings provided in {guid_file}.[/]")
-
-        return mappings
-
-    except toml.decoder.TomlDecodeError as err:
-        raise CSToolsError(error=f"File decode error: {err}",
-                           reason=f"Unable to load TOML from {guid_file}.",
-                           mitigation=f"Check {guid_file} to make sure it's valid TOML format.")
-
-
-def _write_guid_mappings(guid_file: pathlib.Path, guid_mappings) -> None:
-    """
-    Writes the GUID mappings out to the mapping file.
-    :param guid_file:
-    :param guid_mappings:
-    """
-    create_guid_file_if_not_exists(guid_file=guid_file)  # just to make sure.
-
-    try:
-        toml_content = toml.load(str(guid_file))
-        toml_content["mappings"] = guid_mappings
-        with open(guid_file, "w") as f:
-            toml.dump(toml_content, f)
-
-    except toml.decoder.TomlDecodeError as err:
-        raise CSToolsError(error=f"File decode error: {err}",
-                           reason=f"Unable to load TOML from {guid_file}.",
-                           mitigation=f"Check {guid_file} to make sure it's valid TOML format.")
-    except OSError as err:
-        raise CSToolsError(error=f"File error: {err}",
-                           reason=f"Unable to write to TOML file {guid_file}.",
-                           mitigation=f"Check {guid_file} to make sure it's valid TOML format and writeable.")
 
 
 def _load_and_append_tml_file(
@@ -339,124 +304,73 @@ def _load_and_append_tml_file(
         console.log(f"[error]Attempting to load a directory {path}.[/]")
         return None
 
-    if not path.name.endswith(".tml"):
-        console.log(f"[bold red]{path} Only TML (.tml) files are supported.[/]")
+    if not (path.name.endswith(".tml") or path.name.endswith(".yaml")):
+        console.log(f"[bold red]{path} Only TML (.tml) and YAML (.yaml) files are supported.[/]")
         return None
 
     tmlobj = _load_tml_from_file(path=path)
 
     # If the GUID is not in the file, use the name.  This requires the first part of the name to be a GUID.
-    # Connection YAML files don't have a GUID.  --export will export as <guid>.connection.tml
-    if not tmlobj.guid:
+    # Connection YAML files don't have a GUID.
+    if not hasattr(tmlobj, 'guid') or not tmlobj.guid:
         tmlobj.guid = path.name.split('.')[0]
-
-    # can't map yet because content can load in bundles and sometimes new mappings are created.
-    # _map_guids(tml=tmlobj, guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
 
     tml_file_bundles[tmlobj.guid] = TMLFileBundle(file=path, tml=tmlobj)
 
     return tmlobj.guid
 
 
-def _load_tml_from_file(path: pathlib.Path) -> TML:
+def _load_tml_from_file(path: pathlib.Path) -> TMLObject:
     """
     Loads a TML object.  If it's a worksheet and the connection is provided, then the table FQNs will be modified.
     :param path: The path to the file.
     :return: A TML object.
     """
-    with open(path, "r") as tmlfile:
-        tmlstr = tmlfile.read()
+    tml_type = determine_tml_type(path=path)
+    return tml_type.load(path)
 
-    return YAMLTML.get_tml_object(tml_yaml_str=tmlstr)
-
-
-def _build_dependency_tree(tml_list: List[TML]) -> TSDependencyTree:
-    """
-    Builds a dependency tree for the TML to be loaded.
-    :param tml_list: List of TML to check.
-    :return: A dependency tree of content.  Loading can be done on the levels.
-    """
-    dt = TSDependencyTree()
-
-    for tml in tml_list:
-        depends_on = _find_depends_on(tml=tml.tml)
-        dt.add_dependency(tml.guid, depends_on=set(depends_on))
-
-    return dt
-
-
-def _find_depends_on(tml: dict) -> List[str]:
-    """
-    Returns a list of dependencies for the TML.  These are identified by any FQNs in the file.
-    :param tml: The TML dictionary content (tml.tml)
-    :return: A list of FQNs this TML depends on.  Note that missing FQNs mean a dependency is ignored.
-    """
-    depends_on = []
-
-    for k in tml.keys():
-        #  print(f"{k} == {tml[k]}")
-        if k.lower() == "fqn":
-            depends_on.append(tml[k])
-        elif isinstance(tml[k], dict):
-            depends_on.extend(_find_depends_on(tml[k]))
-        elif isinstance(tml[k], list):
-            for _ in tml[k]:
-                if isinstance(_, dict):
-                    depends_on.extend(_find_depends_on(_))
-
-    return depends_on
-
-
-def _map_guids(tml: TML, guid_mappings: Dict, delete_unmapped_fqns: bool) -> TML:
-    """
-    Updates the TML to map any known GUIDs to new GUIDs.  If the old GUID (guid in file) is in the mapping as a key,
-    it will be replaced with the value.
-    :param tml: A TML object to replace mappings on.
-    :param guid_mappings: The mapping dictionary of the form guid_mapping[<old_guid>] => <new_guid>
-    :param delete_unmapped_fqns: If true, GUIDs and FQNs that don't have a mapping, will be deleted.
-    """
-
-    # check all entries in the tml to see if they are GUID or FQN.
-    # If yes, try to change the value.
-    # If no, try mapping, but at the next level down.  Ruturn when there are no child levels.
-    _find_and_map_guids(tml=tml.tml, guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
-    return tml
-
-
-def _find_and_map_guids(tml: Dict, guid_mappings: Dict, delete_unmapped_fqns: bool) -> None:
-    """
-    Recursively finds GUIDs (GUID or fqn entries) and replaces if the GUID is mapped.  This shouldn't get too deep.
-    :param tml: The TML fragment to check.
-    :param guid_mappings: The mapping to use.
-    :param delete_unmapped_fqns: If true, GUIDs and FQNs that don't have a mapping, will be deleted.
-    """
-    guid_key_names = ('guid', 'fqn')
-    del_key = None
-    for k in tml.keys():
-        if k in guid_key_names:
-            v = tml.get(k, None)
-            if v:
-                if v in guid_mappings.keys():  # if there is a mapping, replace it.
-                    tml[k] = guid_mappings[v]
-                # if there isn't a mapping and we are deleting unmapped, then delete the FQN.  Note that this checks
-                # to verify the value hasn't been set on either side.
-                elif delete_unmapped_fqns and k == 'fqn' and tml[k] not in guid_mappings.values():
-                    del_key = k  # this works because there is only one FQN for a given dictionary.
-        elif isinstance(tml[k], dict):
-            _find_and_map_guids(tml=tml[k], guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
-        elif isinstance(tml[k], list):
-            for _ in tml[k]:
-                if isinstance(_, dict):
-                    _find_and_map_guids(tml=_, guid_mappings=guid_mappings, delete_unmapped_fqns=delete_unmapped_fqns)
-
-    if del_key:
-        del (tml[del_key])
+#  The following was previous code that determined dependencies.  It may need to be revised, but will need updates
+#  based on thoughtspot_tml changes.
+# def _build_dependency_tree(tml_list: List[TML]) -> TSDependencyTree:
+#      """
+#      Builds a dependency tree for the TML to be loaded.
+#      :param tml_list: List of TML to check.
+#      :return: A dependency tree of content.  Loading can be done on the levels.
+#      """
+#      dt = TSDependencyTree()
+#
+#      for tml in tml_list:
+#          depends_on = _find_depends_on(tml=tml.as_dict())
+#          dt.add_dependency(tml.guid, depends_on=set(depends_on))
+#
+#      return dt
+#
+#
+#  def _find_depends_on(tml: dict) -> List[str]:
+#      """
+#      Returns a list of dependencies for the TML.  These are identified by any FQNs in the file.
+#      :param tml: The TML dictionary content (tml.tml)
+#      :return: A list of FQNs this TML depends on.  Note that missing FQNs mean a dependency is ignored.
+#      """
+#      depends_on = []
+#
+#      for k in tml.keys():
+#          #  print(f"{k} == {tml[k]}")
+#          if k.lower() == "fqn":
+#              depends_on.append(tml[k])
+#          elif isinstance(tml[k], dict):
+#              depends_on.extend(_find_depends_on(tml[k]))
+#          elif isinstance(tml[k], list):
+#              for _ in tml[k]:
+#                  if isinstance(_, dict):
+#                      depends_on.extend(_find_depends_on(_))
+#
+#      return depends_on
 
 
 def _upload_connections(
     ts: ThoughtSpot,
-    guid_mappings: Dict[GUID, GUID],
-    guid_file: pathlib.Path,
+    guid_mapping: GUIDMapping,
     connection_file_bundles: Dict[GUID, TMLFileBundle],
     tml_logs: pathlib.Path,
     import_policy: TMLImportPolicy,
@@ -466,7 +380,6 @@ def _upload_connections(
     Uploads connections.
     :param ts: The ThoughtSpot object.
     :param guid_mappings:  Mapping of old to new GUIDs.
-    :param guid_file: The file to write GUID mapping to if being used.
     :param connection_file_bundles: The bundle of connections to upload.
     :param tml_logs: The TML log directory to log uploaded content.
     :param import_policy: The import policy to use.  Connections cannot be validated.
@@ -499,25 +412,18 @@ def _upload_connections(
                 # connections without passwords can be created, but then the following table create fails (and you
                 # get errors in the UI.  So throw an exception to avoid future pain.
                 password_found = False
-                for p in cnx.properties:
-                    if 'password' in p.values():
-                        if p['value']:
-                            password_found = True
+                for p in cnx.connection.properties:
+                    if p.key == "password" and p.value:
+                        password_found = True
                         break
 
                 if not password_found:
-                    raise CSToolsError(error=f'Connection "{cnx.name}" missing password',
+                    raise CSToolsError(error=f'Connection "{cnx.connection.name}" missing password',
                                        reason=f'Connections require a valid password to create tables.',
                                        mitigation='Add a password to the connection file and try again.')
 
-                # Strange scenario that happens.  Connections don't contain table join information.  If creating,
-                # and have tables in the connection and then create, you end up with the tables being created
-                # twice and the second time fails (so no joins).  Trying to delete the tables from the connection
-                # in these scenarios so they get created from TML (with the joins).  Not sure if older versions
-                # support this capability.  This also requires the TML for tables be exported.
-                _remove_tables_from_connection(cnx)  # tables are updated separately.  This requires having that TML.
+                metadata = cnxtml_to_cnxjson(cnx.to_dict())
 
-                metadata = cnxtml_to_cnxjson(cnx.tml)
                 if tml_logs:  # TODO - need to log after any changes, such as removing tables.
                     fn = f"{tml_logs}/{filenames[fcnt]}.imported"
                     fcnt += 1
@@ -526,18 +432,23 @@ def _upload_connections(
 
                 if force_create:
 
-                    # Currently descriptions aren't exported for connections, so they will be set to blank unless
-                    # manually set.
-                    r = ts.api._connection.create(name=cnx.name, description=cnx.description,
-                                                  type=ConnectionType.from_str(cnx.type), createEmpty=True,
-                                                  metadata=metadata)
-                else:
-                    # NOTE: this only works if the filename has the GUID.  This is a hack because connection TML doesn't
-                    # include GUIDs for the connection.
-                    cnx.guid = get_guid_from_filename(cnx_bundle.file.name)
+                    # If creating, and have tables in the connection and then create, you end up with the tables
+                    # being created twice and the second time fails.  Delete the tables from the connection in these
+                    # scenarios, so they get created from TML.  Not sure if older versions support this capability.
+                    # This also requires the TML for tables be exported.
+                    # HOWEVER, for connection updates, you have to have the tables.  This may be a bug.
 
-                    r = ts.api._connection.update(name=cnx.name, description=cnx.description, id=cnx.guid,
-                                                  type=ConnectionType.from_str(cnx.type), createEmpty=True,
+                    # Currently descriptions aren't exported for connections, so they will be set to blank.
+                    r = ts.api._connection.create(name=cnx.connection.name, description="",
+                                                  type=ConnectionType.from_str(cnx.connection.type), createEmpty=True,
+                                                  metadata=metadata)
+
+                else:
+                    # That was the original GUID, now we have to see if there is a mapping.
+                    cnx.guid = guid_mapping.get_mapped_guid(cnx.guid)
+
+                    r = ts.api._connection.update(name=cnx.name, description="", id=cnx.guid,
+                                                  type=ConnectionType.from_str(cnx.connection.type), createEmpty=False,
                                                   metadata=metadata)
 
                 tmlrr = TMLResponseReference()
@@ -568,19 +479,20 @@ def _upload_connections(
 
                         table_list.append(tname)
 
-                    connection_tables[cnx.name] = table_list
+                    connection_tables[cnx.connection.name] = table_list
 
                     # need to write guid mappings to the file.
-                    if guid_file:
+                    if guid_mapping:
                         old_table_guids = {}  # first get the old table GUIDs based on table name.
-                        for table in cnx.tml.get('table', []):
-                            old_table_guids[table['name']] = table['id']
+                        if cnx.connection.table:
+                            for table in cnx.connection.table:
+                                old_table_guids[table.name] = table.id
 
                         for new_table in text.get('logicalTableList', []):
                             tname = new_table['header'].get('name')
                             tid = new_table['header'].get('id')
                             if tname in old_table_guids.keys():
-                                guid_mappings[old_table_guids[tname]] = tid
+                                guid_mapping.set_mapped_guid(old_table_guids[tname], tid)
                             else:
                                 console.log(f"Unexpected table returned from create: {tname} ({tid})")
                 else:
@@ -593,8 +505,12 @@ def _upload_connections(
 
         metadata_list = MetadataTypeList()
 
-        fcnt = 0
+        fcnt = -1
         for _ in resp:
+            # need to start at -1 because the last datasource can show up before the response is finished for tables.
+            if _.metadata_type == MetadataObject.data_source.value:  # only update for data sources and not tables.
+                fcnt += 1
+
             if _.status_code == 'ERROR':
                 console.log(
                     f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
@@ -603,17 +519,14 @@ def _upload_connections(
                 console.log(f"{filenames[fcnt]} {_.status_code}: {_.name} " f"({_.metadata_type}::{_.guid})")
                 # if the object was loaded successfully and guid mappings are being used,
                 # make sure the mapping is there
-                old_guid = get_guid_from_filename(filenames[fcnt])
-                if guid_file:
-                    guid_mappings[old_guid] = _.guid
+                if guid_mapping:
+                    old_guid = get_guid_from_filename(filenames[fcnt])
+                    guid_mapping.set_mapped_guid(old_guid, _.guid)
                 results[_.guid] = (_.metadata_type, filenames[fcnt], StatusCode.ok)
                 metadata_list.add(MetadataObject.data_source
                                   if _.metadata_type == MetadataObject.data_source.value
                                   else MetadataObject.logical_table,
                     _.guid)
-
-            if _.metadata_type == MetadataObject.data_source:  # only update for data sources and not tables.
-                fcnt += 1
 
         # connections are always partial, so wait for the ones that got created.
         _wait_for_metadata(ts=ts, metadata_list=metadata_list)
@@ -622,22 +535,14 @@ def _upload_connections(
         raise  # just reraise so this process fails.
     except Exception as e:
         console.log(f"[bold red]{e}[/]")
+        traceback.print_exc()
 
     return resp, results, connection_tables
 
 
-def _remove_tables_from_connection(cnx: TML) -> None:
-    """
-    Removes the table references from the connection TML.
-    :param cnx: The connection TML.
-    """
-    cnx.tml['table'] = []
-
-
 def _upload_tml(
         ts: ThoughtSpot,
-        guid_mappings: Dict[GUID, GUID],
-        guid_file: pathlib.Path,
+        guid_mappings: GUIDMapping,
         tml_file_bundles: Dict[GUID, TMLFileBundle],
         tml_logs: pathlib.Path,
         import_policy: TMLImportPolicy,
@@ -652,10 +557,10 @@ def _upload_tml(
     updated_file_bundles = {}
     if connection_tables:  # don't bother if no connections.
         for k, v in tml_file_bundles.items():
-            if v.tml.content_type == 'table':  # is this an enum somewhere?
+            if v.tml.tml_type_name == 'table':  # is this an enum somewhere?
                 # see if the table and connection are in the TML
-                connection_name = v.tml.connection_name
-                table_name = v.tml.content_name
+                connection_name = v.tml.table.connection.name
+                table_name = v.tml.table.name
                 if not (connection_name in connection_tables.keys() and
                         table_name in connection_tables[connection_name]):
                     updated_file_bundles[k] = v
@@ -669,8 +574,9 @@ def _upload_tml(
         return resp, results
 
     try:
-        [_map_guids(tfb.tml, guid_mappings, False) for tfb in updated_file_bundles.values()]  # update GUIDs
-        tml_to_load = [YAMLTML.dump_tml_object(_.tml) for _ in updated_file_bundles.values()]  # get the JSON to load
+        if guid_mappings:
+            [guid_mappings.disambiguate(_.tml) for _ in updated_file_bundles.values()]
+        tml_to_load = [_.tml.dumps() for _ in updated_file_bundles.values()]  # get the JSON to load
 
         filenames = [tfb.file.name for tfb in updated_file_bundles.values()]
         old_guids = [_ for _ in updated_file_bundles.keys()]  # keys and values return in the same order
@@ -691,32 +597,47 @@ def _upload_tml(
 
         metadata_list = MetadataTypeList()
 
-        fcnt = 0
-        error_free = True
+        fcnt = 0  # keeps track of content to file loaded.
+        error_free = True  # needed to see if there were errors.  If using ALL_OR_NONE, an error will cause no creation.
+        guids_to_map = {}  # list of GUIDs to map.  GUIDs will only be added if the content was successfully loaded.
+
         for _ in resp:
             if _.status_code == StatusCode.error:
                 error_free = False
                 console.log(
                     f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
                 results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], StatusCode.error)
+            elif _.status_code == StatusCode.warning:
+                console.log(f"[bold yellow]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                results[_.guid] = (_.metadata_type, filenames[fcnt], StatusCode.warning)
+                old_guid = old_guids[fcnt]
+                guids_to_map[old_guid] = _.guid
+                metadata_list.add(
+                    ts.metadata.tml_type_to_metadata_object(updated_file_bundles[old_guid].tml.tml_type_name),
+                    _.guid)
             elif _.status_code == StatusCode.ok:
                 console.log(f"{filenames[fcnt]} {_.status_code}: {_.name} " f"({_.metadata_type}::{_.guid})")
                 # if the object was loaded successfully and guid mappings are being used,
                 # make sure the mapping is there
                 old_guid = old_guids[fcnt]
-                if guid_file:
-                    guid_mappings[old_guid] = _.guid
+                guids_to_map[old_guid] = _.guid
                 results[_.guid] = (_.metadata_type, filenames[fcnt], StatusCode.ok)
                 metadata_list.add(
-                    ts.metadata.tml_type_to_metadata_object(updated_file_bundles[old_guid].tml.content_type),
+                    ts.metadata.tml_type_to_metadata_object(updated_file_bundles[old_guid].tml.tml_type_name),
                     _.guid)
 
             fcnt += 1
 
         # if the import policy is all or none and there was an error, then nothing should have gotten created.
         if import_policy != TMLImportPolicy.all_or_none or error_free:
+            # was some success, so add the mappings to be saved.
+            if guid_mappings:
+                for k, v in guids_to_map.items():
+                    guid_mappings.set_mapped_guid(k, v)
             _wait_for_metadata(ts=ts, metadata_list=metadata_list)
         else:  # need to not return the OK ones in this scenario because they would attempt to be tagged and shared.
+            console.log('\n[bold yellow]Warning:  Content was not created.  This can be due to a failure when '
+                        'using ALL_OR_NONE policy.[\]\n')
             resp = []
 
     except Exception as e:
@@ -751,6 +672,15 @@ def _flatten_tml_response(r: Dict) -> [TMLResponseReference]:
                 status = _['response']['status']
                 trr.error_code = status.get('error_code', '')
                 trr.error_message = status['error_message'].replace('<br/>', '')
+            elif trr.status_code == StatusCode.warning:
+                h = _['response']['header']
+                status = _['response']['status']
+                trr.error_code = status.get('status_code', '')
+                trr.guid = h.get('id_guid', 'UNKNOWN')
+                trr.error_message = status['error_message'].replace('<br/>', '')
+                trr.name = h.get('name', 'UNKNOWN')
+                trr.type = h.get('type', 'UNKNOWN')
+                trr.metadata_type = h.get('metadata_type', 'UNKNOWN')
             else:
                 h = _['response']['header']
                 trr.guid = h.get('id_guid', 'UNKNOWN')
@@ -1004,40 +934,41 @@ def cnxtml_to_cnxjson (cnxtml: Dict) -> str:
     # first, organize tables by database and schema
     # { database_name: { schema_name: { table_name: [ columns ], table_name: [ columns ], ... } } }
     databases = {}
-    for t in cnxtml.get('table'):
-        # all tables should have these or it should fail.
-        db_name = t['external_table']['db_name']
-        schema_name = t['external_table']['schema_name']
-        table_name = t['external_table']['table_name']
+    if cnxtml.get('table', None):
+        for t in cnxtml.get('table'):
+            # all tables should have these or it should fail.
+            db_name = t['external_table']['db_name']
+            schema_name = t['external_table']['schema_name']
+            table_name = t['external_table']['table_name']
 
-        # columns are optional
-        columns = []
-        for c in t.get('column'):
-            columns.append({
-                "name": c['external_column'],
-                "type": c['data_type'],
-                # using defaults for the following booleans since it's unknown.
-                "canImport": "true",
-                "selected": "true",
-                "isLinkActivated": "true",
-                "isImported": "false",
-                "tableName": table_name,
-                "schemaName": schema_name,
-                "dbName": db_name,
-            })
+            # columns are optional
+            columns = []
+            for c in t.get('column'):
+                columns.append({
+                    "name": c['external_column'],
+                    "type": c['data_type'],
+                    # using defaults for the following booleans since it's unknown.
+                    "canImport": "true",
+                    "selected": "true",
+                    "isLinkActivated": "true",
+                    "isImported": "false",
+                    "tableName": table_name,
+                    "schemaName": schema_name,
+                    "dbName": db_name,
+                })
 
-        # at this point the details of a table should be known and need to be added to the appropriate DB
-        db = databases.get(db_name) if db_name in databases.keys() else {}
-        databases[db_name] = db
+            # at this point the details of a table should be known and need to be added to the appropriate DB
+            db = databases.get(db_name) if db_name in databases.keys() else {}
+            databases[db_name] = db
 
-        schema = db.get(schema_name) if schema_name in db.keys() else {}  # tables and columns
-        db[schema_name] = schema
+            schema = db.get(schema_name) if schema_name in db.keys() else {}  # tables and columns
+            db[schema_name] = schema
 
-        table = schema.get(table_name) if table_name in schema.keys() else []  # list of columns
-        table.extend(columns)
-        schema[table_name] = table
+            table = schema.get(table_name) if table_name in schema.keys() else []  # list of columns
+            table.extend(columns)
+            schema[table_name] = table
 
-    # TODO convert to a proper metadata format now that things are combined.
+    # Convert to a proper metadata format now that things are combined.
     external_databases = []
     for dbn in databases.keys():
         db = databases.get(dbn)

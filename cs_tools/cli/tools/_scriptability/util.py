@@ -1,10 +1,58 @@
 """Contains useful classes and methods for scriptability."""
 import copy
 import pathlib
-from typing import List
+from typing import Callable, List
 
-from thoughtspot_tml.tml import TML
+from thoughtspot_tml.types import TMLObject
+from thoughtspot_tml.utils import disambiguate as _disambiguate, EnvironmentGUIDMapper
 from cs_tools.data.enums import GUID, MetadataObject
+
+
+class GUIDMapping:
+    """Wrapper for guid mapping to make it easier to use."""
+
+    def __init__(self, from_env: str, to_env: str, path: pathlib.Path):
+        """
+        Creates a new GUIDMapping
+        :param from_env: The from environment name.
+        :param to_env: The to environment name.
+        :param path: The file to read from and/or save to.
+        """
+        self.from_env: str = from_env
+        self.to_env: str = to_env
+        self.path: pathlib.Path = path
+
+        # forcing names to lower to make consistent.
+        transformer: Callable[[str], str] = str.lower
+        if path.exists():
+            self.guid_mapper = EnvironmentGUIDMapper.read(path=path, environment_transformer=transformer)
+        else:
+            self.guid_mapper: EnvironmentGUIDMapper = EnvironmentGUIDMapper(environment_transformer=transformer)
+
+    def get_mapped_guid(self, from_guid):
+        """Returns the guid mapping"""
+        # guid_mapper.get() -> { DEV: guid1, PROD: guid2, ... }
+        # get the GUID or return the original
+        return self.guid_mapper.get(from_guid, default={}).get(self.to_env, from_guid)
+
+    def set_mapped_guid(self, from_guid, to_guid):
+        """Sets the guid mapping from the old to the new."""
+        self.guid_mapper[from_guid] = (self.from_env, from_guid)
+        self.guid_mapper[from_guid] = (self.to_env, to_guid)
+
+    def disambiguate(self, tml: TMLObject, delete_unmapped: bool = False):
+        """
+        Replaces source GUIDs with target.
+        :param tml: A TLM object to replace GUIDs for.
+        :param delete_unmapped: If true, unmapped GUIDs will be removed.
+        """
+        # self.guid_mapper.generate_map(DEV, PROD) # =>  {envt_A_guid1: envt_B_guid2 , .... }
+        mapper = self.guid_mapper.generate_mapping(self.from_env, self.to_env)
+        _disambiguate(tml=tml, guid_mapping=mapper, delete_unmapped_guid=delete_unmapped)
+
+    def save(self):
+        """Saves the GUID mappings."""
+        self.guid_mapper.save(path=self.path, info={"test": True})
 
 
 class TMLFileBundle:
@@ -12,7 +60,7 @@ class TMLFileBundle:
     Bundles file information with TML to make it easier to track and log.
     """
 
-    def __init__(self, file: pathlib.Path, tml: TML):
+    def __init__(self, file: pathlib.Path, tml: TMLObject):
         """
         Creates a new TMLFileBundle
         :param file: A path to the TML file.

@@ -3,8 +3,8 @@ This file contains the methods to execute the 'scriptability compare' command.
 """
 import pathlib
 
-from thoughtspot_tml import YAMLTML
-from thoughtspot_tml.tml import TML
+from thoughtspot_tml.utils import determine_tml_type
+from thoughtspot_tml.types import TMLObject
 from typer import Argument as A_
 
 from cs_tools.cli.ux import console
@@ -38,17 +38,18 @@ def compare(
         console.log(f"{file1} is{'' if same else ' not'} the same as {file2}")
 
 
-def _get_tmlobj(path: pathlib.Path) -> TML:
+def _get_tmlobj(path: pathlib.Path) -> TMLObject:
     """Returns a TML object from the file path."""
-    with open(path, "r") as tmlfile:
-        tmlstr = tmlfile.read()
 
-    return YAMLTML.get_tml_object(tml_yaml_str=tmlstr)
+    tml_type = determine_tml_type(path=path)
+    tml = tml_type.load(path=path)
+
+    return tml
 
 
-def _compare_tml(file1: str, tml1: TML, file2: str, tml2: TML) -> bool:
+def _compare_tml(file1: str, tml1: TMLObject, file2: str, tml2: TMLObject) -> bool:
     """Compares two TML objects, listing any differences."""
-    return __compare_dict(file1, tml1.tml, file2, tml2.tml)
+    return __compare_dict(file1, tml1.to_dict(), file2, tml2.to_dict())
 
 
 def __compare_dict(f1: str, d1: dict, f2: str, d2: dict) -> bool:
