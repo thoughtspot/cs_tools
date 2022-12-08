@@ -379,7 +379,7 @@ def _upload_connections(
     """
     Uploads connections.
     :param ts: The ThoughtSpot object.
-    :param guid_mappings:  Mapping of old to new GUIDs.
+    :param guid_mapping:  Mapping of old to new GUIDs.
     :param connection_file_bundles: The bundle of connections to upload.
     :param tml_logs: The TML log directory to log uploaded content.
     :param import_policy: The import policy to use.  Connections cannot be validated.
@@ -542,7 +542,7 @@ def _upload_connections(
 
 def _upload_tml(
         ts: ThoughtSpot,
-        guid_mappings: GUIDMapping,
+        guid_mapping: GUIDMapping,
         tml_file_bundles: Dict[GUID, TMLFileBundle],
         tml_logs: pathlib.Path,
         import_policy: TMLImportPolicy,
@@ -574,8 +574,8 @@ def _upload_tml(
         return resp, results
 
     try:
-        if guid_mappings:
-            [guid_mappings.disambiguate(_.tml) for _ in updated_file_bundles.values()]
+        if guid_mapping:
+            [guid_mapping.disambiguate(_.tml) for _ in updated_file_bundles.values()]
         tml_to_load = [_.tml.dumps() for _ in updated_file_bundles.values()]  # get the JSON to load
 
         filenames = [tfb.file.name for tfb in updated_file_bundles.values()]
@@ -631,9 +631,9 @@ def _upload_tml(
         # if the import policy is all or none and there was an error, then nothing should have gotten created.
         if import_policy != TMLImportPolicy.all_or_none or error_free:
             # was some success, so add the mappings to be saved.
-            if guid_mappings:
+            if guid_mapping:
                 for k, v in guids_to_map.items():
-                    guid_mappings.set_mapped_guid(k, v)
+                    guid_mapping.set_mapped_guid(k, v)
             _wait_for_metadata(ts=ts, metadata_list=metadata_list)
         else:  # need to not return the OK ones in this scenario because they would attempt to be tagged and shared.
             console.log('\n[bold yellow]Warning:  Content was not created.  This can be due to a failure when '

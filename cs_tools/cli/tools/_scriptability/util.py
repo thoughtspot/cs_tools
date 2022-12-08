@@ -11,7 +11,7 @@ from cs_tools.data.enums import GUID, MetadataObject
 class GUIDMapping:
     """Wrapper for guid mapping to make it easier to use."""
 
-    def __init__(self, from_env: str, to_env: str, path: pathlib.Path):
+    def __init__(self, from_env: str, to_env: str, path: pathlib.Path, remap_object_guid: bool = True):
         """
         Creates a new GUIDMapping
         :param from_env: The from environment name.
@@ -21,6 +21,7 @@ class GUIDMapping:
         self.from_env: str = from_env
         self.to_env: str = to_env
         self.path: pathlib.Path = path
+        self.remap_object_guid = remap_object_guid
 
         # forcing names to lower to make consistent.
         transformer: Callable[[str], str] = str.lower
@@ -48,7 +49,10 @@ class GUIDMapping:
         """
         # self.guid_mapper.generate_map(DEV, PROD) # =>  {envt_A_guid1: envt_B_guid2 , .... }
         mapper = self.guid_mapper.generate_mapping(self.from_env, self.to_env)
-        _disambiguate(tml=tml, guid_mapping=mapper, delete_unmapped_guid=delete_unmapped)
+        _disambiguate(tml=tml,
+                      guid_mapping=mapper,
+                      remap_object_guid=self.remap_object_guid,
+                      delete_unmapped_guids=delete_unmapped)
 
     def save(self):
         """Saves the GUID mappings."""
