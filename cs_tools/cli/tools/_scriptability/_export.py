@@ -244,19 +244,10 @@ def _write_tml_obj_to_file(path: pathlib.Path, tml: TMLObject) -> None:
     :param tml:  The TML object to write to a file.
     :return: None
     """
-    guid = tml.guid
-    ctype = type(tml).__name__.lower()  # class name has to match the format.
-    name = tml.name
+    fn = path.name if not path.is_dir() else f"{path}/{tml.guid}.{tml.tml_type_name}.tml"
 
-    fn = f"{guid}.{ctype}.tml"
-    if path:
-        fn = f"{path}/{fn}"
-
-    console.log(f'writing {name} to {fn}')
+    console.log(f'writing {tml.name} to {fn}')
     tml.dump(fn)
-    # tmlstr = YAMLTML.dump_tml_object(tml_obj=tml)
-    # with open(fn, "w") as f:
-        # f.write(tmlstr)
 
 
 def _show_results_as_table(results: List[Tuple]) -> None:
