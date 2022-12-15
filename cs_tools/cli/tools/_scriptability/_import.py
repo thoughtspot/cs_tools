@@ -3,6 +3,7 @@ This file contains the methods to execute the 'scriptability import' command.
 """
 import click
 import copy
+import enum
 import json
 import pathlib
 import time
@@ -20,7 +21,61 @@ from cs_tools.cli.ux import console
 from cs_tools.data.enums import AccessLevel, ConnectionType, GUID, TMLImportPolicy, StatusCode, MetadataObject
 from cs_tools.errors import CSToolsError
 from cs_tools.thoughtspot import ThoughtSpot
-from .util import GUIDMapping, MetadataTypeList, TMLFileBundle, get_guid_from_filename
+from .util import GUIDMapping, MetadataTypeList, TMLFileBundle
+
+
+class LogLevel(enum.Enum):
+    ERROR = "Error"
+    WARNING = "Warning"
+    INFO = "Info"
+    DEBUG = "Debug"
+
+
+# This feels a bit like overwriting logger, but the console class is a special one.  Only want to write info to the
+# file, but warnings and errors to both.
+class ImportLog:
+    """Encapsulates both the console and file logging."""
+
+    def __init__(self):
+        self.file = None
+
+    def open(self, path: pathlib.Path):
+        self.file = open(path, "w")
+
+    def close(self) -> None:
+        self.file.close()
+
+    def log(self, msg: str, level: LogLevel = LogLevel.INFO, also_console=False) -> None:
+        """
+        Logs a message to the console and
+        :param msg:  The message to log.
+        :param level: The level.  Colors will be added for the console.
+        :param log_console: If true, will log INFO and DEBUG to the console.  Errors and warnings always go to console.
+        """
+        if self.file:
+            self.file.write(f"{msg}\n")
+
+        if level == LogLevel.WARNING:
+            console.log(f"[bold yellow]{msg}[/]")
+        elif level == LogLevel.ERROR:
+            console.log(f"[bold red]{msg}[/]")
+        elif also_console:
+            console.log(msg)
+
+    def info(self, msg: str, also_console=False) -> None:
+        """Logs an info message."""
+        self.log(msg=msg, level=LogLevel.INFO, also_console=also_console)
+
+    def warning(self, msg: str) -> None:
+        """Logs a warning message."""
+        self.log(msg=msg, level=LogLevel.WARNING)
+
+    def error(self, msg: str) -> None:
+        """Logs an error message."""
+        self.log(msg=msg, level=LogLevel.ERROR)
+
+
+log = ImportLog()
 
 
 class TMLResponseReference:
@@ -96,6 +151,11 @@ def import_(
                            reason="The logging directory must already exist.",
                            mitigation="Check the --tml_logs argument to make sure it is correct.")
 
+    if tml_logs:
+        log.open(path=path / "tml_import.log")
+    else:
+        log.open(path=pathlib.Path(".tml_import.log"))
+
     guid_mapping: Union[GUIDMapping, None] = None
     if guid_file:
         if not (from_env and to_env):
@@ -107,9 +167,9 @@ def import_(
 
     if path.is_dir():  # individual files are listed as they are loaded so just show directory.
         if import_policy == TMLImportPolicy.validate_only:
-            console.log(f"[bold green]validating from {path}.[/]")
+            log.info(f"validating from {path}.", also_console=True)
         else:
-            console.log(f"[bold green]importing from {path} with policy {import_policy.value}.[/]")
+            log.info(f"importing from {path} with policy {import_policy.value}.", also_console=True)
 
     if import_policy == TMLImportPolicy.validate_only:
         results = _import_and_validate(ts, path, force_create, guid_mapping, tml_logs)
@@ -119,6 +179,8 @@ def import_(
                                             guid_mapping, tags, share_with, tml_logs)
 
     _show_results_as_table(results)
+
+    log.close()
 
 
 def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool,
@@ -141,9 +203,15 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
 
     connection_file_bundles= {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name == "connection"}
     for cfb in connection_file_bundles.values():
-        console.log(f'[bold yellow] Connection validation not supported.  Ignoring {cfb.file.name}')
+        log.warning(f'Connection validation not supported.  Ignoring {cfb.file.name}')
 
     filenames = [tfb.file.name for tfb in tml_file_bundles.values()]
+
+    # There may be an issue with the delete_unmapped logic.  If new content is being validated that has FQNs that
+    # aren't in the target system, then those would need to be deleted. But if it's validating against existing content
+    # then it wouldn't.
+    if guid_mapping:
+        [guid_mapping.disambiguate(_.tml, delete_unmapped_guids=True) for _ in tml_file_bundles.values()]
 
     # strip GUIDs if doing force create and convert to a list of TML string.
     if force_create:
@@ -151,7 +219,7 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
             _.tml.guid = None
 
     for f in filenames:
-        console.log(f'validating {f}')
+        log.info(f'validating {f}')
 
     with console.status(f"[bold green]importing {path.name}[/]"):
         tml_to_load = [_.tml.dumps() for _ in tml_file_bundles.values()]  # get the JSON to load
@@ -174,19 +242,18 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
         fcnt = 0
         for _ in resp:
             try:
-                if _.status_code == 'ERROR':
-                    console.log(f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                if _.status_code == StatusCode.error:
+                    log.error(f"{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})")
                     results[f"err-{fcnt}"] = ("", filenames[fcnt], StatusCode.error)
-                elif _.status_code == 'WARNING':
-                    console.log(
-                        f"[bold yellow]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                elif _.status_code == StatusCode.warning:
+                    log.warning(f"{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})")
                     results[f"warn-{fcnt}"] = ("", filenames[fcnt], StatusCode.warning)
                 else:
-                    console.log(f"{filenames[fcnt]} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
+                    log.info(f"{filenames[fcnt]} {_.status_code}: {_.name} ({_.metadata_type}::{_.guid})")
                     results[_.guid] = (_.metadata_type, filenames[fcnt], StatusCode.ok)
 
             except KeyError as ke:
-                console.log(f"Unexpected content: {_}")
+                log.error(f"Unexpected content: {_}")
 
             fcnt += 1
 
@@ -242,17 +309,13 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
 
             # if there are TML, do those next.
             if tml_file_bundles:
-
-                # If there were connections, new mapping may have been created.
-                [guid_mapping.disambiguate(_.tml, delete_unmapped=True) for _ in tml_file_bundles.values()]
-
                 resp, results = _upload_tml(ts, guid_mapping, tml_file_bundles,
                                             tml_logs, import_policy, force_create, connection_tables)
                 all_resp.extend(resp)
                 all_results.update(results)
 
     except Exception as e:  # just log the error and then let any content that got sent still get tagged and shared.
-        console.log(f"[bold red]Error loading content: {e}")
+        log.error(f"Error loading content: {e}")
 
     # responses for each item that didn't error.  Use for mapping and tagging.
     ok_resp = [_ for _ in all_resp if (_.status_code == StatusCode.ok or _.status_code == StatusCode.warning)]
@@ -285,7 +348,7 @@ def _load_tml_from_files(path: pathlib.Path) -> Dict[GUID, TMLFileBundle]:
         _load_and_append_tml_file(path=path, tml_file_bundles=tml_file_bundles)
 
     log_bundle = [_.file.name for _ in tml_file_bundles.values()]
-    console.log(f"Attempting to load: {log_bundle}")
+    log.info(f"Attempting to load: {log_bundle}")
 
     return tml_file_bundles
 
@@ -301,11 +364,11 @@ def _load_and_append_tml_file(
     """
 
     if path.is_dir():
-        console.log(f"[error]Attempting to load a directory {path}.[/]")
+        log.error(f"Attempting to load a directory {path}.")
         return None
 
     if not (path.name.endswith(".tml") or path.name.endswith(".yaml")):
-        console.log(f"[bold red]{path} Only TML (.tml) and YAML (.yaml) files are supported.[/]")
+        log.error(f"{path} Only TML (.tml) and YAML (.yaml) files are supported.")
         return None
 
     tmlobj = _load_tml_from_file(path=path)
@@ -392,12 +455,12 @@ def _upload_connections(
     connection_tables: Dict[str, List[str]] = {}  # connection name to table names
 
     if import_policy == TMLImportPolicy.validate_only:
-        console.log("[bold yellow]Warning: connections don't support validate only policies.  Ignoring connections.[/]")
+        log.warning("Warning: connections don't support validate only policies.  Ignoring connections.")
         return resp, results, connection_tables  # connection APIs don't support validate_only.
 
     if import_policy == TMLImportPolicy.all_or_none:
-        console.log(f"[bold yellow]Warning: connections don't support 'ALL_OR_NONE' policies.  "
-                    f"Using {TMLImportPolicy.partial.value} for connections.[/]")
+        log.warning(f"Warning: connections don't support 'ALL_OR_NONE' policies.  "
+                f"Using {TMLImportPolicy.partial.value} for connections.")
 
     try:
         filenames = [tfb.file.name for tfb in connection_file_bundles.values()]
@@ -445,9 +508,9 @@ def _upload_connections(
 
                 else:
                     # That was the original GUID, now we have to see if there is a mapping.
-                    cnx.guid = guid_mapping.get_mapped_guid(cnx.guid)
+                    target_guid = guid_mapping.get_mapped_guid(cnx.guid)
 
-                    r = ts.api._connection.update(name=cnx.name, description="", id=cnx.guid,
+                    r = ts.api._connection.update(name=cnx.name, description="", id=target_guid,
                                                   type=ConnectionType.from_str(cnx.connection.type), createEmpty=False,
                                                   metadata=metadata)
 
@@ -483,6 +546,9 @@ def _upload_connections(
 
                     # need to write guid mappings to the file.
                     if guid_mapping:
+                        # map the connection
+                        guid_mapping.set_mapped_guid(cnx.guid, text['header']['id'])
+
                         old_table_guids = {}  # first get the old table GUIDs based on table name.
                         if cnx.connection.table:
                             for table in cnx.connection.table:
@@ -494,14 +560,14 @@ def _upload_connections(
                             if tname in old_table_guids.keys():
                                 guid_mapping.set_mapped_guid(old_table_guids[tname], tid)
                             else:
-                                console.log(f"Unexpected table returned from create: {tname} ({tid})")
+                                log.warning(f"Unexpected table returned from create: {tname} ({tid})")
                 else:
                     tmlrr.status_code = r.status_code
                     tmlrr.error_code = "ERROR"
                     resp.append(tmlrr)
 
             except HTTPStatusError as e:
-                console.log(f"[bold red]Failed to import {cnx_bundle.file.name}: {e.response.text}[/]")
+                log.error(f"Failed to import {cnx_bundle.file.name}: {e.response.text}")
 
         metadata_list = MetadataTypeList()
 
@@ -512,16 +578,10 @@ def _upload_connections(
                 fcnt += 1
 
             if _.status_code == 'ERROR':
-                console.log(
-                    f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                log.error(f"{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})")
                 results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], StatusCode.error)
             else:
-                console.log(f"{filenames[fcnt]} {_.status_code}: {_.name} " f"({_.metadata_type}::{_.guid})")
-                # if the object was loaded successfully and guid mappings are being used,
-                # make sure the mapping is there
-                if guid_mapping:
-                    old_guid = get_guid_from_filename(filenames[fcnt])
-                    guid_mapping.set_mapped_guid(old_guid, _.guid)
+                log.info(f"{filenames[fcnt]} {_.status_code}: {_.name} " f"({_.metadata_type}::{_.guid})")
                 results[_.guid] = (_.metadata_type, filenames[fcnt], StatusCode.ok)
                 metadata_list.add(MetadataObject.data_source
                                   if _.metadata_type == MetadataObject.data_source.value
@@ -534,7 +594,7 @@ def _upload_connections(
     except CSToolsError:
         raise  # just reraise so this process fails.
     except Exception as e:
-        console.log(f"[bold red]{e}[/]")
+        log.error(f"{e}")
         traceback.print_exc()
 
     return resp, results, connection_tables
@@ -575,7 +635,8 @@ def _upload_tml(
 
     try:
         if guid_mapping:
-            [guid_mapping.disambiguate(_.tml) for _ in updated_file_bundles.values()]
+            # if we are forcing the creation of new content, we want to delete guids that aren't ma
+            [guid_mapping.disambiguate(tml=_.tml, delete_unmapped_guids=force_create) for _ in updated_file_bundles.values()]
         tml_to_load = [_.tml.dumps() for _ in updated_file_bundles.values()]  # get the JSON to load
 
         filenames = [tfb.file.name for tfb in updated_file_bundles.values()]
@@ -604,11 +665,10 @@ def _upload_tml(
         for _ in resp:
             if _.status_code == StatusCode.error:
                 error_free = False
-                console.log(
-                    f"[bold red]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                log.error(f"{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})")
                 results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], StatusCode.error)
             elif _.status_code == StatusCode.warning:
-                console.log(f"[bold yellow]{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})[/]")
+                log.warning(f"{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})")
                 results[_.guid] = (_.metadata_type, filenames[fcnt], StatusCode.warning)
                 old_guid = old_guids[fcnt]
                 guids_to_map[old_guid] = _.guid
@@ -616,7 +676,7 @@ def _upload_tml(
                     ts.metadata.tml_type_to_metadata_object(updated_file_bundles[old_guid].tml.tml_type_name),
                     _.guid)
             elif _.status_code == StatusCode.ok:
-                console.log(f"{filenames[fcnt]} {_.status_code}: {_.name} " f"({_.metadata_type}::{_.guid})")
+                log.info(f"{filenames[fcnt]} {_.status_code}: {_.name} " f"({_.metadata_type}::{_.guid})")
                 # if the object was loaded successfully and guid mappings are being used,
                 # make sure the mapping is there
                 old_guid = old_guids[fcnt]
@@ -636,12 +696,11 @@ def _upload_tml(
                     guid_mapping.set_mapped_guid(k, v)
             _wait_for_metadata(ts=ts, metadata_list=metadata_list)
         else:  # need to not return the OK ones in this scenario because they would attempt to be tagged and shared.
-            console.log('\n[bold yellow]Warning:  Content was not created.  This can be due to a failure when '
-                        'using ALL_OR_NONE policy.[\]\n')
+            log.warning('Content was not created.  This can be due to a error when using ALL_OR_NONE policy.')
             resp = []
 
     except Exception as e:
-        console.log(f"[bold red]{e}[/]")
+        log.error(f"{e}")
         raise
 
     return resp, results
@@ -707,12 +766,12 @@ def _add_tags(ts: ThoughtSpot, objects: List[TMLResponseReference], tags: List[s
             ids.append(_.guid)
             types.append(_.metadata_type)
         if ids:  # might all be errors
-            console.log(f'Adding tags {tags} to {ids}')
+            log.info(f'Adding tags {tags} to {ids}')
             try:
                 ts.api.metadata.assigntag(id=ids, type=types, tagname=tags)
             except Exception as e:
-                console.log(f'[bold red]Error adding tags: {e}.[/]')
-                console.log(f'[bold red]Check spelling of the tag.[/]')
+                log.error(f'Error adding tags: {e}.')
+                log.error(f'Check spelling of the tag.')
 
 
 def _share_with(ts: ThoughtSpot, objects: List[TMLResponseReference], share_with: List[str]) -> None:
@@ -729,7 +788,7 @@ def _share_with(ts: ThoughtSpot, objects: List[TMLResponseReference], share_with
             try:
                 groups.append(ts.group.get_group_id(_))
             except HTTPStatusError as e:
-                console.log(f"[bold red]unable to get ID for group {_}: {e}")
+                log.error(f"unable to get ID for group {_}: {e}")
 
         if groups:  # make sure some mapped
 
@@ -753,7 +812,7 @@ def _share_with(ts: ThoughtSpot, objects: List[TMLResponseReference], share_with
                 try:
                     ts.api.security.share(type=ctype, id=objectids, permissions=permissions)
                 except HTTPStatusError as e:
-                    console.log(f"Unable to share {objectids} of type {ctype} with permissions: {permissions}")
+                    log.error(f"Unable to share {objectids} of type {ctype} with permissions: {permissions}")
 
 
 def _wait_for_metadata(ts: ThoughtSpot, metadata_list: MetadataTypeList):
@@ -772,7 +831,7 @@ def _wait_for_metadata(ts: ThoughtSpot, metadata_list: MetadataTypeList):
     items_to_wait_on = copy.copy(metadata_list)  # don't look for all the items every time.
 
     while not items_to_wait_on.is_empty() and total_waited_secs < max_wait_time_secs:
-        console.log(f"Waiting on {items_to_wait_on} for {wait_time_secs} seconds.".replace('[', r'\['))
+        log.info(f"Waiting on {items_to_wait_on} for {wait_time_secs} seconds.".replace('[', r'\['))
         # always sleep first since the first call will (probably) be immediately.
         time.sleep(wait_time_secs)
         total_waited_secs += wait_time_secs

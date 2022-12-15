@@ -546,3 +546,41 @@ class MetadataMiddleware:
         }
 
         return mapping.get(tml_type, None)
+
+    @validate_arguments
+    def table_references(self, guid: GUID, tml_type: str) -> Dict[str, GUID]:
+        """
+        Returns a list of referenced tables for the given object.  These are from referencedTableHeaders.
+        :param guid: The metadata object GUID to get referenced tables for.
+        :param type: TML type
+        :return: A dict that maps the name to the GUID for the referenced tables.
+        """
+        r = self.ts.api.metadata.details(id=[guid], type=self.tml_type_to_metadata_object(tml_type))
+        details = r.json()
+        mappings = self._find_table_references(details)
+        return mappings
+
+    @validate_arguments
+    def _find_table_references(self, details: Union[List, Dict[str, Any]]) -> Dict[str, GUID]:
+        """
+        Returns a dictionary of name to GUID mappings from the metadata.detail response.
+        :param details: The details returned from the metadata.detail call.
+        """
+        mappings = {}
+
+        try:
+            if isinstance(details, dict):
+                for k, v in details.items():
+                    if k == "referencedTableHeaders":  # should map to a list of id/name pairs.
+                        for _ in v:
+                            mappings[_['name']] = _['id']
+                    elif isinstance(v, dict) or isinstance(v, list):
+                        mappings.update(self._find_table_references(v))
+            elif isinstance(details, list):
+                for _ in details:
+                    if isinstance(_, dict) or isinstance(_, list):
+                        mappings.update(self._find_table_references(_))
+        except ValueError as ve:
+            console.log(ve)
+
+        return mappings

@@ -77,3 +77,17 @@ def filter_none(request_parameters: Dict[str, Any]) -> Dict[str, Any]:
             kw[k] = v
 
     return kw
+
+
+def before_version(version: str, compare_to_version: str) -> bool:
+    """
+    Returns True of the version is earlier than the comparison version.  Only the first two parts are examined.
+    It's assumed that there are always two parts.
+    Examples:
+        8.2 is before 8.9
+        8.2 is not before 8.2.3
+    """
+    v_major, v_minor, *other = version.split(".")
+    ct_major, ct_minor, *other = compare_to_version.split(".")
+
+    return v_major < ct_major or (v_major == ct_major and v_minor < ct_minor)
