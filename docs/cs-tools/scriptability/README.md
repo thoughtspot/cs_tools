@@ -5,6 +5,9 @@
     *__This tool uses private API calls!__ These could change with any version update and
     break the provided functionality.*
 
+    *__The mapping file format has changed from 1.4 to 2.0.__  Any existing mapping files will need to be 
+    converted to the new format.*
+
 ## Overview
 
 This tool allows user to simplify and automate the export and import of ThoughtSpot TML from and to the same or different instances.
@@ -29,46 +32,51 @@ There are several use cases where exporting and importing TML is useful:
     When exporting the TML, you will need content permissions to the content to be exported.  
     When importing the TML it will be created as the authenticated user of the tool.
 
-This version of cstools scriptability supports the following scenarios:
+This version of cstools scriptability supports the following:
 
-* Export TML based on specific GUIDs (with and without related content)
-* Export TML based on a ThoughtSpot TAG (with and without related content)
+* All TML types _and_ connections can be exported and imported with or without related content
+* Orgs are now supported for those instances where it's being used.
+
+Export
+* Export TML based on a GUID
+* Export TML based on the author
+* Export TML based on a ThoughtSpot TAG
+* Export only TML that matches a pattern
+
+Import
 * Import TML (update and create new) with complex dependency handling (updated)
-* :sparkles: Supports exporting connections
-* :sparkles: Support a mapping file of GUIDs with automatic updates for new content (new)
-* :sparkles: Compare two TML files for differences (new)
-* :sparkles: Generate an empty mapping file (new)
-* :sparkles: Share and tag content when importing (new)
-* :sparkles: Import tables via TML (new)
+* Compare two TML files for differences
+* Share and tag content when importing
 
 !!! warning "TML is complex and this tool is new."
 
-    The scriptability tool has been tested in a number of complex scenarios.  But TML export and import is complex 
-    with a variety of different scenarios.  It is anticipated that some scenarios have not been tested for and 
-    won't work.  Please provide feedback on errors and unsupported scenarios by entering a [new issue][gh-issue].
+    The scriptability tool has been tested in a number of complex scenarios.  But TML export and import is 
+    complex with a variety of different scenarios.  It is anticipated that some scenarios have not been 
+    tested for and won't work.  Please provide feedback on errors and unsupported scenarios by 
+    entering a [new issue][gh-issue].
 
 !!! warning "Limitations"
 
-    * Connections cannot be imported
-    * Scriptability doesn't support removal or changes of joins.  These must be done manually.
-    * Deleting columns with dependencies probably won't work and give dependency errors.
+    * All of the general [TML limitation](https://docs.thoughtspot.com/software/latest/tml#_limitations_of_working_with_tml_files) apply when using the scriptability tool.
     * The author of new content is the user in the config file, not the original author.
 
     The following are some known issues when using the tool:
-    * SQL Views give errors on export and cannot be imported.
-    * Connections can only be exported and not imported.
-    * There are scenarios where there is content you can access, but not download.  In these cases you will get an 
-      error message.
+    * Worksheets based on SQL Views can sometimes fail.  This is a TML limitation.
+    * There are scenarios where there is content you can access, but not download.  In these cases you will get an error message.
 
     In general, any changes with dependencies are likely to cause errors in the current version.  
 
-??? important "Planned features coming soon"
+??? important "New features being considered for upcoming releases"
 
-    The following features are planned for an upcoming release:
+    The following features are being considered for an upcoming release:
 
     * Set the author on import
-    * Export and import SQL views
-    * Import connections
+    * Get only content modified since a given date
+    * Automatic versioning of mapping files
+    * Ability to compare two environements for differences
+
+    Other ideas are welcome.  Submit a request via [GitHub][gh_issue].
+
 
 !!! info "Helpful Links"
 
@@ -114,32 +122,18 @@ This version of cstools scriptability supports the following scenarios:
 
 ## GUID mapping file
 
-You will usually need to have an explicit mapping from one GUID to another.  This is particularly true of tables if 
-there are more than one with the same name in the system being imported to.  If you don't provide the GUID as an 
-FQN in the TML file, you will get an error on import, because ThoughtSpot won't know which table is being referred to.
+You will usually need to have an explicit mapping from one GUID to another.  This is particularly true 
+of tables if there are more than one with the same name in the system being imported to.  If you don't 
+provide the GUID as an FQN in the TML file, you will get an error on import, because ThoughtSpot won't 
+know which table is being referred to.
 
-The default name for the GUID mapping file is `guid.mapping`, but you can use whatever name you like since it's specified as a parameter.  The GUID mapping file is only used for importing TML.  When creating content, the GUID 
-mapping file is updated as content is created with new GUID mappings.  This allows it to be used later for updating content.
+The default name for the GUID mapping file is `guid.mapping.json`, but you can use whatever name you like 
+since it's specified as a parameter.  The GUID mapping file is only used for importing TML.  When creating 
+content, the GUID mapping file is updated as content is created with new GUID mappings.  
+This allows it to be used later for updating content.
 
-The GUID mapping file is a [TOML](https://toml.io/en/) file with different sections.  The example below shows a starting file with mappings for tables.  The top section are values that tell the reader what the mapping file is for.  (Meaningful naming of the file is recommended.)  The `[mappings]` section contains mappings _from_ the old GUID _to_ the new GUID.  These would be from the source to the destination.
-
-~~~
-name = "TML Import"
-source = "TS 1"
-destination = "TS 2"
-description = "Mapping file for TML migration."
-version = "1.1.0"
-
-[mappings]
-"7ba07f4c-8756-48ef-bef0-0acc74f361f4"="73bc24b6-d3ff-4dae-bf82-61ae80f03dab" 
-"a51f5b23-53c5-4703-ac0c-3bf5af649811"="11767209-e54d-4a26-ae63-92d1ab024051"
-"dace214a-b8d6-46fd-927f-d03c0e06e62f"="5d9bf47d-79b6-45e4-acff-f7d166d2dee0"
-~~~
-
-
-??? warning "Comments are not retained"
-
-    The mapping file is updated and rewritten as new content is created.  TOML allows comments, but reading and writing comments is not supported.  A future version will have the ability to add some type of content, such as table names for the mappings.
+The GUID mapping file is created and loaded by the [thoughtspot_tml] project.  More details can be found 
+[there](https://github.com/thoughtspot/thoughtspot_tml).  
 
 ## CLI preview
 
@@ -278,27 +272,36 @@ version = "1.1.0"
 
 ## Changelog
 
-!!! tldr ":octicons-tag-16: v1.4.1 &nbsp; &nbsp; :material-calendar-text: 2022-09-12"
-    === ":hammer_and_wrench: &nbsp; Bug fixes"
-        - Fixed an error that would stop download if SQL views were used in earlier versions of ThoughtSpot. A message will be displayed, but the export will continue.
-        - Fixed an error where worksheets weren't downloaded when exporting based on a filters, such as tags or owner.
 
 ??? info "Changes History"
 
+    ??? tldr ":octicons-tag-16: v2.0.0 &nbsp; &nbsp; :material-calendar-text: 2022-12-16"
+        === ":hammer_and_wrench: &nbsp; Added"
+            - Import connections and SQL views
+            - Support for Orgs
+            - Updated mapping file format
+            - Using new version of thoughtspot_tml
+            - Multiple bug fixes
+
+    !!! tldr ":octicons-tag-16: v1.4.1 &nbsp; &nbsp; :material-calendar-text: 2022-09-12"
+        === ":hammer_and_wrench: &nbsp; Bug fixes"
+            - Fixed an error that would stop download if SQL views were used in earlier versions of ThoughtSpot. A message will be displayed, but the export will continue.
+
+    - Fixed an error where worksheets weren't downloaded when exporting based on a filters, such as tags or owner.
     ??? tldr ":octicons-tag-16: v1.4.0 &nbsp; &nbsp; :material-calendar-text: 2022-09-01"
         === ":hammer_and_wrench: &nbsp; Added"
-            - Download tables and connections.
+            - Download tables and connections
             - Upload tables
             - Multiple bug fixes
 
     ??? tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2022-07-19"
         === ":hammer_and_wrench: &nbsp; Added"
-            - Create an empty mapping file.
-            - Compare two TML files.
-            - Create content with automatic dependency handling.
-            - Update content with automatic dependency handling.  
-            - Allow new and updated content to be shared with groups during import.
-            - Allow tags to be applied to new and updated content during import.
+            - Create an empty mapping file
+            - Compare two TML files
+            - Create content with automatic dependency handling
+            - Update content with automatic dependency handling  
+            - Allow new and updated content to be shared with groups during import
+            - Allow tags to be applied to new and updated content during import
 
     ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-15"
         === ":hammer_and_wrench: &nbsp; Added"
