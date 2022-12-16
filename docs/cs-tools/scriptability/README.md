@@ -45,8 +45,10 @@ Export
 
 Import
 * Import TML (update and create new) with complex dependency handling (updated)
-* Compare two TML files for differences
 * Share and tag content when importing
+
+Compare
+* Compare two TML files for differences
 
 !!! warning "TML is complex and this tool is new."
 
@@ -139,32 +141,31 @@ The GUID mapping file is created and loaded by the [thoughtspot_tml] project.  M
 
 === "scriptability --help"
     ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools scriptability --help
-    Usage: cs_tools tools scriptability <command>
-                                                [--version, --help]
 
-    Tool for easily migrating TML between instance.
+    Usage: cstools tools scriptability <command>
+                                               [--version, --help]
 
-    USE AT YOUR OWN RISK! This tool uses private API calls which
-    could change on any version update and break the tool.
+      Tool for easily migrating TML between instance.
 
-    ThoughtSpot provides the ability to export object metadata (tables,
-    worksheets, liveboards, etc.)  in ThoughtSpot Modeling Language (TML)
-    format, which is a text format based on YAML.   These files can then be
-    modified and imported into another (or the same) instance to either 
-    create or modify objects.
+      USE AT YOUR OWN RISK! This tool uses private API calls which
+      could change on any version update and break the tool.
 
-    cs_tools tools scriptability --help
+      ThoughtSpot provides the ability to extract object metadata (tables,
+      worksheets, liveboards, etc.)  in ThoughtSpot Modeling Language (TML)
+      format, which is a text format based on YAML.   These files can then be
+      modified and imported into another (or the same) instance to either create
+      or modify objects.
+
+        cs_tools tools scriptability --help
 
     Options:
       --version           Show the version and exit.
       --help, --helpfull  Show this message and exit.
 
     Commands:
-      compare         Compares two TML files for differences.
-      create-mapping  Create a new, empty mapping file.
-      export          Exports TML as YAML from ThoughtSpot.
-      import          Import TML from a file or directory into ThoughtSpot.
+      compare
+      export
+      import
     ```
 
 === "scriptability compare"
@@ -184,34 +185,16 @@ The GUID mapping file is created and loaded by the [thoughtspot_tml] project.  M
       --help, --helpfull  Show this message and exit.
     ```
 
-=== "scriptability create-mapping"
-    ```console
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools scriptability create-mapping --help
-
-    Usage: cs_tools tools scriptability create-mapping 
-               FILE [--help]
-    
-      Create a new, empty mapping file.
-    
-    Arguments:
-      FILE  Path to the new mapping file to be created.  Existing files will not be overwritten.  
-    
-    Options:
-      --help, --helpfull  Show this message and exit.
-    ```
-
 === "scriptability export"
     ```console 
-    cs_tools tools scriptability export --help
 
-    Usage: cs_tools tools scriptability export DIR
-                                                           [--tags, ...,
-                                                           --help] --config
-                                                           NAME
+    Usage: cstools tools scriptability export DIR
+                                                      [--tags, ...,
+                                                      --help] --config NAME
 
     Arguments:
       DIR  full path (directory) to save data set to  
-
+    
     Options:
       --tags TAGS                     comma separated list of tags to export
       --export-ids GUIDS              comma separated list of GUIDs to export that
@@ -228,42 +211,47 @@ The GUID mapping file is created and loaded by the [thoughtspot_tml] project.  M
                                       if specified, also export related content
                                       [default: no-export-associated]
       --set-fqns / --no-set-fqns      if set, then the content in the TML will
-                                      have FQNs (GUIDs) added.  \[default:
+                                      have FQNs (GUIDs) added.  [default:
                                       no-set-fqns]
+      --org TEXT                      Name of org to export from.  The user must
+                                      have access to that org.
       --config NAME                   config file identifier  
       --help, --helpfull              Show this message and exit.
     ```
 
 === "scriptability import"
     ```console 
-    (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools tools scriptability import --help
 
-    Usage: cs_tools tools scriptability import FILE_OR_DIR
-                                                           [--import-policy,
-                                                           ..., --help]
-                                                           --config NAME
-    
-      Import TML from a file or directory into ThoughtSpot.
-    
+    Usage: cstools tools scriptability import FILE_OR_DIR
+                                                          [--import-policy,
+                                                          ..., --help] --config
+                                                          NAME
+
     Arguments:
       FILE_OR_DIR  full path to the TML file or directory to import.  
-    
+
     Options:
       --import-policy [PARTIAL|ALL_OR_NONE|VALIDATE_ONLY]
-                                      The import policy type  \[default:
+                                      The import policy type  [default:
                                       VALIDATE_ONLY]
       --force-create / --no-force-create
                                       If true, will force a new object to be
-                                      created.  \[default: no-force-
+                                      created.  [default: no-force-
                                       create]
       --guid-file FILE_OR_DIR         Existing or new mapping file to map GUIDs
                                       from source instance to target instance.
+      --from-env TEXT                 The environment name importing from, for
+                                      GUID mapping.
+      --to-env TEXT                   The environment name importing to, for GUID
+                                      mapping.
       --tags TAGS                     One or more tags to add to the imported
                                       content.
       --share-with GROUPS             One or more groups to share the uploaded
                                       content with.
       --tml-logs DIR                  full path to the directory to log sent TML.
                                       TML can change during load.
+      --org TEXT                      Name of org to import to.  The user must
+                                      have access to that org.
       --config NAME                   config file identifier  
       --help, --helpfull              Show this message and exit.
     ```

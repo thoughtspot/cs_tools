@@ -152,16 +152,3 @@ def scriptability_compare(
         ),
 ):
     compare(file1=file1, file2=file2)
-
-
-@app.command(name='create-mapping', cls=CSToolsCommand)
-def scriptability_create_mapping(
-    guid_file: pathlib.Path = A_(
-        ...,
-        help='Path to the new mapping file to be created.  Existing files will not be overwritten.',
-        metavar='FILE',
-        dir_okay=False,
-        resolve_path=True
-    ),
-):
-    create_mapping(guid_file=guid_file)
