@@ -109,7 +109,7 @@ class InteractiveTQL:
 
         with self.console.status('[bold green]running query[/]'):
             try:
-                r = self.ts.api.ts_dataservice.query(data, timeout=timeout)
+                r = self.ts.api.dataservice_query(data=data, timeout=timeout)
                 r.raise_for_status()
             except httpx.HTTPStatusError as e:
                 log.error('TQL query request failed.', exc_info=True)
@@ -222,11 +222,11 @@ class InteractiveTQL:
             return
 
         if token_type == 'dynamic':
-            call_ = self.ts.api.ts_dataservice.tokens_dynamic
+            call_ = self.ts.api.dataservice_tokens_dynamic
             key = 'schema'
 
         if token_type == 'static':
-            call_ = self.ts.api.ts_dataservice.tokens_static
+            call_ = self.ts.api.dataservice_tokens_static
             key = 'language'
 
         try:

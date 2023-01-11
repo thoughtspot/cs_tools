@@ -100,7 +100,7 @@ async def _():
         'offset': -1,
         'auto_created': False
     }
-    r = _scoped['ts'].api.metadata.list_object_headers(**params)
+    r = _scoped['ts'].api.metadata.list(**params)
     return r.json()
 
 
@@ -116,5 +116,5 @@ async def _():
         'sort': 'DEFAULT',
         'offset': -1
     }
-    r = _scoped['ts'].api.metadata.list_object_headers(**params)
+    r = _scoped['ts'].api.metadata.list(**params)
     return r.json()

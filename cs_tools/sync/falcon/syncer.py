@@ -138,12 +138,10 @@ class Falcon:
                     http_timeout=self.timeout
                 )
             except (httpx.ConnectError, httpx.ConnectTimeout):
-                h = self.ts.api.ts_dataservice._tsload_node
-                p = self.ts.api.ts_dataservice._tsload_port
-                r = f'could not connect at {h}:{p}'
+                r = f'could not connect at {self.ts.api.dataservice_url}'
                 m = ''
 
-                if h != self.ts.config.thoughtspot.host:
+                if self.ts.api.dataservice_url.host != self.ts.config.thoughtspot.host:
                     m = (
                         '\n\nIf that url is surprising to you, you likely have '
                         'the tsload service load balancer turned on (the default '
@@ -152,4 +150,5 @@ class Falcon:
                         'ThoughtSpot Support Engineer to disable the etl_http_server '
                         '(tsload connector service) load balancer.'
                     )
+
                 raise TSLoadServiceUnreachable(reason=r, mitigation=m)

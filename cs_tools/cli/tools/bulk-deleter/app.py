@@ -57,7 +57,7 @@ def _validate_objects_exist(ts, data):
 
     for system_type, to_delete_guids in new_data.items():
         for chunk in chunks(to_delete_guids, n=15):
-            r = ts.api.metadata.list_object_headers(type=system_type, fetchids=chunk)
+            r = ts.api.metadata.list(type=system_type, fetchids=chunk)
             returned_guids = [_['id'] for _ in r.json()]
 
             if len(returned_guids) != len(chunk):
