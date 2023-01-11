@@ -112,25 +112,14 @@ def reveal(obscured: bytes) -> bytes:
     return zlib.decompress(b64d(obscured))
 
 
-def find(predicate: Callable[[Any], Any], seq: Iterable) -> Optional[Any]:
+def find(predicate: Callable[[Any], [bool]], iterable: list[Any]) -> Any:
     """
-    Return the first element in the sequence which meets the predicate.
-
-    If an entry is not found, then None is returned.
-
-    This is different from python's filter due to the fact it stops the
-    moment it finds a valid entry.
-
-    Parameters
-    -----------
-    predicate
-        a function that returns a boolean-like result
-    seq
-        an iterable to search through
+    Return the first element in the sequence that meets the predicate.
     """
-    for element in seq:
+    for element in iterable:
         if predicate(element):
             return element
+
     return None
 
 
