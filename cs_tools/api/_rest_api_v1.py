@@ -245,7 +245,7 @@ class RESTAPIv1(httpx.Client):
         r = self.post("callosum/v1/tspublic/v1/metadata/unassigntag", data=d)
         return r
 
-    def metadata_list_object_headers(
+    def metadata_list(
         self,
         *,
         metadata_type: MetadataObjectType = "QUESTION_ANSWER_BOOK",
@@ -259,7 +259,8 @@ class RESTAPIv1(httpx.Client):
         pattern: str = UNDEFINED,
         skip_guids: list[GUID] = UNDEFINED,
         fetch_guids: list[GUID] = UNDEFINED,
-        auto_created: bool = UNDEFINED
+        auto_created: bool = UNDEFINED,
+        author_guid: GUID = UNDEFINED,
     ) -> httpx.Response:
         p = {
             "type": type,
@@ -274,8 +275,9 @@ class RESTAPIv1(httpx.Client):
             "skipids": dumps(skip_guids),
             "fetchids": dumps(fetch_guids),
             "auto_created": auto_created,
+            "authorguid": author_guid,
         }
-        r = self.get("callosum/v1/tspublic/v1/metadata/listobjectheaders", params=p)
+        r = self.get("callosum/v1/tspublic/v1/metadata/list", params=p)
         return r
 
     def metadata_details(
