@@ -1,58 +1,49 @@
-from typing import Any, Dict, List, Union
+from __future__ import annotations
+from typing import Any, Optional
+from typing import TYPE_CHECKING
 import logging
 
 from pydantic import validate_arguments
 
 from cs_tools.data.enums import GUID
 from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist
-from cs_tools.api import util
+from cs_tools.api import _utils
+
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
 
 
 log = logging.getLogger(__name__)
 
 
 class UserMiddleware:
-    """
-    """
-    def __init__(self, ts):
+    """ """
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
     @validate_arguments
-    def all(self) -> List[Dict[str, Any]]:
+    def all(self) -> list[dict[str, Any]]:
         """
         Get all users in ThoughtSpot.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        users : List[Dict[str, Any]]
-          all user headers
         """
         offset = 0
         users = []
 
         while True:
             # user/list doesn't offer batching..
-            r = self.ts.api._metadata.list(type='USER', batchsize=50, offset=offset)
+            r = self.ts.api.metadata_list(metadata_type="USER", batchsize=50, offset=offset)
             data = r.json()
-            users.extend(data['headers'])
-            offset += len(data['headers'])
+            users.extend(data["headers"])
+            offset += len(data["headers"])
 
-            if data['isLastBatch']:
+            if data["isLastBatch"]:
                 break
 
         return users
 
     @validate_arguments
-    def get(
-        self,
-        principal: Union[str, GUID],
-        *,
-        error_if_ambiguous: bool = True
-    ) -> Dict[str, Any]:
+    def get(self, principal: str | GUID, *, error_if_ambiguous: bool = True) -> dict[str, Any]:
         """
         Find a user in ThoughtSpot.
 
@@ -64,11 +55,6 @@ class UserMiddleware:
         error_if_ambiguous : bool, default True
           whether or not to raise an error if multiple users are identified
 
-        Returns
-        -------
-        user : Dict[str, Any]
-          user header
-
         Raises
         ------
         ContentDoesNotExist
@@ -77,37 +63,34 @@ class UserMiddleware:
         AmbiguousContentError
           raise when multiple users match the identifier 'principal'
         """
-        if util.is_valid_guid(principal):
-            kw = {'fetchids': [principal]}
+        if _utils.is_valid_guid(principal):
+            kw = {"fetch_guids": [principal]}
         else:
-            kw = {'pattern': principal}
+            kw = {"pattern": principal}
 
-        r = self.ts.api._metadata.list(type='USER', **kw)
-        user = r.json()['headers']
+        r = self.ts.api.metadata_list(metadata_type="USER", **kw)
+        user = r.json()["headers"]
 
         if not user:
-            raise ContentDoesNotExist(
-                type='USER',
-                reason=f"No user found with the name [blue]{principal}"
-            )
+            raise ContentDoesNotExist(type="USER", reason=f"No user found with the name [blue]{principal}")
 
         if error_if_ambiguous:
             if len(user) > 1:
-                raise AmbiguousContentError(type='user', name=principal)
+                raise AmbiguousContentError(type="user", name=principal)
+
             user = user[0]
 
         return user
 
     @validate_arguments
-    def get_guid(
-        self,
-        name: str
-    ) -> Union[GUID, None]:
+    def get_guid(self, name: str) -> Optional[GUID]:
         """
         Returns the GUID for a user or None if the user wasn't found.
-        :param name: The user name, e.g. somebody@somecompany.com
-        :return: GUID or None
+
+        Parameters
+        ----------
+        name : str
+          the user's username, e.g. somebody@somecompany.com
         """
-        r = self.ts.api.user.get(name=name)
-        user = r.json()
-        return user['header']['id']
+        r = self.ts.api.user_read(name=name)
+        return r.json()["header"]["id"]
