@@ -83,3 +83,14 @@ cstools = "cs_tools.cli.main:run"
 
 [tool.ward]
 path = "tests"
+
+
+[tool.black]
+line-length = 120
+exclude = '''
+(
+      __pycache__   # ignore compiled bytecode
+    | \.venv*       # ignore virtual environments
+    | \.nox         # ignore virtual environments
+)
+'''
