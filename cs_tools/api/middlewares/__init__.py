@@ -5,7 +5,6 @@ from .metadata import MetadataMiddleware
 from .org import OrgMiddleware
 from .pinboard import PinboardMiddleware
 from .search import SearchMiddleware
-from .session import SessionMiddleware
 from .tag import TagMiddleware
 from .tql import TQLMiddleware
 from .tsload import TSLoadMiddleware

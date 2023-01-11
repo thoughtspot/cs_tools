@@ -8,7 +8,7 @@ import sys
 import httpx
 
 from cs_tools.api._rest_api_v1 import RESTAPIv1
-from cs_tools.api.middlewares import Answer, Connection, Group, Metadata, Pinboard, Search, Tag, TQL, TSLoad, User
+from cs_tools.api.middlewares import Answer, Connection, Group, Metadata, Org, Pinboard, Search, Tag, TQL, TSLoad, User
 from cs_tools._version import __version__
 from cs_tools.settings import CSToolsConfig
 from cs_tools.errors import ThoughtSpotUnavailable, AuthenticationError
@@ -34,6 +34,7 @@ class ThoughtSpot:
         # ==============================================================================
         # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
         # ==============================================================================
+        self.org = Org(self)
         self.search = Search(self)
         self.user = User(self)
         self.group = Group(self)

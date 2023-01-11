@@ -1,41 +1,73 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import json
-from httpx import HTTPStatusError
+
+from pydantic import validate_arguments
+import httpx
 
 from cs_tools.errors import CSToolsError
+
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
+
 
 class OrgMiddleware:
     """
     Helper functions for dealing with organizations.
     """
-    def __init__(self, ts):
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    def lookup_id_for_name(self, org_name: str) -> int:
+    @validate_arguments
+    def get(self, org_name: str) -> int:
         """
-        Looks up the org id for the given name.  IDs are how orgs are managed, but names are more common for users.
-        :param org_name: The name of the org to look up the ID for.
-        :return: The ID of the org.  Throws an error if the org name doesn't exist.
+        Looks up the org id for the given name. 
+
+        Orgs are managed by ID, but names are more common for users.
         """
+        r = self.ts.api.session_orgs_read()
+
+        for org in r.json().get("orgs", []):
+            if org["orgName"] == org_name:
+                return org.get("orgId")
+
+        raise CSToolsError(
+            error=f"Invalid Org passed '{org_name}'",
+            reason="Org is unknown or the User doesn't have access to it.",
+            mitigation="Verify the Org exists and that the User has access.",
+        )
+
+    @validate_arguments
+    def switch(self, org: str | int) -> int:
+        """
+        Switch to the target org.
+
+        Parameters
+        ----------
+        org : str, int
+          name or ID of the org to switch to
+
+        Raises
+        ------
+        CSToolsError
+          raise when no matching org is found, or you're disallowed from switching
+        """
+        org_id = org if str(org).lstrip("-").isdigit() else self.get(org)
+
         try:
-            # The following doesn't currently work and gives a 403 for all users.
-            # r = self.ts.api.org.get(name=org_name)  # just look for the org with the given name
-            # content = json.loads(r.content)
-            # return int(content['orgId'])
+            self.ts.api.session_orgs_update(org_id=org_id)
 
-            # The orgs get call will return the list of orgs the user has access to.
-            r = self.ts.api.session.orgs_get()
-            orgs = json.loads(r.text).get('orgs')
-            for o in orgs:
-                if o.get('orgName') == org_name:
-                    return o.get('orgId')
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == httpx.codes.FORBIDDEN:
+                rzn = json.loads(e.response.text).get("debug", "Unknown reason")
+            else:
+                rzn = f"Invalid org specified, got '{org}'"
 
-            # org not in the results.
-            raise(CSToolsError(error=f"Unable to look up org {org_name}",
-                               reason=f"Unknown org or user doesn't have access.",
-                               mitigation="Verify org exists and user has access."
-                              )
-                  )
+            raise CSToolsError(
+                error="Error setting org context.",
+                reason=rzn,
+                mitigation="Verify the org name or ID and try again."
+            )
 
-        except HTTPStatusError as hse:
-            print(hse)
-            raise(CSToolsError(error=f'error getting org ID: {hse}'))
+        return org_id
