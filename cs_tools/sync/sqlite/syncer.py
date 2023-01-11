@@ -25,6 +25,9 @@ class SQLite:
         self.engine = sa.create_engine(f'sqlite:///{path}', future=True)
         self.cnxn = self.engine.connect()
 
+        # self.metadata = sa.MetaData(bind=self.cnxn)
+        # self.metadata.reflect()
+
         # decorators must be declared here, SQLAlchemy doesn't care about instances
         sa.event.listen(sa.schema.MetaData, 'after_create', self.capture_metadata)
 

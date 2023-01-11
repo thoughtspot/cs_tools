@@ -48,6 +48,7 @@ class ConnectionMiddleware:
         """
         tables = []
 
+        # replace with connection/export tables
         r = self.ts.api._connection.detail(id=id, pattern=pattern, tagname=tagname, showhidden=showhidden)
 
         for table in r.json()['tables']:

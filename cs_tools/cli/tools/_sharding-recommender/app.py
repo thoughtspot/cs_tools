@@ -1,16 +1,12 @@
-from typing import List
 import logging
 import pathlib
 import zipfile
 
-import oyaml as yaml
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.sync.falcon import Falcon
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
-from cs_tools.const import FMT_TSLOAD_DATETIME
 
 from ._version import __version__
 from .models import FalconTableInfo
@@ -23,9 +19,6 @@ log = logging.getLogger(__name__)
 app = CSToolsApp(
     help="""
     Gather data on your existing Falcon tables for sharding.
-
-    [b][yellow]USE AT YOUR OWN RISK![/b] This tool uses private API calls which
-    could change on any version update and break the tool.[/]
 
     Once tables grow sufficiently large within a Falcon deployment, cluster
     performance and data loading can be enhanced through the use of sharding.
@@ -41,6 +34,24 @@ app = CSToolsApp(
       https://docs.thoughtspot.com/latest/admin/loading/sharding.html
     """,
 )
+
+
+# @app.command()
+# def deploy_spotapp(
+#     connection_guid: str = Arg(),
+#     nodes: int = Opt(..., help='number of nodes serving your ThoughtSpot cluster'),
+#     cpu_per_node: int = Opt(56, help='number of CPUs serving each node'),
+#     threshold: int = Opt(
+#         55_000_000,
+#         help='unsharded row threshold, once exceeded a table will be a candidate for sharding'
+#     ),
+#     ideal_rows: int = Opt(20_000_000, help='ideal rows per shard'),
+#     min_rows: int = Opt(15_000_000, help='minumum rows per shard'),
+#     max_rows: int = Opt(20_000_000, help='maximum rows per shard')
+# ):
+#     """
+#     Deploy the Sharding Recommender SpotApp.
+#     """
 
 
 @app.command()

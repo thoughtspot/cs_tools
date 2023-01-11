@@ -11,7 +11,7 @@ import toml
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
-from cs_tools.settings import TSConfig, _meta_config
+from cs_tools.settings import CSToolsConfig, _meta_config
 from cs_tools.errors import CSToolsError
 from cs_tools.util import deep_update
 from cs_tools.const import APP_DIR
@@ -71,7 +71,7 @@ def create(
         'temp_dir': temp_dir, 'disable_ssl': disable_ssl, 'disable_sso': disable_sso,
         'verbose': verbose, 'syncer': syncers
     }
-    cfg  = TSConfig.from_parse_args(config, **args)
+    cfg  = CSToolsConfig.from_parse_args(config, **args)
     file = APP_DIR / f'cluster-cfg_{config}.toml'
 
     if file.exists() and not Confirm.ask(
@@ -134,17 +134,17 @@ def modify(
         password = Prompt.ask('[yellow](your input is hidden)[/]\nPassword', console=console, password=True)
 
     file = APP_DIR / f'cluster-cfg_{config}.toml'
-    old  = TSConfig.from_toml(file).dict()
+    old  = CSToolsConfig.from_toml(file).dict()
     kw = {
         'host': host, 'port': port, 'username': username, 'password': password,
         'temp_dir': temp_dir, 'disable_ssl': disable_ssl, 'disable_sso': disable_sso,
         'verbose': verbose, 'syncer': syncers
     }
-    data = TSConfig.from_parse_args(config, **kw, validate=False).dict()
+    data = CSToolsConfig.from_parse_args(config, **kw, validate=False).dict()
     new  = deep_update(old, data, ignore=None)
 
     try:
-        cfg = TSConfig(**new)
+        cfg = CSToolsConfig(**new)
     except pydantic.ValidationError as e:
         console.print(f'[error]{e}')
         raise typer.Exit(-1)
@@ -189,7 +189,7 @@ def check(
     Check your config file.
     """
     console.log(f'Checking cluster configuration [b blue]{config}')
-    cfg = TSConfig.from_command(config)
+    cfg = CSToolsConfig.from_command(config)
 
     console.log(f'Logging into [b]ThoughtSpot[/] as [b blue]{cfg.auth["frontend"].username}')
     ts = ThoughtSpot(cfg)

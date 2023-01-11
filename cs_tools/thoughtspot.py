@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime as dt
 import platform
 import logging
@@ -5,17 +6,14 @@ import json
 import sys
 
 import httpx
-import click
 
-from cs_tools.errors import ThoughtSpotUnavailable, AuthenticationError
-from cs_tools.util import reveal
-from cs_tools.api._rest_api_v1 import _RESTAPIv1
+from cs_tools.api._rest_api_v1 import RESTAPIv1
+from cs_tools.api.middlewares import Answer, Connection, Group, Metadata, Pinboard, Search, Tag, TQL, TSLoad, User
 from cs_tools._version import __version__
-from cs_tools.api.middlewares import (
-    AnswerMiddleware, ConnectionMiddleware, GroupMiddleware, MetadataMiddleware, OrgMiddleware, PinboardMiddleware,
-    SearchMiddleware, SessionMiddleware, TagMiddleware, TQLMiddleware, TSLoadMiddleware, UserMiddleware
-)
-from cs_tools.data.models import ThoughtSpotPlatform, LoggedInUser
+from cs_tools.settings import CSToolsConfig
+from cs_tools.errors import ThoughtSpotUnavailable, AuthenticationError
+from cs_tools.types import ThoughtSpotPlatform, LoggedInUser
+from cs_tools.util import reveal
 
 
 log = logging.getLogger(__name__)
@@ -24,33 +22,34 @@ log = logging.getLogger(__name__)
 class ThoughtSpot:
     """
     """
-    def __init__(self, config):
+    def __init__(self, config: CSToolsConfig):
         self.config = config
-        self._rest_api = _RESTAPIv1(config, ts=self)
-        self._logged_in_user = None
-        self._platform = None
+        self._rest_api_v1 = RESTAPIv1(config.thoughtspot.fullpath, verify=config.verify, )
+        # self._rest_api_v2 = RESTAPIv2()
 
-        # Middleware endpoints. These are logically grouped interactions within
-        # ThoughtSpot so that working with the REST and GraphQL apis is simpler
-        # to do.
-        self.search = SearchMiddleware(self)
-        self.session = SessionMiddleware(self)
-        self.user = UserMiddleware(self)
-        self.group = GroupMiddleware(self)
+        # assigned at self.login()
+        self._logged_in_user: LoggedInUser = None
+        self._platform: ThoughtSpotPlatform = None
+
+        # ==============================================================================
+        # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
+        # ==============================================================================
+        self.search = Search(self)
+        self.user = User(self)
+        self.group = Group(self)
         # self.tml
-        self.org = OrgMiddleware(self)
-        self.metadata = MetadataMiddleware(self)
-        self.pinboard = self.liveboard = PinboardMiddleware(self)
-        self.answer = AnswerMiddleware(self)
-        self.connection = ConnectionMiddleware(self)
+        self.metadata = Metadata(self)
+        self.pinboard = self.liveboard = Pinboard(self)
+        self.answer = Answer(self)
+        self.connection = Connection(self)
         # self.worksheet
         # self.table
-        self.tag = TagMiddleware(self)
-        self.tql = TQLMiddleware(self)
-        self.tsload = TSLoadMiddleware(self)
+        self.tag = Tag(self)
+        self.tql = TQL(self)
+        self.tsload = TSLoad(self)
 
     @property
-    def api(self) -> _RESTAPIv1:
+    def api(self) -> RESTAPIv1:
         """
         Access the REST API.
         """
@@ -87,11 +86,10 @@ class ThoughtSpot:
         Log in to ThoughtSpot.
         """
         try:
-            r = self.api._session.login(
+            r = self.api.session_login(
                 username=self.config.auth['frontend'].username,
                 password=reveal(self.config.auth['frontend'].password).decode(),
-                rememberme=True,
-                disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
+                # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
             )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
@@ -124,8 +122,8 @@ class ThoughtSpot:
 
             raise ThoughtSpotUnavailable(**info) from None
 
-        self._logged_in_user = LoggedInUser.from_session_info(data)
-        self._this_platform = ThoughtSpotPlatform.from_session_info(data)
+        self._logged_in_user = LoggedInUser.from_api_v1_session_info(data)
+        self._this_platform = ThoughtSpotPlatform.from_api_v1_session_info(data)
 
         log.debug(f"""execution context...
 
@@ -157,4 +155,4 @@ class ThoughtSpot:
         """
         Log out of ThoughtSpot.
         """
-        self.api._session.logout()
+        self.api.session_logout.logout()

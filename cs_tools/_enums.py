@@ -1,3 +1,7 @@
+"""
+Yo, archive. This is dead code.
+"""
+
 import typing
 import enum
 import uuid
@@ -163,5 +167,3 @@ class StatusCode(enum.Enum):
                 return s
 
         return StatusCode.unknown
-
-

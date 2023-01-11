@@ -9,7 +9,7 @@ import httpx
 
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.settings import _meta_config, TSConfig
+from cs_tools.settings import _meta_config, CSToolsConfig
 from cs_tools.const import APP_DIR
 
 meta = _meta_config.load()
@@ -81,7 +81,7 @@ class DThoughtSpot(Dependency):
         ctx = click.get_current_context()
         args, options, flags = split_args_from_opts(ctx.args)
 
-        config = options.pop("config", TSConfig.check_for_default())
+        config = options.pop("config", CSToolsConfig.check_for_default())
 
         # click interpreted `--config NAME` as an Argument value because the argument itself
         # was missing.
@@ -92,7 +92,7 @@ class DThoughtSpot(Dependency):
         if config is None:
             ctx.fail("no environment specified for --config")
 
-        sig = inspect.signature(TSConfig.from_toml).parameters
+        sig = inspect.signature(CSToolsConfig.from_toml).parameters
         extra = set(options).difference(sig)
         flags = set(flags).difference(sig)
 
@@ -106,7 +106,7 @@ class DThoughtSpot(Dependency):
         if flags:
             log.warning(f"[yellow]Ignoring extra flags ({' '.join(flags)})")
 
-        cfg = TSConfig.from_toml(APP_DIR / f'cluster-cfg_{config}.toml', **options)
+        cfg = CSToolsConfig.from_toml(APP_DIR / f'cluster-cfg_{config}.toml', **options)
         ctx.obj.thoughtspot = ThoughtSpot(cfg)
 
         if self.login:

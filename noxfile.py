@@ -13,9 +13,11 @@ import nox_poetry as nox
 ON_GITHUB = "GITHUB_ACTIONS" in os.environ
 PY_VERSIONS = [
     # "3.6.8",
-    "3.7", "3.8",
+    "3.7", 
+    "3.8",
     "3.9",
-    "3.10"
+    "3.10",
+    # "3.11"
 ]
 HERE = pathlib.Path(__file__).parent
 DIST = HERE / "dist"
@@ -35,12 +37,11 @@ SUPPORTED_PLATFORM_MATRIX = {
     # Mojave   (10.14) ----------------------> [EOL 2021.10.25]
     "mac": (
         # Apple M1 Chip
-        # "macosx_12_universal2",
+        "macosx_12_universal2",
         # Intel x84-64
         "macosx_12_x86_64",
         "macosx_11_x86_64",
         "macosx_10_15_x86_64",
-        "macosx_10_14_x86_64"
     ),
 
     # PEP600: manylinux_x_y_<arch> based on glibc>=x.y  (future-proofed)

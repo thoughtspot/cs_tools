@@ -60,7 +60,7 @@ class _meta_config(BaseModel):
             version.parse(__version__) <= version.parse(data.get("latest_release_version", "9.9.9"))
             and
             # the release is at least 5 days old
-            (NOW - data.get("latest_release_date", EPOCH)).total_seconds() > ONE_DAY * 5
+            (NOW.date() - data.get("latest_release_date", EPOCH)).total_seconds() > ONE_DAY * 5
         ):
             release_url = "https://api.github.com/repos/thoughtspot/cs_tools/releases/latest"
 
@@ -109,12 +109,6 @@ class Settings(BaseModel):
         }
 
 
-class APIParameters(Settings):
-    """
-    Base class for API parameter validation.
-    """
-
-
 class TSCloudURL(str):
     """
     Validator to match against a ThoughtSpot cloud URL.
@@ -138,24 +132,8 @@ class TSCloudURL(str):
         return cls(f'{m.group(1)}')
 
 
-class LocalHost(str):
-    """
-    Validator to match against localhost.
-    """
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        if v != 'localhost':
-            raise ValueError('value is not localhost')
-
-        return cls(v)
-
-
 class HostConfig(Settings):
-    host: Union[AnyHttpUrl, IPv4Address, TSCloudURL, LocalHost]
+    host: Union[AnyHttpUrl, IPv4Address, TSCloudURL]
     port: int = None
     disable_ssl: bool = False
     disable_sso: bool = False
@@ -191,7 +169,7 @@ class AuthConfig(Settings):
     password: str = None
 
 
-class TSConfig(Settings):
+class CSToolsConfig(Settings):
     name: str
     thoughtspot: HostConfig
     auth: Dict[str, AuthConfig]
@@ -231,7 +209,7 @@ class TSConfig(Settings):
         *,
         verbose: bool = None,
         temp_dir: pathlib.Path = None
-    ) -> 'TSConfig':
+    ) -> 'CSToolsConfig':
         """
         Read in a ts-config.toml file.
 
@@ -261,7 +239,7 @@ class TSConfig(Settings):
         return cls.parse_obj(data)
 
     @classmethod
-    def from_command(cls, config: str = None, **passthru) -> 'TSConfig':
+    def from_command(cls, config: str = None, **passthru) -> 'CSToolsConfig':
         """
         Read in a ts-config.toml file by its name.
 
@@ -286,7 +264,7 @@ class TSConfig(Settings):
         *,
         validate: bool = True,
         **passthru
-    ) -> 'TSConfig':
+    ) -> 'CSToolsConfig':
         """
         Validate initial input from config.create or config.modify.
         """
