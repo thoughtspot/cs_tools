@@ -1,27 +1,27 @@
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
 
 
-[tool.poetry]
+[project]
 name = "cs_tools"
-version = "1.3.5"
+version = "1.4.0b0"
 description = """\
 	Tools created by the ThoughtSpot PS/CS organization to assist implementation and \
     administration of your platform.\
 """
-authors = [
-	"boonhapus <nicholas.cooper@thoughtspot.com>",
-	"billdback-ts <bill.back@thoughtspot.com>",
-	"devinmcpherson-ts <devin.mcpherson@thoughtspot.com>",
-	"mishathoughtspot <misha.beek@thoughtspot.com>"
-]
-maintainers = ["boonhapus <nicholas.cooper@thoughtspot.com>"]
-license = "Proprietary"
 readme = "README.md"
-homepage = "https://thoughtspot.github.io/cs_tools/"
-repository = "https://github.com/thoughtspot/cs_tools"
-documentation = "https://thoughtspot.github.io/cs_tools/"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+authors = [
+	{name = "boonhapus", email="nicholas.cooper@thoughtspot.com"},
+	{name = "billdback-ts", email="bill.back@thoughtspot.com"},
+	{name = "devinmcpherson-ts", email="devin.mcpherson@thoughtspot.com"},
+	{name = "mishathoughtspot", email="misha.beek@thoughtspot.com"},
+]
+maintainers = [
+    {name = "boonhapus", email="nicholas.cooper@thoughtspot.com"},
+]
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
@@ -29,60 +29,71 @@ classifiers = [
     "Operating System :: OS Independent",
     "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
-packages = [
-    { include = "cs_tools" }
+
+dependencies = [
+    # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
+
+    "awesomeversion",
+    "httpx",
+    "pydantic",
+    "python-dateutil",
+    "thoughtspot_tml @ https://github.com/thoughtspot/thoughtspot_tml/archive/v2.0.0.zip",
+    "toml",
 ]
-# include = []
-# exclude = []
 
-[tool.poetry.dependencies]
-# Accept new incoming python versions
-python = ">= 3.7 , < 3.11"
+# packages = [
+#     { include = "cs_tools" }
+# ]
 
-# Poetry doesn't solve for itself, so we need to keep this guy around
-# possibly a bug? poetry#5004
-poetry-core = "^1.0.0a0"
+[project.urls]
+homepage = "https://thoughtspot.github.io/cs_tools/"
+repository = "https://github.com/thoughtspot/cs_tools"
+documentation = "https://thoughtspot.github.io/cs_tools/"
 
-# Windows version of readline
-pyreadline3 = { version = "^3.4.1",  markers = "sys_platform == 'win32'" }
-click = "^8.1.3"
-httpx = "^0.23.0"
-Jinja2 = "^3.1.2"
-uvicorn = "^0.19.0"
-fastapi = "0.85.1"
-typer = "0.5.0"
-pendulum = "^2.1.2"
-toml = "^0.10.2"
-sqlmodel = "^0.0.8"
-rich = "^12.6.0"
-pydantic = "^1.10.2"
-starlette = "0.20.4"
-oyaml = "^1.0"
-thoughtspot-tml = {git = "https://github.com/thoughtspot/thoughtspot_tml.git", rev = "build-spec"}
+[project.optional-dependencies]
+cli = [
+    # pin these dependencies explicitly so we can ensure they work across environments
+    # 
+    # DEV NOTE @boonhapus 2023/01/14
+    #   these are only the direct dependencies, NOT the transitive dependencies.. so we
+    #   need an extra process to grab the grandchild dependencies so our direct reliance
+    #   doesn't break when a child updates.
+    #
+    #   see dist/build.py for this purpose
 
-[tool.poetry.dev-dependencies]
-mkdocs-material =  "*"
-flake8 =  "*"
-coverage =  "*"
-isort =  "*"
-black =  "*"
-ward =  "*"
-snakeviz = "*"
+    # platform-specific
+    "pyreadline3 == 3.4.1 ; sys_platform == 'win32'",
+
+    "httpx",
+    "pendulum",
+    "rich",
+    "typer[all]",
+    "sqlmodel"
+    # Jinja2 = "^3.1.2"
+    # uvicorn = "^0.19.0"
+    # fastapi = "0.85.1"
+    # starlette = "0.20.4"
+    # oyaml = "^1.0"
+]
+dev = [
+    "cs_tools[cli]",
+    "black",
+    "coverage[toml]",
+    "nox",
+    "rich",
+    "ward",
+]
 
 
-[tool.poetry.scripts]
+[project.scripts]
 cs_tools = "cs_tools.cli.main:run"
 cstools = "cs_tools.cli.main:run"
-
-
-[tool.ward]
-path = "tests"
 
 
 [tool.black]
@@ -94,3 +105,27 @@ exclude = '''
     | \.nox         # ignore virtual environments
 )
 '''
+
+[tool.ward]
+path = "tests/"
+
+[tool.coverage.run]
+branch = true
+include = [
+    "src/**.py",
+]
+omit = [
+    "src/thoughtspot_tml/_scriptability.py",
+    "src/thoughtspot_tml/_compat.py",
+    "__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "# pragma: no cover",
+    "# pragma: peephole optimzer",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+]
