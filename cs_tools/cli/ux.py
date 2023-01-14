@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional
+from typing import Optional, Callable, List, Any
 import contextlib
 import logging
 import sys
@@ -8,7 +8,6 @@ import typer
 import click
 
 from cs_tools.const import CONSOLE_THEME, GH_SYNCER
-
 
 log = logging.getLogger(__name__)
 console = Console(theme=CONSOLE_THEME)

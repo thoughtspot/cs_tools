@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, TypeVar
-from typing import Any, Callable, List, Optional
+from typing import Optional, Callable, TypeVar, List, Any, TYPE_CHECKING
 import logging
 
 import click

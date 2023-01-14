@@ -1,12 +1,11 @@
-from typing import Any, Dict, List
-import logging
+from typing import List, Dict, Any
 import pathlib
+import logging
 import json
 
 from pydantic.dataclasses import dataclass
 
 from . import util
-
 
 log = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
-from typing import Any, Dict
+from typing import Dict, Any
 import logging.config
-import datetime as dt
 import platform
+import datetime as dt
 import logging
 
 import pendulum
@@ -9,16 +9,12 @@ import typer
 
 from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin
 from cs_tools.cli.loader import CSTool
-from cs_tools._version import __version__
 from cs_tools.settings import _meta_config
+from cs_tools._version import __version__
 from cs_tools.cli.ux import console, CSToolsApp
-from cs_tools.const import APP_DIR, TOOLS_DIR
-from cs_tools.const import DOCS_BASE_URL, GH_ISSUES, GDRIVE_FORM
+from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES, APP_DIR
 from cs_tools.util import State
-
-from cs_tools.cli import _config
-from cs_tools.cli import _tools
-from cs_tools.cli import _log
+from cs_tools.cli import _config, _tools, _log
 
 log = logging.getLogger(__name__)
 meta = _meta_config.load()

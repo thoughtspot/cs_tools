@@ -4,10 +4,13 @@ import sys
 import typer
 import rich
 
-from cs_tools.cli.dependencies.thoughtspot import thoughtspot, thoughtspot_nologin
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
-from .interactive import InteractiveTQL
+from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin, thoughtspot
+from cs_tools.cli.ux import console
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
+from cs_tools.cli.ux import CSToolsApp
 
+from .interactive import InteractiveTQL
 
 app = CSToolsApp(
     help="""

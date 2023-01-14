@@ -85,6 +85,7 @@ dev = [
     "cs_tools[cli]",
     "black",
     "coverage[toml]",
+    "isort",
     "nox",
     "rich",
     "ward",
@@ -95,6 +96,13 @@ dev = [
 cs_tools = "cs_tools.cli.main:run"
 cstools = "cs_tools.cli.main:run"
 
+
+[tool.isort]
+profile = "black"
+line_length = 120
+from_first = true
+length_sort = true
+reverse_sort = true
 
 [tool.black]
 line-length = 120

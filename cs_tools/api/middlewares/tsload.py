@@ -1,16 +1,16 @@
-from typing import Any, Dict, List, Union
-from io import BufferedIOBase, TextIOWrapper
 from tempfile import _TemporaryFileWrapper
+from typing import Union, List, Dict, Any
+from io import BufferedIOBase, TextIOWrapper
 import datetime as dt
 import logging
-import json
 import time
+import json
 
 from pydantic import validate_arguments
 
 from cs_tools.data.enums import Privilege
-from cs_tools.errors import InsufficientPrivileges, TSLoadServiceUnreachable
-from cs_tools.const import FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE, APP_DIR
+from cs_tools.errors import TSLoadServiceUnreachable, InsufficientPrivileges
+from cs_tools.const import FMT_TSLOAD_TRUE_FALSE, FMT_TSLOAD_DATETIME, FMT_TSLOAD_TIME, FMT_TSLOAD_DATE, APP_DIR
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot

@@ -1,29 +1,32 @@
 from __future__ import annotations
+
 from typing import Any
 from io import BufferedIOBase
 import datetime as dt
-import logging
 import pathlib
+import logging
 import json
 
 import httpx
 
-from cs_tools.api._utils import UNDEFINED, dumps, scrub_undefined, scrub_sensitive
+from cs_tools.api._utils import scrub_undefined, scrub_sensitive, dumps, UNDEFINED
 from cs_tools._version import __version__
-from cs_tools.types import GUID
-from cs_tools.types import UserProfile, SecurityPrincipal, TMLObject
 from cs_tools.types import (
-    ConnectionMetadata,
-    ConnectionType,
-    FormatType,
-    MetadataCategory,
-    MetadataObjectType,
     MetadataObjectSubtype,
-    PermissionType,
     ShareModeAccessLevel,
+    MetadataObjectType,
+    ConnectionMetadata,
+    SecurityPrincipal,
+    MetadataCategory,
+    TMLImportPolicy,
+    PermissionType,
+    ConnectionType,
+    UserProfile,
+    FormatType,
+    TMLObject,
     SortOrder,
     TMLType,
-    TMLImportPolicy,
+    GUID,
 )
 
 log = logging.getLogger(__name__)

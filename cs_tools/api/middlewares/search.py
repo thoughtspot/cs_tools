@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import datetime as dt
 import logging
 import json
@@ -6,7 +6,7 @@ import json
 from pydantic import validate_arguments
 import httpx
 
-from cs_tools.errors import CSToolsError, AmbiguousContentError, ContentDoesNotExist
+from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist, CSToolsError
 from cs_tools.api import util
 
 if TYPE_CHECKING:

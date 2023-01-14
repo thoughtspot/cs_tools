@@ -1,8 +1,8 @@
 from typing import List
 import pathlib
 
+from rich.prompt import Confirm, Prompt
 from rich.markup import escape
-from rich.prompt import Prompt, Confirm
 from rich.rule import Rule
 import pydantic
 import typer
@@ -10,11 +10,14 @@ import toml
 
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
-from cs_tools.settings import CSToolsConfig, _meta_config
+from cs_tools.settings import _meta_config, CSToolsConfig
 from cs_tools.errors import CSToolsError
-from cs_tools.util import deep_update
+from cs_tools.cli.ux import console
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
+from cs_tools.cli.ux import CSToolsApp
 from cs_tools.const import APP_DIR
+from cs_tools.util import deep_update
 
 meta = _meta_config.load()
 app = CSToolsApp(

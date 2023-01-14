@@ -1,27 +1,28 @@
 """
 This file contains the methods to execute the 'scriptability import' command.
 """
-import click
-import copy
-import enum
-import json
+from typing import Optional, Union, Tuple, List, Dict
+import traceback
 import pathlib
 import time
-import traceback
-
-from httpx import HTTPStatusError
-from rich.table import Table
-from typer import Argument as A_, Option as O_  # noqa
-from typing import Dict, List, Optional, Tuple, Union
+import json
+import enum
+import copy
 
 from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml.types import TMLObject
+from rich.table import Table
+from typer import Argument as A_  # noqa
+from typer import Option as O_
+from httpx import HTTPStatusError
+import click
 
-from cs_tools.cli.ux import console
-from cs_tools.data.enums import AccessLevel, ConnectionType, GUID, TMLImportPolicy, StatusCode, MetadataObject
-from cs_tools.errors import CSToolsError
 from cs_tools.thoughtspot import ThoughtSpot
-from .util import GUIDMapping, MetadataTypeList, TMLFileBundle
+from cs_tools.data.enums import TMLImportPolicy, MetadataObject, ConnectionType, AccessLevel, StatusCode, GUID
+from cs_tools.errors import CSToolsError
+from cs_tools.cli.ux import console
+
+from .util import MetadataTypeList, TMLFileBundle, GUIDMapping
 
 
 class LogLevel(enum.Enum):

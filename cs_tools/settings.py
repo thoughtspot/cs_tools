@@ -8,7 +8,7 @@ import re
 
 from pydantic.types import DirectoryPath, FilePath
 from packaging import version
-from pydantic import BaseModel, AnyHttpUrl, validator
+from pydantic import validator, AnyHttpUrl, BaseModel
 import httpx
 import toml
 

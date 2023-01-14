@@ -1,21 +1,24 @@
-from typing import Any, Dict, List, Tuple
-import logging
+from typing import Tuple, List, Dict, Any
 import pathlib
+import logging
 
-from typer import Argument as A_, Option as O_  # noqa
+from typer import Argument as A_  # noqa
+from typer import Option as O_
 import pendulum
-import click
 import typer
+import click
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
 from cs_tools.cli.util import base64_to_file
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.errors import ContentDoesNotExist
+from cs_tools.cli.ux import console
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
+from cs_tools.cli.ux import CSToolsApp
 
-from .enums import ContentType, UserActions
+from .enums import UserActions, ContentType
 from .util import DataTable
-
 
 log = logging.getLogger(__name__)
 

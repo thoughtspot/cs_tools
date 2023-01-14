@@ -3,6 +3,7 @@ def _get_version() -> str:
     Retrieve the version string.
     """
     import pathlib
+
     import toml
 
     package_dir = pathlib.Path(__file__).parent.parent

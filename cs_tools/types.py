@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any
 import datetime as dt
 import typing
-import enum
 import uuid
+import enum
 
-from thoughtspot_tml.types import TMLObject, ConnectionMetadata
+from thoughtspot_tml.types import ConnectionMetadata, TMLObject
 import dateutil
 
 GUID = typing.cast(uuid.UUID, str)

@@ -5,22 +5,23 @@
 #   - add support for tables and connections
 #   - add support for importing .zip files
 #
+from typing import Optional, List
 import pathlib
-import click
-from typer import Argument as A_, Option as O_
-from typing import List, Optional
-import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
+from typer import Argument as A_
+from typer import Option as O_
+import typer
+import click
+
+from cs_tools.cli.tools.common import teardown_thoughtspot, setup_thoughtspot
 from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
+from cs_tools.cli.options import TEMP_DIR_OPT, VERBOSE_OPT, CONFIG_OPT
 from cs_tools.data.enums import TMLImportPolicy
-from cs_tools.cli.ux import CSToolsGroup, CSToolsCommand
+from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup
 
 from ._compare import compare
-from ._export import export
 from ._import import import_
-
+from ._export import export
 
 app = typer.Typer(
     help="""

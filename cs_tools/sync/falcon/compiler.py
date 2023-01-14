@@ -1,6 +1,6 @@
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.schema import CreateColumn
-from sqlalchemy.types import Boolean, Float, Integer, String
+from sqlalchemy.types import Integer, Boolean, String, Float
 
 
 @compiles(Boolean, "sqlite")

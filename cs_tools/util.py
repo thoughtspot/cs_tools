@@ -1,5 +1,6 @@
-from base64 import urlsafe_b64encode as b64e, urlsafe_b64decode as b64d
-from typing import Any, Callable, Dict, Iterable, Optional
+from typing import Optional, Iterable, Callable, Dict, Any
+from base64 import urlsafe_b64encode as b64e
+from base64 import urlsafe_b64decode as b64d
 import collections.abc
 import datetime as dt
 import zlib

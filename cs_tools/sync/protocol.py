@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 
 # also available
 from pydantic.dataclasses import dataclass
-
 
 DB_ROW = Dict[str, Any]
 RECORDS_FORMAT = List[DB_ROW]

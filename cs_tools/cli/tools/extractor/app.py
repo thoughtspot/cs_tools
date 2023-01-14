@@ -1,18 +1,21 @@
-from typing import Any, Dict
+from typing import Dict, Any
 import datetime as dt
 import logging
 import re
 
-from typer import Argument as A_, Option as O_  # noqa
+from typer import Argument as A_  # noqa
+from typer import Option as O_
 import sqlalchemy as sa
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
+from cs_tools.cli.ux import console
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
+from cs_tools.cli.ux import CSToolsApp
 
 from .enums import RecordsetType
-
 
 log = logging.getLogger(__name__)
 

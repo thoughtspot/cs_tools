@@ -5,15 +5,17 @@ import logging
 import json
 
 from rich.table import Table
-import httpx
 import typer
+import httpx
 
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.data.enums import GUID
-
+from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
+from cs_tools.cli.ux import console
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
+from cs_tools.cli.ux import CSToolsApp
 
 log = logging.getLogger(__name__)
 

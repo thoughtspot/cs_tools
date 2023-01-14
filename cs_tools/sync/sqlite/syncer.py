@@ -1,10 +1,9 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import pathlib
 import logging
 
 from pydantic.dataclasses import dataclass
 import sqlalchemy as sa
-
 
 log = logging.getLogger(__name__)
 

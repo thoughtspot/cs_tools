@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Union, List, Dict, Any
 import logging
 
 from pydantic import validate_arguments

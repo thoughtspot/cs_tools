@@ -1,18 +1,18 @@
-from subprocess import PIPE, Popen
+from subprocess import Popen, PIPE
 from typing import List
 from types import ModuleType
-import pkg_resources
 import importlib
-import logging
 import pathlib
+import logging
 import json
 import sys
 import os
 
+import pkg_resources
+
 from cs_tools.sync.protocol import SyncerProtocol
 from cs_tools.sync._compat import version
 from cs_tools.errors import SyncerProtocolError
-
 
 log = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import logging
 import enum
 import csv
@@ -8,7 +8,6 @@ from pydantic.dataclasses import dataclass
 from sqlalchemy_redshift import dialect
 import sqlalchemy as sa
 import s3fs
-
 
 log = logging.getLogger(__name__)
 

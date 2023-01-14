@@ -1,17 +1,19 @@
-import logging
-import pathlib
 import zipfile
+import pathlib
+import logging
 
+import _ext_api
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
+from cs_tools.cli.ux import console
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
+from cs_tools.cli.ux import CSToolsApp
 
 from ._version import __version__
 from .models import FalconTableInfo
-import _ext_api
-
 
 HERE = pathlib.Path(__file__).parent
 log = logging.getLogger(__name__)

@@ -9,7 +9,6 @@ import click
 
 from cs_tools.cli.dependencies.syncer import DSyncer
 
-
 log = logging.getLogger(__name__)
 
 

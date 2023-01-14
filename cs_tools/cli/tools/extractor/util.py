@@ -1,9 +1,8 @@
-from typing import Any, Dict
+from typing import Dict, Any
 import datetime as dt
 import re
 
 import sqlalchemy as sa
-
 
 RE_LETTERS_ONLY = re.compile(r"[^A-Za-z]")
 

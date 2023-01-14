@@ -1,12 +1,14 @@
 """Contains useful classes and methods for scriptability."""
-import copy
-import pathlib
 from typing import Callable, List
+import pathlib
+import copy
 
+from thoughtspot_tml.utils import disambiguate as _disambiguate
+from thoughtspot_tml.utils import EnvironmentGUIDMapper
 from thoughtspot_tml.types import TMLObject
-from thoughtspot_tml.utils import disambiguate as _disambiguate, EnvironmentGUIDMapper
+
+from cs_tools.data.enums import MetadataObject, GUID
 from cs_tools.cli.ux import console
-from cs_tools.data.enums import GUID, MetadataObject
 
 
 class GUIDMapping:

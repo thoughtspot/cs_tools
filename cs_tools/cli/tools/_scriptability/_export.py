@@ -1,22 +1,25 @@
 """
 This file contains the methods to execute the 'scriptability export' command.
 """
-import click
+from typing import Union, Tuple, List, Dict, Any
 import pathlib
-from httpx import HTTPStatusError
-from typing import Any, Dict, List, Tuple, Union
-from rich.table import Table
-from typer import Argument as A_, Option as O_
 
+from thoughtspot_tml.exceptions import TMLDecodeError
 from thoughtspot_tml.utils import determine_tml_type, disambiguate
 from thoughtspot_tml.types import TMLObject
-from thoughtspot_tml.exceptions import TMLDecodeError
+from thoughtspot_tml import Connection
+from rich.table import Table
+from typer import Argument as A_
+from typer import Option as O_
+from httpx import HTTPStatusError
+import click
 
-from cs_tools.api.util import before_version
+from cs_tools.data.enums import MetadataObjectSubtype, DownloadableContent, MetadataObject, TMLType, GUID
 from cs_tools.cli.types import CommaSeparatedValuesType
-from cs_tools.cli.ux import console
+from cs_tools.api.util import before_version
 from cs_tools.errors import CSToolsError
-from cs_tools.data.enums import DownloadableContent, GUID, MetadataObject, MetadataObjectSubtype, TMLType
+from cs_tools.cli.ux import console
+
 from .util import strip_blanks
 
 
@@ -155,21 +158,24 @@ def _download_connection(
     path: pathlib.Path,
     guid: GUID,
 ) -> List[Tuple[GUID, str, str, str]]:
-    """Download a connection.  Connections aren't supported by TML yet."""
+    """
+    Download a connection.
+
+    Connections aren't supported by TML yet.
+    """
     results: List[Tuple[GUID, str, str, str]] = []  # (guid, status, name, message)
 
-    r = ts.api._connection.export(guid)
+    r = ts.api.connection_export(guid=guid)
 
-    fn = f"{path}/{guid}.connection.tml"
-    yaml = r.content.decode()
-    name = yaml.split("\n")[0].split(": ")[1]
+    tml = Connection.loads(r.text)
+    tml.guid = guid
 
     try:
-        with open(fn, "w") as yamlfile:
-            yamlfile.write(yaml)
-        results.append((guid, "OK", name, "Success"))
-    except IOError as e:
-        results.append((guid, "ERROR", name, f"Error writing to file {fn}"))
+        tml.dump(path / f"{guid}.connection.tml")
+    except IOError:
+        results.append((guid, "ERROR", tml.name, f"Error writing to file {tml.name}"))
+    else:
+        results.append((guid, "OK", tml.name, "Success"))
 
     return results
 

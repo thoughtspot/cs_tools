@@ -4,7 +4,7 @@ try:
     # provisional in py38, accepted in py310
     from importlib.metadata import version
 except ImportError:
-    from pkg_resources import DistributionNotFound, get_distribution
+    from pkg_resources import get_distribution, DistributionNotFound
 
     def version(package_name: str) -> Union[str, None]:
         """

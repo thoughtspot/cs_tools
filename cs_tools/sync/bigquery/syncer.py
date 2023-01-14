@@ -1,14 +1,14 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import pathlib
 import logging
 
 from pydantic.dataclasses import dataclass
-from cs_tools.const import APP_DIR
 from google.cloud import bigquery
 import sqlalchemy as sa
 
-from . import sanitize
+from cs_tools.const import APP_DIR
 
+from . import sanitize
 
 log = logging.getLogger(__name__)
 

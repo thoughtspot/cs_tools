@@ -3,9 +3,8 @@ Yo, archive. This is dead code.
 """
 
 import typing
-import enum
 import uuid
-
+import enum
 
 # Purely for the sake of annotation documentation.
 GUID = typing.cast(uuid.UUID, str)

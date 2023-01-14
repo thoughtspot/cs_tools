@@ -1,8 +1,8 @@
-from typing import List, Optional
+from typing import Optional, List
 import datetime as dt
 import logging
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import SQLModel, Field
 
 log = logging.getLogger(__name__)
 

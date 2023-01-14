@@ -4,7 +4,6 @@ from rich.default_styles import DEFAULT_STYLES
 from rich.theme import Theme
 import typer
 
-
 # remove colorization from repr styles
 CONSOLE_THEME = Theme(
     {

@@ -1,20 +1,23 @@
 import datetime as dt
-import pathlib
 import zipfile
+import pathlib
 import logging
 
-from typer import Argument as A_, Option as O_  # noqa
-import oyaml as yaml
+from typer import Argument as A_  # noqa
+from typer import Option as O_
 import typer
+import oyaml as yaml
 
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
+from cs_tools.cli.types import TZAwareDateTimeType, SyncerProtocolType
+from cs_tools.cli.ux import console
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
+from cs_tools.cli.ux import CSToolsApp
 
 from ._version import __version__
-from .models import BISERVER_MODELS, METADATA_MODELS
+from .models import METADATA_MODELS, BISERVER_MODELS
 from . import transform
-
 
 log = logging.getLogger(__name__)
 

@@ -1,17 +1,17 @@
-from typing import List, Callable
+from typing import Callable, List
 import logging
 import json
 
 from rich.console import Console
-import rich
-import httpx
 import typer
+import httpx
+import rich
 
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.data.models import Privilege
+
 from .completer import TQLCompleter
 from .const import TQL_HELP
-
 
 log = logging.getLogger(__name__)
 

@@ -1,14 +1,13 @@
-from typing import Any, Dict, List, TextIO
+from typing import TextIO, List, Dict, Any
 import contextlib
-import logging
-import pathlib
 import zipfile
+import pathlib
+import logging
 import csv
 
 from pydantic.dataclasses import dataclass
 
 from . import util
-
 
 log = logging.getLogger(__name__)
 

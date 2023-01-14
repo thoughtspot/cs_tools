@@ -7,7 +7,7 @@ from pydantic.dataclasses import dataclass
 from typer.testing import CliRunner, Result
 import typer
 
-from cs_tools.cli.ux import WARNING_BETA, WARNING_PRIVATE
+from cs_tools.cli.ux import WARNING_PRIVATE, WARNING_BETA
 from cs_tools.const import PACKAGE_DIR, GH_ISSUES
 
 

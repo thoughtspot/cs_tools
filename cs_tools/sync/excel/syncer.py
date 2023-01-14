@@ -1,13 +1,12 @@
-from typing import Any, Dict, List
-import logging
+from typing import List, Dict, Any
 import pathlib
+import logging
 import enum
 
 from pydantic.dataclasses import dataclass
 import openpyxl
 
 from . import sanitize
-
 
 log = logging.getLogger(__name__)
 

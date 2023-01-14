@@ -1,6 +1,7 @@
 from __future__ import annotations
-import datetime as dt
+
 import platform
+import datetime as dt
 import logging
 import json
 import sys
@@ -8,13 +9,12 @@ import sys
 import httpx
 
 from cs_tools.api._rest_api_v1 import RESTAPIv1
-from cs_tools.api.middlewares import Answer, Connection, Group, Metadata, Org, Pinboard, Search, Tag, TQL, TSLoad, User
-from cs_tools._version import __version__
+from cs_tools.api.middlewares import Pinboard, Metadata, TSLoad, Search, Answer, Group, User, Tag, Org, TQL
 from cs_tools.settings import CSToolsConfig
+from cs_tools._version import __version__
 from cs_tools.errors import ThoughtSpotUnavailable, AuthenticationError
 from cs_tools.types import ThoughtSpotPlatform, LoggedInUser
 from cs_tools.util import reveal
-
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class ThoughtSpot:
         self.metadata = Metadata(self)
         self.pinboard = self.liveboard = Pinboard(self)
         self.answer = Answer(self)
-        self.connection = Connection(self)
+        # self.connection
         # self.worksheet
         # self.table
         self.tag = Tag(self)

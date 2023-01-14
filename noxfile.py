@@ -301,6 +301,7 @@ def tests(session: nox.Session) -> None:
     session.run("ward")
 
 
-# @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
-# def code_quality(session):
-#     session.run("poetry", "install", external=True)
+@nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
+def lint(session):
+    session.run("isort", ".")
+    session.run("black", "." "--config", "pyproject.toml")

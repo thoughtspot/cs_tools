@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import tempfile
 import logging
 import csv
@@ -9,9 +9,9 @@ import sqlalchemy as sa
 import httpx
 import click
 
-from cs_tools.errors import SyncerError, ThoughtSpotUnavailable, TSLoadServiceUnreachable
-from . import compiler, sanitize
+from cs_tools.errors import TSLoadServiceUnreachable, ThoughtSpotUnavailable, SyncerError
 
+from . import sanitize, compiler
 
 log = logging.getLogger(__name__)
 

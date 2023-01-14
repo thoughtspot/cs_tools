@@ -1,20 +1,14 @@
-import copy
-from typing import Any, Dict, List, Union, Tuple
+from typing import Union, Tuple, List, Dict, Any
 import logging
+import copy
 
-from httpx import HTTPStatusError
 from pydantic import validate_arguments
+from httpx import HTTPStatusError
 
-from cs_tools.data.enums import (
-    DownloadableContent,
-    GUID,
-    MetadataCategory,
-    MetadataObject,
-    MetadataObjectSubtype,
-)
+from cs_tools.data.enums import MetadataObjectSubtype, DownloadableContent, MetadataCategory, MetadataObject, GUID
 from cs_tools.errors import ContentDoesNotExist
-from cs_tools.util import chunks
 from cs_tools.cli.ux import console
+from cs_tools.util import chunks
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot

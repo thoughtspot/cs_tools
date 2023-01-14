@@ -5,8 +5,7 @@ import json
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-from fastapi import FastAPI, Request, Body
-
+from fastapi import Request, FastAPI, Body
 
 HERE = pathlib.Path(__file__).parent
 _scoped = {}

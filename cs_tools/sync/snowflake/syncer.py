@@ -1,17 +1,16 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import logging
 import enum
 
+from snowflake.sqlalchemy import snowdialect, URL
 from pydantic.dataclasses import dataclass
-from snowflake.sqlalchemy import URL, snowdialect
-from pydantic import Field, root_validator
+from pydantic import root_validator, Field
 import sqlalchemy as sa
 
-from cs_tools import __version__
 from cs_tools.util import chunks
+from cs_tools import __version__
 
 from .const import MAX_EXPRESSIONS_MAGIC_NUMBER
-
 
 log = logging.getLogger(__name__)
 

@@ -1,15 +1,18 @@
-import logging
 import pathlib
+import logging
 import enum
 
-from typer import Argument as A_, Option as O_  # noqa
+from typer import Argument as A_  # noqa
+from typer import Option as O_
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
+from cs_tools.cli.ux import console
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
+from cs_tools.cli.ux import CSToolsApp
 from cs_tools.util import chunks
-
 
 log = logging.getLogger(__name__)
 HERE = pathlib.Path(__file__).parent

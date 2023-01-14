@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import Any
-from typing import TYPE_CHECKING
+
+from typing import Any, TYPE_CHECKING
 import logging
 
 from pydantic import validate_arguments

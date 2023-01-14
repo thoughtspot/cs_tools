@@ -1,7 +1,7 @@
 import datetime as dt
 import logging
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import SQLModel, Field
 
 from cs_tools.util import to_datetime
 

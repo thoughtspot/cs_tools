@@ -3,16 +3,19 @@ import logging
 import socket
 import enum
 
-from typer import Argument as A_, Option as O_  # noqa
+from typer import Argument as A_  # noqa
+from typer import Option as O_
 import uvicorn
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.data.enums import AccessLevel
-from cs_tools.cli.ux import console, CSToolsApp, CSToolsArgument as Arg, CSToolsOption as Opt
+from cs_tools.cli.ux import console
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
+from cs_tools.cli.ux import CSToolsApp
 
 from .web_app import _scoped
-
 
 log = logging.getLogger(__name__)
 

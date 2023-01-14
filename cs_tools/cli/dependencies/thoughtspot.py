@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Tuple
 from dataclasses import dataclass
-import inspect
+from typing import Tuple, List, Dict, Any
 import logging
+import inspect
 
 from typer.core import TyperOption
-import click
 import httpx
+import click
 
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.thoughtspot import ThoughtSpot

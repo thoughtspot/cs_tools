@@ -1,8 +1,8 @@
-from typing import Any, Dict, List, Union
+from typing import Union, List, Dict, Any
 import datetime as dt
 
-from dateutil import tz as tz_
 from rich.table import Table
+from dateutil import tz as tz_
 
 
 def to_datetime(
