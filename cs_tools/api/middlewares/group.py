@@ -5,12 +5,16 @@ from pydantic import validate_arguments
 
 log = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
+
 
 class GroupMiddleware:
     """
     Functions to simplify using the group API
     """
-    def __init__(self, ts):
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
     @validate_arguments
@@ -21,4 +25,4 @@ class GroupMiddleware:
         """
         r = self.ts.api.group.get_group(name=name)
         info = r.json()
-        return info['header']['id']
+        return info["header"]["id"]

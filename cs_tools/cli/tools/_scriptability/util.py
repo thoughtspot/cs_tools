@@ -50,10 +50,12 @@ class GUIDMapping:
         """
         # self.guid_mapper.generate_map(DEV, PROD) # =>  {envt_A_guid1: envt_B_guid2 , .... }
         mapper = self.guid_mapper.generate_mapping(self.from_env, self.to_env)
-        _disambiguate(tml=tml,
-                      guid_mapping=mapper,
-                      remap_object_guid=self.remap_object_guid,
-                      delete_unmapped_guids=delete_unmapped_guids)
+        _disambiguate(
+            tml=tml,
+            guid_mapping=mapper,
+            remap_object_guid=self.remap_object_guid,
+            delete_unmapped_guids=delete_unmapped_guids,
+        )
 
     def save(self):
         """Saves the GUID mappings."""
@@ -145,7 +147,7 @@ class MetadataTypeList:
             s += f'{mtype.value}: [{", ".join(self._mapping[mtype])}], '
 
         if s.endswith(", "):
-            s = s[0: len(s) - 2]  # strip out the last ,
+            s = s[0 : len(s) - 2]  # strip out the last ,
         s += "}"
 
         return s

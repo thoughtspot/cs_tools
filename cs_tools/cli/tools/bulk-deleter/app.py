@@ -16,17 +16,17 @@ HERE = pathlib.Path(__file__).parent
 
 
 class AcceptedObjectType(str, enum.Enum):
-    QUESTION_ANSWER_BOOK = 'saved answer'
-    PINBOARD_ANSWER_BOOK = 'pinboard'
-    saved_answer = 'QUESTION_ANSWER_BOOK'
-    liveboard = 'PINBOARD_ANSWER_BOOK'
-    pinboard = 'PINBOARD_ANSWER_BOOK'
+    QUESTION_ANSWER_BOOK = "saved answer"
+    PINBOARD_ANSWER_BOOK = "pinboard"
+    saved_answer = "QUESTION_ANSWER_BOOK"
+    liveboard = "PINBOARD_ANSWER_BOOK"
+    pinboard = "PINBOARD_ANSWER_BOOK"
 
     def to_system_type(self) -> str:
-        return self.name if self.name.endswith('BOOK') else self.value
+        return self.name if self.name.endswith("BOOK") else self.value
 
     def __eq__(self, other) -> bool:
-        if hasattr(other, 'value'):
+        if hasattr(other, "value"):
             other = other.value
 
         return other in (self.value, self.name)
@@ -46,29 +46,26 @@ def _validate_objects_exist(ts, data):
 
     This is a ThoughtSpot API limitation.
     """
-    new_data = {
-        'QUESTION_ANSWER_BOOK': [],
-        'PINBOARD_ANSWER_BOOK': []
-    }
+    new_data = {"QUESTION_ANSWER_BOOK": [], "PINBOARD_ANSWER_BOOK": []}
 
     for object_ in data:
-        system_type = AcceptedObjectType(object_['object_type']).to_system_type()
-        new_data[system_type].append(object_['object_guid'])
+        system_type = AcceptedObjectType(object_["object_type"]).to_system_type()
+        new_data[system_type].append(object_["object_guid"])
 
     for system_type, to_delete_guids in new_data.items():
         for chunk in chunks(to_delete_guids, n=15):
             r = ts.api.metadata.list(type=system_type, fetchids=chunk)
-            returned_guids = [_['id'] for _ in r.json()]
+            returned_guids = [_["id"] for _ in r.json()]
 
             if len(returned_guids) != len(chunk):
                 for guid in set(to_delete_guids).difference(set(returned_guids)):
                     new_data[system_type].remove(guid)
                     log.warning(
-                        f'{guid} [yellow]is not a valid [blue]{system_type}[/]![/] '
-                        f'[error]removing this from the delete operation[/]'
+                        f"{guid} [yellow]is not a valid [blue]{system_type}[/]![/] "
+                        f"[error]removing this from the delete operation[/]"
                     )
 
-    return new_data['QUESTION_ANSWER_BOOK'], new_data['PINBOARD_ANSWER_BOOK']
+    return new_data["QUESTION_ANSWER_BOOK"], new_data["PINBOARD_ANSWER_BOOK"]
 
 
 app = CSToolsApp(
@@ -79,8 +76,8 @@ app = CSToolsApp(
 @app.command(dependencies=[thoughtspot])
 def single(
     ctx: typer.Context,
-    type: AcceptedObjectType = Opt(..., help='type of the metadata to delete'),
-    guid: str = Opt(..., help='guid to delete')
+    type: AcceptedObjectType = Opt(..., help="type of the metadata to delete"),
+    guid: str = Opt(..., help="guid to delete"),
 ):
     """
     Removes a specific object from ThoughtSpot.
@@ -88,15 +85,15 @@ def single(
     ts = ctx.obj.thoughtspot
     system_type = AcceptedObjectType.to_system_type(type)
 
-    data = [{'object_type': system_type, 'object_guid': guid}]
+    data = [{"object_type": system_type, "object_guid": guid}]
     answers, liveboards = _validate_objects_exist(ts, data)
 
     if not answers and not liveboards:
         raise typer.Exit(-1)
 
-    console.print(f'deleting {system_type}: {guid}')
+    console.print(f"deleting {system_type}: {guid}")
     r = ts.api._metadata.delete(type=system_type, id=[guid])
-    log.debug(f'{r} - {r.content}')
+    log.debug(f"{r} - {r.content}")
 
 
 @app.command(dependencies=[thoughtspot])
@@ -104,15 +101,12 @@ def from_tabular(
     ctx: typer.Context,
     syncer: str = Opt(
         None,
-        help='protocol and path for options to pass to the syncer',
-        metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+        help="protocol and path for options to pass to the syncer",
+        metavar="protocol://DEFINITION.toml",
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx),
     ),
-    deletion: str = Opt(
-        None,
-        help='if using --syncer, directive to find user deletion at'
-    ),
-    batchsize: int = Opt(1, help='maximum amount of objects to delete simultaneously')
+    deletion: str = Opt(None, help="if using --syncer, directive to find user deletion at"),
+    batchsize: int = Opt(1, help="maximum amount of objects to delete simultaneously"),
 ):
     """
     Remove many objects from ThoughtSpot.
@@ -139,7 +133,7 @@ def from_tabular(
         +-----------------------+-------------+
     """
     if syncer is not None and deletion is None:
-        console.print('[red]you must provide a syncer directive to --deletion')
+        console.print("[red]you must provide a syncer directive to --deletion")
         raise typer.Exit(-1)
 
     ts = ctx.obj.thoughtspot
@@ -148,21 +142,21 @@ def from_tabular(
     answers, liveboards = _validate_objects_exist(ts, data)
 
     if liveboards:
-        console.print(f'deleting {len(liveboards)} total liveboards')
+        console.print(f"deleting {len(liveboards)} total liveboards")
 
         for chunk in chunks(liveboards, n=batchsize):
             if batchsize > 1:
-                console.print(f'\tdeleting {len(chunk)} liveboards:\n{chunk}')
+                console.print(f"\tdeleting {len(chunk)} liveboards:\n{chunk}")
 
-            r = ts.api._metadata.delete(type='PINBOARD_ANSWER_BOOK', id=list(chunk))
-            log.debug(f'{r} - {r.content}')
+            r = ts.api._metadata.delete(type="PINBOARD_ANSWER_BOOK", id=list(chunk))
+            log.debug(f"{r} - {r.content}")
 
     if answers:
-        console.print(f'deleting {len(answers)} total answers')
+        console.print(f"deleting {len(answers)} total answers")
 
         for chunk in chunks(answers, n=batchsize):
             if batchsize > 1:
-                console.print(f'\tdeleting {len(chunk)} answers:\n{chunk}')
+                console.print(f"\tdeleting {len(chunk)} answers:\n{chunk}")
 
-            r = ts.api._metadata.delete(type='QUESTION_ANSWER_BOOK', id=list(chunk))
-            log.debug(f'{r} - {r.content}')
+            r = ts.api._metadata.delete(type="QUESTION_ANSWER_BOOK", id=list(chunk))
+            log.debug(f"{r} - {r.content}")

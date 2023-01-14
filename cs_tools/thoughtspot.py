@@ -20,11 +20,14 @@ log = logging.getLogger(__name__)
 
 
 class ThoughtSpot:
-    """
-    """
+    """ """
+
     def __init__(self, config: CSToolsConfig):
         self.config = config
-        self._rest_api_v1 = RESTAPIv1(config.thoughtspot.fullpath, verify=config.verify, )
+        self._rest_api_v1 = RESTAPIv1(
+            config.thoughtspot.fullpath,
+            verify=config.verify,
+        )
         # self._rest_api_v2 = RESTAPIv2()
 
         # assigned at self.login()
@@ -61,11 +64,8 @@ class ThoughtSpot:
         """
         Return information about the logged in user.
         """
-        if not hasattr(self, '_logged_in_user'):
-            raise RuntimeError(
-                'attempted to access user details before logging into the '
-                'ThoughtSpot platform'
-            )
+        if not hasattr(self, "_logged_in_user"):
+            raise RuntimeError("attempted to access user details before logging into the " "ThoughtSpot platform")
 
         return self._logged_in_user
 
@@ -74,11 +74,8 @@ class ThoughtSpot:
         """
         Return information about the ThoughtSpot platform.
         """
-        if not hasattr(self, '_this_platform'):
-            raise RuntimeError(
-                'attempted to access platform details before logging into the '
-                'ThoughtSpot platform'
-            )
+        if not hasattr(self, "_this_platform"):
+            raise RuntimeError("attempted to access platform details before logging into the " "ThoughtSpot platform")
 
         return self._this_platform
 
@@ -88,45 +85,43 @@ class ThoughtSpot:
         """
         try:
             r = self.api.session_login(
-                username=self.config.auth['frontend'].username,
-                password=reveal(self.config.auth['frontend'].password).decode(),
+                username=self.config.auth["frontend"].username,
+                password=reveal(self.config.auth["frontend"].password).decode(),
                 # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
             )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
                 raise AuthenticationError(
                     config_name=self.config.name,
-                    config_username=self.config.auth['frontend'].username,
-                    debug=''.join(json.loads(e.response.json().get('debug', []))),
-                    incident_id=e.response.json().get('incident_id_guid', '<missing>')
+                    config_username=self.config.auth["frontend"].username,
+                    debug="".join(json.loads(e.response.json().get("debug", []))),
+                    incident_id=e.response.json().get("incident_id_guid", "<missing>"),
                 )
             raise e
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
             host = self.config.thoughtspot.host
-            rzn = (
-                f'cannot see url [blue]{host}[/] from the current machine'
-                f'\n\n>>> [yellow]{e}[/]'
-            )
+            rzn = f"cannot see url [blue]{host}[/] from the current machine" f"\n\n>>> [yellow]{e}[/]"
             raise ThoughtSpotUnavailable(reason=rzn) from None
 
         # got a response, but couldn't make sense of it
         try:
             data = r.json()
         except json.JSONDecodeError:
-            if 'Enter the activation code to enable service' in r.text:
+            if "Enter the activation code to enable service" in r.text:
                 info = {
-                    'reason': "It is in 'Economy Mode'.",
-                    'mitigation': f'Activate it at [url]{self.config.thoughtspot.host}'
+                    "reason": "It is in 'Economy Mode'.",
+                    "mitigation": f"Activate it at [url]{self.config.thoughtspot.host}",
                 }
             else:
-                info = {'reason': 'for an unknown reason.'}
+                info = {"reason": "for an unknown reason."}
 
             raise ThoughtSpotUnavailable(**info) from None
 
         self._logged_in_user = LoggedInUser.from_api_v1_session_info(data)
         self._this_platform = ThoughtSpotPlatform.from_api_v1_session_info(data)
 
-        log.debug(f"""execution context...
+        log.debug(
+            f"""execution context...
 
         [CS TOOLS COMMAND]
         cs_tools {' '.join(sys.argv[1:])}
@@ -150,7 +145,8 @@ class ThoughtSpot:
         username: {self._logged_in_user.name}
         display_name: {self._logged_in_user.display_name}
         privileges: {list(map(str, self._logged_in_user.privileges))}
-        """)
+        """
+        )
 
     def logout(self) -> None:
         """

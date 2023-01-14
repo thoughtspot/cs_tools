@@ -35,13 +35,10 @@ def base64_to_file(string: str, *, filepath: pathlib.Path) -> None:
     add_padding = len(string) % 4
 
     if add_padding:
-        log.warning(
-            f'adding {add_padding} padding characters to meet the required octect '
-            f'length for {filepath}'
-        )
-        string += '=' * add_padding
+        log.warning(f"adding {add_padding} padding characters to meet the required octect " f"length for {filepath}")
+        string += "=" * add_padding
 
-    with pathlib.Path(filepath).open(mode='wb') as file:
+    with pathlib.Path(filepath).open(mode="wb") as file:
         file.write(base64.b64decode(string))
 
 

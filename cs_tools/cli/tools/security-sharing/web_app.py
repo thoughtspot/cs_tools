@@ -13,8 +13,8 @@ _scoped = {}
 
 
 web_app = FastAPI()
-web_app.mount('/static', StaticFiles(directory=f'{HERE}/static'), name='static')
-templates = Jinja2Templates(directory=f'{HERE}/static')
+web_app.mount("/static", StaticFiles(directory=f"{HERE}/static"), name="static")
+templates = Jinja2Templates(directory=f"{HERE}/static")
 
 
 #
@@ -32,14 +32,10 @@ templates = Jinja2Templates(directory=f'{HERE}/static')
 #
 
 
-@web_app.get('/', response_class=HTMLResponse)
+@web_app.get("/", response_class=HTMLResponse)
 async def read_index(request: Request):
-    data = {
-        'request': request,
-        'host': _scoped['ts'].platform.url,
-        'user': _scoped['ts'].me.display_name
-    }
-    return templates.TemplateResponse('index.html', data)
+    data = {"request": request, "host": _scoped["ts"].platform.url, "user": _scoped["ts"].me.display_name}
+    return templates.TemplateResponse("index.html", data)
 
 
 #
@@ -55,13 +51,13 @@ async def read_index(request: Request):
 #
 
 
-@web_app.post('/api/security/share')
-async def _(type: str=Body(...), guids: List[str]=Body(...), permissions: Dict[str, Any]=Body(...)):
+@web_app.post("/api/security/share")
+async def _(type: str = Body(...), guids: List[str] = Body(...), permissions: Dict[str, Any] = Body(...)):
     """
     TSSetPermissionRequest
     """
-    permissions = {guid: data['shareMode'] for guid, data in permissions.items()}
-    r = _scoped['ts'].api._security.share(type=type, id=guids, permissions=permissions)
+    permissions = {guid: data["shareMode"] for guid, data in permissions.items()}
+    r = _scoped["ts"].api._security.share(type=type, id=guids, permissions=permissions)
 
     try:
         return r.json()
@@ -69,52 +65,46 @@ async def _(type: str=Body(...), guids: List[str]=Body(...), permissions: Dict[s
         pass
 
 
-@web_app.post('/api/defined_permission')
+@web_app.post("/api/defined_permission")
 # async def _(request: Request):  # could also do it like this ... how lazy to be?
-async def _(type: str=Body(...), guids: List[str]=Body(...)):
+async def _(type: str = Body(...), guids: List[str] = Body(...)):
     """
     TSGetTablePermissionsRequest
     """
-    r = _scoped['ts'].api._security.defined_permission(type=type, id=guids)
+    r = _scoped["ts"].api._security.defined_permission(type=type, id=guids)
     return r.json()
 
 
-@web_app.get('/api/list_columns/{guid}')
+@web_app.get("/api/list_columns/{guid}")
 async def _(guid: str):
     """
     TSGetColumnsRequest
     """
-    r = _scoped['ts'].api._metadata.list_columns(id=guid)
+    r = _scoped["ts"].api._metadata.list_columns(id=guid)
     return r.json()
 
 
-@web_app.get('/api/user_groups')
+@web_app.get("/api/user_groups")
 async def _():
     """
     TSGetUserGroupsRequest
     """
-    params = {
-        'type': 'USER_GROUP',
-        'category': 'ALL',
-        'sort': 'DEFAULT',
-        'offset': -1,
-        'auto_created': False
-    }
-    r = _scoped['ts'].api.metadata.list(**params)
+    params = {"type": "USER_GROUP", "category": "ALL", "sort": "DEFAULT", "offset": -1, "auto_created": False}
+    r = _scoped["ts"].api.metadata.list(**params)
     return r.json()
 
 
-@web_app.get('/api/tables')
+@web_app.get("/api/tables")
 async def _():
     """
     TSGetTablesRequest
     """
     params = {
-        'type': 'LOGICAL_TABLE',
-        'subtypes': ['ONE_TO_ONE_LOGICAL'],
-        'category': 'ALL',
-        'sort': 'DEFAULT',
-        'offset': -1
+        "type": "LOGICAL_TABLE",
+        "subtypes": ["ONE_TO_ONE_LOGICAL"],
+        "category": "ALL",
+        "sort": "DEFAULT",
+        "offset": -1,
     }
-    r = _scoped['ts'].api.metadata.list(**params)
+    r = _scoped["ts"].api.metadata.list(**params)
     return r.json()

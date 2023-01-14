@@ -65,6 +65,7 @@ class SyncerProtocol:
           https://docs.python.org/3/library/dataclasses.html
           https://pydantic-docs.helpmanual.io/usage/dataclasses
     """
+
     name: str
 
     def load(self, identifier: str) -> RECORDS_FORMAT:
@@ -75,7 +76,7 @@ class SyncerProtocol:
         ----------
         identifier: str
           resource name within the storage layer to extract data from
-          
+
           examples
           --------
             - database identifier could be a fully qualified tablename
@@ -99,7 +100,7 @@ class SyncerProtocol:
         ----------
         identifier: str
           resource name within the storage layer to extract data from
-          
+
           examples
           --------
             - database identifier could be a fully qualified tablename

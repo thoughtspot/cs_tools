@@ -51,37 +51,44 @@ def pip_install(package: str) -> None:
     """
     env = os.environ.copy()
     args = [
-        sys.executable, '-m', 'pip', 'install', package,
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        package,
         # silence output
-        '--quiet',
+        "--quiet",
         # disable caching
         "--no-cache-dir",
         # don't get for new versions of pip, because it doesn't matter and is noisy
         "--disable-pip-version-check",
         # trust installs from the official python package index
-        '--trusted-host', 'files.pythonhost.org',
-        '--trusted-host', 'pypi.org',
-        '--trusted-host', 'pypi.python.org',
+        "--trusted-host",
+        "files.pythonhost.org",
+        "--trusted-host",
+        "pypi.org",
+        "--trusted-host",
+        "pypi.python.org",
     ]
 
     with Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env) as proc:
         _, stderr = proc.communicate()
 
         if proc.returncode != 0:
-            err = stderr.decode('utf-8').lstrip().strip()
-            log.error(f'unable to install package: {package}: {err}')
+            err = stderr.decode("utf-8").lstrip().strip()
+            log.error(f"unable to install package: {package}: {err}")
 
 
 def ensure_dependencies(requirements: List[str]) -> None:
     for requirement in requirements:
-        log.debug(f'processing requirement: {requirement}')
+        log.debug(f"processing requirement: {requirement}")
         req = pkg_resources.Requirement.parse(requirement)
 
         if is_installed(req.project_name):
-            log.debug('requirement satisfied, no install necessary')
+            log.debug("requirement satisfied, no install necessary")
             continue
 
-        log.info(f'installing package: {requirement}')
+        log.info(f"installing package: {requirement}")
         pip_install(requirement)
 
 
@@ -93,7 +100,7 @@ def module_from_fp(fp: pathlib.Path) -> ModuleType:
 
         from . import foo
     """
-    __name__ = f'cs_tools_{fp.parent.stem}_syncer'
+    __name__ = f"cs_tools_{fp.parent.stem}_syncer"
     __file__ = fp
     __path__ = [fp.parent.as_posix()]
 
@@ -108,61 +115,48 @@ def module_from_fp(fp: pathlib.Path) -> ModuleType:
 
 
 def load_syncer(*, protocol: str, manifest_path: pathlib.Path) -> SyncerProtocol:
-    """
-    """
-    with manifest_path.open('r') as j:
+    """ """
+    with manifest_path.open("r") as j:
         manifest = json.load(j)
 
-    if 'name' not in manifest:
-        manifest['name'] = manifest_path.parent.stem
+    if "name" not in manifest:
+        manifest["name"] = manifest_path.parent.stem
 
-    if 'requirements' not in manifest:
-        manifest['requirements'] = []
+    if "requirements" not in manifest:
+        manifest["requirements"] = []
 
-    if 'syncer_class' not in manifest:
+    if "syncer_class" not in manifest:
         raise SyncerProtocolError(
             protocol,
             manifest_path=manifest_path,
-            reason=(
-                "manifest [blue]{manifest_path}[/] is missing a top-level directive "
-                "for [blue]syncer_class[/]"
-            )
+            reason=("manifest [blue]{manifest_path}[/] is missing a top-level directive " "for [blue]syncer_class[/]"),
         )
 
-    log.debug(f'manifest digest:\n\n{manifest}\n')
-    ensure_dependencies(manifest['requirements'])
+    log.debug(f"manifest digest:\n\n{manifest}\n")
+    ensure_dependencies(manifest["requirements"])
 
-    mod = module_from_fp(manifest_path.parent / 'syncer.py')
-    cls = getattr(mod, manifest['syncer_class'])
+    mod = module_from_fp(manifest_path.parent / "syncer.py")
+    cls = getattr(mod, manifest["syncer_class"])
 
-    if not hasattr(cls, 'name'):
+    if not hasattr(cls, "name"):
         raise SyncerProtocolError(
             protocol,
             manifest_path=manifest_path,
-            reason=(
-                "[blue]{manifest_path.parent}/syncer.py[/] must define an attribute "
-                "for [blue]name[/]"
-            )
+            reason=("[blue]{manifest_path.parent}/syncer.py[/] must define an attribute " "for [blue]name[/]"),
         )
 
-    if not hasattr(cls, 'load'):
+    if not hasattr(cls, "load"):
         raise SyncerProtocolError(
             protocol,
             manifest_path=manifest_path,
-            reason=(
-                "[blue]{manifest_path.parent}/syncer.py[/] must define the "
-                "[blue]load[/] method"
-            )
+            reason=("[blue]{manifest_path.parent}/syncer.py[/] must define the " "[blue]load[/] method"),
         )
 
-    if not hasattr(cls, 'dump'):
+    if not hasattr(cls, "dump"):
         raise SyncerProtocolError(
             protocol,
             manifest_path=manifest_path,
-            reason=(
-                "[blue]{manifest_path.parent}/syncer.py[/] must define the "
-                "[blue]dump[/] method"
-            )
+            reason=("[blue]{manifest_path.parent}/syncer.py[/] must define the " "[blue]dump[/] method"),
         )
 
     return cls

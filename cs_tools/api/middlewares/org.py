@@ -22,7 +22,7 @@ class OrgMiddleware:
     @validate_arguments
     def get(self, org_name: str) -> int:
         """
-        Looks up the org id for the given name. 
+        Looks up the org id for the given name.
 
         Orgs are managed by ID, but names are more common for users.
         """
@@ -65,9 +65,7 @@ class OrgMiddleware:
                 rzn = f"Invalid org specified, got '{org}'"
 
             raise CSToolsError(
-                error="Error setting org context.",
-                reason=rzn,
-                mitigation="Verify the org name or ID and try again."
+                error="Error setting org context.", reason=rzn, mitigation="Verify the org name or ID and try again."
             )
 
         return org_id

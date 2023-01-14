@@ -51,10 +51,10 @@ def scrub_sensitive(request_keywords: dict[str, Any]) -> dict[str, Any]:
 
     This is purely here to pop off the password.
     """
-    SAFEWORDS = ("password", )
+    SAFEWORDS = ("password",)
 
     # don't modify the actual keywords we want to build into the request
-    secure = copy.deepcopy({k: v for k, v in request_keywords.items() if k not in ('file', 'files')})
+    secure = copy.deepcopy({k: v for k, v in request_keywords.items() if k not in ("file", "files")})
 
     for keyword in ("params", "data", "json"):
         for safe_word in SAFEWORDS:
@@ -63,7 +63,7 @@ def scrub_sensitive(request_keywords: dict[str, Any]) -> dict[str, Any]:
     return secure
 
 
-def dumps(inp: list[Any] | UNDEFINED) -> str | UNDEFINED:
+def dumps(inp: list[Any] | type[UNDEFINED]) -> str | type[UNDEFINED]:
     """
     json.dumps, but passthru our UNDEFINED sentinel.
     """

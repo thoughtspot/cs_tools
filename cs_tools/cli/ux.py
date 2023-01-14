@@ -12,10 +12,7 @@ from cs_tools.const import CONSOLE_THEME, GH_SYNCER
 
 log = logging.getLogger(__name__)
 console = Console(theme=CONSOLE_THEME)
-WARNING_BETA = (
-    "\n\n[bold yellow]USE AT YOUR OWN RISK![/] "
-    "This tool is currently in beta."
-)
+WARNING_BETA = "\n\n[bold yellow]USE AT YOUR OWN RISK![/] " "This tool is currently in beta."
 WARNING_PRIVATE = (
     "\n\n[bold yellow]USE AT YOUR OWN RISK![/] "
     "This tool utilized private / internal API calls. These API calls are not "
@@ -40,7 +37,6 @@ def CSToolsOption(default, *param_decls, **passthru) -> typer.models.OptionInfo:
 
 
 class CSToolsCommand(typer.core.TyperCommand):
-
     def __init__(self, **passthru):
         ctx_settings = passthru.pop("context_settings") or {}
         # we need these to forward options to the dependencies
@@ -52,7 +48,7 @@ class CSToolsCommand(typer.core.TyperCommand):
         with contextlib.ExitStack() as stack:
             if hasattr(self.callback, "dependencies"):
                 [stack.enter_context(dep(ctx)) for dep in self.callback.dependencies]
-    
+
             r = ctx.invoke(self.callback, **ctx.params)
 
         return r
@@ -95,7 +91,6 @@ class CSToolsCommand(typer.core.TyperCommand):
 
 
 class CSToolsApp(typer.Typer):
-
     def __init__(self, **passthru):
         passthru["cls"] = CSToolsGroup
         passthru["rich_markup_mode"] = "rich"
@@ -108,7 +103,7 @@ class CSToolsApp(typer.Typer):
         dependencies: Optional[List[Callable]] = None,
         # typer kwargs
         cls: Optional[CSToolsCommand] = CSToolsCommand,
-        **passthru
+        **passthru,
     ):
         """
         Override to inject dependencies.

@@ -23,16 +23,16 @@ app = CSToolsApp(help="Extract data from a worksheet, view, or table in your pla
 @app.command(dependencies=[thoughtspot])
 def search(
     ctx: typer.Context,
-    query: str = Opt(..., help='search terms to issue against the dataset'),
-    dataset: str = Opt(..., help='name of the worksheet, view, or table to search against'),
+    query: str = Opt(..., help="search terms to issue against the dataset"),
+    dataset: str = Opt(..., help="name of the worksheet, view, or table to search against"),
     syncer: str = Opt(
         ...,
-        help='protocol and path for options to pass to the syncer',
-        metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+        help="protocol and path for options to pass to the syncer",
+        metavar="protocol://DEFINITION.toml",
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx),
     ),
-    target: str = Opt(..., help='syncer directive to load data to'),
-    data_type: RecordsetType = Opt('worksheet', help='type of object to search')
+    target: str = Opt(..., help="syncer directive to load data to"),
+    data_type: RecordsetType = Opt("worksheet", help="type of object to search"),
 ):
     """
     Search a dataset from the command line.

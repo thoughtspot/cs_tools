@@ -5,23 +5,18 @@ import datetime as dt
 import zlib
 
 
-def to_datetime(timestamp: int, *, unit: str='s') -> dt.datetime:
+def to_datetime(timestamp: int, *, unit: str = "s") -> dt.datetime:
     """
     Convert a timestamp to a python datetime.
 
     Mostly offers a nice API to the datetime library.
     """
-    _units = {
-         's': 1,
-        'ms': 1_000,
-        'us': 1_000_000,
-        'ns': 1_000_000_000
-    }
+    _units = {"s": 1, "ms": 1_000, "us": 1_000_000, "ns": 1_000_000_000}
 
     try:
         transform = _units[unit]
     except KeyError:
-        raise ValueError('unit must one of: s, ms, us, ns') from None
+        raise ValueError("unit must one of: s, ms, us, ns") from None
     else:
         timestamp = timestamp / transform
 
@@ -33,7 +28,7 @@ def chunks(iter_, *, n: int) -> iter:
     Yield successive n-sized chunks from lst.
     """
     for i in range(0, len(iter_), n):
-        yield iter_[i:i + n]
+        yield iter_[i : i + n]
 
 
 def dedupe(iterable: Iterable) -> Iterable:
@@ -46,7 +41,7 @@ def dedupe(iterable: Iterable) -> Iterable:
     return iter(dict.fromkeys(iterable))
 
 
-def deep_update(old: dict, new: dict, *, ignore: Any=None) -> dict:
+def deep_update(old: dict, new: dict, *, ignore: Any = None) -> dict:
     """
     Update existing dictionary with new data.
 
@@ -127,13 +122,14 @@ class State:
     """
     An object that can be used to store arbitrary state.
     """
+
     _state: Dict[str, Any]
 
     def __init__(self, state: Optional[Dict[str, Any]] = None):
         if state is None:
             state = {}
 
-        super().__setattr__('_state', state)
+        super().__setattr__("_state", state)
 
     def __setattr__(self, key: Any, value: Any) -> None:
         self._state[key] = value

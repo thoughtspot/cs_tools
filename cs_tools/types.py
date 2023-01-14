@@ -19,6 +19,7 @@ GUID = typing.cast(uuid.UUID, str)
 #   or what is show in the ThoughtSpot UI, while the member value is the API contract value.
 # ======================================================================================================================
 
+
 class FormatType(enum.Enum):
     records = "FULL"
     values = "COMPACT"
@@ -64,14 +65,14 @@ class SortOrder(enum.Enum):
 
 
 class ConnectionType(enum.Enum):
-    azure = 'RDBMS_AZURE_SQL_DATAWAREHOUSE'
-    big_query = 'RDBMS_GCP_BIGQUERY'
-    databricks = 'RDBMS_DATABRICKS'
-    oracle_adw = 'RDBMS_ORACLE_ADW'
-    presto = 'RDBMS_PRESTO'
-    redshift = 'RDBMS_REDSHIFT'
-    sap_hana = 'RDBMS_SAP_HANA'
-    snowflake = 'RDBMS_SNOWFLAKE'
+    azure = "RDBMS_AZURE_SQL_DATAWAREHOUSE"
+    big_query = "RDBMS_GCP_BIGQUERY"
+    databricks = "RDBMS_DATABRICKS"
+    oracle_adw = "RDBMS_ORACLE_ADW"
+    presto = "RDBMS_PRESTO"
+    redshift = "RDBMS_REDSHIFT"
+    sap_hana = "RDBMS_SAP_HANA"
+    snowflake = "RDBMS_SNOWFLAKE"
 
 
 class TMLType(enum.Enum):
@@ -97,25 +98,26 @@ class ShareModeAccessLevel(enum.Enum):
 
 
 class GroupPrivilege(enum.Enum):
-    innate = 'AUTHORING'
-    can_administer_thoughtspot = 'ADMINISTRATION'
-    can_upload_user_data = 'USERDATAUPLOADING'
-    can_download_data = 'DATADOWNLOADING'
-    has_developer_privilege = 'DEVELOPER'
-    can_share_with_all_users = 'SHAREWITHALL'
-    can_manage_data = 'DATAMANAGEMENT'
-    can_use_experimental_features = 'EXPERIMENTALFEATUREPRIVILEG'
-    can_invoke_custom_r_analysis = 'RANALYSIS'
-    can_manage_sync = 'SYNCMANAGEMENT'
-    can_schedule_for_others = 'JOBSCHEDULING'
-    has_spotiq_privilege = 'A3ANALYSIS'
-    can_administer_and_bypass_rls = 'BYPASSRLS'
-    cannot_create_or_delete_pinboards = 'DISABLE_PINBOARD_CREATION'
+    innate = "AUTHORING"
+    can_administer_thoughtspot = "ADMINISTRATION"
+    can_upload_user_data = "USERDATAUPLOADING"
+    can_download_data = "DATADOWNLOADING"
+    has_developer_privilege = "DEVELOPER"
+    can_share_with_all_users = "SHAREWITHALL"
+    can_manage_data = "DATAMANAGEMENT"
+    can_use_experimental_features = "EXPERIMENTALFEATUREPRIVILEG"
+    can_invoke_custom_r_analysis = "RANALYSIS"
+    can_manage_sync = "SYNCMANAGEMENT"
+    can_schedule_for_others = "JOBSCHEDULING"
+    has_spotiq_privilege = "A3ANALYSIS"
+    can_administer_and_bypass_rls = "BYPASSRLS"
+    cannot_create_or_delete_pinboards = "DISABLE_PINBOARD_CREATION"
 
 
 # ======================================================================================================================
 # REST API V1 input parameter types
 # ======================================================================================================================
+
 
 class UserProfile(typing.TypedDict):
     # GET: callosum/v1/tspublic/v1/user
@@ -130,6 +132,7 @@ class SecurityPrincipal(typing.TypedDict):
 # ======================================================================================================================
 # CS Tools Internal types
 # ======================================================================================================================
+
 
 @dataclass
 class ThoughtSpotPlatform:
@@ -148,12 +151,12 @@ class ThoughtSpotPlatform:
         config_info = info.get("configInfo")
 
         data = {
-            'version': info['releaseVersion'],
-            'deployment': 'cloud' if config_info['isSaas'] else 'software',
-            'url': config_info.get('emailConfig', {}).get('welcomeEmailConfig', {}).get('getStartedLink', "NOT SET"),
-            'timezone': info['timezone'],
-            'cluster_name': config_info['selfClusterName'],
-            'cluster_id': config_info['selfClusterId'],
+            "version": info["releaseVersion"],
+            "deployment": "cloud" if config_info["isSaas"] else "software",
+            "url": config_info.get("emailConfig", {}).get("welcomeEmailConfig", {}).get("getStartedLink", "NOT SET"),
+            "timezone": info["timezone"],
+            "cluster_name": config_info["selfClusterName"],
+            "cluster_id": config_info["selfClusterId"],
         }
 
         return cls(**data)
@@ -170,11 +173,11 @@ class LoggedInUser:
     @classmethod
     def from_api_v1_session_info(cls, info: dict[str, Any]) -> LoggedInUser:
         data = {
-            'guid': info['userGUID'],
-            'name': info['userName'],
-            'display_name': info['userDisplayName'],
-            'email': info['userEmail'],
-            'privileges': info['privileges']
+            "guid": info["userGUID"],
+            "name": info["userName"],
+            "display_name": info["userDisplayName"],
+            "email": info["userEmail"],
+            "privileges": info["privileges"],
         }
 
         return cls(**data)

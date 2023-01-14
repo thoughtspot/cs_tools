@@ -21,37 +21,39 @@ from .util import strip_blanks
 
 
 def export(
-        ctx: click.Context,
-        path: pathlib.Path = A_(  # may not want to use
-            ...,
-            help='full path (directory) to save data set to',
-            metavar='DIR',
-            dir_okay=True,
-            resolve_path=True
-        ),
-        tags: List[str] = O_([], metavar='TAGS',
-                             callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-                             help='comma separated list of tags to export'),
-        export_ids: List[str] = O_([], metavar='GUIDS',
-                                   callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-                                   help='comma separated list of GUIDs to export'),
-        author: str = O_('', metavar='USERNAME',
-                         help='username that is the author of the content to download'),
-        pattern: str = O_(None, metavar='PATTERN',
-                          help="Pattern for name with % as a wildcard"),
-        include_types: List[str] = O_([], metavar='CONTENTTYPES',
-                                      callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-                                      help='list of types to include: answer, liveboard, view, sqlview, '
-                                           'table, connection'),
-        exclude_types: List[str] = O_([], metavar='CONTENTTYPES',
-                                      callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-                                      help='list of types to exclude (overrides include): answer, liveboard, view, '
-                                           'sqlview, table, connection'),
-        export_associated: bool = O_(False,
-                                     help='if specified, also export related content'),
-        set_fqns: bool = O_(False,
-                            help='if set, then the content in the TML will have FQNs (GUIDs) added.'),
-        org: str = O_(None, help='Name of org to export from.  The user must have access to that org.')
+    ctx: click.Context,
+    path: pathlib.Path = A_(  # may not want to use
+        ..., help="full path (directory) to save data set to", metavar="DIR", dir_okay=True, resolve_path=True
+    ),
+    tags: List[str] = O_(
+        [],
+        metavar="TAGS",
+        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+        help="comma separated list of tags to export",
+    ),
+    export_ids: List[str] = O_(
+        [],
+        metavar="GUIDS",
+        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+        help="comma separated list of GUIDs to export",
+    ),
+    author: str = O_("", metavar="USERNAME", help="username that is the author of the content to download"),
+    pattern: str = O_(None, metavar="PATTERN", help="Pattern for name with % as a wildcard"),
+    include_types: List[str] = O_(
+        [],
+        metavar="CONTENTTYPES",
+        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+        help="list of types to include: answer, liveboard, view, sqlview, " "table, connection",
+    ),
+    exclude_types: List[str] = O_(
+        [],
+        metavar="CONTENTTYPES",
+        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+        help="list of types to exclude (overrides include): answer, liveboard, view, " "sqlview, table, connection",
+    ),
+    export_associated: bool = O_(False, help="if specified, also export related content"),
+    set_fqns: bool = O_(False, help="if set, then the content in the TML will have FQNs (GUIDs) added."),
+    org: str = O_(None, help="Name of org to export from.  The user must have access to that org."),
 ):
     """
     Exports TML as YAML from ThoughtSpot.  There are different parameters that can impact content to download:
@@ -67,16 +69,19 @@ def export(
     """
 
     if export_ids and (tags or author or include_types or exclude_types or pattern):
-        raise CSToolsError(error="GUID cannot be used with other filters.",
-                           reason="You can only specify GUIDs or a combination of other filters, " 
-                                  "such as author and tag.",
-                           mitigation="Modify you parameters to have GUIDS or author/tag.  "
-                                      "Note that tags and author can be used together.")
+        raise CSToolsError(
+            error="GUID cannot be used with other filters.",
+            reason="You can only specify GUIDs or a combination of other filters, " "such as author and tag.",
+            mitigation="Modify you parameters to have GUIDS or author/tag.  "
+            "Note that tags and author can be used together.",
+        )
 
     if not path.is_dir():
-        raise CSToolsError(error=f"{path} is not a directory.",
-                           reason=f"Only directories are supported for export.",
-                           mitigation="Rerun with a valid directory to export to.")
+        raise CSToolsError(
+            error=f"{path} is not a directory.",
+            reason=f"Only directories are supported for export.",
+            mitigation="Rerun with a valid directory to export to.",
+        )
 
     ts = ctx.obj.thoughtspot
 
@@ -112,38 +117,44 @@ def export(
         include_types = _convert_types_to_downloadable_content(include_types)
         exclude_types = _convert_types_to_downloadable_content(exclude_types)
 
-        export_objects = (ts.metadata.get_object_ids_filtered(tags=tags,
-                                                              author=author_guid,
-                                                              pattern=pattern,
-                                                              include_types=include_types,
-                                                              exclude_types=exclude_types))
+        export_objects = ts.metadata.get_object_ids_filtered(
+            tags=tags, author=author_guid, pattern=pattern, include_types=include_types, exclude_types=exclude_types
+        )
 
     results: List[Tuple[GUID, str, str, str]] = []  # (guid, status, name, message)
     for obj in export_objects:
-        guid = obj['id']
-        metadata_type = obj['type']
-        with console.status((f"[bold green]exporting {guid} ({metadata_type}) {'with' if export_associated else 'without'}"
-                             f"associated content.[/]")):
+        guid = obj["id"]
+        metadata_type = obj["type"]
+        with console.status(
+            (
+                f"[bold green]exporting {guid} ({metadata_type}) {'with' if export_associated else 'without'}"
+                f"associated content.[/]"
+            )
+        ):
 
             try:
                 if metadata_type == DownloadableContent.data_source:
                     results.extend(_download_connection(ts=ts, path=path, guid=guid))
                 else:  # everything except connections.
-                    results.extend(_download_tml(ts=ts, path=path, guid=guid,
-                                                 export_associated=export_associated, set_fqns=set_fqns))
+                    results.extend(
+                        _download_tml(
+                            ts=ts, path=path, guid=guid, export_associated=export_associated, set_fqns=set_fqns
+                        )
+                    )
 
             except HTTPStatusError as e:
                 # Sometimes getting 400 errors on the content.  Need to just log an error and continue.
-                console.log(f'Error exporting TML for GUID {guid}: {e}.  Check for access permissions.')
-                results.append((guid, 'HTTP ERROR', 'UNK', f"{e}"))
+                console.log(f"Error exporting TML for GUID {guid}: {e}.  Check for access permissions.")
+                results.append((guid, "HTTP ERROR", "UNK", f"{e}"))
 
     _show_results_as_table(results=results)
 
 
-def _download_connection(ts,
-                         path: pathlib.Path,
-                         guid: GUID,
-                         ) -> List[Tuple[GUID, str, str, str]]:
+def _download_connection(
+    ts,
+    path: pathlib.Path,
+    guid: GUID,
+) -> List[Tuple[GUID, str, str, str]]:
     """Download a connection.  Connections aren't supported by TML yet."""
     results: List[Tuple[GUID, str, str, str]] = []  # (guid, status, name, message)
 
@@ -151,44 +162,39 @@ def _download_connection(ts,
 
     fn = f"{path}/{guid}.connection.tml"
     yaml = r.content.decode()
-    name = yaml.split('\n')[0].split(": ")[1]
+    name = yaml.split("\n")[0].split(": ")[1]
 
     try:
         with open(fn, "w") as yamlfile:
             yamlfile.write(yaml)
-        results.append((guid, 'OK', name, 'Success'))
+        results.append((guid, "OK", name, "Success"))
     except IOError as e:
-        results.append((guid, 'ERROR', name, f'Error writing to file {fn}'))
+        results.append((guid, "ERROR", name, f"Error writing to file {fn}"))
 
     return results
 
 
-def _download_tml(ts,
-                  path: pathlib.Path,
-                  guid: GUID,
-                  export_associated: bool,
-                  set_fqns: bool
-                  ) -> List[Tuple[GUID, str, str, str]]:
+def _download_tml(
+    ts, path: pathlib.Path, guid: GUID, export_associated: bool, set_fqns: bool
+) -> List[Tuple[GUID, str, str, str]]:
     results: List[Tuple[GUID, str, str, str]] = []  # (guid, status, name, message)
 
     # 8.7.+ has export_fqn.  After we don't unless specified.
-    r = ts.api.metadata.tml_export(export_ids=[guid],  # only doing one at a time to account for FQN mapping
-                                   formattype=TMLType.yaml.value,  # formattype=formattype
-                                   export_associated=export_associated,
-                                   export_fqn=True)
+    r = ts.api.metadata.tml_export(
+        export_ids=[guid],  # only doing one at a time to account for FQN mapping
+        formattype=TMLType.yaml.value,  # formattype=formattype
+        export_associated=export_associated,
+        export_fqn=True,
+    )
 
-
-    objects = r.json().get('object', [])
+    objects = r.json().get("object", [])
 
     tml_objects = []
     for _ in objects:
-        status = _['info']['status']
-        if not status['status_code'] == 'OK':  # usually access errors.
+        status = _["info"]["status"]
+        if not status["status_code"] == "OK":  # usually access errors.
             console.log(f"[bold red]unable to get {_['info']['name']}: {_['info']['status']}[/]")
-            results.append((guid,
-                            status['status_code'],
-                            _['info']['name'],
-                            f"{_['info']['status']['error_message']}"))
+            results.append((guid, status["status_code"], _["info"]["name"], f"{_['info']['status']['error_message']}"))
 
         else:
             console.log(f"{_['info']['filename']} (Downloaded)")
@@ -196,10 +202,10 @@ def _download_tml(ts,
                 tml_type = determine_tml_type(info=_["info"])
                 tmlobj = tml_type.loads(tml_document=_["edoc"])
                 tml_objects.append(tmlobj)
-                results.append((guid, status['status_code'], _['info']['name'], "Success"))
+                results.append((guid, status["status_code"], _["info"]["name"], "Success"))
             except TMLDecodeError as tde:  # some objects might not be supported
                 console.log(f"[bold red]Unable to convert {_['edoc']} to a TML object.  Ignoring. {tde}")
-                results.append((guid, 'WARNING', _['info']['name'], "Unable to convert to TML object"))
+                results.append((guid, "WARNING", _["info"]["name"], "Unable to convert to TML object"))
 
     if set_fqns and before_version(ts.platform.version, "8.7"):
         _add_fqns_to_tml(ts, tml_list=tml_objects)
@@ -261,8 +267,9 @@ def _show_results_as_table(results: List[Tuple]) -> None:
     console.print(table)
 
 
-def _convert_types_to_downloadable_content(types: List[str]) \
-        -> List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]]:
+def _convert_types_to_downloadable_content(
+    types: List[str],
+) -> List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]]:
     """
     Converts types, such as 'liveboard' to downloadable content types, such as DownloadableContent.pinboard
     :param types: A list of names of types.  Current types can be: answer, liveboard, view, sqlview, table, connection
@@ -274,7 +281,7 @@ def _convert_types_to_downloadable_content(types: List[str]) \
         "connection": DownloadableContent.data_source,
         "liveboard": DownloadableContent.pinboard,
         "sqlview": DownloadableContent.logical_table,  # subtype is "SQL_VIEW"
-        "table": DownloadableContent.logical_table, # subtype is "ONE_TO_ONE_LOGICAL"
+        "table": DownloadableContent.logical_table,  # subtype is "ONE_TO_ONE_LOGICAL"
         "view": DownloadableContent.logical_table,  # subtype is "AGGR_WORKSHEET"
         "worksheet": DownloadableContent.logical_table,  # subtype is "WORKSHEET"
     }
@@ -284,7 +291,7 @@ def _convert_types_to_downloadable_content(types: List[str]) \
         "connection": None,
         "liveboard": None,
         "sqlview": MetadataObjectSubtype.sql_view,  # subtype is "SQL_VIEW"
-        "table": MetadataObjectSubtype.system_table, # subtype is "ONE_TO_ONE_LOGICAL"
+        "table": MetadataObjectSubtype.system_table,  # subtype is "ONE_TO_ONE_LOGICAL"
         "view": MetadataObjectSubtype.view,  # subtype is "AGGR_WORKSHEET":w
         "worksheet": MetadataObjectSubtype.worksheet,  # subtype is "WORKSHEET"
     }
@@ -292,10 +299,11 @@ def _convert_types_to_downloadable_content(types: List[str]) \
     download_types = []
     for t in types:
         if t not in type_map.keys():
-            raise CSToolsError(error=f'Unknown type: {t}',
-                               reason=f'You must specify only valid types.',
-                               mitigation=f'try again with one of the valid types: '
-                                          f'[{",".join(list(type_map.keys()))}]')
+            raise CSToolsError(
+                error=f"Unknown type: {t}",
+                reason=f"You must specify only valid types.",
+                mitigation=f"try again with one of the valid types: " f'[{",".join(list(type_map.keys()))}]',
+            )
         dt = type_map.get(t)
         dst = subtype_map.get(t)
 

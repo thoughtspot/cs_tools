@@ -10,23 +10,19 @@ from pydantic import validate_arguments
 
 from cs_tools.data.enums import Privilege
 from cs_tools.errors import InsufficientPrivileges, TSLoadServiceUnreachable
-from cs_tools.const import (
-    FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE,
-    APP_DIR
-)
+from cs_tools.const import FMT_TSLOAD_DATETIME, FMT_TSLOAD_DATE, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE, APP_DIR
 
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
-REQUIRED_PRIVILEGES = set([
-    Privilege.can_administer_thoughtspot,
-    Privilege.can_manage_data
-])
+REQUIRED_PRIVILEGES = set([Privilege.can_administer_thoughtspot, Privilege.can_manage_data])
 
 
 class TSLoadMiddleware:
-    """
-    """
-    def __init__(self, ts):
+    """ """
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
         # The load server resides on a different port compared to standard ThoughtSpot
         # services. This is because the service tends to carry heavy file-load
@@ -51,14 +47,14 @@ class TSLoadMiddleware:
         # Further reading:
         #   https://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html
         #
-        self._cache_fp = APP_DIR / '.cache/tsload-node-redirect-by-cycle-id.json'
+        self._cache_fp = APP_DIR / ".cache/tsload-node-redirect-by-cycle-id.json"
 
     def _cache_node_redirect(self, cycle_id: str, *, node_info: Dict = None) -> Dict[str, Dict]:
         """
         Method is a total hack.
         """
         try:
-            with self._cache_fp.open(mode='r') as j:
+            with self._cache_fp.open(mode="r") as j:
                 cache = json.load(j)
         except FileNotFoundError:
             cache = {}
@@ -69,16 +65,16 @@ class TSLoadMiddleware:
 
         # write to cache
         now = dt.datetime.utcnow().timestamp()
-        cache[cycle_id] = {**node_info, 'load_datetime': now}
+        cache[cycle_id] = {**node_info, "load_datetime": now}
 
         # keep only recent data
         cache = {
             cycle: details
             for cycle, details in cache.items()
-            if (now - details['load_datetime']) <= (10 * 86400)  # 10 days
+            if (now - details["load_datetime"]) <= (10 * 86400)  # 10 days
         }
 
-        with self._cache_fp.open(mode='w') as j:
+        with self._cache_fp.open(mode="w") as j:
             json.dump(cache, j, indent=4, sort_keys=True)
 
         return cache
@@ -88,7 +84,7 @@ class TSLoadMiddleware:
         Attempt a login.
 
         By default, the tsload service API sits behind a load balancer. When we first
-        init a new load cycle, the balancer will respond with the proper node (if 
+        init a new load cycle, the balancer will respond with the proper node (if
         applicable) to submit file uploads to. If that node is not the main node, then
         we will be required to authorize again.
         """
@@ -96,9 +92,9 @@ class TSLoadMiddleware:
 
         if cycle_id in cache:
             ds = self.ts.api.ts_dataservice
-            ds._tsload_node = cache[cycle_id]['host']
-            ds._tsload_port = cache[cycle_id]['port']
-            log.debug(f'redirecting to: {ds.etl_server_fullpath}')
+            ds._tsload_node = cache[cycle_id]["host"]
+            ds._tsload_port = cache[cycle_id]["port"]
+            log.debug(f"redirecting to: {ds.etl_server_fullpath}")
             ds.load_auth()
 
     def _check_privileges(self) -> None:
@@ -107,9 +103,7 @@ class TSLoadMiddleware:
         """
         if not set(self.ts.me.privileges).intersection(REQUIRED_PRIVILEGES):
             raise InsufficientPrivileges(
-                user=self.ts.me,
-                service='remote TQL',
-                required_privileges=', '.join(REQUIRED_PRIVILEGES)
+                user=self.ts.me, service="remote TQL", required_privileges=", ".join(REQUIRED_PRIVILEGES)
             )
 
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
@@ -119,15 +113,15 @@ class TSLoadMiddleware:
         *,
         database: str,
         table: str,
-        schema_: str = 'falcon_default_schema',
+        schema_: str = "falcon_default_schema",
         empty_target: bool = True,
         max_ignored_rows: int = 0,
         date_format: str = FMT_TSLOAD_DATE,
         date_time_format: str = FMT_TSLOAD_DATETIME,
         time_format: str = FMT_TSLOAD_TIME,
         skip_second_fraction: bool = False,
-        field_separator: str = '|',
-        null_value: str = '',
+        field_separator: str = "|",
+        null_value: str = "",
         boolean_representation: str = FMT_TSLOAD_TRUE_FALSE,
         has_header_row: bool = False,
         escape_character: str = '"',
@@ -135,7 +129,7 @@ class TSLoadMiddleware:
         flexible: bool = False,
         # not related to Remote TSLOAD API
         ignore_node_redirect: bool = False,
-        http_timeout: int = 60.0
+        http_timeout: int = 60.0,
     ) -> List[Dict[str, Any]]:
         """
         Load a file via tsload on a remote server.
@@ -182,75 +176,64 @@ class TSLoadMiddleware:
         self._check_privileges()
 
         flags = {
-            'target': {
-                'database': database,
-                'schema': schema_,
-                'table': table
-            },
-            'format': {
-                'field_separator': field_separator,
-                'enclosing_character': enclosing_character,
-                'escape_character': escape_character,
-                'null_value': null_value,
-                'date_time': {
-                    'date_time_format': date_time_format,
-                    'date_format': date_format,
-                    'time_format': time_format,
-                    'skip_second_fraction': skip_second_fraction
+            "target": {"database": database, "schema": schema_, "table": table},
+            "format": {
+                "field_separator": field_separator,
+                "enclosing_character": enclosing_character,
+                "escape_character": escape_character,
+                "null_value": null_value,
+                "date_time": {
+                    "date_time_format": date_time_format,
+                    "date_format": date_format,
+                    "time_format": time_format,
+                    "skip_second_fraction": skip_second_fraction,
                 },
-                'boolean': {
-                    'true_format': boolean_representation.split('_')[0],
-                    'false_format': boolean_representation.split('_')[1]
+                "boolean": {
+                    "true_format": boolean_representation.split("_")[0],
+                    "false_format": boolean_representation.split("_")[1],
                 },
-                'has_header_row': has_header_row,
-                'flexible': flexible
+                "has_header_row": has_header_row,
+                "flexible": flexible,
             },
-            'load_options': {
-                'empty_target': empty_target,
-                'max_ignored_rows': max_ignored_rows
-            }
+            "load_options": {"empty_target": empty_target, "max_ignored_rows": max_ignored_rows},
         }
 
         try:
             r = self.ts.api.ts_dataservice.load_init(flags, timeout=http_timeout)
         except Exception as e:
             raise TSLoadServiceUnreachable(
-                f'[red]something went wrong trying to access tsload service: {e}[/]'
-                f'\n\nIf you haven\'t enabled tsload service yet, please find the link '
-                f'below further information:'
-                f'\nhttps://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html'
-                f'\n\nHeres the tsload command for the file you tried to load:'
-                f'\n\ntsload --source_file {fd.name} --target_database {database} '
-                f'--target_schema {schema_} --target_table {table} '
+                f"[red]something went wrong trying to access tsload service: {e}[/]"
+                f"\n\nIf you haven't enabled tsload service yet, please find the link "
+                f"below further information:"
+                f"\nhttps://docs.thoughtspot.com/latest/admin/loading/load-with-tsload.html"
+                f"\n\nHeres the tsload command for the file you tried to load:"
+                f"\n\ntsload --source_file {fd.name} --target_database {database} "
+                f"--target_schema {schema_} --target_table {table} "
                 f'--max_ignored_rows {max_ignored_rows} --date_format "{FMT_TSLOAD_DATE}" '
                 f'--time_format "{FMT_TSLOAD_TIME}" --date_time_format "{FMT_TSLOAD_DATETIME}" '
                 f'--field_separator "{field_separator}" --null_value "{null_value}" '
-                f'--boolean_representation {boolean_representation} '
+                f"--boolean_representation {boolean_representation} "
                 f'--escape_character "{escape_character}" --enclosing_character "{enclosing_character}"'
-                + ('--empty_target ' if empty_target else '--noempty_target ')
-                + ('--has_header_row ' if has_header_row else '')
-                + ('--skip_second_fraction ' if skip_second_fraction else '')
-                + ('--flexible' if flexible else ''),
-                http_error=e
+                + ("--empty_target " if empty_target else "--noempty_target ")
+                + ("--has_header_row " if has_header_row else "")
+                + ("--skip_second_fraction " if skip_second_fraction else "")
+                + ("--flexible" if flexible else ""),
+                http_error=e,
             )
 
         data = r.json()
-        self._cache_node_redirect(data['cycle_id'], node_info=data.get('node_address', None))
+        self._cache_node_redirect(data["cycle_id"], node_info=data.get("node_address", None))
 
         if not ignore_node_redirect:
-            self._check_for_redirect_auth(data['cycle_id'])
+            self._check_for_redirect_auth(data["cycle_id"])
 
-        self.ts.api.ts_dataservice.load_start(data['cycle_id'], fd=fd, timeout=http_timeout)
-        self.ts.api.ts_dataservice.load_commit(data['cycle_id'])
-        return data['cycle_id']
+        self.ts.api.ts_dataservice.load_start(data["cycle_id"], fd=fd, timeout=http_timeout)
+        self.ts.api.ts_dataservice.load_commit(data["cycle_id"])
+        return data["cycle_id"]
 
     @validate_arguments
     def status(
-        self,
-        cycle_id: str,
-        *,
-        ignore_node_redirect: bool = False,
-        wait_for_complete: bool = False
+        self, cycle_id: str, *, ignore_node_redirect: bool = False, wait_for_complete: bool = False
     ) -> Dict[str, Any]:
         """
         Get the status of a previously started data load.
@@ -278,13 +261,13 @@ class TSLoadMiddleware:
             if not wait_for_complete:
                 break
 
-            if data['internal_stage'] == 'DONE':
-                break
-            
-            if data['status']['message'] != 'OK':
+            if data["internal_stage"] == "DONE":
                 break
 
-            log.debug(f'data load status:\n{data}')
+            if data["status"]["message"] != "OK":
+                break
+
+            log.debug(f"data load status:\n{data}")
             time.sleep(1)
 
         return data

@@ -6,8 +6,7 @@ from cs_tools.const import FMT_TSLOAD_DATETIME
 
 
 def clean_datetime(o: Any) -> str:
-    """
-    """
+    """ """
     if isinstance(o, dt.datetime):
         return o.strftime(FMT_TSLOAD_DATETIME)
     return o

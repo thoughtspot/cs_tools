@@ -13,8 +13,8 @@ log = logging.getLogger(__name__)
 
 
 class InsertMode(enum.Enum):
-    append = 'APPEND'
-    overwrite = 'OVERWRITE'
+    append = "APPEND"
+    overwrite = "OVERWRITE"
 
 
 @dataclass
@@ -22,6 +22,7 @@ class Excel:
     """
     Interact with Excel.
     """
+
     filepath: pathlib.Path
     mode: InsertMode = InsertMode.overwrite
 
@@ -47,7 +48,7 @@ class Excel:
 
     @property
     def name(self) -> str:
-        return 'excel'
+        return "excel"
 
     def load(self, tab_name: str) -> List[Dict[str, Any]]:
         t = self._get_or_create_tab(tab_name)

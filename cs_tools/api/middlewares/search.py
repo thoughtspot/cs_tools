@@ -9,6 +9,8 @@ import httpx
 from cs_tools.errors import CSToolsError, AmbiguousContentError, ContentDoesNotExist
 from cs_tools.api import util
 
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
 DB_ROW = Dict[str, Any]
@@ -22,11 +24,11 @@ def _fix_for_scal_101507(row: List[Dict[str, Any]]) -> List[DB_ROW]:
     # "data": [ {"Timestamp": {"v":{"s":1625759921}} ]
     #
     for i, value in enumerate(row):
-        if isinstance(value, dict) and value['v']:
+        if isinstance(value, dict) and value["v"]:
             try:
-                row[i] = value['v']['s']
+                row[i] = value["v"]["s"]
             except Exception:
-                log.warning(f'unexpected value in search-data response: {value}')
+                log.warning(f"unexpected value in search-data response: {value}")
 
     return row
 
@@ -50,7 +52,7 @@ def _cast(data: List[DB_ROW], types: Dict[str, str]) -> List[DB_ROW]:
         "DATE_TIME": dt.datetime.fromtimestamp,
         "TIMESTAMP": float,
     }
-    
+
     _logged = {}
     column_names = list(sorted(types.keys(), key=len, reverse=True))
 
@@ -80,9 +82,9 @@ def _cast(data: List[DB_ROW], types: Dict[str, str]) -> List[DB_ROW]:
 
 
 class SearchMiddleware:
-    """
-    """
-    def __init__(self, ts):
+    """ """
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
     # DEVNOTE:
@@ -98,13 +100,7 @@ class SearchMiddleware:
 
     @validate_arguments
     def __call__(
-        self,
-        query: str,
-        *,
-        worksheet: str = None,
-        table: str = None,
-        view: str = None,
-        sample: bool = -1
+        self, query: str, *, worksheet: str = None, table: str = None, view: str = None, sample: bool = -1
     ) -> List[Dict[str, Any]]:
         """
         Search a data source.
@@ -174,67 +170,56 @@ class SearchMiddleware:
 
         if not util.is_valid_guid(guid):
             d = self.ts._rest_api._metadata.list(
-                       type='LOGICAL_TABLE',
-                       subtypes=[subtype],
-                       pattern=guid,
-                       sort='CREATED',
-                       sortascending=True
-                   ).json()
+                type="LOGICAL_TABLE", subtypes=[subtype], pattern=guid, sort="CREATED", sortascending=True
+            ).json()
 
-            if not d['headers']:
-                raise ContentDoesNotExist(
-                    type=friendly,
-                    reason=f"No {friendly} found with the name [blue]{guid}"
-                )
+            if not d["headers"]:
+                raise ContentDoesNotExist(type=friendly, reason=f"No {friendly} found with the name [blue]{guid}")
 
-            d = [_ for _ in d['headers'] if _['name'].casefold() == guid.casefold()]
+            d = [_ for _ in d["headers"] if _["name"].casefold() == guid.casefold()]
 
             if len(d) > 1:
                 raise AmbiguousContentError(type=friendly, name=guid)
 
-            guid = d[0]['id']
+            guid = d[0]["id"]
 
-        log.debug(f'executing search on guid {guid}\n\n{query}\n')
+        log.debug(f"executing search on guid {guid}\n\n{query}\n")
         offset = 0
         data = []
 
         while True:
             try:
                 r = self.ts._rest_api.data.searchdata(
-                        query_string=query,
-                        data_source_guid=guid,
-                        formattype='COMPACT',
-                        batchsize=sample,
-                        offset=offset
-                    )
+                    query_string=query, data_source_guid=guid, formattype="COMPACT", batchsize=sample, offset=offset
+                )
             except httpx.HTTPStatusError as e:
                 log.debug(e, exc_info=True)
                 err = e.response.json()
                 errors = [msg for msg in json.loads(err["debug"]) if msg]
-                query = query.replace('[', r'\[')
+                query = query.replace("[", r"\[")
                 raise CSToolsError(
                     error="\n".join(errors),
                     mitigation=(
                         f"Double check, does this query apply to [blue]{worksheet or table or view}[/]?"
                         f"\n\nSearch terms\n[blue]{query}"
-                    )
+                    ),
                 )
 
             d = r.json()
-            data.extend(d.pop('data'))
-            offset += d['rowCount']
+            data.extend(d.pop("data"))
+            offset += d["rowCount"]
 
-            if d['rowCount'] < d['pageSize']:
+            if d["rowCount"] < d["pageSize"]:
                 break
 
-            if sample >= 0 and d['rowCount'] == d['pageSize']:
+            if sample >= 0 and d["rowCount"] == d["pageSize"]:
                 break
 
             if offset % 500_000 == 0:
                 log.warning(
-                    f'using the Data API to extract {offset / 1_000_000: >4,.1f}M+ '
-                    f'rows is not a scalable practice, consider adding a filter or '
-                    f'extracting directly from the underlying data source instead!'
+                    f"using the Data API to extract {offset / 1_000_000: >4,.1f}M+ "
+                    f"rows is not a scalable practice, consider adding a filter or "
+                    f"extracting directly from the underlying data source instead!"
                 )
 
         # Get the data types

@@ -6,24 +6,30 @@ from httpx import HTTPStatusError
 from pydantic import validate_arguments
 
 from cs_tools.data.enums import (
-    DownloadableContent, GUID, MetadataCategory, MetadataObject, MetadataObjectSubtype,
+    DownloadableContent,
+    GUID,
+    MetadataCategory,
+    MetadataObject,
+    MetadataObjectSubtype,
 )
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.util import chunks
 from cs_tools.cli.ux import console
 
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
 
 
 class MetadataMiddleware:
-    """
-    """
-    def __init__(self, ts):
+    """ """
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
         self.cache = {
-            'calendar_type': {},
-            'currency_type': {},
+            "calendar_type": {},
+            "currency_type": {},
         }
 
     @validate_arguments
@@ -33,7 +39,7 @@ class MetadataMiddleware:
         tags: Union[str, List[str]] = None,
         category: MetadataCategory = MetadataCategory.all,
         exclude_system_content: bool = True,
-        chunksize: int = 500
+        chunksize: int = 500,
     ) -> List[Dict[str, Any]]:
         """
         Get all metadata in ThoughtSpot.
@@ -60,7 +66,7 @@ class MetadataMiddleware:
             tags = [tags]
 
         content = []
-        types = ['PINBOARD_ANSWER_BOOK', 'QUESTION_ANSWER_BOOK', 'LOGICAL_TABLE']
+        types = ["PINBOARD_ANSWER_BOOK", "QUESTION_ANSWER_BOOK", "LOGICAL_TABLE"]
         track_guids = {}
 
         for type_ in types:
@@ -68,34 +74,28 @@ class MetadataMiddleware:
 
             while True:
                 r = self.ts.api._metadata.list(
-                        type=type_,
-                        category=category,
-                        tagname=tags,
-                        batchsize=chunksize,
-                        offset=offset
-                    )
+                    type=type_, category=category, tagname=tags, batchsize=chunksize, offset=offset
+                )
 
                 data = r.json()
                 to_extend = []
 
-                for d in data['headers']:
-                    track_guids[d['id']] = d['name']
+                for d in data["headers"]:
+                    track_guids[d["id"]] = d["name"]
 
                     # inject the type (only objects with subtypes define .type)
-                    to_extend.append({'type': type_, **d})
+                    to_extend.append({"type": type_, **d})
 
                 offset += len(to_extend)
 
                 if exclude_system_content:
                     to_extend = [
-                        answer
-                        for answer in to_extend
-                        if answer.get('authorName') not in ('system', 'tsadmin', 'su')
+                        answer for answer in to_extend if answer.get("authorName") not in ("system", "tsadmin", "su")
                     ]
 
                 content.extend(to_extend)
 
-                if data['isLastBatch']:
+                if data["isLastBatch"]:
                     break
 
         if not content:
@@ -109,50 +109,45 @@ class MetadataMiddleware:
                     "\n  - [blue]{category.value}[/] {type}"
                     "\n  - [blue]{incl}[/] admin-generated {type}"
                     "\n  - with tags [blue]{tags}"
-                )
+                ),
             }
             raise ContentDoesNotExist(type="content", **info)
 
         return content
 
     @validate_arguments
-    def columns(
-        self,
-        guids: List[GUID],
-        *,
-        include_hidden: bool = False,
-        chunksize: int = 10
-    ) -> List[Dict[str, Any]]:
-        """
-        """
+    def columns(self, guids: List[GUID], *, include_hidden: bool = False, chunksize: int = 10) -> List[Dict[str, Any]]:
+        """ """
         columns = []
 
         for chunk in chunks(guids, n=chunksize):
             r = self.ts.api.metadata.details(id=chunk, showhidden=include_hidden)
 
-            for logical_table in r.json()['storables']:
-                for column in logical_table.get('columns', []):
-                    columns.append({
-                        'column_guid': column['header']['id'],
-                        'object_guid': logical_table['header']['id'],
-                        'column_name': column['header']['name'],
-                        'description': column['header'].get('description'),
-                        'data_type': column['dataType'],
-                        'column_type': column['type'],
-                        'additive': column['isAdditive'],
-                        'aggregation': column['defaultAggrType'],
-                        'hidden': column['header']['isHidden'],
-                        'synonyms': column['synonyms'],
-                        'index_type': column['indexType'],
-                        'geo_config': self._lookup_geo_config(column),
-                        'index_priority': column['indexPriority'],
-                        'format_pattern': column.get('formatPattern'),
-                        'currency_type': self._lookup_currency_type(column),
-                        'attribution_dimension': column['isAttributionDimension'],
-                        'spotiq_preference': column['spotiqPreference'],
-                        'calendar_type': self._lookup_calendar_guid(column),
-                        'is_formula': 'formulaId' in column,
-                    })
+            for logical_table in r.json()["storables"]:
+                for column in logical_table.get("columns", []):
+                    columns.append(
+                        {
+                            "column_guid": column["header"]["id"],
+                            "object_guid": logical_table["header"]["id"],
+                            "column_name": column["header"]["name"],
+                            "description": column["header"].get("description"),
+                            "data_type": column["dataType"],
+                            "column_type": column["type"],
+                            "additive": column["isAdditive"],
+                            "aggregation": column["defaultAggrType"],
+                            "hidden": column["header"]["isHidden"],
+                            "synonyms": column["synonyms"],
+                            "index_type": column["indexType"],
+                            "geo_config": self._lookup_geo_config(column),
+                            "index_priority": column["indexPriority"],
+                            "format_pattern": column.get("formatPattern"),
+                            "currency_type": self._lookup_currency_type(column),
+                            "attribution_dimension": column["isAttributionDimension"],
+                            "spotiq_preference": column["spotiqPreference"],
+                            "calendar_type": self._lookup_calendar_guid(column),
+                            "is_formula": "formulaId" in column,
+                        }
+                    )
 
         return columns
 
@@ -164,45 +159,44 @@ class MetadataMiddleware:
         type: Union[MetadataObject, MetadataObjectSubtype],
         # release in 7.2.0+
         # permission_type: PermissionType = PermissionType.explicit,
-        chunksize: int = 15
+        chunksize: int = 15,
     ) -> List[Dict[str, Any]]:
-        """
-        """
+        """ """
         types = {
-            'FORMULA': 'LOGICAL_COLUMN',
-            'CALENDAR_TABLE': 'LOGICAL_COLUMN',
-            'LOGICAL_COLUMN': 'LOGICAL_COLUMN',
-            'QUESTION_ANSWER_BOOK': 'QUESTION_ANSWER_BOOK',
-            'PINBOARD_ANSWER_BOOK': 'PINBOARD_ANSWER_BOOK',
-            'ONE_TO_ONE_LOGICAL': 'LOGICAL_TABLE',
-            'USER_DEFINED': 'LOGICAL_TABLE',
-            'WORKSHEET': 'LOGICAL_TABLE',
-            'AGGR_WORKSHEET': 'LOGICAL_TABLE',
-            'MATERIALIZED_VIEW': 'LOGICAL_TABLE',
-            'SQL_VIEW': 'LOGICAL_TABLE',
-            'LOGICAL_TABLE': 'LOGICAL_TABLE',
+            "FORMULA": "LOGICAL_COLUMN",
+            "CALENDAR_TABLE": "LOGICAL_COLUMN",
+            "LOGICAL_COLUMN": "LOGICAL_COLUMN",
+            "QUESTION_ANSWER_BOOK": "QUESTION_ANSWER_BOOK",
+            "PINBOARD_ANSWER_BOOK": "PINBOARD_ANSWER_BOOK",
+            "ONE_TO_ONE_LOGICAL": "LOGICAL_TABLE",
+            "USER_DEFINED": "LOGICAL_TABLE",
+            "WORKSHEET": "LOGICAL_TABLE",
+            "AGGR_WORKSHEET": "LOGICAL_TABLE",
+            "MATERIALIZED_VIEW": "LOGICAL_TABLE",
+            "SQL_VIEW": "LOGICAL_TABLE",
+            "LOGICAL_TABLE": "LOGICAL_TABLE",
         }
 
         sharing_access = []
-        user_guids = [user['id'] for user in self.ts.user.all()]
+        user_guids = [user["id"] for user in self.ts.user.all()]
 
         for chunk in chunks(guids, n=chunksize):
             r = self.ts.api._security.defined_permission(type=types[type.value], id=chunk)
 
             for data in r.json().values():
-                for shared_to_principal_guid, permission in data['permissions'].items():
+                for shared_to_principal_guid, permission in data["permissions"].items():
                     d = {
-                        'object_guid': permission['topLevelObjectId'],
+                        "object_guid": permission["topLevelObjectId"],
                         # 'shared_to_user_guid':
                         # 'shared_to_group_guid':
-                        'permission_type': 'DEFINED',
-                        'share_mode': permission['shareMode']
+                        "permission_type": "DEFINED",
+                        "share_mode": permission["shareMode"],
                     }
 
                     if shared_to_principal_guid in user_guids:
-                        d['shared_to_user_guid'] = shared_to_principal_guid
+                        d["shared_to_user_guid"] = shared_to_principal_guid
                     else:
-                        d['shared_to_group_guid'] = shared_to_principal_guid
+                        d["shared_to_group_guid"] = shared_to_principal_guid
 
                     sharing_access.append(d)
 
@@ -210,12 +204,7 @@ class MetadataMiddleware:
 
     @validate_arguments
     def dependents(
-        self,
-        guids: List[GUID],
-        *,
-        for_columns: bool = False,
-        include_columns: bool = False,
-        chunksize: int = 50
+        self, guids: List[GUID], *, for_columns: bool = False, include_columns: bool = False, chunksize: int = 50
     ) -> List[Dict[str, Any]]:
         """
         Get all dependencies of content in ThoughtSpot.
@@ -240,12 +229,12 @@ class MetadataMiddleware:
           all dependencies' headers
         """
         if include_columns:
-            guids = [column['header']['id'] for column in self.columns(guids)]
-            type_ = 'LOGICAL_COLUMN'
+            guids = [column["header"]["id"] for column in self.columns(guids)]
+            type_ = "LOGICAL_COLUMN"
         elif for_columns:
-            type_ = 'LOGICAL_COLUMN'
+            type_ = "LOGICAL_COLUMN"
         else:
-            type_ = 'LOGICAL_TABLE'
+            type_ = "LOGICAL_TABLE"
 
         dependents = []
 
@@ -256,16 +245,12 @@ class MetadataMiddleware:
             for parent_guid, all_dependencies in data.items():
                 for dependency_type, headers in all_dependencies.items():
                     for header in headers:
-                        dependents.append({
-                            'parent_guid': parent_guid,
-                            'type': dependency_type,
-                            **header
-                        })
+                        dependents.append({"parent_guid": parent_guid, "type": dependency_type, **header})
 
         return dependents
 
     @validate_arguments
-    def get_edoc_object_list(self, guids: List[GUID]) -> List[Dict[str,str]]:
+    def get_edoc_object_list(self, guids: List[GUID]) -> List[Dict[str, str]]:
         """
         Returns a list of objects that map from id to type for edoc calls.
 
@@ -286,17 +271,21 @@ class MetadataMiddleware:
             offset = 0
 
             while True:
-                r = self.ts.api._metadata.list(type=metadata_type.value, batchsize=500, offset=offset, fetchids=guids)
+                r = self.ts.api.metadata_list(
+                    metadata_type=metadata_type.value, batchsize=500, offset=offset, fetchids=guids
+                )
                 data = r.json()
                 offset += len(data)
 
-                for metadata in data['headers']:
+                for metadata in data["headers"]:
                     if metadata_type == DownloadableContent.logical_table:
-                        mapped_guids.append({"id": metadata["id"], "type": self.map_subtype_to_type(metadata.get("type"))})
+                        mapped_guids.append(
+                            {"id": metadata["id"], "type": self.map_subtype_to_type(metadata.get("type"))}
+                        )
                     else:
                         mapped_guids.append({"id": metadata["id"], "type": metadata_type.value})
 
-                if data['isLastBatch']:
+                if data["isLastBatch"]:
                     break
 
             r = self.ts.api._metadata.list(fetchids=guids)
@@ -305,12 +294,12 @@ class MetadataMiddleware:
 
     @validate_arguments
     def get_object_ids_filtered(
-            self,
-            include_types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = None,
-            exclude_types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = None,
-            tags: List[str] = None,
-            author: GUID = None,
-            pattern: str = None,
+        self,
+        include_types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = None,
+        exclude_types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = None,
+        tags: List[str] = None,
+        author: GUID = None,
+        pattern: str = None,
     ) -> List[Dict[str, Any]]:
         """
         Gets a list of IDs for the associated based on the (optional) filter values passed.  Multiple filters will
@@ -336,13 +325,14 @@ class MetadataMiddleware:
         # if not include types are specified, start with all types.
         if not include_types:
             # tables have subtypes you have to specify.
-            types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = \
-                [(_, None) for _ in DownloadableContent if _ != DownloadableContent.logical_table]
-            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.system_table))
-            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.view))
-            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.materialized_view))
-            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.sql_view))
-            types.append((DownloadableContent.logical_table,MetadataObjectSubtype.worksheet))
+            types: List[Tuple[DownloadableContent, Union[MetadataObjectSubtype, None]]] = [
+                (_, None) for _ in DownloadableContent if _ != DownloadableContent.logical_table
+            ]
+            types.append((DownloadableContent.logical_table, MetadataObjectSubtype.system_table))
+            types.append((DownloadableContent.logical_table, MetadataObjectSubtype.view))
+            types.append((DownloadableContent.logical_table, MetadataObjectSubtype.materialized_view))
+            types.append((DownloadableContent.logical_table, MetadataObjectSubtype.sql_view))
+            types.append((DownloadableContent.logical_table, MetadataObjectSubtype.worksheet))
 
         else:
             types = copy.copy(include_types)
@@ -353,7 +343,7 @@ class MetadataMiddleware:
             for xt in exclude_types:
                 for t in types:
                     if not (xt[0] == t[0] and xt[1] == t[1]):
-                        updated_types.append((t[0],t[1]))
+                        updated_types.append((t[0], t[1]))
 
             types = updated_types
 
@@ -363,22 +353,28 @@ class MetadataMiddleware:
 
             while True:
                 try:
-                    r = self.ts.api._metadata.list(type=metadata_type[0].value,
-                                                   subtypes=[metadata_type[1].value] if metadata_type[1] else None,
-                                                   batchsize=500, offset=offset,
-                                                   tagname=tags, authorguid=author,
-                                                   pattern=pattern)
+                    r = self.ts.api._metadata.list(
+                        type=metadata_type[0].value,
+                        subtypes=[metadata_type[1].value] if metadata_type[1] else None,
+                        batchsize=500,
+                        offset=offset,
+                        tagname=tags,
+                        authorguid=author,
+                        pattern=pattern,
+                    )
                     data = r.json()
                     offset += len(data)
 
-                    for metadata in data['headers']:
+                    for metadata in data["headers"]:
 
                         # add if there is an author specified, or if there is not author.
                         # workaround for 7.1/7.2, which don't support the authorguid filter.
-                        if (author and metadata['author'] == author) or not author:  # otherwise, ignore
-                            object_ids.append({"id": metadata["id"], "type": metadata_type[0], "subtype": metadata_type[1]})
+                        if (author and metadata["author"] == author) or not author:  # otherwise, ignore
+                            object_ids.append(
+                                {"id": metadata["id"], "type": metadata_type[0], "subtype": metadata_type[1]}
+                            )
 
-                    if data['isLastBatch']:
+                    if data["isLastBatch"]:
                         break
                 except HTTPStatusError as hse:
                     console.log(f"[bold red]Error retrieving content for type {metadata_type}: {hse}")
@@ -387,9 +383,7 @@ class MetadataMiddleware:
         return object_ids
 
     @validate_arguments
-    def get_object_types(self,
-                         guids: List[GUID]
-                         ) -> List[Dict[str, Any]]:
+    def get_object_types(self, guids: List[GUID]) -> List[Dict[str, Any]]:
         """
         For a given set of GUIDs determine the type and subtype (where appropriate).  Types that are not found will
         not be included.
@@ -422,9 +416,9 @@ class MetadataMiddleware:
                 break
 
             try:
-                r = self.ts.api.metadata.list_object_headers(type=t[0].value,
-                                                             subtypes=[t[1].value] if t[1] else None,
-                                                             fetchids=tmp_guids)
+                r = self.ts.api.metadata.list(
+                    type=t[0].value, subtypes=[t[1].value] if t[1] else None, fetchids=tmp_guids
+                )
                 content = r.json()
 
                 # The response is a list of objects that only include the ones that exist.
@@ -454,58 +448,57 @@ class MetadataMiddleware:
 
     def _lookup_geo_config(self, column_details) -> Union[str, None]:
         try:
-            config = column_details['geoConfig']
+            config = column_details["geoConfig"]
         except KeyError:
             return None
 
-        if config['type'] in ('LATITUDE', 'LONGITUDE'):
-            return config['type'].title()
-        elif config['type'] == 'ZIP_CODE':
-            return 'Zipcode'
-        elif config['type'] == 'ADMIN_DIV_0':
-            return 'Country'
+        if config["type"] in ("LATITUDE", "LONGITUDE"):
+            return config["type"].title()
+        elif config["type"] == "ZIP_CODE":
+            return "Zipcode"
+        elif config["type"] == "ADMIN_DIV_0":
+            return "Country"
         # things get messy here....
-        elif config['type'] in ('ADMIN_DIV_1', 'ADMIN_DIV_2'):
-            return 'Sub-nation Region'
+        elif config["type"] in ("ADMIN_DIV_1", "ADMIN_DIV_2"):
+            return "Sub-nation Region"
 
-        return 'Unknown'
+        return "Unknown"
 
     def _lookup_calendar_guid(self, column_details) -> Union[str, None]:
         try:
-            ccal_guid = column_details['calendarTableGUID']
+            ccal_guid = column_details["calendarTableGUID"]
         except KeyError:
             return None
 
-        if ccal_guid not in self.cache['calendar_type']:
-            r = self.ts.api._metadata.list(type='LOGICAL_TABLE', showhidden=True, fetchids=[ccal_guid])
-            d = r.json()['headers'][0]
-            self.cache['calendar_type'][ccal_guid] = d['name']
+        if ccal_guid not in self.cache["calendar_type"]:
+            r = self.ts.api.metadata_list(metadata_type="LOGICAL_TABLE", showhidden=True, fetchids=[ccal_guid])
+            d = r.json()["headers"][0]
+            self.cache["calendar_type"][ccal_guid] = d["name"]
 
-        return self.cache['calendar_type'][ccal_guid]
+        return self.cache["calendar_type"][ccal_guid]
 
     def _lookup_currency_type(self, column_details) -> Union[str, None]:
         try:
-            currency_info = column_details['currencyTypeInfo']
+            currency_info = column_details["currencyTypeInfo"]
         except KeyError:
             return None
 
         name = None
-        if currency_info['setting'] == 'FROM_USER_LOCALE':
-            name = 'Infer From Browser'
-        elif currency_info['setting'] == 'FROM_ISO_CODE':
+        if currency_info["setting"] == "FROM_USER_LOCALE":
+            name = "Infer From Browser"
+        elif currency_info["setting"] == "FROM_ISO_CODE":
             name = f'Specify ISO Code: {currency_info["isoCode"]}'
-        elif currency_info['setting'] == 'FROM_COLUMN':
-            g = currency_info['columnGuid']
+        elif currency_info["setting"] == "FROM_COLUMN":
+            g = currency_info["columnGuid"]
 
-            if g not in self.cache['currency_type']:
-                r = self.ts.api._metadata.list(type='LOGICAL_COLUMN', showhidden=True, fetchids=[g])
-                d = r.json()['headers'][0]
-                self.cache['currency_type'][g] = name = f'From a column: {d["name"]}'
+            if g not in self.cache["currency_type"]:
+                r = self.ts.api.metadata_list(metadata_type="LOGICAL_COLUMN", showhidden=True, fetchids=[g])
+                d = r.json()["headers"][0]
+                self.cache["currency_type"][g] = name = f'From a column: {d["name"]}'
             else:
-                name = self.cache['currency_type'][g]
+                name = self.cache["currency_type"][g]
 
         return name
-
 
     @validate_arguments
     def objects_exist(self, metadata_type: MetadataObject, guids: List[GUID]) -> Dict[GUID, bool]:
@@ -515,7 +508,7 @@ class MetadataMiddleware:
         :param guids: The list of GUIDs to check.
         :return: A map of GUID to boolean, where True == it exists.
         """
-        r = self.ts.api.metadata.list_object_headers(type=metadata_type, fetchids=guids)
+        r = self.ts.api.metadata.list(type=metadata_type, fetchids=guids)
         content = r.json()
 
         # The response is a list of objects that only include the ones that exist.  So check each GUID and add to the
@@ -573,7 +566,7 @@ class MetadataMiddleware:
                 for k, v in details.items():
                     if k == "referencedTableHeaders":  # should map to a list of id/name pairs.
                         for _ in v:
-                            mappings[_['name']] = _['id']
+                            mappings[_["name"]] = _["id"]
                     elif isinstance(v, dict) or isinstance(v, list):
                         mappings.update(self._find_table_references(v))
             elif isinstance(details, list):

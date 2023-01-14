@@ -30,11 +30,7 @@ class TagMiddleware:
         tag_name : str
           name of the tag to create
         """
-        r = self.ts.api.request(
-            "POST",
-            "callosum/v1/metadata/create",
-            data={"type": "TAG", "name": tag_name}
-        )
+        r = self.ts.api.request("POST", "callosum/v1/metadata/create", data={"type": "TAG", "name": tag_name})
         return r.json()["header"]
 
     @validate_arguments
@@ -54,11 +50,7 @@ class TagMiddleware:
         """
         tag = self.get(tag_name)
 
-        self.ts.api.request(
-            "POST",
-            "callosum/v1/metadata/delete",
-            data={"type": "TAG", "id": tag["id"]}
-        )
+        self.ts.api.request("POST", "callosum/v1/metadata/delete", data={"type": "TAG", "id": tag["id"]})
 
     @validate_arguments
     def all(self) -> list[dict[str, Any]]:

@@ -6,14 +6,16 @@ from pydantic import validate_arguments
 from cs_tools.data.enums import MetadataCategory
 from cs_tools.errors import ContentDoesNotExist
 
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
 
 
 class PinboardMiddleware:
-    """
-    """
-    def __init__(self, ts):
+    """ """
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
     @validate_arguments
@@ -52,18 +54,14 @@ class PinboardMiddleware:
 
         while True:
             r = self.ts.api._metadata.list(
-                    type='PINBOARD_ANSWER_BOOK',
-                    category=category,
-                    tagname=tags,
-                    batchsize=chunksize,
-                    offset=offset
-                )
+                type="PINBOARD_ANSWER_BOOK", category=category, tagname=tags, batchsize=chunksize, offset=offset
+            )
 
             data = r.json()
-            pinboards.extend(data['headers'])
-            offset += len(data['headers'])
+            pinboards.extend(data["headers"])
+            offset += len(data["headers"])
 
-            if not data['headers'] and not pinboards:
+            if not data["headers"] and not pinboards:
                 info = {
                     "incl": "exclude" if exclude_system_content else "include",
                     "category": category,
@@ -74,18 +72,16 @@ class PinboardMiddleware:
                         "\n  - [blue]{category.value}[/] {type}"
                         "\n  - [blue]{incl}[/] admin-generated {type}"
                         "\n  - with tags [blue]{tags}"
-                    )
+                    ),
                 }
                 raise ContentDoesNotExist(type="pinboards", **info)
 
-            if data['isLastBatch']:
+            if data["isLastBatch"]:
                 break
 
         if exclude_system_content:
             pinboards = [
-                pinboard
-                for pinboard in pinboards
-                if pinboard.get('authorName') not in ('system', 'tsadmin', 'su')
+                pinboard for pinboard in pinboards if pinboard.get("authorName") not in ("system", "tsadmin", "su")
             ]
 
         return pinboards

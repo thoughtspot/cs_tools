@@ -25,9 +25,9 @@ CONFIG_OPT = TyperOption(
 )
 
 TEMP_DIR_OPT = TyperOption(
-    param_decls=['--temp_dir'],
+    param_decls=["--temp_dir"],
     default=APP_DIR.as_posix(),
-    help='location on disk to save temporary files',
+    help="location on disk to save temporary files",
     show_default=False,
     metavar="PATH",
     rich_help_panel="[ThoughtSpot Config Overrides]",
@@ -43,8 +43,7 @@ VERBOSE_OPT = TyperOption(
 
 
 def split_args_from_opts(extra_args: List[str]) -> Tuple[List[str], Dict[str, Any], List[str]]:
-    """
-    """
+    """ """
     args = []
     flag = []
     opts = {}
@@ -106,7 +105,7 @@ class DThoughtSpot(Dependency):
         if flags:
             log.warning(f"[yellow]Ignoring extra flags ({' '.join(flags)})")
 
-        cfg = CSToolsConfig.from_toml(APP_DIR / f'cluster-cfg_{config}.toml', **options)
+        cfg = CSToolsConfig.from_toml(APP_DIR / f"cluster-cfg_{config}.toml", **options)
         ctx.obj.thoughtspot = ThoughtSpot(cfg)
 
         if self.login:

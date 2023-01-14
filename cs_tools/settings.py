@@ -30,13 +30,14 @@ class _meta_config(BaseModel):
     version = v104
     published_at = 10202019210
     """
+
     default_config_name: str = None
     latest_release_version: str = None
     latest_release_date: dt.date = None
 
     @classmethod
     def load(cls):
-        _filepath: pathlib.Path = APP_DIR / '.meta-config.toml'
+        _filepath: pathlib.Path = APP_DIR / ".meta-config.toml"
         data = {}
 
         try:
@@ -77,15 +78,10 @@ class _meta_config(BaseModel):
         return cls(**data)
 
     def save(self) -> None:
-        _filepath: pathlib.Path = APP_DIR / '.meta-config.toml'
+        _filepath: pathlib.Path = APP_DIR / ".meta-config.toml"
         data = {
-            "default": {
-                "config": self.default_config_name
-            },
-            "latest_release": {
-                "version": self.latest_release_version,
-                "published_at": self.latest_release_date
-            }
+            "default": {"config": self.default_config_name},
+            "latest_release": {"version": self.latest_release_version, "published_at": self.latest_release_date},
         }
 
         _filepath.write_text(toml.dumps(data))
@@ -103,17 +99,15 @@ class Settings(BaseModel):
     """
 
     class Config:
-        json_encoders = {
-            FilePath: lambda v: v.resolve().as_posix(),
-            DirectoryPath: lambda v: v.resolve().as_posix()
-        }
+        json_encoders = {FilePath: lambda v: v.resolve().as_posix(), DirectoryPath: lambda v: v.resolve().as_posix()}
 
 
 class TSCloudURL(str):
     """
     Validator to match against a ThoughtSpot cloud URL.
     """
-    REGEX = re.compile(r'(?:https:\/\/)?(.*\.thoughtspot\.cloud)(?:\/.*)?')
+
+    REGEX = re.compile(r"(?:https:\/\/)?(.*\.thoughtspot\.cloud)(?:\/.*)?")
 
     @classmethod
     def __get_validators__(cls):
@@ -122,14 +116,14 @@ class TSCloudURL(str):
     @classmethod
     def validate(cls, v):
         if not isinstance(v, str):
-            raise TypeError('string required')
+            raise TypeError("string required")
 
         m = cls.REGEX.fullmatch(v)
 
         if not m:
-            raise ValueError('invalid thoughtspot cloud url')
+            raise ValueError("invalid thoughtspot cloud url")
 
-        return cls(f'{m.group(1)}')
+        return cls(f"{m.group(1)}")
 
 
 class HostConfig(Settings):
@@ -143,23 +137,23 @@ class HostConfig(Settings):
         host = self.host
         port = self.port
 
-        if not host.startswith('http'):
-            host = f'https://{host}'
+        if not host.startswith("http"):
+            host = f"https://{host}"
 
         if port:
-            port = f':{port}'
+            port = f":{port}"
         else:
-            port = ''
+            port = ""
 
-        return f'{host}{port}'
+        return f"{host}{port}"
 
-    @validator('host')
+    @validator("host")
     def cast_as_str(v: Any) -> str:
         """
         Converts arguments to a string.
         """
-        if hasattr(v, 'host'):
-            return f'{v.scheme}://{v.host}'
+        if hasattr(v, "host"):
+            return f"{v.scheme}://{v.host}"
 
         return str(v)
 
@@ -177,7 +171,7 @@ class CSToolsConfig(Settings):
     verbose: bool = False
     temp_dir: DirectoryPath = APP_DIR
 
-    @validator('syncer')
+    @validator("syncer")
     def resolve_path(v: Any) -> str:
         if v is None or isinstance(v, dict):
             return v
@@ -185,8 +179,7 @@ class CSToolsConfig(Settings):
 
     @classmethod
     def check_for_default(cls) -> Dict[str, Any]:
-        """
-        """
+        """ """
         try:
             cfg_data = _meta_config()["default"]["config"]
         except KeyError:
@@ -203,13 +196,7 @@ class CSToolsConfig(Settings):
         return data
 
     @classmethod
-    def from_toml(
-        cls,
-        fp: pathlib.Path,
-        *,
-        verbose: bool = None,
-        temp_dir: pathlib.Path = None
-    ) -> 'CSToolsConfig':
+    def from_toml(cls, fp: pathlib.Path, *, verbose: bool = None, temp_dir: pathlib.Path = None) -> "CSToolsConfig":
         """
         Read in a ts-config.toml file.
 
@@ -224,22 +211,22 @@ class CSToolsConfig(Settings):
         try:
             data = toml.load(fp)
         except FileNotFoundError:
-            raise ConfigDoesNotExist(name=fp.stem.replace('cluster-cfg_', ''))
+            raise ConfigDoesNotExist(name=fp.stem.replace("cluster-cfg_", ""))
 
-        if data.get('name') is None:
-            data['name'] = fp.stem.replace('cluster-cfg_', '')
+        if data.get("name") is None:
+            data["name"] = fp.stem.replace("cluster-cfg_", "")
 
         # overrides
         if verbose is not None:
-            data['verbose'] = verbose
+            data["verbose"] = verbose
 
         if temp_dir is not None:
-            data['temp_dir'] = temp_dir
+            data["temp_dir"] = temp_dir
 
         return cls.parse_obj(data)
 
     @classmethod
-    def from_command(cls, config: str = None, **passthru) -> 'CSToolsConfig':
+    def from_command(cls, config: str = None, **passthru) -> "CSToolsConfig":
         """
         Read in a ts-config.toml file by its name.
 
@@ -253,41 +240,35 @@ class CSToolsConfig(Settings):
         """
         if config is None:
             meta = _meta_config(config)
-            config = meta['default']['config']
+            config = meta["default"]["config"]
 
-        return cls.from_toml(APP_DIR / f'cluster-cfg_{config}.toml', **passthru)
+        return cls.from_toml(APP_DIR / f"cluster-cfg_{config}.toml", **passthru)
 
     @classmethod
-    def from_parse_args(
-        cls,
-        name: str,
-        *,
-        validate: bool = True,
-        **passthru
-    ) -> 'CSToolsConfig':
+    def from_parse_args(cls, name: str, *, validate: bool = True, **passthru) -> "CSToolsConfig":
         """
         Validate initial input from config.create or config.modify.
         """
-        _pw = passthru.get('password')
-        _syncers = [syncer.split('://') for syncer in passthru.get('syncer', [])]
+        _pw = passthru.get("password")
+        _syncers = [syncer.split("://") for syncer in passthru.get("syncer", [])]
 
         data = {
-            'name': name,
-            'verbose': passthru.get('verbose'),
-            'temp_dir': passthru.get('temp_dir'),
-            'thoughtspot': {
-                'host': passthru['host'],
-                'port': passthru.get('port'),
-                'disable_ssl': passthru.get('disable_ssl'),
-                'disable_sso': passthru.get('disable_sso'),
+            "name": name,
+            "verbose": passthru.get("verbose"),
+            "temp_dir": passthru.get("temp_dir"),
+            "thoughtspot": {
+                "host": passthru["host"],
+                "port": passthru.get("port"),
+                "disable_ssl": passthru.get("disable_ssl"),
+                "disable_sso": passthru.get("disable_sso"),
             },
-            'auth': {
-                'frontend': {
-                    'username': passthru['username'],
-                    'password': obscure(_pw).decode() if _pw is not None else _pw
+            "auth": {
+                "frontend": {
+                    "username": passthru["username"],
+                    "password": obscure(_pw).decode() if _pw is not None else _pw,
                 }
             },
-            'syncer': {proto: definition_fp for (proto, definition_fp) in _syncers}
+            "syncer": {proto: definition_fp for (proto, definition_fp) in _syncers},
         }
 
         return cls.parse_obj(data) if validate else cls.construct(**data)

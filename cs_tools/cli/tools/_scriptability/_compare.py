@@ -11,20 +11,12 @@ from cs_tools.cli.ux import console
 
 
 def compare(
-        file1: pathlib.Path = A_(
-            ...,
-            help='full path to the first TML file to compare.',
-            metavar='FILE1',
-            dir_okay=False,
-            resolve_path=True
-        ),
-        file2: pathlib.Path = A_(
-            ...,
-            help='full path to the second TML file to compare.',
-            metavar='FILE2',
-            dir_okay=False,
-            resolve_path=True
-        ),
+    file1: pathlib.Path = A_(
+        ..., help="full path to the first TML file to compare.", metavar="FILE1", dir_okay=False, resolve_path=True
+    ),
+    file2: pathlib.Path = A_(
+        ..., help="full path to the second TML file to compare.", metavar="FILE2", dir_okay=False, resolve_path=True
+    ),
 ):
     """
     Compares two TML files for differences.

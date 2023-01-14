@@ -5,12 +5,11 @@ import re
 import sqlalchemy as sa
 
 
-RE_LETTERS_ONLY = re.compile(r'[^A-Za-z]')
+RE_LETTERS_ONLY = re.compile(r"[^A-Za-z]")
 
 
 def infer_schema_from_results(data: Dict[str, Any], tablename: str, metadata: sa.Table) -> sa.Table:
-    """
-    """
+    """ """
     PY_TO_SQL_MAPPING_TYPES = {
         str: sa.String,
         bool: sa.Boolean,
@@ -31,7 +30,7 @@ def infer_schema_from_results(data: Dict[str, Any], tablename: str, metadata: sa
             p, _, s = str(max_val).partition(".")
             column_type = column_type(precision=len(p) + len(s))
 
-        if column_type == sa.Integer and max_val > (2 ** 31 - 1):
+        if column_type == sa.Integer and max_val > (2**31 - 1):
             column_type = sa.BigInteger
 
         column = sa.Column(column_name, column_type)

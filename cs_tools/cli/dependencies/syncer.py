@@ -45,17 +45,17 @@ class DSyncer(Dependency):
         ctx = click.get_current_context()
         cfg = self._read_config_from_definition(ctx.obj.thoughtspot, self.protocol, self.definition_fp)
 
-        if 'manifest' not in cfg:
-            cfg['manifest'] = PACKAGE_DIR / 'sync' / self.protocol / 'MANIFEST.json'
+        if "manifest" not in cfg:
+            cfg["manifest"] = PACKAGE_DIR / "sync" / self.protocol / "MANIFEST.json"
 
-        log.info(f'registering syncer: {self.protocol}')
-        Syncer = register.load_syncer(protocol=self.protocol, manifest_path=cfg.pop('manifest'))
+        log.info(f"registering syncer: {self.protocol}")
+        Syncer = register.load_syncer(protocol=self.protocol, manifest_path=cfg.pop("manifest"))
 
-        log.debug(f'initializing syncer: {Syncer}')
+        log.debug(f"initializing syncer: {Syncer}")
         self.__Syncer_init__(Syncer, **cfg["configuration"])
 
         if hasattr(self._syncer, "__is_database__") and self.models is not None:
-            log.debug(f'creating tables: {self._syncer}')
+            log.debug(f"creating tables: {self._syncer}")
             [t.__table__.to_metadata(self.metadata) for t in self.models]
             self.metadata.create_all(self._syncer.cnxn)
 
@@ -64,7 +64,7 @@ class DSyncer(Dependency):
             #     tables = [t.name for t in metadata.sorted_tables]
             #     views = ["VW_WORKSHEET_DEPENDENTS"]
             #     metadata.reflect(self._syncer.cnxn, views=True, only=[*tables, *views])
- 
+
     def __exit__(self, *e):
         # reserved for shutdown work if we need to tidy up the database?
         return
@@ -74,7 +74,7 @@ class DSyncer(Dependency):
     #
 
     def _read_config_from_definition(self, ts, proto, definition) -> Dict[str, Any]:
-        if definition in ('default', ''):
+        if definition in ("default", ""):
             try:
                 definition = ts.config.syncer[proto]
             except (TypeError, KeyError):
@@ -86,7 +86,7 @@ class DSyncer(Dependency):
                         "Pass the full path to [primary]{proto}://[/] or set a default "
                         "with [primary]cs_tools config modify --config {cfg} --syncer "
                         "{proto}://[blue]path/to/my/default.toml"
-                    )
+                    ),
                 )
 
         try:
@@ -96,7 +96,7 @@ class DSyncer(Dependency):
                 proto=proto,
                 definition=definition,
                 reason="No {proto} definition found at [blue]{definition}",
-                mitigation="You must specify a valid path to a .toml definition file."
+                mitigation="You must specify a valid path to a .toml definition file.",
             )
         except UnicodeDecodeError:
             back = r"C:\work\my\example\filepath".replace("\\", "\\\\")
@@ -111,7 +111,7 @@ class DSyncer(Dependency):
                     r"\n  :x: [red]C:\work\my\example\filepath[/]"
                     f"\n  :white_heavy_check_mark: [green]{back}[/]"
                     f"\n  :white_heavy_check_mark: [green]{fwds}[/]"
-                )
+                ),
             )
         except toml.TomlDecodeError:
             raise SyncerError(
@@ -121,7 +121,7 @@ class DSyncer(Dependency):
                 mitigation=(
                     "Visit the link below to see a full example."
                     "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example"
-                )
+                ),
             )
 
         return cfg
@@ -129,7 +129,7 @@ class DSyncer(Dependency):
     def __Syncer_init__(self, Syncer, **syncer_config):
         try:
             # sanitize input by accepting aliases
-            if hasattr(Syncer, '__pydantic_model__'):
+            if hasattr(Syncer, "__pydantic_model__"):
                 syncer_config = Syncer.__pydantic_model__.parse_obj(syncer_config).dict()
 
             self._syncer = Syncer(**syncer_config)
@@ -138,21 +138,18 @@ class DSyncer(Dependency):
                 proto=self.protocol,
                 definition=self.definition_fp,
                 reason="[blue]{definition}[/] is missing a top level marker.",
-                mitigation=(
-                    "The first line of your definition file should be.."
-                    "\n\n[white]\[configuration]"
-                )
+                mitigation=("The first line of your definition file should be.." "\n\n[white]\[configuration]"),
             )
         except pydantic.ValidationError as e:
             raise SyncerError(
                 proto=self.protocol,
                 definition=self.definition_fp,
-                errors='\n  '.join([f"[blue]{_['loc'][0]}[/]: {_['msg']}" for _ in e.errors()]),
+                errors="\n  ".join([f"[blue]{_['loc'][0]}[/]: {_['msg']}" for _ in e.errors()]),
                 reason="[blue]{definition}[/] has incorrect parameters.\n\n  {errors}",
                 mitigation=(
                     "Visit the link below to see a full example."
                     "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example"
-                )
+                ),
             )
 
     def __getattr__(self, member_name: str) -> Any:

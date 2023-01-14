@@ -12,17 +12,11 @@ def to_group(data) -> models.Group:
 
 
 def to_group_privilege(data) -> models.Group:
-    return [
-        _.dict()
-        for _ in it.chain.from_iterable(models.GroupPrivilege.from_api_v1(d) for d in data)
-    ]
+    return [_.dict() for _ in it.chain.from_iterable(models.GroupPrivilege.from_api_v1(d) for d in data)]
 
 
 def to_principal_association(data) -> models.XREFPrincipal:
-    return [
-        _.dict()
-        for _ in it.chain.from_iterable(models.XREFPrincipal.from_api_v1(d) for d in data)
-    ]
+    return [_.dict() for _ in it.chain.from_iterable(models.XREFPrincipal.from_api_v1(d) for d in data)]
 
 
 def to_tag(data) -> models.MetadataObject:
@@ -39,16 +33,12 @@ def to_metadata_column(data) -> models.MetadataColumn:
 
 def to_column_synonym(data) -> models.ColumnSynonym:
     return [
-        _.dict()
-        for _ in it.chain.from_iterable(models.ColumnSynonym.from_api_v1(d) for d in data if d['synonyms'])
+        _.dict() for _ in it.chain.from_iterable(models.ColumnSynonym.from_api_v1(d) for d in data if d["synonyms"])
     ]
 
 
 def to_tagged_object(data) -> models.TaggedObject:
-    return [
-        _.dict()
-        for _ in it.chain.from_iterable(models.TaggedObject.from_api_v1(d) for d in data if d['tags'])
-    ]
+    return [_.dict() for _ in it.chain.from_iterable(models.TaggedObject.from_api_v1(d) for d in data if d["tags"])]
 
 
 def to_dependent_object(data) -> models.DependentObject:

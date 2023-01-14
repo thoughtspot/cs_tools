@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any
-from io import BuffedIOBase
+from io import BufferedIOBase
 import datetime as dt
 import logging
 import pathlib
@@ -45,14 +45,8 @@ class RESTAPIv1(httpx.Client):
         #
         self.timeout = 15 * 60
         self.headers.update(
-            {
-                "x-requested-by": "ThoughtSpot",
-                "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)"
-            }
+            {"x-requested-by": "ThoughtSpot", "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)"}
         )
-
-        # TSLOAD dataservice is sitting behind a load balancer on port 8442
-        self._dataservice_url = self.base_url.copy_with(port=8442)
 
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Make an HTTP request."""
@@ -64,10 +58,10 @@ class RESTAPIv1(httpx.Client):
         r = super().request(method, endpoint, **request_kw)
         r.raise_for_status()
 
-        log.debug(f'<< HTTP: {r.status_code}')
+        log.debug(f"<< HTTP: {r.status_code}")
 
         if r.text:
-            log.trace('<< CONTENT:\n\n%s', r.text)
+            log.trace("<< CONTENT:\n\n%s", r.text)
 
         return r
 
@@ -118,11 +112,7 @@ class RESTAPIv1(httpx.Client):
         return r
 
     def org_search(
-        self,
-        *,
-        org_id: int = UNDEFINED,
-        org_name: str = UNDEFINED,
-        show_inactive: bool = False
+        self, *, org_id: int = UNDEFINED, org_name: str = UNDEFINED, show_inactive: bool = False
     ) -> httpx.Response:
         d = {"id": org_id, "name": org_name, "showinactive": show_inactive, "orgScope": "ALL"}
         r = self.post("callosum/v1/tspublic/v1/org/search", data=d)
@@ -147,11 +137,7 @@ class RESTAPIv1(httpx.Client):
         return r
 
     def user_transfer_ownership(
-        self,
-        *,
-        from_username: str,
-        to_username: str,
-        object_guids: list[GUID] = UNDEFINED
+        self, *, from_username: str, to_username: str, object_guids: list[GUID] = UNDEFINED
     ) -> httpx.Response:
         p = {"fromUserName": from_username, "toUserName": to_username, "objectsID": dumps(object_guids)}
         r = self.post("callosum/v1/tspublic/v1/user/transfer/ownership", params=p)
@@ -163,7 +149,7 @@ class RESTAPIv1(httpx.Client):
         principals: list[SecurityPrincipal],
         apply_changes: bool = False,
         remove_deleted: bool = True,
-        password: str = UNDEFINED
+        password: str = UNDEFINED,
     ) -> httpx.Response:
         fp = pathlib.Path(f"principals-{dt.datetime.now():%Y%m%dT%H%M%S}.json")
         fp.write_text(json.dumps(principals, indent=4))
@@ -202,7 +188,7 @@ class RESTAPIv1(httpx.Client):
             "batchsize": batchsize,
             "pagenumber": page_number,
             "offset": offset,
-            "formattpe": format_type
+            "formattpe": format_type,
         }
         r = self.post("callosum/v1/tspublic/v1/searchdata", params=p)
         return r
@@ -385,7 +371,7 @@ class RESTAPIv1(httpx.Client):
         guids: list[str],
         metadata_type: MetadataObjectType = "LOGICAL_TABLE",
         batchsize: int = -1,
-        offset: int = -1
+        offset: int = -1,
     ) -> httpx.Response:
         d = {"type": metadata_type, "id": dumps(guids), "batchsize": batchsize, "offset": offset}
         r = self.post("callosum/v1/tspublic/v1/dependency/listdependents", data=d)
@@ -426,10 +412,7 @@ class RESTAPIv1(httpx.Client):
             "id": dumps(guids),
             "permission": {
                 "permissions": {
-                    principal_guid: {
-                        "shareMode": access_level
-                    }
-                    for principal_guid, access_level in permissions.items()
+                    principal_guid: {"shareMode": access_level} for principal_guid, access_level in permissions.items()
                 }
             },
             # we don't support these options
@@ -455,15 +438,6 @@ class RESTAPIv1(httpx.Client):
             "permissiontype": permission_type,
         }
         r = self.get("callosum/v1/tspublic/v1/security/metadata/permissions", params=p)
-        return r
-
-    # ==================================================================================================================
-    # PERISCOPE (falcon monitor)
-    # ==================================================================================================================
-
-    def periscope_sage_table_info(self, *, nodes: str = "all") -> httpx.Response:
-        p = {"nodes": nodes, "callosumTimeout": 600}  # override callosum timeouts to 10mins
-        r = self.get("periscope/sage/combinedtableinfo", params=p)
         return r
 
     # ==================================================================================================================
@@ -516,16 +490,11 @@ class RESTAPIv1(httpx.Client):
         return r
 
     def dataservice_dataload_start(
-        self,
-        *,
-        cycle_id: GUID,
-        fd: BuffedIOBase | Any,
-        timeout: float = UNDEFINED
+        self, *, cycle_id: GUID, fd: BufferedIOBase | Any, timeout: float = UNDEFINED
     ) -> httpx.Response:
-        # This endpoint will return immediately once the file has loaded to the remote
-        # network. Processing of the dataload may happen concurrently, and thus, this
-        # function may be called multiple times to paralellize the full data load across
-        # multiple files.
+        # This endpoint returns immediately once the file uploads to the remote host.
+        # Processing of the dataload happens concurrently, and this function may be
+        # called multiple times to paralellize the full data load across multiple files.
         fullpath = self.dataservice_url.copy_with(path=f"loads/{cycle_id}")
         timeout = self.timeout if timeout is UNDEFINED else timeout
         r = self.post(fullpath, timeout=timeout, files={"upload-file": fd})

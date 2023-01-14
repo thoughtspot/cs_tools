@@ -42,22 +42,24 @@ app = CSToolsApp(
     no_args_is_help=True,
     context_settings={
         # global settings
-        'help_option_names': ['--help', '-h'],
-        'obj': State(),
-
+        "help_option_names": ["--help", "-h"],
+        "obj": State(),
         # allow responsive console design
-        'max_content_width': console.width,
-
+        "max_content_width": console.width,
         # allow case-insensitive commands
-        'token_normalize_func': lambda x: x.lower()
+        "token_normalize_func": lambda x: x.lower(),
     },
     epilog=(
         f":bookmark: v{__version__} "
         f":books: [cyan][link={DOCS_BASE_URL}]Documentation[/] "
         f"🛟 [link={GH_ISSUES}]Get Help[/] "
         f":memo: [link={GDRIVE_FORM}]Feedback[/][/] "
-        + (f":computer_disk: [green]{meta.default_config_name}[/] (default)" if meta.default_config_name is not None else "")
-    )
+        + (
+            f":computer_disk: [green]{meta.default_config_name}[/] (default)"
+            if meta.default_config_name is not None
+            else ""
+        )
+    ),
 )
 
 
@@ -80,7 +82,7 @@ def _platform(ctx: typer.Context):
         ts.login()
     except Exception as e:
         exc = type(e).__name__
-        msg = str(e).replace('\n', '\n      ')
+        msg = str(e).replace("\n", "\n      ")
         m += f"""
         [LOGIN ERROR]
         {exc}: {msg}
@@ -107,46 +109,45 @@ def _platform(ctx: typer.Context):
 
 
 def _setup_logging() -> None:
-    now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
+    now = dt.datetime.now().strftime("%Y-%m-%dT%H_%M_%S")
 
-    logging.config.dictConfig({
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'verbose': {
-                'format': '[%(levelname)s - %(asctime)s] [%(name)s - %(module)s.%(funcName)s %(lineno)d] %(message)s'
-            }
-        },
-        'handlers': {
-            'to_file': {
-                'formatter': 'verbose',
-                'level': 'DEBUG',     # user can override in their config file
-                'class': 'logging.FileHandler',
-                # RotatingFileHandler.__init__ params...
-                'filename': f'{APP_DIR}/logs/{now}.log',
-                'mode': 'w',          # Create a new file for each run of cs_tools.
-                'encoding': 'utf-8',  # Handle unicode fun.
-                'delay': True         # Don't create a file if no logging is done.
+    logging.config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "verbose": {
+                    "format": "[%(levelname)s - %(asctime)s] [%(name)s - %(module)s.%(funcName)s %(lineno)d] %(message)s"
+                }
             },
-            'to_console': {
-                'level': 'INFO',
-                'class': 'rich.logging.RichHandler',
-                # rich.__init__ params...
-                'console': console,
-                'show_level': False,
-                'markup': True,
-                'log_time_format': '[%X]'
-            }
-        },
-        'loggers': {},
-        'root': {
-            'level': 'DEBUG',
-            'handlers': ['to_file', 'to_console']
+            "handlers": {
+                "to_file": {
+                    "formatter": "verbose",
+                    "level": "DEBUG",  # user can override in their config file
+                    "class": "logging.FileHandler",
+                    # RotatingFileHandler.__init__ params...
+                    "filename": f"{APP_DIR}/logs/{now}.log",
+                    "mode": "w",  # Create a new file for each run of cs_tools.
+                    "encoding": "utf-8",  # Handle unicode fun.
+                    "delay": True,  # Don't create a file if no logging is done.
+                },
+                "to_console": {
+                    "level": "INFO",
+                    "class": "rich.logging.RichHandler",
+                    # rich.__init__ params...
+                    "console": console,
+                    "show_level": False,
+                    "markup": True,
+                    "log_time_format": "[%X]",
+                },
+            },
+            "loggers": {},
+            "root": {"level": "DEBUG", "handlers": ["to_file", "to_console"]},
         }
-    })
+    )
 
     # ROTATE LOGS
-    logs_dir = APP_DIR / 'logs'
+    logs_dir = APP_DIR / "logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
 
     lifo = sorted(logs_dir.iterdir(), reverse=True)
@@ -157,12 +158,12 @@ def _setup_logging() -> None:
             log.unlink()
 
     # SILENCE NOISY LOGS
-    logging.getLogger('urllib3').setLevel(logging.ERROR)
-    logging.getLogger('httpx').setLevel(logging.ERROR)
+    logging.getLogger("urllib3").setLevel(logging.ERROR)
+    logging.getLogger("httpx").setLevel(logging.ERROR)
 
 
 def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
-    ctx_settings['obj'].tools = {}
+    ctx_settings["obj"].tools = {}
 
     for path in TOOLS_DIR.iterdir():
         if path.name == "__pycache__" or not path.is_dir():
@@ -174,7 +175,7 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
             continue
 
         # add tool to the global state
-        ctx_settings['obj'].tools[tool.name] = tool
+        ctx_settings["obj"].tools[tool.name] = tool
 
         # add tool to the cli
         tools_app.add_typer(
@@ -199,20 +200,20 @@ def run():
     try:
         app()
     except Exception as e:
-        log.debug('whoopsie, something went wrong!', exc_info=True)
+        log.debug("whoopsie, something went wrong!", exc_info=True)
 
-        if hasattr(e, 'cli_msg_template'):
-            log.info(f'[error]{e}\n')
+        if hasattr(e, "cli_msg_template"):
+            log.info(f"[error]{e}\n")
         else:
-            GF = 'https://forms.gle/sh6hyBSS2mnrwWCa9'
-            GH = 'https://github.com/thoughtspot/cs_tools/issues/new/choose'
+            GF = "https://forms.gle/sh6hyBSS2mnrwWCa9"
+            GH = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
 
             log.exception(
-                '[yellow]This is an unhandled error!! :cold_sweat:'
-                '\n\nIf you encounter this message more than once, please help by '
-                'letting us know at one of the links below:'
-                f'\n\n  Google Forms: [link={GF}]{GF}[/link]'
-                f'\n        GitHub: [link={GH}]{GH}[/link]'
-                '\n\n[/][error]'
+                "[yellow]This is an unhandled error!! :cold_sweat:"
+                "\n\nIf you encounter this message more than once, please help by "
+                "letting us know at one of the links below:"
+                f"\n\n  Google Forms: [link={GF}]{GF}[/link]"
+                f"\n        GitHub: [link={GH}]{GH}[/link]"
+                "\n\n[/][error]"
             )
-            console.print('')
+            console.print("")

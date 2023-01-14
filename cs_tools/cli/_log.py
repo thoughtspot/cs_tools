@@ -3,35 +3,29 @@ import shutil
 
 import typer
 
-from cs_tools.cli.ux import (
-    CSToolsGroup, CSToolsCommand, CSToolsArgument as Arg, CSToolsOption as Opt
-)
+from cs_tools.cli.ux import CSToolsGroup, CSToolsCommand, CSToolsArgument as Arg, CSToolsOption as Opt
 from cs_tools.errors import CSToolsError
 from cs_tools.const import APP_DIR
 
 
 app = typer.Typer(
     cls=CSToolsGroup,
-    name='logs',
+    name="logs",
     help="""
     Export and view log files.
 
     Something went wrong? Log files will help the ThoughtSpot team understand
     how to debug and fix it.
-    """
+    """,
 )
 
 
 @app.command(cls=CSToolsCommand)
 def export(
     save_path: pathlib.Path = Arg(
-        ...,
-        help='location on disk to save logs to',
-        metavar='DIRECTORY',
-        file_okay=False,
-        resolve_path=True
+        ..., help="location on disk to save logs to", metavar="DIRECTORY", file_okay=False, resolve_path=True
     ),
-    latest: int = Opt(50, help='number of most recent logfiles to export', show_default=False)
+    latest: int = Opt(50, help="number of most recent logfiles to export", show_default=False),
 ):
     """
     Grab logs to share with ThoughtSpot.
@@ -41,7 +35,7 @@ def export(
     except FileNotFoundError as e:
         raise CSToolsError(error=str(e))
 
-    log_dir = APP_DIR / 'logs'
+    log_dir = APP_DIR / "logs"
     sorted_newest = sorted(log_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
 
     for i, log in enumerate(sorted_newest, start=1):

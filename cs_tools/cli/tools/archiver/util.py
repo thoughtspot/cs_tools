@@ -6,11 +6,7 @@ from rich.table import Table
 
 
 def to_datetime(
-    epoch: Union[int, dt.datetime],
-    *,
-    tz: str = 'UTC',
-    friendly: bool = False,
-    format: str = None
+    epoch: Union[int, dt.datetime], *, tz: str = "UTC", friendly: bool = False, format: str = None
 ) -> Union[dt.timedelta, str]:
     """
     Convert a nominal value to a datetime.
@@ -40,7 +36,7 @@ def to_datetime(
         when = dt.datetime.fromtimestamp(epoch / 1000.0, tz=tz)
     if isinstance(epoch, dt.datetime):
         when = epoch if epoch.tzinfo is not None else epoch.replace(tzinfo=tz)
-    if epoch == 'now':
+    if epoch == "now":
         when = now
 
     if friendly:
@@ -48,20 +44,20 @@ def to_datetime(
 
         if delta.days >= 365:
             years = delta.days // 365
-            s = 's' if years > 1 else ''
-            for_humans = f'about {years} year{s} ago'
+            s = "s" if years > 1 else ""
+            for_humans = f"about {years} year{s} ago"
 
         elif delta.days > 0:
-            s = 's' if delta.days > 1 else ''
-            for_humans = f'about {delta.days} day{s} ago'
+            s = "s" if delta.days > 1 else ""
+            for_humans = f"about {delta.days} day{s} ago"
 
         elif delta.seconds > 3600:
             hours = delta.seconds // 3600
-            s = 's' if hours > 1 else ''
-            for_humans = f'about {hours} hour{s} ago'
+            s = "s" if hours > 1 else ""
+            for_humans = f"about {hours} hour{s} ago"
 
         else:
-            for_humans = 'less than 1 hour ago'
+            for_humans = "less than 1 hour ago"
 
         return for_humans
 
@@ -77,20 +73,16 @@ class DataTable(Table):
 
     Feed DataTable data, and we'll render it prettily.
     """
-    def __init__(
-        self,
-        data: List[Dict[str, Any]],
-        limit: int = 6,
-        **table_kw
-    ):
+
+    def __init__(self, data: List[Dict[str, Any]], limit: int = 6, **table_kw):
         super().__init__(*data[0].keys(), **table_kw)
         self.data = data
         self.limit = limit
 
         if len(self.data) > self.limit:
-            top  = self.data[: self.limit // 2]
-            mid  = [{_: '...' for _ in self.data[0]}]
-            bot  = self.data[-1 * self.limit // 2:]
+            top = self.data[: self.limit // 2]
+            mid = [{_: "..." for _ in self.data[0]}]
+            bot = self.data[-1 * self.limit // 2 :]
             data = [*top, *mid, *bot]
         else:
             data = self.data

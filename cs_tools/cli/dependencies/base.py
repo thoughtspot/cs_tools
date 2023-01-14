@@ -29,6 +29,7 @@ class Dependency:
 
     For an example, see `cs_tools.cli.dependencies.thoughtspot`
     """
+
     parameters: List[click.Parameter]
     callback: Optional[Callable] = field(default=None, init=False)
 

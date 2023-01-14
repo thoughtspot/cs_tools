@@ -95,42 +95,36 @@ class TMLResponseReference:
 
 
 def import_(
-        ctx: click.Context,
-        path: pathlib.Path = A_(
-            ...,
-            help='full path to the TML file or directory to import.',
-            metavar='FILE_OR_DIR',
-            dir_okay=True,
-            resolve_path=True
-        ),
-        import_policy: TMLImportPolicy = O_(TMLImportPolicy.validate_only.value,
-                                            help="The import policy type"),
-        force_create: bool = O_(False,
-                                help="If true, will force a new object to be created."),
-        guid_file: Optional[pathlib.Path] = O_(
-            None,
-            help='Existing or new mapping file to map GUIDs from source instance to target instance.  '
-                 'This file must conform with the GUID mapping structure defined in the thoughtspot_tml library.',
-            metavar='JSON_FILE',
-            dir_okay=False,
-            resolve_path=True
-        ),
-        from_env: str = O_(None,
-                           help="The environment name importing from, for GUID mapping."),
-        to_env: str = O_(None,
-                           help="The environment name importing to, for GUID mapping."),
-        tags: List[str] = O_([], metavar='TAGS',
-                             help='One or more tags to add to the imported content.'),
-        share_with: List[str] = O_([], metavar='GROUPS',
-                                   help='One or more groups to share the uploaded content with.'),
-        tml_logs: Optional[pathlib.Path] = O_(
-            None,
-            help='full path to the directory to log sent TML.  TML can change during load.',
-            metavar='DIR',
-            dir_okay=True,
-            resolve_path=True
-        ),
-        org: Union[str, int] = O_(None, help='Name or ID of org to import to.  The user must have access to that org.')
+    ctx: click.Context,
+    path: pathlib.Path = A_(
+        ...,
+        help="full path to the TML file or directory to import.",
+        metavar="FILE_OR_DIR",
+        dir_okay=True,
+        resolve_path=True,
+    ),
+    import_policy: TMLImportPolicy = O_(TMLImportPolicy.validate_only.value, help="The import policy type"),
+    force_create: bool = O_(False, help="If true, will force a new object to be created."),
+    guid_file: Optional[pathlib.Path] = O_(
+        None,
+        help="Existing or new mapping file to map GUIDs from source instance to target instance.  "
+        "This file must conform with the GUID mapping structure defined in the thoughtspot_tml library.",
+        metavar="JSON_FILE",
+        dir_okay=False,
+        resolve_path=True,
+    ),
+    from_env: str = O_(None, help="The environment name importing from, for GUID mapping."),
+    to_env: str = O_(None, help="The environment name importing to, for GUID mapping."),
+    tags: List[str] = O_([], metavar="TAGS", help="One or more tags to add to the imported content."),
+    share_with: List[str] = O_([], metavar="GROUPS", help="One or more groups to share the uploaded content with."),
+    tml_logs: Optional[pathlib.Path] = O_(
+        None,
+        help="full path to the directory to log sent TML.  TML can change during load.",
+        metavar="DIR",
+        dir_okay=True,
+        resolve_path=True,
+    ),
+    org: Union[str, int] = O_(None, help="Name or ID of org to import to.  The user must have access to that org."),
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -142,14 +136,18 @@ def import_(
         ts.session.switch_org(org=org)
 
     if not path.exists():
-        raise CSToolsError(error=f"{path} doesn't exist",
-                           reason="You can only import from an existing directory.",
-                           mitigation="Check the --path argument to make sure it is correct.")
+        raise CSToolsError(
+            error=f"{path} doesn't exist",
+            reason="You can only import from an existing directory.",
+            mitigation="Check the --path argument to make sure it is correct.",
+        )
 
     if tml_logs and not tml_logs.is_dir():
-        raise CSToolsError(error=f"{path} doesn't exist",
-                           reason="The logging directory must already exist.",
-                           mitigation="Check the --tml_logs argument to make sure it is correct.")
+        raise CSToolsError(
+            error=f"{path} doesn't exist",
+            reason="The logging directory must already exist.",
+            mitigation="Check the --tml_logs argument to make sure it is correct.",
+        )
 
     if tml_logs:
         log.open(path=path / "tml_import.log")
@@ -159,9 +157,11 @@ def import_(
     guid_mapping: Union[GUIDMapping, None] = None
     if guid_file:
         if not (from_env and to_env):
-            raise CSToolsError(error=f"GUID files also require specifying the 'from' and 'to' environments.",
-                               reason="Insufficient information to perform GUID mapping.",
-                               mitigation="Set the --from-env and --to-env values.")
+            raise CSToolsError(
+                error=f"GUID files also require specifying the 'from' and 'to' environments.",
+                reason="Insufficient information to perform GUID mapping.",
+                mitigation="Set the --from-env and --to-env values.",
+            )
         else:
             guid_mapping = GUIDMapping(from_env=from_env, to_env=to_env, path=guid_file)
 
@@ -175,16 +175,18 @@ def import_(
         results = _import_and_validate(ts, path, force_create, guid_mapping, tml_logs)
     else:
         # results = _import_and_create(ts, path, import_policy, force_create, guid_mapping, tags, share_with, tml_logs)
-        results = _import_and_create_bundle(ts, path, import_policy, force_create,
-                                            guid_mapping, tags, share_with, tml_logs)
+        results = _import_and_create_bundle(
+            ts, path, import_policy, force_create, guid_mapping, tags, share_with, tml_logs
+        )
 
     _show_results_as_table(results)
 
     log.close()
 
 
-def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool,
-                         guid_mapping: GUIDMapping, tml_logs: pathlib.Path) -> Dict[GUID, Tuple]:
+def _import_and_validate(
+    ts: ThoughtSpot, path: pathlib.Path, force_create: bool, guid_mapping: GUIDMapping, tml_logs: pathlib.Path
+) -> Dict[GUID, Tuple]:
     """
     Does a validation import.  No content is created.  If FQNs map, they will be used.  If they don't, they will be
     removed.
@@ -201,9 +203,9 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
     all_tml_bundles = _load_tml_from_files(path)
     tml_file_bundles = {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name != "connection"}
 
-    connection_file_bundles= {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name == "connection"}
+    connection_file_bundles = {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name == "connection"}
     for cfb in connection_file_bundles.values():
-        log.warning(f'Connection validation not supported.  Ignoring {cfb.file.name}')
+        log.warning(f"Connection validation not supported.  Ignoring {cfb.file.name}")
 
     filenames = [tfb.file.name for tfb in tml_file_bundles.values()]
 
@@ -219,7 +221,7 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
             _.tml.guid = None
 
     for f in filenames:
-        log.info(f'validating {f}')
+        log.info(f"validating {f}")
 
     with console.status(f"[bold green]importing {path.name}[/]"):
         tml_to_load = [_.tml.dumps() for _ in tml_file_bundles.values()]  # get the JSON to load
@@ -233,9 +235,9 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
                     f.write(tmlstr)
                 fcnt += 1
 
-        r = ts.api.metadata.tml_import(import_objects=tml_to_load,
-                                       import_policy=TMLImportPolicy.validate_only.value,
-                                       force_create=force_create)
+        r = ts.api.metadata.tml_import(
+            import_objects=tml_to_load, import_policy=TMLImportPolicy.validate_only.value, force_create=force_create
+        )
 
         resp = _flatten_tml_response(r)
 
@@ -260,9 +262,16 @@ def _import_and_validate(ts: ThoughtSpot, path: pathlib.Path, force_create: bool
     return results
 
 
-def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy: TMLImportPolicy, force_create: bool,
-                              guid_mapping: GUIDMapping, tags: List[str], share_with: List[str],
-                              tml_logs: pathlib.Path) -> Dict[GUID, Tuple]:
+def _import_and_create_bundle(
+    ts: ThoughtSpot,
+    path: pathlib.Path,
+    import_policy: TMLImportPolicy,
+    force_create: bool,
+    guid_mapping: GUIDMapping,
+    tags: List[str],
+    share_with: List[str],
+    tml_logs: pathlib.Path,
+) -> Dict[GUID, Tuple]:
     """
     Attempts to create new content.  If a mapping is not found, then an assumption is made that the mapping is correct.
     :param ts: The ThoughtSpot connection.
@@ -286,7 +295,7 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
     connection_file_bundles: Dict[GUID, TMLFileBundle]
 
     tml_file_bundles = {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name != "connection"}
-    connection_file_bundles= {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name == "connection"}
+    connection_file_bundles = {k: v for k, v in all_tml_bundles.items() if v.tml.tml_type_name == "connection"}
 
     all_resp = []
     all_results = {}
@@ -302,15 +311,17 @@ def _import_and_create_bundle(ts: ThoughtSpot, path: pathlib.Path, import_policy
         with console.status(f"[bold green]importing {path.name}[/]"):
             # if there are connections, do those first.
             if connection_file_bundles:
-                resp, results, connection_tables = _upload_connections(ts, guid_mapping, connection_file_bundles,
-                                                                       tml_logs, import_policy, force_create)
+                resp, results, connection_tables = _upload_connections(
+                    ts, guid_mapping, connection_file_bundles, tml_logs, import_policy, force_create
+                )
                 all_resp.extend(resp)
                 all_results.update(results)
 
             # if there are TML, do those next.
             if tml_file_bundles:
-                resp, results = _upload_tml(ts, guid_mapping, tml_file_bundles,
-                                            tml_logs, import_policy, force_create, connection_tables)
+                resp, results = _upload_tml(
+                    ts, guid_mapping, tml_file_bundles, tml_logs, import_policy, force_create, connection_tables
+                )
                 all_resp.extend(resp)
                 all_results.update(results)
 
@@ -353,9 +364,7 @@ def _load_tml_from_files(path: pathlib.Path) -> Dict[GUID, TMLFileBundle]:
     return tml_file_bundles
 
 
-def _load_and_append_tml_file(
-        path: pathlib.Path,
-        tml_file_bundles: Dict[GUID, TMLFileBundle]) -> GUID:
+def _load_and_append_tml_file(path: pathlib.Path, tml_file_bundles: Dict[GUID, TMLFileBundle]) -> GUID:
     """
     Loads a TML file from the path, getting table mappings if needed.
     :param path:  The file path.
@@ -375,8 +384,8 @@ def _load_and_append_tml_file(
 
     # If the GUID is not in the file, use the name.  This requires the first part of the name to be a GUID.
     # Connection YAML files don't have a GUID.
-    if not hasattr(tmlobj, 'guid') or not tmlobj.guid:
-        tmlobj.guid = path.name.split('.')[0]
+    if not hasattr(tmlobj, "guid") or not tmlobj.guid:
+        tmlobj.guid = path.name.split(".")[0]
 
     tml_file_bundles[tmlobj.guid] = TMLFileBundle(file=path, tml=tmlobj)
 
@@ -391,6 +400,7 @@ def _load_tml_from_file(path: pathlib.Path) -> TMLObject:
     """
     tml_type = determine_tml_type(path=path)
     return tml_type.load(path)
+
 
 #  The following was previous code that determined dependencies.  It may need to be revised, but will need updates
 #  based on thoughtspot_tml changes.
@@ -437,7 +447,7 @@ def _upload_connections(
     connection_file_bundles: Dict[GUID, TMLFileBundle],
     tml_logs: pathlib.Path,
     import_policy: TMLImportPolicy,
-    force_create: bool
+    force_create: bool,
 ) -> Tuple[List[TMLResponseReference], Dict[GUID, Tuple], Dict[str, List[str]]]:
     """
     Uploads connections.
@@ -459,8 +469,10 @@ def _upload_connections(
         return resp, results, connection_tables  # connection APIs don't support validate_only.
 
     if import_policy == TMLImportPolicy.all_or_none:
-        log.warning(f"Warning: connections don't support 'ALL_OR_NONE' policies.  "
-                f"Using {TMLImportPolicy.partial.value} for connections.")
+        log.warning(
+            f"Warning: connections don't support 'ALL_OR_NONE' policies.  "
+            f"Using {TMLImportPolicy.partial.value} for connections."
+        )
 
     try:
         filenames = [tfb.file.name for tfb in connection_file_bundles.values()]
@@ -481,9 +493,11 @@ def _upload_connections(
                         break
 
                 if not password_found:
-                    raise CSToolsError(error=f'Connection "{cnx.connection.name}" missing password',
-                                       reason=f'Connections require a valid password to create tables.',
-                                       mitigation='Add a password to the connection file and try again.')
+                    raise CSToolsError(
+                        error=f'Connection "{cnx.connection.name}" missing password',
+                        reason=f"Connections require a valid password to create tables.",
+                        mitigation="Add a password to the connection file and try again.",
+                    )
 
                 metadata = cnxtml_to_cnxjson(cnx.to_dict())
 
@@ -502,37 +516,46 @@ def _upload_connections(
                     # HOWEVER, for connection updates, you have to have the tables.  This may be a bug.
 
                     # Currently descriptions aren't exported for connections, so they will be set to blank.
-                    r = ts.api._connection.create(name=cnx.connection.name, description="",
-                                                  type=ConnectionType.from_str(cnx.connection.type), createEmpty=True,
-                                                  metadata=metadata)
+                    r = ts.api._connection.create(
+                        name=cnx.connection.name,
+                        description="",
+                        type=ConnectionType.from_str(cnx.connection.type),
+                        createEmpty=True,
+                        metadata=metadata,
+                    )
 
                 else:
                     # That was the original GUID, now we have to see if there is a mapping.
                     target_guid = guid_mapping.get_mapped_guid(cnx.guid)
 
-                    r = ts.api._connection.update(name=cnx.name, description="", id=target_guid,
-                                                  type=ConnectionType.from_str(cnx.connection.type), createEmpty=False,
-                                                  metadata=metadata)
+                    r = ts.api._connection.update(
+                        name=cnx.name,
+                        description="",
+                        id=target_guid,
+                        type=ConnectionType.from_str(cnx.connection.type),
+                        createEmpty=False,
+                        metadata=metadata,
+                    )
 
                 tmlrr = TMLResponseReference()
                 text = json.loads(r.text)
                 if not r.is_error:
                     # for reasons known only to the creator, the create and update responses have slightly different
                     # responses.
-                    if text.get('dataSource'):  # update if exists, create just has the details at the top level.
-                        text = text.get('dataSource')
+                    if text.get("dataSource"):  # update if exists, create just has the details at the top level.
+                        text = text.get("dataSource")
 
                     tmlrr.status_code = StatusCode.ok
-                    tmlrr.guid = text['header']['id']
-                    tmlrr.name = text['header']['name']
+                    tmlrr.guid = text["header"]["id"]
+                    tmlrr.name = text["header"]["name"]
                     tmlrr.metadata_type = MetadataObject.data_source.value
                     resp.append(tmlrr)
 
                     # also need to add responses for each table that was created
                     table_list = []
-                    for new_table in text.get('logicalTableList', []):
-                        tname = new_table['header'].get('name')
-                        tid = new_table['header'].get('id')
+                    for new_table in text.get("logicalTableList", []):
+                        tname = new_table["header"].get("name")
+                        tid = new_table["header"].get("id")
                         tmlrr = TMLResponseReference()
                         tmlrr.status_code = StatusCode.ok
                         tmlrr.guid = tid
@@ -547,16 +570,16 @@ def _upload_connections(
                     # need to write guid mappings to the file.
                     if guid_mapping:
                         # map the connection
-                        guid_mapping.set_mapped_guid(cnx.guid, text['header']['id'])
+                        guid_mapping.set_mapped_guid(cnx.guid, text["header"]["id"])
 
                         old_table_guids = {}  # first get the old table GUIDs based on table name.
                         if cnx.connection.table:
                             for table in cnx.connection.table:
                                 old_table_guids[table.name] = table.id
 
-                        for new_table in text.get('logicalTableList', []):
-                            tname = new_table['header'].get('name')
-                            tid = new_table['header'].get('id')
+                        for new_table in text.get("logicalTableList", []):
+                            tname = new_table["header"].get("name")
+                            tid = new_table["header"].get("id")
                             if tname in old_table_guids.keys():
                                 guid_mapping.set_mapped_guid(old_table_guids[tname], tid)
                             else:
@@ -577,16 +600,18 @@ def _upload_connections(
             if _.metadata_type == MetadataObject.data_source.value:  # only update for data sources and not tables.
                 fcnt += 1
 
-            if _.status_code == 'ERROR':
+            if _.status_code == "ERROR":
                 log.error(f"{filenames[fcnt]} {_.status_code}: {_.error_message} ({_.error_code})")
                 results[f"err-{fcnt}"] = ("unknown", filenames[fcnt], StatusCode.error)
             else:
                 log.info(f"{filenames[fcnt]} {_.status_code}: {_.name} " f"({_.metadata_type}::{_.guid})")
                 results[_.guid] = (_.metadata_type, filenames[fcnt], StatusCode.ok)
-                metadata_list.add(MetadataObject.data_source
-                                  if _.metadata_type == MetadataObject.data_source.value
-                                  else MetadataObject.logical_table,
-                    _.guid)
+                metadata_list.add(
+                    MetadataObject.data_source
+                    if _.metadata_type == MetadataObject.data_source.value
+                    else MetadataObject.logical_table,
+                    _.guid,
+                )
 
         # connections are always partial, so wait for the ones that got created.
         _wait_for_metadata(ts=ts, metadata_list=metadata_list)
@@ -601,13 +626,13 @@ def _upload_connections(
 
 
 def _upload_tml(
-        ts: ThoughtSpot,
-        guid_mapping: GUIDMapping,
-        tml_file_bundles: Dict[GUID, TMLFileBundle],
-        tml_logs: pathlib.Path,
-        import_policy: TMLImportPolicy,
-        force_create: bool,
-        connection_tables: Dict[str, List[str]]
+    ts: ThoughtSpot,
+    guid_mapping: GUIDMapping,
+    tml_file_bundles: Dict[GUID, TMLFileBundle],
+    tml_logs: pathlib.Path,
+    import_policy: TMLImportPolicy,
+    force_create: bool,
+    connection_tables: Dict[str, List[str]],
 ) -> Tuple[List[TMLResponseReference], Dict[GUID, Tuple]]:
 
     resp: List[TMLResponseReference] = []
@@ -617,12 +642,13 @@ def _upload_tml(
     updated_file_bundles = {}
     if connection_tables:  # don't bother if no connections.
         for k, v in tml_file_bundles.items():
-            if v.tml.tml_type_name == 'table':  # is this an enum somewhere?
+            if v.tml.tml_type_name == "table":  # is this an enum somewhere?
                 # see if the table and connection are in the TML
                 connection_name = v.tml.table.connection.name
                 table_name = v.tml.table.name
-                if not (connection_name in connection_tables.keys() and
-                        table_name in connection_tables[connection_name]):
+                if not (
+                    connection_name in connection_tables.keys() and table_name in connection_tables[connection_name]
+                ):
                     updated_file_bundles[k] = v
             else:
                 updated_file_bundles[k] = v
@@ -636,7 +662,10 @@ def _upload_tml(
     try:
         if guid_mapping:
             # if we are forcing the creation of new content, we want to delete guids that aren't ma
-            [guid_mapping.disambiguate(tml=_.tml, delete_unmapped_guids=force_create) for _ in updated_file_bundles.values()]
+            [
+                guid_mapping.disambiguate(tml=_.tml, delete_unmapped_guids=force_create)
+                for _ in updated_file_bundles.values()
+            ]
         tml_to_load = [_.tml.dumps() for _ in updated_file_bundles.values()]  # get the JSON to load
 
         filenames = [tfb.file.name for tfb in updated_file_bundles.values()]
@@ -651,9 +680,9 @@ def _upload_tml(
                     f.write(tmlstr)
                 fcnt += 1
 
-        r = ts.api.metadata.tml_import(import_objects=tml_to_load,
-                                       import_policy=import_policy.value,
-                                       force_create=force_create)
+        r = ts.api.metadata.tml_import(
+            import_objects=tml_to_load, import_policy=import_policy.value, force_create=force_create
+        )
         resp = _flatten_tml_response(r)
 
         metadata_list = MetadataTypeList()
@@ -673,8 +702,8 @@ def _upload_tml(
                 old_guid = old_guids[fcnt]
                 guids_to_map[old_guid] = _.guid
                 metadata_list.add(
-                    ts.metadata.tml_type_to_metadata_object(updated_file_bundles[old_guid].tml.tml_type_name),
-                    _.guid)
+                    ts.metadata.tml_type_to_metadata_object(updated_file_bundles[old_guid].tml.tml_type_name), _.guid
+                )
             elif _.status_code == StatusCode.ok:
                 log.info(f"{filenames[fcnt]} {_.status_code}: {_.name} " f"({_.metadata_type}::{_.guid})")
                 # if the object was loaded successfully and guid mappings are being used,
@@ -683,8 +712,8 @@ def _upload_tml(
                 guids_to_map[old_guid] = _.guid
                 results[_.guid] = (_.metadata_type, filenames[fcnt], StatusCode.ok)
                 metadata_list.add(
-                    ts.metadata.tml_type_to_metadata_object(updated_file_bundles[old_guid].tml.tml_type_name),
-                    _.guid)
+                    ts.metadata.tml_type_to_metadata_object(updated_file_bundles[old_guid].tml.tml_type_name), _.guid
+                )
 
             fcnt += 1
 
@@ -696,7 +725,7 @@ def _upload_tml(
                     guid_mapping.set_mapped_guid(k, v)
             _wait_for_metadata(ts=ts, metadata_list=metadata_list)
         else:  # need to not return the OK ones in this scenario because they would attempt to be tagged and shared.
-            log.warning('Content was not created.  This can be due to a error when using ALL_OR_NONE policy.')
+            log.warning("Content was not created.  This can be due to a error when using ALL_OR_NONE policy.")
             resp = []
 
     except Exception as e:
@@ -718,34 +747,34 @@ def _flatten_tml_response(r: Dict) -> [TMLResponseReference]:
 
     text = json.loads(r.text)
     if text:
-        for _ in text['object']:
+        for _ in text["object"]:
             trr = TMLResponseReference()
-            trr.status_code = StatusCode.from_str(_['response']['status']['status_code'])
+            trr.status_code = StatusCode.from_str(_["response"]["status"]["status_code"])
             if trr.status_code == StatusCode.ok:
-                h = _['response']['header']
-                trr.guid = h.get('id_guid', 'UNKNOWN')
-                trr.name = h.get('name', 'UNKNOWN')
-                trr.type = h.get('type', 'UNKNOWN')
-                trr.metadata_type = h.get('metadata_type', 'UNKNOWN')
+                h = _["response"]["header"]
+                trr.guid = h.get("id_guid", "UNKNOWN")
+                trr.name = h.get("name", "UNKNOWN")
+                trr.type = h.get("type", "UNKNOWN")
+                trr.metadata_type = h.get("metadata_type", "UNKNOWN")
             elif trr.status_code == StatusCode.error:
-                status = _['response']['status']
-                trr.error_code = status.get('error_code', '')
-                trr.error_message = status['error_message'].replace('<br/>', '')
+                status = _["response"]["status"]
+                trr.error_code = status.get("error_code", "")
+                trr.error_message = status["error_message"].replace("<br/>", "")
             elif trr.status_code == StatusCode.warning:
-                h = _['response']['header']
-                status = _['response']['status']
-                trr.error_code = status.get('status_code', '')
-                trr.guid = h.get('id_guid', 'UNKNOWN')
-                trr.error_message = status['error_message'].replace('<br/>', '')
-                trr.name = h.get('name', 'UNKNOWN')
-                trr.type = h.get('type', 'UNKNOWN')
-                trr.metadata_type = h.get('metadata_type', 'UNKNOWN')
+                h = _["response"]["header"]
+                status = _["response"]["status"]
+                trr.error_code = status.get("status_code", "")
+                trr.guid = h.get("id_guid", "UNKNOWN")
+                trr.error_message = status["error_message"].replace("<br/>", "")
+                trr.name = h.get("name", "UNKNOWN")
+                trr.type = h.get("type", "UNKNOWN")
+                trr.metadata_type = h.get("metadata_type", "UNKNOWN")
             else:
-                h = _['response']['header']
-                trr.guid = h.get('id_guid', 'UNKNOWN')
-                trr.name = h.get('name', 'UNKNOWN')
-                trr.type = h.get('type', 'UNKNOWN')
-                trr.metadata_type = h.get('metadata_type', 'UNKNOWN')
+                h = _["response"]["header"]
+                trr.guid = h.get("id_guid", "UNKNOWN")
+                trr.name = h.get("name", "UNKNOWN")
+                trr.type = h.get("type", "UNKNOWN")
+                trr.metadata_type = h.get("metadata_type", "UNKNOWN")
 
             flat.append(trr)
 
@@ -766,12 +795,12 @@ def _add_tags(ts: ThoughtSpot, objects: List[TMLResponseReference], tags: List[s
             ids.append(_.guid)
             types.append(_.metadata_type)
         if ids:  # might all be errors
-            log.info(f'Adding tags {tags} to {ids}')
+            log.info(f"Adding tags {tags} to {ids}")
             try:
                 ts.api.metadata.assigntag(id=ids, type=types, tagname=tags)
             except Exception as e:
-                log.error(f'Error adding tags: {e}.')
-                log.error(f'Check spelling of the tag.')
+                log.error(f"Error adding tags: {e}.")
+                log.error(f"Check spelling of the tag.")
 
 
 def _share_with(ts: ThoughtSpot, objects: List[TMLResponseReference], share_with: List[str]) -> None:
@@ -831,7 +860,7 @@ def _wait_for_metadata(ts: ThoughtSpot, metadata_list: MetadataTypeList):
     items_to_wait_on = copy.copy(metadata_list)  # don't look for all the items every time.
 
     while not items_to_wait_on.is_empty() and total_waited_secs < max_wait_time_secs:
-        log.info(f"Waiting on {items_to_wait_on} for {wait_time_secs} seconds.".replace('[', r'\['))
+        log.info(f"Waiting on {items_to_wait_on} for {wait_time_secs} seconds.".replace("[", r"\["))
         # always sleep first since the first call will (probably) be immediately.
         time.sleep(wait_time_secs)
         total_waited_secs += wait_time_secs
@@ -844,9 +873,11 @@ def _wait_for_metadata(ts: ThoughtSpot, metadata_list: MetadataTypeList):
                     items_to_wait_on.remove(ctype, k)
 
     if not items_to_wait_on.is_empty():
-        raise CSToolsError(error=f"Timing out on API call after {total_waited_secs} seconds",
-                           reason=f"Exceeded timeout on items: {items_to_wait_on}",
-                           mitigation=f"Check the connection and content to identify the issue.")
+        raise CSToolsError(
+            error=f"Timing out on API call after {total_waited_secs} seconds",
+            reason=f"Exceeded timeout on items: {items_to_wait_on}",
+            mitigation=f"Check the connection and content to identify the issue.",
+        )
 
     # HACK ALERT!  It seems like you can create content and get confirmation it exists, but then it doesn't completely.
     time.sleep(3)
@@ -876,7 +907,7 @@ def _show_results_as_table(results: Dict[GUID, Tuple]) -> None:
     console.print(table)
 
 
-def cnxtml_to_cnxjson (cnxtml: Dict) -> str:
+def cnxtml_to_cnxjson(cnxtml: Dict) -> str:
     """
     Converts from the YAML/TML you get from downloading the YAML to the connection JSON metadata format.  See
     https://developers.thoughtspot.com/docs/?pageid=connections-api#connection-metadata for details on the format.
@@ -984,37 +1015,39 @@ def cnxtml_to_cnxjson (cnxtml: Dict) -> str:
 
     # properties become part of the configuration
     configuration = {}
-    for p in cnxtml['properties']:
-        configuration[p['key']] = p['value']
+    for p in cnxtml["properties"]:
+        configuration[p["key"]] = p["value"]
 
-    cnxjson['configuration'] = configuration
-    cnxjson['externalDatabases'] = []  # default to empty.
+    cnxjson["configuration"] = configuration
+    cnxjson["externalDatabases"] = []  # default to empty.
 
     # first, organize tables by database and schema
     # { database_name: { schema_name: { table_name: [ columns ], table_name: [ columns ], ... } } }
     databases = {}
-    if cnxtml.get('table', None):
-        for t in cnxtml.get('table'):
+    if cnxtml.get("table", None):
+        for t in cnxtml.get("table"):
             # all tables should have these or it should fail.
-            db_name = t['external_table']['db_name']
-            schema_name = t['external_table']['schema_name']
-            table_name = t['external_table']['table_name']
+            db_name = t["external_table"]["db_name"]
+            schema_name = t["external_table"]["schema_name"]
+            table_name = t["external_table"]["table_name"]
 
             # columns are optional
             columns = []
-            for c in t.get('column'):
-                columns.append({
-                    "name": c['external_column'],
-                    "type": c['data_type'],
-                    # using defaults for the following booleans since it's unknown.
-                    "canImport": "true",
-                    "selected": "true",
-                    "isLinkActivated": "true",
-                    "isImported": "false",
-                    "tableName": table_name,
-                    "schemaName": schema_name,
-                    "dbName": db_name,
-                })
+            for c in t.get("column"):
+                columns.append(
+                    {
+                        "name": c["external_column"],
+                        "type": c["data_type"],
+                        # using defaults for the following booleans since it's unknown.
+                        "canImport": "true",
+                        "selected": "true",
+                        "isLinkActivated": "true",
+                        "isImported": "false",
+                        "tableName": table_name,
+                        "schemaName": schema_name,
+                        "dbName": db_name,
+                    }
+                )
 
             # at this point the details of a table should be known and need to be added to the appropriate DB
             db = databases.get(db_name) if db_name in databases.keys() else {}
@@ -1049,23 +1082,22 @@ def cnxtml_to_cnxjson (cnxtml: Dict) -> str:
                 }
                 columns = []
                 for c in t:
-                    columns.append({
-                        "name": c.get("name"),
-                        "type": c.get("type"),
-                        "canImport": c.get("canImport", "true"),
-                        "selected": c.get("selected", "true"),
-                        "isLinkedActive": c.get("isLinkedActive", "true"),
-                        "isImported": c.get("isImported", "false"),
-                        "tableName": tn,
-                        "schemaName": sn,
-                        "dbName": dbn
-                    })
+                    columns.append(
+                        {
+                            "name": c.get("name"),
+                            "type": c.get("type"),
+                            "canImport": c.get("canImport", "true"),
+                            "selected": c.get("selected", "true"),
+                            "isLinkedActive": c.get("isLinkedActive", "true"),
+                            "isImported": c.get("isImported", "false"),
+                            "tableName": tn,
+                            "schemaName": sn,
+                            "dbName": dbn,
+                        }
+                    )
                 table["columns"] = columns
                 tables.append(table)
-            schemas.append({
-                "name": sn,
-                "tables": tables
-            })
+            schemas.append({"name": sn, "tables": tables})
         extdb["schemas"] = schemas
         external_databases.append(extdb)
 

@@ -7,7 +7,7 @@ from cs_tools.const import DOCS_BASE_URL, GH_ISSUES, GDRIVE_FORM
 meta = _meta_config()
 app = typer.Typer(
     cls=CSToolsGroup,
-    name='tools',
+    name="tools",
     help="""
     Run an installed tool.
 
@@ -15,12 +15,16 @@ app = typer.Typer(
     which aren't native to ThoughtSpot or advanced functionality for
     clients who have a well-adopted platform.
     """,
-    subcommand_metavar='<tool>',
+    subcommand_metavar="<tool>",
     invoke_without_command=True,
     epilog=(
         f":books: [cyan][link={DOCS_BASE_URL}/cs-tools/overview/]Documentation[/] "
         f"🛟 [link={GH_ISSUES}]Get Help[/] "
         f":memo: [link={GDRIVE_FORM}]Feedback[/][/] "
-        + (f":computer_disk: [green]{meta.default_config_name}[/] (default)" if meta.default_config_name is not None else "")
-    )
+        + (
+            f":computer_disk: [green]{meta.default_config_name}[/] (default)"
+            if meta.default_config_name is not None
+            else ""
+        )
+    ),
 )
