@@ -11,8 +11,9 @@ from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin
 from cs_tools.cli.loader import CSTool
 from cs_tools.settings import _meta_config
 from cs_tools._version import __version__
+from cs_tools._logging import _setup_logging
 from cs_tools.cli.ux import rich_console, CSToolsApp
-from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES, APP_DIR
+from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES
 from cs_tools.cli import _config, _tools, _log
 from cs_tools import utils
 
@@ -95,7 +96,7 @@ def _platform(ctx: typer.Context):
 
         [LOGGED IN USER]
         user_id: {ts.me.guid}
-        username: {ts.me.name}
+        username: {ts.me.username}
         display_name: {ts.me.display_name}
         privileges: {list(map(lambda e: e.name, ts.me.privileges))}
         """
@@ -104,58 +105,58 @@ def _platform(ctx: typer.Context):
     rich_console.print(m)
 
 
-def _setup_logging() -> None:
-    now = dt.datetime.now().strftime("%Y-%m-%dT%H_%M_%S")
+# def _setup_logging() -> None:
+#     now = dt.datetime.now().strftime("%Y-%m-%dT%H_%M_%S")
 
-    logging.config.dictConfig(
-        {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "verbose": {
-                    "format": "[%(levelname)s - %(asctime)s] [%(name)s - %(module)s.%(funcName)s %(lineno)d] %(message)s"
-                }
-            },
-            "handlers": {
-                "to_file": {
-                    "formatter": "verbose",
-                    "level": "DEBUG",  # user can override in their config file
-                    "class": "logging.FileHandler",
-                    # RotatingFileHandler.__init__ params...
-                    "filename": f"{APP_DIR}/logs/{now}.log",
-                    "mode": "w",  # Create a new file for each run of cs_tools.
-                    "encoding": "utf-8",  # Handle unicode fun.
-                    "delay": True,  # Don't create a file if no logging is done.
-                },
-                "to_console": {
-                    "level": "INFO",
-                    "class": "rich.logging.RichHandler",
-                    # rich.__init__ params...
-                    "console": rich_console,
-                    "show_level": False,
-                    "markup": True,
-                    "log_time_format": "[%X]",
-                },
-            },
-            "loggers": {},
-            "root": {"level": "DEBUG", "handlers": ["to_file", "to_console"]},
-        }
-    )
+#     logging.config.dictConfig(
+#         {
+#             "version": 1,
+#             "disable_existing_loggers": False,
+#             "formatters": {
+#                 "verbose": {
+#                     "format": "[%(levelname)s - %(asctime)s] [%(name)s - %(module)s.%(funcName)s %(lineno)d] %(message)s"
+#                 }
+#             },
+#             "handlers": {
+#                 "to_file": {
+#                     "formatter": "verbose",
+#                     "level": "DEBUG",  # user can override in their config file
+#                     "class": "logging.FileHandler",
+#                     # RotatingFileHandler.__init__ params...
+#                     "filename": f"{APP_DIR}/logs/{now}.log",
+#                     "mode": "w",  # Create a new file for each run of cs_tools.
+#                     "encoding": "utf-8",  # Handle unicode fun.
+#                     "delay": True,  # Don't create a file if no logging is done.
+#                 },
+#                 "to_console": {
+#                     "level": "INFO",
+#                     "class": "rich.logging.RichHandler",
+#                     # rich.__init__ params...
+#                     "console": rich_console,
+#                     "show_level": False,
+#                     "markup": True,
+#                     "log_time_format": "[%X]",
+#                 },
+#             },
+#             "loggers": {},
+#             "root": {"level": "DEBUG", "handlers": ["to_file", "to_console"]},
+#         }
+#     )
 
-    # ROTATE LOGS
-    logs_dir = APP_DIR / "logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
+#     # ROTATE LOGS
+#     logs_dir = APP_DIR / "logs"
+#     logs_dir.mkdir(parents=True, exist_ok=True)
 
-    lifo = sorted(logs_dir.iterdir(), reverse=True)
+#     lifo = sorted(logs_dir.iterdir(), reverse=True)
 
-    # keep only the last 25 logfiles
-    for idx, log in enumerate(lifo):
-        if idx > 25:
-            log.unlink()
+#     # keep only the last 25 logfiles
+#     for idx, log in enumerate(lifo):
+#         if idx > 25:
+#             log.unlink()
 
-    # SILENCE NOISY LOGS
-    logging.getLogger("urllib3").setLevel(logging.ERROR)
-    logging.getLogger("httpx").setLevel(logging.ERROR)
+#     # SILENCE NOISY LOGS
+#     logging.getLogger("urllib3").setLevel(logging.ERROR)
+#     logging.getLogger("httpx").setLevel(logging.ERROR)
 
 
 def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
@@ -204,12 +205,56 @@ def run():
             GF = "https://forms.gle/sh6hyBSS2mnrwWCa9"
             GH = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
 
-            log.exception(
-                "[yellow]This is an unhandled error!! :cold_sweat:"
-                "\n\nIf you encounter this message more than once, please help by "
-                "letting us know at one of the links below:"
-                f"\n\n  Google Forms: [link={GF}]{GF}[/link]"
-                f"\n        GitHub: [link={GH}]{GH}[/link]"
-                "\n\n[/][error]"
+            from rich.traceback import Traceback
+            from rich.align import Align
+            from rich.panel import Panel
+            from rich.text import Text
+            from rich import box
+            import random
+            import contextlib  # dependencies
+            import typer       # main cli library
+            import click       # supporting cli library
+
+            traceback = Traceback(
+                width=150,
+                extra_lines=3,
+                word_wrap=False,
+                show_locals=False,
+                suppress=[typer, click, contextlib],
+                max_frames=10,
             )
-            rich_console.print("")
+
+            suprised_emoji = random.choice(
+                (
+                    ":cold_sweat:", ":astonished:", ":anguished:", ":person_shrugging:", ":sweat:", ":scream:",
+                    ":sweat_smile:", ":nerd_face:"
+                )
+            )
+
+            text = Panel(
+                Text.from_markup(
+                    f"\nIf you encounter this message more than once, please help by letting us know!"
+                    f"\n"
+                    f"\n    Google Forms: [blue][link={GF}]{GF}[/link][/]"
+                    f"\n          GitHub: [blue][link={GH}]{GH}[/link][/]"
+                    f"\n"
+                ),
+                box.SIMPLE_HEAD,
+                border_style="yellow",
+                title=f"{suprised_emoji}  This is an unhandled error!  {suprised_emoji}",
+                subtitle="Run [b blue]cs_tools logs report[/] to send us your last error."
+            )
+
+            # log.exception(
+            #     "[yellow]This is an unhandled error!! :cold_sweat:"
+            #     "\n\nIf you encounter this message more than once, please help by "
+            #     "letting us know at one of the links below:"
+            #     "\n\n[/][error]",
+            #     suppress=[typer]
+            # )
+            rich_console.print(
+                Align.center(traceback),
+                "\n",
+                Align.center(Panel(text)),
+                "\n",
+            )
