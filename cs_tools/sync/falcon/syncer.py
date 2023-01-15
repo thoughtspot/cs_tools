@@ -117,17 +117,21 @@ class Falcon:
                     http_timeout=self.timeout,
                 )
             except (httpx.ConnectError, httpx.ConnectTimeout):
-                r = f"could not connect at {self.ts.api.dataservice_url}"
+                r = f"could not connect at [b blue]{self.ts.api.dataservice_url}[/]"
                 m = ""
 
                 if self.ts.api.dataservice_url.host != self.ts.config.thoughtspot.host:
                     m = (
-                        "\n\nIf that url is surprising to you, you likely have "
-                        "the tsload service load balancer turned on (the default "
-                        "setting) and the local machine cannot directly send files to "
-                        "that node.\n\nConsider turning on your VPN or working with a "
-                        "ThoughtSpot Support Engineer to disable the etl_http_server "
-                        "(tsload connector service) load balancer."
+                        "Is your VPN connected?"
+                        "\n\n"
+                        "If that isn't the URL of your ThoughtSpot cluster, then your "
+                        "ThoughtSpot admin likely has configured the Remote TSLoad "
+                        "Connector Service to use a load balancer and your local "
+                        "machine is unable to connect directly to the ThoughtSpot node "
+                        "which is accepting files."
+                        "\n\n"
+                        "You can try using `[b blue]ignore_load_balancer_redirect[/]` "
+                        "in your Falcon syncer definition as well."
                     )
 
                 raise TSLoadServiceUnreachable(reason=r, mitigation=m)

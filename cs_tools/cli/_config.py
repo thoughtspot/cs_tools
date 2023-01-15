@@ -12,12 +12,12 @@ from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.settings import _meta_config, CSToolsConfig
 from cs_tools.errors import CSToolsError
-from cs_tools.cli.ux import console
+from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.const import APP_DIR
-from cs_tools.util import deep_update
+from cs_tools import utils
 
 meta = _meta_config.load()
 app = CSToolsApp(
@@ -69,7 +69,7 @@ def create(
     Create a new config file.
     """
     if password is None or password == "prompt":
-        password = Prompt.ask("[yellow](your input is hidden)[/]\nPassword", console=console, password=True)
+        password = Prompt.ask("[yellow](your input is hidden)[/]\nPassword", console=rich_console, password=True)
 
     args = {
         "host": host,
@@ -99,7 +99,7 @@ def create(
         _meta_config(config)
         message += "as the default"
 
-    console.print(message)
+    rich_console.print(message)
 
 
 @app.command()
@@ -145,7 +145,7 @@ def modify(
     two which are to remain.
     """
     if password == "prompt":
-        password = Prompt.ask("[yellow](your input is hidden)[/]\nPassword", console=console, password=True)
+        password = Prompt.ask("[yellow](your input is hidden)[/]\nPassword", console=rich_console, password=True)
 
     file = APP_DIR / f"cluster-cfg_{config}.toml"
     old = CSToolsConfig.from_toml(file).dict()
@@ -161,12 +161,12 @@ def modify(
         "syncer": syncers,
     }
     data = CSToolsConfig.from_parse_args(config, **kw, validate=False).dict()
-    new = deep_update(old, data, ignore=None)
+    new = utils.deep_update(old, data, ignore=None)
 
     try:
         cfg = CSToolsConfig(**new)
     except pydantic.ValidationError as e:
-        console.print(f"[error]{e}")
+        rich_console.print(f"[error]{e}")
         raise typer.Exit(-1)
 
     with file.open("w") as t:
@@ -180,7 +180,7 @@ def modify(
         meta.save()
         message += " as the default"
 
-    console.print(message)
+    rich_console.print(message)
 
 
 @app.command()
@@ -193,10 +193,10 @@ def delete(config: str = Opt(..., help="config file identifier", metavar="NAME")
     try:
         file.unlink()
     except FileNotFoundError:
-        console.print(f'[yellow]cluster configuration file "{config}" does not exist')
+        rich_console.print(f'[yellow]cluster configuration file "{config}" does not exist')
         raise typer.Exit()
 
-    console.print(f'removed cluster configuration file "{config}"')
+    rich_console.print(f'removed cluster configuration file "{config}"')
 
 
 @app.command()
@@ -204,15 +204,15 @@ def check(config: str = Opt(..., help="config file identifier", metavar="NAME"))
     """
     Check your config file.
     """
-    console.log(f"Checking cluster configuration [b blue]{config}")
+    rich_console.log(f"Checking cluster configuration [b blue]{config}")
     cfg = CSToolsConfig.from_command(config)
 
-    console.log(f'Logging into [b]ThoughtSpot[/] as [b blue]{cfg.auth["frontend"].username}')
+    rich_console.log(f'Logging into [b]ThoughtSpot[/] as [b blue]{cfg.auth["frontend"].username}')
     ts = ThoughtSpot(cfg)
     ts.login()
     ts.logout()
 
-    console.log("[secondary]Success[/]!")
+    rich_console.log("[secondary]Success[/]!")
 
 
 @app.command(no_args_is_help=0)  # this is abuse, pay it no mind
@@ -245,7 +245,7 @@ def show(config: str = Opt(None, help="optionally, display the contents of a par
         default = f"[b blue]{config}[/] is{not_} the [green]default[/] configuration"
         link = f" :computer_disk: [white][link={fp}]{fp.name}"
 
-        console.print(
+        rich_console.print(
             f"\n:file_folder: [link={fp.parent}]{fp.parent}",
             f"\n:page_facing_up: {default}",
             "\n",
@@ -265,7 +265,7 @@ def show(config: str = Opt(None, help="optionally, display the contents of a par
 
         cfg_list.append(f"  - {cfg_name}")
 
-    console.print(
+    rich_console.print(
         f"\n[b]ThoughtSpot[/] cluster configurations are located at"
         f"\n  [b blue][link={APP_DIR}]{APP_DIR}[/][/]"
         f"\n"

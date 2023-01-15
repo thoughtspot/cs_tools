@@ -6,7 +6,7 @@ import logging
 from pydantic import validate_arguments
 
 from cs_tools.errors import ContentDoesNotExist
-from cs_tools import util
+from cs_tools import utils
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
@@ -87,7 +87,7 @@ class TagMiddleware:
         ContentDoesNotExist
           raised when a tag does not exist and is not to be autocreated
         """
-        tag = util.find(lambda e: e["name"].casefold() == tag_name.casefold(), self.all())
+        tag = utils.find(lambda e: e["name"].casefold() == tag_name.casefold(), self.all())
 
         if create_if_not_exists and tag is None:
             tag = self.create(tag_name)

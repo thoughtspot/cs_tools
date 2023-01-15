@@ -1,4 +1,6 @@
-from typing import List, Dict, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import datetime as dt
 import logging
 import json
@@ -7,16 +9,16 @@ from pydantic import validate_arguments
 import httpx
 
 from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist, CSToolsError
-from cs_tools.api import util
+from cs_tools.types import RecordsFormat
+from cs_tools.api import _utils
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
-DB_ROW = Dict[str, Any]
 
 
-def _fix_for_scal_101507(row: List[Dict[str, Any]]) -> List[DB_ROW]:
+def _fix_for_scal_101507(row: RecordsFormat) -> RecordsFormat:
     # BUG: SCAL-101507
     #
     # DATE_TIME formatted columns return data in the format below. This fixes that.
@@ -33,11 +35,11 @@ def _fix_for_scal_101507(row: List[Dict[str, Any]]) -> List[DB_ROW]:
     return row
 
 
-def _to_records(columns: List[str], rows: List[DB_ROW]) -> List[DB_ROW]:
+def _to_records(columns: list[str], rows: list[RecordsFormat]) -> list[RecordsFormat]:
     return [dict(zip(columns, _fix_for_scal_101507(row))) for row in rows]
 
 
-def _cast(data: List[DB_ROW], types: Dict[str, str]) -> List[DB_ROW]:
+def _cast(data: list[RecordsFormat], headers_to_types: dict[str, str]) -> list[RecordsFormat]:
     """
     Cast data coming back from Search API to their intended column types.
     """
@@ -54,29 +56,31 @@ def _cast(data: List[DB_ROW], types: Dict[str, str]) -> List[DB_ROW]:
     }
 
     _logged = {}
-    column_names = list(sorted(types.keys(), key=len, reverse=True))
+    column_names = list(sorted(headers_to_types.keys(), key=len, reverse=True))
 
     for row in data:
-        for key in row:
+        for column in row:
             try:
-                column_name = key if key in column_names else next(c for c in column_names if c in key)
-                column_type = types[column_name]
-                python_type = TS_TO_PY_TYPES[column_type]
+                # "column" or "total {column}" <-- any aggregation
+                column_name = column if column in column_names else next(c for c in column_names if c in column)
+                column_type = headers_to_types[column_name]
+                cast_as_type = TS_TO_PY_TYPES[column_type]
 
+            # ON EITHER ERROR, we'll cast to string, but only log it once per column..
             except (StopIteration, KeyError) as e:
                 if isinstance(e, StopIteration):
-                    msg = f"could not match column [yellow]{key}[/]"
+                    msg = f"could not match column [yellow]{column}[/]"
 
                 if isinstance(e, KeyError):
-                    msg = f"could not find suitable column type for [yellow]{key}[/]=[blue]{column_type}[/]"
+                    msg = f"could not find suitable column type for [yellow]{column}[/]=[blue]{column_type}[/]"
 
-                if key not in _logged:
+                if column not in _logged:
                     log.warning(f"{msg}, using VARCHAR")
 
-                _logged[key] = 1
-                python_type = str
+                _logged[column] = 1
+                cast_as_type = str
 
-            row[key] = python_type(row[key])
+            row[column] = cast_as_type(row[column])
 
     return data
 
@@ -101,7 +105,7 @@ class SearchMiddleware:
     @validate_arguments
     def __call__(
         self, query: str, *, worksheet: str = None, table: str = None, view: str = None, sample: bool = -1
-    ) -> List[Dict[str, Any]]:
+    ) -> RecordsFormat:
         """
         Search a data source.
 
@@ -126,7 +130,7 @@ class SearchMiddleware:
 
         Returns
         -------
-        data : List[Dict[str, Any]]
+        data : RecordsFormat
           search result in data records format
 
         Raises
@@ -168,7 +172,7 @@ class SearchMiddleware:
             friendly = "view"
             subtype = "AGGR_WORKSHEET"
 
-        if not util.is_valid_guid(guid):
+        if not _utils.is_valid_guid(guid):
             d = self.ts._rest_api._metadata.list(
                 type="LOGICAL_TABLE", subtypes=[subtype], pattern=guid, sort="CREATED", sortascending=True
             ).json()
@@ -189,8 +193,8 @@ class SearchMiddleware:
 
         while True:
             try:
-                r = self.ts._rest_api.data.searchdata(
-                    query_string=query, data_source_guid=guid, formattype="COMPACT", batchsize=sample, offset=offset
+                r = self.ts.api.search_data(
+                    query_string=query, data_source_guid=guid, format_type="COMPACT", batchsize=sample, offset=offset
                 )
             except httpx.HTTPStatusError as e:
                 log.debug(e, exc_info=True)
@@ -223,7 +227,7 @@ class SearchMiddleware:
                 )
 
         # Get the data types
-        r = self.ts._rest_api.metadata.details(type="LOGICAL_TABLE", id=[guid])
+        r = self.ts.api.metadata_details(metadata_type="LOGICAL_TABLE", guids=[guid])
         data_types = {c["header"]["name"]: c["dataType"] for c in r.json()["storables"][0]["columns"]}
 
         # Cleanups

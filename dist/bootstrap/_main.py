@@ -56,14 +56,10 @@ def run(args: argparse.Namespace) -> ReturnCode:
         # offline_install=not args.fetch_remote,
         offline_install=True,
         reinstall=args.reinstall,
-        setup=args.setup
+        setup=args.setup,
     )
 
-    if (
-        not args.setup
-        and 'macOS' in platform.platform()
-        and 'arm64' in platform.platform()
-    ):
+    if not args.setup and "macOS" in platform.platform() and "arm64" in platform.platform():
         log.note(
             "You've got one of those fancy new Apple M1 chips! Unfortunately, CS Tools doesn't "
             "yet support offline installs for this chipset yet. For the time being, you'll have "
@@ -72,13 +68,13 @@ def run(args: argparse.Namespace) -> ReturnCode:
         log.info(
             "\n"
             "\n  # Change directory to the CS Tools internal application directory."
-            "\n  cd \"$HOME/Library/Application Support/cs_tools\""
+            '\n  cd "$HOME/Library/Application Support/cs_tools"'
             "\n"
             "\n  # Create a virtual environment called .cs_tools"
             "\n  python3 -m venv .cs_tools"
             "\n"
             "\n  # Activate that virtual environment."
-            "\n  source \"$HOME/Library/Application Support/cs_tools/.cs_tools/bin/activate\""
+            '\n  source "$HOME/Library/Application Support/cs_tools/.cs_tools/bin/activate"'
             "\n"
             "\n  # Install the CS Tools dependencies remotely."
             "\n  pip install -r $HOME/Downloads/cs_tools-bootstrapper/pkgs/requirements.txt"

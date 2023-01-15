@@ -10,7 +10,7 @@ import click
 from cs_tools.const import CONSOLE_THEME, GH_SYNCER
 
 log = logging.getLogger(__name__)
-console = Console(theme=CONSOLE_THEME)
+rich_console = Console(theme=CONSOLE_THEME)
 WARNING_BETA = "\n\n[bold yellow]USE AT YOUR OWN RISK![/] " "This tool is currently in beta."
 WARNING_PRIVATE = (
     "\n\n[bold yellow]USE AT YOUR OWN RISK![/] "
@@ -54,7 +54,7 @@ class CSToolsCommand(typer.core.TyperCommand):
 
     #
 
-    def augment_help_text(self, ctx: click.Context, *, seen_params: List[click.Parameter]) -> List[click.Parameter]:
+    def augment_help_text(self, ctx: typer.Context, *, seen_params: List[click.Parameter]) -> List[click.Parameter]:
         """
         Inject Dependency parameters and help text.
 
@@ -80,7 +80,7 @@ class CSToolsCommand(typer.core.TyperCommand):
 
         return seen_params
 
-    def get_params(self, ctx: click.Context) -> List[click.Parameter]:
+    def get_params(self, ctx: typer.Context) -> List[click.Parameter]:
         """
         Override for augmentations.
         """
@@ -126,7 +126,7 @@ class CSToolsGroup(typer.core.TyperGroup):
     command_class = CSToolsCommand
     group_class = type
 
-    def list_commands(self, ctx: click.Context) -> List[str]:
+    def list_commands(self, ctx: typer.Context) -> List[str]:
         """
         Override so we don't sort alphabetically
         """

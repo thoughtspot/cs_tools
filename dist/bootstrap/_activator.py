@@ -43,12 +43,7 @@ class Activator:
       whether or not to run any install code
     """
 
-    def __init__(
-        self,
-        offline_install: bool = True,
-        reinstall: bool = False,
-        setup: bool = False
-    ):
+    def __init__(self, offline_install: bool = True, reinstall: bool = False, setup: bool = False):
         self._offline_install = offline_install
         self._reinstall = reinstall
         self._setup = setup
@@ -349,7 +344,7 @@ class Activator:
 
         # .bash_profile is for login shells
         # .bashrc is for interactive shells
-        for profile in ['.bash_profile', '.bashrc']:
+        for profile in [".bash_profile", ".bashrc"]:
             bash_profile = HOME.joinpath(profile)
 
             if bash_profile.exists():

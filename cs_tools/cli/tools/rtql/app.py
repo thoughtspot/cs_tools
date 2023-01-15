@@ -5,7 +5,7 @@ import typer
 import rich
 
 from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin, thoughtspot
-from cs_tools.cli.ux import console
+from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
@@ -44,7 +44,7 @@ def interactive(
     For a list of all commands, type "help" after invoking tql
     """
     ts = ctx.obj.thoughtspot
-    tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=console, http_timeout=http_timeout)
+    tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=rich_console, http_timeout=http_timeout)
     tql.run()
 
 

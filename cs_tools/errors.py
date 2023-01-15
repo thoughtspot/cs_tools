@@ -45,6 +45,15 @@ class TSLoadServiceUnreachable(CSToolsError):
     """
 
     error = "The remote tsload service ([blue]etl_httpserver[/]) is unreachable."
+    reason = "HTTP Error: {http_error.response.status_code} {http_error.response.reason_phrase}"
+    mitigation = (
+        "Ensure your cluster is set up for allow remove data loads"
+        "\n  https://docs.thoughtspot.com/software/latest/tsload-connector#_setting_up_your_cluster"
+        "\n\n"
+        "Heres the tsload command for the file you tried to load:"
+        "\n\n"
+        "{tsload_command}"
+    )
 
 
 class ContentDoesNotExist(CSToolsError):

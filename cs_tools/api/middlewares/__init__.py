@@ -1,3 +1,4 @@
+from .logical_table import LogicalTableMiddleware
 from .pinboard import PinboardMiddleware
 from .metadata import MetadataMiddleware
 from .tsload import TSLoadMiddleware

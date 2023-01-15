@@ -4,7 +4,6 @@ from cs_tools.cli.util import _TSDependentObject, TSDependencyTree
 
 
 class TestTSDependencyTree(unittest.TestCase):
-
     def testNewDOWithoutDependents(self):
         """Tests creating a basic object with no dependencies."""
         dobj = _TSDependentObject("abcd")
@@ -61,5 +60,3 @@ class TestTSDependencyTree(unittest.TestCase):
         self.assertEqual(0, dt._get_object_level("obj8"))
 
         print(dt)
-
-

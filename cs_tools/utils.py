@@ -1,27 +1,8 @@
-from typing import Optional, Iterable, Callable, Dict, Any
+from typing import Optional, Callable, Any
 from base64 import urlsafe_b64encode as b64e
 from base64 import urlsafe_b64decode as b64d
 import collections.abc
-import datetime as dt
 import zlib
-
-
-def to_datetime(timestamp: int, *, unit: str = "s") -> dt.datetime:
-    """
-    Convert a timestamp to a python datetime.
-
-    Mostly offers a nice API to the datetime library.
-    """
-    _units = {"s": 1, "ms": 1_000, "us": 1_000_000, "ns": 1_000_000_000}
-
-    try:
-        transform = _units[unit]
-    except KeyError:
-        raise ValueError("unit must one of: s, ms, us, ns") from None
-    else:
-        timestamp = timestamp / transform
-
-    return dt.datetime.fromtimestamp(timestamp)
 
 
 def chunks(iter_, *, n: int) -> iter:
@@ -30,16 +11,6 @@ def chunks(iter_, *, n: int) -> iter:
     """
     for i in range(0, len(iter_), n):
         yield iter_[i : i + n]
-
-
-def dedupe(iterable: Iterable) -> Iterable:
-    """
-    Removes duplicates.
-
-    In python 3.6+, this algorithm preserves order of the underlying
-    iterable.
-    """
-    return iter(dict.fromkeys(iterable))
 
 
 def deep_update(old: dict, new: dict, *, ignore: Any = None) -> dict:
@@ -124,9 +95,9 @@ class State:
     An object that can be used to store arbitrary state.
     """
 
-    _state: Dict[str, Any]
+    _state: dict[str, Any]
 
-    def __init__(self, state: Optional[Dict[str, Any]] = None):
+    def __init__(self, state: Optional[dict[str, Any]] = None):
         if state is None:
             state = {}
 

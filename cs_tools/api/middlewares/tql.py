@@ -1,4 +1,6 @@
-from typing import Tuple, List, Dict, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import pathlib
 import logging
 import json
@@ -6,14 +8,13 @@ import json
 from pydantic.typing import Annotated
 from pydantic import validate_arguments, Field
 
-from cs_tools.data.enums import Privilege
 from cs_tools.errors import InsufficientPrivileges
+from cs_tools.types import GroupPrivilege, RecordsFormat
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
-REQUIRED_PRIVILEGES = set([Privilege.can_administer_thoughtspot, Privilege.can_manage_data])
 
 
 def _to_table(headers, rows=None):
@@ -32,11 +33,13 @@ class TQLMiddleware:
         self.ts = ts
 
     def _check_privileges(self) -> None:
-        """ """
-        if not set(self.ts.me.privileges).intersection(REQUIRED_PRIVILEGES):
-            raise InsufficientPrivileges(
-                user=self.ts.me, service="remote TQL", required_privileges=", ".join(REQUIRED_PRIVILEGES)
-            )
+        """
+        Determine if the user has necessary Data Manager privileges.
+        """
+        REQUIRED = set([GroupPrivilege.can_administer_thoughtspot, GroupPrivilege.can_manage_data])
+
+        if not set(self.ts.me.privileges).intersection(REQUIRED):
+            raise InsufficientPrivileges(user=self.ts.me, service="remote TQL", required_privileges=", ".join(REQUIRED))
 
     @validate_arguments
     def query(
@@ -47,7 +50,7 @@ class TQLMiddleware:
         database: str = None,
         schema_: Annotated[str, Field(alias="schema")] = "falcon_default_schema",
         http_timeout: int = 60.0,
-    ) -> Tuple[List[Dict[str, str]], List[Dict[str, Any]]]:
+    ) -> list[RecordsFormat]:
         """
 
         Parameters
@@ -71,7 +74,7 @@ class TQLMiddleware:
             "query": {"statement": statement},
         }
 
-        r = self.ts.api.ts_dataservice.query(data, timeout=http_timeout)
+        r = self.ts.api.dataservice_query(data, timeout=http_timeout)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []
@@ -94,7 +97,7 @@ class TQLMiddleware:
         schema_: str = "falcon_default_schema",
         raise_errors: bool = False,
         http_timeout: int = 60.0,
-    ) -> List[Dict[str, Any]]:
+    ) -> RecordsFormat:
         """ """
         self._check_privileges()
 
@@ -106,7 +109,7 @@ class TQLMiddleware:
             "query": {"statement": command},
         }
 
-        r = self.ts.api.ts_dataservice.query(data, timeout=http_timeout)
+        r = self.ts.api.dataservice_query(data, timeout=http_timeout)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []
@@ -121,7 +124,7 @@ class TQLMiddleware:
         return out
 
     @validate_arguments
-    def script(self, fp: pathlib.Path, *, raise_errors: bool = False, http_timeout: int = 60.0) -> List[Dict[str, Any]]:
+    def script(self, fp: pathlib.Path, *, raise_errors: bool = False, http_timeout: int = 60.0) -> RecordsFormat:
         """ """
         self._check_privileges()
 
@@ -132,7 +135,7 @@ class TQLMiddleware:
                 "script": f.read(),
             }
 
-        r = self.ts.api.ts_dataservice.script(data, timeout=http_timeout)
+        r = self.ts.api.dataservice_script(data, timeout=http_timeout)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []

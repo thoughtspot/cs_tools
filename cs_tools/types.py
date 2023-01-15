@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 import datetime as dt
+import logging
 import typing
 import uuid
-import enum
 
 from thoughtspot_tml.types import ConnectionMetadata, TMLObject
-import dateutil
+from dateutil import tz
+import pydantic
 
+from cs_tools._compat import StrEnum
+
+log = logging.getLogger(__name__)
 GUID = typing.cast(uuid.UUID, str)
 
 
@@ -21,12 +24,12 @@ GUID = typing.cast(uuid.UUID, str)
 # ======================================================================================================================
 
 
-class FormatType(enum.Enum):
+class FormatType(StrEnum):
     records = "FULL"
     values = "COMPACT"
 
 
-class MetadataObjectType(enum.Enum):
+class MetadataObjectType(StrEnum):
     logical_table = "LOGICAL_TABLE"
     logical_column = "LOGICAL_COLUMN"
     logical_relationship = "LOGICAL_RELATIONSHIP"
@@ -38,7 +41,7 @@ class MetadataObjectType(enum.Enum):
     group = "USER_GROUP"
 
 
-class MetadataObjectSubtype(enum.Enum):
+class MetadataObjectSubtype(StrEnum):
     system_table = "ONE_TO_ONE_LOGICAL"
     worksheet = "WORKSHEET"
     csv_upload = "USER_DEFINED"
@@ -49,14 +52,14 @@ class MetadataObjectSubtype(enum.Enum):
     calendar = "CALENDAR_TABLE"
 
 
-class MetadataCategory(enum.Enum):
+class MetadataCategory(StrEnum):
     all = "ALL"
     my = "MY"
     favorite = "FAVORITE"
     requested = "REQUESTED"
 
 
-class SortOrder(enum.Enum):
+class SortOrder(StrEnum):
     default = "DEFAULT"
     name = "NAME"
     display_name = "DISPLAY_NAME"
@@ -65,7 +68,7 @@ class SortOrder(enum.Enum):
     modified = "MODIFIED"
 
 
-class ConnectionType(enum.Enum):
+class ConnectionType(StrEnum):
     azure = "RDBMS_AZURE_SQL_DATAWAREHOUSE"
     big_query = "RDBMS_GCP_BIGQUERY"
     databricks = "RDBMS_DATABRICKS"
@@ -76,29 +79,29 @@ class ConnectionType(enum.Enum):
     snowflake = "RDBMS_SNOWFLAKE"
 
 
-class TMLType(enum.Enum):
+class TMLType(StrEnum):
     yaml = "YAML"
     json = "JSON"
 
 
-class TMLImportPolicy(enum.Enum):
+class TMLImportPolicy(StrEnum):
     all_or_none = "ALL_OR_NONE"
     partial = "PARTIAL"
     validate = "VALIDATE_ONLY"
 
 
-class PermissionType(enum.Enum):
+class PermissionType(StrEnum):
     inherited = "EFFECTIVE"
     explicit = "DEFINED"
 
 
-class ShareModeAccessLevel(enum.Enum):
+class ShareModeAccessLevel(StrEnum):
     no_access = "NO_ACCESS"
     can_view = "READ_ONLY"
     can_modify = "MODIFY"
 
 
-class GroupPrivilege(enum.Enum):
+class GroupPrivilege(StrEnum):
     innate = "AUTHORING"
     can_administer_thoughtspot = "ADMINISTRATION"
     can_upload_user_data = "USERDATAUPLOADING"
@@ -131,21 +134,73 @@ class SecurityPrincipal(typing.TypedDict):
 
 
 # ======================================================================================================================
+# CS Tools Middleware types
+# ======================================================================================================================
+
+
+class TMLSupportedContent(StrEnum):
+    connection = "DATA_SOURCE"
+    table = "LOGICAL_TABLE"
+    view = "LOGICAL_TABLE"
+    sql_view = "LOGICAL_TABLE"
+    sqlview = "LOGICAL_TABLE"
+    worksheet = "LOGICAL_TABLE"
+    pinboard = "PINBOARD_ANSWER_BOOK"
+    liveboard = "PINBOARD_ANSWER_BOOK"
+    answer = "QUESTION_ANSWER_BOOK"
+
+    @classmethod
+    def from_friendly_type(cls, friendly_type: str) -> TMLSupportedContent:
+        return cls[friendly_type]
+
+
+# ======================================================================================================================
+# CS Tools Middleware output types
+# ======================================================================================================================
+
+
+RecordsFormat = list[dict[str, Any]]
+# records are typically a metadata header fragment, but not always.
+#
+# [
+#     {
+#         "id": str,
+#         "name": str,
+#         "description": None | str,
+#         "type": str,
+#         ...
+#     },
+#     ...
+# ]
+
+
+# ======================================================================================================================
 # CS Tools Internal types
 # ======================================================================================================================
 
 
-@dataclass
-class ThoughtSpotPlatform:
+class ThoughtSpotPlatform(pydantic.BaseModel):
     version: str
-    deployment: str  # one of: cloud, software
+    deployment: str
     url: str
-    timezone: str
+    timezone: dt.timezone
     cluster_name: str
     cluster_id: str
 
-    def __post_init__(self):
-        self.tz: dt.timezone = dateutil.tz.gettz(self.timezone)
+    @pydantic.validator("deployment", pre=True)
+    def _one_of(cls, deployment: str) -> str:
+        if deployment.lower() not in ("software", "cloud"):
+            raise ValueError(f"'deployment' must be one of 'software' or 'cloud', got '{deployment}'")
+        return deployment.lower()
+
+    @pydantic.validator("timezone", pre=True)
+    def _get_tz(cls, tz_name: str) -> dt.timezone:
+        timezone = tz.gettz(tz_name)
+
+        if timezone is None:
+            log.warning(f"could not retrieve timezone for '{tz_name}'")
+
+        return timezone
 
     @classmethod
     def from_api_v1_session_info(cls, info: dict[str, Any]) -> ThoughtSpotPlatform:
@@ -162,9 +217,11 @@ class ThoughtSpotPlatform:
 
         return cls(**data)
 
+    class Config:
+        arbitrary_types_allowed = True
 
-@dataclass
-class LoggedInUser:
+
+class LoggedInUser(pydantic.BaseModel):
     guid: GUID
     username: str
     display_name: str
@@ -182,3 +239,6 @@ class LoggedInUser:
         }
 
         return cls(**data)
+
+    class Config:
+        arbitrary_types_allowed = True

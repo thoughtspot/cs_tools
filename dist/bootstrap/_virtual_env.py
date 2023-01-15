@@ -74,8 +74,11 @@ class VirtualEnvironment:
             # don't get for new versions of pip, because it doesn't matter and is noisy
             "--disable-pip-version-check",
             # trust installs from the official python package index
-            "--trusted-host", "files.pythonhost.org",
-            "--trusted-host", "pypi.org",
-            "--trusted-host", "pypi.python.org",
+            "--trusted-host",
+            "files.pythonhost.org",
+            "--trusted-host",
+            "pypi.org",
+            "--trusted-host",
+            "pypi.python.org",
         )
         return self.python("-m", "pip", *required_general_args, *args, **kwargs)

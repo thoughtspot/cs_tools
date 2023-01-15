@@ -45,11 +45,15 @@ dependencies = [
     "python-dateutil",
     "thoughtspot_tml @ https://github.com/thoughtspot/thoughtspot_tml/archive/v2.0.0.zip",
     "toml",
+
+    # TODO: switch with Starlite...
+    "uvicorn",
+    "fastapi",
+
+    # version specific
+    "strenum >= 0.4.9; python_version < '3.11.0'",
 ]
 
-# packages = [
-#     { include = "cs_tools" }
-# ]
 
 [project.urls]
 homepage = "https://thoughtspot.github.io/cs_tools/"

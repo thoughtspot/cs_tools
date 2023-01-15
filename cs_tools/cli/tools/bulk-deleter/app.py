@@ -8,11 +8,11 @@ import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console
+from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
-from cs_tools.util import chunks
+from cs_tools import utils
 
 log = logging.getLogger(__name__)
 HERE = pathlib.Path(__file__).parent
@@ -56,7 +56,7 @@ def _validate_objects_exist(ts, data):
         new_data[system_type].append(object_["object_guid"])
 
     for system_type, to_delete_guids in new_data.items():
-        for chunk in chunks(to_delete_guids, n=15):
+        for chunk in utils.chunks(to_delete_guids, n=15):
             r = ts.api.metadata.list(type=system_type, fetchids=chunk)
             returned_guids = [_["id"] for _ in r.json()]
 
@@ -94,7 +94,7 @@ def single(
     if not answers and not liveboards:
         raise typer.Exit(-1)
 
-    console.print(f"deleting {system_type}: {guid}")
+    rich_console.print(f"deleting {system_type}: {guid}")
     r = ts.api._metadata.delete(type=system_type, id=[guid])
     log.debug(f"{r} - {r.content}")
 
@@ -136,7 +136,7 @@ def from_tabular(
         +-----------------------+-------------+
     """
     if syncer is not None and deletion is None:
-        console.print("[red]you must provide a syncer directive to --deletion")
+        rich_console.print("[red]you must provide a syncer directive to --deletion")
         raise typer.Exit(-1)
 
     ts = ctx.obj.thoughtspot
@@ -145,21 +145,21 @@ def from_tabular(
     answers, liveboards = _validate_objects_exist(ts, data)
 
     if liveboards:
-        console.print(f"deleting {len(liveboards)} total liveboards")
+        rich_console.print(f"deleting {len(liveboards)} total liveboards")
 
-        for chunk in chunks(liveboards, n=batchsize):
+        for chunk in utils.chunks(liveboards, n=batchsize):
             if batchsize > 1:
-                console.print(f"\tdeleting {len(chunk)} liveboards:\n{chunk}")
+                rich_console.print(f"\tdeleting {len(chunk)} liveboards:\n{chunk}")
 
             r = ts.api._metadata.delete(type="PINBOARD_ANSWER_BOOK", id=list(chunk))
             log.debug(f"{r} - {r.content}")
 
     if answers:
-        console.print(f"deleting {len(answers)} total answers")
+        rich_console.print(f"deleting {len(answers)} total answers")
 
-        for chunk in chunks(answers, n=batchsize):
+        for chunk in utils.chunks(answers, n=batchsize):
             if batchsize > 1:
-                console.print(f"\tdeleting {len(chunk)} answers:\n{chunk}")
+                rich_console.print(f"\tdeleting {len(chunk)} answers:\n{chunk}")
 
             r = ts.api._metadata.delete(type="QUESTION_ANSWER_BOOK", id=list(chunk))
             log.debug(f"{r} - {r.content}")

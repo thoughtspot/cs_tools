@@ -8,7 +8,7 @@ import httpx
 import rich
 
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.data.models import Privilege
+from cs_tools.types import GroupPrivilege
 
 from .completer import TQLCompleter
 from .const import TQL_HELP
@@ -79,17 +79,6 @@ class InteractiveTQL:
     @property
     def print(self):
         return self.console.print
-
-    def _check_privileges(self):
-        required = set([Privilege.can_administer_thoughtspot, Privilege.can_manage_data])
-
-        if not set(self.ts.me.privileges).intersection(required):
-            self.print(
-                "[red]You do not have the correct privileges to access the remote TQL "
-                'service!\n\nYou require at least the "Can Manage Data" privilege.'
-                "\n\nPlease consult with your ThoughtSpot Administrator.[/]"
-            )
-            raise typer.Exit()
 
     def _query(self, questions: List[dict] = None):
         """
@@ -293,7 +282,7 @@ class InteractiveTQL:
         """
         with self.console.status("[bold green]starting remote TQL client..[/]"):
             self.ts.login()
-            self._check_privileges()
+            self.ts.tql._check_privileges()
             self.update_tokens("static")
             self.update_tokens("dynamic")
 

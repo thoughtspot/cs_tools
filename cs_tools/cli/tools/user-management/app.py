@@ -10,12 +10,12 @@ import httpx
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.data.enums import GUID
 from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
-from cs_tools.cli.ux import console
+from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
+from cs_tools.types import GUID
 
 log = logging.getLogger(__name__)
 
@@ -116,9 +116,7 @@ def _form_principals(users, groups, xref):
 
 
 app = CSToolsApp(
-    help="""
-    Managing Users and Groups in bulk.
-    """,
+    help="""Managing Users and Groups in bulk.""",
     options_metavar="[--version, --help]",
 )
 
@@ -149,7 +147,7 @@ def transfer(
 
     if tag is not None or guids is not None:
         with console.status(f"[bold green]Getting all content by: {from_}"):
-            user = ts.user.get(from_)
+            user = ts.user.guid_for(from_)
             content = _all_user_content(user=user["id"], ts=ts)
 
         if tag is not None:

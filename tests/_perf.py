@@ -1,7 +1,7 @@
 import cs_tools
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import cProfile
     import snakeviz
     import pathlib

@@ -1,29 +1,19 @@
-from typing import Optional, List
 import logging
 import socket
-import enum
 
-from typer import Argument as A_  # noqa
-from typer import Option as O_
 import uvicorn
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.data.enums import AccessLevel
-from cs_tools.cli.ux import console
+from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
+from cs_tools.types import ShareModeAccessLevel
 
 from .web_app import _scoped
 
 log = logging.getLogger(__name__)
-
-
-class PermissionType(str, enum.Enum):
-    VIEW = "view"
-    EDIT = "edit"
-    REMOVE = "remove"
 
 
 def _find_my_local_ip() -> str:
@@ -41,31 +31,7 @@ def _find_my_local_ip() -> str:
     return ip
 
 
-def _get_group_id(api, *, group_name: str) -> Optional[str]:
-    """
-    Returns the id for the group with the given name.
-
-    Parameters
-    ----------
-    group_name : str
-      name of the group to get the ID for.
-
-    Returns
-    -------
-    guid : str
-      GUID for the group or None if the group name doesn't exist.
-    """
-    # TODO put the group lists into a data model with easy to user group details.
-    group_details = api._metadata.list(type="USER_GROUP")
-
-    for g in group_details.json()["headers"]:
-        if group_name == g["name"]:
-            return g["id"]
-
-    return None
-
-
-def _get_table_ids(api, *, db: str, schema: str = "falcon_default_schema", table: str = None) -> List[str]:
+def _get_table_ids(api, *, db: str, schema: str = "falcon_default_schema", table: str = None) -> list[str]:
     """
     Returns a list of table GUIDs.
     """
@@ -101,10 +67,14 @@ def _get_physical_table(api, *, table_id: str) -> str:
     return r["logicalTableContent"]["physicalTableName"]
 
 
-def _permission_param_to_permission(permission: str) -> AccessLevel:
+def _permission_param_to_permission(permission: str) -> ShareModeAccessLevel:
     """ """
     # should be one of these due to parameter checking
-    _mapping = {"view": AccessLevel.read_only, "edit": AccessLevel.modify, "remove": AccessLevel.no_access}
+    _mapping = {
+        "view": ShareModeAccessLevel.read_only,
+        "edit": ShareModeAccessLevel.modify,
+        "remove": ShareModeAccessLevel.no_access,
+    }
     return _mapping[permission]
 
 
@@ -131,7 +101,7 @@ def run(ctx: typer.Context, webserver_port: int = Opt(5000, help="port to host t
 
     _scoped["ts"] = ts
 
-    console.print("starting webserver..." f"\nplease visit [green]http://{visit_ip}:5000/[/] in your browser")
+    rich_console.print("starting webserver..." f"\nplease visit [green]http://{visit_ip}:5000/[/] in your browser")
 
     uvicorn.run(
         "cs_tools.cli.tools.security-sharing.web_app:web_app",
@@ -145,7 +115,7 @@ def run(ctx: typer.Context, webserver_port: int = Opt(5000, help="port to host t
 def share(
     ctx: typer.Context,
     group: str = Opt(..., help="group to share with"),
-    permission: PermissionType = Opt(..., help="permission type to assign"),
+    permission: ShareModeAccessLevel = Opt(..., help="permission type to assign"),
     database: str = Opt(..., help="name of database of tables to share"),
     schema: str = Opt("falcon_default_schema", help="name of schema of tables to share"),
     table: str = Opt(None, help="name of the table to share, if not provided then share all tables"),
@@ -155,24 +125,20 @@ def share(
     """
     ts = ctx.obj.thoughtspot
 
-    group_id = _get_group_id(ts.api, group_name=group)
-
-    if not group_id:
-        console.print(f'[red]Group "{group}" not found. Verify the name and try again.[/]')
-        raise typer.Exit()
-
     table_ids = _get_table_ids(ts.api, db=database, schema=schema, table=table)
 
     if not table_ids:
-        console.print(f"No tables found for {database}.{schema}{f'.{table}' if table else ''}")
+        rich_console.print(f"No tables found for {database}.{schema}{f'.{table}' if table else ''}")
         raise typer.Exit()
 
     r = ts.api._security.share(
-        type="LOGICAL_TABLE", id=table_ids, permission={group_id: _permission_param_to_permission(permission)}
+        type="LOGICAL_TABLE",
+        id=table_ids,
+        permission={ts.group.guid_for(group): _permission_param_to_permission(permission)},
     )
 
     status = "[green]success[/]" if r.status_code == 204 else "[red]failed[/]"
-    console.print(f'Sharing with group "{group}": {status}')
+    rich_console.print(f'Sharing with group "{group}": {status}')
 
     if r.status_code != 204:
         log.error(r.content)

@@ -9,12 +9,24 @@ import sys
 import httpx
 
 from cs_tools.api._rest_api_v1 import RESTAPIv1
-from cs_tools.api.middlewares import Pinboard, Metadata, TSLoad, Search, Answer, Group, User, Tag, Org, TQL
+from cs_tools.api.middlewares import (
+    LogicalTableMiddleware,
+    PinboardMiddleware,
+    MetadataMiddleware,
+    TSLoadMiddleware,
+    SearchMiddleware,
+    AnswerMiddleware,
+    GroupMiddleware,
+    UserMiddleware,
+    TQLMiddleware,
+    TagMiddleware,
+    OrgMiddleware,
+)
 from cs_tools.settings import CSToolsConfig
 from cs_tools._version import __version__
 from cs_tools.errors import ThoughtSpotUnavailable, AuthenticationError
 from cs_tools.types import ThoughtSpotPlatform, LoggedInUser
-from cs_tools.util import reveal
+from cs_tools import utils
 
 log = logging.getLogger(__name__)
 
@@ -37,20 +49,19 @@ class ThoughtSpot:
         # ==============================================================================
         # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
         # ==============================================================================
-        self.org = Org(self)
-        self.search = Search(self)
-        self.user = User(self)
-        self.group = Group(self)
+        self.org = OrgMiddleware(self)
+        self.search = SearchMiddleware(self)
+        self.user = UserMiddleware(self)
+        self.group = GroupMiddleware(self)
         # self.tml
-        self.metadata = Metadata(self)
-        self.pinboard = self.liveboard = Pinboard(self)
-        self.answer = Answer(self)
+        self.metadata = MetadataMiddleware(self)
+        self.pinboard = self.liveboard = PinboardMiddleware(self)
+        self.answer = AnswerMiddleware(self)
         # self.connection
-        # self.worksheet
-        # self.table
-        self.tag = Tag(self)
-        self.tql = TQL(self)
-        self.tsload = TSLoad(self)
+        self.logical_table = LogicalTableMiddleware(self)
+        self.tag = TagMiddleware(self)
+        self.tql = TQLMiddleware(self)
+        self.tsload = TSLoadMiddleware(self)
 
     @property
     def api(self) -> RESTAPIv1:
@@ -86,7 +97,7 @@ class ThoughtSpot:
         try:
             r = self.api.session_login(
                 username=self.config.auth["frontend"].username,
-                password=reveal(self.config.auth["frontend"].password).decode(),
+                password=utils.reveal(self.config.auth["frontend"].password).decode(),
                 # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
             )
         except httpx.HTTPStatusError as e:

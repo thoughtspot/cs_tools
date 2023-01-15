@@ -1,10 +1,12 @@
-from typing import Union, List, Dict, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import logging
 
 from pydantic import validate_arguments
 
-from cs_tools.data.enums import MetadataCategory
 from cs_tools.errors import ContentDoesNotExist
+from cs_tools.types import MetadataCategory, RecordsFormat
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
@@ -22,11 +24,11 @@ class PinboardMiddleware:
     def all(
         self,
         *,
-        tags: Union[str, List[str]] = None,
+        tags: str | list[str] = None,
         category: MetadataCategory = MetadataCategory.all,
         exclude_system_content: bool = True,
-        chunksize: int = 500
-    ) -> List[Dict[str, Any]]:
+        chunksize: int = 500,
+    ) -> RecordsFormat:
         """
         Get all pinboards in ThoughtSpot.
 
@@ -43,7 +45,7 @@ class PinboardMiddleware:
 
         Returns
         -------
-        pinboards : List[Dict[str, Any]]
+        pinboards : api._types.RECORDS
           all pinboard headers
         """
         if isinstance(tags, str):

@@ -4,6 +4,7 @@ import logging
 import inspect
 
 from typer.core import TyperOption
+import typer
 import httpx
 import click
 
@@ -71,7 +72,7 @@ def split_args_from_opts(extra_args: List[str]) -> Tuple[List[str], Dict[str, An
 class DThoughtSpot(Dependency):
     login: bool = True
 
-    def __call__(self, ctx: click.Context):
+    def __call__(self, ctx: typer.Context):
         if hasattr(ctx.obj, "thoughtspot"):
             return ctx.obj.thoughtspot
         return self

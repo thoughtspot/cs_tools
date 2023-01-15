@@ -11,6 +11,7 @@ import json
 import copy
 
 UNDEFINED = object()
+SYSTEM_USERS = {"system": "System User", "su": "Administrator Super-User", "tsadmin": "Administrator"}
 
 
 def is_valid_guid(to_test: str) -> bool:

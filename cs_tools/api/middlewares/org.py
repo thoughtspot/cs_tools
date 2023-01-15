@@ -25,7 +25,8 @@ class OrgMiddleware:
         """
         Looks up the org id for the given name.
 
-        Orgs are managed by ID, but names are more common for users.
+        Normally this would be .guid_for, but Orgs don't have GUIDs, they have simple
+        numeric IDs.
         """
         r = self.ts.api.session_orgs_read()
 

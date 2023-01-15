@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Optional, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import logging
 
 from pydantic import validate_arguments
+import httpx
 
-from cs_tools.data.enums import GUID
-from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist
+from cs_tools.errors import ContentDoesNotExist
+from cs_tools.types import RecordsFormat, GUID
 from cs_tools.api import _utils
 
 if TYPE_CHECKING:
@@ -23,19 +24,17 @@ class UserMiddleware:
         self.ts = ts
 
     @validate_arguments
-    def all(self) -> list[dict[str, Any]]:
+    def all(self) -> RecordsFormat:
         """
         Get all users in ThoughtSpot.
         """
-        offset = 0
         users = []
 
         while True:
             # user/list doesn't offer batching..
-            r = self.ts.api.metadata_list(metadata_type="USER", batchsize=50, offset=offset)
+            r = self.ts.api.metadata_list(metadata_type="USER", batchsize=50, offset=len(users))
             data = r.json()
             users.extend(data["headers"])
-            offset += len(data["headers"])
 
             if data["isLastBatch"]:
                 break
@@ -43,54 +42,23 @@ class UserMiddleware:
         return users
 
     @validate_arguments
-    def get(self, principal: str | GUID, *, error_if_ambiguous: bool = True) -> dict[str, Any]:
+    def guid_for(self, username: str) -> GUID:
         """
-        Find a user in ThoughtSpot.
-
-        Parameters
-        ----------
-        principal : str or GUID
-          GUID or username or display name of the user
-
-        error_if_ambiguous : bool, default True
-          whether or not to raise an error if multiple users are identified
-
-        Raises
-        ------
-        ContentDoesNotExist
-          raised when the user by 'principal' does not exist
-
-        AmbiguousContentError
-          raise when multiple users match the identifier 'principal'
+        Return the GUID for a given User.
         """
-        if _utils.is_valid_guid(principal):
-            kw = {"fetch_guids": [principal]}
-        else:
-            kw = {"pattern": principal}
+        if _utils.is_valid_guid(username):
+            return username
 
-        r = self.ts.api.metadata_list(metadata_type="USER", **kw)
-        user = r.json()["headers"]
+        try:
+            r = self.ts.api.user_read(name=username)
+        except httpx.HTTPStatusError as e:
+            if e.response.is_client_error:
+                info = {
+                    "reason": "User names are case sensitive. You can find a User's 'username' in the Admin panel.",
+                    "mitigation": "Verify the name and try again.",
+                }
+                raise ContentDoesNotExist(**info) from None
 
-        if not user:
-            raise ContentDoesNotExist(type="USER", reason=f"No user found with the name [blue]{principal}")
+            raise e
 
-        if error_if_ambiguous:
-            if len(user) > 1:
-                raise AmbiguousContentError(type="user", name=principal)
-
-            user = user[0]
-
-        return user
-
-    @validate_arguments
-    def get_guid(self, name: str) -> Optional[GUID]:
-        """
-        Returns the GUID for a user or None if the user wasn't found.
-
-        Parameters
-        ----------
-        name : str
-          the user's username, e.g. somebody@somecompany.com
-        """
-        r = self.ts.api.user_read(name=name)
         return r.json()["header"]["id"]

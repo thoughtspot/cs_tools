@@ -11,10 +11,10 @@ from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin
 from cs_tools.cli.loader import CSTool
 from cs_tools.settings import _meta_config
 from cs_tools._version import __version__
-from cs_tools.cli.ux import console, CSToolsApp
+from cs_tools.cli.ux import rich_console, CSToolsApp
 from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES, APP_DIR
-from cs_tools.util import State
 from cs_tools.cli import _config, _tools, _log
+from cs_tools import utils
 
 log = logging.getLogger(__name__)
 meta = _meta_config.load()
@@ -39,9 +39,9 @@ app = CSToolsApp(
     context_settings={
         # global settings
         "help_option_names": ["--help", "-h"],
-        "obj": State(),
+        "obj": utils.State(),
         # allow responsive console design
-        "max_content_width": console.width,
+        "max_content_width": rich_console.width,
         # allow case-insensitive commands
         "token_normalize_func": lambda x: x.lower(),
     },
@@ -101,7 +101,7 @@ def _platform(ctx: typer.Context):
         """
         ts.logout()
 
-    console.print(m)
+    rich_console.print(m)
 
 
 def _setup_logging() -> None:
@@ -131,7 +131,7 @@ def _setup_logging() -> None:
                     "level": "INFO",
                     "class": "rich.logging.RichHandler",
                     # rich.__init__ params...
-                    "console": console,
+                    "console": rich_console,
                     "show_level": False,
                     "markup": True,
                     "log_time_format": "[%X]",
@@ -212,4 +212,4 @@ def run():
                 f"\n        GitHub: [link={GH}]{GH}[/link]"
                 "\n\n[/][error]"
             )
-            console.print("")
+            rich_console.print("")

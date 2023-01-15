@@ -4,7 +4,7 @@ This file contains the methods to execute the 'scriptability create-mapping' com
 import pathlib
 
 from cs_tools.errors import CSToolsError
-from cs_tools.cli.ux import console
+from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 
 from ._version import __version__

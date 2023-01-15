@@ -15,7 +15,7 @@ import toml
 from cs_tools._version import __version__
 from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.const import APP_DIR
-from cs_tools.util import obscure
+from cs_tools import utils
 
 log = logging.getLogger(__name__)
 
@@ -265,7 +265,7 @@ class CSToolsConfig(Settings):
             "auth": {
                 "frontend": {
                     "username": passthru["username"],
-                    "password": obscure(_pw).decode() if _pw is not None else _pw,
+                    "password": utils.obscure(_pw).decode() if _pw is not None else _pw,
                 }
             },
             "syncer": {proto: definition_fp for (proto, definition_fp) in _syncers},

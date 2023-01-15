@@ -1,7 +1,7 @@
 import typer
 
 from cs_tools.settings import _meta_config
-from cs_tools.cli.ux import console, CSToolsGroup
+from cs_tools.cli.ux import rich_console, CSToolsGroup
 from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, GH_ISSUES
 
 meta = _meta_config()

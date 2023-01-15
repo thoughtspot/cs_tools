@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Callable, TypeVar, List, Any, TYPE_CHECKING
 import logging
 
+import typer
 import click
 
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ class Dependency:
     parameters: List[click.Parameter]
     callback: Optional[Callable] = field(default=None, init=False)
 
-    def __call__(self, ctx: click.Context) -> Any:
+    def __call__(self, ctx: typer.Context) -> Any:
         if self.callback is None:
             return self
 

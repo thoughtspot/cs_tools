@@ -2,17 +2,13 @@ from typing import Tuple, List, Dict, Any
 import pathlib
 import logging
 
-from typer import Argument as A_  # noqa
-from typer import Option as O_
 import pendulum
 import typer
-import click
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
-from cs_tools.cli.util import base64_to_file
 from cs_tools.errors import ContentDoesNotExist
-from cs_tools.cli.ux import console
+from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
@@ -51,7 +47,7 @@ app = CSToolsApp(
 
 @app.command(dependencies=[thoughtspot])
 def identify(
-    ctx: click.Context,
+    ctx: typer.Context,
     tag_name: str = Opt("INACTIVE", "--tag", help="tag name to use for labeling objects to archive (case sensitive)"),
     content: ContentType = Opt("all", help="type of content to archive"),
     recent_activity: int = Opt(
@@ -95,7 +91,7 @@ def identify(
     tz = ts.platform.tz
     actions = UserActions.strigified(sep="', '", context=content)
 
-    with console.status("[bold green]retrieving objects usage..[/]"):
+    with rich_console.status("[bold green]retrieving objects usage..[/]"):
         data = ts.search(
             f"[user action] = '{actions}' "
             f"[timestamp].'last {recent_activity} days' "
@@ -116,7 +112,7 @@ def identify(
     tags_to_ignore = [t.casefold() for t in ignore_tag]
 
     if content.value in ("all", "answer"):
-        with console.status("[bold green]retrieving existing answers..[/]"):
+        with rich_console.status("[bold green]retrieving existing answers..[/]"):
             for answer in ts.answer.all():
                 content_in_platform += 1
                 add = pendulum.from_timestamp(answer["created"] / 1000, tz=tz)
@@ -143,7 +139,7 @@ def identify(
                 )
 
     if content.value in ("all", "liveboard"):
-        with console.status("[bold green]retrieving existing liveboards..[/]"):
+        with rich_console.status("[bold green]retrieving existing liveboards..[/]"):
             for liveboard in ts.liveboard.all():
                 content_in_platform += 1
                 add = pendulum.from_timestamp(liveboard["created"] / 1000, tz=tz)
@@ -170,7 +166,7 @@ def identify(
                 )
 
     if not to_archive:
-        console.log("no stale content found")
+        rich_console.log("no stale content found")
         raise typer.Exit()
 
     table_kw = {
@@ -178,7 +174,7 @@ def identify(
         "caption": f"{len(to_archive)} items tagged ({content_in_platform} in cluster)",
     }
 
-    console.log(DataTable(to_archive, **table_kw), justify="center")
+    rich_console.log(DataTable(to_archive, **table_kw), justify="center")
 
     if report is not None:
         to_archive = [{**_, "operation": "identify"} for _ in to_archive]
@@ -252,7 +248,7 @@ def revert(
         )
 
     if not to_unarchive:
-        console.log(f"no content found with the tag '{tag_name}'")
+        rich_console.log(f"no content found with the tag '{tag_name}'")
         raise typer.Exit()
 
     table_kw = {
@@ -260,7 +256,7 @@ def revert(
         "caption": f"Total of {len(to_unarchive)} items tagged..",
     }
 
-    console.log(DataTable(to_unarchive, **table_kw), justify="center")
+    rich_console.log(DataTable(to_unarchive, **table_kw), justify="center")
 
     if report is not None:
         to_unarchive = [{**_, "operation": "revert"} for _ in to_unarchive]
@@ -338,11 +334,11 @@ def remove(
 
     if export_tml is not None:
         if not export_tml.as_posix().endswith("zip"):
-            console.print(f"[error]Path must be a valid zipfile! Got: [blue]{export_tml}")
+            rich_console.print(f"[error]Path must be a valid zipfile! Got: [blue]{export_tml}")
             raise typer.Exit(-1)
 
         if export_tml.exists():
-            console.print(f"[yellow]Zipfile [blue]{export_tml}[/] already exists!")
+            rich_console.print(f"[yellow]Zipfile [blue]{export_tml}[/] already exists!")
             typer.confirm("Would you like to overwrite it?", abort=True)
 
     to_unarchive = []
@@ -363,7 +359,7 @@ def remove(
         )
 
     if not to_unarchive:
-        console.log(f"no content found with the tag [blue]{tag_name}")
+        rich_console.log(f"no content found with the tag [blue]{tag_name}")
         raise typer.Exit()
 
     table_kw = {
@@ -375,7 +371,7 @@ def remove(
         "caption": f"Total of {len(to_unarchive)} items tagged..",
     }
 
-    console.log(DataTable(to_unarchive, **table_kw), justify="center")
+    rich_console.log(DataTable(to_unarchive, **table_kw), justify="center")
 
     if report is not None:
         to_unarchive = [{**_, "operation": "remove"} for _ in to_unarchive]
@@ -412,7 +408,7 @@ def remove(
         )
 
         if not r.json().get("zip_file"):
-            console.log(
+            rich_console.log(
                 "[error]attempted to export TML, but the API response failed, please "
                 "re-run the command with --verbose flag to capture more log details"
             )

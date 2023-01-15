@@ -1,7 +1,14 @@
-from typing import Union, List, Dict, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import logging
 
 from pydantic import validate_arguments
+import httpx
+
+from cs_tools.errors import ContentDoesNotExist
+from cs_tools.types import GUID
+from cs_tools.api import _utils
 
 log = logging.getLogger(__name__)
 
@@ -18,11 +25,23 @@ class GroupMiddleware:
         self.ts = ts
 
     @validate_arguments
-    def get_group_id(self, name: str):
+    def guid_for(self, group_name: str) -> GUID:
         """
-        Returns the GUID for a group with the given name.
-        :param name: Name of the group, like 'Administrator'
+        Return the GUID for a given Group.
         """
-        r = self.ts.api.group.get_group(name=name)
-        info = r.json()
-        return info["header"]["id"]
+        if _utils.is_valid_guid(group_name):
+            return group_name
+
+        try:
+            r = self.ts.api.group_read(name=group_name)
+        except httpx.HTTPStatusError as e:
+            if e.response.is_client_error:
+                info = {
+                    "reason": "Group names are case sensitive. You can find a group's 'Group Name' in the Admin panel.",
+                    "mitigation": "Verify the name and try again.",
+                }
+                raise ContentDoesNotExist(**info) from None
+
+            raise e
+
+        return r.json()["header"]["id"]

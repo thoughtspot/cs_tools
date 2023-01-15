@@ -1,16 +1,13 @@
 import datetime as dt
-import zipfile
-import pathlib
 import logging
 
 from typer import Argument as A_  # noqa
 from typer import Option as O_
 import typer
-import oyaml as yaml
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import TZAwareDateTimeType, SyncerProtocolType
-from cs_tools.cli.ux import console
+from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
@@ -25,70 +22,70 @@ log = logging.getLogger(__name__)
 app = CSToolsApp(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 
 
-@app.command(dependencies=[thoughtspot])
-def spotapp(
-    ctx: typer.Context,
-    directory: pathlib.Path = Arg(
-        ..., help="location on your machine to copy the SpotApp to", file_okay=False, resolve_path=True
-    ),
-    # NOTE: make optional for Falcon
-    connection_guid: str = Opt(
-        ...,
-        help=(
-            "TML details: find your connection guid by going to Data > "
-            "Connections > your connection, and copying the GUID in the URL"
-        ),
-    ),
-    database: str = Opt(
-        ...,
-        help=(
-            "TML details: find your database by editing an existing Table in "
-            "your connection, and look at the path TABLE:DB"
-        ),
-    ),
-    schema: str = Opt(
-        ...,
-        help=(
-            "TML details: find your database by editing an existing Table in "
-            "your connection, and look at the path TABLE:SCHEMA"
-        ),
-    ),
-):
-    """
-    Copy the Searchable SpotApp to your machine.
+# @app.command(dependencies=[thoughtspot])
+# def spotapp(
+#     ctx: typer.Context,
+#     directory: pathlib.Path = Arg(
+#         ..., help="location on your machine to copy the SpotApp to", file_okay=False, resolve_path=True
+#     ),
+#     # NOTE: make optional for Falcon
+#     connection_guid: str = Opt(
+#         ...,
+#         help=(
+#             "TML details: find your connection guid by going to Data > "
+#             "Connections > your connection, and copying the GUID in the URL"
+#         ),
+#     ),
+#     database: str = Opt(
+#         ...,
+#         help=(
+#             "TML details: find your database by editing an existing Table in "
+#             "your connection, and look at the path TABLE:DB"
+#         ),
+#     ),
+#     schema: str = Opt(
+#         ...,
+#         help=(
+#             "TML details: find your database by editing an existing Table in "
+#             "your connection, and look at the path TABLE:SCHEMA"
+#         ),
+#     ),
+# ):
+#     """
+#     Copy the Searchable SpotApp to your machine.
 
-    [yellow]This SpotApp is in beta! It will grow and get better over time.[/]
+#     [yellow]This SpotApp is in beta! It will grow and get better over time.[/]
 
-    Currently the SpotApp performs the Modeling for Search aspect of the entire data
-    model and that is it.
-    """
-    ts = ctx.obj.thoughtspot
+#     Currently the SpotApp performs the Modeling for Search aspect of the entire data
+#     model and that is it.
+#     """
+#     ts = ctx.obj.thoughtspot
 
-    r = ts.api.metadata.details(id=[connection_guid], type="DATA_SOURCE")
-    connection_name = next(
-        cnxn["header"]["name"] for cnxn in r.json()["storables"] if cnxn["header"]["id"] == connection_guid
-    )
+#     r = ts.api.metadata.details(id=[connection_guid], type="DATA_SOURCE")
+#     connection_name = next(
+#         cnxn["header"]["name"] for cnxn in r.json()["storables"] if cnxn["header"]["id"] == connection_guid
+#     )
 
-    HERE = pathlib.Path(__file__).parent
-    tml = {}
+#     HERE = pathlib.Path(__file__).parent
+#     tml = {}
 
-    with zipfile.ZipFile(HERE / "mfs.zip", mode="r") as z:
-        for file in z.infolist():
-            with z.open(file, "r") as f:
-                data = yaml.safe_load(f)
-                data["table"]["connection"]["name"] = connection_name
-                data["table"]["connection"]["fqn"] = connection_guid
-                data["table"]["db"] = database
-                data["table"]["schema"] = schema
-                tml[file] = data
+#     with zipfile.ZipFile(HERE / "mfs.zip", mode="r") as z:
+#         for file in z.infolist():
+#             with z.open(file, "r") as f:
+#                 data = yaml.safe_load(f)
+#                 data["table"]["connection"]["name"] = connection_name
+#                 data["table"]["connection"]["fqn"] = connection_guid
+#                 data["table"]["db"] = database
+#                 data["table"]["schema"] = schema
+#                 tml[file] = data
 
-    NAME = f"CS Tools Searchable SpotApp (v{__version__})"
+#     NAME = f"CS Tools Searchable SpotApp (v{__version__})"
 
-    with zipfile.ZipFile(directory / f"{NAME}.zip", mode="w") as z:
-        for file, content in tml.items():
-            z.writestr(file, yaml.safe_dump(content))
+#     with zipfile.ZipFile(directory / f"{NAME}.zip", mode="w") as z:
+#         for file, content in tml.items():
+#             z.writestr(file, yaml.safe_dump(content))
 
-    console.print(f"moved the [blue]{NAME}[/] to {directory}")
+#     console.print(f"moved the [blue]{NAME}[/] to {directory}")
 
 
 @app.command(dependencies=[thoughtspot])
@@ -268,7 +265,11 @@ def gather(
         export.dump("ts_tag", data=data)
 
     with console.status("[bold green]getting metadata.."):
-        content = ts.metadata.all(exclude_system_content=False)
+        content = [
+            *ts.logical_table.all(exclude_system_content=False),
+            *ts.answer.all(exclude_system_content=False),
+            *ts.liveboard.all(exclude_system_content=False),
+        ]
 
     with console.status(f"[bold green]writing metadata to {export.name}.."):
         data = transform.to_metadata_object(content)
@@ -279,7 +280,7 @@ def gather(
 
     with console.status("[bold green]getting columns.."):
         guids = [_["id"] for _ in content if not _["type"].endswith("BOOK")]
-        data = ts.metadata.columns(guids, include_hidden=True)
+        data = ts.logical_table.columns(guids, include_hidden=True)
 
     with console.status(f"[bold green]writing columns to {export.name}.."):
         col_ = transform.to_metadata_column(data)

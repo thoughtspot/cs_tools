@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import logging
 
 from pydantic import validate_arguments
 
 from cs_tools.errors import ContentDoesNotExist
-from cs_tools.types import MetadataCategory
+from cs_tools.types import MetadataCategory, RecordsFormat
+from cs_tools.api import _utils
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
-RECORDS = list[dict[str, Any]]
 
 
 class AnswerMiddleware:
@@ -27,9 +27,10 @@ class AnswerMiddleware:
         *,
         tags: str | list[str] = None,
         category: MetadataCategory = MetadataCategory.all,
+        hidden: bool = False,
         exclude_system_content: bool = True,
         chunksize: int = 500,
-    ) -> RECORDS:
+    ) -> RecordsFormat:
         """
         Get all answers in ThoughtSpot.
 
@@ -52,26 +53,27 @@ class AnswerMiddleware:
         if isinstance(tags, str):
             tags = [tags]
 
-        offset = 0
         answers = []
 
         while True:
-            r = self.ts.api.metadata.list(
-                type="QUESTION_ANSWER_BOOK", category=category, tagname=tags, batchsize=chunksize, offset=offset
+            r = self.ts.api.metadata_list(
+                type="QUESTION_ANSWER_BOOK",
+                category=category,
+                tag_name=tags,
+                show_hidden=hidden,
+                batchsize=chunksize,
+                offset=len(answers),
             )
 
             data = r.json()
             to_extend = data["headers"]
-            offset += len(to_extend)
 
             if exclude_system_content:
-                to_extend = [
-                    answer for answer in to_extend if answer.get("authorName") not in ("system", "tsadmin", "su")
-                ]
+                to_extend = [answer for answer in to_extend if answer.get("authorName") not in _utils.SYSTEM_USERS]
 
             answers.extend(to_extend)
 
-            if not to_extend and not answers:
+            if not answers:
                 info = {
                     "incl": "exclude" if exclude_system_content else "include",
                     "category": category,

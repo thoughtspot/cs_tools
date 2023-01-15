@@ -203,14 +203,14 @@ class RESTAPIv1(httpx.Client):
     def metadata_assign_tag(
         self,
         *,
-        metadata_guid: list[GUID],
-        metadata_type: list[MetadataObjectType],
+        metadata_guids: list[GUID],
+        metadata_types: list[MetadataObjectType],
         tag_guids: list[GUID] = UNDEFINED,
         tag_names: list[str] = UNDEFINED,
     ) -> httpx.Response:
         d = {
-            "id": dumps(metadata_guid),
-            "type": dumps(metadata_type),
+            "id": dumps(metadata_guids),
+            "type": dumps(metadata_types),
             "tagid": dumps(tag_guids),
             "tagname": dumps(tag_names),
         }
@@ -246,6 +246,7 @@ class RESTAPIv1(httpx.Client):
         batchsize: int = UNDEFINED,
         tag_name: list[str] = UNDEFINED,
         pattern: str = UNDEFINED,
+        show_hidden: bool = False,
         skip_guids: list[GUID] = UNDEFINED,
         fetch_guids: list[GUID] = UNDEFINED,
         auto_created: bool = UNDEFINED,
@@ -261,6 +262,7 @@ class RESTAPIv1(httpx.Client):
             "batchsize": batchsize,
             "tagname": dumps(tag_name),
             "pattern": pattern,
+            "showhidden": show_hidden,
             "skipids": dumps(skip_guids),
             "fetchids": dumps(fetch_guids),
             "auto_created": auto_created,
@@ -481,13 +483,13 @@ class RESTAPIv1(httpx.Client):
         return r
 
     def dataservice_dataload_session(self, *, username: str, password: str) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path="session")
+        fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/session")
         d = {"username": username, "password": password}
         r = self.post(fullpath, data=d)
         return r
 
     def dataservice_dataload_initialize(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path="loads")
+        fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/loads")
         timeout = self.timeout if timeout is UNDEFINED else timeout
         r = self.post(fullpath, timeout=timeout, json=data)
         return r
@@ -498,22 +500,22 @@ class RESTAPIv1(httpx.Client):
         # This endpoint returns immediately once the file uploads to the remote host.
         # Processing of the dataload happens concurrently, and this function may be
         # called multiple times to paralellize the full data load across multiple files.
-        fullpath = self.dataservice_url.copy_with(path=f"loads/{cycle_id}")
+        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
         timeout = self.timeout if timeout is UNDEFINED else timeout
         r = self.post(fullpath, timeout=timeout, files={"upload-file": fd})
         return r
 
     def dataservice_dataload_commit(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"loads/{cycle_id}/commit")
+        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/commit")
         r = self.post(fullpath)
         return r
 
     def dataservice_dataload_status(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"loads/{cycle_id}")
+        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
         r = self.get(fullpath)
         return r
 
     def dataservice_dataload_bad_records(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"loads/{cycle_id}/bad_records_file")
+        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")
         r = self.get(fullpath)
         return r

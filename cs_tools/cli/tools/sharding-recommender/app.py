@@ -1,19 +1,18 @@
-import zipfile
 import pathlib
 import logging
 
-import _ext_api
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import console
+from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 
 from ._version import __version__
 from .models import FalconTableInfo
+from . import _extended_rest_api_v1
 
 HERE = pathlib.Path(__file__).parent
 log = logging.getLogger(__name__)
@@ -133,14 +132,14 @@ def gather(
     """
     ts = ctx.obj.thoughtspot
 
-    with console.status("[bold green]getting falcon table info"):
-        r = _ext_api.periscope_sage_combined_table_info(ts.api)
+    with rich_console.status("[bold green]getting falcon table info"):
+        r = _extended_rest_api_v1.periscope_sage_combined_table_info(ts.api)
 
         if not r.success:
-            console.log(f"[red]could not get falcon table info {r}")
+            rich_console.log(f"[red]could not get falcon table info {r}")
             raise typer.Exit(1)
 
         data = [FalconTableInfo.from_api_v1(_) for _ in r.json()["tables"]]
 
-    with console.status(f"[bold green]loading data to {syncer.name}.."):
+    with rich_console.status(f"[bold green]loading data to {syncer.name}.."):
         syncer.dump("ts_falcon_table_info", data=data)

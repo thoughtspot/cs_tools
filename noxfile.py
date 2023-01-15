@@ -1,19 +1,18 @@
 from collections.abc import Iterable
-from typing import Any, List, Tuple
+from typing import Tuple, List, Any
 import itertools
 import argparse
-import pathlib
 import zipfile
+import pathlib
 import shutil
 import os
 
 import nox_poetry as nox
 
-
 ON_GITHUB = "GITHUB_ACTIONS" in os.environ
 PY_VERSIONS = [
     # "3.6.8",
-    "3.7", 
+    "3.7",
     "3.8",
     "3.9",
     "3.10",
@@ -22,7 +21,7 @@ PY_VERSIONS = [
 HERE = pathlib.Path(__file__).parent
 DIST = HERE / "dist"
 DIST_PKGS = DIST / "pkgs"
-REQS_TXT = DIST_PKGS / 'requirements.txt'
+REQS_TXT = DIST_PKGS / "requirements.txt"
 SUPPORTED_PLATFORM_MATRIX = {
     # fmt: off
     # PEP425: Compatibility Tags for Built Distributions
@@ -79,15 +78,15 @@ def _manual_resolver_fixes(requirements: pathlib.Path) -> None:
     # For some reason, the dependency solver produces an unreachable typing-extensions
     # marker. We're going to rewrite it.
     fixes = {
-        'typing-extensions': 'typing-extensions==4.1.1; python_full_version >= "3.6.2" and python_full_version < "4.0.0"'
+        "typing-extensions": 'typing-extensions==4.1.1; python_full_version >= "3.6.2" and python_full_version < "4.0.0"'
     }
     lines = []
-    for line in requirements.read_text().split('\n'):
+    for line in requirements.read_text().split("\n"):
         if line.startswith(tuple(fixes)):
-            package, _, _ = line.partition('==')
+            package, _, _ = line.partition("==")
             line = fixes[package]
         lines.append(line)
-    requirements.write_text('\n'.join(lines))
+    requirements.write_text("\n".join(lines))
 
 
 def zip_it(dir_: pathlib.Path, *, name: str, path: str = None, new: bool = True) -> None:
@@ -108,7 +107,7 @@ def zip_it(dir_: pathlib.Path, *, name: str, path: str = None, new: bool = True)
     new: bool  [default: True]
       whether or not to create a new zipfile
     """
-    if path is not None and path.endswith('/'):
+    if path is not None and path.endswith("/"):
         path = pathlib.Path(path).name
 
     if new:
@@ -116,9 +115,9 @@ def zip_it(dir_: pathlib.Path, *, name: str, path: str = None, new: bool = True)
 
     with zipfile.ZipFile(name, "a", zipfile.ZIP_DEFLATED) as zip_:
         for file in dir_.iterdir():
-            arcname = path if path is None else f'{path}/{file.name}'
+            arcname = path if path is None else f"{path}/{file.name}"
 
-            if file.name == '__pycache__':
+            if file.name == "__pycache__":
                 continue
             if arcname in zip_.namelist():
                 continue
@@ -135,7 +134,7 @@ def vendor_packages(session):
     python versions in the PY_VERSIONS constraint. Consider using pyenv
     or docker to build.
     """
-    first_run = session.python == '3.6.8'
+    first_run = session.python == "3.6.8"
 
     # TODO: use argparse for the following args
     # --silent         :: defaults to ON_GITHUB
@@ -160,7 +159,7 @@ def vendor_packages(session):
     for platform, platforms in SUPPORTED_PLATFORM_MATRIX.items():
         dest = DIST_PKGS / platform
 
-        session.log(f'cleaning {dest}..')
+        session.log(f"cleaning {dest}..")
         shutil.rmtree(dest, ignore_errors=True)
 
         # CentOS 7 ships with pip vesion 9.x.x which doesn't understand PEP 571+
@@ -185,22 +184,22 @@ def vendor_packages(session):
 
         _manual_resolver_fixes(REQS_TXT)
 
-        session.log(f'adding {WHL_FILE.name} to {platform}/')
+        session.log(f"adding {WHL_FILE.name} to {platform}/")
         shutil.copyfile(WHL_FILE, dest / WHL_FILE.name)
 
-        session.log(f'adding {REQS_TXT.name} to {platform}/')
+        session.log(f"adding {REQS_TXT.name} to {platform}/")
         shutil.copyfile(REQS_TXT, dest / REQS_TXT.name)
 
         if not ON_GITHUB:
-            session.log(f'zipping {platform}/ for distribution..')
-            _, version, *_ = WHL_FILE.stem.split('-')
+            session.log(f"zipping {platform}/ for distribution..")
+            _, version, *_ = WHL_FILE.stem.split("-")
             archive = DIST / f"{platform}-cs_tools-{version}.zip"
-            zip_it(dest, name=archive, path='pkgs/', new=first_run)
-            zip_it(DIST / 'bootstrap', name=archive, path='bootstrap/', new=False)
+            zip_it(dest, name=archive, path="pkgs/", new=first_run)
+            zip_it(DIST / "bootstrap", name=archive, path="bootstrap/", new=False)
             shutil.rmtree(dest, ignore_errors=True)
 
     if not ON_GITHUB:
-        session.log('cleaning temporary files..')
+        session.log("cleaning temporary files..")
         WHL_FILE.unlink()
         REQS_TXT.unlink()
 
@@ -216,7 +215,7 @@ def bump_version(session: nox.Session) -> None:
         help="mark the release or bump the beta version",
         dest="beta",
         action="store_true",
-        default=False,        
+        default=False,
     )
     ver = parser.add_mutually_exclusive_group()
     ver.add_argument(
@@ -248,6 +247,7 @@ def bump_version(session: nox.Session) -> None:
         Retrieve the version string.
         """
         import pathlib
+
         import toml
 
         package_dir = pathlib.Path(__file__).parent.parent
@@ -255,18 +255,19 @@ def bump_version(session: nox.Session) -> None:
         return pyproject_toml["tool"]["poetry"]["version"]
 
     def _write_version(version: str) -> None:
-        (HERE / 'cs_tools' / '_version.py').write_text(f"__version__ = '{version}'")
+        (HERE / "cs_tools" / "_version.py").write_text(f"__version__ = '{version}'")
 
         import tomlkit
-        pyproject = (HERE / 'pyproject.toml').read_text()
+
+        pyproject = (HERE / "pyproject.toml").read_text()
         doc = tomlkit.parse(pyproject)
-        doc['tool']['poetry']['version'] = version
+        doc["tool"]["poetry"]["version"] = version
         txt = tomlkit.dumps(doc)
-        (HERE / 'pyproject.toml').write_text(txt)
+        (HERE / "pyproject.toml").write_text(txt)
 
     __version__ = _get_version()
-    major, minor, patch = __version__.split('.')
-    patch, *in_beta = patch.split('b')
+    major, minor, patch = __version__.split(".")
+    patch, *in_beta = patch.split("b")
 
     if args.major and not in_beta:
         major, minor, patch = int(major) + 1, 0, 0
@@ -285,7 +286,7 @@ def bump_version(session: nox.Session) -> None:
         v = "version"
         beta = ""
 
-    version = f'{major}.{minor}.{patch}{beta}'
+    version = f"{major}.{minor}.{patch}{beta}"
 
     _write_version(version)
     session.run("git", "add", f"{HERE}/pyproject.toml", f"{HERE}/cs_tools/_version.py", external=True)
@@ -303,5 +304,5 @@ def tests(session: nox.Session) -> None:
 
 @nox.session(python=PY_VERSIONS, reuse_venv=not ON_GITHUB)
 def lint(session):
-    session.run("isort", ".")
+    session.run("isort", "cs_tools/")
     session.run("black", "." "--config", "pyproject.toml")

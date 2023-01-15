@@ -5,6 +5,7 @@ import logging
 
 import sqlalchemy
 import pendulum
+import typer
 import click
 
 from cs_tools.cli.dependencies.syncer import DSyncer
@@ -19,7 +20,7 @@ class CommaSeparatedValuesType(click.ParamType):
 
     name = "string"
 
-    def convert(self, value: str, param: click.Parameter = None, ctx: click.Context = None) -> List[str]:
+    def convert(self, value: str, param: click.Parameter = None, ctx: typer.Context = None) -> List[str]:
         if value is None:
             return None
 
@@ -43,7 +44,7 @@ class TZAwareDateTimeType(click.ParamType):
         self,
         value: dt.datetime,
         param: click.Parameter = None,
-        ctx: click.Context = None,
+        ctx: typer.Context = None,
         locality: str = "local",  # one of: local, utc, server
     ) -> List[str]:
         if value is None:
@@ -63,7 +64,7 @@ class SyncerProtocolType(click.ParamType):
     name = "path"
 
     def convert(
-        self, value: str, param: click.Parameter = None, *, ctx: click.Context = None, models: sqlalchemy.Table = None
+        self, value: str, param: click.Parameter = None, *, ctx: typer.Context = None, models: sqlalchemy.Table = None
     ) -> DSyncer:
         if value is None:
             return value
