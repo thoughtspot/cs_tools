@@ -5,6 +5,7 @@ These are private because consumers of CS Tools codebase should ideally be
 using the cs_tools.api.middlewares or consuming the cs_tools.api._rest_api_v1
 directly.
 """
+from __future__ import annotations
 from typing import Any
 import uuid
 import json

@@ -74,6 +74,9 @@ cli = [
     # platform-specific
     "pyreadline3 == 3.4.1 ; sys_platform == 'win32'",
 
+    # version specific
+    "typing_extensions >= 4.4.0; python_version < '3.8.0'",
+
     "httpx",
     "rich",
     "typer[all]",

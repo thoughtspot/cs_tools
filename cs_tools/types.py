@@ -10,7 +10,7 @@ from thoughtspot_tml.types import ConnectionMetadata, TMLObject
 import pendulum
 import pydantic
 
-from cs_tools._compat import StrEnum
+from cs_tools._compat import StrEnum, TypedDict
 
 log = logging.getLogger(__name__)
 GUID = typing.cast(uuid.UUID, str)
@@ -123,12 +123,12 @@ class GroupPrivilege(StrEnum):
 # ======================================================================================================================
 
 
-class UserProfile(typing.TypedDict):
+class UserProfile(  TypedDict):
     # GET: callosum/v1/tspublic/v1/user
     ...
 
 
-class SecurityPrincipal(typing.TypedDict):
+class SecurityPrincipal(    TypedDict):
     # GET: callosum/v1/tspublic/v1/user/list
     ...
 

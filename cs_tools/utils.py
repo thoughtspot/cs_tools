@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Optional, Callable, Any
 from base64 import urlsafe_b64encode as b64e
 from base64 import urlsafe_b64decode as b64d
