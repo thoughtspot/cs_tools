@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 import datetime as dt
 import json
 
+import sqlmodel
 from cs_tools.const import FMT_TSLOAD_DATETIME
 
 
@@ -9,7 +10,9 @@ def clean_datetime(o: Any) -> str:
     """ """
     if isinstance(o, dt.datetime):
         return o.strftime(FMT_TSLOAD_DATETIME)
-    return o
+    if isinstance(o, sqlmodel.SQLModel):
+        return o.dict()
+    return json.dumps(o)
 
 
 def clean_for_falcon(data: List[Dict[str, Any]]) -> List[List[str]]:

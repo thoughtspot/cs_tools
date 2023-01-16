@@ -8,6 +8,7 @@ from pydantic import Field
 import sqlalchemy as sa
 import httpx
 import click
+import io
 
 from cs_tools.errors import TSLoadServiceUnreachable, SyncerError
 from cs_tools.types import RecordsFormat
@@ -88,38 +89,40 @@ class Falcon:
 
         data = sanitize.clean_for_falcon(data)
 
-        file_opts = {"mode": "w+", "encoding": "utf-8", "newline": "", "dir": self.ts.config.temp_dir}
+        file_opts = {"encoding": "utf-8", "newline": ""}
 
-        with tempfile.NamedTemporaryFile(**file_opts) as fd:
-            writer = csv.DictWriter(fd, data[0].keys(), delimiter="|")
-            # writer.writeheader()
-            writer.writerows(data)
-            fd.seek(0)
-            try:
-                self.ts.tsload.upload(
-                    fd,
-                    ignore_node_redirect=self.ignore_load_balancer_redirect,
-                    database=self.database,
-                    table=table,
-                    empty_target=self.empty_target,
-                    http_timeout=self.timeout,
-                )
-            except (httpx.ConnectError, httpx.ConnectTimeout):
-                r = f"could not connect at [b blue]{self.ts.api.dataservice_url}[/]"
-                m = ""
+        with tempfile.NamedTemporaryFile(mode="wb+", dir=self.ts.config.temp_dir) as fd:
+            with io.TextIOWrapper(fd, **file_opts) as txt:
+                writer = csv.DictWriter(txt, data[0].keys(), delimiter="|")
+                # writer.writeheader()
+                writer.writerows(data)
+                fd.seek(0)
 
-                if self.ts.api.dataservice_url.host != self.ts.config.thoughtspot.host:
-                    m = (
-                        "Is your VPN connected?"
-                        "\n\n"
-                        "If that isn't the URL of your ThoughtSpot cluster, then your "
-                        "ThoughtSpot admin likely has configured the Remote TSLoad "
-                        "Connector Service to use a load balancer and your local "
-                        "machine is unable to connect directly to the ThoughtSpot node "
-                        "which is accepting files."
-                        "\n\n"
-                        "You can try using `[b blue]ignore_load_balancer_redirect[/]` "
-                        "in your Falcon syncer definition as well."
+                try:
+                    self.ts.tsload.upload(
+                        fd,
+                        ignore_node_redirect=self.ignore_load_balancer_redirect,
+                        database=self.database,
+                        table=table,
+                        empty_target=self.empty_target,
+                        http_timeout=self.timeout,
                     )
+                except (httpx.ConnectError, httpx.ConnectTimeout):
+                    r = f"could not connect at [b blue]{self.ts.api.dataservice_url}[/]"
+                    m = ""
 
-                raise TSLoadServiceUnreachable(reason=r, mitigation=m)
+                    if self.ts.api.dataservice_url.host != self.ts.config.thoughtspot.host:
+                        m = (
+                            "Is your VPN connected?"
+                            "\n\n"
+                            "If that isn't the URL of your ThoughtSpot cluster, then your "
+                            "ThoughtSpot admin likely has configured the Remote TSLoad "
+                            "Connector Service to use a load balancer and your local "
+                            "machine is unable to connect directly to the ThoughtSpot node "
+                            "which is accepting files."
+                            "\n\n"
+                            "You can try using `[b blue]ignore_load_balancer_redirect[/]` "
+                            "in your Falcon syncer definition as well."
+                        )
+
+                    raise TSLoadServiceUnreachable(reason=r, mitigation=m)
