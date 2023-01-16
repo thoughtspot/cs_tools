@@ -1,12 +1,10 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Optional, Callable, TypeVar, List, Any, TYPE_CHECKING
+from typing import Optional, Callable, Any
 import logging
 
 import typer
 import click
-
-if TYPE_CHECKING:
-    SelfDependency = TypeVar("SelfDependency", bound="Dependency")
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +28,7 @@ class Dependency:
     For an example, see `cs_tools.cli.dependencies.thoughtspot`
     """
 
-    parameters: List[click.Parameter]
+    parameters: list[click.Parameter]
     callback: Optional[Callable] = field(default=None, init=False)
 
     def __call__(self, ctx: typer.Context) -> Any:
@@ -39,7 +37,7 @@ class Dependency:
 
         return self.callback(ctx)
 
-    def __enter__(self) -> "SelfDependency":
+    def __enter__(self) -> Dependency:
         # if you need access to the context, either store the current context on the
         # object, or call for it.
         #

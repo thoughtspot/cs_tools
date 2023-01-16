@@ -1,5 +1,6 @@
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import Any
 import pathlib
 import logging
 
@@ -20,7 +21,7 @@ log = logging.getLogger(__name__)
 class DSyncer(Dependency):
     protocol: str
     definition_fp: pathlib.Path
-    models: List[sqlmodel.SQLModel] = None
+    models: list[sqlmodel.SQLModel] = None
 
     @property
     def metadata(self) -> sqlmodel.MetaData:
@@ -30,11 +31,12 @@ class DSyncer(Dependency):
           2. metadata defined in the SQLModel layer
           3. fallback metadata
         """
+
         if hasattr(self._syncer, "metadata"):
             return self._syncer.metadata
 
         if self.models is not None:
-            return self.models[0].SQLModel.metadata
+            return self.models[0].metadata
 
         if not hasattr(self, "_metadata"):
             self._metadata = sqlmodel.MetaData()
@@ -55,9 +57,9 @@ class DSyncer(Dependency):
         self.__Syncer_init__(Syncer, **cfg["configuration"])
 
         if hasattr(self._syncer, "__is_database__") and self.models is not None:
-            log.debug(f"creating tables: {self._syncer}")
-            [t.__table__.to_metadata(self.metadata) for t in self.models]
-            self.metadata.create_all(self._syncer.cnxn)
+            log.warning(f"creating tables {self.models} in {self._syncer}")
+            [t.__table__.to_metadata(self.metadata) for t in self.models if t.metadata is not self.metadata]
+            self.metadata.create_all(self._syncer.cnxn, tables=[t.__table__ for t in self.models])
 
             # If we want to define and create DB Views, we can do so...
             # if self._syncer.name != "falcon":
@@ -70,10 +72,30 @@ class DSyncer(Dependency):
         return
 
     #
+    # MAKE THE DEPENDENCY BEHAVE LIKE A SYNCER
+    #
+
+    def __getattr__(self, member_name: str) -> Any:
+        # proxy calls to the underlying syncer first
+        try:
+            member = getattr(self._syncer, member_name)
+        except AttributeError:
+            try:
+                member = self.__dict__[member_name]
+            except KeyError:
+                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{member_name}'") from None
+
+        return member
+
+    def __repr__(self) -> str:
+        # make the dependency look like the underlying Syncer
+        return self._syncer.__repr__()
+
+    #
     #
     #
 
-    def _read_config_from_definition(self, ts, proto, definition) -> Dict[str, Any]:
+    def _read_config_from_definition(self, ts, proto, definition) -> dict[str, Any]:
         if definition in ("default", ""):
             try:
                 definition = ts.config.syncer[proto]
@@ -108,7 +130,7 @@ class DSyncer(Dependency):
                 mitigation=(
                     f"If you're on Windows, you must escape the backslashes in your filepaths, or flip them the other "
                     f"way around.\n"
-                    r"\n  :x: [red]C:\work\my\example\filepath[/]"
+                    r"\n  :cross_mark: [red]C:\work\my\example\filepath[/]"
                     f"\n  :white_heavy_check_mark: [green]{back}[/]"
                     f"\n  :white_heavy_check_mark: [green]{fwds}[/]"
                 ),
@@ -138,7 +160,7 @@ class DSyncer(Dependency):
                 proto=self.protocol,
                 definition=self.definition_fp,
                 reason="[blue]{definition}[/] is missing a top level marker.",
-                mitigation=("The first line of your definition file should be.." "\n\n[white]\[configuration]"),
+                mitigation=(r"The first line of your definition file should be..\n\n[white]\[configuration]"),
             )
         except pydantic.ValidationError as e:
             raise SyncerError(
@@ -151,19 +173,3 @@ class DSyncer(Dependency):
                     "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example"
                 ),
             )
-
-    def __getattr__(self, member_name: str) -> Any:
-        # proxy calls to the underlying syncer first
-        try:
-            member = getattr(self._syncer, member_name)
-        except AttributeError:
-            try:
-                member = self.__dict__[member_name]
-            except KeyError:
-                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{member_name}'") from None
-
-        return member
-
-    def __repr__(self) -> str:
-        # make the dependency look like the underlying Syncer
-        return self._syncer.__repr__()

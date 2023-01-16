@@ -7,7 +7,7 @@ import typing
 import uuid
 
 from thoughtspot_tml.types import ConnectionMetadata, TMLObject
-from dateutil import tz
+import pendulum
 import pydantic
 
 from cs_tools._compat import StrEnum
@@ -183,7 +183,7 @@ class ThoughtSpotPlatform(pydantic.BaseModel):
     version: str
     deployment: str
     url: str
-    timezone: dt.timezone
+    timezone: pendulum._Timezone
     cluster_name: str
     cluster_id: str
 
@@ -194,8 +194,8 @@ class ThoughtSpotPlatform(pydantic.BaseModel):
         return deployment.lower()
 
     @pydantic.validator("timezone", pre=True)
-    def _get_tz(cls, tz_name: str) -> dt.timezone:
-        timezone = tz.gettz(tz_name)
+    def _get_tz(cls, tz_name: str) -> pendulum._Timezone:
+        timezone = pendulum.timezone(tz_name)
 
         if timezone is None:
             log.warning(f"could not retrieve timezone for '{tz_name}'")
@@ -232,7 +232,7 @@ class LoggedInUser(pydantic.BaseModel):
     def from_api_v1_session_info(cls, info: dict[str, Any]) -> LoggedInUser:
         data = {
             "guid": info["userGUID"],
-            "name": info["userName"],
+            "username": info["userName"],
             "display_name": info["userDisplayName"],
             "email": info["userEmail"],
             "privileges": info["privileges"],

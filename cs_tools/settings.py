@@ -7,7 +7,7 @@ import json
 import re
 
 from pydantic.types import DirectoryPath, FilePath
-from packaging import version
+from awesomeversion import AwesomeVersion
 from pydantic import validator, AnyHttpUrl, BaseModel
 import httpx
 import toml
@@ -30,39 +30,40 @@ class _meta_config(BaseModel):
     version = v104
     published_at = 10202019210
     """
-
     default_config_name: str = None
     latest_release_version: str = None
     latest_release_date: dt.date = None
+    _meta_fp: pathlib.Path = APP_DIR / ".meta-config.toml"
 
     @classmethod
     def load(cls):
-        _filepath: pathlib.Path = APP_DIR / ".meta-config.toml"
+        fp = cls._meta_fp
         data = {}
 
+        if not fp.exists():
+            fp.touch()
+
         try:
-            disk = toml.load(_filepath)
+            disk = toml.load(fp)
             data["default_config_name"] = disk["default"]["config"]
             data["latest_release_version"] = disk["latest_release"].get("version", None)
             data["latest_release_date"] = disk["latest_release"].get("published_at", None)
         except Exception:
             log.debug("failed to load the full meta config", exc_info=True)
 
-        # fetch latest remote version
+        # constants
         EPOCH = dt.date(2012, 6, 1)
         NOW = dt.datetime.now()
-        ONE_DAY = 60 * 60 * 24
+        ONE_DAY = 86400  # seconds
 
-        if (
-            # check at most, once daily
-            (NOW - dt.datetime.fromtimestamp(_filepath.stat().st_mtime)).total_seconds() > ONE_DAY
-            and
-            # the installed version is less than the remote version
-            version.parse(__version__) <= version.parse(data.get("latest_release_version", "9.9.9"))
-            and
-            # the release is at least 5 days old
-            (NOW.date() - data.get("latest_release_date", EPOCH)).total_seconds() > ONE_DAY * 5
-        ):
+        # predicates to check
+        have_not_checked_today = (NOW - dt.datetime.fromtimestamp(fp.stat().st_mtime)).total_seconds() > ONE_DAY
+        has_data = fp.stat().st_size
+        local_lt_remote = AwesomeVersion(__version__) <= AwesomeVersion(data.get("latest_release_version", "9.9.9"))
+        remote_gt_5days = (NOW.date() - data.get("latest_release_date", EPOCH)).total_seconds() > ONE_DAY * 5
+
+        # fetch latest remote version
+        if have_not_checked_today and has_data and local_lt_remote and remote_gt_5days:
             release_url = "https://api.github.com/repos/thoughtspot/cs_tools/releases/latest"
 
             try:
@@ -78,16 +79,15 @@ class _meta_config(BaseModel):
         return cls(**data)
 
     def save(self) -> None:
-        _filepath: pathlib.Path = APP_DIR / ".meta-config.toml"
         data = {
             "default": {"config": self.default_config_name},
             "latest_release": {"version": self.latest_release_version, "published_at": self.latest_release_date},
         }
 
-        _filepath.write_text(toml.dumps(data))
+        self._meta_fp.write_text(toml.dumps(data))
 
     def newer_version_string(self) -> str:
-        if version.parse(__version__) >= version.parse(self.latest_release_version):
+        if AwesomeVersion(__version__) >= AwesomeVersion(self.latest_release_version or "0.0.0"):
             return ""
         url = f"https://github.com/thoughtspot/cs_tools/releases/tag/{self.latest_release_version}"
         return f"[green]Newer version available![/] [cyan][link={url}]{self.latest_release_version}[/][/]"
@@ -178,14 +178,9 @@ class CSToolsConfig(Settings):
         return {k: pathlib.Path(f).resolve() for k, f in v.items()}
 
     @classmethod
-    def check_for_default(cls) -> Dict[str, Any]:
+    def get_default_config_name(cls) -> str:
         """ """
-        try:
-            cfg_data = _meta_config()["default"]["config"]
-        except KeyError:
-            cfg_data = None
-
-        return cfg_data
+        return _meta_config.load().default_config_name
 
     def dict(self) -> Any:
         """
@@ -239,7 +234,7 @@ class CSToolsConfig(Settings):
           name of the configuration file
         """
         if config is None:
-            meta = _meta_config(config)
+            meta = _meta_config.load(config)
             config = meta["default"]["config"]
 
         return cls.from_toml(APP_DIR / f"cluster-cfg_{config}.toml", **passthru)

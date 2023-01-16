@@ -81,7 +81,7 @@ class DThoughtSpot(Dependency):
         ctx = click.get_current_context()
         args, options, flags = split_args_from_opts(ctx.args)
 
-        config = options.pop("config", CSToolsConfig.check_for_default())
+        config = options.pop("config", CSToolsConfig.get_default_config_name())
 
         # click interpreted `--config NAME` as an Argument value because the argument itself
         # was missing.

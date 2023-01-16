@@ -195,7 +195,7 @@ def _import_and_validate(
         for tml_file, content in zip(tml_files, r.json()["object"]):
             results.append(
                 TMLImportResponse(
-                    guid=tml_file.tml.guid,
+                    guid=content["response"].get("header", {}).get("id_guid", tml_file.tml.guid),
                     metadata_object_type=TMLSupportedContent[tml_file.tml.tml_type_name].to_metadata_object_type(),
                     tml_type_name=tml_file.tml.tml_type_name,
                     name=tml_file.filepath.stem,
@@ -483,7 +483,7 @@ def _upload_tml(
     guids_to_map: dict[GUID, GUID] = {}
 
     for tml_file, content in zip(updated, r.json()["object"]):
-        guid = content["response"].get("header", {}).get("guid", tml_file.tml.guid)
+        guid = content["response"].get("header", {}).get("id_guid", tml_file.tml.guid)
         type = content["response"].get("header", {}).get("type", tml_file.tml.tml_type_name)
         name = content["response"].get("header", {}).get("name", tml_file.filepath.stem)
 

@@ -1,13 +1,9 @@
-from typing import Dict, Any
-import logging.config
-import platform
-import datetime as dt
+from __future__ import annotations
+from typing import Any
 import logging
 
-import pendulum
 import typer
 
-from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin
 from cs_tools.cli.loader import CSTool
 from cs_tools.settings import _meta_config
 from cs_tools._version import __version__
@@ -60,106 +56,7 @@ app = CSToolsApp(
 )
 
 
-@app.command("platform", hidden=True, dependencies=[thoughtspot_nologin])
-def _platform(ctx: typer.Context):
-    """
-    Return details about this machine for debugging purposes.
-    """
-    ts = ctx.obj.thoughtspot
-
-    m = f"""[b yellow]
-        [PLATFORM DETAILS]
-        system: {platform.system()} (detail: {platform.platform()})
-        python: {platform.python_version()}
-        ran at: {pendulum.now().format('dddd, MMMM Do YYYY @ HH:mm:ss A (zz)')}
-        cs_tools: v{__version__}
-    """
-
-    try:
-        ts.login()
-    except Exception as e:
-        exc = type(e).__name__
-        msg = str(e).replace("\n", "\n      ")
-        m += f"""
-        [LOGIN ERROR]
-        {exc}: {msg}
-        """
-    else:
-        m += f"""
-        [THOUGHTSPOT]
-        cluster id: {ts.platform.cluster_id}
-        cluster: {ts.platform.cluster_name}
-        url: {ts.platform.url}
-        timezone: {ts.platform.timezone}
-        branch: {ts.platform.deployment}
-        version: {ts.platform.version}
-
-        [LOGGED IN USER]
-        user_id: {ts.me.guid}
-        username: {ts.me.username}
-        display_name: {ts.me.display_name}
-        privileges: {list(map(lambda e: e.name, ts.me.privileges))}
-        """
-        ts.logout()
-
-    rich_console.print(m)
-
-
-# def _setup_logging() -> None:
-#     now = dt.datetime.now().strftime("%Y-%m-%dT%H_%M_%S")
-
-#     logging.config.dictConfig(
-#         {
-#             "version": 1,
-#             "disable_existing_loggers": False,
-#             "formatters": {
-#                 "verbose": {
-#                     "format": "[%(levelname)s - %(asctime)s] [%(name)s - %(module)s.%(funcName)s %(lineno)d] %(message)s"
-#                 }
-#             },
-#             "handlers": {
-#                 "to_file": {
-#                     "formatter": "verbose",
-#                     "level": "DEBUG",  # user can override in their config file
-#                     "class": "logging.FileHandler",
-#                     # RotatingFileHandler.__init__ params...
-#                     "filename": f"{APP_DIR}/logs/{now}.log",
-#                     "mode": "w",  # Create a new file for each run of cs_tools.
-#                     "encoding": "utf-8",  # Handle unicode fun.
-#                     "delay": True,  # Don't create a file if no logging is done.
-#                 },
-#                 "to_console": {
-#                     "level": "INFO",
-#                     "class": "rich.logging.RichHandler",
-#                     # rich.__init__ params...
-#                     "console": rich_console,
-#                     "show_level": False,
-#                     "markup": True,
-#                     "log_time_format": "[%X]",
-#                 },
-#             },
-#             "loggers": {},
-#             "root": {"level": "DEBUG", "handlers": ["to_file", "to_console"]},
-#         }
-#     )
-
-#     # ROTATE LOGS
-#     logs_dir = APP_DIR / "logs"
-#     logs_dir.mkdir(parents=True, exist_ok=True)
-
-#     lifo = sorted(logs_dir.iterdir(), reverse=True)
-
-#     # keep only the last 25 logfiles
-#     for idx, log in enumerate(lifo):
-#         if idx > 25:
-#             log.unlink()
-
-#     # SILENCE NOISY LOGS
-#     logging.getLogger("urllib3").setLevel(logging.ERROR)
-#     logging.getLogger("httpx").setLevel(logging.ERROR)
-
-
-def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
+def _setup_tools(tools_app: typer.Typer, ctx_settings: dict[str, Any]) -> None:
     ctx_settings["obj"].tools = {}
 
     for path in TOOLS_DIR.iterdir():
@@ -202,9 +99,6 @@ def run():
         if hasattr(e, "cli_msg_template"):
             log.info(f"[error]{e}\n")
         else:
-            GF = "https://forms.gle/sh6hyBSS2mnrwWCa9"
-            GH = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
-
             from rich.traceback import Traceback
             from rich.align import Align
             from rich.panel import Panel
@@ -224,6 +118,8 @@ def run():
                 max_frames=10,
             )
 
+            google_forms = "https://forms.gle/sh6hyBSS2mnrwWCa9"
+            github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
             suprised_emoji = random.choice(
                 (
                     ":cold_sweat:", ":astonished:", ":anguished:", ":person_shrugging:", ":sweat:", ":scream:",
@@ -235,8 +131,8 @@ def run():
                 Text.from_markup(
                     f"\nIf you encounter this message more than once, please help by letting us know!"
                     f"\n"
-                    f"\n    Google Forms: [blue][link={GF}]{GF}[/link][/]"
-                    f"\n          GitHub: [blue][link={GH}]{GH}[/link][/]"
+                    f"\n    Google Forms: [blue][link={google_forms}]{google_forms}[/link][/]"
+                    f"\n          GitHub: [blue][link={github_issue}]{github_issue}[/link][/]"
                     f"\n"
                 ),
                 box.SIMPLE_HEAD,
@@ -245,16 +141,4 @@ def run():
                 subtitle="Run [b blue]cs_tools logs report[/] to send us your last error."
             )
 
-            # log.exception(
-            #     "[yellow]This is an unhandled error!! :cold_sweat:"
-            #     "\n\nIf you encounter this message more than once, please help by "
-            #     "letting us know at one of the links below:"
-            #     "\n\n[/][error]",
-            #     suppress=[typer]
-            # )
-            rich_console.print(
-                Align.center(traceback),
-                "\n",
-                Align.center(Panel(text)),
-                "\n",
-            )
+            rich_console.print(Align.center(traceback), "\n", Align.center(Panel(text)), "\n")

@@ -5,9 +5,11 @@ def periscope_sage_combined_table_info(ts_client: httpx.Client) -> httpx.Respons
     """
     The API call powers the Falcon Table Usage info.
 
-    This information is only useful on ThoughtSpot Software clusters.
+    This information is only useful on ThoughtSpot Software clusters running Falcon.
 
-    You may find the same information under the Data >>> Table >>> Usage tab.
+    You can find the same information by going to..
+
+       Admin >>> System >>> Table Status >>> Table Information
     """
     MIN_WAIT_10 = 60 * 10
 

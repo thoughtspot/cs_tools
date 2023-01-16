@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from __future__ import annotations
 import tempfile
 import logging
 import csv
@@ -9,7 +9,8 @@ import sqlalchemy as sa
 import httpx
 import click
 
-from cs_tools.errors import TSLoadServiceUnreachable, ThoughtSpotUnavailable, SyncerError
+from cs_tools.errors import TSLoadServiceUnreachable, SyncerError
+from cs_tools.types import RecordsFormat
 
 from . import sanitize, compiler
 
@@ -32,8 +33,8 @@ class Falcon:
     __is_database__ = True
 
     def __post_init_post_parse__(self):
-        self.timeout = None if self.timeout == 0 else self.timeout
         ctx = click.get_current_context()
+        self.timeout = None if self.timeout == 0 else self.timeout
         self.engine = sa.engine.create_mock_engine("sqlite://", self.intercept_create_table)
         self.cnxn = self.engine.connect()
         self._thoughtspot = getattr(ctx.obj, "thoughtspot", None)
@@ -49,28 +50,15 @@ class Falcon:
     def intercept_create_table(self, sql, *multiparams, **params):
         q = sql.compile(dialect=self.engine.dialect)
         q = str(q).strip()
-
-        # ignore CREATE TABLE for ts_bi_server.. since this is Falcon, it exists already
-        if "ts_bi_server" in q:
-            return
-
         self.ts.tql.command(command=f"{q};", database=self.database, http_timeout=self.timeout)
 
     def ensure_setup(self, metadata, cnxn, **kw):
 
-        if self.ts is None:
-            # DEV NOTE:
-            # I think we can realistically only reach here if Falcon is meant to be
-            # active AND we are attempting to run a tools command, so that's not the
-            # case, @boonhapus has gotta take a better look.
-            raise ThoughtSpotUnavailable(reason="unknown reason")
-
         if self.ts.platform.deployment == "cloud":
-            raise SyncerError("Falcon is not available for data load operations on TS Cloud " "deployments")
+            raise SyncerError("Falcon is not available for data load operations on TS Cloud deployments")
 
         # create the database and schema if it doesn't exist
         self.ts.tql.command(command=f"CREATE DATABASE {self.database};", http_timeout=self.timeout)
-
         self.ts.tql.command(command=f"CREATE SCHEMA {self.database}.{self.schema_};", http_timeout=self.timeout)
 
     def capture_metadata(self, metadata, cnxn, **kw):
@@ -85,7 +73,7 @@ class Falcon:
     def name(self) -> str:
         return "falcon"
 
-    def load(self, table: str) -> List[Dict[str, Any]]:
+    def load(self, table: str) -> RecordsFormat:
         t = self.metadata.tables[table]
         q = t.select().compile(dialect=self.engine.dialect)
         q = str(q).strip()
@@ -93,7 +81,7 @@ class Falcon:
         d = next(_["data"] for _ in r if "data" in _)  # there will be only 1 response
         return d
 
-    def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, table: str, *, data: RecordsFormat) -> None:
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return

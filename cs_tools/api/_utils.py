@@ -58,8 +58,15 @@ def scrub_sensitive(request_keywords: dict[str, Any]) -> dict[str, Any]:
     secure = copy.deepcopy({k: v for k, v in request_keywords.items() if k not in ("file", "files")})
 
     for keyword in ("params", "data", "json"):
+        # .params on GET, POST, PUT
+        # .data, .json on POST, PUT
+        data = secure.get(keyword, None)
+
+        if data is None:
+            continue
+
         for safe_word in SAFEWORDS:
-            secure.get(keyword, {}).pop(safe_word, None)
+            secure[keyword].pop(safe_word, None)
 
     return secure
 
@@ -72,19 +79,3 @@ def dumps(inp: list[Any] | type[UNDEFINED]) -> str | type[UNDEFINED]:
         return inp
 
     return json.dumps(inp)
-
-
-def before_version(version: str, compare_to_version: str) -> bool:
-    """
-    Returns True of the version is earlier than the comparison version.  Only the first two parts are examined.
-
-    It's assumed that there are always two parts.
-
-    Examples:
-        8.2 is before 8.9
-        8.2 is not before 8.2.3
-    """
-    v_major, v_minor, *other = version.split(".")
-    ct_major, ct_minor, *other = compare_to_version.split(".")
-
-    return v_major < ct_major or (v_major == ct_major and v_minor < ct_minor)

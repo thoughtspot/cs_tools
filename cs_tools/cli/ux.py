@@ -3,14 +3,13 @@ import contextlib
 import logging
 import sys
 
-from rich.console import Console
 import typer
 import click
 
-from cs_tools.const import CONSOLE_THEME, GH_SYNCER
+from cs_tools._logging import rich_console
+from cs_tools.const import GH_SYNCER
 
 log = logging.getLogger(__name__)
-rich_console = Console(theme=CONSOLE_THEME)
 WARNING_BETA = "\n\n[bold yellow]USE AT YOUR OWN RISK![/] " "This tool is currently in beta."
 WARNING_PRIVATE = (
     "\n\n[bold yellow]USE AT YOUR OWN RISK![/] "

@@ -74,7 +74,7 @@ class TQLMiddleware:
             "query": {"statement": statement},
         }
 
-        r = self.ts.api.dataservice_query(data, timeout=http_timeout)
+        r = self.ts.api.dataservice_query(data=data, timeout=http_timeout)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []
@@ -109,7 +109,7 @@ class TQLMiddleware:
             "query": {"statement": command},
         }
 
-        r = self.ts.api.dataservice_query(data, timeout=http_timeout)
+        r = self.ts.api.dataservice_query(data=data, timeout=http_timeout)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []
@@ -135,7 +135,7 @@ class TQLMiddleware:
                 "script": f.read(),
             }
 
-        r = self.ts.api.dataservice_script(data, timeout=http_timeout)
+        r = self.ts.api.dataservice_script(data=data, timeout=http_timeout)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []

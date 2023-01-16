@@ -36,10 +36,7 @@ class ThoughtSpot:
 
     def __init__(self, config: CSToolsConfig):
         self.config = config
-        self._rest_api_v1 = RESTAPIv1(
-            config.thoughtspot.fullpath,
-            verify=config.verify,
-        )
+        self._rest_api_v1 = RESTAPIv1(config.thoughtspot.fullpath, verify=config.thoughtspot.disable_ssl)
         # self._rest_api_v2 = RESTAPIv2()
 
         # assigned at self.login()
@@ -68,7 +65,7 @@ class ThoughtSpot:
         """
         Access the REST API.
         """
-        return self._rest_api
+        return self._rest_api_v1
 
     @property
     def me(self) -> LoggedInUser:
@@ -100,6 +97,7 @@ class ThoughtSpot:
                 password=utils.reveal(self.config.auth["frontend"].password).decode(),
                 # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
             )
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
                 raise AuthenticationError(
@@ -109,27 +107,34 @@ class ThoughtSpot:
                     incident_id=e.response.json().get("incident_id_guid", "<missing>"),
                 )
             raise e
+
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
             host = self.config.thoughtspot.host
             rzn = f"cannot see url [blue]{host}[/] from the current machine" f"\n\n>>> [yellow]{e}[/]"
             raise ThoughtSpotUnavailable(reason=rzn) from None
 
-        # got a response, but couldn't make sense of it
-        try:
-            data = r.json()
-        except json.JSONDecodeError:
-            if "Enter the activation code to enable service" in r.text:
-                info = {
-                    "reason": "It is in 'Economy Mode'.",
-                    "mitigation": f"Activate it at [url]{self.config.thoughtspot.host}",
-                }
-            else:
-                info = {"reason": "for an unknown reason."}
+        else:
+            r = self.api.session_info()
+            d = r.json()
 
-            raise ThoughtSpotUnavailable(**info) from None
+        # # got a response, but couldn't make sense of it
+        # try:
+        #     data = r.json()
+        # except json.JSONDecodeError:
+        #     print(r.text)
 
-        self._logged_in_user = LoggedInUser.from_api_v1_session_info(data)
-        self._this_platform = ThoughtSpotPlatform.from_api_v1_session_info(data)
+        #     if "Enter the activation code to enable service" in r.text:
+        #         info = {
+        #             "reason": "It is in 'Economy Mode'.",
+        #             "mitigation": f"Activate it at [url]{self.config.thoughtspot.host}",
+        #         }
+        #     else:
+        #         info = {"reason": "for an unknown reason."}
+
+        #     raise ThoughtSpotUnavailable(**info) from None
+
+        self._logged_in_user = LoggedInUser.from_api_v1_session_info(d)
+        self._this_platform = ThoughtSpotPlatform.from_api_v1_session_info(d)
 
         log.debug(
             f"""execution context...
@@ -153,7 +158,7 @@ class ThoughtSpot:
 
         [LOGGED IN USER]
         user_id: {self._logged_in_user.guid}
-        username: {self._logged_in_user.name}
+        username: {self._logged_in_user.username}
         display_name: {self._logged_in_user.display_name}
         privileges: {list(map(str, self._logged_in_user.privileges))}
         """
@@ -163,4 +168,4 @@ class ThoughtSpot:
         """
         Log out of ThoughtSpot.
         """
-        self.api.session_logout.logout()
+        self.api.session_logout()

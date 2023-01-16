@@ -3,43 +3,36 @@ import shutil
 
 import typer
 
-from cs_tools.errors import CSToolsError
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsCommand
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsGroup
+from cs_tools.cli.ux import rich_console
 from cs_tools.const import APP_DIR
 
-app = typer.Typer(
-    cls=CSToolsGroup,
-    name="logs",
-    help="""
-    Export and view log files.
-
-    Something went wrong? Log files will help the ThoughtSpot team understand
-    how to debug and fix it.
-    """,
-)
+app = typer.Typer(cls=CSToolsGroup, name="logs", hidden=True)
 
 
 @app.command(cls=CSToolsCommand)
-def export(
+def report(
     save_path: pathlib.Path = Arg(
-        ..., help="location on disk to save logs to", metavar="DIRECTORY", file_okay=False, resolve_path=True
+        None, help="location on disk to save logs to", metavar="DIRECTORY", file_okay=False, resolve_path=True,
     ),
-    latest: int = Opt(50, help="number of most recent logfiles to export", show_default=False),
+    latest: int = Opt(1, help="number of most recent logfiles to export", min=1),
 ):
     """
     Grab logs to share with ThoughtSpot.
     """
-    try:
-        save_path.mkdir(parents=True, exist_ok=True)
-    except FileNotFoundError as e:
-        raise CSToolsError(error=str(e))
+    while save_path is None:
+        save_fp = typer.prompt(f"Where should we save the last {latest} log files to?")
+        save_path = pathlib.Path(save_fp)
 
-    log_dir = APP_DIR / "logs"
-    sorted_newest = sorted(log_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
+    save_path.mkdir(parents=True, exist_ok=True)
+    rich_console.print(f"\nSaving logs to [b blue link={save_path.resolve().as_posix()}]{save_path.resolve()}[/]\n")
+
+    sorted_newest = sorted(APP_DIR.joinpath("logs").iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
 
     for i, log in enumerate(sorted_newest, start=1):
         if i <= latest:
+            rich_console.print(f"  [b blue]{log.name}")
             shutil.copy(log, save_path)
