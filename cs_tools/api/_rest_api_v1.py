@@ -483,13 +483,13 @@ class RESTAPIv1(httpx.Client):
         return r
 
     def dataservice_dataload_session(self, *, username: str, password: str) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/session")
+        fullpath = self.dataservice_url.copy_with(path="/ts_dataservice/v1/public/session")
         d = {"username": username, "password": password}
         r = self.post(fullpath, data=d)
         return r
 
     def dataservice_dataload_initialize(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/loads")
+        fullpath = self.dataservice_url.copy_with(path="/ts_dataservice/v1/public/loads")
         timeout = self.timeout if timeout is UNDEFINED else timeout
         r = self.post(fullpath, timeout=timeout, json=data)
         return r
@@ -500,22 +500,22 @@ class RESTAPIv1(httpx.Client):
         # This endpoint returns immediately once the file uploads to the remote host.
         # Processing of the dataload happens concurrently, and this function may be
         # called multiple times to paralellize the full data load across multiple files.
-        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
+        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
         timeout = self.timeout if timeout is UNDEFINED else timeout
         r = self.post(fullpath, timeout=timeout, files={"upload-file": fd})
         return r
 
     def dataservice_dataload_commit(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/commit")
+        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/commit")
         r = self.post(fullpath)
         return r
 
     def dataservice_dataload_status(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
+        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
         r = self.get(fullpath)
         return r
 
     def dataservice_dataload_bad_records(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")
+        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")
         r = self.get(fullpath)
         return r

@@ -50,7 +50,7 @@ class TSLoadNodeRedirectCache:
 
     def load(self) -> dict[CycleID, CachedRedirectInfo]:
         text = self.cache_fp.read_text()
-        return json.loads(text) if self.cache_fp else {}
+        return json.loads(text) if text else {}
 
     def dump(self, data: dict[CycleID, CachedRedirectInfo]) -> None:
         text = json.dumps(data, indent=4)
@@ -71,7 +71,7 @@ class TSLoadNodeRedirectCache:
         self.dump(keep)
 
     def get_for(self, cycle_id: CycleID) -> Optional[CachedRedirectInfo]:
-        for existing_cycle_id, redirect_info in self.cycles.items():
+        for existing_cycle_id, redirect_info in self.load().items():
             if cycle_id == existing_cycle_id:
                 return redirect_info
 
