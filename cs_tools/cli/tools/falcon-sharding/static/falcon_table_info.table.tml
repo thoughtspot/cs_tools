@@ -1,10 +1,10 @@
 guid: null
 table:
-  name: falcon_table_info
+  name: ts_falcon_table_info
   description: Output from an internal service which is used for health probes.
   db: cs_tools
   schema: falcon_default_schema
-  db_table: falcon_table_info
+  db_table: ts_falcon_table_info
   columns:
   - name: Database
     db_column_name: database_name

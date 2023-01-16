@@ -44,7 +44,7 @@ class FalconTableInfo(SQLModel, table=True):
             "build_duration_s": data.get("buildDuration"),
             "is_known": data.get("isKnown"),
             "database_status": data.get("databaseStatus"),
-            "last_uploaded_at": dt.datetime.fromtimestamp(data.get("lastUploadedAt", 0) / 1000),
+            "last_uploaded_at": dt.datetime.fromtimestamp(data.get("lastUploadedAt", 0) / 10000),
             "num_of_rows": data.get("numOfRows"),
             "approx_bytes_size": data.get("approxByteSize"),
             "uncompressed_bytes_size": data.get("uncompressedByteSize"),

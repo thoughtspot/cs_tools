@@ -40,10 +40,10 @@ app = CSToolsApp(
 )
 
 
-@app.command()
+@app.command(dependencies=[thoughtspot])
 def deploy(
     ctx: typer.Context,
-    falcon_database: str = Arg("cs_tools", metavar="[DATABASE]", help="name of the database where data is gathered to"),
+    falcon_database: str = Opt("cs_tools", help="name of the database where data is gathered to"),
     nodes: int = Opt(..., help='number of nodes serving your ThoughtSpot cluster'),
     cpu_per_node: int = Opt(56, help='number of CPUs serving each node'),
     threshold: int = Opt(
@@ -91,7 +91,7 @@ def deploy(
     r = ts.api.metadata_tml_import(import_objects=[t.dumps() for t in tmls], import_policy=TMLImportPolicy.all_or_none)
 
     from rich.align import Align
-    from rich.table import Table
+    from rich.table import Table as RichTable
     from rich import box
 
     status_emojis = {
@@ -100,14 +100,14 @@ def deploy(
         "ERROR": ":cross_mark:",
     }
 
-    table = Table(width=150, box=box.SIMPLE_HEAD, row_styles=("dim", ""), title_style="white", caption_style="white")
+    table = RichTable(width=150, box=box.SIMPLE_HEAD, row_styles=("dim", ""), title_style="white", caption_style="white")
     table.add_column("Status", justify="center", width=10)  # 4 + length of "status"
     table.add_column("Type", justify="center", width=13)    # 4 + length of "worksheet"
     table.add_column("GUID", justify="center", width=40)    # 4 + length of a guid
     table.add_column("Name", width=150 - 10 - 13 - 40, no_wrap=True)
 
-    for tml, content in zip(tmls, r.json()["objects"]):
-        status = status_emojis.get(content["response"]["status_code"], ":cross_mark:")
+    for tml, content in zip(tmls, r.json()["object"]):
+        status = status_emojis.get(content["response"]["status"]["status_code"], ":cross_mark:")
         type_ = tml.tml_type_name
         guid = content["response"].get("header", {}).get("id_guid", "[gray]{null}")
         name = content["response"].get("header", {}).get("name", tml.name)
@@ -135,8 +135,8 @@ def gather(
     with rich_console.status("[bold green]getting falcon table info"):
         r = _extended_rest_api_v1.periscope_sage_combined_table_info(ts.api)
 
-        if not r.success:
-            rich_console.log(f"[red]could not get falcon table info {r}")
+        if not r.is_success:
+            rich_console.error(f"could not get falcon table info {r}")
             raise typer.Exit(1)
 
         data = [FalconTableInfo.from_api_v1(_) for _ in r.json()["tables"]]

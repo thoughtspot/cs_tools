@@ -1,5 +1,5 @@
 guid: null
-pinboard:
+liveboard:
   name: 'TS: Sharding Recommender'
   visualizations:
   - id: Viz_1
