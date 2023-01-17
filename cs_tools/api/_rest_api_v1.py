@@ -253,7 +253,7 @@ class RESTAPIv1(httpx.Client):
         author_guid: GUID = UNDEFINED,
     ) -> httpx.Response:
         p = {
-            "type": type,
+            "type": metadata_type,
             "subtypes": dumps(subtypes),
             "category": category,
             "sort": sort,
@@ -279,7 +279,7 @@ class RESTAPIv1(httpx.Client):
         show_hidden: bool = False,
     ) -> httpx.Response:
         p = {
-            "type": type,
+            "type": metadata_type,
             "id": dumps(guids),
             "showhidden": show_hidden,
             "dropquestiondetails": False,
