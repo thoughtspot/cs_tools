@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Union
 
 from rich.console import Console, RenderableType
 from rich.align import Align
@@ -61,16 +61,36 @@ class LiveTaskList(Live):
 
     def __init__(
         self,
-        *work_items: Tuple[types.WorkItem],
+        work_items: List[Union[types.WorkItem, Tuple[types.TaskName, types.TaskDescription]]],
         layout: Callable[[], [RenderableType]],
         console: Console
     ):
         super().__init__(console=console)
-        self.work_items = [w.bind_display(self) for w in work_items]
+        self.work_items = work_items
         self.work_layout = layout
 
+    @property
+    def work_items(self) -> List[types.WorkItem]:
+        return self._work_items
+
+    @work_items.setter
+    def work_items(self, items: List[Union[types.WorkItem, Tuple[types.TaskName, types.TaskDescription]]]) -> None:
+        if not hasattr(self, "_work_items"):
+            self._work_items = []
+
+        for work_item in items:
+            if isinstance(work_item, tuple):
+                work_item = types.WorkItem(name=work_item[0], description=work_item[1], _live_display=self)
+
+            self._work_items.append(work_item)
+
+        print(self._work_items)
+
+    def __getitem__(self, task_name: types.TaskName) -> types.WorkItem:
+        return self.get_task(task_name)
+
     def get_task(self, task_name: str) -> types.WorkItem:
-        return utils.find(lambda w: w.task_name == task_name, self.work_items)
+        return utils.find(lambda w: w.name == task_name, self.work_items)
 
     def draw(self) -> None:
         with self._lock:

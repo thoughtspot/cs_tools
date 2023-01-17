@@ -126,13 +126,13 @@ def gather(
     ts = ctx.obj.thoughtspot
     
     tasks = [
-        types.WorkItem(task_name="gather_info", description="Getting Falcon table information"),
-        types.WorkItem(task_name="dump_info", description=f"Writing table information to {syncer.name}"),
+        ("gather_info", "Getting Falcon table information"),
+        ("dump_info", f"Writing table information to {syncer.name}"),
     ]
 
-    with layout.LiveTaskList(*tasks, layout=layout.build_task_list, console=rich_console) as tasks_list:
+    with layout.LiveTaskList(tasks, layout=layout.build_task_list, console=rich_console) as tasks_list:
 
-        with tasks_list.get_task("gather_info"):
+        with tasks_list["gather_info"]:
             r = _extended_rest_api_v1.periscope_sage_combined_table_info(ts.api)
 
             if not r.is_success:
@@ -141,5 +141,5 @@ def gather(
 
             data = [models.FalconTableInfo.from_api_v1(_) for _ in r.json()["tables"]]
 
-        with tasks_list.get_task("dump_info"):
+        with tasks_list["dump_info"]:
             syncer.dump("ts_falcon_table_info", data=data)

@@ -1,21 +1,25 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
 from typing import Tuple
 import datetime as dt
 
 from rich.live import Live
 
+TaskName = str  # TODO: underscores or ints only
+TaskDescription = str
+
 
 @dataclass
 class WorkItem:
     """Represents a task to complete"""
-    task_name: str
+    name: str
     description: str
     status: str = ":popcorn:"
     started_at: dt.datetime = None
     duration: int = None
+    _live_display: InitVar[Live] = None
 
-    def __post_init__(self):
-        self._live_display: Live = None
+    def __post_init__(self, rich_live: Live=None):
+        self._live_display = rich_live
 
     def bind_display(self, rich_live: Live):
         self._live_display = rich_live
