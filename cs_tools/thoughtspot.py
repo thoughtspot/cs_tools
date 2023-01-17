@@ -18,6 +18,7 @@ from cs_tools.api.middlewares import (
     AnswerMiddleware,
     GroupMiddleware,
     UserMiddleware,
+    TMLMiddleware,
     TQLMiddleware,
     TagMiddleware,
     OrgMiddleware,
@@ -57,6 +58,7 @@ class ThoughtSpot:
         # self.connection
         self.logical_table = LogicalTableMiddleware(self)
         self.tag = TagMiddleware(self)
+        self.tml = TMLMiddleware(self)
         self.tql = TQLMiddleware(self)
         self.tsload = TSLoadMiddleware(self)
 

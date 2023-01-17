@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
-import datetime as dt
+from typing import Any, List, Dict
 import logging
 import typing
 import uuid
+import re
 
 from thoughtspot_tml.types import ConnectionMetadata, TMLObject
 import pendulum
@@ -123,12 +123,12 @@ class GroupPrivilege(StrEnum):
 # ======================================================================================================================
 
 
-class UserProfile(  TypedDict):
+class UserProfile(TypedDict):
     # GET: callosum/v1/tspublic/v1/user
     ...
 
 
-class SecurityPrincipal(    TypedDict):
+class SecurityPrincipal(TypedDict):
     # GET: callosum/v1/tspublic/v1/user/list
     ...
 
@@ -172,6 +172,41 @@ RecordsFormat = list[dict[str, Any]]
 #     },
 #     ...
 # ]
+
+
+class TMLAPIResponse(pydantic.BaseModel):
+    guid: str
+    metadata_object_type: str
+    tml_type_name: str
+    name: str
+    status_code: str
+    error_messages: List[str] = None
+    _full_response: Any = None
+
+    @pydantic.validator("status_code", pre=True)
+    def _one_of(cls, status: str) -> str:
+        ALLOWED = ("OK", "WARNING", "ERROR")
+
+        if status.upper() not in ALLOWED:
+            allowed = ", ".join(f"'{s}'" for s in ALLOWED)
+            raise ValueError(f"'status_code' must be one of {allowed}, got '{status}'")
+
+        return status.lower()
+
+    @pydantic.validator("error_messages", pre=True)
+    def _parse_errors(cls, error_string: str) -> List[str]:
+        if error_string is None:
+            return []
+
+        return [e.strip() for e in re.split("<br/>|\n", error_string) if e.strip()]
+
+    @property
+    def is_success(self) -> bool:
+        return self.status_code == "OK"
+
+    @property
+    def is_error(self) -> bool:
+        return self.status_code == "ERROR"
 
 
 # ======================================================================================================================
@@ -226,10 +261,10 @@ class LoggedInUser(pydantic.BaseModel):
     username: str
     display_name: str
     email: str
-    privileges: list[GroupPrivilege]
+    privileges: List[GroupPrivilege]
 
     @classmethod
-    def from_api_v1_session_info(cls, info: dict[str, Any]) -> LoggedInUser:
+    def from_api_v1_session_info(cls, info: Dict[str, Any]) -> LoggedInUser:
         data = {
             "guid": info["userGUID"],
             "username": info["userName"],

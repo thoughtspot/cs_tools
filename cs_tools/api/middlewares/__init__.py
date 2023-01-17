@@ -6,6 +6,7 @@ from .search import SearchMiddleware
 from .answer import AnswerMiddleware
 from .group import GroupMiddleware
 from .user import UserMiddleware
+from .tml import TMLMiddleware
 from .tql import TQLMiddleware
 from .tag import TagMiddleware
 from .org import OrgMiddleware
