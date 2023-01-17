@@ -3,6 +3,7 @@ import logging
 
 from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml import Table, Worksheet
+from rich.live import Live
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
@@ -13,8 +14,11 @@ from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.types import TMLImportPolicy
 
-from .models import FalconTableInfo
 from . import _extended_rest_api_v1
+from . import layout
+from . import models
+from . import types
+
 
 HERE = pathlib.Path(__file__).parent
 log = logging.getLogger(__name__)
@@ -88,11 +92,7 @@ def deploy(
 
         tmls.append(tml)
 
-    r = ts.api.metadata_tml_import(import_objects=[t.dumps() for t in tmls], import_policy=TMLImportPolicy.all_or_none)
-
-    from rich.align import Align
-    from rich.table import Table as RichTable
-    from rich import box
+    response = ts.tml.to_import(tmls, policy=TMLImportPolicy.all_or_none)
 
     status_emojis = {
         "OK": ":white_heavy_check_mark:",
@@ -100,21 +100,14 @@ def deploy(
         "ERROR": ":cross_mark:",
     }
 
-    table = RichTable(width=150, box=box.SIMPLE_HEAD, row_styles=("dim", ""), title_style="white", caption_style="white")
-    table.add_column("Status", justify="center", width=10)  # 4 + length of "status"
-    table.add_column("Type", justify="center", width=13)    # 4 + length of "worksheet"
-    table.add_column("GUID", justify="center", width=40)    # 4 + length of a guid
-    table.add_column("Name", width=150 - 10 - 13 - 40, no_wrap=True)
+    centered_table = layout.build_table()
 
-    for tml, content in zip(tmls, r.json()["object"]):
-        status = status_emojis.get(content["response"]["status"]["status_code"], ":cross_mark:")
-        type_ = tml.tml_type_name
-        guid = content["response"].get("header", {}).get("id_guid", "[gray]{null}")
-        name = content["response"].get("header", {}).get("name", tml.name)
+    for response in response:
+        status = status_emojis.get(response.status_code, ":cross_mark:")
+        guid = response.guid or "[gray]{null}"
+        centered_table.renderable.add_row(status, response.tml_type_name, guid, response.name)
 
-        table.add_row(status, type_, guid, name)
-
-    rich_console.print(Align.center(table))
+    rich_console.print(centered_table)
 
 
 @app.command(dependencies=[thoughtspot])
@@ -124,22 +117,29 @@ def gather(
         ...,
         help="protocol and path for options to pass to the syncer",
         metavar="protocol://DEFINITION.toml",
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx, models=[FalconTableInfo]),
+        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx, models=[models.FalconTableInfo]),
     ),
 ):
     """
     Extract Falcon table info from your ThoughtSpot platform.
     """
     ts = ctx.obj.thoughtspot
+    
+    tasks = [
+        types.WorkItem(task_name="gather_info", description="Getting Falcon table information"),
+        types.WorkItem(task_name="dump_info", description=f"Writing table information to {syncer.name}"),
+    ]
 
-    with rich_console.status("[bold green]getting falcon table info"):
-        r = _extended_rest_api_v1.periscope_sage_combined_table_info(ts.api)
+    with layout.LiveTaskList(*tasks, layout=layout.build_task_list, console=rich_console) as tasks_list:
 
-        if not r.is_success:
-            rich_console.error(f"could not get falcon table info {r}")
-            raise typer.Exit(1)
+        with tasks_list.get_task("gather_info"):
+            r = _extended_rest_api_v1.periscope_sage_combined_table_info(ts.api)
 
-        data = [FalconTableInfo.from_api_v1(_) for _ in r.json()["tables"]]
+            if not r.is_success:
+                rich_console.error(f"could not get falcon table info {r}")
+                raise typer.Exit(1)
 
-    with rich_console.status(f"[bold green]loading data to {syncer.name}.."):
-        syncer.dump("ts_falcon_table_info", data=data)
+            data = [models.FalconTableInfo.from_api_v1(_) for _ in r.json()["tables"]]
+
+        with tasks_list.get_task("dump_info"):
+            syncer.dump("ts_falcon_table_info", data=data)
