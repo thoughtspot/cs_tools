@@ -1,4 +1,3 @@
-import datetime as dt
 import pathlib
 
 import typer
@@ -40,9 +39,9 @@ def status(
     """
     ts = ctx.obj.thoughtspot
 
-    with console.status("[bold green]Waiting for data load to complete.."):
+    with rich_console.status("[bold green]Waiting for data load to complete.."):
         data = ts.tsload.status(cycle_id, wait_for_complete=True)
-        console.print(
+        rich_console.print(
             f'\nCycle ID: {data["cycle_id"]} ({data["status"]["code"]})'
             f'\nStage: {data["internal_stage"]}'
             f'\nRows written: {data["rows_written"]}'
@@ -59,10 +58,10 @@ def status(
     #     bad_records.dump(fp, data=data)
 
     if data["status"]["code"] == "LOAD_FAILED":
-        console.print(f'\nFailure reason:\n  [red]{data["status"]["message"]}[/]')
+        rich_console.print(f'\nFailure reason:\n  [red]{data["status"]["message"]}[/]')
 
     if data.get("parsing_errors", False):
-        console.print(f'[red]{data["parsing_errors"]}')
+        rich_console.print(f'[red]{data["parsing_errors"]}')
 
 
 @app.command(dependencies=[thoughtspot])
@@ -169,11 +168,11 @@ def file(
         "enclosing_character": enclosing_character,
     }
 
-    with console.status(f"[bold green]Loading [yellow]{file}[/] to ThoughtSpot.."):
+    with rich_console.status(f"[bold green]Loading [yellow]{file}[/] to ThoughtSpot.."):
         with file.open("r", encoding="utf-8", newline="") as fd:
             cycle_id = ts.tsload.upload(fd, **opts, http_timeout=http_timeout)
 
-    console.log(f"Data load cycle_id: [cyan]{cycle_id}")
+    rich_console.log(f"Data load cycle_id: [cyan]{cycle_id}")
 
     # if bad_records is None:
     #     return

@@ -196,7 +196,7 @@ def _import_and_validate(
             results.append(
                 TMLImportResponse(
                     guid=content["response"].get("header", {}).get("id_guid", tml_file.tml.guid),
-                    metadata_object_type=TMLSupportedContent[tml_file.tml.tml_type_name].to_metadata_object_type(),
+                    metadata_object_type=TMLSupportedContent[tml_file.tml.tml_type_name].value,
                     tml_type_name=tml_file.tml.tml_type_name,
                     name=tml_file.filepath.stem,
                     status_code=content["response"]["status"]["status_code"],
@@ -493,7 +493,7 @@ def _upload_tml(
         responses.append(
             TMLImportResponse(
                 guid=guid,
-                metadata_object_type=TMLSupportedContent[tml_file.tml.tml_type_name].to_metadata_object_type(),
+                metadata_object_type=TMLSupportedContent[tml_file.tml.tml_type_name].value,
                 tml_type_name=type,
                 name=name,
                 status_code=content["response"]["status"]["status_code"],
