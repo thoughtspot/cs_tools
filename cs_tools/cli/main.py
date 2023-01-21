@@ -3,12 +3,14 @@ from typing import Any
 import logging
 
 import typer
+import rich
 
 from cs_tools.cli.loader import CSTool
 from cs_tools.settings import _meta_config
 from cs_tools._version import __version__
 from cs_tools._logging import _setup_logging
 from cs_tools.cli.ux import rich_console, CSToolsApp
+from cs_tools.errors import CSToolsError
 from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES
 from cs_tools.cli import _config, _tools, _log
 from cs_tools import utils
@@ -80,7 +82,7 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: dict[str, Any]) -> None:
         )
 
 
-def run():
+def run() -> int:
     """
     Entrypoint into cs_tools.
     """
@@ -93,52 +95,57 @@ def run():
 
     try:
         app()
-    except Exception as e:
+
+    except CSToolsError as e:
+        log.debug(e, exc_info=True)
+        rich_console.log(e)
+        return 1
+
+    except Exception:
         log.debug("whoopsie, something went wrong!", exc_info=True)
 
-        if hasattr(e, "cli_msg_template"):
-            log.info(f"[error]{e}\n")
-        else:
-            from rich.traceback import Traceback
-            from rich.align import Align
-            from rich.panel import Panel
-            from rich.text import Text
-            from rich import box
-            import random
-            import contextlib  # dependencies
-            import typer       # main cli library
-            import click       # supporting cli library
+        import random
+        import contextlib  # dependencies
+        import typer       # main cli library
+        import click       # supporting cli library
 
-            traceback = Traceback(
-                width=150,
-                extra_lines=3,
-                word_wrap=False,
-                show_locals=False,
-                suppress=[typer, click, contextlib],
-                max_frames=10,
+        traceback = rich.traceback.Traceback(
+            width=150,
+            extra_lines=3,
+            word_wrap=False,
+            show_locals=False,
+            suppress=[typer, click, contextlib],
+            max_frames=10,
+        )
+
+        google_forms = "https://forms.gle/sh6hyBSS2mnrwWCa9"
+        github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
+        suprised_emoji = random.choice(
+            (
+                ":cold_sweat:", ":astonished:", ":anguished:", ":person_shrugging:", ":sweat:", ":scream:",
+                ":sweat_smile:", ":nerd_face:"
             )
+        )
 
-            google_forms = "https://forms.gle/sh6hyBSS2mnrwWCa9"
-            github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
-            suprised_emoji = random.choice(
-                (
-                    ":cold_sweat:", ":astonished:", ":anguished:", ":person_shrugging:", ":sweat:", ":scream:",
-                    ":sweat_smile:", ":nerd_face:"
-                )
-            )
+        text = rich.panel.Panel(
+            rich.text.Text.from_markup(
+                f"\nIf you encounter this message more than once, please help by letting us know!"
+                f"\n"
+                f"\n    Google Forms: [b blue][link={google_forms}]{google_forms}[/link][/]"
+                f"\n          GitHub: [b blue][link={github_issue}]{github_issue}[/link][/]"
+                f"\n"
+            ),
+            border_style="yellow",
+            title=f"{suprised_emoji}  This is an unhandled error!  {suprised_emoji}",
+            subtitle="Run [b blue]cs_tools logs report[/] to send us your last error."
+        )
 
-            text = Panel(
-                Text.from_markup(
-                    f"\nIf you encounter this message more than once, please help by letting us know!"
-                    f"\n"
-                    f"\n    Google Forms: [blue][link={google_forms}]{google_forms}[/link][/]"
-                    f"\n          GitHub: [blue][link={github_issue}]{github_issue}[/link][/]"
-                    f"\n"
-                ),
-                box.SIMPLE_HEAD,
-                border_style="yellow",
-                title=f"{suprised_emoji}  This is an unhandled error!  {suprised_emoji}",
-                subtitle="Run [b blue]cs_tools logs report[/] to send us your last error."
-            )
+        rich_console.print(
+            rich.align.Align.center(traceback),
+            "\n",
+            rich.align.Align.center(text),
+            "\n"
+        )
+        return 1
 
-            rich_console.print(Align.center(traceback), "\n", Align.center(Panel(text)), "\n")
+    return 0

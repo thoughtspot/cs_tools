@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from io import BufferedIOBase
 import datetime as dt
+import tempfile
 import pathlib
 import logging
 import json
@@ -154,12 +155,17 @@ class RESTAPIv1(httpx.Client):
         remove_deleted: bool = True,
         password: str = UNDEFINED,
     ) -> httpx.Response:
-        fp = pathlib.Path(f"principals-{dt.datetime.now():%Y%m%dT%H%M%S}.json")
+        fp = pathlib.Path(tempfile.gettempdir()) / f"principals-{dt.datetime.now():%Y%m%dT%H%M%S}.json"
         fp.write_text(json.dumps(principals, indent=4))
 
-        f = {"principals": ("principals.json", fp.open("rb"), "application/json")}
-        p = {"applyChanges": apply_changes, "removeDeleted": remove_deleted, "password": password}
-        r = self.post("callosum/v1/tspublic/v1/user/transfer/ownership", files=f, params=p)
+        try:
+            f = {"principals": ("principals.json", fp.open("rb"), "application/json")}
+            d = {"applyChanges": apply_changes, "removeDeleted": remove_deleted, "password": password}
+            r = self.post("callosum/v1/tspublic/v1/user/sync", files=f, data=d)
+
+        finally:
+            fp.unlink()
+
         return r
 
     # ==================================================================================================================

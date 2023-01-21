@@ -44,9 +44,9 @@ class ThoughtSpot:
         self._logged_in_user: LoggedInUser = None
         self._platform: ThoughtSpotPlatform = None
 
-        # ==============================================================================
+        # ==============================================================================================================
         # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
-        # ==============================================================================
+        # ==============================================================================================================
         self.org = OrgMiddleware(self)
         self.search = SearchMiddleware(self)
         self.user = UserMiddleware(self)
@@ -93,6 +93,7 @@ class ThoughtSpot:
         """
         Log in to ThoughtSpot.
         """
+
         try:
             r = self.api.session_login(
                 username=self.config.auth["frontend"].username,
@@ -111,29 +112,33 @@ class ThoughtSpot:
             raise e
 
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-            host = self.config.thoughtspot.host
-            rzn = f"cannot see url [blue]{host}[/] from the current machine" f"\n\n>>> [yellow]{e}[/]"
-            raise ThoughtSpotUnavailable(reason=rzn) from None
+            rzn = "Cannot connect to ThoughtSpot ( [b blue]{host}[/] ) from your computer"
+            fwd = "Is your [white]ThoughtSpot[/] accessible outside of the VPN? \n\n[white]>>>[/] {exc}"
+            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host, exc=e) from None
 
-        else:
-            r = self.api.session_info()
-            d = r.json()
+        # .session_login() returns 200 OK , but the instance is unavailable for the API
+        if "Site Maintenance".casefold() in r.text.casefold():
+            site_states = [
+                ("Enable service", "Your cluster is in Economy Mode.", "Visit [b blue]{host}[/] to start it."),
+                ("Service will be online shortly", "Your cluster is starting.", "Contact ThoughtSpot with any issues."),
+            ]
 
-        # # got a response, but couldn't make sense of it
-        # try:
-        #     data = r.json()
-        # except json.JSONDecodeError:
-        #     print(r.text)
+            for page_response, rzn, fwd in site_states:
+                if page_response.casefold() in r.text.casefold():
+                    break
+            else:
+                rzn = "Your cluster is not allowing API access."
+                fwd = "Check the logs for more details."
+                log.debug(r.text)
 
-        #     if "Enter the activation code to enable service" in r.text:
-        #         info = {
-        #             "reason": "It is in 'Economy Mode'.",
-        #             "mitigation": f"Activate it at [url]{self.config.thoughtspot.host}",
-        #         }
-        #     else:
-        #         info = {"reason": "for an unknown reason."}
+            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host)
 
-        #     raise ThoughtSpotUnavailable(**info) from None
+        # ==============================================================================================================
+        # GOOD TO GO , INTERACT WITH THE APIs
+        # ==============================================================================================================
+
+        r = self.api.session_info()
+        d = r.json()
 
         self._logged_in_user = LoggedInUser.from_api_v1_session_info(d)
         self._this_platform = ThoughtSpotPlatform.from_api_v1_session_info(d)

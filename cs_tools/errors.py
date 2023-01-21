@@ -8,27 +8,35 @@ class CSToolsError(Exception):
     This can be caught to handle any exception raised from this library.
     """
 
-    cli_msg_template = "{error}"
+    cli_msg_template = "[b red]{error}[/]"
 
     def __init__(self, error: str = None, reason: str = None, mitigation: str = None, **ctx: Any):
-        self.__dict__ = {
-            "error": error or self.__class__.error,
-            "reason": reason or getattr(self.__class__, "reason", ""),
-            "mitigation": mitigation or getattr(self.__class__, "mitigation", ""),
-            **ctx,
-        }
+        self.error = error or self.__class__.error
+        self.reason = reason or getattr(self.__class__, "reason", "")
+        self.mitigation = mitigation or getattr(self.__class__, "mitigation", "")
+        self.extra_context = ctx
 
-    def __str__(self) -> str:
-        msg = self.cli_msg_template
-
+    def __rich__(self) -> str:
+        m = f"[b red]{self.__dict__['error']}[/]"
+        
         if self.__dict__["reason"]:
-            msg += "\n[white]{reason}"
+            m += f"\n[white]{self.__dict__['reason']}[/]"
 
         if self.__dict__["mitigation"]:
-            msg += "\n\n[secondary]Mitigation\n[hint]{mitigation}"
+            m += (
+                f"\n"
+                f"\n[b green]Mitigation[/]"
+                f"\n[b yellow]{self.__dict__['mitigation']}[/]"
+            )
 
-        # double expand __dict__ to template anything within cli_msg_template
-        return msg.format(**self.__dict__).format(**self.__dict__)
+        # enforce trailing newline
+        m += "\n\n"
+
+        # inject any other context
+        return m.format(**self.extra_context)
+
+    def __str__(self) -> str:
+        return self.error
 
 
 class ThoughtSpotUnavailable(CSToolsError):
