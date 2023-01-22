@@ -132,7 +132,7 @@ class RESTAPIv1(httpx.Client):
         return r
 
     def user_update(self, *, user_guid: GUID, content: UserProfile, password: str = UNDEFINED) -> httpx.Response:
-        d = {"userid": user_guid, "content": content, "password": password}
+        d = {"userid": user_guid, "content": json.dumps(content), "password": password, "triggeredbyadmin": True}
         r = self.put(f"callosum/v1/tspublic/v1/user/{user_guid}", data=d)
         return r
 
