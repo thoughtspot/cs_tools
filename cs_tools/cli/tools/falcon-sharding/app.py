@@ -3,7 +3,6 @@ import logging
 
 from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml import Table, Worksheet
-from rich.live import Live
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
@@ -12,12 +11,12 @@ from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.layout import LiveTasks
 from cs_tools.types import TMLImportPolicy
 
 from . import _extended_rest_api_v1
 from . import layout
 from . import models
-from . import types
 
 
 HERE = pathlib.Path(__file__).parent
@@ -113,11 +112,11 @@ def deploy(
 @app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
-    syncer: str = Arg(
+    syncer: pathlib.Path = Arg(
         ...,
         help="protocol and path for options to pass to the syncer",
         metavar="protocol://DEFINITION.toml",
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx, models=[models.FalconTableInfo]),
+        custom_type=SyncerProtocolType(models=[models.FalconTableInfo]),
     ),
 ):
     """
@@ -130,9 +129,9 @@ def gather(
         ("dump_info", f"Writing table information to {syncer.name}"),
     ]
 
-    with layout.LiveTaskList(tasks, layout=layout.build_task_list, console=rich_console) as tasks_list:
+    with LiveTasks(tasks, console=rich_console) as tasks:
 
-        with tasks_list["gather_info"]:
+        with tasks["gather_info"]:
             r = _extended_rest_api_v1.periscope_sage_combined_table_info(ts.api)
 
             if not r.is_success:
@@ -141,5 +140,5 @@ def gather(
 
             data = [models.FalconTableInfo.from_api_v1(_) for _ in r.json()["tables"]]
 
-        with tasks_list["dump_info"]:
+        with tasks["dump_info"]:
             syncer.dump("ts_falcon_table_info", data=data)

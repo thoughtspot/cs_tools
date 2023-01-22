@@ -1,3 +1,4 @@
+import pathlib
 import logging
 
 from rich.live import Live
@@ -55,11 +56,10 @@ def single(
 @app.command(dependencies=[thoughtspot])
 def from_tabular(
     ctx: typer.Context,
-    syncer: str = Opt(
+    syncer: pathlib.Path = Opt(
         ...,
+        custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
-        metavar="protocol://DEFINITION.toml",
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx),
         rich_help_panel="Syncer Options",
     ),
     deletion: str = Opt(..., help="directive to find content to delete", rich_help_panel="Syncer Options"),
