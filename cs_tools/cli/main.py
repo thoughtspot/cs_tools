@@ -86,6 +86,8 @@ def run() -> int:
     """
     Entrypoint into cs_tools.
     """
+    from cs_tools.cli import _monkey
+
     _setup_logging()
     _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
 
