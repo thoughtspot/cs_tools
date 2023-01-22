@@ -6,6 +6,7 @@ import sys
 import typer
 import click
 
+from cs_tools.cli.types import SyncerProtocolType
 from cs_tools._logging import rich_console
 from cs_tools.const import GH_SYNCER
 
@@ -86,7 +87,7 @@ class CSToolsCommand(typer.core.TyperCommand):
             seen_params.extend([p for p in dependency.parameters if p not in seen_params])
 
         # add syncer documentation page help text
-        if any("protocol://" in str(p.metavar) for p in seen_params):
+        if any(isinstance(p.type, SyncerProtocolType) for p in seen_params):
             syncer = f" :floppy_disk: [cyan][link={GH_SYNCER}]How do I use a Syncer?[/][/]"
 
             if self.epilog is None:

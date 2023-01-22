@@ -101,10 +101,10 @@ class DThoughtSpot(Dependency):
             ctx.fail(f"Got unexpected extra arguments ({extra_args})")
 
         if args:
-            log.warning(f"[yellow]Ignoring extra arguments ({' '.join(args)})")
+            log.warning(f"[b yellow]Ignoring extra arguments ({' '.join(args)})")
 
         if flags:
-            log.warning(f"[yellow]Ignoring extra flags ({' '.join(flags)})")
+            log.warning(f"[b yellow]Ignoring extra flags ({' '.join(flags)})")
 
         cfg = CSToolsConfig.from_toml(APP_DIR / f"cluster-cfg_{config}.toml", **options)
         ctx.obj.thoughtspot = ThoughtSpot(cfg)
