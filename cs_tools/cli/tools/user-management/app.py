@@ -1,344 +1,343 @@
 from typing import List
-import collections
 import itertools as it
 import logging
-import json
+import pathlib
 
-from rich.table import Table
 import typer
 import httpx
 
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
+from cs_tools.api._utils import SYSTEM_USERS
+from cs_tools.cli.layout import LiveTasks
+from cs_tools.cli.types import MetadataType, MultipleChoiceType, SyncerProtocolType
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
-from cs_tools.types import GUID
+
+from . import _extended_rest_api_v1
+from . import layout
+from . import work
 
 log = logging.getLogger(__name__)
-
-
-def _all_user_content(user: GUID, ts: ThoughtSpot):
-    """
-    Return all content owned by this user.
-    """
-    types = ("QUESTION_ANSWER_BOOK", "PINBOARD_ANSWER_BOOK", "LOGICAL_TABLE", "TAG", "DATA_SOURCE")
-    content = []
-
-    for metadata_type in types:
-        offset = 0
-
-        while True:
-            r = ts.api._metadata.list(
-                type=metadata_type,
-                batchsize=500,
-                offset=offset,
-                pattern=str(user),
-                # authorguid=user,
-            )
-
-            data = r.json()
-            offset += len(data)
-
-            for metadata in data["headers"]:
-                if metadata["author"] == user:
-                    metadata["type"] = metadata_type
-                    content.append(metadata)
-
-            if data["isLastBatch"]:
-                break
-
-    return content
-
-
-def _get_current_security(ts: ThoughtSpot):
-    """ """
-    users_and_groups = ts.api.user.list().json()
-    users = []
-    groups = []
-    associations = []
-
-    for principal in users_and_groups:
-        data = {
-            "display_name": principal["displayName"],
-            "visibility": principal["visibility"],
-            "type": principal["principalTypeEnum"],
-        }
-
-        if "USER" in principal["principalTypeEnum"]:
-            type_ = "USER"
-            users.append({"username": principal["name"], "email": principal["mail"], **data})
-
-        if "GROUP" in principal["principalTypeEnum"]:
-            type_ = "GROUP"
-            groups.append({"group_name": principal["name"], "description": principal.get("description"), **data})
-
-        for group in principal["groupNames"]:
-            associations.append({"principal_name": principal["name"], "principal_type": type_, "group_name": group})
-
-    return users, groups, associations
-
-
-def _form_principals(users, groups, xref):
-    principals = []
-    principals_groups = collections.defaultdict(list)
-
-    for x in xref:
-        principals_groups[x["principal_name"]].append(x["group_name"])
-
-    for group in groups:
-        principals.append(
-            {
-                "name": group["group_name"],
-                "displayName": group["display_name"],
-                "description": group["description"],
-                "principalTypeEnum": group["type"],
-                "groupNames": principals_groups[group["group_name"]],
-                "visibility": group["visibility"],
-            }
-        )
-
-    for user in users:
-        principals.append(
-            {
-                "name": user["username"],
-                "displayName": user["display_name"],
-                "mail": user["email"],
-                "principalTypeEnum": user["type"],
-                "groupNames": principals_groups[user["username"]],
-                "visibility": user["visibility"],
-            }
-        )
-
-    return principals
-
-
-app = CSToolsApp(
-    help="""Managing Users and Groups in bulk.""",
-    options_metavar="[--version, --help]",
-)
+app = CSToolsApp(help="""Managing Users and Groups in bulk.""", options_metavar="[--version, --help]")
 
 
 @app.command(dependencies=[thoughtspot])
 def transfer(
     ctx: typer.Context,
-    from_: str = Opt(..., "--from", help="username of the current content owner"),
-    to_: str = Opt(..., "--to", help="username to transfer content to"),
-    tag: List[str] = Opt(
+    from_username: str = Opt(..., "--from", help="username of the current content owner"),
+    to_username: str = Opt(..., "--to", help="username to transfer content to"),
+    tags: str = Opt(
         None,
-        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+        custom_type=MultipleChoiceType(),
         help="if specified, only move content marked with one or more of these tags",
     ),
-    guids: List[str] = Opt(
+    metadata_types: List[MetadataType] = Opt(
         None,
-        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
+        custom_type=MetadataType(to_system_types=True, include_subtype=True),
+        help="if specified, only move specific types of objects",
+    ),
+    guids: str = Opt(
+        None,
+        custom_type=MultipleChoiceType(),
         help="if specified, only move specific objects",
     ),
+    include_dataflow: bool = Opt(False, "--include-dataflow", help="whether or not to include DataFlow jobs"),
 ):
     """
     Transfer ownership of objects from one User to another.
 
-    Tags and GUIDs constraints are applied in OR fashion.
+    Tags, Metadata Types, and GUIDs constraints are applied in OR fashion.
     """
     ts = ctx.obj.thoughtspot
-    ids = set()
 
-    if tag is not None or guids is not None:
-        with console.status(f"[bold green]Getting all content by: {from_}"):
-            user = ts.user.guid_for(from_)
-            content = _all_user_content(user=user["id"], ts=ts)
+    tasks = [
+        ("gather_content", f"Getting content for [b blue]{from_username}[/]"),
+        ("transfer_ownership", f"Setting [b blue]{to_username}[/] as the content Author"),
+    ]
 
-        if tag is not None:
-            ids.update([_["id"] for _ in content if set([t["name"] for t in _["tags"]]).intersection(set(tag))])
+    if ts.platform.deployment == "software":
+        tasks.append(("transfer_dataflow", f"Transferring DataFlow ownership to [b blue]{to_username}[/]"))
 
-        if guids is not None:
-            ids.update([_["id"] for _ in content if _["id"] in guids])
+    with LiveTasks(tasks, console=rich_console) as tasks:
+        guids_to_transfer = set()
 
-    amt = len(ids) if ids else "all"
+        with tasks["gather_content"]:
+            if (tags or guids or metadata_types):
+                include = None if not metadata_types else [t[0] for t in metadata_types]
+                subtype = None if not metadata_types else [t[1] for t in metadata_types if t[1] is not None]
+                content = ts.metadata.find(author=from_username, include_types=include, include_subtypes=subtype)
 
-    with console.status(f'[bold green]Transferring {amt} objects from "{from_}" to "{to_}"'):
-        try:
-            r = ts.api.user.transfer_ownership(fromUserName=from_, toUserName=to_, objectsID=ids)
-        except Exception:
-            json_msg = r.json()["debug"]
-            msg = json.loads(json_msg)  # uhm, lol?
-            console.print(f"[red]Failed transferral of objects. {msg[-1]}")
-        else:
-            console.print(f'[green]Transferred {amt} objects from "{from_}" to "{to_}"')
+                for header in content:
+                    if tags and set(tags).intersection(tag["name"] for tag in header["tags"]):
+                        guids_to_transfer.add(header["id"])
+
+                    if header["metadata_type"] in (include or []) and header["type"] in (*(subtype or []), None):
+                        guids_to_transfer.add(header["id"])
+
+                    if guids and header["id"] in guids:
+                        guids_to_transfer.add(header["id"])
+
+        with tasks["transfer_ownership"]:
+            extra = {}
+
+            if (tags or guids or metadata_types):
+                if not guids_to_transfer:
+                    rich_console.log(
+                        f"No content found for [b blue]{from_username}[/] with [b blue]--tags[/] or "
+                        f"[b blue]--guids[/]"
+                    )
+                    raise typer.Exit(1)
+
+                extra["object_guids"] = list(guids_to_transfer)
+
+            # ts.api.user_transfer_ownership(from_username=from_username, to_username=to_username, **extra)
+
+            rich_console.log(
+                f"Transferred {len(guids_to_transfer) or 'all'} objects from [b blue]{from_username}[/] to "
+                f"[b blue]{to_username}[/]"
+            )
+
+        if ts.platform.deployment == "software":
+            with tasks["transfer_dataflow"]:
+                _extended_rest_api_v1.dataflow_transfer_ownership(
+                    ts.api,
+                    from_username=from_username,
+                    to_username=to_username
+                )
 
 
 @app.command(dependencies=[thoughtspot])
 def rename(
     ctx: typer.Context,
-    from_: str = Opt(None, "--from", help="current username"),
-    to_: str = Opt(None, "--to", help="new username"),
-    syncer: str = Opt(
+    from_username: str = Opt(None, "--from", help="current username"),
+    to_username: str = Opt(None, "--to", help="new username"),
+    syncer: pathlib.Path = Opt(
         None,
+        custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
-        metavar="protocol://DEFINITION.toml",
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx),
+        rich_help_panel="Syncer Options"
     ),
-    remapping: str = Opt(None, help="if using --syncer, directive to find user remapping at"),
+    remapping: str = Opt(None, help="directive to find usernames to sync at", rich_help_panel="Syncer Options"),
 ):
     """
-    Remap Users from one username to another.
+    Rename Users from one username to another.
 
     If you are renaming from an external data source, your data must follow the
     tabular format below.
 
     \b
-    +----------------+---------------------------+
-    | from_username  |        to_username        |
-    +----------------+---------------------------+
-    | cs_tools       | cstools                   |
-    | namey.namerson | namey@thoughtspot.com     |
-    | fake.user      | fake.user@thoughtspot.com |
-    +----------------+---------------------------+
+        +----------------+---------------------------+
+        | from_username  |        to_username        |
+        +----------------+---------------------------+
+        | cs_tools       | cstools                   |
+        | namey.namerson | namey@thoughtspot.com     |
+        | fake.user      | fake.user@thoughtspot.com |
+        +----------------+---------------------------+
     """
-    if syncer is not None:
-        if remapping is None:
-            console.print("[red]you must provide a syncer directive to --remapping")
-            raise typer.Exit(-1)
-
-        remapping = {r["from_username"]: r["to_username"] for r in syncer.load(remapping)}
-    elif from_ is None or to_ is None:
-        missing = "--from" if from_ is None else "--to"
-        other = "--to" if from_ is None else "--from"
-        console.print(f"if {other} is supplied, {missing} must also be given!")
+    if None in (from_username, to_username):
+        rich_console.print(
+            f"You must supply both [b blue]--from[/], and [b blue]--to[/], "
+            f"got [b blue]--from '{from_username}' --to '{to_username}'"
+        )
         raise typer.Exit(-1)
-    else:
-        remapping = {from_: to_}
 
     ts = ctx.obj.thoughtspot
+    users_map = {}
 
-    with console.status("getting all existing users in ThoughtSpot.."):
-        users = ts.user.all()
+    if syncer is None:
+        users_map[from_username] = to_username
+    
+    elif remapping is None:
+        rich_console.print("[red]you must provide a syncer directive to --remapping")
+        raise typer.Exit(-1)
 
-    with console.status(f"attempting update for {len(remapping)} users.."):
-        for user in users:
-            if user["name"] not in remapping:
-                continue
-            if user["name"] in ("tsadmin", "system", "admin", "su"):
-                console.log(f'[yellow]renaming {user["name"]} is not allowed!')
-                continue
+    else:
+        for row in syncer.load(remapping):
+            users_map[row["from_username"]] = row["to_username"]
+    
+    tasks = [
+        ("gather_users", f"Getting information on {len(users_map)} existing Users in ThoughtSpot"),
+        ("update_users", f"Attempting update for {len(users_map)} Users"),
+    ]
 
-            r = ts.api.metadata.details(id=[user["id"]], type="USER")
+    with LiveTasks(tasks, console=rich_console) as tasks:
+        failed = []
 
-            # get existing user data
-            user_data = r.json()["storables"][0]
+        with tasks["gather_users"]:
+            responses = []
 
-            # update it with the new username
-            user_data["header"]["name"] = remapping.pop(user["name"])
+            for from_username in users_map:
+                if from_username in SYSTEM_USERS:
+                    rich_console.log(f"[b yellow]renaming [b blue]{from_username}[/] is [b red]not allowed")
+                    continue
 
-            try:
-                r = ts.api._session.user_update(userid=user["id"], content=user_data)
-            except httpx.HTTPStatusError:
-                console.print(f"rename [red]failed[/] for [yellow]{from_}[/]")
-            else:
-                console.print(f"rename [green]complete[/]: [yellow]{from_} [white]-->[/] {to_}")
+                try:
+                    r = ts.api.user_read(name=from_username)
+                except httpx.HTTPStatusError as e:
+                    rich_console.log(f"failed to find user [b blue]{from_username}[/]")
+                    r = e.response
 
-    if remapping:
-        not_renamed = "\n  - ".join(remapping)
-        console.print(f"\n[yellow]users not found in system:[/]\n  - {not_renamed}")
+                responses.append(r)
+
+        with tasks["update_users"]:
+            for from_username, to_username, r in zip(users_map.items(), responses):
+                if r.is_error or from_username in SYSTEM_USERS:
+                    continue
+
+                user_info = r.json()
+                user_info["header"]["name"] = to_username
+
+                try:
+                    ts.api.user_update(user_guid=user_info["header"]["id"], content=user_info)
+                except httpx.HTTPStatusError:
+                    header = user_info["header"]
+                    user = f"{header['id']} [b blue]{header['displayName']}[/] ({from_username})"
+                    log.error(f"failed to update user {user}", exc_info=True)
+                    failed.append(from_username)
+
+    if failed:
+        rich_console.log(
+            f"[b yellow]Failed to update {len(failed)} Users",
+            f"\n - ",
+            f"\n - ".join(failed)
+        )
 
 
 @app.command(dependencies=[thoughtspot])
 def sync(
     ctx: typer.Context,
-    syncer: str = Arg(
+    syncer: pathlib.Path = Arg(
         ...,
+        custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
-        metavar="protocol://DEFINITION.toml",
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx),
     ),
-    users: str = Opt("ts_auth_sync_users", help="directive to find users to sync at"),
-    groups: str = Opt("ts_auth_sync_groups", help="directive to find groups to sync at"),
-    associations: str = Opt("ts_auth_sync_xref", help="directive to find associations to sync at"),
+    export: bool = Opt(
+        False,
+        "--export",
+        help="if specified, dump principals to the syncer",
+        rich_help_panel="Export Options"
+    ),
+    users: str = Opt(
+        "ts_auth_sync_users",
+        help="directive to find users to sync at",
+        rich_help_panel="Syncer Options"
+    ),
+    groups: str = Opt(
+        "ts_auth_sync_groups",
+        help="directive to find groups to sync at",
+        rich_help_panel="Syncer Options"
+    ),
+    associations: str = Opt(
+        "ts_auth_sync_xref",
+        help="directive to find associations to sync at",
+        rich_help_panel="Syncer Options"
+    ),
+    new_user_password: str = Opt(None, help="password to set for all newly created users"),
+    remove_deleted: bool = Opt(
+        False,
+        "--remove-deleted",
+        help="delete users and groups not found after loading from the syncer"
+    ),
     apply_changes: bool = Opt(
         False,
-        "--apply-changes",
-        help="whether or not to sync the security strategy into ThoughtSpot",
-        show_default=False,
+        "--apply-changes / --dry-run",
+        help="test your sync to ThoughtSpot",
     ),
-    new_user_password: str = Opt(
-        None,
-        help="password for new users added during the sync operation",
-    ),
-    dont_remove_deleted: bool = Opt(
-        True,
-        "--dont-remove-deleted/--remove-deleted",
-        help="whether to remove the deleted users and user groups",
-        show_default=False,
-    ),
-    export: bool = Opt(False, "--export", help="whether or not to dump data to the syncer", show_default=False),
     create_empty: bool = Opt(
         False,
         "--create-empty",
-        help="write the structure of principals to your syncer without any data",
-        show_default=False,
+        help="write the structure of principal data to your syncer without any data",
+        rich_help_panel="Syncer Options"
     ),
 ):
     """
     Sync your Users and Groups from an external data source.
 
     \b
-    During this operation, Users and Groups..
-      - present in ThoughtSpot, but not present in Syncer are [red]deleted[/] in ThoughtSpot
-        - if using the --no-remove-deleted flag, users will not be deleted in this case
-      - not present in ThoughtSpot, but present in Syncer are [green]created[/] in ThoughtSpot
-      - present in ThoughtSpot, and in Syncer are [yellow]updated[/] by their attributes
-        - this includes group membership
+        +-------------+--------------+----------+-----------------------------+
+        |  Principal  |  in Syncer?  |  in TS?  |  Result                     |
+        +-------------+--------------+----------+-----------------------------+
+        |    USER     |     FALSE    |   TRUE   |  [green]CREATE[/]  in  ThoughtSpot    |
+        |    USER     |     TRUE     |   TRUE   |  [yellow]UPDATE[/]  in  ThoughtSpot    |
+        |    USER     |     FALSE    |   FALSE  |    { no action taken }      |
+        |    USER     |     TRUE     |   FALSE  |  [red]REMOVE[/] from ThoughtSpot**  |
+        |---------------------------------------------------------------------|
+        |    GROUP    |     FALSE    |   TRUE   |  [green]CREATE[/]  in  ThoughtSpot    |
+        |    GROUP    |     TRUE     |   TRUE   |  [yellow]UPDATE[/]  in  ThoughtSpot    |
+        |    GROUP    |     FALSE    |   FALSE  |    { no action taken }      |
+        |    GROUP    |     TRUE     |   FALSE  |  [red]REMOVE[/] from ThoughtSpot**  |
+        +-------------+--------------+----------+-----------------------------+
+
+         * [yellow]UPDATE[/] includes GROUP reassignment, if applicable
+        ** if --remove-deleted is specified, default to { no action taken }
     """
     ts = ctx.obj.thoughtspot
 
-    if export:
-        with console.status("[bold green]getting existing security strategy.."):
-            if create_empty:
-                u, g, x = [], [], []
-            else:
-                u, g, x = _get_current_security(ts)
+    # ==================================================================================================================
+    # EXPORT MODE
+    # ==================================================================================================================
+    
+    tasks = [
+        ("export_principals", "Getting existing Security Strategy"),
+        ("dump_principals", f"Writing Security Strategy to {syncer.name}"),
+    ]
 
-        with console.status(f"[bold green]writing security strategy to {syncer.name}.."):
-            syncer.dump(users, data=u)
-            syncer.dump(groups, data=g)
-            syncer.dump(associations, data=x)
+    if export:
+        with LiveTasks(tasks, console=rich_console) as tasks:
+            with tasks["export_principals"]:
+                if create_empty:
+                    u, g, x = [], [], []
+                else:
+                    u, g, x = work._get_current_security(ts)
+
+            with tasks["dump_principals"]:
+                syncer.dump(users, data=u)
+                syncer.dump(groups, data=g)
+                syncer.dump(associations, data=x)
+
         raise typer.Exit()
 
-    with console.status(f"[bold green]loading security strategy from {syncer.name}.."):
-        u = syncer.load(users)
-        g = syncer.load(groups)
-        x = syncer.load(associations)
+    # ==================================================================================================================
+    # IMPORT MODE
+    # ==================================================================================================================
+    
+    tasks = [
+        ("load_principals", f"Reading Security Strategy from {syncer.name}"),
+        ("sync_principals", "Syncing Security Strategy to ThoughtSpot"),
+    ]
 
-    with console.status("[bold green]syncing security strategy to [white]ThoughtSpot[/].."):
-        principals = _form_principals(u, g, x)
+    with LiveTasks(tasks, console=rich_console) as tasks:
 
-        r = ts.api.user.sync(
-            principals=principals,
-            applyChanges=apply_changes,
-            removeDeleted=dont_remove_deleted,
-            password=new_user_password,
-        )
+        with tasks["load_principals"]:
+            u = syncer.load(users)
+            g = syncer.load(groups)
+            x = syncer.load(associations)
 
-        d = r.json()
-        log.debug(d)
+        with tasks["sync_principals"]:
+            principals = work._form_principals(u, g, x)
 
-        # draw the tables
-        for principal in ("users", "groups"):
-            a = d[f"{principal}Added"]
-            u = d[f"{principal}Updated"]
-            r = d[f"{principal}Deleted"]
-            t = Table(
-                "added",
-                "updated",
-                "removed",
-                title=f"Synced {principal}".title(),
-                caption=f"{len(a) + len(u) + len(r)} {principal} synced",
+            r = ts.api.user_sync(
+                principals=principals,
+                apply_changes=apply_changes,
+                remove_deleted=remove_deleted,
+                password=new_user_password,
             )
 
-            for row in it.zip_longest(a, u, r):
-                t.add_row(*row)
+            data = r.json()
 
-            console.log("\n", t, justify="center")
-            console.print("\n\n")
+    for principal_type in ("groups", "users"):
+        centered_table = layout.build_table()
+        centered_table.title = f"Synced {principal_type.title()}"
+
+        create = data[principal_type + "Added"]
+        update = data[principal_type + "Updated"]
+        delete = data[principal_type + "Deleted"]
+        rows = it.zip_longest(create, update, delete)
+
+        for idx, row in enumerate(rows, start=1):
+            centered_table.add_row(rows)
+
+        centered_table.footer = f"{idx} principals synced to ThoughtSpot"
+        rich_console.print(centered_table)
