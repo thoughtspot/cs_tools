@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 import logging
 
 from pydantic import validate_arguments
@@ -156,21 +156,16 @@ class MetadataMiddleware:
     def find(
         self,
         *,
-        tags: list[str] = None,
+        tags: List[str] = None,
         author: GUID = None,
         pattern: str = None,
-        include_types: list[str] = None,
-        exclude_types: list[str] = None,
+        include_types: List[str] = None,
+        exclude_types: List[str] = None,
+        include_subtypes: List[str] = None,
     ) -> RecordsFormat:
         """
         Find all object which meet the predicates in the keyword args.
         """
-        if include_types is None:
-            include_types = []
-
-        if exclude_types is None:
-            exclude_types = []
-
         content = []
         metadata_list_kw = {}
 
@@ -181,15 +176,31 @@ class MetadataMiddleware:
             metadata_list_kw["pattern"] = pattern
 
         for metadata_type in MetadataObjectType:
-            if (metadata_type in exclude_types) or (metadata_type not in include_types):
+            if exclude_types is not None and (metadata_type in exclude_types):
                 continue
 
-            r = self.ts.api.metadata_list(metadata_type=metadata_type, batchsize=500, **metadata_list_kw)
+            if include_types is not None and (metadata_type not in include_types):
+                continue
 
-            for header in r.json()["headers"]:
-                header["metadata_type"] = metadata_type
-                header["type"] = header.get("type", None)
-                content.append(header)
+            metadata_list_kw["offset"] = 0
+
+            while True:
+                r = self.ts.api.metadata_list(metadata_type=metadata_type, batchsize=500, **metadata_list_kw)
+                data = r.json()
+                metadata_list_kw["offset"] += len(data["headers"])
+
+                for header in data["headers"]:
+                    subtype = header.get("type", None)
+
+                    if (include_subtypes is not None) and (subtype is not None) and (subtype not in include_subtypes):
+                        continue
+
+                    header["metadata_type"] = metadata_type
+                    header["type"] = subtype
+                    content.append(header)
+
+                if data["isLastBatch"]:
+                    break
 
         return content
 
