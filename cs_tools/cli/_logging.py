@@ -2,7 +2,8 @@ import logging.config
 import datetime as dt
 import logging
 
-from cs_tools.const import APP_DIR, rich_console
+from cs_tools.cli.ux import rich_console
+from cs_tools.const import APP_DIR
 
 
 def _monkeypatch_logging_trace() -> None:
