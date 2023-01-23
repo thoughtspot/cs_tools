@@ -304,6 +304,9 @@ class UnixPath:
 
     def unset(self) -> None:
         for profile in self.get_shell_profiles():
+            if not profile.exists():
+                continue
+
             contents = profile.read_text()
 
             if self.profile_snippet in contents:
