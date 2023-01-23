@@ -45,7 +45,7 @@ def cli():
         dest="beta",
         default=False,
     )
-    operation = parser.add_mutually_exclusive_group()
+    operation = parser.add_mutually_exclusive_group(required=True)
     operation.add_argument(
         "-i",
         "--install",
@@ -373,13 +373,19 @@ def get_cs_tools_venv():
     updater_py = here / "_updater.py"
 
     if not updater_py.exists():
-        log.info("Missing {updater}, downloading from GitHub".format(updater=updater_py))
+        log.info("Missing '{updater}', downloading from GitHub".format(updater=updater_py))
         updater_path = "cs_tools/updater/_updater.py"
-        updater_url = "https://api.github.com/repos/thoughtspot/cs_tools/contents/{path}".format(path=updater_path)
+        updater_url = (
+            "https://api.github.com/repos/thoughtspot/cs_tools"
+            "/contents/{path}"
+            "?ref=holiday%2Dplanning"  # TODO: remove before release
+            .format(path=updater_path)
+        )
 
         data = http_request(updater_url)
         data = http_request(data["download_url"], to_json=False)
-        updater_py.write_text(data)
+        updater_py.write_text(data.decode())
+        log.info("Downloaded as '{updater}'".format(updater=updater_py))
 
     # Hack the PATH var so we can import from _updater
     sys.path.insert(0, os.path.dirname(__file__))
