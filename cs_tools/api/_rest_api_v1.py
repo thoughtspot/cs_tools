@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 from io import BufferedIOBase
 import datetime as dt
 import tempfile
@@ -146,7 +146,7 @@ class RESTAPIv1(httpx.Client):
         return r
 
     def user_transfer_ownership(
-        self, *, from_username: str, to_username: str, object_guids: list[GUID] = UNDEFINED
+        self, *, from_username: str, to_username: str, object_guids: List[GUID] = UNDEFINED
     ) -> httpx.Response:
         p = {"fromUserName": from_username, "toUserName": to_username, "objectsID": dumps(object_guids)}
         r = self.post("callosum/v1/tspublic/v1/user/transfer/ownership", params=p)
@@ -155,7 +155,7 @@ class RESTAPIv1(httpx.Client):
     def user_sync(
         self,
         *,
-        principals: list[SecurityPrincipal],
+        principals: List[SecurityPrincipal],
         apply_changes: bool = False,
         remove_deleted: bool = True,
         password: str = UNDEFINED,
@@ -218,10 +218,10 @@ class RESTAPIv1(httpx.Client):
     def metadata_assign_tag(
         self,
         *,
-        metadata_guids: list[GUID],
-        metadata_types: list[MetadataObjectType],
-        tag_guids: list[GUID] = UNDEFINED,
-        tag_names: list[str] = UNDEFINED,
+        metadata_guids: List[GUID],
+        metadata_types: List[MetadataObjectType],
+        tag_guids: List[GUID] = UNDEFINED,
+        tag_names: List[str] = UNDEFINED,
     ) -> httpx.Response:
         d = {
             "id": dumps(metadata_guids),
@@ -235,14 +235,14 @@ class RESTAPIv1(httpx.Client):
     def metadata_unassign_tag(
         self,
         *,
-        metadata_guid: list[GUID],
-        metadata_type: list[MetadataObjectType],
-        tag_guids: list[GUID] = UNDEFINED,
-        tag_names: list[str] = UNDEFINED,
+        metadata_guids: List[GUID],
+        metadata_types: List[MetadataObjectType],
+        tag_guids: List[GUID] = UNDEFINED,
+        tag_names: List[str] = UNDEFINED,
     ) -> httpx.Response:
         d = {
-            "id": dumps(metadata_guid),
-            "type": dumps(metadata_type),
+            "id": dumps(metadata_guids),
+            "type": dumps(metadata_types),
             "tagid": dumps(tag_guids),
             "tagname": dumps(tag_names),
         }
@@ -253,18 +253,18 @@ class RESTAPIv1(httpx.Client):
         self,
         *,
         metadata_type: MetadataObjectType = "QUESTION_ANSWER_BOOK",
-        subtypes: list[MetadataObjectSubtype] = UNDEFINED,
+        subtypes: List[MetadataObjectSubtype] = UNDEFINED,
         category: MetadataCategory = "ALL",
         sort: SortOrder = "DEFAULT",
         sort_ascending: bool = UNDEFINED,
         offset: int = -1,
         batchsize: int = UNDEFINED,
-        tag_name: list[str] = UNDEFINED,
+        tag_name: List[str] = UNDEFINED,
         pattern: str = UNDEFINED,
         show_hidden: bool = False,
-        skip_guids: list[GUID] = UNDEFINED,
-        fetch_guids: list[GUID] = UNDEFINED,
-        auto_created: bool = UNDEFINED,
+        skip_guids: List[GUID] = UNDEFINED,
+        fetch_guids: List[GUID] = UNDEFINED,
+        auto_created: bool = False,
         author_guid: GUID = UNDEFINED,
     ) -> httpx.Response:
         p = {
@@ -289,7 +289,7 @@ class RESTAPIv1(httpx.Client):
     def metadata_details(
         self,
         *,
-        guids: list[GUID],
+        guids: List[GUID],
         metadata_type: MetadataObjectType = "LOGICAL_TABLE",
         show_hidden: bool = False,
     ) -> httpx.Response:
@@ -306,7 +306,7 @@ class RESTAPIv1(httpx.Client):
     def metadata_tml_export(
         self,
         *,
-        export_guids: list[GUID],
+        export_guids: List[GUID],
         format_type: TMLType = "YAML",
         export_associated: bool = False,
         export_fqn: bool = True,  # this is a happier default
@@ -323,7 +323,7 @@ class RESTAPIv1(httpx.Client):
     def metadata_tml_import(
         self,
         *,
-        import_objects: list[TMLObject],
+        import_objects: List[TMLObject],
         import_policy: TMLImportPolicy = "VALIDATE_ONLY",
         force_create: bool = False,
     ) -> httpx.Response:
@@ -388,7 +388,7 @@ class RESTAPIv1(httpx.Client):
     def dependency_list_dependents(
         self,
         *,
-        guids: list[str],
+        guids: List[str],
         metadata_type: MetadataObjectType = "LOGICAL_TABLE",
         batchsize: int = -1,
         offset: int = -1,
@@ -405,7 +405,7 @@ class RESTAPIv1(httpx.Client):
         self,
         *,
         metadata_type: str,
-        guids: list[GUID],
+        guids: List[GUID],
         # DEV NOTE: @boonhapus 2023/01/09
         #    this parameter deviates from the REST API V1 contract!
         #
@@ -447,7 +447,7 @@ class RESTAPIv1(httpx.Client):
         self,
         *,
         metadata_type: MetadataObjectType,
-        guids: list[GUID],
+        guids: List[GUID],
         dependent_share: bool = False,
         permission_type: PermissionType = "DEFINED",
     ) -> httpx.Response:

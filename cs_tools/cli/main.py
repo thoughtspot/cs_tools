@@ -5,10 +5,10 @@ import logging
 import typer
 import rich
 
+from cs_tools.cli._logging import _setup_logging
 from cs_tools.cli.loader import CSTool
 from cs_tools.settings import _meta_config
 from cs_tools._version import __version__
-from cs_tools._logging import _setup_logging
 from cs_tools.cli.ux import rich_console, CSToolsApp
 from cs_tools.errors import CSToolsError
 from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES
