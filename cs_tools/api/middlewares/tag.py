@@ -6,6 +6,7 @@ import logging
 from pydantic import validate_arguments
 
 from cs_tools.errors import ContentDoesNotExist
+from cs_tools.api._utils import dumps
 from cs_tools import utils
 
 if TYPE_CHECKING:
@@ -50,7 +51,7 @@ class TagMiddleware:
         """
         tag = self.get(tag_name)
 
-        self.ts.api.request("POST", "callosum/v1/metadata/delete", data={"type": "TAG", "id": tag["id"]})
+        self.ts.api.request("POST", "callosum/v1/metadata/delete", data={"type": "TAG", "id": dumps([tag["id"]])})
 
     @validate_arguments
     def all(self) -> list[dict[str, Any]]:
