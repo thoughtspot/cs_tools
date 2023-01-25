@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Union
 import logging
 
 from pydantic import validate_arguments
@@ -25,7 +25,7 @@ class AnswerMiddleware:
     def all(
         self,
         *,
-        tags: str | list[str] = None,
+        tags: Union[str, List[str]] = None,
         category: MetadataCategory = MetadataCategory.all,
         hidden: bool = False,
         exclude_system_content: bool = True,
@@ -57,9 +57,9 @@ class AnswerMiddleware:
 
         while True:
             r = self.ts.api.metadata_list(
-                type="QUESTION_ANSWER_BOOK",
+                metadata_type="QUESTION_ANSWER_BOOK",
                 category=category,
-                tag_name=tags,
+                tag_name=tags or _utils.UNDEFINED,
                 show_hidden=hidden,
                 batchsize=chunksize,
                 offset=len(answers),
@@ -71,7 +71,7 @@ class AnswerMiddleware:
             if exclude_system_content:
                 to_extend = [answer for answer in to_extend if answer.get("authorName") not in _utils.SYSTEM_USERS]
 
-            answers.extend(to_extend)
+            answers.extend([{"metadata_type": "QUESTION_ANSWER_BOOK", **answer} for answer in to_extend])
 
             if not answers:
                 info = {
