@@ -12,7 +12,7 @@ from cs_tools._version import __version__
 from cs_tools.cli.ux import rich_console, CSToolsApp
 from cs_tools.errors import CSToolsError
 from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES
-from cs_tools.cli import _config, _tools, _log
+from cs_tools.cli import _config, _tools, _self, _log
 from cs_tools import utils
 
 log = logging.getLogger(__name__)
@@ -93,6 +93,7 @@ def run() -> int:
 
     app.add_typer(_tools.app)
     app.add_typer(_config.app)
+    app.add_typer(_self.app)
     app.add_typer(_log.app)
 
     try:
