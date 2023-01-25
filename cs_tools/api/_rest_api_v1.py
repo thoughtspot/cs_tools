@@ -177,6 +177,10 @@ class RESTAPIv1(httpx.Client):
         r = self.get("callosum/v1/tspublic/v1/group", params=p)
         return r
 
+    def group_list_users(self, *, group_guid: GUID) -> httpx.Response:
+        r = self.get(f"callosum/v1/tspublic/v1/group/{group_guid}/users")
+        return r
+
     # ==================================================================================================================
     # DATA        ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_groups_and_privileges
     # ==================================================================================================================
