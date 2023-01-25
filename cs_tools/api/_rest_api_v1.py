@@ -59,8 +59,13 @@ class RESTAPIv1(httpx.Client):
 
         log.debug(f">> {method.upper()} to {endpoint} with keywords {secure}")
 
-        r = super().request(method, endpoint, **request_kw)
-        r.raise_for_status()
+        try:
+            r = super().request(method, endpoint, **request_kw)
+            r.raise_for_status()
+        except httpx.HTTPError as e:
+            log.exception("Something went wrong calling the ThoughtSpot API")
+            log.warning(e.response.json())
+            raise e from None
 
         log.debug(f"<< HTTP: {r.status_code}")
 
