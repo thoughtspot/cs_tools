@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from typing import List, Union
 
+from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml._tml import TML
 from pydantic import validate_arguments
 
-from cs_tools.types import TMLImportPolicy, TMLSupportedContent, TMLAPIResponse
+from cs_tools.types import GUID, TMLImportPolicy, TMLSupportedContent, TMLAPIResponse
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
@@ -51,3 +52,19 @@ class TMLMiddleware:
             )
 
         return responses
+
+    @validate_arguments
+    def to_export(self, guids: List[GUID], *, export_associated: bool=False) -> List[TML]:
+        """
+        Import TML objects.
+        """
+        r = self.ts.api.metadata_tml_export(export_guids=guids)
+
+        tmls: List[TML] = []
+
+        for guid, content in zip(guids, r.json()["object"]):
+            tml_cls = determine_tml_type(info=content["info"])
+            tml = tml_cls.loads(content["edoc"])
+            tmls.append(tml)
+
+        return tmls
