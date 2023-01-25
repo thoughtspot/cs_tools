@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 import logging
 
 from pydantic import validate_arguments
 import httpx
 
 from cs_tools.errors import ContentDoesNotExist
-from cs_tools.types import GUID
+from cs_tools.types import GUID, RecordsFormat, UserProfile
 from cs_tools.api import _utils
 
 log = logging.getLogger(__name__)
@@ -45,3 +45,25 @@ class GroupMiddleware:
             raise e
 
         return r.json()["header"]["id"]
+
+    @validate_arguments
+    def users_in(self, group_name: str, *, is_directly_assigned: bool=True) -> List[RecordsFormat]:
+        """
+        Return the User headers for a given Group.
+        """
+        if _utils.is_valid_guid(group_name):
+            group_guid = group_name
+        else:
+            group_guid = self.guid_for(group_name)
+
+        users_profiles: List[UserProfile] = self.ts.api.group.group_list_users(group_guid=group_guid)
+        users = []
+
+        for user in users_profiles:
+            if is_directly_assigned and group_guid in user["assignedGroups"]:
+                users.append(user["header"])
+
+            if not is_directly_assigned and group_guid in user["inheritedGroups"]:
+                users.append(user["header"])
+
+        return users
