@@ -54,17 +54,33 @@ class TMLMiddleware:
         return responses
 
     @validate_arguments
-    def to_export(self, guids: List[GUID], *, export_associated: bool=False) -> List[TML]:
+    def to_export(
+        self,
+        guids: List[GUID],
+        *,
+        export_associated: bool=False,
+        iterator: bool=False,
+    ) -> List[TML]:
         """
         Import TML objects.
         """
-        r = self.ts.api.metadata_tml_export(export_guids=guids)
-
+        # DEV NOTE: @boonhapus, 2023/01/24
+        #
+        #   running individual exports is not efficient, how can we provide a better API for customers with large
+        #   amount of content ot export?
+        #
         tmls: List[TML] = []
 
-        for guid, content in zip(guids, r.json()["object"]):
-            tml_cls = determine_tml_type(info=content["info"])
-            tml = tml_cls.loads(content["edoc"])
-            tmls.append(tml)
+        for guid in guids:
+            r = self.ts.api.metadata_tml_export(export_guids=[guid])
+
+            for content in r.json()["object"]:
+                tml_cls = determine_tml_type(info=content["info"])
+                tml = tml_cls.loads(content["edoc"])
+
+                if iterator:
+                    yield tml
+
+                tmls.append(tml)
 
         return tmls
