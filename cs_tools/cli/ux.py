@@ -42,7 +42,7 @@ def CSToolsArgument(default, **passthru) -> typer.models.ArgumentInfo:
     """
     Typer does this with a function definition, even though they behave like classes.
     """
-    passthru["show_default"] = default not in (..., None)
+    passthru["show_default"] = passthru.get("show_default", default not in (..., None))
     return CSToolsArgumentInfo(default=default, **passthru)
 
 
@@ -50,7 +50,7 @@ def CSToolsOption(default, *param_decls, **passthru) -> typer.models.OptionInfo:
     """
     Typer does this with a function definition, even though they behave like classes.
     """
-    passthru["show_default"] = default not in (..., None)
+    passthru["show_default"] = passthru.get("show_default", default not in (..., None))
     return CSToolsOptionInfo(default=default, param_decls=param_decls, **passthru)
 
 
