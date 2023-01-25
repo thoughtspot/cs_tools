@@ -173,8 +173,8 @@ class SearchMiddleware:
             subtype = "AGGR_WORKSHEET"
 
         if not _utils.is_valid_guid(guid):
-            d = self.ts._rest_api._metadata.list(
-                type="LOGICAL_TABLE", subtypes=[subtype], pattern=guid, sort="CREATED", sortascending=True
+            d = self.ts.api.metadata_list(
+                metadata_type="LOGICAL_TABLE", subtypes=[subtype], pattern=guid, sort="CREATED", sort_ascending=True
             ).json()
 
             if not d["headers"]:
@@ -192,21 +192,8 @@ class SearchMiddleware:
         data = []
 
         while True:
-            try:
-                r = self.ts.api.search_data(
+            r = self.ts.api.search_data(
                     query_string=query, data_source_guid=guid, format_type="COMPACT", batchsize=sample, offset=offset
-                )
-            except httpx.HTTPStatusError as e:
-                log.debug(e, exc_info=True)
-                err = e.response.json()
-                errors = [msg for msg in json.loads(err["debug"]) if msg]
-                query = query.replace("[", r"\[")
-                raise CSToolsError(
-                    error="\n".join(errors),
-                    mitigation=(
-                        f"Double check, does this query apply to [blue]{worksheet or table or view}[/]?"
-                        f"\n\nSearch terms\n[blue]{query}"
-                    ),
                 )
 
             d = r.json()
@@ -232,5 +219,5 @@ class SearchMiddleware:
 
         # Cleanups
         data = _to_records(columns=d["columnNames"], rows=data)
-        data = _cast(data, types=data_types)
+        data = _cast(data, headers_to_types=data_types)
         return data
