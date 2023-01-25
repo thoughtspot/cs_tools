@@ -110,7 +110,7 @@ def identify(
         ("gather_ts_bi", "Getting content usage and activity statistics"),
         ("gather_supporting_filter_criteria", "Getting supporting metadata for content identification"),
         ("gather_metadata", "Getting existing content metadata"),
-        ("syncer_report", f"Writing Archiver report{'to {report.name}' if report is not None else ''}"),
+        ("syncer_report", f"Writing Archiver report{f'to {report.name}' if report is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items to tag with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("tagging_content", "Tagging content in ThoughtSpot"),
@@ -245,7 +245,7 @@ def revert(
 
     tasks = [
         ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver report{'to {report.name}' if report is not None else ''}"),
+        ("syncer_report", f"Writing Archiver report{f'to {report.name}' if report is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("untagging_content", f"Removing [b blue]{tag_name}[/] from content in ThoughtSpot"),
@@ -373,10 +373,10 @@ def remove(
 
     tasks = [
         ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver report{'to {report.name}' if report is not None else ''}"),
+        ("syncer_report", f"Writing Archiver report{f'to {report.name}' if report is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
-        ("export_content", f"Exporting content as TML{'to {directory}' if directory is not None else ''}"),
+        ("export_content", f"Exporting content as TML{f' to {directory}' if directory is not None else ''}"),
         ("delete_content", f"Deleting [b blue]{tag_name}[/] content in ThoughtSpot"),
         ("deleting_tag", f"Removing the [b blue]{tag_name}[/] tag from ThoughtSpot"),
     ]
@@ -445,7 +445,7 @@ def remove(
             if directory is None:
                 this_task.skip()
             else:
-                for tml in ts.tml.to_export(guids=[content["id"] for content in to_delete]):
+                for tml in ts.tml.to_export(guids=[content["id"] for content in to_delete], iterator=True):
                     tml.dump(directory / f"{tml.guid}.{tml.tml_type_name}.tml")
 
         with tasks["delete_content"] as this_task:
