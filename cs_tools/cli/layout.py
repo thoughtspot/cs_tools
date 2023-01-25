@@ -65,6 +65,7 @@ class WorkTask:
         self._live = rich_live
         self._started_at: dt.datetime = None
         self._stopped_at: dt.datetime = None
+        self._skipped = False
 
     @property
     def started_at(self) -> dt.datetime:
@@ -74,6 +75,10 @@ class WorkTask:
     def duration(self) -> dt.timedelta:
         end = self._stopped_at or dt.datetime.now()
         return end - self.started_at
+
+    def skip(self) -> None:
+        self._skipped = True
+        self.status = None
 
     def bind_display(self, rich_live: Live) -> None:
         self._live = rich_live
@@ -86,7 +91,9 @@ class WorkTask:
         return self
 
     def __exit__(self, exc_type, exc, trace) -> None:
-        self.status = ":white_heavy_check_mark:" if exc is None else ":cross_mark:"
+        if not self._skipped:
+            self.status = ":white_heavy_check_mark:" if exc is None else ":cross_mark:"
+
         self._stopped_at = dt.datetime.now()
         self._live.refresh()
 
