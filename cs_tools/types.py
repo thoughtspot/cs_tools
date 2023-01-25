@@ -109,7 +109,7 @@ class GroupPrivilege(StrEnum):
     has_developer_privilege = "DEVELOPER"
     can_share_with_all_users = "SHAREWITHALL"
     can_manage_data = "DATAMANAGEMENT"
-    can_use_experimental_features = "EXPERIMENTALFEATUREPRIVILEG"
+    can_use_experimental_features = "EXPERIMENTALFEATUREPRIVILEGE"
     can_invoke_custom_r_analysis = "RANALYSIS"
     can_manage_sync = "SYNCMANAGEMENT"
     can_schedule_for_others = "JOBSCHEDULING"
