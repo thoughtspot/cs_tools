@@ -41,12 +41,29 @@ class CSToolsVirtualEnvironment:
     @staticmethod
     def run(*args, raise_on_failure: bool = True, **kwargs) -> sp.CompletedProcess:
         """Run a SHELL command."""
-        cp = sp.run(args, stdout=sp.PIPE, stderr=sp.STDOUT, **kwargs)
+        levels = {"ERROR": log.error, "WARNING": log.warning}
+
+        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, **kwargs) as proc:
+            for line_bytes in proc.stdout:
+                line = line_bytes.decode().strip()
+
+                if line.startswith("-----"):  # progressbar
+                    continue
+
+                elif line.startswith(tuple(levels)):
+                    log_level, _, line = line.partition(":")
+                    logger = levels[log_level]
+
+                else:
+                    logger = log.debug
+
+                logger(line)
+
+        cp = sp.CompletedProcess(args, proc.returncode, stdout=proc.stdout, stderr=proc.stderr)
 
         if raise_on_failure and cp.returncode != 0:
             cmd = " ".join(args)
-            r = cp.stdout.decode()
-            raise RuntimeError(f"Failed with exit code: {cp.returncode}\n\nCOMMAND: {cmd}\n\n{r}")
+            raise RuntimeError(f"Failed with exit code: {cp.returncode}\n\nCOMMAND: {cmd}")
 
         return cp
 
