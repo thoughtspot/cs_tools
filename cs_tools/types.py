@@ -159,7 +159,7 @@ class TMLSupportedContent(StrEnum):
 # ======================================================================================================================
 
 
-RecordsFormat = list[dict[str, Any]]
+RecordsFormat = List[Dict[str, Any]]
 # records are typically a metadata header fragment, but not always.
 #
 # [
@@ -238,7 +238,7 @@ class ThoughtSpotPlatform(pydantic.BaseModel):
         return timezone
 
     @classmethod
-    def from_api_v1_session_info(cls, info: dict[str, Any]) -> ThoughtSpotPlatform:
+    def from_api_v1_session_info(cls, info: Dict[str, Any]) -> ThoughtSpotPlatform:
         config_info = info.get("configInfo")
 
         data = {

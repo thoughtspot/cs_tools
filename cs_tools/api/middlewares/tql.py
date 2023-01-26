@@ -50,7 +50,7 @@ class TQLMiddleware:
         database: str = None,
         schema_: Annotated[str, Field(alias="schema")] = "falcon_default_schema",
         http_timeout: int = 60.0,
-    ) -> list[RecordsFormat]:
+    ) -> RecordsFormat:
         """
 
         Parameters

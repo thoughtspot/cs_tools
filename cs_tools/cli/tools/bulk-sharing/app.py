@@ -1,3 +1,4 @@
+from typing import List
 import logging
 import socket
 
@@ -31,7 +32,7 @@ def _find_my_local_ip() -> str:
     return ip
 
 
-def _get_table_ids(api, *, db: str, schema: str = "falcon_default_schema", table: str = None) -> list[str]:
+def _get_table_ids(api, *, db: str, schema: str = "falcon_default_schema", table: str = None) -> List[str]:
     """
     Returns a list of table GUIDs.
     """

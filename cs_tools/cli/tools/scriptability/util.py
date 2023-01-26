@@ -93,6 +93,6 @@ class TMLFile:
         return isinstance(self.tml, Connection)
 
 
-def strip_blanks(inp: list[str]) -> list[str]:
+def strip_blanks(inp: List[str]) -> List[str]:
     """Strips blank out of a list."""
     return [e for e in inp if e]

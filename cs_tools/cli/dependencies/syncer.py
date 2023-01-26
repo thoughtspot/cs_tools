@@ -95,7 +95,7 @@ class DSyncer(Dependency):
     #
     #
 
-    def _read_config_from_definition(self, ts, proto, definition) -> dict[str, Any]:
+    def _read_config_from_definition(self, ts, proto, definition) -> Dict[str, Any]:
         if definition in ("default", ""):
             try:
                 definition = ts.config.syncer[proto]

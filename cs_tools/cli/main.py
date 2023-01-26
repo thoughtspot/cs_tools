@@ -58,7 +58,7 @@ app = CSToolsApp(
 )
 
 
-def _setup_tools(tools_app: typer.Typer, ctx_settings: dict[str, Any]) -> None:
+def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
     ctx_settings["obj"].tools = {}
 
     for path in TOOLS_DIR.iterdir():

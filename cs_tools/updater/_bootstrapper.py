@@ -153,7 +153,7 @@ def cli():
 
     log.info("{g}Done!{x} Thank you for trying CS Tools.".format(g=_GREEN, x=_RESET))
 
-    if args.install:
+    if args.install or args.reinstall:
         log.info(
             "{y}You're almost there! Please {g}restart your shell{x} {y}and then execute the command below.{x}"
             "\n"
@@ -427,7 +427,7 @@ def get_path_manipulator(venv):
 
 
 def http_request(url, to_json=True):
-    # type: (str, bool) -> dict[str, Any]
+    # type: (str, bool) -> Dict[str, Any]
     """
     Makes a GET request to <url>.
     """
@@ -448,7 +448,7 @@ def http_request(url, to_json=True):
 
 
 def get_latest_cs_tools_release(allow_beta=False):
-    # type: (bool) -> dict[str, Any]
+    # type: (bool) -> Dict[str, Any]
     """
     Get the latest CS Tools release.
     """

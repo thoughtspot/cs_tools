@@ -47,7 +47,7 @@ def scrub_undefined(inp: Any) -> Any:
     return inp
 
 
-def scrub_sensitive(request_keywords: dict[str, Any]) -> dict[str, Any]:
+def scrub_sensitive(request_keywords: Dict[str, Any]) -> Dict[str, Any]:
     """
     Remove sensitive data for logging. It's a poor man's logging.Filter.
 

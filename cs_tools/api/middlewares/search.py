@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List
 import datetime as dt
 import logging
-import json
 
 from pydantic import validate_arguments
-import httpx
 
-from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist, CSToolsError
+from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist
 from cs_tools.types import RecordsFormat
 from cs_tools.api import _utils
 
@@ -35,11 +33,11 @@ def _fix_for_scal_101507(row: RecordsFormat) -> RecordsFormat:
     return row
 
 
-def _to_records(columns: list[str], rows: list[RecordsFormat]) -> list[RecordsFormat]:
+def _to_records(columns: List[str], rows: list[RecordsFormat]) -> list[RecordsFormat]:
     return [dict(zip(columns, _fix_for_scal_101507(row))) for row in rows]
 
 
-def _cast(data: list[RecordsFormat], headers_to_types: dict[str, str]) -> list[RecordsFormat]:
+def _cast(data: list[RecordsFormat], headers_to_types: Dict[str, str]) -> list[RecordsFormat]:
     """
     Cast data coming back from Search API to their intended column types.
     """

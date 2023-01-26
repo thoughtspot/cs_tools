@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union, List
 import logging
 
 from pydantic import validate_arguments
 
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import MetadataCategory, RecordsFormat, GUID
+from cs_tools.utils import chunks
 from cs_tools.api import _utils
 
 if TYPE_CHECKING:
@@ -26,7 +27,7 @@ class LogicalTableMiddleware:
     def all(
         self,
         *,
-        tags: str | list[str] = None,
+        tags: Union[str, List[str]] = None,
         category: MetadataCategory = MetadataCategory.all,
         hidden: bool = False,
         exclude_system_content: bool = True,
@@ -48,7 +49,7 @@ class LogicalTableMiddleware:
 
         Returns
         -------
-        tables : list[dict[str, Any]]
+        tables : list[Dict[str, Any]]
           all answer headers
         """
         if isinstance(tags, str):
@@ -95,7 +96,7 @@ class LogicalTableMiddleware:
         return tables
 
     @validate_arguments
-    def columns(self, guids: list[GUID], *, include_hidden: bool = False, chunksize: int = 10) -> RecordsFormat:
+    def columns(self, guids: List[GUID], *, include_hidden: bool = False, chunksize: int = 10) -> RecordsFormat:
         """ """
         columns = []
 

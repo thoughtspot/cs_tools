@@ -4,6 +4,7 @@ This file contains the methods to execute the 'scriptability import' command.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import List, Dict, Union
 import pathlib
 import logging
 import time
@@ -36,12 +37,12 @@ class TMLImportResponse:
     tml_type_name: str
     name: str
     status_code: str  # ERROR, WARNING, OK
-    error_messages: list[str] = None
+    error_messages: List[str] = None
 
     def __post_init__(self):
         self.error_messages = self._process_errors()
 
-    def _process_errors(self) -> list[str]:
+    def _process_errors(self) -> List[str]:
         if self.error_messages is None:
             return []
         return [_.strip() for _ in re.split("<br/>|\n", self.error_messages) if _.strip()]
@@ -76,7 +77,7 @@ def _mute_our_rich_handler() -> None:
 #         self.error_message: str = ""
 
 
-def import_(
+def to_import(
     ctx: typer.Context,
     path: pathlib.Path = Arg(
         ...,
@@ -95,8 +96,8 @@ def import_(
     ),
     from_env: str = Opt(None, help="the environment name importing from", rich_help_panel="GUID File Options"),
     to_env: str = Opt(None, help="the environment name importing to", rich_help_panel="GUID File Options"),
-    tags: list[str] = Opt(None, help="tags to add to the imported content"),
-    share_with: list[str] = Opt(None, help="groups to share the uploaded content with"),
+    tags: List[str] = Opt(None, help="tags to add to the imported content"),
+    share_with: List[str] = Opt(None, help="groups to share the uploaded content with"),
     tml_logs: pathlib.Path = Opt(
         None,
         help="full path to the directory to log sent TML. TML can change during load.",
@@ -104,7 +105,7 @@ def import_(
         file_okay=False,
         resolve_path=True,
     ),
-    org: str | int = Opt(None, help="name or ID of an Org to import to", hidden=True),
+    org: Union[str, int] = Opt(None, help="name or ID of an Org to import to", hidden=True),
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -149,13 +150,13 @@ def import_(
 
 def _import_and_validate(
     ts: ThoughtSpot, path: pathlib.Path, force_create: bool, guid_mapping: GUIDMapping, tml_logs: pathlib.Path
-) -> list[TMLImportResponse]:
+) -> List[TMLImportResponse]:
     """
     Perform a validation import.
 
     No content is created. If FQNs map, they will be used. If they don't, they will be removed.
     """
-    tml_files: list[TMLFile] = []
+    tml_files: List[TMLFile] = []
 
     for guid, tml_file in _load_tml_from_files(path).items():
         if tml_file.is_connection:
@@ -190,7 +191,7 @@ def _import_and_validate(
             force_create=force_create,
         )
 
-        results: list[TMLImportResponse] = []
+        results: List[TMLImportResponse] = []
 
         for tml_file, content in zip(tml_files, r.json()["object"]):
             results.append(
@@ -213,15 +214,15 @@ def _import_and_create_bundle(
     import_policy: TMLImportPolicy,
     force_create: bool,
     guid_mapping: GUIDMapping,
-    tags: list[str],
-    share_with: list[str],
+    tags: List[str],
+    share_with: List[str],
     tml_logs: pathlib.Path,
-) -> list[TMLImportResponse]:
+) -> List[TMLImportResponse]:
     """
     Attempts to create new content. If a mapping is not found, then an assumption is made that the mapping is correct.
     """
-    tml_files: list[TMLFile] = []
-    cnxn_files: list[TMLFile] = []
+    tml_files: List[TMLFile] = []
+    cnxn_files: List[TMLFile] = []
 
     for guid, tml_file in _load_tml_from_files(path).items():
         cnxn_files.append(tml_file) if tml_file.is_connection else tml_files.append(tml_file)
@@ -252,7 +253,7 @@ def _import_and_create_bundle(
                 results.extend(d)
             else:
                 # connection name --> table names
-                connection_tables: dict[str, str] = {}
+                connection_tables: Dict[str, str] = {}
 
             if tml_files:
                 r, d = _upload_tml(**kw, tml_file_bundles=tml_files, connection_tables=connection_tables)
@@ -276,13 +277,13 @@ def _import_and_create_bundle(
     return results
 
 
-def _load_tml_from_files(path: pathlib.Path) -> dict[GUID, TMLFile]:
+def _load_tml_from_files(path: pathlib.Path) -> Dict[GUID, TMLFile]:
     """
     Loads the TML files, returning a list of file names and the TML mapping from GUID to TML object.
     :param path: The path to the TML files (either a file or directory)
     :return: A dictionary of GUIDs to TML file bundles (path and TML object). Only files to be loaded will be included.
     """
-    tml_file_bundles: dict[GUID, TMLFile] = {}
+    tml_file_bundles: Dict[GUID, TMLFile] = {}
 
     if path.is_file():
         filepaths = [path]
@@ -308,16 +309,16 @@ def _load_tml_from_files(path: pathlib.Path) -> dict[GUID, TMLFile]:
 def _upload_connections(
     ts: ThoughtSpot,
     guid_mapping: GUIDMapping,
-    connection_file_bundles: list[TMLFile],
+    connection_file_bundles: List[TMLFile],
     tml_logs: pathlib.Path,
     import_policy: TMLImportPolicy,
     force_create: bool,
-) -> tuple[list[TMLImportResponse], dict[str, list[str]]]:
+) -> tuple[List[TMLImportResponse], Dict[str, List[str]]]:
     """
     Uploads connections.
     """
-    responses: list[TMLImportResponse] = []
-    connection_tables: dict[str, list[str]] = {}  # connection name --> table names
+    responses: List[TMLImportResponse] = []
+    connection_tables: Dict[str, List[str]] = {}  # connection name --> table names
 
     if import_policy == TMLImportPolicy.validate:
         log.warning("Warning: connections don't support validate only policies.  Ignoring connections.")
@@ -434,14 +435,14 @@ def _upload_connections(
 def _upload_tml(
     ts: ThoughtSpot,
     guid_mapping: GUIDMapping,
-    tml_file_bundles: list[TMLFile],
+    tml_file_bundles: List[TMLFile],
     tml_logs: pathlib.Path,
     import_policy: TMLImportPolicy,
     force_create: bool,
-    connection_tables: dict[str, list[str]],
-) -> list[TMLImportResponse]:
+    connection_tables: Dict[str, List[str]],
+) -> List[TMLImportResponse]:
 
-    responses: list[TMLImportResponse] = []
+    responses: List[TMLImportResponse] = []
 
     if not connection_tables:
         updated = copy.copy(tml_file_bundles)
@@ -480,7 +481,7 @@ def _upload_tml(
         force_create=force_create,
     )
 
-    guids_to_map: dict[GUID, GUID] = {}
+    guids_to_map: Dict[GUID, GUID] = {}
 
     for tml_file, content in zip(updated, r.json()["object"]):
         guid = content["response"].get("header", {}).get("id_guid", tml_file.tml.guid)
@@ -513,7 +514,7 @@ def _upload_tml(
     return responses
 
 
-def _add_tags(ts: ThoughtSpot, objects: list[TMLImportResponse], tags: list[str]) -> None:
+def _add_tags(ts: ThoughtSpot, objects: List[TMLImportResponse], tags: List[str]) -> None:
     """
     Adds the tags to the items in the response.
     :param ts: The ThoughtSpot object.
@@ -534,7 +535,7 @@ def _add_tags(ts: ThoughtSpot, objects: list[TMLImportResponse], tags: list[str]
                 log.error(f"Error adding tags: {e}\nCheck spelling of the tag.")
 
 
-def _share_with(ts: ThoughtSpot, objects: list[TMLImportResponse], share_with: list[str]) -> None:
+def _share_with(ts: ThoughtSpot, objects: List[TMLImportResponse], share_with: List[str]) -> None:
     """
     Shares the objects with the groups.
     :param ts: The ThoughtSpot interface object.
@@ -544,11 +545,11 @@ def _share_with(ts: ThoughtSpot, objects: list[TMLImportResponse], share_with: l
     """
     with rich_console.status(f"[bold green]sharing with: {share_with}[/]"):
         groups = []
-        for _ in share_with:
+        for group in share_with:
             try:
-                groups.append(ts.group.guid_for(_))
+                groups.append(ts.group.guid_for(group))
             except HTTPStatusError as e:
-                log.error(f"unable to get ID for group {_}: {e}")
+                log.error(f"unable to get ID for group {group}: {e}")
 
         if groups:  # make sure some mapped
 
@@ -575,14 +576,14 @@ def _share_with(ts: ThoughtSpot, objects: list[TMLImportResponse], share_with: l
                     log.error(f"Unable to share {objectids} of type {ctype} with permissions: {permissions}")
 
 
-def _wait_for_metadata(ts: ThoughtSpot, guids: list[GUID]) -> None:
+def _wait_for_metadata(ts: ThoughtSpot, guids: List[GUID]) -> None:
     ready_guids = set()
     n = 0
 
     # when all content is ready, this returns an empty set
     while set(guids).difference(ready_guids):
         n += 1
-        log.info(f"checking {len(guids): >3} guids, {n=}")
+        log.info(f"checking {len(guids): >3} guids, n={n}")
 
         r_t = (ts.metadata_list(metadata_type="LOGICAL_TABLE", fetch_guids=list(guids), hidden=False),)
         r_a = (ts.metadata_list(metadata_type="QUESTION_ANSWER_BOOK", fetch_guids=list(guids), hidden=False),)
@@ -595,7 +596,7 @@ def _wait_for_metadata(ts: ThoughtSpot, guids: list[GUID]) -> None:
         time.sleep(5.0)
 
 
-def _show_results_as_table(results: list[TMLImportResponse]) -> None:
+def _show_results_as_table(results: List[TMLImportResponse]) -> None:
     """
     Writes a pretty results table to the rich_console.
     """

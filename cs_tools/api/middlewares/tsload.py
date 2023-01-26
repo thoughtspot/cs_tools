@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from tempfile import _TemporaryFileWrapper
-from typing import TypedDict, Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING, Dict, Union
 from io import BufferedIOBase, TextIOWrapper
 import ipaddress as ip
 import datetime as dt
@@ -14,6 +14,7 @@ import json
 from pydantic import validate_arguments
 import httpx
 
+from cs_tools._compat import TypedDict
 from cs_tools.errors import TSLoadServiceUnreachable, InsufficientPrivileges
 from cs_tools.types import GroupPrivilege, RecordsFormat
 from cs_tools.types import GUID as CycleID
@@ -48,11 +49,11 @@ class TSLoadNodeRedirectCache:
         self.cache_fp.touch(exist_ok=True)
         self._remove_old_data()
 
-    def load(self) -> dict[CycleID, CachedRedirectInfo]:
+    def load(self) -> Dict[CycleID, CachedRedirectInfo]:
         text = self.cache_fp.read_text()
         return json.loads(text) if text else {}
 
-    def dump(self, data: dict[CycleID, CachedRedirectInfo]) -> None:
+    def dump(self, data: Dict[CycleID, CachedRedirectInfo]) -> None:
         text = json.dumps(data, indent=4)
         self.cache_fp.write_text(text)
 
@@ -166,7 +167,7 @@ class TSLoadMiddleware:
     @validate_arguments(config=dict(arbitrary_types_allowed=True))
     def upload(
         self,
-        fd: BufferedIOBase | TextIOWrapper | _TemporaryFileWrapper,
+        fd: Union[BufferedIOBase, TextIOWrapper, _TemporaryFileWrapper],
         *,
         database: str,
         table: str,
@@ -297,7 +298,7 @@ class TSLoadMiddleware:
     @validate_arguments
     def status(
         self, cycle_id: CycleID, *, ignore_node_redirect: bool = False, wait_for_complete: bool = False
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Get the status of a previously started data load.
 

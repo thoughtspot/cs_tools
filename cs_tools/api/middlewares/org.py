@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 import json
 
 from pydantic import validate_arguments
@@ -41,7 +41,7 @@ class OrgMiddleware:
         )
 
     @validate_arguments
-    def switch(self, org: str | int) -> int:
+    def switch(self, org: Union[str, int]) -> int:
         """
         Switch to the target org.
 

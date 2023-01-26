@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Dict
 from io import BufferedIOBase
 import datetime as dt
 import tempfile
@@ -425,7 +425,7 @@ class RESTAPIv1(httpx.Client):
         #
         #    we'll supply the data in the grandchild format for ease of use.
         #
-        permissions: dict[GUID, ShareModeAccessLevel],
+        permissions: Dict[GUID, ShareModeAccessLevel],
     ) -> httpx.Response:
         d = {
             "type": metadata_type,

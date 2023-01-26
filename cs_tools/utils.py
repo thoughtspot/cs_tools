@@ -96,9 +96,9 @@ class State:
     An object that can be used to store arbitrary state.
     """
 
-    _state: dict[str, Any]
+    _state: Dict[str, Any]
 
-    def __init__(self, state: Optional[dict[str, Any]] = None):
+    def __init__(self, state: Optional[Dict[str, Any]] = None):
         if state is None:
             state = {}
 

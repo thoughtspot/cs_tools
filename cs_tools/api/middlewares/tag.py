@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Dict
 import logging
 
 from pydantic import validate_arguments
 
 from cs_tools.errors import ContentDoesNotExist
+from cs_tools.types import RecordsFormat
 from cs_tools.api._utils import dumps
 from cs_tools import utils
 
@@ -22,7 +23,7 @@ class TagMiddleware:
         self.ts = ts
 
     @validate_arguments
-    def create(self, tag_name: str) -> dict[str, Any]:
+    def create(self, tag_name: str) -> Dict[str, Any]:
         """
         Create a new tag in ThoughtSpot.
 
@@ -54,7 +55,7 @@ class TagMiddleware:
         self.ts.api.request("POST", "callosum/v1/metadata/delete", data={"type": "TAG", "id": dumps([tag["id"]])})
 
     @validate_arguments
-    def all(self) -> list[dict[str, Any]]:
+    def all(self) -> RecordsFormat:
         """
         Get all tags in ThoughtSpot.
         """
@@ -71,7 +72,7 @@ class TagMiddleware:
         return tags
 
     @validate_arguments
-    def get(self, tag_name: str, *, create_if_not_exists: bool = False) -> dict[str, Any]:
+    def get(self, tag_name: str, *, create_if_not_exists: bool = False) -> Dict[str, Any]:
         """
         Find a tag in ThoughtSpot.
 

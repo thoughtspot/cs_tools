@@ -4,6 +4,7 @@ This file contains the methods to execute the 'scriptability export' command.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import List
 import collections
 import pathlib
 import logging
@@ -14,9 +15,10 @@ from thoughtspot_tml.utils import determine_tml_type, disambiguate
 from thoughtspot_tml import Connection
 from awesomeversion import AwesomeVersion
 from rich.table import Table
-from typer import Argument as A_
-from typer import Option as O_
+from cs_tools.cli.ux import CSToolsArgument as Arg
+from cs_tools.cli.ux import CSToolsOption as Opt
 from httpx import HTTPStatusError
+import typer
 
 from cs_tools.cli.types import CommaSeparatedValuesType
 from cs_tools.errors import CSToolsError
@@ -35,12 +37,12 @@ class TMLExportResponse:
     tml_type_name: str
     name: str
     status_code: str  # ERROR, WARNING, OK
-    error_messages: list[str] = None
+    error_messages: List[str] = None
 
     def __post_init__(self):
         self.error_messages = self._process_errors()
 
-    def _process_errors(self) -> list[str]:
+    def _process_errors(self) -> List[str]:
         if self.error_messages is None:
             return []
         return [_.strip() for _ in re.split("<br/>|\n", self.error_messages) if _.strip()]
@@ -52,37 +54,37 @@ class TMLExportResponse:
 
 def export(
     ctx: typer.Context,
-    path: pathlib.Path = A_(  # may not want to use
+    path: pathlib.Path = Arg(  # may not want to use
         ..., help="path to save data set to", dir_okay=False, resolve_path=True
     ),
-    tags: list[str] = O_(
+    tags: List[str] = Opt(
         None,
         metavar="TAGS",
         callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
         help="comma separated list of tags to export",
     ),
-    guids: list[GUID] = O_(
+    guids: list[GUID] = Opt(
         None,
         metavar="GUIDS",
         callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
         help="comma separated list of GUIDs to export",
     ),
-    author: str = O_(None, metavar="USERNAME", help="username that is the author of the content to download"),
-    pattern: str = O_(None, metavar="PATTERN", help=r"pattern for name with % as a wildcard"),
-    include_types: list[str] = O_(
+    author: str = Opt(None, metavar="USERNAME", help="username that is the author of the content to download"),
+    pattern: str = Opt(None, metavar="PATTERN", help=r"pattern for name with % as a wildcard"),
+    include_types: List[str] = Opt(
         None,
         metavar="CONTENTTYPES",
         callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
         help="list of types to include: answer, liveboard, view, sqlview, table, connection",
     ),
-    exclude_types: list[str] = O_(
+    exclude_types: List[str] = Opt(
         None,
         metavar="CONTENTTYPES",
         callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
         help="list of types to exclude (overrides include): answer, liveboard, view, sqlview, table, connection",
     ),
-    export_associated: bool = O_(False, help="if specified, also export related content"),
-    org: str = O_(None, help="name or id of the org to export from", hidden=True),
+    export_associated: bool = Opt(False, help="if specified, also export related content"),
+    org: str = Opt(None, help="name or id of the org to export from", hidden=True),
 ):
     """
     Exports TML as YAML from ThoughtSpot.

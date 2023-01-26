@@ -17,7 +17,7 @@ from cs_tools.cli.ux import CSToolsApp
 from cs_tools.types import TMLImportPolicy
 
 from ._compare import compare
-from ._import import import_
+from ._import import to_import
 from ._export import export
 
 app = CSToolsApp(
@@ -106,7 +106,7 @@ def scriptability_import(
     ),
     org: str = Opt(None, help="Name of org to import to.  The user must have access to that org."),
 ):
-    import_(
+    to_import(
         ctx=ctx,
         path=path,
         import_policy=import_policy,

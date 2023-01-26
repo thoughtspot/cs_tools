@@ -47,7 +47,7 @@ class AnswerMiddleware:
 
         Returns
         -------
-        answers : list[dict[str, Any]]
+        answers : list[Dict[str, Any]]
           all answer headers
         """
         if isinstance(tags, str):

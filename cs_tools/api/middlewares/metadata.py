@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Union
 import logging
 
 from pydantic import validate_arguments
@@ -31,9 +31,9 @@ class MetadataMiddleware:
     @validate_arguments
     def permissions(
         self,
-        guids: list[GUID],
+        guids: List[GUID],
         *,
-        type: MetadataObjectType | MetadataObjectSubtype,
+        type: Union[MetadataObjectType, MetadataObjectSubtype],
         permission_type: PermissionType = PermissionType.explicit,
         chunksize: int = 15,
     ) -> RecordsFormat:
@@ -80,7 +80,7 @@ class MetadataMiddleware:
 
     @validate_arguments
     def dependents(
-        self, guids: list[GUID], *, for_columns: bool = False, include_columns: bool = False, chunksize: int = 50
+        self, guids: List[GUID], *, for_columns: bool = False, include_columns: bool = False, chunksize: int = 50
     ) -> RecordsFormat:
         """
         Get all dependencies of content in ThoughtSpot.
@@ -126,11 +126,11 @@ class MetadataMiddleware:
         return dependents
 
     @validate_arguments
-    def get(self, guids: list[GUID]) -> RecordsFormat:
+    def get(self, guids: List[GUID]) -> RecordsFormat:
         """
         Find all objects based on the supplied guids.
         """
-        content: list[RecordsFormat] = []
+        content: List[RecordsFormat] = []
         guids = set(guids)
 
         for metadata_type in MetadataObjectType:
@@ -205,7 +205,7 @@ class MetadataMiddleware:
         return content
 
     @validate_arguments
-    def objects_exist(self, metadata_type: MetadataObjectType, guids: list[GUID]) -> dict[GUID, bool]:
+    def objects_exist(self, metadata_type: MetadataObjectType, guids: List[GUID]) -> Dict[GUID, bool]:
         """
         Check if the input GUIDs exist.
         """
@@ -216,7 +216,7 @@ class MetadataMiddleware:
         return {guid: guid in existence for guid in guids}
 
     @validate_arguments
-    def table_references(self, guid: GUID, *, tml_type: str, hidden: bool = False) -> dict[GUID, str]:
+    def table_references(self, guid: GUID, *, tml_type: str, hidden: bool = False) -> Dict[GUID, str]:
         """
         Returns a mapping of parent LOGICAL_TABLEs
 
