@@ -70,7 +70,7 @@ class RESTAPIv1(httpx.Client):
         log.debug(f"<< HTTP: {r.status_code}")
 
         if r.text:
-            log.trace("<< CONTENT:\n\n%s", r.text)
+            log.debug("<< CONTENT:\n\n%s", r.text)
 
         return r
 

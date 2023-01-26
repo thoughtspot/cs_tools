@@ -92,7 +92,7 @@ def transfer(
 
                 extra["object_guids"] = list(guids_to_transfer)
 
-            # ts.api.user_transfer_ownership(from_username=from_username, to_username=to_username, **extra)
+            ts.api.user_transfer_ownership(from_username=from_username, to_username=to_username, **extra)
 
             rich_console.log(
                 f"Transferred {len(guids_to_transfer) or 'all'} objects from [b blue]{from_username}[/] to "
