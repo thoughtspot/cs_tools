@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List
 import logging
 
 from pydantic import validate_arguments
@@ -239,8 +239,8 @@ class MetadataMiddleware:
         #   metadata/tml/export LOGICAL_TABLE order will be identically sorted.. but TBD
         #
         metadata_type = TMLSupportedContent.from_friendly_type(tml_type)
-        r = self.ts.api.metadata_details(guids=[guid], metadata_type=metadata_type)
-        mappings: dict[GUID, str] = {}  # LOGICAL_TABLE.guid : LOGICAL_TABLE.name
+        r = self.ts.api.metadata_details(guids=[guid], metadata_type=metadata_type, hidden=hidden)
+        mappings: Dict[GUID, str] = {}  # LOGICAL_TABLE.guid : LOGICAL_TABLE.name
 
         if "storables" not in r.json():
             log.warning(f"no detail found for {tml_type} = {guid}")
