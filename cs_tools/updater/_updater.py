@@ -51,7 +51,7 @@ class CSToolsVirtualEnvironment:
                     continue
 
                 elif line.startswith(tuple(levels)):
-                    log_level, _, line = line.partition(":")
+                    log_level, _, line = line.partition(": ")
                     logger = levels[log_level]
 
                 else:

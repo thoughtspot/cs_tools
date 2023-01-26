@@ -46,7 +46,7 @@ def cli():
         "--beta",
         help=argparse.SUPPRESS,  # "install a remote pre-release version of CS Tools"
         dest="beta",
-        default=False,
+        action="store_true",
     )
     operation = parser.add_mutually_exclusive_group(required=True)
     operation.add_argument(
@@ -109,6 +109,7 @@ def cli():
         "\n    platform tag '{platform_tag}'"
         "\n    python: {py_version}"
         "\n    ran at: {now}"
+        "\n"
         .format(
             system=platform.system(), detail=platform.platform(),
             platform_tag=sysconfig.get_platform(),
@@ -454,8 +455,6 @@ def get_latest_cs_tools_release(allow_beta=False):
     releases = http_request("https://api.github.com/repos/thoughtspot/cs_tools/releases")
 
     for release in releases:
-        if release["draft"]:
-            continue
         if release["prerelease"] and not allow_beta:
             continue
         break
