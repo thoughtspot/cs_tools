@@ -373,7 +373,7 @@ def cli_type_filepath(fp):
     return path
 
 
-def get_cs_tools_venv():
+def get_cs_tools_venv(**passthru):
     # type: () -> CSToolsVirtualEnvironment
     """Get the CS Tools Virtual Environment."""
     import pathlib
@@ -408,7 +408,7 @@ def get_cs_tools_venv():
         )
         raise SystemExit(1)
 
-    return CSToolsVirtualEnvironment()
+    return CSToolsVirtualEnvironment(**passthru)
 
 
 def get_path_manipulator(venv):
