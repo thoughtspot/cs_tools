@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cs_tools"
-version = "1.4.0b0"
+dynamic = ["version"]
 description = """\
 	Tools created by the ThoughtSpot PS/CS organization to assist implementation and \
     administration of your platform.\
@@ -98,6 +98,8 @@ dev = [
 cs_tools = "cs_tools.cli.main:run"
 cstools = "cs_tools.cli.main:run"
 
+[tool.setuptools.dynamic]
+version = {attr = "cs_tools._version.__version__"}
 
 [tool.isort]
 profile = "black"
