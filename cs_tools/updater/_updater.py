@@ -39,11 +39,12 @@ class CSToolsVirtualEnvironment:
         return self.venv_path / directory / exec_name
 
     @staticmethod
-    def run(*args, raise_on_failure: bool = True, **kwargs) -> sp.CompletedProcess:
+    def run(*args, raise_on_failure: bool = True, **kwargs) -> List[str]:
         """Run a SHELL command."""
         levels = {"ERROR": log.error, "WARNING": log.warning}
+        output = []
 
-        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, **kwargs) as proc:
+        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, close_fds=False, **kwargs) as proc:
             for line_bytes in proc.stdout:
                 line = line_bytes.decode().strip()
 
@@ -58,14 +59,13 @@ class CSToolsVirtualEnvironment:
                     logger = log.debug
 
                 logger(line)
+                output.append(line)
 
-        cp = sp.CompletedProcess(args, proc.returncode, stdout=proc.stdout, stderr=proc.stderr)
-
-        if raise_on_failure and cp.returncode != 0:
+        if raise_on_failure and proc.returncode != 0:
             cmd = " ".join(args)
-            raise RuntimeError(f"Failed with exit code: {cp.returncode}\n\nCOMMAND: {cmd}")
+            raise RuntimeError(f"Failed with exit code: {proc.returncode}\n\nCOMMAND: {cmd}")
 
-        return cp
+        return output
 
     def get_venv_path(self) -> pathlib.Path:
         """Resolve to a User configuration directory."""
@@ -118,7 +118,7 @@ class CSToolsVirtualEnvironment:
     def reset(self) -> None:
         """Reset the virtual environment to base."""
         installed = self.venv_path.joinpath("INSTALLED-REQUIREMENTS.txt")
-        installed.write_text(self.pip("freeze").stdout.decode())
+        installed.write_text('\n'.join(self.pip("freeze")))
 
         if installed.stat().st_size:
             self.pip("uninstall", "-r", installed.as_posix(), "-y")
