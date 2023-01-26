@@ -118,7 +118,7 @@ def cli():
     )
     # fmt: on
 
-    venv = get_cs_tools_venv()
+    venv = get_cs_tools_venv(find_links=args.offline_mode)
     path = get_path_manipulator(venv)
 
     if args.install or args.reinstall:
@@ -134,7 +134,7 @@ def cli():
         requires = "cs_tools[cli]"
 
         if args.offline_mode:
-            log.info("Using the offline binary found at {p}{off}{x}".format(p=_PURPLE, x=_RESET, off=args.offline_mode))
+            log.info("Using the offline binary found at {p}{off}{x}".format(p=_PURPLE, x=_RESET, off=venv.find_links))
         else:
             log.info("Getting the latest CS Tools {beta}release.".format(beta="beta " if args.beta else ""))
             release = get_latest_cs_tools_release(allow_beta=args.beta)

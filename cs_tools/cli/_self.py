@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import os
 
 from awesomeversion import AwesomeVersion
 import typer
@@ -35,15 +36,17 @@ def upgrade(
     offline: pathlib.Path = Opt(
         None,
         help="install cs_tools from a distributable directory instead of from remote",
-
+        metavar="cs_tools.zip",
     ),
+    venv_name: str = Opt(None, "--venv-name", hidden=True),
 ):
     """
     Upgrade CS Tools.
     """
-    import os
-    os.environ["CS_TOOLS_CONFIG_DIRNAME"] = "cs_tools_new"
-    venv = CSToolsVirtualEnvironment()
+    if venv_name is not None:
+        os.environ["CS_TOOLS_CONFIG_DIRNAME"] = venv_name
+
+    venv = CSToolsVirtualEnvironment(find_links=offline)
     release = get_latest_cs_tools_release()
     requires = "cs_tools[cli]"
 
@@ -61,7 +64,32 @@ def upgrade(
 
     log.info("Upgrading CS Tools and its dependencies.")
     rc = venv.pip("install", requires)
-    log.info(rc)
+    log.debug(rc)
+
+
+@app.command(cls=CSToolsCommand, hidden=True)
+def info():
+    """
+    Remove CS Tools.
+    """
+    # - installed cs_tools version
+    # - config directory
+    # - command to activate the venv
+    # - platform tags
+    raise NotImplementedError("Not yet.")
+
+
+@app.command(cls=CSToolsCommand, hidden=True)
+def pip():
+    """
+    Remove CS Tools.
+    """
+    # if venv_name is not None:
+    #     os.environ["CS_TOOLS_CONFIG_DIRNAME"] = venv_name
+
+    # venv = CSToolsVirtualEnvironment()
+    # venv.pip()
+    raise NotImplementedError("Not yet.")
 
 
 @app.command(cls=CSToolsCommand)
