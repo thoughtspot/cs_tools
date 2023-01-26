@@ -9,7 +9,10 @@ under-supported version of Python.
 """
 from __future__ import print_function
 from argparse import RawTextHelpFormatter
+import datetime as dt
+import sysconfig
 import argparse
+import platform
 import tempfile
 import logging
 import shutil
@@ -82,8 +85,8 @@ def cli():
     args = parser.parse_args()
     _setup_logging(args.verbose)
 
+    # fmt: off
     log.info(
-        # fmt: off
         "{g}Welcome to the CS Tools Bootstrapper!{x}"
         "\n"
         "Ideally, you will only need to run this one time, and then your environment can be fully managed by CS Tools "
@@ -98,17 +101,22 @@ def cli():
             google_forms="https://forms.gle/sh6hyBSS2mnrwWCa9",
             github_issues="https://github.com/thoughtspot/cs_tools/issues/new/choose"
         )
-        # fmt: on
     )
-    # log.debug(
-    #     f"""
-    # [PLATFORM DETAILS]
-    # system: {platform.system()} (detail: {platform.platform()})
-    # platform tag '{sysconfig.get_platform()}'
-    # python: {platform.python_version()}
-    # ran at: {dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S %z')}
-    # """
-    # )
+    log.debug(
+        "\n"
+        "\n    [PLATFORM DETAILS]"
+        "\n    system: {system} (detail: {detail})"
+        "\n    platform tag '{platform_tag}'"
+        "\n    python: {py_version}"
+        "\n    ran at: {now}"
+        .format(
+            system=platform.system(), detail=platform.platform(),
+            platform_tag=sysconfig.get_platform(),
+            py_version=platform.python_version(),
+            now=dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S %z')
+        )
+    )
+    # fmt: on
 
     venv = get_cs_tools_venv()
     path = get_path_manipulator(venv)
@@ -123,14 +131,15 @@ def cli():
             path.unset()
             venv.reset()
 
+        requires = "cs_tools[cli]"
+
         if args.offline_mode:
             log.info("Using the offline binary found at {p}{off}{x}".format(p=_PURPLE, x=_RESET, off=args.offline_mode))
-            requires = "cs_tools"
         else:
             log.info("Getting the latest CS Tools {beta}release.".format(beta="beta " if args.beta else ""))
             release = get_latest_cs_tools_release(allow_beta=args.beta)
             log.info("Found version: {p}{tag}{x}".format(p=_PURPLE, x=_RESET, tag=release["tag_name"]))
-            requires = "https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(tag=release["tag_name"])
+            requires += " @ https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(tag=release["tag_name"])
 
         log.info("Installing CS Tools and its dependencies.")
         venv.pip("install", requires)
