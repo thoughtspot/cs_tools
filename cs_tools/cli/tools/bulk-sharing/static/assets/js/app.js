@@ -81,9 +81,9 @@ class TableSecurityInfo {
             async: false
         })
         .done(function(data, textStatus, xhr) {
-            $.each(data.headers, function(index, columnData) {
-                self._columnAccess[columnData.id] = {
-                    'columnName': columnData.name,
+            $.each(data, function() {
+                self._columnAccess[this.column_guid] = {
+                    'columnName': this.column_name,
                     'permissions': {}  // set in getCLS()
                 }
             });
@@ -436,7 +436,7 @@ class SelectorUserGroups {
         .done(function(data, textStatus, xhr) {
             var HTML = '';
 
-            $.each(data, function(k, userGroup) {
+            $.each(data.headers, function(k, userGroup) {
                 if ($.inArray(userGroup.name, ['Administrator', 'System', 'All']) == -1) {
                     HTML += '<option value="' + userGroup.id + '">' + userGroup.name + '</option>';
 
@@ -478,7 +478,7 @@ class SelectorTables {
         .done(function(data, textStatus, xhr) {
             var HTML = '';
 
-            $.each(data, function(k, table) {
+            $.each(data.headers, function(k, table) {
                 HTML += '<option value="' + table.id + '">' + table.name + '</option>'
             })
 

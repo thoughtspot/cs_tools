@@ -56,7 +56,7 @@ async def _(type: str = Body(...), guids: List[str] = Body(...), permissions: Di
     TSSetPermissionRequest
     """
     permissions = {guid: data["shareMode"] for guid, data in permissions.items()}
-    r = _scoped["ts"].api._security.share(type=type, id=guids, permissions=permissions)
+    r = _scoped["ts"].api.security_share(metadata_type=type, guids=guids, permissions=permissions)
 
     try:
         return r.json()
@@ -70,7 +70,7 @@ async def _(type: str = Body(...), guids: List[str] = Body(...)):
     """
     TSGetTablePermissionsRequest
     """
-    r = _scoped["ts"].api._security.defined_permission(type=type, id=guids)
+    r = _scoped["ts"].api.security_metadata_permissions(metadata_type=type, guids=guids)
     return r.json()
 
 
@@ -79,8 +79,7 @@ async def _(guid: str):
     """
     TSGetColumnsRequest
     """
-    r = _scoped["ts"].api._metadata.list_columns(id=guid)
-    return r.json()
+    return _scoped["ts"].logical_table.columns(guids=[guid])
 
 
 @web_app.get("/api/user_groups")
@@ -88,8 +87,13 @@ async def _():
     """
     TSGetUserGroupsRequest
     """
-    params = {"type": "USER_GROUP", "category": "ALL", "sort": "DEFAULT", "offset": -1, "auto_created": False}
-    r = _scoped["ts"].api.metadata.list(**params)
+    r = _scoped["ts"].api.metadata_list(
+            metadata_type="USER_GROUP",
+            category="ALL",
+            sort="DEFAULT",
+            offset=-1,
+            auto_created=False
+        )
     return r.json()
 
 
@@ -98,12 +102,5 @@ async def _():
     """
     TSGetTablesRequest
     """
-    params = {
-        "type": "LOGICAL_TABLE",
-        "subtypes": ["ONE_TO_ONE_LOGICAL"],
-        "category": "ALL",
-        "sort": "DEFAULT",
-        "offset": -1,
-    }
-    r = _scoped["ts"].api.metadata.list(**params)
+    r = _scoped["ts"].api.metadata_list(metadata_type="LOGICAL_TABLE", subtypes=["ONE_TO_ONE_LOGICAL"])
     return r.json()
