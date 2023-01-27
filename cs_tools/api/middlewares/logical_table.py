@@ -101,7 +101,7 @@ class LogicalTableMiddleware:
         columns = []
 
         for chunk in chunks(guids, n=chunksize):
-            r = self.ts.api.metadata.details(id=chunk, showhidden=include_hidden)
+            r = self.ts.api.metadata_details(guids=chunk, show_hidden=include_hidden)
 
             for logical_table in r.json()["storables"]:
                 for column in logical_table.get("columns", []):
@@ -131,7 +131,9 @@ class LogicalTableMiddleware:
 
         return columns
 
+    # ==================================================================================================================
     # SUPPORTS .logical_table_columns
+    # ==================================================================================================================
 
     def _lookup_geo_config(self, column_details) -> Optional[str]:
         try:
@@ -158,7 +160,7 @@ class LogicalTableMiddleware:
             return None
 
         if ccal_guid not in self.cache["calendar_type"]:
-            r = self.ts.api.metadata_list(metadata_type="LOGICAL_TABLE", showhidden=True, fetchids=[ccal_guid])
+            r = self.ts.api.metadata_list(metadata_type="LOGICAL_TABLE", show_hidden=True, fetch_ids=[ccal_guid])
             d = r.json()["headers"][0]
             self.cache["calendar_type"][ccal_guid] = d["name"]
 
@@ -179,7 +181,7 @@ class LogicalTableMiddleware:
             g = currency_info["columnGuid"]
 
             if g not in self.cache["currency_type"]:
-                r = self.ts.api.metadata_list(metadata_type="LOGICAL_COLUMN", showhidden=True, fetchids=[g])
+                r = self.ts.api.metadata_list(metadata_type="LOGICAL_COLUMN", show_hidden=True, fetch_ids=[g])
                 d = r.json()["headers"][0]
                 self.cache["currency_type"][g] = name = f'From a column: {d["name"]}'
             else:

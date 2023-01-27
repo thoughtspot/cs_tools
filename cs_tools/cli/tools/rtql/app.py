@@ -79,12 +79,12 @@ def file(
                 if m.strip().endswith(";"):
                     c = "[cyan]"
 
-                console.print(c + m, end="")
+                rich_console.print(c + m, end="")
 
         if "data" in response:
             t = rich.table.Table(*response["data"][0].keys(), box=rich.box.HORIZONTALS)
             [t.add_row(*_.values()) for _ in response["data"]]
-            console.print("\n", t)
+            rich_console.print("\n", t)
 
 
 @app.command(dependencies=[thoughtspot])
@@ -115,7 +115,7 @@ def command(
             command = "\n".join(sys.stdin.readlines())
 
     if not command:
-        console.print("[red]no valid input given to rtql command")
+        rich_console.print("[red]no valid input given to rtql command")
         raise typer.Exit()
 
     r = ts.tql.command(command, schema_=schema, http_timeout=http_timeout)
@@ -133,9 +133,9 @@ def command(
                 if m.strip().endswith(";"):
                     c = "[cyan]"
 
-                console.print(c + m, end="")
+                rich_console.print(c + m, end="")
 
         if "data" in response:
             t = rich.table.Table(*response["data"][0].keys(), box=rich.box.HORIZONTALS)
             [t.add_row(*_.values()) for _ in response["data"]]
-            console.print("\n", t)
+            rich_console.print("\n", t)
