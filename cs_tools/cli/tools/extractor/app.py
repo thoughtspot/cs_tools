@@ -1,26 +1,26 @@
-from typing import Dict, Any
-import datetime as dt
 import logging
-import re
 
-from typer import Argument as A_  # noqa
-from typer import Option as O_
-import sqlalchemy as sa
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType
+from cs_tools._compat import StrEnum
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.dependencies.syncer import DSyncer
 
-from .enums import RecordsetType
+from . import work
 
 log = logging.getLogger(__name__)
+app = CSToolsApp(help="Extract data from a worksheet, view, or table in ThoughtSpot.")
 
 
-app = CSToolsApp(help="Extract data from a worksheet, view, or table in your platform.")
+class SearchableDataSource(StrEnum):
+    worksheet = "worksheet"
+    table = "table"
+    view = "view"
 
 
 @app.command(dependencies=[thoughtspot])
@@ -28,14 +28,14 @@ def search(
     ctx: typer.Context,
     query: str = Opt(..., help="search terms to issue against the dataset"),
     dataset: str = Opt(..., help="name of the worksheet, view, or table to search against"),
-    syncer: str = Opt(
+    data_type: SearchableDataSource = Opt("worksheet", help="type of object to search"),
+    syncer: DSyncer = Opt(
         ...,
+        custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
-        metavar="protocol://DEFINITION.toml",
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx),
+        rich_help_panel="Syncer Options",
     ),
-    target: str = Opt(..., help="syncer directive to load data to"),
-    data_type: RecordsetType = Opt("worksheet", help="type of object to search"),
+    target: str = Opt(..., help="directive to load Search data to", rich_help_panel="Syncer Options"),
 ):
     """
     Search a dataset from the command line.
@@ -44,22 +44,31 @@ def search(
     Search-level formulas are not currently supported, but a formula defined as
     part of a data source is.
 
-    If the syncer target is a database table and does not exist, we'll create it.
+    If the syncer target is a database table that does not exist, we'll create it.
     """
-    with console.status(f'[bold green]retrieving data from {data_type.value} "{dataset}"..[/]'):
-        data = ctx.obj.thoughtspot.search(query, **{data_type.value: dataset})
+    ts = ctx.obj.thoughtspot
 
-    if not data:
-        query = query.replace("[", r"\[")
-        console.log(f"[red]No data returned from query:[/] {query}")
-        return
+    tasks = [
+        ("gather_search", f"Retrieving data from [b blue]{data_type.value.title()} [b green]{dataset}"),
+        ("syncer_dump", f"Writing rows to [b blue]{syncer.name}"),
+    ]
 
-    if hasattr(syncer, "__is_database__"):
-        table = infer_schema_from_results(data, tablename=target, metadata=syncer.metadata)
-        syncer.metadata.create_all(bind=syncer.cnxn, tables=[table])
+    with LiveTasks(tasks, console=rich_console) as tasks:
 
-        # fix data for INSERT
-        column_names = [c.name for c in table.columns]
-        data = [dict(zip(column_names, row.values())) for row in data]
+        with tasks["gather_search"]:
+            data = ts.search(query, **{data_type: dataset})
 
-    syncer.dump(target, data=data)
+        if not data:
+            rich_console.log("[red]No data returned from query:[/] " + fr"{query}")
+            return
+
+        with tasks["syncer_dump"]:
+            if hasattr(syncer, "__is_database__"):
+                table = work.infer_schema_from_results(data, tablename=target, metadata=syncer.metadata)
+                syncer.metadata.create_all(bind=syncer.cnxn, tables=[table])
+
+                # fix data for INSERT
+                column_names = [c.name for c in table.columns]
+                data = [dict(zip(column_names, row.values())) for row in data]
+
+            syncer.dump(target, data=data)
