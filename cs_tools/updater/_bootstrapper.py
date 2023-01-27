@@ -434,11 +434,16 @@ def http_request(url, to_json=True):
     import urllib.request
     import contextlib
     import json
+    import ssl
 
-    request = urllib.request.Request(url)
-    request.add_header("user-agent", "cs_tools.bootstrapper/{v} (+github: thoughtspot/cs_tools)".format(v=__version__))
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
 
-    with contextlib.closing(urllib.request.urlopen(request)) as r:
+    # request = urllib.request.Request(url)
+    # request.add_header("user-agent", "cs_tools.bootstrapper/{v} (+github: thoughtspot/cs_tools)".format(v=__version__))
+
+    with urllib.request.urlopen(url, context=ctx) as r:
         data = r.read()
 
     if to_json:
