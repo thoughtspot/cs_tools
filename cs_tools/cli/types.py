@@ -134,7 +134,7 @@ class SyncerProtocolType(click.ParamType):
     def get_metavar(self, param) -> str:
         return "protocol://DEFINITION.toml"
 
-    def convert(self, value: str, param: click.Parameter = None, *, ctx: typer.Context = None) -> DSyncer:
+    def convert(self, value: str, param: click.Parameter = None, ctx: typer.Context = None) -> DSyncer:
         if value is None:
             return value
 

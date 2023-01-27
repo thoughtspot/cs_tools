@@ -1,7 +1,6 @@
 from typing import List
 import itertools as it
 import logging
-import pathlib
 
 import typer
 import httpx
@@ -14,6 +13,7 @@ from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.dependencies.syncer import DSyncer
 
 from . import _extended_rest_api_v1
 from . import layout
@@ -113,7 +113,7 @@ def rename(
     ctx: typer.Context,
     from_username: str = Opt(None, "--from", help="current username"),
     to_username: str = Opt(None, "--to", help="new username"),
-    syncer: pathlib.Path = Opt(
+    syncer: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
@@ -208,7 +208,7 @@ def rename(
 @app.command(dependencies=[thoughtspot])
 def sync(
     ctx: typer.Context,
-    syncer: pathlib.Path = Arg(
+    syncer: DSyncer = Arg(
         ...,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",

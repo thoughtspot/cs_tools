@@ -16,6 +16,7 @@ from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import MetadataObjectType
+from cs_tools.cli.dependencies.syncer import DSyncer
 
 from . import _extended_rest_api_v1
 from . import layout
@@ -55,9 +56,9 @@ def identify(
     ),
     recent_activity: int = Opt(
         ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE,
-        # fake the default value in the CLI output
         help=(
             "content without recent views will be [b green]selected[/] (exceeds days threshold) "
+            # fake the default value in the CLI output
             "[dim]\[default: all TS: BI history][/]"
         ),
         show_default=False,
@@ -86,7 +87,7 @@ def identify(
         help="content with this tag (case sensitive) will be [b red]filtered[/], can be specified multiple times",
         rich_help_panel="Content Identification Criteria (applied with OR)",
     ),
-    report: pathlib.Path = Opt(
+    report: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",

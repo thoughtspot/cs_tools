@@ -13,6 +13,7 @@ from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.types import TMLImportPolicy
+from cs_tools.cli.dependencies.syncer import DSyncer
 
 from . import _extended_rest_api_v1
 from . import layout
@@ -61,44 +62,48 @@ def deploy(
     Deploy the Sharding Recommender SpotApp.
     """
     ts = ctx.obj.thoughtspot
+    
+    tasks = [
+        ("customize_spotapp", "Customizing [b blue]Falcon Table Sharding Worksheet[/] with your parameters"),
+        ("deploy_spotapp", "Deploying the SpotApp to ThoughtSpot"),
+    ]
 
-    parameters = {
-        'parameter: CPU per Node': str(cpu_per_node),
-        'parameter: Ideal Rows per Shard': str(ideal_rows),
-        'parameter: Maximum Rows per Shard': str(max_rows),
-        'parameter: Minimum Rows per Shard': str(min_rows),
-        'parameter: Number of ThoughtSpot Nodes': str(nodes),
-        'parameter: Unsharded Row Threshold': str(threshold)
-    }
+    with LiveTasks(tasks, console=rich_console) as tasks:
 
-    here = pathlib.Path(__file__).parent
-    tmls = []
+        with tasks["customize_spotapp"]:
+            parameters = {
+                'parameter: CPU per Node': str(cpu_per_node),
+                'parameter: Ideal Rows per Shard': str(ideal_rows),
+                'parameter: Maximum Rows per Shard': str(max_rows),
+                'parameter: Minimum Rows per Shard': str(min_rows),
+                'parameter: Number of ThoughtSpot Nodes': str(nodes),
+                'parameter: Unsharded Row Threshold': str(threshold)
+            }
 
-    for file in here.glob("**/*.tml"):
-        tml_cls = determine_tml_type(path=file)
-        tml = tml_cls.load(file)
-        tml.guid = None
+            here = pathlib.Path(__file__).parent
+            tmls = []
 
-        if isinstance(tml, Table):
-            tml.table.db = falcon_database
+            for file in here.glob("**/*.tml"):
+                tml_cls = determine_tml_type(path=file)
+                tml = tml_cls.load(file)
+                tml.guid = None
 
-        if isinstance(tml, Worksheet):
-            for formula in tml.worksheet.formulas:
-                try:
-                    formula.expr = parameters[formula.name]
-                except KeyError:
-                    pass
+                if isinstance(tml, Table):
+                    tml.table.db = falcon_database
 
-        tmls.append(tml)
+                if isinstance(tml, Worksheet):
+                    for formula in tml.worksheet.formulas:
+                        try:
+                            formula.expr = parameters[formula.name]
+                        except KeyError:
+                            pass
 
-    response = ts.tml.to_import(tmls, policy=TMLImportPolicy.all_or_none)
+                tmls.append(tml)
 
-    status_emojis = {
-        "OK": ":white_heavy_check_mark:",
-        "WARNING": ":pinching_hand:",
-        "ERROR": ":cross_mark:",
-    }
+        with tasks["deploy_spotapp"]:
+            response = ts.tml.to_import(tmls, policy=TMLImportPolicy.all_or_none)
 
+    status_emojis = {"OK": ":white_heavy_check_mark:", "WARNING": ":pinching_hand:", "ERROR": ":cross_mark:"}
     centered_table = layout.build_table()
 
     for response in response:
@@ -112,7 +117,7 @@ def deploy(
 @app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
-    syncer: pathlib.Path = Arg(
+    syncer: DSyncer = Arg(
         ...,
         help="protocol and path for options to pass to the syncer",
         metavar="protocol://DEFINITION.toml",

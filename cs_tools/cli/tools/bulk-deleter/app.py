@@ -1,4 +1,3 @@
-import pathlib
 import logging
 
 from rich.live import Live
@@ -10,6 +9,7 @@ from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.dependencies.syncer import DSyncer
 
 from . import _extended_rest_api_v1
 from . import layout
@@ -56,7 +56,7 @@ def single(
 @app.command(dependencies=[thoughtspot])
 def from_tabular(
     ctx: typer.Context,
-    syncer: pathlib.Path = Opt(
+    syncer: DSyncer = Opt(
         ...,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
