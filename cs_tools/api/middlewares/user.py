@@ -56,6 +56,7 @@ class UserMiddleware:
                 info = {
                     "reason": "User names are case sensitive. You can find a User's 'username' in the Admin panel.",
                     "mitigation": "Verify the name and try again.",
+                    "type": "User",
                 }
                 raise ContentDoesNotExist(**info) from None
 

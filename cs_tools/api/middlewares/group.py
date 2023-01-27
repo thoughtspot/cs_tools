@@ -39,6 +39,7 @@ class GroupMiddleware:
                 info = {
                     "reason": "Group names are case sensitive. You can find a group's 'Group Name' in the Admin panel.",
                     "mitigation": "Verify the name and try again.",
+                    "type": "Group",
                 }
                 raise ContentDoesNotExist(**info) from None
 
