@@ -57,7 +57,7 @@ class MetadataMiddleware:
         user_guids = [user["id"] for user in self.ts.user.all()]
 
         for chunk in utils.chunks(guids, n=chunksize):
-            r = self.ts.api.security_metadata_permissions(metadata_type=type_to_supertype[type.value], id=chunk)
+            r = self.ts.api.security_metadata_permissions(metadata_type=type_to_supertype[type.value], guids=chunk)
 
             for data in r.json().values():
                 for shared_to_principal_guid, permission in data["permissions"].items():

@@ -61,7 +61,7 @@ class LogicalTableMiddleware:
             r = self.ts.api.metadata_list(
                 metadata_type="LOGICAL_TABLE",
                 category=category,
-                tag_name=tags,
+                tag_name=tags or _utils.UNDEFINED,
                 show_hidden=hidden,
                 batchsize=chunksize,
                 offset=len(tables),
@@ -73,7 +73,7 @@ class LogicalTableMiddleware:
             if exclude_system_content:
                 to_extend = [table for table in to_extend if table.get("authorName") not in _utils.SYSTEM_USERS]
 
-            tables.extend(to_extend)
+            tables.extend([{"metadata_type": "LOGICAL_TABLE", **table} for table in to_extend])
 
             if not tables:
                 info = {
@@ -160,7 +160,7 @@ class LogicalTableMiddleware:
             return None
 
         if ccal_guid not in self.cache["calendar_type"]:
-            r = self.ts.api.metadata_list(metadata_type="LOGICAL_TABLE", show_hidden=True, fetch_ids=[ccal_guid])
+            r = self.ts.api.metadata_list(metadata_type="LOGICAL_TABLE", show_hidden=True, fetch_guids=[ccal_guid])
             d = r.json()["headers"][0]
             self.cache["calendar_type"][ccal_guid] = d["name"]
 
@@ -181,7 +181,7 @@ class LogicalTableMiddleware:
             g = currency_info["columnGuid"]
 
             if g not in self.cache["currency_type"]:
-                r = self.ts.api.metadata_list(metadata_type="LOGICAL_COLUMN", show_hidden=True, fetch_ids=[g])
+                r = self.ts.api.metadata_list(metadata_type="LOGICAL_COLUMN", show_hidden=True, fetch_guids=[g])
                 d = r.json()["headers"][0]
                 self.cache["currency_type"][g] = name = f'From a column: {d["name"]}'
             else:

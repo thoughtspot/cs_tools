@@ -106,20 +106,23 @@ class TZAwareDateTimeType(click.ParamType):
 
     name = "datetime"
 
-    def convert(
-        self,
-        value: dt.datetime,
-        param: click.Parameter = None,
-        ctx: typer.Context = None,
-        locality: str = "local",  # one of: local, utc, server
-    ) -> List[str]:
+    def __init__(self, *args_passthru, locality: str = "local", **kwargs_passthru):
+        super().__init__(*args_passthru, **kwargs_passthru)
+        self.locality = locality
+
+    def tz_based_on_locality(self, ctx) -> pendulum._Timezone:
+        _locality = {
+            "server": ctx.obj.thoughtspot.platform.timezone,
+            "local": pendulum.local_timezone(),
+            "utc": "UTC",
+        }
+        return _locality.get(self.locality, "UTC")
+
+    def convert(self, value: Any, param: click.Parameter = None, ctx: click.Context = None) -> pendulum.DateTime:
         if value is None:
             return None
 
-        LOCALITY = {"server": ctx.obj.thoughtspot.platform.timezone, "local": pendulum.local_timezone(), "utc": "UTC"}
-
-        tz = LOCALITY[locality]
-        return pendulum.instance(value, tz=tz)
+        return pendulum.instance(value, tz=self.tz_based_on_locality(ctx))
 
 
 class SyncerProtocolType(click.ParamType):
@@ -128,13 +131,13 @@ class SyncerProtocolType(click.ParamType):
     """
     name = "path"
 
-    def __init__(self, models: sqlalchemy.Table = None):
+    def __init__(self, models: List[sqlalchemy.Table] = None):
         self.models = models
 
     def get_metavar(self, param) -> str:
         return "protocol://DEFINITION.toml"
 
-    def convert(self, value: str, param: click.Parameter = None, ctx: typer.Context = None) -> DSyncer:
+    def convert(self, value: Any, param: click.Parameter = None, ctx: typer.Context = None) -> DSyncer:
         if value is None:
             return value
 
