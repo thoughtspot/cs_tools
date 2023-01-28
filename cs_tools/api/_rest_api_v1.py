@@ -64,7 +64,7 @@ class RESTAPIv1(httpx.Client):
             r.raise_for_status()
         except httpx.HTTPError as e:
             log.debug("Something went wrong calling the ThoughtSpot API")
-            log.warning(e.response.json())
+            log.warning(e.response.text)
             raise e from None
 
         log.debug(f"<< HTTP: {r.status_code}")
@@ -130,6 +130,33 @@ class RESTAPIv1(httpx.Client):
     # ==================================================================================================================
     # USER        ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_user_management
     # ==================================================================================================================
+
+    def user_create(
+        self,
+        *,
+        username: str,
+        email: str,
+        display_name: str,
+        password: str,
+        sharing_visibility: str = "DEFAULT",
+        user_type: str = "LOCAL_USER",
+        user_properties: Dict[str, Any] = UNDEFINED,
+        group_guids: List[GUID] = UNDEFINED,
+        # org_id: int = UNDEFINED,
+    ) -> httpx.Response:
+        d = {
+            "name": username,
+            "email": email,
+            "displayname": display_name,
+            "password": password,
+            "visibility": sharing_visibility,
+            "usertype": user_type,
+            "properties": user_properties,
+            "groups": dumps(group_guids),
+            "triggeredbyadmin": True,
+        }
+        r = self.post("callosum/v1/tspublic/v1/user", data=d)
+        return r
 
     def user_read(self, *, user_guid: GUID = UNDEFINED, name: str = UNDEFINED) -> httpx.Response:
         p = {"userid": user_guid, "name": name}

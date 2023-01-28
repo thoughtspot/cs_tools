@@ -118,6 +118,11 @@ class GroupPrivilege(StrEnum):
     cannot_create_or_delete_pinboards = "DISABLE_PINBOARD_CREATION"
 
 
+class SharingVisibility(StrEnum):
+    shareable = "DEFAULT"
+    not_shareable = "NON_SHAREABLE"
+
+
 # ======================================================================================================================
 # REST API V1 input parameter types
 # ======================================================================================================================
