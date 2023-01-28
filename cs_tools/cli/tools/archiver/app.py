@@ -72,19 +72,19 @@ def identify(
     only_groups: str = Opt(
         None,
         custom_type=MultipleChoiceType(),
-        help="content not authored by users in these groups will be [b red]filtered[/], can be specified multiple times",
+        help="content not authored by users in these groups will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria (applied with OR)",
     ),
     ignore_groups: str = Opt(
         None,
         custom_type=MultipleChoiceType(),
-        help="content authored by users in these groups will be [b red]filtered[/], can be specified multiple times",
+        help="content authored by users in these groups will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria (applied with OR)",
     ),
     ignore_tags: str = Opt(
         None,
         custom_type=MultipleChoiceType(),
-        help="content with this tag (case sensitive) will be [b red]filtered[/], can be specified multiple times",
+        help="content with this tag (case sensitive) will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria (applied with OR)",
     ),
     report: DSyncer = Opt(
