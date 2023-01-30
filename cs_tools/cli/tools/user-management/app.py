@@ -92,7 +92,11 @@ def transfer(
 
                 extra["object_guids"] = list(guids_to_transfer)
 
-            ts.api.user_transfer_ownership(from_username=from_username, to_username=to_username, **extra)
+            try:
+                ts.api.user_transfer_ownership(from_username=from_username, to_username=to_username, **extra)
+            except httpx.HTTPStatusError as e:
+                log.debug(e, exc_info=True)
+                raise typer.Exit(1)
 
             rich_console.log(
                 f"Transferred {len(guids_to_transfer) or 'all'} objects from [b blue]{from_username}[/] to "
