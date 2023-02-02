@@ -11,6 +11,7 @@ import pathlib
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.types import MultipleChoiceType
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
@@ -36,35 +37,58 @@ app = CSToolsApp(
 @app.command(dependencies=[thoughtspot], name="export")
 def scriptability_export(
     ctx: typer.Context,
-    path: pathlib.Path = Arg(  # may not want to use
-        ..., help="full path (directory) to save data set to", metavar="DIR", dir_okay=True, resolve_path=True
+    directory: pathlib.Path = Arg(
+        ..., help="directory to save TML to", file_okay=False, resolve_path=True
     ),
-    tags: List[str] = Opt([], metavar="TAGS", help="comma separated list of tags to export"),
-    export_ids: List[str] = Opt(
-        [],
-        metavar="GUIDS",
-        help="comma separated list of GUIDs to export " "that cannot be combined with other filters",
+    tags: str = Opt(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="objects marked with tags to export, comma separated",
     ),
-    author: str = Opt(None, metavar="USERNAME", help="username that is the author of the content to download"),
-    pattern: str = Opt(None, metavar="PATTERN", help="Pattern for name with % as a wildcard"),
-    include_types: List[str] = Opt(
-        [],
-        metavar="CONTENTTYPES",
-        help="list of types to include: answer, liveboard, view, sqlview, " "table, connection",
+    guids: str = Opt(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="specific objects to export, comma separated",
     ),
-    exclude_types: List[str] = Opt(
-        [],
-        metavar="CONTENTTYPES",
-        help="list of types to exclude (overrides include): answer, liveboard, view, " "sqlview, table, connection",
+    author: str = Opt(None, help="objects authored by this username to export"),
+    pattern: str = Opt(None, help=r"object names which meet a pattern, follows SQL LIKE operator (% as a wildcard)"),
+    include_types: str = Opt(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="list of types to export: answer, liveboard, view, sqlview, table, connection",
     ),
-    export_associated: bool = Opt(False, help="if specified, also export related content"),
-    org: str = Opt(None, help="Name of org to export from.  The user must have access to that org."),
+    exclude_types: str = Opt(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="list of types to exclude (overrides include): answer, liveboard, view, sqlview, table, connection",
+    ),
+    export_associated: bool = Opt(
+        False, 
+        "--export-associated",
+        help="if specified, also export related content"
+    ),
+    org: str = Opt(None, help="name or ID of the org to export from", hidden=True),
 ):
+    """
+    Exports TML from ThoughtSpot.
+
+    There are different parameters that can impact content to download. At least one
+    needs to be specified.
+
+    - GUIDs: only content with the specific GUIDs will be downloaded.
+    - filters, e.g tags, author, pattern, include_types, exclude_types.
+
+    If you specify GUIDs then you can't use any filters.
+
+    Filters are applied in AND fashion - only items that match all filters will be
+    exported. For example, if you export for the "finance" tag and author "user123",
+    then only content owned by that user with the "finance" tag will be exported.
+    """
     export(
-        ctx=ctx,
-        path=path,
+        ts=ctx.obj.thoughtspot,
+        path=directory,
         tags=tags,
-        export_ids=export_ids,
+        guids=guids,
         author=author,
         pattern=pattern,
         include_types=include_types,
@@ -77,38 +101,43 @@ def scriptability_export(
 @app.command(dependencies=[thoughtspot], name="import")
 def scriptability_import(
     ctx: typer.Context,
-    path: pathlib.Path = Arg(
-        ...,
-        help="full path to the TML file or directory to import.",
-        metavar="FILE_OR_DIR",
-        dir_okay=True,
-        resolve_path=True,
+    directory: pathlib.Path = Arg(
+        ..., help="directory to load TML from", file_okay=False, resolve_path=True
     ),
     import_policy: TMLImportPolicy = Opt(TMLImportPolicy.validate, help="The import policy type"),
-    force_create: bool = Opt(False, help="If true, will force a new object to be created."),
+    force_create: bool = Opt(False, "--force-create", help="will force a new object to be created"),
     guid_file: Optional[pathlib.Path] = Opt(
         None,
-        help="Existing or new mapping file to map GUIDs from source instance to target instance.",
-        metavar="FILE_OR_DIR",
+        help="existing or new mapping file to map GUIDs from source instance to target instance",
         dir_okay=False,
         resolve_path=True,
     ),
-    from_env: str = Opt(None, help="The environment name importing from, for GUID mapping."),
-    to_env: str = Opt(None, help="The environment name importing to, for GUID mapping."),
-    tags: List[str] = Opt([], metavar="TAGS", help="One or more tags to add to the imported content."),
-    share_with: List[str] = Opt([], metavar="GROUPS", help="One or more groups to share the uploaded content with."),
+    from_env: str = Opt(None, help="the source environment name importing from", rich_help_panel="GUID Mapping Options"),
+    to_env: str = Opt(None, help="the target environment name importing to", rich_help_panel="GUID Mapping Options"),
+    tags: List[str] = Opt([], help="one or more tags to add to the imported content"),
+    share_with: List[str] = Opt([], help="one or more groups to share the uploaded content with"),
     tml_logs: Optional[pathlib.Path] = Opt(
         None,
-        help="full path to the directory to log sent TML.  TML can change during load.",
+        help="full path to the directory to log sent TML. TML can change during load",
         metavar="DIR",
-        dir_okay=True,
+        file_okay=True,
         resolve_path=True,
     ),
-    org: str = Opt(None, help="Name of org to import to.  The user must have access to that org."),
+    org: str = Opt(None, help="name of org to import to"),
 ):
+    """
+    Import TML from a file or directory into ThoughtSpot.
+
+    \b
+    cs_tools dependends on thoughtspot_tml. The GUID file is produced from
+    thoughtspot_tml and requires a specific format. For further information on the
+    GUID File, see
+
+       https://github.com/thoughtspot/thoughtspot_tml/tree/v2_0_release#environmentguidmapper
+    """
     to_import(
         ctx=ctx,
-        path=path,
+        path=directory,
         import_policy=import_policy,
         force_create=force_create,
         guid_file=guid_file,
@@ -124,10 +153,13 @@ def scriptability_import(
 @app.command(name="compare")
 def scriptability_compare(
     file1: pathlib.Path = Arg(
-        ..., help="full path to the first TML file to compare.", metavar="FILE1", dir_okay=False, resolve_path=True
+        ..., help="full path to the first TML file to compare", dir_okay=False, resolve_path=True
     ),
     file2: pathlib.Path = Arg(
-        ..., help="full path to the second TML file to compare.", metavar="FILE2", dir_okay=False, resolve_path=True
+        ..., help="full path to the second TML file to compare", dir_okay=False, resolve_path=True
     ),
 ):
+    """
+    Compares two TML files for differences.
+    """
     compare(file1=file1, file2=file2)

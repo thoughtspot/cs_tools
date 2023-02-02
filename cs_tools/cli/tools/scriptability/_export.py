@@ -1,6 +1,3 @@
-"""
-This file contains the methods to execute the 'scriptability export' command.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,14 +12,10 @@ from thoughtspot_tml.utils import determine_tml_type, disambiguate
 from thoughtspot_tml import Connection
 from awesomeversion import AwesomeVersion
 from rich.table import Table
-from cs_tools.cli.ux import CSToolsArgument as Arg
-from cs_tools.cli.ux import CSToolsOption as Opt
 from httpx import HTTPStatusError
-import typer
 
-from cs_tools.cli.types import CommaSeparatedValuesType
-from cs_tools.errors import CSToolsError
 from cs_tools.cli.ux import rich_console
+from cs_tools.errors import CSToolsError
 from cs_tools.types import TMLSupportedContent, GUID
 
 from .util import strip_blanks
@@ -52,55 +45,7 @@ class TMLExportResponse:
         return self.status_code == "OK"
 
 
-def export(
-    ctx: typer.Context,
-    path: pathlib.Path = Arg(  # may not want to use
-        ..., help="path to save data set to", dir_okay=False, resolve_path=True
-    ),
-    tags: List[str] = Opt(
-        None,
-        metavar="TAGS",
-        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-        help="comma separated list of tags to export",
-    ),
-    guids: list[GUID] = Opt(
-        None,
-        metavar="GUIDS",
-        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-        help="comma separated list of GUIDs to export",
-    ),
-    author: str = Opt(None, metavar="USERNAME", help="username that is the author of the content to download"),
-    pattern: str = Opt(None, metavar="PATTERN", help=r"pattern for name with % as a wildcard"),
-    include_types: List[str] = Opt(
-        None,
-        metavar="CONTENTTYPES",
-        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-        help="list of types to include: answer, liveboard, view, sqlview, table, connection",
-    ),
-    exclude_types: List[str] = Opt(
-        None,
-        metavar="CONTENTTYPES",
-        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-        help="list of types to exclude (overrides include): answer, liveboard, view, sqlview, table, connection",
-    ),
-    export_associated: bool = Opt(False, help="if specified, also export related content"),
-    org: str = Opt(None, help="name or id of the org to export from", hidden=True),
-):
-    """
-    Exports TML as YAML from ThoughtSpot.
-
-    There are different parameters that can impact content to download. At least one
-    needs to be specified.
-
-    - GUIDs: only content with the specific GUIDs will be downloaded.
-    - filters, e.g tags, author, pattern, include_types, exclude_types.
-
-    If you specify GUIDs then you can't use any filters.
-
-    Filters are applied in AND fashion - only items that match all filters will be
-    exported. For example, if you export for the "finance" tag and author "user123",
-    then only content owned by that user with the "finance" tag will be exported.
-    """
+def export(ts, path, guids, tags, author, include_types, exclude_types, pattern, export_associated, org):
     if guids and (tags or author or include_types or exclude_types or pattern):
         raise CSToolsError(
             error="GUID cannot be used with other filters.",
@@ -112,14 +57,12 @@ def export(
 
     # TODO: ensure this logic is captured in the CLI parsing above....
     # do some basic cleanup to make sure we don't have extra spaces or case issues.
-    export_ids = strip_blanks(guids)
-    tags = strip_blanks(tags)
-    include_types = [_.strip().lower() for _ in include_types]
-    exclude_types = [_.strip().lower() for _ in exclude_types + ["USER", "USER_GROUP"]]
-    author = author.strip() if author else None
+    # guids = strip_blanks(guids or [])
+    # tags = strip_blanks(tags or [])
+    # include_types = [_.strip().lower() for _ in (include_types or [])]
+    # exclude_types = [_.strip().lower() for _ in (exclude_types or [])]
+    # author = author.strip() if author else None
     #
-
-    ts = ctx.obj.thoughtspot
 
     if org is not None:
         ts.org.switch(org)
@@ -129,15 +72,15 @@ def export(
     # With associated - download content with associated and save
     # With fqns - download content with associated, map FQNs, save content specified (original or with FQNs)
 
-    if export_ids:
-        export_objects = ts.metadata.get(export_ids)
+    if guids:
+        export_objects = ts.metadata.get(guids)
     else:
         export_objects = ts.metadata.find(
             tags=tags,
             author=author,
             pattern=pattern,
-            include_types=[TMLSupportedContent[friendly] for friendly in include_types],
-            exclude_types=[TMLSupportedContent[friendly] for friendly in exclude_types],
+            include_types=[TMLSupportedContent[f] for f in (include_types or [])] or None,
+            exclude_types=[TMLSupportedContent[f] for f in (exclude_types or [])] + ["USER", "USER_GROUP"],
         )
 
     results: list[TMLExportResponse] = []
@@ -151,9 +94,9 @@ def export(
 
             try:
                 if metadata_type == TMLSupportedContent.connection:
-                    r = _download_connection(ts=ts, path=path, guid=guid)
+                    r = _download_connection(ts=ts, directory=path, guid=guid)
                 else:
-                    r = _download_tml(ts=ts, path=path, guid=guid, export_associated=export_associated)
+                    r = _download_tml(ts=ts, directory=path, guid=guid, export_associated=export_associated)
 
                 results.extend(r)
 
@@ -172,7 +115,10 @@ def export(
                     )
                 )
 
-    _show_results_as_table(results=results)
+    if results:
+        _show_results_as_table(results=results)
+    else:
+        log.warning("No TML found matching the input conditions")
 
 
 def _download_connection(ts, directory: pathlib.Path, guid: GUID) -> list[TMLExportResponse]:
@@ -213,10 +159,6 @@ def _download_tml(ts, directory: pathlib.Path, guid: GUID, export_associated: bo
     )
 
     results: list[TMLExportResponse] = []
-
-    if r.json().get("object", []):
-        return results
-
     tml_objects = []
 
     for content in r.json()["object"]:
@@ -224,16 +166,17 @@ def _download_tml(ts, directory: pathlib.Path, guid: GUID, export_associated: bo
 
         r = TMLExportResponse(
             guid=info["id"],
-            metadata_object_type=TMLSupportedContent.from_child_type(info["type"]).to_metadata_object_type(),
+            metadata_object_type=TMLSupportedContent[info["type"]],
             tml_type_name=info["type"],
             name=info["name"],
             status_code=info["status"]["status_code"],
             error_messages=info["status"].get("error_message", None),
         )
 
+        results.append(r)
+
         if not r.is_success:
             log.warning(f"[b red]unable to get {r.name}: {r.status_code}")
-            results.append(r)
 
         else:
             log.info(f"{content['info']['filename']} (Downloaded)")

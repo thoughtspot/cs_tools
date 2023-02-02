@@ -23,9 +23,9 @@ def create_mapping(
     Create a new, empty mapping file.
     """
     if create_guid_file_if_not_exists(guid_file):
-        console.log(f"[bold yellow]File {guid_file} already exists.  Not creating a new one.[/]")
+        rich_console.log(f"[b yellow]File {guid_file} already exists.  Not creating a new one.[/]")
     else:
-        console.log(f"[bold green]Created {guid_file}.[/]")
+        rich_console.log(f"[b green]Created {guid_file}.[/]")
 
 
 def create_guid_file_if_not_exists(guid_file: pathlib.Path) -> bool:

@@ -5,23 +5,11 @@ import pathlib
 
 from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml.types import TMLObject
-from typer import Argument as A_
 
 from cs_tools.cli.ux import rich_console
 
 
-def compare(
-    file1: pathlib.Path = A_(
-        ..., help="full path to the first TML file to compare.", metavar="FILE1", dir_okay=False, resolve_path=True
-    ),
-    file2: pathlib.Path = A_(
-        ..., help="full path to the second TML file to compare.", metavar="FILE2", dir_okay=False, resolve_path=True
-    ),
-):
-    """
-    Compares two TML files for differences.
-    """
-
+def compare(file1, file2):
     tml1 = _get_tmlobj(file1)
     tml2 = _get_tmlobj(file2)
 
@@ -41,10 +29,10 @@ def _get_tmlobj(path: pathlib.Path) -> TMLObject:
 
 def _compare_tml(file1: str, tml1: TMLObject, file2: str, tml2: TMLObject) -> bool:
     """Compares two TML objects, listing any differences."""
-    return __compare_dict(file1, tml1.to_dict(), file2, tml2.to_dict())
+    return _compare_dict(file1, tml1.to_dict(), file2, tml2.to_dict())
 
 
-def __compare_dict(f1: str, d1: dict, f2: str, d2: dict) -> bool:
+def _compare_dict(f1: str, d1: dict, f2: str, d2: dict) -> bool:
     """Compares two dictionaries, logging any changes."""
     if not (type(d1) is dict and type(d2) is dict):
         rich_console.log(f"[bold red]{d1} and {d2} are different types.")
@@ -69,9 +57,9 @@ def __compare_dict(f1: str, d1: dict, f2: str, d2: dict) -> bool:
 
     for k in common_keys:
         if type(d1[k]) is dict:
-            same = __compare_dict(f1, d1[k], f2, d2[k]) and same  # need to set to false if one is false
+            same = _compare_dict(f1, d1[k], f2, d2[k]) and same  # need to set to false if one is false
         elif type(d1[k]) is list:
-            same = __compare_list(f1, d1[k], f2, d2[k]) and same  # need to set to false if one is false
+            same = _compare_list(f1, d1[k], f2, d2[k]) and same  # need to set to false if one is false
         else:
             if d1[k] != d2[k]:
                 rich_console.log(f"[bold red]Values for key '{k}' are different: [/]")
@@ -81,7 +69,7 @@ def __compare_dict(f1: str, d1: dict, f2: str, d2: dict) -> bool:
     return same
 
 
-def __compare_list(f1: str, l1: list, f2: str, l2: list) -> bool:
+def _compare_list(f1: str, l1: list, f2: str, l2: list) -> bool:
     """Compares the contents of a list."""
     same = True
 
@@ -95,9 +83,9 @@ def __compare_list(f1: str, l1: list, f2: str, l2: list) -> bool:
 
     for cnt in range(0, len(l1)):
         if type(l1[cnt]) is dict:
-            same = __compare_dict(f1, l1[cnt], f2, l2[cnt]) and same
+            same = _compare_dict(f1, l1[cnt], f2, l2[cnt]) and same
         elif type(l1[cnt]) is list:
-            same = __compare_list(f1, l1[cnt], f2, l2[cnt]) and same
+            same = _compare_list(f1, l1[cnt], f2, l2[cnt]) and same
         else:
             if l1[cnt] != l2[cnt]:
                 rich_console.log(f"[bold red]Values are different: [/]")
