@@ -1,2 +1,2 @@
-recursive-include cs_tools/cli/tools/**
+recursive-include cs_tools/cli/tools/** *
 recursive-include cs_tools/sync/** *.json
