@@ -107,7 +107,7 @@ class RESTAPIv1(httpx.Client):
 
     def session_orgs_update(self, *, org_id: int) -> httpx.Response:
         d = {"orgid": org_id}
-        r = self.put("callosum/v1/tspublic/v1/session/org", data=d)
+        r = self.put("callosum/v1/tspublic/v1/session/orgs", data=d)
         return r
 
     def session_info(self) -> httpx.Response:
