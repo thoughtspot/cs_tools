@@ -28,6 +28,9 @@ from cs_tools.types import (
     SortOrder,
     TMLType,
     GUID,
+    SharingVisibility,
+    GroupPrivilege,
+    GroupInfo,
 )
 
 log = logging.getLogger(__name__)
@@ -138,7 +141,7 @@ class RESTAPIv1(httpx.Client):
         email: str,
         display_name: str,
         password: str,
-        sharing_visibility: str = "DEFAULT",
+        sharing_visibility: SharingVisibility = "DEFAULT",
         user_type: str = "LOCAL_USER",
         user_properties: Dict[str, Any] = UNDEFINED,
         group_guids: List[GUID] = UNDEFINED,
@@ -158,8 +161,8 @@ class RESTAPIv1(httpx.Client):
         r = self.post("callosum/v1/tspublic/v1/user", data=d)
         return r
 
-    def user_read(self, *, user_guid: GUID = UNDEFINED, name: str = UNDEFINED) -> httpx.Response:
-        p = {"userid": user_guid, "name": name}
+    def user_read(self, *, user_guid: GUID = UNDEFINED, username: str = UNDEFINED) -> httpx.Response:
+        p = {"userid": user_guid, "name": username}
         r = self.get("callosum/v1/tspublic/v1/user", params=p)
         return r
 
@@ -204,9 +207,35 @@ class RESTAPIv1(httpx.Client):
     # GROUP       ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_groups_and_privileges
     # ==================================================================================================================
 
-    def group_read(self, *, group_guid: GUID = UNDEFINED, name: str = UNDEFINED) -> httpx.Response:
-        p = {"groupid": group_guid, "name": name}
+    def group_create(
+        self,
+        *,
+        group_name: str,
+        display_name: str,
+        description: str = None,
+        privileges: List[GroupPrivilege],
+        sharing_visibility: SharingVisibility = "DEFAULT",
+        group_type: str = "LOCAL_GROUP",
+    ) -> httpx.Response:
+        d = {
+            "name": group_name,
+            "display_name": display_name,
+            "description": description,
+            "privileges": dumps(privileges),
+            "visibility": sharing_visibility,
+            "grouptype": group_type,
+        }
+        r = self.post("callosum/v1/tspublic/v1/group", data=d)
+        return r
+
+    def group_read(self, *, group_guid: GUID = UNDEFINED, group_name: str = UNDEFINED) -> httpx.Response:
+        p = {"groupid": group_guid, "name": group_name}
         r = self.get("callosum/v1/tspublic/v1/group", params=p)
+        return r
+
+    def group_update(self, *, group_guid: GUID, content: GroupInfo) -> httpx.Response:
+        d = {"groupid": group_guid, "content": json.dumps(content), "triggeredbyadmin": True}
+        r = self.put(f"callosum/v1/tspublic/v1/group/{group_guid}", data=d)
         return r
 
     def group_list_users(self, *, group_guid: GUID) -> httpx.Response:
