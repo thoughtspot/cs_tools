@@ -7,6 +7,7 @@ import uuid
 import re
 
 from thoughtspot_tml.types import ConnectionMetadata, TMLObject
+from awesomeversion import AwesomeVersion
 import pendulum
 import pydantic
 
@@ -133,6 +134,11 @@ class UserProfile(TypedDict):
     ...
 
 
+class GroupInfo(TypedDict):
+    # GET: callosum/v1/tspublic/v1/group
+    ...
+
+
 class SecurityPrincipal(TypedDict):
     # GET: callosum/v1/tspublic/v1/user/list
     ...
@@ -180,8 +186,8 @@ RecordsFormat = List[Dict[str, Any]]
 
 
 class TMLAPIResponse(pydantic.BaseModel):
-    guid: str
-    metadata_object_type: str
+    guid: GUID
+    metadata_object_type: MetadataObjectType
     tml_type_name: str
     name: str
     status_code: str
@@ -220,12 +226,17 @@ class TMLAPIResponse(pydantic.BaseModel):
 
 
 class ThoughtSpotPlatform(pydantic.BaseModel):
-    version: str
+    version: AwesomeVersion
     deployment: str
     url: str
     timezone: pendulum._Timezone
     cluster_name: str
     cluster_id: str
+
+    @pydantic.validator("version", pre=True)
+    def _strip_patches(cls, version: str) -> str:
+        major, minor, patch, *extra = version.split(".")
+        return AwesomeVersion(f"{major}.{minor}.{patch}")
 
     @pydantic.validator("deployment", pre=True)
     def _one_of(cls, deployment: str) -> str:
