@@ -300,7 +300,7 @@ def _load_tml_from_files(path: pathlib.Path) -> Dict[GUID, TMLFile]:
 
         tml_file_bundles[tml.guid] = TMLFile(filepath=path, tml=tml)
 
-    log_bundle = ", ".join([tml_file.filepath.name for tml_file in tml_file_bundles])
+    log_bundle = ", ".join([tml_file.filepath.name for tml_file in tml_file_bundles.values()])
     log.info(f"Attempting to load: {log_bundle}")
 
     return tml_file_bundles
