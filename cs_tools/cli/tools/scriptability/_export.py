@@ -55,17 +55,23 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
             ),
         )
 
-    # TODO: ensure this logic is captured in the CLI parsing above....
-    # do some basic cleanup to make sure we don't have extra spaces or case issues.
-    # guids = strip_blanks(guids or [])
-    # tags = strip_blanks(tags or [])
-    # include_types = [_.strip().lower() for _ in (include_types or [])]
-    # exclude_types = [_.strip().lower() for _ in (exclude_types or [])]
-    # author = author.strip() if author else None
-    #
-
     if org is not None:
         ts.org.switch(org)
+
+    if include_types is not None:
+        include_types = [TMLSupportedContent[t] for t in include_types]
+
+    exclude_types = (exclude_types or []) + ["LOGICAL_COLUMN", "USER", "USER_GROUP"]
+
+    log.debug(
+        f"EXPORT args"
+        f"\nguids={guids}"
+        f"\ntags={tags}"
+        f"\nauthor={author}"
+        f"\npattern={pattern}"
+        f"\ninclude_types={include_types}"
+        f"\nexclude_types={exclude_types}"
+    )
 
     # Scenarios to support
     # GUID/filters - download the content and save
@@ -79,8 +85,8 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
             tags=tags,
             author=author,
             pattern=pattern,
-            include_types=[TMLSupportedContent[f] for f in (include_types or [])] or None,
-            exclude_types=[TMLSupportedContent[f] for f in (exclude_types or [])] + ["USER", "USER_GROUP"],
+            include_types=include_types,
+            exclude_types=exclude_types,
         )
 
     results: list[TMLExportResponse] = []
