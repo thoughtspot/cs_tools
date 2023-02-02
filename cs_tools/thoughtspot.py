@@ -121,6 +121,7 @@ class ThoughtSpot:
             site_states = [
                 ("Enable service", "Your cluster is in Economy Mode.", "Visit [b blue]{host}[/] to start it."),
                 ("Service will be online shortly", "Your cluster is starting.", "Contact ThoughtSpot with any issues."),
+                ("Estimated time to complete", "Your cluster is upgrading.", "Contact ThoughtSpot with any issues."),
             ]
 
             for page_response, rzn, fwd in site_states:
