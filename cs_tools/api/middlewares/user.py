@@ -50,7 +50,7 @@ class UserMiddleware:
             return username
 
         try:
-            r = self.ts.api.user_read(name=username)
+            r = self.ts.api.user_read(username=username)
         except httpx.HTTPStatusError as e:
             if e.response.is_client_error:
                 info = {

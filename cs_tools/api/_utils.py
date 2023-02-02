@@ -6,7 +6,7 @@ using the cs_tools.api.middlewares or consuming the cs_tools.api._rest_api_v1
 directly.
 """
 from __future__ import annotations
-from typing import Any
+from typing import Any, Dict, List, Union
 import uuid
 import json
 import copy
@@ -72,7 +72,7 @@ def scrub_sensitive(request_keywords: Dict[str, Any]) -> Dict[str, Any]:
     return secure
 
 
-def dumps(inp: list[Any] | type[UNDEFINED]) -> str | type[UNDEFINED]:
+def dumps(inp: Union[List[Any], type[UNDEFINED]]) -> Union[str, type[UNDEFINED]]:
     """
     json.dumps, but passthru our UNDEFINED sentinel.
     """

@@ -33,7 +33,7 @@ class GroupMiddleware:
             return group_name
 
         try:
-            r = self.ts.api.group_read(name=group_name)
+            r = self.ts.api.group_read(group_name=group_name)
         except httpx.HTTPStatusError as e:
             if e.response.is_client_error:
                 info = {

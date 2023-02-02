@@ -134,7 +134,7 @@ class MetadataMiddleware:
         guids = set(guids)
 
         for metadata_type in MetadataObjectType:
-            r = self.ts.api.metadata_list(metadata_type=metadata_type, fetch_ids=list(guids))
+            r = self.ts.api.metadata_list(metadata_type=metadata_type, fetch_guids=list(guids))
 
             for header in r.json()["headers"]:
                 header["metadata_type"] = metadata_type
