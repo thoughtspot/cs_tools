@@ -3,15 +3,16 @@ from typing import Union, Dict, Any
 import datetime as dt
 import pathlib
 import logging
+import urllib
 import json
 import re
 
 from pydantic.types import DirectoryPath, FilePath
 from awesomeversion import AwesomeVersion
 from pydantic import validator, AnyHttpUrl, BaseModel
-import httpx
 import toml
 
+from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 from cs_tools._version import __version__
 from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.const import APP_DIR
@@ -33,58 +34,60 @@ class _meta_config(BaseModel):
     default_config_name: str = None
     latest_release_version: str = None
     latest_release_date: dt.date = None
-    _meta_fp: pathlib.Path = APP_DIR / ".meta-config.toml"
 
     @classmethod
     def load(cls):
-        fp = cls._meta_fp
-        data = {}
-
-        if not fp.exists():
-            fp.touch()
-
-        try:
-            disk = toml.load(fp)
-            data["default_config_name"] = disk["default"]["config"]
-            data["latest_release_version"] = disk["latest_release"].get("version", None)
-            data["latest_release_date"] = disk["latest_release"].get("published_at", None)
-        except Exception:
-            log.debug("failed to load the full meta config", exc_info=True)
+        fp = APP_DIR / ".meta-config.toml"
 
         # constants
-        EPOCH = dt.date(2012, 6, 1)
+        EPOCH = dt.datetime(2012, 6, 1)
         NOW = dt.datetime.now()
-        ONE_DAY = 86400  # seconds
+        ONE_HOUR = 3600  # seconds
+
+        if fp.exists():
+            fp_stat = fp.stat()
+            disk = toml.load(fp)
+
+            data = {
+                "default_config_name": disk["default"].get("config"),
+                "latest_release_version": disk["latest_release"].get("version"),
+                "latest_release_date": disk["latest_release"].get("published_at"),
+            }
+            modified_at = dt.datetime.fromtimestamp(fp_stat.st_mtime)
+        else:
+            data = {}
+            modified_at = EPOCH
 
         # predicates to check
-        have_not_checked_today = (NOW - dt.datetime.fromtimestamp(fp.stat().st_mtime)).total_seconds() > ONE_DAY
-        has_data = fp.stat().st_size
+        have_not_checked_5h = (NOW - modified_at).total_seconds() > (ONE_HOUR * 5)
         local_lt_remote = AwesomeVersion(__version__) <= AwesomeVersion(data.get("latest_release_version", "9.9.9"))
-        remote_gt_5days = (NOW.date() - data.get("latest_release_date", EPOCH)).total_seconds() > ONE_DAY * 5
 
         # fetch latest remote version
-        if have_not_checked_today and has_data and local_lt_remote and remote_gt_5days:
-            release_url = "https://api.github.com/repos/thoughtspot/cs_tools/releases/latest"
+        if have_not_checked_5h and local_lt_remote:
 
             try:
-                r = httpx.get(release_url, timeout=1).json()
+                r = get_latest_cs_tools_release(allow_beta=AwesomeVersion(__version__).beta, timeout=0.0001)
                 data["latest_release_version"] = r["name"]
                 data["latest_release_date"] = dt.datetime.strptime(r["published_at"], "%Y-%m-%dT%H:%M:%SZ").date()
-                cls(**data).save()
-            except httpx.TimeoutException:
+                return cls(**data).save()
+
+            except urllib.error.URLError:
                 log.info("fetching latest CS Tools release version timed out")
+
             except Exception as e:
                 log.info(f"could not fetch release url: {e}")
 
         return cls(**data)
 
     def save(self) -> None:
+        fp = APP_DIR / ".meta-config.toml"
         data = {
             "default": {"config": self.default_config_name},
             "latest_release": {"version": self.latest_release_version, "published_at": self.latest_release_date},
         }
-
-        self._meta_fp.write_text(toml.dumps(data))
+        
+        fp.write_text(toml.dumps(data))
+        return self
 
     def newer_version_string(self) -> str:
         if AwesomeVersion(__version__) >= AwesomeVersion(self.latest_release_version or "0.0.0"):
