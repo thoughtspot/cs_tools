@@ -426,13 +426,12 @@ def get_path_manipulator(venv):
     return _updater.UnixPath(venv)
 
 
-def http_request(url, to_json=True):
+def http_request(url, to_json=True, timeout=None):
     # type: (str, bool) -> Dict[str, Any]
     """
     Makes a GET request to <url>.
     """
     import urllib.request
-    import contextlib
     import json
     import ssl
 
@@ -440,10 +439,7 @@ def http_request(url, to_json=True):
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    # request = urllib.request.Request(url)
-    # request.add_header("user-agent", "cs_tools.bootstrapper/{v} (+github: thoughtspot/cs_tools)".format(v=__version__))
-
-    with urllib.request.urlopen(url, context=ctx) as r:
+    with urllib.request.urlopen(url, timeout=None, context=ctx) as r:
         data = r.read()
 
     if to_json:
@@ -452,12 +448,12 @@ def http_request(url, to_json=True):
     return data
 
 
-def get_latest_cs_tools_release(allow_beta=False):
+def get_latest_cs_tools_release(allow_beta=False, timeout=None):
     # type: (bool) -> Dict[str, Any]
     """
     Get the latest CS Tools release.
     """
-    releases = http_request("https://api.github.com/repos/thoughtspot/cs_tools/releases")
+    releases = http_request("https://api.github.com/repos/thoughtspot/cs_tools/releases", timeout=None)
 
     for release in releases:
         if release["prerelease"] and not allow_beta:
