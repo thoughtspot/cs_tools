@@ -300,7 +300,7 @@ def _load_tml_from_files(path: pathlib.Path) -> Dict[GUID, TMLFile]:
 
         tml_file_bundles[tml.guid] = TMLFile(filepath=path, tml=tml)
 
-    log_bundle = ", ".join([tml_file.filepath.name for tml_file in tml_file_bundles.values()])
+    log_bundle = ", ".join([tml_file.filepath.name for tml_file in tml_file_bundles])
     log.info(f"Attempting to load: {log_bundle}")
 
     return tml_file_bundles
@@ -330,7 +330,7 @@ def _upload_connections(
             f"Using {TMLImportPolicy.partial} for connections."
         )
 
-    for tml_file in connection_file_bundles.values():
+    for tml_file in connection_file_bundles:
         tml = tml_file.tml
 
         # connections without passwords can be created, but then the following table create fails (and you
