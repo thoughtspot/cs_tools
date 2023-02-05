@@ -22,7 +22,6 @@ from cs_tools import utils
 meta = _meta_config.load()
 app = CSToolsApp(
     name="config",
-    no_args_is_help=True,
     help="""
     Work with dedicated config files.
 

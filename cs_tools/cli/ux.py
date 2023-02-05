@@ -112,6 +112,7 @@ class CSToolsApp(typer.Typer):
     def __init__(self, **passthru):
         passthru["cls"] = CSToolsGroup
         passthru["rich_markup_mode"] = "rich"
+        passthru["no_args_is_help"] = True
         super().__init__(**passthru)
 
     def command(
@@ -121,6 +122,7 @@ class CSToolsApp(typer.Typer):
         dependencies: Optional[List[Callable]] = None,
         # typer kwargs
         cls: Optional[CSToolsCommand] = CSToolsCommand,
+        no_args_is_help: bool = True,
         **passthru,
     ):
         """
@@ -134,7 +136,7 @@ class CSToolsApp(typer.Typer):
                 f.dependencies = []
 
             f.dependencies.extend(dependencies)
-            info = typer.models.CommandInfo(name=name, cls=cls, callback=f, **passthru)
+            info = typer.models.CommandInfo(name=name, cls=cls, callback=f, no_args_is_help=no_args_is_help, **passthru)
             self.registered_commands.append(info)
             return f
 

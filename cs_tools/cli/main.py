@@ -34,7 +34,6 @@ app = CSToolsApp(
     :floppy_disk: [red]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
     """,
     add_completion=False,
-    no_args_is_help=True,
     context_settings={
         # global settings
         "help_option_names": ["--help", "-h"],
