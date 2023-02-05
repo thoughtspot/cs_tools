@@ -24,7 +24,7 @@ class UserMiddleware:
         self.ts = ts
 
     @validate_arguments
-    def all(self) -> RecordsFormat:
+    def all(self, batchsize: int = 50) -> RecordsFormat:
         """
         Get all users in ThoughtSpot.
         """
@@ -32,7 +32,7 @@ class UserMiddleware:
 
         while True:
             # user/list doesn't offer batching..
-            r = self.ts.api.metadata_list(metadata_type="USER", batchsize=50, offset=len(users))
+            r = self.ts.api.metadata_list(metadata_type="USER", batchsize=batchsize, offset=len(users))
             data = r.json()
             users.extend(data["headers"])
 

@@ -57,8 +57,17 @@ class GroupMiddleware:
         else:
             group_guid = self.guid_for(group_name)
 
-        users_profiles: List[UserProfile] = self.ts.api.group.group_list_users(group_guid=group_guid)
+        r = self.ts.api.group_list_users(group_guid=group_guid)
+        users_profiles: List[UserProfile] = r.json()
         users = []
+
+        if not users_profiles:
+            info = {
+                "reason": "Group names are case sensitive. You can find a group's 'Group Name' in the Admin panel.",
+                "mitigation": "Verify the name and try again.",
+                "type": "Group",
+            }
+            raise ContentDoesNotExist(**info) from None
 
         for user in users_profiles:
             if is_directly_assigned and group_guid in user["assignedGroups"]:
