@@ -52,7 +52,10 @@ class RESTAPIv1(httpx.Client):
         #
         self.timeout = 15 * 60
         self.headers.update(
-            {"x-requested-by": "ThoughtSpot", "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)"}
+            {
+                "x-requested-by": "CS Tools",
+                "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)"
+            }
         )
 
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
