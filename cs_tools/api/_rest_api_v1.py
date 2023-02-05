@@ -81,7 +81,7 @@ class RESTAPIv1(httpx.Client):
     # SESSION     ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_session_management
     # ==================================================================================================================
 
-    def _token_auth(self, *, username: str, secret: GUID) -> httpx.Response:
+    def _trusted_auth(self, *, username: str, secret: GUID) -> httpx.Response:
         # get the login token for a given user
         d = {"secret_key": secret, "username": username, "access_level": "FULL"}
         r = self.post("callosum/v1/tspublic/v1/session/auth/token", data=d)
@@ -391,6 +391,40 @@ class RESTAPIv1(httpx.Client):
     # CONNECTION  ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_data_connections
     # ==================================================================================================================
 
+    def connection_fetch_connection(
+        self,
+        *,
+        guid: GUID,
+        include_columns: bool = False,
+        config: ConnectionMetadata = UNDEFINED,
+        authentication_type: str = "SERVICE_ACCOUNT"
+    ) -> httpx.Response:
+        d = {
+            "id": guid,
+            "includeColumns": include_columns,
+            "config": config,
+            "authentication_type": authentication_type
+        }
+        r = self.post("callosum/v1/tspublic/v1/connection/fetchConnection", data=d)
+        return r
+
+    def connection_fetch_live_columns(
+        self,
+        *,
+        guid: GUID,
+        tables: List[Dict[str, Any]] = UNDEFINED,
+        config: ConnectionMetadata = UNDEFINED,
+        authentication_type: str = "SERVICE_ACCOUNT"
+    ) -> httpx.Response:
+        d = {
+            "connection_id": guid,
+            "tables": dumps(tables),
+            "config": config,
+            "authentication_type": authentication_type
+        }
+        r = self.post("callosum/v1/connection/fetchLiveColumns", data=d)
+        return r
+
     def connection_create(
         self,
         *,
@@ -429,7 +463,7 @@ class RESTAPIv1(httpx.Client):
             "metadata": metadata,
             # state  # inaccesible to the Developer
         }
-        r = self.post("callosum/v1/tspublic/v1/connection/create", data=d)
+        r = self.post("callosum/v1/tspublic/v1/connection/update", data=d)
         return r
 
     def connection_export(self, *, guid: GUID) -> httpx.Response:
