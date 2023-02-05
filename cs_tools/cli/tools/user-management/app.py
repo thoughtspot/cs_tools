@@ -20,7 +20,7 @@ from . import layout
 from . import work
 
 log = logging.getLogger(__name__)
-app = CSToolsApp(help="""Managing Users and Groups in bulk.""", options_metavar="[--version, --help]")
+app = CSToolsApp(help="""Manage Users and Groups in bulk.""")
 
 
 @app.command(dependencies=[thoughtspot])
@@ -174,13 +174,13 @@ def rename(
 
             for from_username in users_map:
                 if from_username in SYSTEM_USERS:
-                    rich_console.log(f"[b yellow]renaming [b blue]{from_username}[/] is [b red]not allowed")
+                    log.info(f"[b yellow]renaming [b blue]{from_username}[/] is [b red]not allowed")
                     continue
 
                 try:
                     r = ts.api.user_read(name=from_username)
                 except httpx.HTTPStatusError as e:
-                    rich_console.log(f"failed to find user [b blue]{from_username}[/]")
+                    log.error(f"failed to find user [b blue]{from_username}[/]")
                     r = e.response
 
                 responses.append(r)
@@ -202,9 +202,9 @@ def rename(
                     failed.append(from_username)
 
     if failed:
-        rich_console.log(
-            f"[b yellow]Failed to update {len(failed)} Users",
-            f"\n - ",
+        log.warning(
+            f"[b yellow]Failed to update {len(failed)} Users"
+            f"\n - "
             f"\n - ".join(failed)
         )
 
@@ -275,7 +275,7 @@ def sync(
         +-------------+--------------+----------+-----------------------------+
 
          * [yellow]UPDATE[/] includes GROUP reassignment, if applicable
-        ** if --remove-deleted is specified, default to { no action taken }
+        ** if --remove-deleted is not specified, default to { no action taken }
     """
     ts = ctx.obj.thoughtspot
 
