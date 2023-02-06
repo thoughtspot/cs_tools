@@ -58,7 +58,7 @@ class PinboardMiddleware:
             r = self.ts.api.metadata_list(
                 metadata_type="PINBOARD_ANSWER_BOOK",
                 category=category,
-                tag_name=tags or _utils.UNDEFINED,
+                tag_names=tags or _utils.UNDEFINED,
                 batchsize=chunksize,
                 offset=len(pinboards)
             )

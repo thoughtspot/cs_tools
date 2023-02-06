@@ -59,7 +59,7 @@ class AnswerMiddleware:
             r = self.ts.api.metadata_list(
                 metadata_type="QUESTION_ANSWER_BOOK",
                 category=category,
-                tag_name=tags or _utils.UNDEFINED,
+                tag_names=tags or _utils.UNDEFINED,
                 show_hidden=hidden,
                 batchsize=chunksize,
                 offset=len(answers),

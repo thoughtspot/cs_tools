@@ -170,7 +170,7 @@ class MetadataMiddleware:
         metadata_list_kw = {}
 
         if tags is not None:
-            metadata_list_kw["tag_name"] = tags
+            metadata_list_kw["tag_names"] = tags
 
         if author is not None:
             metadata_list_kw["author_guid"] = self.ts.user.guid_for(author)
