@@ -9,7 +9,7 @@ from cs_tools._programmatic import get_cs_tool
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.settings import _meta_config
 from cs_tools._version import __version__
-from cs_tools.cli.ux import rich_console, CSToolsApp
+from cs_tools.cli.ux import rich_console, CSToolsApp, CSToolsOption as Opt
 from cs_tools.errors import CSToolsError
 from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES
 from cs_tools.cli import _config, _tools, _self, _log
@@ -55,6 +55,16 @@ app = CSToolsApp(
         )
     ),
 )
+
+
+@app.callback()
+def main(version: bool = Opt(False, "--version", help="Show the version and exit.")):
+    """
+    Manage users in the awesome CLI app.
+    """
+    if version:
+        rich.console(f"CS Tools {__version__}")
+        raise typer.Exit(0)
 
 
 def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
