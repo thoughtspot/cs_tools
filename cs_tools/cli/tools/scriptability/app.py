@@ -6,21 +6,26 @@
 #   - add support for importing .zip files
 #
 from typing import Optional, List
+import logging
 import pathlib
 
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import MultipleChoiceType
+from thoughtspot_tml import Connection
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
-from cs_tools.types import TMLImportPolicy
+from cs_tools.cli.ux import rich_console
+from cs_tools.types import GUID, TMLImportPolicy
 
 from ._compare import compare
 from ._import import to_import
 from ._export import export
+from . import layout
 
+log = logging.getLogger(__name__)
 app = CSToolsApp(
     help="""
     Tool for easily migrating TML between instance.
@@ -34,11 +39,80 @@ app = CSToolsApp(
 )
 
 
+@app.command(dependencies=[thoughtspot], hidden=True)
+def connection_rationalize(
+    ctx: typer.Context,
+    connection_guid: GUID = Opt(..., help="connection GUID"),
+    # directory: pathlib.Path = Opt(..., help="directory to save data to"),
+):
+    ts = ctx.obj.thoughtspot
+
+    r = ts.api.connection_export(guid=connection_guid)
+    tml = Connection.loads(r.text)
+    tml.guid = connection_guid
+
+    external_tables = [
+        {
+            "databaseName": table.external_table.db_name,
+            "schemaName": table.external_table.schema_name,
+            "tableName": table.external_table.table_name
+        }
+        for table in tml.connection.table
+    ]
+
+    r = ts.api.connection_fetch_connection(guid=tml.guid)
+    d = r.json()
+    i = tml.to_rest_api_v1_metadata()
+
+    r = ts.api.connection_fetch_live_columns(
+            guid=tml.guid,
+            tables=external_tables,
+            config=i["configuration"],
+            authentication_type=d["authenticationType"]
+        )
+
+    if r.is_error:
+        log.error(f"encountered an error fetching columns from [b blue]{tml.name}[/]\n{r.json()}")
+        raise typer.Exit(1)
+
+    need_to_fix = []
+    unsynced_columns = 0
+
+    for fully_qualified_tablename, columns in r.json().items():
+        n = 0
+ 
+        for column in columns:
+            if column["selected"] and not column["isLinkedActive"]:
+                n += 1
+
+        if n > 0:
+            unsynced_columns += n
+            database, schema, table = fully_qualified_tablename.split(".")
+            need_to_fix.append(
+                {
+                    "database": database,
+                    "schema": schema,
+                    "table": table,
+                    "unsynced_columns": n,
+                    "is_whole_table_unsynced": n == len(columns),
+                }
+            )
+
+    if need_to_fix:
+        log.warning(
+            f"[b yellow]{unsynced_columns} columns across {len(need_to_fix)} tables are out of sync in "
+            f"[b blue]{tml.name}"
+        )
+        table = layout.build_table()
+        [table.renderable.add_row(*map(str, row.values())) for row in need_to_fix]
+        rich_console.print(table)
+
+
 @app.command(dependencies=[thoughtspot], name="export")
 def scriptability_export(
     ctx: typer.Context,
     directory: pathlib.Path = Arg(
-        ..., help="directory to save TML to", file_okay=False, resolve_path=True
+        ..., help="directory to save TML to", file_okay=False, resolve_path=True, exists=True
     ),
     tags: str = Opt(
         None,
@@ -122,6 +196,7 @@ def scriptability_import(
         metavar="DIR",
         file_okay=True,
         resolve_path=True,
+        exists=True
     ),
     org: str = Opt(None, help="name of org to import to"),
 ):

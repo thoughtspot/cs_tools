@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import List, Dict, Union
+import datetime as dt
 import pathlib
 import logging
 import time
@@ -13,6 +14,7 @@ import re
 
 from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml.types import TMLObject
+from rich.align import Align
 from rich.table import Table
 from httpx import HTTPStatusError
 import typer
@@ -129,9 +131,10 @@ def to_import(
     if org is not None:
         ts.org.switch(org)
 
-    log_fp = path / "tml_import.log" if tml_logs is not None else pathlib.Path("tml_import.log")
+    log_fp = path if tml_logs is not None else pathlib.Path(".")
+    log_fp = path / f"scriptability-import-{dt.datetime.now():%Y-%m-%dT%H_%M_%S}.log"
     log.setLevel(logging.INFO)
-    log.addHandler(logging.FileHandler(log_fp.as_posix(), encoding="UTF-8", delay=True))
+    log.addHandler(logging.FileHandler(log_fp.as_posix(), mode="w", encoding="UTF-8", delay=True))
 
     guid_mapping = GUIDMapping(from_env=from_env, to_env=to_env, path=guid_file) if guid_file is not None else None
 
@@ -231,7 +234,6 @@ def _import_and_create_bundle(
         if force_create:
             tml_file.tml.guid = None
 
-    responses = []
     results = []
 
     try:
@@ -248,17 +250,15 @@ def _import_and_create_bundle(
             }
 
             if cnxn_files:
-                r, d, connection_tables = _upload_connections(**kw, connection_file_bundles=cnxn_files)
-                responses.extend(r)
-                results.extend(d)
+                r, connection_tables = _upload_connections(**kw, connection_file_bundles=cnxn_files)
+                results.extend(r)
             else:
                 # connection name --> table names
                 connection_tables: Dict[str, str] = {}
 
             if tml_files:
-                r, d = _upload_tml(**kw, tml_file_bundles=tml_files, connection_tables=connection_tables)
-                responses.extend(r)
-                results.extend(d)
+                r = _upload_tml(**kw, tml_file_bundles=tml_files, connection_tables=connection_tables)
+                results.extend(r)
 
     # log the error, but let any content that got imported still get tagged and shared
     except Exception as e:
@@ -269,10 +269,10 @@ def _import_and_create_bundle(
         guid_mapping.save()
 
     if tags:
-        _add_tags(ts, [r for r in responses if not r.is_error], tags)
+        _add_tags(ts, [r for r in results if not r.is_error], tags)
 
     if share_with:
-        _share_with(ts, [r for r in responses if not r.is_error], share_with)
+        _share_with(ts, [r for r in results if not r.is_error], share_with)
 
     return results
 
@@ -346,7 +346,7 @@ def _upload_connections(
             )
 
         if tml_logs is not None:
-            filename = f"{tml_file.filepath.stem}.IMPORTED"
+            filename = f"{tml_file.filepath.name}.IMPORTED"
             tml_file.tml.dump(tml_logs / f"{filename}.{tml_file.tml.tml_type_name}.tml")
 
         if force_create:
@@ -427,7 +427,7 @@ def _upload_connections(
                     guid_mapping.set_mapped_guid(old_guid, new_guid)
 
     # CONNECTIONS ARE ALWAYS PARTIAL, WAIT FOR THE CREATED ONES
-    _wait_for_metadata(ts=ts, metadata_list=[imported_object.guid for imported_object in responses])
+    _wait_for_metadata(ts=ts, guids=[imported_object.guid for imported_object in responses])
 
     return responses, connection_tables
 
@@ -509,7 +509,7 @@ def _upload_tml(
             for old_guid, new_guid in guids_to_map.items():
                 guid_mapping.set_mapped_guid(old_guid, new_guid)
 
-        _wait_for_metadata(ts=ts, metadata_list=[imported_object.guid for imported_object in responses])
+        _wait_for_metadata(ts=ts, guids=[imported_object.guid for imported_object in responses])
 
     return responses
 
@@ -526,7 +526,7 @@ def _add_tags(ts: ThoughtSpot, objects: List[TMLImportResponse], tags: List[str]
         types = []
         for _ in objects:
             ids.append(_.guid)
-            types.append(_.metadata_type)
+            types.append(_.metadata_object_type)
         if ids:  # might all be errors
             log.info(f"Adding tags {tags} to {ids}")
             try:
@@ -556,12 +556,13 @@ def _share_with(ts: ThoughtSpot, objects: List[TMLImportResponse], share_with: L
             # Bundling by type to save on calls.
             type_bundles = {}
             for _ in objects:
-                if _.metadata_type == MetadataObjectType.data_source:  # connections don't support sharing as-of 8.9
+                # connections don't support sharing as-of 8.9
+                if _.metadata_object_type == MetadataObjectType.connection:
                     continue
 
-                guid_list = type_bundles.get(_.metadata_type, [])
+                guid_list = type_bundles.get(_.metadata_object_type, [])
                 if not guid_list:
-                    type_bundles[_.metadata_type] = guid_list
+                    type_bundles[_.metadata_object_type] = guid_list
                 guid_list.append(_.guid)
 
             permissions = {}
@@ -585,11 +586,12 @@ def _wait_for_metadata(ts: ThoughtSpot, guids: List[GUID]) -> None:
         n += 1
         log.info(f"checking {len(guids): >3} guids, n={n}")
 
-        r_t = (ts.metadata_list(metadata_type="LOGICAL_TABLE", fetch_guids=list(guids), hidden=False),)
-        r_a = (ts.metadata_list(metadata_type="QUESTION_ANSWER_BOOK", fetch_guids=list(guids), hidden=False),)
-        r_p = (ts.metadata_list(metadata_type="PINBOARD_ANSWER_BOOK", fetch_guids=list(guids), hidden=False),)
+        r_c = ts.api.metadata_list(metadata_type="DATA_SOURCE", fetch_guids=list(guids), show_hidden=False)
+        r_t = ts.api.metadata_list(metadata_type="LOGICAL_TABLE", fetch_guids=list(guids), show_hidden=False)
+        r_a = ts.api.metadata_list(metadata_type="QUESTION_ANSWER_BOOK", fetch_guids=list(guids), show_hidden=False)
+        r_p = ts.api.metadata_list(metadata_type="PINBOARD_ANSWER_BOOK", fetch_guids=list(guids), show_hidden=False)
 
-        for response in (r_t, r_a, r_p):
+        for response in (r_c, r_t, r_a, r_p):
             for header in response.json()["headers"]:
                 ready_guids.add(header["id"])
 
@@ -602,12 +604,12 @@ def _show_results_as_table(results: List[TMLImportResponse]) -> None:
     """
     table = Table(title="Import Results", width=150)
 
-    table.add_column("Status", justify="center", width=10)  # 4 + length of literal: status
-    # table.add_column("GUID", justify="center", width=40)     # 4 + length of a guid
-    table.add_column("Type", no_wrap=True)
-    table.add_column("Filename", no_wrap=True)
+    table.add_column("Status", justify="center", width=10)   # 4 + length of literal: status
+    table.add_column("Type", justify="center", width=13)     # 4 + length of "worksheet"
+    table.add_column("Filename", width=48)                   # 4 + length of "guid.type.tml"
+    table.add_column("Error", no_wrap=True, width=150 - 54 - 13 - 10)  # 4 + lenght of "guid.type.tml"
 
     for r in results:
-        table.add_row(r.status_code, r.type_name, r.filename)
+        table.add_row(r.status_code, r.tml_type_name, r.name, ','.join(r.error_messages))
 
-    rich_console.print(table)
+    rich_console.print(Align.center(table))

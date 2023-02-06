@@ -18,8 +18,6 @@ from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
 from cs_tools.types import TMLSupportedContent, GUID
 
-from .util import strip_blanks
-
 log = logging.getLogger(__name__)
 
 
@@ -61,7 +59,7 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
     if include_types is not None:
         include_types = [TMLSupportedContent[t] for t in include_types]
 
-    exclude_types = (exclude_types or []) + ["LOGICAL_COLUMN", "USER", "USER_GROUP"]
+    exclude_types = (exclude_types or []) + ["LOGICAL_COLUMN", "LOGICAL_RELATIONSHIP", "USER", "USER_GROUP"]
 
     log.debug(
         f"EXPORT args"
