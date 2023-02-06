@@ -1,12 +1,12 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, Dict
 import logging
 
 import typer
 import rich
 
+from cs_tools._programmatic import get_cs_tool
 from cs_tools.cli._logging import _setup_logging
-from cs_tools.cli.loader import CSTool
 from cs_tools.settings import _meta_config
 from cs_tools._version import __version__
 from cs_tools.cli.ux import rich_console, CSToolsApp
@@ -64,7 +64,7 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
         if path.name == "__pycache__" or not path.is_dir():
             continue
 
-        tool = CSTool(path)
+        tool = get_cs_tool(path.name)
 
         if tool.privacy == "unknown":
             continue
