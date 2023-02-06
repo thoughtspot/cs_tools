@@ -1,0 +1,55 @@
+guid: e613a84b-49a9-4bff-9d8b-81fb35e0f092
+view:
+  name: TS_VW_WORKSHEET_DEPENDENT
+  tables:
+  - id: TS_DEPENDENT_OBJECT
+    name: TS_DEPENDENT_OBJECT
+  - id: TS_METADATA_COLUMN
+    name: TS_METADATA_COLUMN
+  - id: TS_METADATA_OBJECT
+    name: TS_METADATA_OBJECT
+  joins:
+  - id: REL_DEPENDENT_OBJECT-TS_METADATA_COLUMN
+    name: REL_DEPENDENT_OBJECT-TS_METADATA_COLUMN
+    source: TS_DEPENDENT_OBJECT
+    destination: TS_METADATA_COLUMN
+  - id: REL_TS_METADATA_COLUMN-TS_METADATA_OBJECT
+    name: REL_TS_METADATA_COLUMN-TS_METADATA_OBJECT
+    source: TS_METADATA_COLUMN
+    destination: TS_METADATA_OBJECT
+  table_paths:
+  - id: TS_DEPENDENT_OBJECT_1
+    table: TS_DEPENDENT_OBJECT
+    join_path:
+    - {}
+  - id: TS_METADATA_OBJECT_1
+    table: TS_METADATA_OBJECT
+    join_path:
+    - join:
+      - REL_DEPENDENT_OBJECT-TS_METADATA_COLUMN
+      - REL_TS_METADATA_COLUMN-TS_METADATA_OBJECT
+  search_query: "[TS_DEPENDENT_OBJECT_1::OBJECT_TYPE].pinboard_answer_book [TS_DEPENDENT_OBJECT_1::OBJECT_TYPE].question_answer_book [TS_METADATA_OBJECT_1::OBJECT_TYPE].worksheet [TS_DEPENDENT_OBJECT_1::DEPENDENT_GUID] [TS_DEPENDENT_OBJECT_1::NAME] [TS_METADATA_OBJECT_1::OBJECT_GUID]"
+  view_columns:
+  - name: DEPENDENT_GUID
+    search_output_column: DEPENDENT_GUID
+    properties:
+      column_type: ATTRIBUTE
+  - name: NAME
+    search_output_column: NAME
+    properties:
+      column_type: ATTRIBUTE
+  - name: OBJECT_GUID
+    search_output_column: OBJECT_GUID
+    properties:
+      column_type: ATTRIBUTE
+  joins_with:
+  - name: REL_TS_VW_WORKSHEET_DEPENDENT-TS_DEPENDENT_OBJECT
+    destination:
+      name: TS_DEPENDENT_OBJECT
+    "on": "[TS_VW_WORKSHEET_DEPENDENT::DEPENDENT_GUID] = [TS_DEPENDENT_OBJECT::DEPENDENT_GUID]"
+    type: INNER
+  - name: REL_TS_VW_WORKSHEET_DEPENDENT-TS_VW_WORKSHEET
+    destination:
+      name: TS_VW_WORKSHEET
+    "on": "[TS_VW_WORKSHEET_DEPENDENT::OBJECT_GUID] = [TS_VW_WORKSHEET::OBJECT_GUID]"
+    type: INNER

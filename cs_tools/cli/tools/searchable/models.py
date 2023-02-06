@@ -64,7 +64,7 @@ class Group(SQLModel, table=True):
 
 class GroupPrivilege(SQLModel, table=True):
     __tablename__ = "ts_group_privilege"
-    group_guid: str = Field(primary_key=True, foreign_key="ts_group.group_guid")
+    group_guid: str = Field(primary_key=True)
     privilege: str = Field(primary_key=True)
 
     @classmethod
@@ -74,8 +74,8 @@ class GroupPrivilege(SQLModel, table=True):
 
 class XREFPrincipal(SQLModel, table=True):
     __tablename__ = "ts_xref_principal"
-    principal_guid: str = Field(primary_key=True, foreign_key="ts_user.user_guid")
-    group_guid: str = Field(primary_key=True, foreign_key="ts_group.group_guid")
+    principal_guid: str = Field(primary_key=True)
+    group_guid: str = Field(primary_key=True)
 
     @classmethod
     def from_api_v1(cls, data) -> List["XREFPrincipal"]:
@@ -86,19 +86,13 @@ class Tag(SQLModel, table=True):
     __tablename__ = "ts_tag"
     tag_guid: str = Field(primary_key=True)
     tag_name: str
-    author_guid: str = Field(foreign_key="ts_user.user_guid")
+    author_guid: str
     created: dt.datetime
     modified: dt.datetime
     color: Optional[str]
 
     @classmethod
     def from_api_v1(cls, data) -> List["Tag"]:
-        if "clientState" not in data:
-            log.warning(
-                f"Tag '{data['name']}' ({data['id']}) is missing its color! There might be a problem with metadata in "
-                f"your cluster."
-            )
-
         return cls(
             tag_guid=data["id"],
             tag_name=data["name"],
@@ -114,10 +108,11 @@ class MetadataObject(SQLModel, table=True):
     object_guid: str = Field(primary_key=True)
     name: str
     description: Optional[str]
-    author_guid: str = Field(foreign_key="ts_user.user_guid")
+    author_guid: str
     created: dt.datetime
     modified: dt.datetime
     object_type: str
+    object_subtype: Optional[str]
 
     @classmethod
     def from_api_v1(cls, data) -> "MetadataObject":
@@ -128,7 +123,8 @@ class MetadataObject(SQLModel, table=True):
             "author_guid": data["author"],
             "created": data["created"],
             "modified": data["modified"],
-            "object_type": data["type"],
+            "object_type": data["metadata_type"],
+            "object_subtype": data.get("type", None),
         }
         return cls(**data)
 
@@ -136,7 +132,7 @@ class MetadataObject(SQLModel, table=True):
 class MetadataColumn(SQLModel, table=True):
     __tablename__ = "ts_metadata_column"
     column_guid: str = Field(primary_key=True)
-    object_guid: str = Field(foreign_key="ts_metadata_object.object_guid")
+    object_guid: str
     column_name: str
     description: Optional[str]
     data_type: str
@@ -162,7 +158,7 @@ class MetadataColumn(SQLModel, table=True):
 
 class ColumnSynonym(SQLModel, table=True):
     __tablename__ = "ts_column_synonym"
-    column_guid: str = Field(primary_key=True, foreign_key="ts_metadata_column.column_guid")
+    column_guid: str = Field(primary_key=True)
     synonym: str = Field(primary_key=True)
 
     @classmethod
@@ -172,8 +168,8 @@ class ColumnSynonym(SQLModel, table=True):
 
 class TaggedObject(SQLModel, table=True):
     __tablename__ = "ts_tagged_object"
-    object_guid: str = Field(primary_key=True, foreign_key="ts_metadata_object.object_guid")
-    tag_guid: str = Field(primary_key=True, foreign_key="ts_tag.tag_guid")
+    object_guid: str = Field(primary_key=True)
+    tag_guid: str = Field(primary_key=True)
 
     @classmethod
     def from_api_v1(cls, data) -> List["TaggedObject"]:
@@ -183,10 +179,10 @@ class TaggedObject(SQLModel, table=True):
 class DependentObject(SQLModel, table=True):
     __tablename__ = "ts_dependent_object"
     dependent_guid: str = Field(primary_key=True)
-    column_guid: str = Field(primary_key=True, foreign_key="ts_metadata_column.column_guid")
+    column_guid: str = Field(primary_key=True)
     name: str
     description: Optional[str]
-    author_guid: str = Field(foreign_key="ts_user.user_guid")
+    author_guid: str
     created: dt.datetime
     modified: dt.datetime
     object_type: str
@@ -212,9 +208,9 @@ class SharingAccess(SQLModel, table=True):
         primary_key=True,
         sa_column_kwargs={"comment": "shared_to_* is a composite PK, but can be nullable, so we need a dummy"},
     )
-    object_guid: str = Field(foreign_key="ts_metadata_object.object_guid")
-    shared_to_user_guid: Optional[str] = Field(foreign_key="ts_user.user_guid")
-    shared_to_group_guid: Optional[str] = Field(foreign_key="ts_group.group_guid")
+    object_guid: str
+    shared_to_user_guid: Optional[str]
+    shared_to_group_guid: Optional[str]
     permission_type: str
     share_mode: str
 
@@ -245,9 +241,9 @@ class BIServer(SQLModel, table=True):
     browser_version: Optional[str]
     client_type: Optional[str]
     client_id: Optional[str]
-    answer_book_guid: Optional[str] = Field(foreign_key="ts_metadata_object.object_guid")
+    answer_book_guid: Optional[str]
     viz_id: Optional[str]
-    user_id: Optional[str] = Field(foreign_key="ts_user.user_guid")
+    user_id: Optional[str]
     user_action: Optional[str]
     query_text: Optional[str]
     response_size: Optional[int]
