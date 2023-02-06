@@ -31,13 +31,13 @@ class FormatType(StrEnum):
 
 
 class MetadataObjectType(StrEnum):
+    connection = "DATA_SOURCE"
     logical_table = "LOGICAL_TABLE"
     logical_column = "LOGICAL_COLUMN"
     logical_relationship = "LOGICAL_RELATIONSHIP"
     saved_answer = "QUESTION_ANSWER_BOOK"
     liveboard = "PINBOARD_ANSWER_BOOK"
     pinboard = "PINBOARD_ANSWER_BOOK"
-    connection = "DATA_SOURCE"
     user = "USER"
     group = "USER_GROUP"
 

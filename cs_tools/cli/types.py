@@ -1,7 +1,6 @@
 from typing import Any, List, Tuple
 import collections.abc
 import itertools as it
-import datetime as dt
 import logging
 
 import sqlalchemy
