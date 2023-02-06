@@ -8,6 +8,7 @@ import typer
 import horde
 
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.input import ConfirmationPrompt
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import rich_console
@@ -21,7 +22,7 @@ from . import models
 from . import work
 
 log = logging.getLogger(__name__)
-app = CSToolsApp(help="""Run automated tests against your ThoughtSpot cluster.""")
+app = CSToolsApp(help="Run automated tests against your ThoughtSpot cluster.")
 
 
 def _handle_exception(event: horde.events.Event) -> None:
@@ -53,7 +54,8 @@ async def random_access(
         custom_type=SyncerProtocolType(models=[models.PerformanceEvent]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
-    )
+    ),
+    dismiss_eula: bool = Opt(False, "--dismiss-concurrency-warning", hidden=True)
 ):
     """
     Target a Worksheet for concurrency testing.
@@ -62,6 +64,25 @@ async def random_access(
     Liveboards created from the Worksheet.
     """
     ts = ctx.obj.thoughtspot
+
+    if not dismiss_eula:
+        text = (
+            "\n"
+            ":zombie: [b yellow]Swarm is not magic![/] :mage:"
+            "\n"
+            "\nThis tool will simulate concurrency against your ThoughtSpot cluster as well as your database platform. "
+            "\nWe will issue queries as if we are legitimate User activity in your platform."
+            "\n"
+            "\n[b blue]Is this okay?"
+        )
+        eula = ConfirmationPrompt(text, console=rich_console)
+
+        if not eula.ask():
+            raise typer.Exit(0)
+        else:
+            log.info("Concurrency simulation EULA has been [b green]accepted[/].")
+    else:
+        log.info("Concurrency simulation EULA has been [b yellow]bypassed[/].")
 
     env = Environment(ts.config.thoughtspot.fullpath, zombie_classes=[strategies.ScopedRandomZombie])
 
