@@ -1,6 +1,8 @@
 """
 This file contains the methods to execute the 'scriptability compare' command.
 """
+from __future__ import annotations
+from typing import Dict, List
 import pathlib
 
 from thoughtspot_tml.utils import determine_tml_type
@@ -32,7 +34,7 @@ def _compare_tml(file1: str, tml1: TMLObject, file2: str, tml2: TMLObject) -> bo
     return _compare_dict(file1, tml1.to_dict(), file2, tml2.to_dict())
 
 
-def _compare_dict(f1: str, d1: dict, f2: str, d2: dict) -> bool:
+def _compare_dict(f1: str, d1: Dict, f2: str, d2: Dict) -> bool:
     """Compares two dictionaries, logging any changes."""
     if not (type(d1) is dict and type(d2) is dict):
         rich_console.log(f"[bold red]{d1} and {d2} are different types.")
@@ -69,7 +71,7 @@ def _compare_dict(f1: str, d1: dict, f2: str, d2: dict) -> bool:
     return same
 
 
-def _compare_list(f1: str, l1: list, f2: str, l2: list) -> bool:
+def _compare_list(f1: str, l1: List, f2: str, l2: List) -> bool:
     """Compares the contents of a list."""
     same = True
 

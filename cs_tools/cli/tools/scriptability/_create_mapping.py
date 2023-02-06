@@ -1,6 +1,7 @@
 """
 This file contains the methods to execute the 'scriptability create-mapping' command.
 """
+from __future__ import annotations
 import pathlib
 
 from cs_tools.errors import CSToolsError

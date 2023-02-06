@@ -5,6 +5,7 @@
 #   - add support for tables and connections
 #   - add support for importing .zip files
 #
+from __future__ import annotations
 from typing import Optional, List
 import logging
 import pathlib
