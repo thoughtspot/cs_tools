@@ -30,8 +30,9 @@ app = typer.Typer(
 )
 
 
+@app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
 @app.command(cls=CSToolsCommand)
-def upgrade(
+def update(
     beta: bool = Opt(False, "--beta", help="pin your install to a pre-release build"),
     offline: pathlib.Path = Opt(
         None,
