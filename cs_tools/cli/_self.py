@@ -63,8 +63,12 @@ def upgrade(
             raise typer.Exit(0)
 
     log.info("Upgrading CS Tools and its dependencies.")
-    rc = venv.pip("install", requires)
-    log.debug(rc)
+
+    try:
+        rc = venv.pip("install", requires)
+        log.debug(rc)
+    except RuntimeError:  # OSError when pip on Windows can't upgrade itself~
+        pass
 
 
 @app.command(cls=CSToolsCommand, hidden=True)
