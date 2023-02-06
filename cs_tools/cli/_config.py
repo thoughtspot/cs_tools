@@ -236,7 +236,7 @@ def show(config: str = Opt(None, help="optionally, display the contents of a par
             contents = escape(fp.open().read())
         except FileNotFoundError:
             raise CSToolsError(
-                error=TypeError(f"could not find [blue]{config}"),
+                error=f"could not find [blue]{config}",
                 mitigation="Did you spell the cluster configuration name correctly?",
             )
 
