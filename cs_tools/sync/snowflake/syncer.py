@@ -4,10 +4,10 @@ import enum
 
 from snowflake.sqlalchemy import snowdialect, URL
 from pydantic.dataclasses import dataclass
-from pydantic import root_validator, Field
+from pydantic import root_validator
 import sqlalchemy as sa
 
-from cs_tools.util import chunks
+from cs_tools.utils import chunks
 from cs_tools import __version__
 
 from .const import MAX_EXPRESSIONS_MAGIC_NUMBER
