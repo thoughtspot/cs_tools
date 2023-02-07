@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import Any, Dict
 import logging
 
+from rich.panel import Panel
+from rich.text import Text
 import typer
 import rich
 
@@ -57,13 +59,14 @@ app = CSToolsApp(
 )
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(version: bool = Opt(False, "--version", help="Show the version and exit.")):
-    """
-    Manage users in the awesome CLI app.
-    """
     if version:
-        rich.console(f"CS Tools {__version__}")
+        rich_console.print(
+            "\n",
+            Panel.fit(Text(__version__, justify="center"), title="CS Tools", padding=(1, 0, 1, 0)),
+            "\n"
+        )
         raise typer.Exit(0)
 
 
