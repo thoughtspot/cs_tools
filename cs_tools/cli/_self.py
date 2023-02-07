@@ -1,8 +1,12 @@
+import sysconfig
+import platform
 import logging
 import pathlib
+import sys
 import os
 
 from awesomeversion import AwesomeVersion
+from rich.panel import Panel
 import typer
 
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
@@ -14,6 +18,7 @@ from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsCommand
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
+from cs_tools.const import APP_DIR
 
 log = logging.getLogger(__name__)
 meta = _meta_config()
@@ -72,16 +77,28 @@ def update(
         pass
 
 
-@app.command(cls=CSToolsCommand, hidden=True)
+@app.command(cls=CSToolsCommand)
 def info():
     """
-    Remove CS Tools.
+    Get information on your install.
     """
-    # - installed cs_tools version
-    # - config directory
-    # - command to activate the venv
-    # - platform tags
-    raise NotImplementedError("Not yet.")
+    if platform.system() == "Windows":
+        source = pathlib.Path(sys.executable).parent.joinpath("Activate.ps1")
+    else:
+        source = f"source {pathlib.Path(sys.executable).parent.joinpath('activate')}"
+
+    rich_console.print(
+        Panel.fit(
+            f"\n           CS Tools: [b yellow]{__version__}[/]"
+            f"\n     Python Version: [b yellow]Python {sys.version}[/]"
+            f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"
+            f"\n  Configs Directory: [b yellow]{APP_DIR}[/]"
+            f"\nActivate VirtualEnv: [b yellow]{source}[/]"
+            f"\n      Platform Tags: [b yellow]{sysconfig.get_platform()}[/]"
+            f"\n",
+            padding=(0, 4, 0, 4)
+        )
+    )
 
 
 @app.command(cls=CSToolsCommand, hidden=True)
@@ -97,7 +114,7 @@ def pip():
     raise NotImplementedError("Not yet.")
 
 
-@app.command(cls=CSToolsCommand)
+@app.command(cls=CSToolsCommand, hidden=True)
 def uninstall(
     delete_configs: bool = Opt(False, "--delete-configs", help="delete all the configurations in CS Tools directory")
 ):

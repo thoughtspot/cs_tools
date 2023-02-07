@@ -105,10 +105,10 @@ def cli():
     log.debug(
         "\n"
         "\n    [PLATFORM DETAILS]"
-        "\n    system: {system} (detail: {detail})"
-        "\n    platform tag '{platform_tag}'"
-        "\n    python: {py_version}"
-        "\n    ran at: {now}"
+        "\n    Python Version: {py_version}"
+        "\n       System Info: {system} (detail: {detail})"
+        "\n     Platform Tags: {platform_tag}"
+        "\n            Ran at: {now}"
         "\n"
         .format(
             system=platform.system(), detail=platform.platform(),
