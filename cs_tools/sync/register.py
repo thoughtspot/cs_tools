@@ -1,15 +1,15 @@
-from subprocess import Popen, PIPE
 from typing import List
 from types import ModuleType
+import itertools as it
 import importlib
 import pathlib
 import logging
 import json
 import sys
-import os
 
 import pkg_resources
 
+from cs_tools.updater._updater import CSToolsVirtualEnvironment
 from cs_tools.sync.protocol import SyncerProtocol
 from cs_tools.sync._compat import version
 from cs_tools.errors import SyncerProtocolError
@@ -39,48 +39,10 @@ def is_installed(package: str) -> bool:
         return False
 
 
-def pip_install(package: str) -> None:
-    """
-    Programmatically install a package.
+def ensure_dependencies(requirements: List[str], pip_args: List[str]) -> None:
+    venv = CSToolsVirtualEnvironment()
 
-    Currently, this is a very strict implementation of the pip command
-    below. It could easily be extended to accept many other pip args,
-    like find-links or other.
-
-        python -m pip install --quiet package==version
-    """
-    env = os.environ.copy()
-    args = [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-        package,
-        # silence output
-        "--quiet",
-        # disable caching
-        "--no-cache-dir",
-        # don't get for new versions of pip, because it doesn't matter and is noisy
-        "--disable-pip-version-check",
-        # trust installs from the official python package index
-        "--trusted-host",
-        "files.pythonhost.org",
-        "--trusted-host",
-        "pypi.org",
-        "--trusted-host",
-        "pypi.python.org",
-    ]
-
-    with Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env) as proc:
-        _, stderr = proc.communicate()
-
-        if proc.returncode != 0:
-            err = stderr.decode("utf-8").lstrip().strip()
-            log.error(f"unable to install package: {package}: {err}")
-
-
-def ensure_dependencies(requirements: List[str]) -> None:
-    for requirement in requirements:
+    for requirement, args in it.zip_longest(requirements, pip_args, fillvalue=[]):
         log.debug(f"processing requirement: {requirement}")
         req = pkg_resources.Requirement.parse(requirement)
 
@@ -89,7 +51,7 @@ def ensure_dependencies(requirements: List[str]) -> None:
             continue
 
         log.info(f"installing package: {requirement}")
-        pip_install(requirement)
+        venv.pip("install", requirement, *args)
 
 
 def module_from_fp(fp: pathlib.Path) -> ModuleType:
@@ -133,7 +95,7 @@ def load_syncer(*, protocol: str, manifest_path: pathlib.Path) -> SyncerProtocol
         )
 
     log.debug(f"manifest digest:\n\n{manifest}\n")
-    ensure_dependencies(manifest["requirements"])
+    ensure_dependencies(manifest["requirements"], manifest.get("pip_args", []))
 
     mod = module_from_fp(manifest_path.parent / "syncer.py")
     cls = getattr(mod, manifest["syncer_class"])
