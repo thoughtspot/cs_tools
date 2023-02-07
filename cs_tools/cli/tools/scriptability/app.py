@@ -191,14 +191,6 @@ def scriptability_import(
     to_env: str = Opt(None, help="the target environment name importing to", rich_help_panel="GUID Mapping Options"),
     tags: List[str] = Opt([], help="one or more tags to add to the imported content"),
     share_with: List[str] = Opt([], help="one or more groups to share the uploaded content with"),
-    tml_logs: Optional[pathlib.Path] = Opt(
-        None,
-        help="full path to the directory to log sent TML. TML can change during load",
-        metavar="DIR",
-        file_okay=True,
-        resolve_path=True,
-        exists=True
-    ),
     org: str = Opt(None, help="name of org to import to"),
 ):
     """
@@ -221,7 +213,6 @@ def scriptability_import(
         to_env=to_env,
         tags=tags,
         share_with=share_with,
-        tml_logs=tml_logs,
         org=org,
     )
 

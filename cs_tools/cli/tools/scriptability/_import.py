@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import List, Dict, Union
-import datetime as dt
 import pathlib
 import logging
 import time
@@ -100,13 +99,6 @@ def to_import(
     to_env: str = Opt(None, help="the environment name importing to", rich_help_panel="GUID File Options"),
     tags: List[str] = Opt(None, help="tags to add to the imported content"),
     share_with: List[str] = Opt(None, help="groups to share the uploaded content with"),
-    tml_logs: pathlib.Path = Opt(
-        None,
-        help="full path to the directory to log sent TML. TML can change during load.",
-        exists=True,
-        file_okay=False,
-        resolve_path=True,
-    ),
     org: Union[str, int] = Opt(None, help="name or ID of an Org to import to", hidden=True),
 ):
     """
@@ -131,28 +123,21 @@ def to_import(
     if org is not None:
         ts.org.switch(org)
 
-    log_fp = path if tml_logs is not None else pathlib.Path(".")
-    log_fp = path / f"scriptability-import-{dt.datetime.now():%Y-%m-%dT%H_%M_%S}.log"
-    log.setLevel(logging.INFO)
-    log.addHandler(logging.FileHandler(log_fp.as_posix(), mode="w", encoding="UTF-8", delay=True))
-
     guid_mapping = GUIDMapping(from_env=from_env, to_env=to_env, path=guid_file) if guid_file is not None else None
 
     if import_policy == TMLImportPolicy.validate:
         log.info(f"validating from {path}")
-        results = _import_and_validate(ts, path, force_create, guid_mapping, tml_logs)
+        results = _import_and_validate(ts, path, force_create, guid_mapping)
 
     else:
         log.info(f"importing from {path} with policy {import_policy}")
-        results = _import_and_create_bundle(
-            ts, path, import_policy, force_create, guid_mapping, tags, share_with, tml_logs
-        )
+        results = _import_and_create_bundle(ts, path, import_policy, force_create, guid_mapping, tags, share_with)
 
     _show_results_as_table(results)
 
 
 def _import_and_validate(
-    ts: ThoughtSpot, path: pathlib.Path, force_create: bool, guid_mapping: GUIDMapping, tml_logs: pathlib.Path
+    ts: ThoughtSpot, path: pathlib.Path, force_create: bool, guid_mapping: GUIDMapping
 ) -> List[TMLImportResponse]:
     """
     Perform a validation import.
@@ -176,9 +161,10 @@ def _import_and_validate(
         if force_create:
             tml_file.tml.guid = None
 
-        if tml_logs is not None:
-            filename = f"{tml_file.filepath.stem}.IMPORTED"
-            tml_file.tml.dump(tml_logs / f"{filename}.{tml_file.tml.tml_type_name}.tml")
+        directory = path.parent if path.is_file() else path
+        directory.joinpath("imported").mkdir(parents=False, exist_ok=False)
+        filename = f"{tml_file.filepath.stem}.IMPORTED"
+        tml_file.tml.dump(directory / "imported" / f"{filename}.{tml_file.tml.tml_type_name}.tml")
 
         log.info(f"validating {tml_file.filepath.name}")
         tml_files.append(tml_file)
@@ -219,7 +205,6 @@ def _import_and_create_bundle(
     guid_mapping: GUIDMapping,
     tags: List[str],
     share_with: List[str],
-    tml_logs: pathlib.Path,
 ) -> List[TMLImportResponse]:
     """
     Attempts to create new content. If a mapping is not found, then an assumption is made that the mapping is correct.
@@ -244,7 +229,6 @@ def _import_and_create_bundle(
             kw = {
                 "ts": ts,
                 "guid_mapping": guid_mapping,
-                "tml_logs": tml_logs,
                 "import_policy": import_policy,
                 "force_create": force_create,
             }
@@ -310,7 +294,6 @@ def _upload_connections(
     ts: ThoughtSpot,
     guid_mapping: GUIDMapping,
     connection_file_bundles: List[TMLFile],
-    tml_logs: pathlib.Path,
     import_policy: TMLImportPolicy,
     force_create: bool,
 ) -> tuple[List[TMLImportResponse], Dict[str, List[str]]]:
@@ -345,9 +328,10 @@ def _upload_connections(
                 mitigation="Add a password to the connection file and try again.",
             )
 
-        if tml_logs is not None:
-            filename = f"{tml_file.filepath.name}.IMPORTED"
-            tml_file.tml.dump(tml_logs / f"{filename}.{tml_file.tml.tml_type_name}.tml")
+        directory = tml_file.filepath.parent if tml_file.filepath.is_file() else tml_file.filepath
+        directory.joinpath("imported").mkdir(parents=False, exist_ok=False)
+        filename = f"{tml_file.filepath.stem}.IMPORTED"
+        tml_file.tml.dump(directory / "imported" / f"{filename}.{tml_file.tml.tml_type_name}.tml")
 
         if force_create:
             # If creating, and have tables in the connection and then create, you end up with the tables
@@ -436,7 +420,6 @@ def _upload_tml(
     ts: ThoughtSpot,
     guid_mapping: GUIDMapping,
     tml_file_bundles: List[TMLFile],
-    tml_logs: pathlib.Path,
     import_policy: TMLImportPolicy,
     force_create: bool,
     connection_tables: Dict[str, List[str]],
@@ -471,9 +454,8 @@ def _upload_tml(
         if guid_mapping:
             guid_mapping.disambiguate(tml=tml_file.tml, delete_unmapped_guids=force_create)
 
-        if tml_logs is not None:
-            filename = f"{tml_file.filepath.stem}.IMPORTED"
-            tml_file.tml.dump(tml_logs / f"{filename}.{tml_file.tml.tml_type_name}.tml")
+        filename = f"{tml_file.filepath.name}.IMPORTED"
+        tml_file.tml.dump(tml_file.filepath.parent / f"{filename}.{tml_file.tml.tml_type_name}.tml")
 
     r = ts.api.metadata_tml_import(
         import_objects=[tml_file.tml.dumps() for tml_file in updated],
