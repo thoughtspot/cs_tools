@@ -57,11 +57,6 @@ class TMLImportResponse:
         return self.status_code == "ERROR"
 
 
-def _mute_our_rich_handler() -> None:
-    rich_handler = next(h for h in logging.getLogger().handlers if hasattr(h, "console") and h.console == rich_console)
-    rich_handler.setLevel(logging.WARNING)
-
-
 # class TMLResponseReference:
 #     """
 #     Keeps track of the TML object including status of upload.
@@ -79,27 +74,17 @@ def _mute_our_rich_handler() -> None:
 
 
 def to_import(
-    ctx: typer.Context,
-    path: pathlib.Path = Arg(
-        ...,
-        help="full path to the TML file or directory to import.",
-        exists=True,
-        resolve_path=True,
-    ),
-    import_policy: TMLImportPolicy = Opt(TMLImportPolicy.validate, help="the import policy type"),
-    force_create: bool = Opt(False, help="if true, will force a new object to be created"),
-    guid_file: pathlib.Path = Opt(
-        None,
-        help="existing or new mapping file to map GUIDs from source instance to target instance",
-        dir_okay=False,
-        resolve_path=True,
-        rich_help_panel="GUID File Options",
-    ),
-    from_env: str = Opt(None, help="the environment name importing from", rich_help_panel="GUID File Options"),
-    to_env: str = Opt(None, help="the environment name importing to", rich_help_panel="GUID File Options"),
-    tags: List[str] = Opt(None, help="tags to add to the imported content"),
-    share_with: List[str] = Opt(None, help="groups to share the uploaded content with"),
-    org: Union[str, int] = Opt(None, help="name or ID of an Org to import to", hidden=True),
+    ts,
+    path,
+    import_policy,
+    force_create,
+    guid_file,
+    from_env,
+    to_env,
+    tags,
+    share_with,
+    tml_logs,
+    org,
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -118,8 +103,6 @@ def to_import(
             mitigation="Set the --from-env and --to-env values.",
         )
 
-    ts = ctx.obj.thoughtspot
-
     if org is not None:
         ts.org.switch(org)
 
@@ -127,17 +110,17 @@ def to_import(
 
     if import_policy == TMLImportPolicy.validate:
         log.info(f"validating from {path}")
-        results = _import_and_validate(ts, path, force_create, guid_mapping)
+        results = _import_and_validate(ts, path, force_create, guid_mapping, tml_logs)
 
     else:
         log.info(f"importing from {path} with policy {import_policy}")
-        results = _import_and_create_bundle(ts, path, import_policy, force_create, guid_mapping, tags, share_with)
+        results = _import_and_create_bundle(ts, path, import_policy, force_create, guid_mapping, tags, share_with, tml_logs)
 
     _show_results_as_table(results)
 
 
 def _import_and_validate(
-    ts: ThoughtSpot, path: pathlib.Path, force_create: bool, guid_mapping: GUIDMapping
+    ts: ThoughtSpot, path: pathlib.Path, force_create: bool, guid_mapping: GUIDMapping, tml_logs: pathlib.Path
 ) -> List[TMLImportResponse]:
     """
     Perform a validation import.
@@ -161,10 +144,10 @@ def _import_and_validate(
         if force_create:
             tml_file.tml.guid = None
 
-        directory = path.parent if path.is_file() else path
-        directory.joinpath("imported").mkdir(parents=False, exist_ok=False)
-        filename = f"{tml_file.filepath.stem}.IMPORTED"
-        tml_file.tml.dump(directory / "imported" / f"{filename}.{tml_file.tml.tml_type_name}.tml")
+        if tml_logs is not None:
+            filename = tml_file.filepath.stem
+            content_type = tml_file.tml.tml_type_name
+            tml_file.tml.dump(tml_logs / f"{filename}.IMPORTED.{content_type}.tml")
 
         log.info(f"validating {tml_file.filepath.name}")
         tml_files.append(tml_file)
@@ -205,6 +188,7 @@ def _import_and_create_bundle(
     guid_mapping: GUIDMapping,
     tags: List[str],
     share_with: List[str],
+    tml_logs: pathlib.Path,
 ) -> List[TMLImportResponse]:
     """
     Attempts to create new content. If a mapping is not found, then an assumption is made that the mapping is correct.
@@ -229,6 +213,7 @@ def _import_and_create_bundle(
             kw = {
                 "ts": ts,
                 "guid_mapping": guid_mapping,
+                "tml_logs": tml_logs,
                 "import_policy": import_policy,
                 "force_create": force_create,
             }
@@ -294,6 +279,7 @@ def _upload_connections(
     ts: ThoughtSpot,
     guid_mapping: GUIDMapping,
     connection_file_bundles: List[TMLFile],
+    tml_logs: pathlib.Path,
     import_policy: TMLImportPolicy,
     force_create: bool,
 ) -> tuple[List[TMLImportResponse], Dict[str, List[str]]]:
@@ -328,10 +314,10 @@ def _upload_connections(
                 mitigation="Add a password to the connection file and try again.",
             )
 
-        directory = tml_file.filepath.parent if tml_file.filepath.is_file() else tml_file.filepath
-        directory.joinpath("imported").mkdir(parents=False, exist_ok=False)
-        filename = f"{tml_file.filepath.stem}.IMPORTED"
-        tml_file.tml.dump(directory / "imported" / f"{filename}.{tml_file.tml.tml_type_name}.tml")
+        if tml_logs is not None:
+            filename = tml_file.filepath.name
+            content_type = tml_file.tml.tml_type_name
+            tml_file.tml.dump(tml_logs / f"{filename}.IMPORTED.{content_type}.tml")
 
         if force_create:
             # If creating, and have tables in the connection and then create, you end up with the tables
@@ -420,6 +406,7 @@ def _upload_tml(
     ts: ThoughtSpot,
     guid_mapping: GUIDMapping,
     tml_file_bundles: List[TMLFile],
+    tml_logs: pathlib.Path,
     import_policy: TMLImportPolicy,
     force_create: bool,
     connection_tables: Dict[str, List[str]],
@@ -454,8 +441,10 @@ def _upload_tml(
         if guid_mapping:
             guid_mapping.disambiguate(tml=tml_file.tml, delete_unmapped_guids=force_create)
 
-        filename = f"{tml_file.filepath.name}.IMPORTED"
-        tml_file.tml.dump(tml_file.filepath.parent / f"{filename}.{tml_file.tml.tml_type_name}.tml")
+        if tml_logs is not None:
+            filename = tml_file.filepath.name
+            content_type = tml_file.tml.tml_type_name
+            tml_file.tml.dump(tml_logs / f"{filename}.IMPORTED.{content_type}.tml")
 
     r = ts.api.metadata_tml_import(
         import_objects=[tml_file.tml.dumps() for tml_file in updated],
