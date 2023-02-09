@@ -37,7 +37,8 @@ class GroupMiddleware:
         except httpx.HTTPStatusError as e:
             if e.response.is_client_error:
                 info = {
-                    "reason": "Group names are case sensitive. You can find a group's 'Group Name' in the Admin panel.",
+                    "reason": f"Group '{group_name}' not found.  Group names are case sensitive. You can find a "
+                              f"group's 'Group Name' in the Admin panel.",
                     "mitigation": "Verify the name and try again.",
                     "type": "Group",
                 }

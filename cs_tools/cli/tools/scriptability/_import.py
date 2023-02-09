@@ -10,6 +10,7 @@ import logging
 import time
 import copy
 import re
+import traceback
 
 from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml.types import TMLObject
@@ -114,7 +115,8 @@ def to_import(
 
     else:
         log.info(f"importing from {path} with policy {import_policy}")
-        results = _import_and_create_bundle(ts, path, import_policy, force_create, guid_mapping, tags, share_with, tml_logs)
+        results = _import_and_create_bundle(ts, path, import_policy, force_create, guid_mapping, tags,
+                                            share_with, tml_logs)
 
     _show_results_as_table(results)
 
@@ -231,7 +233,8 @@ def _import_and_create_bundle(
 
     # log the error, but let any content that got imported still get tagged and shared
     except Exception as e:
-        log.error(f"error loading content: {e}, see logs for details..")
+        traceback.print_exc()
+        log.error(f"error loading content: {e}, see logs for details.")
         log.debug(e, exc_info=True)
 
     if guid_mapping:
@@ -365,7 +368,7 @@ def _upload_connections(
                     metadata_object_type="DATA_SOURCE",
                     tml_type_name="connection",
                     name=data["header"]["name"],
-                    status_code=r.reason_phrase,
+                    status_code=r.reason_phrase if r.reason_phrase else "OK",
                     error_messages=str(r.status_code),
                 )
             )
@@ -387,9 +390,11 @@ def _upload_connections(
 
             # WRITE GUID MAPPINGS TO FILE
             if guid_mapping is not None:
-                guid_mapping.set_mapped_guid(tml.guid, data["header"]["id"])
+                # If the guid was deleted (usually because of force-create, then get it from the file name.
+                guid = tml.guid if tml.guid else tml_file.filepath.name.split('.')[0]
+                guid_mapping.set_mapped_guid(guid, data["header"]["id"])
 
-                old_table_guids = {t.name: t.id for t in tml.connection.tables}
+                old_table_guids = {t.name: t.id for t in tml.connection.table}
 
                 for table in data["logicalTableList"]:
                     old_guid = old_table_guids.get(table["header"]["name"])
@@ -455,12 +460,13 @@ def _upload_tml(
     guids_to_map: Dict[GUID, GUID] = {}
 
     for tml_file, content in zip(updated, r.json()["object"]):
+        old_guid = tml_file.tml.guid if tml_file.tml.guid else tml_file.filepath.name.split('.')[0]
         guid = content["response"].get("header", {}).get("id_guid", tml_file.tml.guid)
         type = content["response"].get("header", {}).get("type", tml_file.tml.tml_type_name)
         name = content["response"].get("header", {}).get("name", tml_file.filepath.stem)
 
         if content["response"]["status"]["status_code"] == "OK":
-            guids_to_map[tml_file.tml.guid] = guid
+            guids_to_map[old_guid] = guid
 
         responses.append(
             TMLImportResponse(
@@ -473,12 +479,14 @@ def _upload_tml(
             )
         )
 
-    is_error_free = all(r.is_success for r in responses)
+    # Have to make sure it's not an error.  is_success is False on warnings, but content is created.
+    is_error_free = all(not r.is_error for r in responses)
 
     if is_error_free or import_policy != TMLImportPolicy.all_or_none:
         if guid_mapping is not None:
             for old_guid, new_guid in guids_to_map.items():
                 guid_mapping.set_mapped_guid(old_guid, new_guid)
+            guid_mapping.save()
 
         _wait_for_metadata(ts=ts, guids=[imported_object.guid for imported_object in responses])
 
@@ -528,6 +536,7 @@ def _share_with(ts: ThoughtSpot, objects: List[TMLImportResponse], share_with: L
             type_bundles = {}
             for _ in objects:
                 # connections don't support sharing as-of 8.9
+                # TODO consider if this should be allowed for 9.0+.  Possible, but maybe not desired.
                 if _.metadata_object_type == MetadataObjectType.connection:
                     continue
 
@@ -576,11 +585,13 @@ def _show_results_as_table(results: List[TMLImportResponse]) -> None:
     table = Table(title="Import Results", width=150)
 
     table.add_column("Status", justify="center", width=10)   # 4 + length of literal: status
+    # table.add_column("Filename", width=48)                 # 4 + length of "guid.type.tml"
+    table.add_column("GUID", width=36)                       # 4 + length of "guid.type.tml"
     table.add_column("Type", justify="center", width=13)     # 4 + length of "worksheet"
-    table.add_column("Filename", width=48)                   # 4 + length of "guid.type.tml"
-    table.add_column("Error", no_wrap=True, width=150 - 54 - 13 - 10)  # 4 + lenght of "guid.type.tml"
+    table.add_column("Error", no_wrap=True, width=150 - 10 - 13 - 48)  # 150 max minus previous.
 
     for r in results:
-        table.add_row(r.status_code, r.tml_type_name, r.name, ','.join(r.error_messages))
+        # table.add_row(r.status_code, r.tml_type_name, r.name, ','.join(r.error_messages))
+        table.add_row(r.status_code, r.guid, r.tml_type_name, ','.join(r.error_messages))
 
     rich_console.print(Align.center(table))
