@@ -7,7 +7,7 @@ from rich.text import Text
 import typer
 import rich
 
-from cs_tools._programmatic import get_cs_tool
+from cs_tools.programmatic import get_cs_tool
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.settings import _meta_config
 from cs_tools._version import __version__
