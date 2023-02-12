@@ -315,6 +315,7 @@ class RESTAPIv1(httpx.Client):
         *,
         metadata_type: MetadataObjectType = "QUESTION_ANSWER_BOOK",
         subtypes: List[MetadataObjectSubtype] = UNDEFINED,
+        owner_types: List[MetadataObjectType] = UNDEFINED,
         category: MetadataCategory = "ALL",
         sort: SortOrder = "DEFAULT",
         sort_ascending: bool = UNDEFINED,
@@ -331,6 +332,7 @@ class RESTAPIv1(httpx.Client):
         p = {
             "type": metadata_type,
             "subtypes": dumps(subtypes),
+            "ownertypes": dumps(owner_types),
             "category": category,
             "sort": sort,
             "sortascending": sort_ascending,
