@@ -137,10 +137,10 @@ class CSTool:
         if args is None:
             args = []
 
-        import click
         from cs_tools import utils
 
-        click.get_current_context().obj = utils.State()
+        self.lib.app.info.context_settings["obj"] = utils.State()
+
         runner = CliRunner()
         result = runner.invoke(app=self.lib.app, args=[command, *args], catch_exceptions=False)
         return result
