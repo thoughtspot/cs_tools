@@ -139,7 +139,7 @@ class CSTool:
 
         from cs_tools import utils
 
-        self.lib.app.info.context_settings["obj"] = utils.State()
+        self.lib.app.info.context_settings = {"obj": utils.State()}
 
         runner = CliRunner()
         result = runner.invoke(app=self.lib.app, args=[command, *args], catch_exceptions=False)
