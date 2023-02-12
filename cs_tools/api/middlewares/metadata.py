@@ -222,11 +222,11 @@ class MetadataMiddleware:
 
     @ft.lru_cache(maxsize=1000)
     @validate_arguments
-    def find_data_source_of_logical_table(guid: GUID, client) -> GUID:
+    def find_data_source_of_logical_table(self, guid: GUID) -> GUID:
         """
         METADATA DETAILS is expensive. Here's our shortcut.
         """
-        r = client.metadata_details(object_type="LOGICAL_TABLE", only_guids=[guid], hidden=True)
+        r = self.ts.api.metadata_details(object_type="LOGICAL_TABLE", only_guids=[guid], hidden=True)
         storable = r.json()["storables"][0]
         return storable["dataSourceId"]
 
