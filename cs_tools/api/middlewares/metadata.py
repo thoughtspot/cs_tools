@@ -226,7 +226,7 @@ class MetadataMiddleware:
         """
         METADATA DETAILS is expensive. Here's our shortcut.
         """
-        r = self.ts.api.metadata_details(object_type="LOGICAL_TABLE", only_guids=[guid], hidden=True)
+        r = self.ts.api.metadata_details(metadata_type="LOGICAL_TABLE", guids=[guid], show_hidden=True)
         storable = r.json()["storables"][0]
         return storable["dataSourceId"]
 
@@ -246,7 +246,7 @@ class MetadataMiddleware:
 
         """
         metadata_type = TMLSupportedContent.from_friendly_type(tml_type)
-        r = self.ts.api.metadata_details(guids=[guid], metadata_type=metadata_type, show_hidden=hidden)
+        r = self.ts.api.metadata_details(metadata_type=metadata_type, guids=[guid], show_hidden=hidden)
         mappings: List[MetadataParent] = []
 
         if "storables" not in r.json():
