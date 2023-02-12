@@ -67,7 +67,7 @@ class RESTAPIv1(httpx.Client):
 
         try:
             r = super().request(method, endpoint, **request_kw)
-        except httpx.HTTPError as e:
+        except httpx.RequestError as e:
             log.debug("Something went wrong calling the ThoughtSpot API")
             log.warning(e.response.text)
             raise e from None
