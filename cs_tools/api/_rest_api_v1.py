@@ -67,7 +67,6 @@ class RESTAPIv1(httpx.Client):
 
         try:
             r = super().request(method, endpoint, **request_kw)
-            r.raise_for_status()
         except httpx.HTTPError as e:
             log.debug("Something went wrong calling the ThoughtSpot API")
             log.warning(e.response.text)
@@ -77,6 +76,9 @@ class RESTAPIv1(httpx.Client):
 
         if r.text:
             log.debug("<< CONTENT:\n\n%s", r.text)
+
+        if r.is_error:
+            r.raise_for_status()
 
         return r
 
