@@ -43,7 +43,7 @@ dependencies = [
     "httpx >= 0.23.3",
     "pydantic >= 1.10.4",
     "pendulum >= 2.1.2",
-    "thoughtspot_tml @ https://github.com/thoughtspot/thoughtspot_tml/archive/v2.0.0.zip",
+    "thoughtspot_tml @ https://github.com/thoughtspot/thoughtspot_tml/archive/v2.0.1.zip",
     "toml >= 0.10.2",
 
     # version specific
