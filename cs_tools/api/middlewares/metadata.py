@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict, List, Union
+import functools as ft
 import logging
 
 from pydantic import validate_arguments
@@ -10,6 +11,7 @@ from cs_tools.types import (
     MetadataObjectSubtype,
     TMLSupportedContent,
     MetadataObjectType,
+    MetadataParent,
     PermissionType,
     RecordsFormat,
     GUID,
@@ -218,8 +220,18 @@ class MetadataMiddleware:
         existence = {header["id"] for header in r.json()["headers"]}
         return {guid: guid in existence for guid in guids}
 
+    @ft.lru_cache(maxsize=1000)
     @validate_arguments
-    def table_references(self, guid: GUID, *, tml_type: str, hidden: bool = False) -> Dict[GUID, str]:
+    def find_data_source_of_logical_table(guid: GUID, client) -> GUID:
+        """
+        METADATA DETAILS is expensive. Here's our shortcut.
+        """
+        r = client.metadata_details(object_type="LOGICAL_TABLE", only_guids=[guid], hidden=True)
+        storable = r.json()["storables"][0]
+        return storable["dataSourceId"]
+
+    @validate_arguments
+    def table_references(self, guid: GUID, *, tml_type: str, hidden: bool = False) -> List[MetadataParent]:
         """
         Returns a mapping of parent LOGICAL_TABLEs
 
@@ -233,17 +245,9 @@ class MetadataMiddleware:
             Liveboard -----> the hidden Answer's mapping LOGICAL_TABLEs
 
         """
-        # DEV NOTE: @boonhapus, 2023/01/14
-        #   we might need a complex data structure.. i believe that any of these types
-        #   can be composed of dissimilar parents with the same name. eg, a Worksheet
-        #   with a View and System Table identically named.
-        #
-        #   Technically, we can resolve this still, as the metadata/details and
-        #   metadata/tml/export LOGICAL_TABLE order will be identically sorted.. but TBD
-        #
         metadata_type = TMLSupportedContent.from_friendly_type(tml_type)
         r = self.ts.api.metadata_details(guids=[guid], metadata_type=metadata_type, show_hidden=hidden)
-        mappings: Dict[GUID, str] = {}  # LOGICAL_TABLE.guid : LOGICAL_TABLE.name
+        mappings: List[MetadataParent] = []
 
         if "storables" not in r.json():
             log.warning(f"no detail found for {tml_type} = {guid}")
@@ -254,7 +258,14 @@ class MetadataMiddleware:
             if metadata_type == "LOGICAL_TABLE":
                 for column in storable["columns"]:
                     for logical_table in column["sources"]:
-                        mappings[logical_table["tableId"]] = logical_table["tableName"]
+                        parent = MetadataParent(
+                            parent_guid=logical_table["tableId"],
+                            parent_name=logical_table["tableName"],
+                            connection=storable["dataSourceId"],
+                        )
+
+                        if parent not in mappings:
+                            mappings.append(parent)
 
             # FIND THE TABLE, LOOP THROUGH ALL COLUMNS LOOKING FOR TABLES WE HAVEN'T SEEN
             if metadata_type == "QUESTION_ANSWER_BOOK":
@@ -263,7 +274,16 @@ class MetadataMiddleware:
 
                 for column in table_viz["vizContent"]["columns"]:
                     for logical_table in column["referencedTableHeaders"]:
-                        mappings[logical_table["id"]] = logical_table["name"]
+                        connection_guid = self.find_data_source_of_logical_table(logical_table["id"])
+
+                        parent = MetadataParent(
+                                parent_guid=logical_table["id"],
+                                parent_name=logical_table["name"],
+                                connection=connection_guid,
+                            )
+
+                        if parent not in mappings:
+                            mappings.append(parent)
 
             # LOOP THROUGH ALL THE VISUALIZATIONS, FIND THE REFERENCE ANSWER, SEARCH AND ADD THE ANSWER-VIZ MAPPINGS
             if metadata_type == "PINBOARD_ANSWER_BOOK":
@@ -271,9 +291,16 @@ class MetadataMiddleware:
 
                 for idx, visualization in enumerate(visualizations, start=1):
                     viz_mappings = self.table_references(
-                        visualization["vizContent"]["refAnswerBook"]["id"], metadata_type="answer", hidden=True
+                        visualization["vizContent"]["refAnswerBook"]["id"],
+                        tml_type="answer",
+                        hidden=True,
                     )
 
-                    mappings.update(viz_mappings)
+                    for parent in viz_mappings:
+                        parent.visualization_guid = visualization["header"]["id"]
+                        parent.visualization_index = f"Viz_{idx}"
+
+                        if parent not in mappings:
+                            mappings.append(parent)
 
         return mappings

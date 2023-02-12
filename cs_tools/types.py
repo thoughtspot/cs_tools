@@ -220,6 +220,17 @@ class TMLAPIResponse(pydantic.BaseModel):
         return self.status_code == "ERROR"
 
 
+class MetadataParent(pydantic.BaseModel):
+    parent_guid: GUID
+    parent_name: str
+    connection: GUID
+    visualization_guid: GUID = None  # viz_guid
+    visualization_index: str = None  # Viz_N
+
+    def __eq__(self, other):
+        return (self.parent_guid, self.visualization_guid) == (other.parent_guid, other.visualization_guid)
+
+
 # ======================================================================================================================
 # CS Tools Internal types
 # ======================================================================================================================
