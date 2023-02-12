@@ -242,7 +242,7 @@ class MetadataMiddleware:
         #   metadata/tml/export LOGICAL_TABLE order will be identically sorted.. but TBD
         #
         metadata_type = TMLSupportedContent.from_friendly_type(tml_type)
-        r = self.ts.api.metadata_details(guids=[guid], metadata_type=metadata_type, hidden=hidden)
+        r = self.ts.api.metadata_details(guids=[guid], metadata_type=metadata_type, show_hidden=hidden)
         mappings: Dict[GUID, str] = {}  # LOGICAL_TABLE.guid : LOGICAL_TABLE.name
 
         if "storables" not in r.json():
