@@ -28,6 +28,7 @@ class AnswerMiddleware:
         tags: Union[str, List[str]] = None,
         category: MetadataCategory = MetadataCategory.all,
         hidden: bool = False,
+        auto_created: bool = False,
         exclude_system_content: bool = True,
         chunksize: int = 500,
     ) -> RecordsFormat:
@@ -61,6 +62,7 @@ class AnswerMiddleware:
                 category=category,
                 tag_names=tags or _utils.UNDEFINED,
                 show_hidden=hidden,
+                auto_created=auto_created,
                 batchsize=chunksize,
                 offset=len(answers),
             )
