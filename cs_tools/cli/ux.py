@@ -66,10 +66,9 @@ class CSToolsCommand(typer.core.TyperCommand):
         with contextlib.ExitStack() as stack:
             if hasattr(self.callback, "dependencies"):
                 for dependency in self.callback.dependencies:
-                    log.debug(f"loading dependency: {dependency}")
+                    # log.debug(f"loading dependency: {dependency}")
                     stack.enter_context(dependency(ctx))
 
-            log.debug(f"invoking {self.callback}")
             r = ctx.invoke(self.callback, **ctx.params)
 
         return r
