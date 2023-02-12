@@ -5,6 +5,7 @@ import datetime as dt
 import logging
 import json
 import sys
+import os
 
 import httpx
 
@@ -95,11 +96,18 @@ class ThoughtSpot:
         """
 
         try:
-            r = self.api.session_login(
-                username=self.config.auth["frontend"].username,
-                password=utils.reveal(self.config.auth["frontend"].password).decode(),
-                # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
-            )
+
+            if os.environ["THOUGHTSPOT_SECRET_KEY"]:
+                r = self.api._trusted_auth(
+                    username=self.config.auth["frontend"].username,
+                    secret=os.environ["THOUGHTSPOT_SECRET_KEY"]
+                )
+            else:
+                r = self.api.session_login(
+                    username=self.config.auth["frontend"].username,
+                    password=utils.reveal(self.config.auth["frontend"].password).decode(),
+                    # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
+                )
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
