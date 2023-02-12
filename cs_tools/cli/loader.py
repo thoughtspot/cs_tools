@@ -138,7 +138,7 @@ class CSTool:
             args = []
 
         runner = CliRunner()
-        result = runner.invoke(self.lib.app, [command, *args])
+        result = runner.invoke(app=self.lib.app, args=[command, *args], catch_exceptions=False)
         return result
 
     def __repr__(self) -> str:
