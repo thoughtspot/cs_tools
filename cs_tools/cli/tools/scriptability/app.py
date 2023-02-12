@@ -6,14 +6,16 @@
 #   - add support for importing .zip files
 #
 from __future__ import annotations
-from typing import Optional, List
+from dataclasses import dataclass
+from typing import Optional, Dict, List, Tuple
 import logging
 import pathlib
 
 import typer
 
+from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.types import MultipleChoiceType
+from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
 from thoughtspot_tml import Connection
 from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
@@ -40,11 +42,60 @@ app = CSToolsApp(
 )
 
 
-@app.command(dependencies=[thoughtspot], hidden=True)
+@dataclass
+class MetadataColumn:
+    database: str
+    schema: str
+    table: str
+    column: str
+    data_type_internal: str
+    data_type_external: str
+    is_missing_external: bool
+
+    @property
+    def fully_qualified_name(self) -> str:
+        return f"{self.database}.{self.schema}.{self.table}"
+
+    @property
+    def is_out_of_sync(self) -> bool:
+        return self.is_missing_external or self.data_type_internal != self.data_type_external
+
+    @property
+    def values(self) -> Tuple[str]:
+        row = (
+            self.database,
+            self.schema,
+            self.table,
+            self.column,
+            self.data_type_internal,
+            self.data_type_external,
+            str(self.is_missing_external),
+        )
+        return row
+
+    def dict(self) -> Dict[str, str]:
+        row = {
+            "database": self.database,
+            "schema": self.schema,
+            "table": self.table,
+            "column": self.column,
+            "data_type_internal": self.data_type_internal,
+            "data_type_external": self.data_type_external,
+            "is_missing_external": str(self.is_missing_external),
+        }
+        return row
+
+
+@app.command(dependencies=[thoughtspot])
 def connection_rationalize(
     ctx: typer.Context,
     connection_guid: GUID = Opt(..., help="connection GUID"),
-    # directory: pathlib.Path = Opt(..., help="directory to save data to"),
+    syncer: DSyncer = Opt(
+        None,
+        custom_type=SyncerProtocolType(),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    )
 ):
     ts = ctx.obj.thoughtspot
 
@@ -61,8 +112,8 @@ def connection_rationalize(
         for table in tml.connection.table
     ]
 
-    r = ts.api.connection_fetch_connection(guid=tml.guid)
-    d = r.json()
+    r = ts.api.metadata_details(metadata_type="DATA_SOURCE", guids=[tml.guid])
+    d = r.json()["storables"][0]
     i = tml.to_rest_api_v1_metadata()
 
     r = ts.api.connection_fetch_live_columns(
@@ -76,37 +127,62 @@ def connection_rationalize(
         log.error(f"encountered an error fetching columns from [b blue]{tml.name}[/]\n{r.json()}")
         raise typer.Exit(1)
 
-    need_to_fix = []
-    unsynced_columns = 0
+    live_external_data = r.json()
+    tables_sync = []
+    column_sync = []
 
-    for fully_qualified_tablename, columns in r.json().items():
-        n = 0
- 
-        for column in columns:
-            if column["selected"] and not column["isLinkedActive"]:
-                n += 1
-
-        if n > 0:
-            unsynced_columns += n
-            database, schema, table = fully_qualified_tablename.split(".")
-            need_to_fix.append(
-                {
-                    "database": database,
-                    "schema": schema,
-                    "table": table,
-                    "unsynced_columns": n,
-                    "is_whole_table_unsynced": n == len(columns),
-                }
-            )
-
-    if need_to_fix:
-        log.warning(
-            f"[b yellow]{unsynced_columns} columns across {len(need_to_fix)} tables are out of sync in "
-            f"[b blue]{tml.name}"
+    for internal_table in tml.connection.table:
+        fqn_name = ".".join(
+            [
+                internal_table.external_table.db_name,
+                internal_table.external_table.schema_name,
+                internal_table.external_table.table_name
+            ]
         )
+
+        if fqn_name not in live_external_data:
+            log.warning(f"internal table '{fqn_name}' has no external representation in {connection_guid}")
+            continue
+
+        out_of_sync = 0
+
+        for idx, column in enumerate(internal_table.column, start=1):
+            external_column = next(c for c in live_external_data[fqn_name] if c["name"] == column.external_column)
+            column_info = {
+                "database": internal_table.external_table.db_name,
+                "schema": internal_table.external_table.schema_name,
+                "table": internal_table.external_table.table_name,
+                "column": column.name,
+                "data_type_internal": column.data_type,
+                "data_type_external": external_column["type"] if external_column["isLinkedActive"] else "{null}",
+                "is_missing_external": not external_column["isLinkedActive"],
+            }
+
+            metadata = MetadataColumn(**column_info)
+
+            if metadata.is_out_of_sync:
+                out_of_sync += 1
+                column_sync.append(metadata)
+
+        if out_of_sync == idx:
+            log.info(f"whole table is out of sync: {internal_table.name} ({internal_table.id})")
+            tables_sync.append(metadata.fully_qualified_name)
+
+    if not column_sync:
+        log.info("[b green]No columns[/] are out of sync with the external database!")
+        raise typer.Exit(0)
+
+    oos_column = len(column_sync)
+    oos_table = len({c.fully_qualified_name for c in column_sync})
+    log.warning(f"[b yellow]{oos_column} columns across {oos_table} tables are out of sync in [b blue]{tml.name}")
+
+    if syncer is None:
         table = layout.build_table()
-        [table.renderable.add_row(*map(str, row.values())) for row in need_to_fix]
+        [table.renderable.add_row(*column.values) for column in column_sync if column.fully_qualified_name not in tables_sync]
         rich_console.print(table)
+
+    else:
+        syncer.dump(f"connection-rationalize", data=[column.dict() for column in column_sync])
 
 
 @app.command(dependencies=[thoughtspot], name="export")
