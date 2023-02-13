@@ -247,6 +247,11 @@ class RESTAPIv1(httpx.Client):
         r = self.get(f"callosum/v1/tspublic/v1/group/{group_guid}/users")
         return r
 
+    def group_add_user(self, *, group_guid: GUID, user_guid: GUID) -> httpx.Response:
+        d = {"groupid": group_guid, "userid": user_guid}
+        r = self.post(f"callosum/v1/tspublic/v1/group/{group_guid}/user/{user_guid}", data=d)
+        return r
+
     # ==================================================================================================================
     # DATA        ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_groups_and_privileges
     # ==================================================================================================================
