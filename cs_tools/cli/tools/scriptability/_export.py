@@ -199,7 +199,8 @@ def _download_tml(ts, directory: pathlib.Path, guid: GUID, export_associated: bo
     # .export_fqn NEW in 8.7.0, here's the backwards compat
     if AwesomeVersion(ts.platform.version) < AwesomeVersion("8.7.0"):
         for tml in tml_objects:
-            guid_name_map = ts.metadata.table_references(tml.guid, tml_type=tml.tml_type_name)
+            parents = ts.metadata.table_references(tml.guid, tml_type=tml.tml_type_name)
+            guid_name_map = {parent.parent_guid: parent.parent_name for parent in parents}
             counter = collections.Counter(guid_name_map.values())
             more_than_one = {name: count for name, count in counter.items() if count > 1}
 
