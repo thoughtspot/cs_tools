@@ -97,7 +97,7 @@ class ThoughtSpot:
 
         try:
 
-            if os.environ["THOUGHTSPOT_SECRET_KEY"]:
+            if os.environ.get("THOUGHTSPOT_SECRET_KEY") is not None:
                 r = self.api._trusted_auth(
                     username=self.config.auth["frontend"].username,
                     secret=os.environ["THOUGHTSPOT_SECRET_KEY"]
