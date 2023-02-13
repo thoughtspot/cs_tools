@@ -56,7 +56,7 @@ class CSToolsVirtualEnvironment:
                     logger = levels[log_level]
 
                 else:
-                    logger = log.debug
+                    logger = log.info
 
                 logger(line)
                 output.append(line)
