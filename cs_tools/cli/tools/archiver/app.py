@@ -274,7 +274,7 @@ def revert(
 
         with tasks["results_preview"] as this_task:
             table = layout.build_table(
-                        title=f"Content to remove [b blue]{tag_name} from",
+                        title=f"Content to untag [b blue]{tag_name}",
                         caption=f"25 random items ({len(to_revert)} [b blue]{tag_name}[/] in ThoughtSpot)",
                     )
 
@@ -403,7 +403,7 @@ def remove(
 
         with tasks["results_preview"] as this_task:
             table = layout.build_table(
-                        title=f"Content to remove [b blue]{tag_name} from",
+                        title=f"Content to remove [b blue]{tag_name}[/]",
                         caption=f"25 random items ({len(to_delete)} [b blue]{tag_name}[/] in ThoughtSpot)",
                     )
 

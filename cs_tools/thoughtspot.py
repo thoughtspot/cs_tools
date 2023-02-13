@@ -102,6 +102,7 @@ class ThoughtSpot:
                     username=self.config.auth["frontend"].username,
                     secret=os.environ["THOUGHTSPOT_SECRET_KEY"]
                 )
+
             else:
                 r = self.api.session_login(
                     username=self.config.auth["frontend"].username,
