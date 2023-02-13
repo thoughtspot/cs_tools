@@ -22,10 +22,10 @@ class TMLMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
+    # @validate_arguments
     def to_import(
         self,
-        tmls: List[Union[TML, TMLObject, str]],
+        tmls: List[Union[TML, str]],
         *,
         policy: TMLImportPolicy = TMLImportPolicy.all_or_none,
         force: bool = False
