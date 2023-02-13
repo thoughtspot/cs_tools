@@ -465,7 +465,7 @@ def _upload_tml(
         type = content["response"].get("header", {}).get("type", tml_file.tml.tml_type_name)
         name = content["response"].get("header", {}).get("name", tml_file.filepath.stem)
 
-        if content["response"]["status"]["status_code"] == "OK":
+        if content["response"]["status"]["status_code"] != "ERROR":
             guids_to_map[old_guid] = guid
 
         responses.append(
