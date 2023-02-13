@@ -7,6 +7,7 @@ import tempfile
 import pathlib
 import logging
 import json
+import time
 
 import httpx
 
@@ -76,6 +77,20 @@ class RESTAPIv1(httpx.Client):
 
         if r.text:
             log.debug("<< CONTENT:\n\n%s", r.text)
+
+        attempts = 0
+
+        # exponential backoff to 3 attempts (4s, 16s, 64s)
+        while r.status_code in (httpx.codes.GATEWAY_TIMEOUT, httpx.codes.BAD_GATEWAY):
+            attempts += 1
+
+            if attempts > 3:
+                break
+
+            backoff = 4 ** attempts
+            log.warning(f"Your ThoughtSpot cluster didn't respond to '{method} {endpoint}', backing off for {backoff}s")
+            time.sleep(backoff)
+            r = super().request(method, endpoint, **request_kw)
 
         if r.is_error:
             r.raise_for_status()
