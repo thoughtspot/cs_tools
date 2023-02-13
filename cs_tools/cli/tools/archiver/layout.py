@@ -24,7 +24,7 @@ def build_table(**table_kwargs) -> Table:
     table.add_column("GUID", justify="center", width=40)      # 4 + length of a GUID
     table.add_column("Modified", justify="center", width=14)  # 4 + length of YYYY-MM-DD
     table.add_column("Author", justify="left", width=20, no_wrap=True)  # ...?
-    table.add_column("Name", justify="left", no_wrap=True)  # the rest..
+    table.add_column("Name", justify="left", width=150 - (16 + 40 + 14 + 20), no_wrap=True)  # the rest..
     return table
 
 

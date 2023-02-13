@@ -111,7 +111,7 @@ def identify(
         ("gather_ts_bi", "Getting content usage and activity statistics"),
         ("gather_supporting_filter_criteria", "Getting supporting metadata for content identification"),
         ("gather_metadata", "Getting existing content metadata"),
-        ("syncer_report", f"Writing Archiver report{f'to {report.name}' if report is not None else ''}"),
+        ("syncer_report", f"Writing Archiver report{f' to {report.name}' if report is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items to tag with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("tagging_content", "Tagging content in ThoughtSpot"),
@@ -161,7 +161,16 @@ def identify(
                     checks.append(not set(t["name"] for t in metadata_object["tags"]).intersection(ignore_tags))
 
                 if all(checks):
-                    to_archive.append(metadata_object)
+                    to_archive.append(
+                        {
+                            "type": metadata_object["metadata_type"],
+                            "guid": metadata_object["id"],
+                            "modified": metadata_object["modified"],
+                            "author_guid": metadata_object["author"],
+                            "author": metadata_object.get("authorDisplayName", "{null}"),
+                            "name": metadata_object["name"],
+                        }
+                    )
 
         if not to_archive:
             rich_console.log("[b yellow]no stale content was found in your [white]ThoughtSpot[/] cluster")
@@ -176,12 +185,12 @@ def identify(
                         ),
                     )
 
-            for row in random.choices(to_archive, k=min(25, len(to_archive))):
+            for row in random.sample(to_archive, k=min(25, len(to_archive))):
                 table.add_row(
-                    MetadataObjectType(row["metadata_type"]).name.title().replace("_", " "),
-                    row["id"],
+                    MetadataObjectType(row["type"]).name.title().replace("_", " "),
+                    row["guid"],
                     pendulum.from_timestamp(row["modified"] / 1000, tz=ts.platform.timezone).strftime("%Y-%m-%d"),
-                    row["authorDisplayName"],
+                    row["author"],
                     row["name"],
                 )
 
@@ -218,8 +227,8 @@ def identify(
             to_tag_names = []
 
             for content in to_archive:
-                to_tag_guids.append(content["id"])
-                to_tag_types.append(content["metadata_type"])
+                to_tag_guids.append(content["guid"])
+                to_tag_types.append(content["type"])
                 to_tag_names.append(tag_guid["id"])
 
             ts.api.metadata_assign_tag(metadata_guids=to_tag_guids, metadata_types=to_tag_types, tag_guids=to_tag_names)
@@ -246,7 +255,7 @@ def revert(
 
     tasks = [
         ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver report{f'to {report.name}' if report is not None else ''}"),
+        ("syncer_report", f"Writing Archiver report{f' to {report.name}' if report is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("untagging_content", f"Removing [b blue]{tag_name}[/] from content in ThoughtSpot"),
@@ -259,12 +268,32 @@ def revert(
             to_revert = []
 
             try:
-                to_revert.extend(ts.answer.all(tags=[tag_name]))
+                to_revert.extend(
+                    {
+                        "type": answer["metadata_type"],
+                        "guid": answer["id"],
+                        "modified": answer["modified"],
+                        "author_guid": answer["author"],
+                        "author": answer.get("authorDisplayName", "{null}"),
+                        "name": answer["name"],
+                    }
+                    for answer in ts.answer.all(tags=[tag_name])
+                )
             except ContentDoesNotExist:
                 pass
 
             try:
-                to_revert.extend(ts.liveboard.all(tags=[tag_name]))
+                to_revert.extend(
+                    {
+                        "type": liveboard["metadata_type"],
+                        "guid": liveboard["id"],
+                        "modified": liveboard["modified"],
+                        "author_guid": liveboard["author"],
+                        "author": liveboard.get("authorDisplayName", "{null}"),
+                        "name": liveboard["name"],
+                    }
+                    for liveboard in ts.liveboard.all(tags=[tag_name])
+                )
             except ContentDoesNotExist:
                 pass
 
@@ -278,12 +307,12 @@ def revert(
                         caption=f"25 random items ({len(to_revert)} [b blue]{tag_name}[/] in ThoughtSpot)",
                     )
 
-            for row in random.choices(to_revert, k=min(25, len(to_revert))):
+            for row in random.sample(to_revert, k=min(25, len(to_revert))):
                 table.add_row(
-                    MetadataObjectType(row["metadata_type"]).name.title().replace("_", " "),
-                    row["id"],
+                    MetadataObjectType(row["type"]).name.title().replace("_", " "),
+                    row["guid"],
                     pendulum.from_timestamp(row["modified"] / 1000, tz=ts.platform.timezone).strftime("%Y-%m-%d"),
-                    row["authorDisplayName"],
+                    row["author"],
                     row["name"],
                 )
 
@@ -320,8 +349,8 @@ def revert(
             to_revert_names = []
 
             for content in to_revert:
-                to_revert_guids.append(content["id"])
-                to_revert_types.append(content["metadata_type"])
+                to_revert_guids.append(content["guid"])
+                to_revert_types.append(content["type"])
                 to_revert_names.append(tag_guid["id"])
 
             ts.api.metadata_unassign_tag(
@@ -374,7 +403,7 @@ def remove(
 
     tasks = [
         ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver report{f'to {report.name}' if report is not None else ''}"),
+        ("syncer_report", f"Writing Archiver report{f' to {report.name}' if report is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("export_content", f"Exporting content as TML{f' to {directory}' if directory is not None else ''}"),
@@ -388,12 +417,32 @@ def remove(
             to_delete = []
 
             try:
-                to_delete.extend(ts.answer.all(tags=[tag_name]))
+                to_delete.extend(
+                    {
+                        "type": answer["metadata_type"],
+                        "guid": answer["id"],
+                        "modified": answer["modified"],
+                        "author_guid": answer["author"],
+                        "author": answer.get("authorDisplayName", "{null}"),
+                        "name": answer["name"],
+                    }
+                    for answer in ts.answer.all(tags=[tag_name])
+                )
             except ContentDoesNotExist:
                 pass
 
             try:
-                to_delete.extend(ts.liveboard.all(tags=[tag_name]))
+                to_delete.extend(
+                    {
+                        "type": liveboard["metadata_type"],
+                        "guid": liveboard["id"],
+                        "modified": liveboard["modified"],
+                        "author_guid": liveboard["author"],
+                        "author": liveboard.get("authorDisplayName", "{null}"),
+                        "name": liveboard["name"],
+                    }
+                    for liveboard in ts.liveboard.all(tags=[tag_name])
+                )
             except ContentDoesNotExist:
                 pass
 
@@ -407,12 +456,12 @@ def remove(
                         caption=f"25 random items ({len(to_delete)} [b blue]{tag_name}[/] in ThoughtSpot)",
                     )
 
-            for row in random.choices(to_delete, k=min(25, len(to_delete))):
+            for row in random.sample(to_delete, k=min(25, len(to_delete))):
                 table.add_row(
-                    MetadataObjectType(row["metadata_type"]).name.title().replace("_", " "),
-                    row["id"],
+                    MetadataObjectType(row["type"]).name.title().replace("_", " "),
+                    row["guid"],
                     pendulum.from_timestamp(row["modified"] / 1000, tz=ts.platform.timezone).strftime("%Y-%m-%d"),
-                    row["authorDisplayName"],
+                    row["author"],
                     row["name"],
                 )
 
@@ -446,18 +495,18 @@ def remove(
             if directory is None:
                 this_task.skip()
             else:
-                for tml in ts.tml.to_export(guids=[content["id"] for content in to_delete], iterator=True):
+                for tml in ts.tml.to_export(guids=[content["guid"] for content in to_delete], iterator=True):
                     tml.dump(directory / f"{tml.guid}.{tml.tml_type_name}.tml")
 
         with tasks["delete_content"] as this_task:
             if export_only:
                 this_task.skip()
             else:
-                for unique_type in [c["metadata_type"] for c in to_delete]:
+                for unique_type in [c["type"] for c in to_delete]:
                     _extended_rest_api_v1.metadata_delete(
                         ts.api,
                         metadata_type=unique_type,
-                        guids=[content["id"] for content in to_delete if content["metadata_type"] == unique_type]
+                        guids=[content["guid"] for content in to_delete if content["type"] == unique_type]
                     )
 
         with tasks["deleting_tag"] as this_task:
