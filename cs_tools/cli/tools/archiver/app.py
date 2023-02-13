@@ -481,8 +481,9 @@ def remove(
             if no_prompt:
                 this_task.skip()
             else:
+                operation = "exporting" if export_only else "removing"
                 this_task.description = prompt = (
-                    f":point_right: Continue with removing {len(to_delete):,} objects? [b magenta](y/N)"
+                    f":point_right: Continue with {operation} {len(to_delete):,} objects? [b magenta](y/N)"
                 )
 
                 if not ConfirmationPrompt(prompt, console=rich_console).ask(with_prompt=False):
