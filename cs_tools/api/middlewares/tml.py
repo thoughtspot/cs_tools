@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from typing import List, Union
 
+from thoughtspot_tml.types import TMLObject
 from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml._tml import TML
 from pydantic import validate_arguments
@@ -24,7 +25,7 @@ class TMLMiddleware:
     @validate_arguments
     def to_import(
         self,
-        tmls: List[Union[TML, str]],
+        tmls: List[Union[TML, TMLObject, str]],
         *,
         policy: TMLImportPolicy = TMLImportPolicy.all_or_none,
         force: bool = False
