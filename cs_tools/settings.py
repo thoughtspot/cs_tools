@@ -44,19 +44,21 @@ class _meta_config(BaseModel):
         NOW = dt.datetime.now()
         ONE_HOUR = 3600  # seconds
 
+        data = {}
+        modified_at = EPOCH
+
         if fp.exists():
             fp_stat = fp.stat()
             disk = toml.load(fp)
 
-            data = {
-                "default_config_name": disk["default"].get("config"),
-                "latest_release_version": disk["latest_release"].get("version"),
-                "latest_release_date": disk["latest_release"].get("published_at"),
-            }
+            if disk["default"].get("config") is not None:
+                data["default_config_name"] = disk["default"]["config"]
+
+            if data.get("latest_release") is not None:
+                data["latest_release_version"] = disk["latest_release"]["version"]
+                data["latest_release_date"] = disk["latest_release"]["published_at"]
+
             modified_at = dt.datetime.fromtimestamp(fp_stat.st_mtime)
-        else:
-            data = {}
-            modified_at = EPOCH
 
         # predicates to check
         have_not_checked_5h = (NOW - modified_at).total_seconds() > (ONE_HOUR * 5)
