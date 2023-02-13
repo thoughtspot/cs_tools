@@ -232,7 +232,7 @@ def revert(
     dry_run: bool = Opt(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
     no_prompt: bool = Opt(False, "--no-prompt", help="disable the confirmation prompt"),
     delete_tag: bool = Opt(False, "--delete-tag", help="after untagging identified content, remove the tag itself"),
-    report: pathlib.Path = Opt(
+    report: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
@@ -344,7 +344,7 @@ def remove(
     dry_run: bool = Opt(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
     no_prompt: bool = Opt(False, "--no-prompt", help="disable the confirmation prompt"),
     delete_tag: bool = Opt(False, "--delete-tag", help="after deleting identified content, remove the tag itself"),
-    report: pathlib.Path = Opt(
+    report: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
