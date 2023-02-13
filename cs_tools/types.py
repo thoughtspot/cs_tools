@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Optional
 import logging
 import typing
 import uuid
@@ -186,7 +186,7 @@ RecordsFormat = List[Dict[str, Any]]
 
 
 class TMLAPIResponse(pydantic.BaseModel):
-    guid: GUID
+    guid: Optional[GUID]
     metadata_object_type: MetadataObjectType
     tml_type_name: str
     name: str
