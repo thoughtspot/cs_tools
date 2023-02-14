@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import List, Union
+import logging
 
 from thoughtspot_tml.types import TMLObject
 from thoughtspot_tml.utils import determine_tml_type
@@ -12,6 +13,8 @@ from cs_tools.types import GUID, TMLImportPolicy, TMLSupportedContent, TMLAPIRes
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
+
+log = logging.getLogger(__name__)
 
 
 class TMLMiddleware:
@@ -76,6 +79,15 @@ class TMLMiddleware:
             r = self.ts.api.metadata_tml_export(export_guids=[guid])
 
             for content in r.json()["object"]:
+                status = content["info"]["status"]
+                
+                if status["status_code"] == "ERROR":
+                    log.warning(
+                        f"{content['info']['type']} ({content['info']['id']}) could not be exported due to.."
+                        f"\n{status['error_message']}"
+                    )
+                    continue
+
                 tml_cls = determine_tml_type(info=content["info"])
                 tml = tml_cls.loads(content["edoc"])
 
