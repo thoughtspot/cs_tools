@@ -105,23 +105,11 @@ class TZAwareDateTimeType(click.ParamType):
 
     name = "datetime"
 
-    def __init__(self, *args_passthru, locality: str = "local", **kwargs_passthru):
-        super().__init__(*args_passthru, **kwargs_passthru)
-        self.locality = locality
-
-    def tz_based_on_locality(self, ctx) -> pendulum._Timezone:
-        _locality = {
-            "server": ctx.obj.thoughtspot.platform.timezone,
-            "local": pendulum.local_timezone(),
-            "utc": "UTC",
-        }
-        return _locality.get(self.locality, "UTC")
-
     def convert(self, value: Any, param: click.Parameter = None, ctx: click.Context = None) -> pendulum.DateTime:
         if value is None:
             return None
 
-        return pendulum.instance(value, tz=self.tz_based_on_locality(ctx))
+        return pendulum.parse(value)
 
 
 class SyncerProtocolType(click.ParamType):

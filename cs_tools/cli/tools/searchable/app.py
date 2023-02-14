@@ -124,13 +124,13 @@ def bi_server(
     compact: bool = Opt(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
     from_date: dt.datetime = Opt(
         None,
-        custom_type=TZAwareDateTimeType(locality="server"),
+        custom_type=TZAwareDateTimeType(),
         metavar="YYYY-MM-DD",
         help="lower bound of rows to select from TS: BI Server",
     ),
     to_date: dt.datetime = Opt(
         None,
-        custom_type=TZAwareDateTimeType(locality="server"),
+        custom_type=TZAwareDateTimeType(),
         metavar="YYYY-MM-DD",
         help="upper bound of rows to select from TS: BI Server",
     ),
