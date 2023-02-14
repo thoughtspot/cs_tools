@@ -378,7 +378,7 @@ def _upload_connections(
                 guid = tml.guid if tml.guid else tml_file.filepath.name.split('.')[0]
                 guid_mapping.set_mapped_guid(guid, data["header"]["id"])
 
-                old_table_guids = {t.name: t.id for t in tml.connection.table}
+                old_table_guids = {t.name: t.id for t in tml.connection.table} if tml.connection.table else {}
 
                 for table in data["logicalTableList"]:
                     old_guid = old_table_guids.get(table["header"]["name"])
