@@ -58,22 +58,6 @@ class TMLImportResponse:
         return self.status_code == "ERROR"
 
 
-# class TMLResponseReference:
-#     """
-#     Keeps track of the TML object including status of upload.
-#     """
-
-#     def _init_(self):
-#         self.status_code: StatusCode = StatusCode.unknown
-#         self.guid: GUID = None
-#         self.name: str = ""
-#         self.type = None
-#         self.metadata_type = None
-#         self.original_guid: GUID = None
-#         self.error_code: str = ""
-#         self.error_message: str = ""
-
-
 def to_import(
     ts,
     path,

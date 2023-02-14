@@ -252,8 +252,8 @@ def scriptability_export(
 @app.command(dependencies=[thoughtspot], name="import")
 def scriptability_import(
     ctx: typer.Context,
-    directory: pathlib.Path = Arg(
-        ..., help="directory to load TML from", file_okay=False, resolve_path=True
+    path: pathlib.Path = Arg(
+        ..., help="file or directory to load TML from", file_okay=True, resolve_path=True
     ),
     import_policy: TMLImportPolicy = Opt(TMLImportPolicy.validate, help="The import policy type"),
     force_create: bool = Opt(False, "--force-create", help="will force a new object to be created"),
@@ -288,7 +288,7 @@ def scriptability_import(
     """
     to_import(
         ts=ctx.obj.thoughtspot,
-        path=directory,
+        path=path,
         import_policy=import_policy,
         force_create=force_create,
         guid_file=guid_file,
