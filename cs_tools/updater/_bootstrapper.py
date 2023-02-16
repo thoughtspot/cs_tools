@@ -143,7 +143,7 @@ def cli():
             requires += " @ https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(tag=release["tag_name"])
 
         log.info("Installing CS Tools and its dependencies.")
-        venv.pip("install", requires)
+        venv.pip("install", requires, "--upgrade")
         path.add()
 
     if args.uninstall:
