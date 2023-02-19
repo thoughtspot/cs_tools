@@ -12,6 +12,7 @@ class PerformanceEvent(SQLModel, table=True):
     metadata_guid: str = Field(primary_key=True)
     user_guid: str = Field(primary_key=True)
     performance_run_id: int
+    strategy: str
     metadata_type: str
     is_success: bool
     response_received_time: dt.datetime
