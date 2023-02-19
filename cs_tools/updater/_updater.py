@@ -180,7 +180,7 @@ class WindowsPath:
 
     def symlink_paths(self, target_path: pathlib.Path, original_path: pathlib.Path) -> None:
         """Attempt to symlink in Windows."""
-        self.unlink(target_path)
+        self.unlink_path(target_path)
 
         try:
             log.info(f"Attempting to symlink: '{target_path}' -> '{original_path}'")
@@ -214,6 +214,7 @@ class WindowsPath:
     def win_registry(self):
         import winreg
 
+        # ala   regedit.exe   Computer / HKEY_CURRENT_USER / ENVIRONMENT
         with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER) as root:
             with winreg.OpenKey(root, "Environment", 0, winreg.KEY_ALL_ACCESS) as key:
                 yield key
@@ -247,8 +248,8 @@ class WindowsPath:
 
             # Couldn't get the PATH variable from registry
             if PATH is None:
-                self.unlink(self.sys_py_dir / "cs_tools.exe")
-                self.unlink(self.sys_py_dir / "cstools.exe")
+                self.unlink_path(self.sys_py_dir / "cs_tools.exe")
+                self.unlink_path(self.sys_py_dir / "cstools.exe")
                 return
 
             log.info(f"Removing '{self.bin_dir}' from User %PATH%")
