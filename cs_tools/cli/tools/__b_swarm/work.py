@@ -51,12 +51,12 @@ def write_stats(syncer, *, strategy: str, stats: horde.Event) -> None:
     data = [
         {
             "request_start_time": r.request.headers["x-requested-at"],
-            "metadata_guid": stat.fired_event.guid,
             "user_guid": stat.fired_event.user.guid,
+            "metadata_guid": stat.fired_event.guid,
+            "viz_id": viz_id if stat.fired_event.metadata_type == "PINBOARD_ANSWER_BOOK" else None,
             "performance_run_id": int(start_event.fired_event._created_at),
             "strategy": strategy,
             "metadata_type": stat.fired_event.metadata_type,
-            "viz_id": viz_id if stat.fired_event.metadata_type == "PINBOARD_ANSWER_BOOK" else None,
             "is_success": stat.fired_event.is_success,
             "response_received_time": dt.datetime.fromisoformat(r.request.headers["x-requested-at"]) + r.elapsed,
             "latency": r.elapsed.total_seconds(),
