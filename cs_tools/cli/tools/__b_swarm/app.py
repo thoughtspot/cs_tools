@@ -61,12 +61,7 @@ async def random_access(
     Liveboards created from the Worksheet.
     """
     ts = ctx.obj.thoughtspot
-
-    if dismiss_eula:
-        log.info("Concurrency simulation EULA has been [b yellow]bypassed[/].")
-    else:
-        work.eula()
-        log.info("Concurrency simulation EULA has been [b green]accepted[/].")
+    work.eula(bypass=dismiss_eula)
 
     env = Environment(ts.config.thoughtspot.fullpath, zombie_classes=[strategies.ScopedRandomZombie])
 
@@ -84,7 +79,7 @@ async def random_access(
     await env.ui.printer.start(console=rich_console, **runner_kw)
 
     if syncer is not None:
-        work.write_stats(syncer, stats=env.stats)
+        work.write_stats(syncer, strategy="random access", stats=env.stats)
 
 
 # @app.command(dependencies=[thoughtspot])

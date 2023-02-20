@@ -7,9 +7,9 @@ from .. import zombie
 
 
 class ScopedOpenAllZombie(zombie.ThoughtSpotZombie):
-    task_delay = between(1, 10)
+    task_delay = between(1)
 
-    def get_random_worksheet_dependent(self, *, content_type: str):
+    def draw_down_content_pool(self, *, content_type: str):
         allowed = self.horde.shared_state.all_guids
         filtered = [content for content in self.my_content[content_type] if content["id"] in allowed]
         return random.choice(filtered)
