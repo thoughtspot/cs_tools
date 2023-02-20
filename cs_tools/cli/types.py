@@ -1,7 +1,9 @@
 from typing import Any, List, Tuple
 import collections.abc
+import urllib.parse
 import itertools as it
 import logging
+import pathlib
 
 import sqlalchemy
 import pendulum
@@ -124,11 +126,25 @@ class SyncerProtocolType(click.ParamType):
     def get_metavar(self, param) -> str:
         return "protocol://DEFINITION.toml"
 
+    def _sanitize_definition(self, definition):
+        if definition.endswith("toml"):
+            definition_fp = pathlib.Path(definition)
+
+            if not definition_fp.exists():
+                raise ...
+
+            return {"definition_fp": definition_fp}
+
+        query_string = urllib.parse.urlparse(f"proto://?{definition}").query
+        definition_kw = {k: vs[0] for k, vs in urllib.parse.parse_qs(query_string).items()}
+        return {"definition_kw": definition_kw}
+
     def convert(self, value: Any, param: click.Parameter = None, ctx: typer.Context = None) -> DSyncer:
         if value is None:
             return value
 
-        proto, definition = value.split("://")
-        syncer_dependency = DSyncer(protocol=proto, definition_fp=definition, parameters=[], models=self.models)
+        proto, definition_str = value.split("://")
+        definition = self._sanitize_definition(definition_str)
+        syncer_dependency = DSyncer(protocol=proto, parameters=[], **definition, models=self.models)
         ctx.command.callback.dependencies.append(syncer_dependency)
         return syncer_dependency
