@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Dict, List
 import pathlib
 import logging
 
@@ -20,8 +20,9 @@ log = logging.getLogger(__name__)
 @dataclass
 class DSyncer(Dependency):
     protocol: str
-    definition_fp: pathlib.Path
-    models: list[sqlmodel.SQLModel] = None
+    definition_fp: pathlib.Path = None
+    definition_kw: Dict[str, Any] = None
+    models: List[sqlmodel.SQLModel] = None
 
     @property
     def metadata(self) -> sqlmodel.MetaData:
@@ -44,14 +45,17 @@ class DSyncer(Dependency):
         return self._metadata
 
     def __enter__(self):
-        ctx = click.get_current_context()
-        cfg = self._read_config_from_definition(ctx.obj.thoughtspot, self.protocol, self.definition_fp)
-
-        if "manifest" not in cfg:
-            cfg["manifest"] = PACKAGE_DIR / "sync" / self.protocol / "MANIFEST.json"
-
+        # TODO: registation as part of __init_subclass__, now that we're a real package~
         log.info(f"registering syncer: {self.protocol}")
-        Syncer = register.load_syncer(protocol=self.protocol, manifest_path=cfg.pop("manifest"))
+        manifest = PACKAGE_DIR / "sync" / self.protocol / "MANIFEST.json"
+        Syncer = register.load_syncer(protocol=self.protocol, manifest_path=manifest)
+
+        ctx = click.get_current_context()
+
+        if self.definition_fp:
+            cfg = self._read_config_from_definition(ctx.obj.thoughtspot, self.protocol, self.definition_fp)
+        else:
+            cfg = {"configuration": self.definition_kw}
 
         log.debug(f"initializing syncer: {Syncer}")
         self.__Syncer_init__(Syncer, **cfg["configuration"])
@@ -60,12 +64,6 @@ class DSyncer(Dependency):
             log.debug(f"creating tables {self.models} in {self._syncer}")
             [t.__table__.to_metadata(self.metadata) for t in self.models if t.metadata is not self.metadata]
             self.metadata.create_all(self._syncer.cnxn, tables=[t.__table__ for t in self.models])
-
-            # If we want to define and create DB Views, we can do so...
-            # if self._syncer.name != "falcon":
-            #     tables = [t.name for t in metadata.sorted_tables]
-            #     views = ["VW_WORKSHEET_DEPENDENTS"]
-            #     metadata.reflect(self._syncer.cnxn, views=True, only=[*tables, *views])
 
     def __exit__(self, *e):
         # reserved for shutdown work if we need to tidy up the database?
@@ -111,40 +109,35 @@ class DSyncer(Dependency):
                     ),
                 )
 
-        try:
-            cfg = toml.load(definition)
-        except (IsADirectoryError, FileNotFoundError):
-            raise SyncerError(
-                proto=proto,
-                definition=definition,
-                reason="No {proto} definition found at [blue]{definition}",
-                mitigation="You must specify a valid path to a .toml definition file.",
-            )
-        except UnicodeDecodeError:
-            back = r"C:\work\my\example\filepath".replace("\\", "\\\\")
-            fwds = r"C:\work\my\example\filepath".replace("\\", "/")
-            raise SyncerError(
-                proto=proto,
-                definition=definition,
-                reason="Couldn't read the Syncer definition at [blue]{definition}[/]",
-                mitigation=(
-                    f"If you're on Windows, you must escape the backslashes in your filepaths, or flip them the other "
-                    f"way around.\n"
-                    r"\n  :cross_mark: [red]C:\work\my\example\filepath[/]"
-                    f"\n  :white_heavy_check_mark: [green]{back}[/]"
-                    f"\n  :white_heavy_check_mark: [green]{fwds}[/]"
-                ),
-            )
-        except toml.TomlDecodeError:
-            raise SyncerError(
-                proto=proto,
-                definition=definition,
-                reason="Your definition file [blue]{definition}[/] is not correct.",
-                mitigation=(
-                    "Visit the link below to see a full example."
-                    "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example"
-                ),
-            )
+        if definition.endswith("toml"):
+            try:
+                cfg = toml.load(definition)
+            except UnicodeDecodeError:
+                back = r"C:\work\my\example\filepath".replace("\\", "\\\\")
+                fwds = r"C:\work\my\example\filepath".replace("\\", "/")
+                raise SyncerError(
+                    proto=proto,
+                    definition=definition,
+                    reason="Couldn't read the Syncer definition at [blue]{definition}[/]",
+                    mitigation=(
+                        f"If you're on Windows, you must escape the backslashes in your filepaths, or flip them the "
+                        f"other way around."
+                        f"\n"
+                        r"\n  :cross_mark: [red]C:\work\my\example\filepath[/]"
+                        f"\n  :white_heavy_check_mark: [green]{back}[/]"
+                        f"\n  :white_heavy_check_mark: [green]{fwds}[/]"
+                    ),
+                )
+            except toml.TomlDecodeError:
+                raise SyncerError(
+                    proto=proto,
+                    definition=definition,
+                    reason="Your definition file [blue]{definition}[/] is not correct.",
+                    mitigation=(
+                        "Visit the link below to see a full example."
+                        "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example"
+                    ),
+                )
 
         return cfg
 
