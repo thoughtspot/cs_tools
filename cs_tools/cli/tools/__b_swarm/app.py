@@ -17,6 +17,7 @@ from . import strategies
 from . import _async
 from . import models
 from . import work
+from . import ui
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(help="Run automated tests against your ThoughtSpot cluster.")
@@ -74,6 +75,7 @@ async def random_access(
     env.create_stats_recorder()
     env.events.add_listener(horde.events.ErrorInZombieTask, listener=_handle_exception)
 
+    # env.create_ui(ui.SwarmUI, ui_name="swarm")
     env.create_ui("printer")
     runner_kw = {"number_of_zombies": users, "spawn_rate": spawn_rate, "total_execution_time": runtime}
     await env.ui.printer.start(console=rich_console, **runner_kw)
