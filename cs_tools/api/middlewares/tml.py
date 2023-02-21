@@ -79,13 +79,11 @@ class TMLMiddleware:
             r = self.ts.api.metadata_tml_export(export_guids=[guid])
 
             for content in r.json()["object"]:
-                status = content["info"]["status"]
+                info = content["info"]
                 
-                if status["status_code"] == "ERROR":
-                    log.warning(
-                        f"{content['info']['type']} ({content['info']['id']}) could not be exported due to.."
-                        f"\n{status['error_message']}"
-                    )
+                if info["status"]["status_code"] == "ERROR":
+                    log.warning(f"{info['type']} ({info['id']}) could not be exported, see log for details..")
+                    log.debug(content)
                     continue
 
                 tml_cls = determine_tml_type(info=content["info"])
