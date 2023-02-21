@@ -109,7 +109,7 @@ class DSyncer(Dependency):
                     ),
                 )
 
-        if definition.endswith("toml"):
+        if definition.as_posix().endswith("toml"):
             try:
                 cfg = toml.load(definition)
             except UnicodeDecodeError:
