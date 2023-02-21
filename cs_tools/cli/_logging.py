@@ -42,12 +42,7 @@ def _setup_logging() -> None:
     _monkeypatch_logging_trace()
     _rotate_logs(n_files_to_keep=25)
 
-    # level_number = max(20 - (level_no * 10), 5)
-    # level = logging.getLevelName(level_number)
-    level_number = 20
-
-    if level_number >= 10:
-        logging.getLogger("httpx").setLevel("INFO")
+    logging.getLogger("httpx").setLevel("INFO")
 
     config = {
         "version": 1,
@@ -85,7 +80,7 @@ def _setup_logging() -> None:
     config["root"]["handlers"].append("to_file")
     config["handlers"]["to_file"] = {
         "formatter": "verbose",
-        "level": "TRACE",
+        "level": "DEBUG",
         "class": "logging.FileHandler",
         "filename": f"{logs_dir}/{now}.log",
         "mode": "w",
