@@ -76,7 +76,8 @@ class RESTAPIv1(httpx.Client):
         log.debug(f"<< HTTP: {r.status_code}")
 
         if r.text:
-            log.debug("<< CONTENT:\n\n%s", r.text)
+            TRACE = 5
+            log.log(TRACE, "<< CONTENT:\n\n%s", r.text)
 
         attempts = 0
 

@@ -42,6 +42,16 @@ VERBOSE_OPT = TyperOption(
     rich_help_panel="[ThoughtSpot Config Overrides]",
 )
 
+VERBOSE_OPT = TyperOption(
+    param_decls=["--verbose", "-v"],
+    default=0,
+    metavar="",
+    show_default=False,
+    count=True,
+    help="verbosity level of log files, can be included multiple times",
+    rich_help_panel="[ThoughtSpot Config Overrides]",
+)
+
 
 def split_args_from_opts(extra_args: List[str]) -> Tuple[List[str], Dict[str, Any], List[str]]:
     """ """
@@ -92,9 +102,11 @@ class DThoughtSpot(Dependency):
         if config is None:
             ctx.fail("no environment specified for --config")
 
+        # add flags to options
+        options = {**options, **{k: True for k in flags}}
+
         sig = inspect.signature(CSToolsConfig.from_toml).parameters
         extra = set(options).difference(sig)
-        flags = set(flags).difference(sig)
 
         if extra:
             extra_args = " ".join(f"--{k} {v}" for k, v in options.items() if k in extra)
@@ -103,11 +115,12 @@ class DThoughtSpot(Dependency):
         if args:
             log.warning(f"[b yellow]Ignoring extra arguments ({' '.join(args)})")
 
-        if flags:
-            log.warning(f"[b yellow]Ignoring extra flags ({' '.join(flags)})")
-
         cfg = CSToolsConfig.from_toml(APP_DIR / f"cluster-cfg_{config}.toml", **options)
         ctx.obj.thoughtspot = ThoughtSpot(cfg)
+
+        if cfg.verbose:
+            to_file_handler = next((h for h in logging.getLogger().handlers if h.name == "to_file"))
+            to_file_handler.setLevel(5)
 
         if self.login:
             ctx.obj.thoughtspot.login()
