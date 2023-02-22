@@ -214,14 +214,9 @@ class RESTAPIv1(httpx.Client):
         fp = pathlib.Path(tempfile.gettempdir()) / f"principals-{dt.datetime.now():%Y%m%dT%H%M%S}.json"
         fp.write_text(json.dumps(principals, indent=4))
 
-        try:
-            f = {"principals": ("principals.json", fp.open("rb"), "application/json")}
-            d = {"applyChanges": apply_changes, "removeDeleted": remove_deleted, "password": password}
-            r = self.post("callosum/v1/tspublic/v1/user/sync", files=f, data=d)
-
-        finally:
-            fp.unlink()
-
+        f = {"principals": ("principals.json", fp.open("rb"), "application/json")}
+        d = {"applyChanges": apply_changes, "removeDeleted": remove_deleted, "password": password}
+        r = self.post("callosum/v1/tspublic/v1/user/sync", files=f, data=d)
         return r
 
     # ==================================================================================================================
