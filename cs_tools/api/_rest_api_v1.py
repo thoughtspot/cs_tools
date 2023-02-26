@@ -37,27 +37,44 @@ from cs_tools.types import (
 log = logging.getLogger(__name__)
 
 
-class RESTAPIv1(httpx.Client):
+class RESTAPIv1:
     """
     Implementation of the REST API v1.
     """
 
     def __init__(self, ts_url: str, **client_opts):
         client_opts["base_url"] = ts_url
-        super().__init__(**client_opts)
+        self.session = httpx.Client(**client_opts)
+
         # DEV NOTE: @boonhapus 2023/01/08
         #    these are enforced client settings regardless of API call
         #
         #    TIMEOUT = 15 minutes
         #    HEADERS = metadata about requests sent to the ThoughtSpot server
         #
-        self.timeout = 15 * 60
-        self.headers.update(
+        self.session.timeout = 15 * 60
+        self.session.headers.update(
             {
                 "x-requested-by": "CS Tools",
                 "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)"
             }
         )
+
+    # PASSTHRU
+
+    def post(self, endpoint: str, **passthru):
+        return self.request("POST", endpoint, **passthru)
+
+    def get(self, endpoint: str, **passthru):
+        return self.request("GET", endpoint, **passthru)
+
+    def put(self, endpoint: str, **passthru):
+        return self.request("PUT", endpoint, **passthru)
+
+    def delete(self, endpoint: str, **passthru):
+        return self.request("DELETE", endpoint, **passthru)
+
+    # CLIENT
 
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Make an HTTP request."""
@@ -67,7 +84,7 @@ class RESTAPIv1(httpx.Client):
         log.debug(f">> {method.upper()} to {endpoint} with keywords {secure}")
 
         try:
-            r = super().request(method, endpoint, **request_kw)
+            r = self.session.request(method, endpoint, **request_kw)
         except httpx.RequestError as e:
             log.debug("Something went wrong calling the ThoughtSpot API", exc_info=True)
             log.warning(f"Could not connect to your ThoughtSpot cluster: {e}")
@@ -91,7 +108,7 @@ class RESTAPIv1(httpx.Client):
             backoff = 4 ** attempts
             log.warning(f"Your ThoughtSpot cluster didn't respond to '{method} {endpoint}', backing off for {backoff}s")
             time.sleep(backoff)
-            r = super().request(method, endpoint, **request_kw)
+            r = self.session.request(method, endpoint, **request_kw)
 
         if r.is_error:
             r.raise_for_status()
