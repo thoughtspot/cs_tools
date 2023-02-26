@@ -85,6 +85,7 @@ cli = [
 ]
 dev = [
     "cs_tools[cli]",
+    "pip-tools",
     "black",
     "coverage[toml]",
     "isort",
