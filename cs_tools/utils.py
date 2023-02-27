@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, Dict
 from base64 import urlsafe_b64encode as b64e
 from base64 import urlsafe_b64decode as b64d
 import collections.abc
@@ -11,7 +11,7 @@ def chunks(iter_, *, n: int) -> iter:
     Yield successive n-sized chunks from list.
     """
     for i in range(0, len(iter_), n):
-        yield iter_[i : i + n]
+        yield iter_[i: i + n]
 
 
 def deep_update(old: dict, new: dict, *, ignore: Any = None) -> dict:
