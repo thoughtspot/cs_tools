@@ -202,7 +202,7 @@ class TMLAPIResponse(pydantic.BaseModel):
             allowed = ", ".join(f"'{s}'" for s in ALLOWED)
             raise ValueError(f"'status_code' must be one of {allowed}, got '{status}'")
 
-        return status.lower()
+        return status.upper()
 
     @pydantic.validator("error_messages", pre=True)
     def _parse_errors(cls, error_string: str) -> List[str]:
