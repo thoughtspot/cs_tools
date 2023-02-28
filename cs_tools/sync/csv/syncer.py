@@ -23,6 +23,7 @@ class CSV:
     escape_character: str = None
     zipped: bool = False
     # line_ending: str = '\r\n'
+    date_time_format: str = "%Y-%m-%d %H:%M:%S"
 
     def __post_init_post_parse__(self):
         self.directory = self.directory.resolve()
@@ -76,7 +77,7 @@ class CSV:
     def load(self, directive: str) -> List[Dict[str, Any]]:
         with self.file_reference(f"{directive}.csv", mode="r") as f:
             reader = csv.DictReader(f, **self.dialect_params())
-            data = [row for row in reader]
+            data = list(reader)
 
         return data
 
@@ -91,4 +92,4 @@ class CSV:
         with self.file_reference(f"{directive}.csv", mode="a") as f:
             writer = csv.DictWriter(f, fieldnames=header, **self.dialect_params())
             writer.writeheader()
-            writer.writerows(data)
+            writer.writerows([util.clean_datetime(row, date_time_format=self.date_time_format) for row in data])

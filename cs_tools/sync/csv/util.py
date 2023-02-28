@@ -1,6 +1,23 @@
 from operator import attrgetter
+from typing import Any, Dict
+import datetime as dt
 import zipfile
 import io
+
+
+def clean_datetime(row: Dict[str, Any], *, date_time_format: str) -> Dict[str, Any]:
+    """
+    Enforce a specific format for datetime values.
+    """
+    out = {}
+
+    for key, value in row.items():
+        if isinstance(value, (dt.datetime, dt.date)):
+            value = value.strftime(date_time_format)
+
+        out[key] = value
+
+    return out
 
 
 class StringToBytesAdapter:

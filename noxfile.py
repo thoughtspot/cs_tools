@@ -16,7 +16,7 @@ PY_VERSIONS = [
     "3.8",
     "3.9",
     "3.10",
-    # "3.11"
+    "3.11",
 ]
 HERE = pathlib.Path(__file__).parent
 DIST = HERE / "dist"
@@ -24,30 +24,22 @@ DIST_PKGS = DIST / "pkgs"
 REQS_TXT = DIST_PKGS / "requirements.txt"
 SUPPORTED_PLATFORM_MATRIX = {
     # fmt: off
-    # PEP425: Compatibility Tags for Built Distributions
-    "windows": (
-        "win_amd64",
-        "win32"
-    ),
-
-    # "macosx_12_x86_64",  # Moneterey [released: 2021.10.25]
-    # "macosx_11_x86_64",  # Big Sur   [released: 2020.11.12]
-    # Catalina (10.15) ----------------------> [EOL tbd]
-    # Mojave   (10.14) ----------------------> [EOL 2021.10.25]
-    "mac": (
-        # Apple M1 Chip
-        "macosx_12_universal2",
-        # Intel x84-64
-        "macosx_12_x86_64",
-        "macosx_11_x86_64",
-        "macosx_10_15_x86_64",
-    ),
-
+    # DEV NOTE: @boonhapus
+    #
+    #   We used to support a distributable installer for all operating system
+    #   configurations. As of cs_tools==1.4.0 , we offered a remote installer to
+    #   bootstrap the environment, which only left no-outside-access devices
+    #   (ie, the ThoughtSpot cluster...)
+    #
+    #   If necessary, we can find the platform tag by running the following command
+    #
+    #      python -c "import sysconfig;print(sysconfig.get_platform())"
+    #
     # PEP600: manylinux_x_y_<arch> based on glibc>=x.y  (future-proofed)
     # PEP599: manylinux2014_<arch> --> CentOS7 [EOL 2024.06.30]
     # PEP571: manylinux2010_<arch> --> CentOS6 [EOL 2020.11.30]
     # PEP513: manylinux1_<arch> -----> CentOS5 [EOL 2017.03.31]
-    "linux": (
+    "thoughtspot": (
         "manylinux2014_x86_64", "manylinux_2_17_x86_64",  # strict, alias
         "manylinux2010_x86_64", "manylinux_2_12_x86_64",  # strict, alias
         "manylinux1_x86_64", "manylinux_2_5_x86_64",      # strict, alias
@@ -134,6 +126,8 @@ def vendor_packages(session):
     python versions in the PY_VERSIONS constraint. Consider using pyenv
     or docker to build.
     """
+    raise NotImplementedError("need to use pip-tools")
+
     first_run = session.python == "3.6.8"
 
     # TODO: use argparse for the following args
@@ -167,9 +161,7 @@ def vendor_packages(session):
         # platform tags, so we'll have to ask for them separately. This is why we group
         # the platform tags.
 
-        # download our dependencies
-        # - since poetry found and resolved our dependencies, --no-deps is fine to use
-        for platform_tags in grouped(platforms, n=2 if platform == "linux" else 1):
+        for platform_tags in grouped(platforms, n=2):
             session.run(
                 # fmt: off
                 "pip", "download",

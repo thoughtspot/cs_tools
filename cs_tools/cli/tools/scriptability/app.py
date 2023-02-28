@@ -87,7 +87,7 @@ class MetadataColumn:
 
 
 @app.command(dependencies=[thoughtspot])
-def connection_rationalize(
+def connection_check(
     ctx: typer.Context,
     connection_guid: GUID = Opt(..., help="connection GUID"),
     syncer: DSyncer = Opt(
