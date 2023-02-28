@@ -4,7 +4,7 @@ This file contains the methods to execute the 'scriptability import' command.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Dict, Union
+from typing import List, Dict
 import pathlib
 import logging
 import time
@@ -13,17 +13,13 @@ import re
 import traceback
 
 from thoughtspot_tml.utils import determine_tml_type
-from thoughtspot_tml.types import TMLObject
 from rich.align import Align
 from rich.table import Table
 from httpx import HTTPStatusError
-import typer
 
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.errors import CSToolsError
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsArgument as Arg
-from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.types import ShareModeAccessLevel, TMLSupportedContent, MetadataObjectType, TMLImportPolicy, GUID
 from cs_tools.api import _utils
 
@@ -131,16 +127,12 @@ def _import_and_validate(
             tml_file.tml.guid = None
 
         if tml_logs is not None:
-            filename = tml_file.filepath.stem
+            filename = tml_file.filepath.name.split(".")[0]
             content_type = tml_file.tml.tml_type_name
             tml_file.tml.dump(tml_logs / f"{filename}.IMPORTED.{content_type}.tml")
 
         log.info(f"validating {tml_file.filepath.name}")
         tml_files.append(tml_file)
-
-    #
-    #
-    #
 
     with rich_console.status(f"[bold green]importing {path.name}[/]"):
         r = ts.api.metadata_tml_import(
@@ -152,14 +144,21 @@ def _import_and_validate(
         results: List[TMLImportResponse] = []
 
         for tml_file, content in zip(tml_files, r.json()["object"]):
+            status_code = content["response"]["status"]["status_code"]
+            error_messages = content["response"]["status"].get("error_message", None)
+            name = tml_file.filepath.stem
+
+            _log_results_error(name=name, status_code=status_code, error_messages=error_messages)
+
+
             results.append(
                 TMLImportResponse(
                     guid=content["response"].get("header", {}).get("id_guid", tml_file.tml.guid),
                     metadata_object_type=TMLSupportedContent[tml_file.tml.tml_type_name].value,
                     tml_type_name=tml_file.tml.tml_type_name,
-                    name=tml_file.filepath.stem,
-                    status_code=content["response"]["status"]["status_code"],
-                    error_messages=content["response"]["status"].get("error_message", None),
+                    name=name,
+                    status_code=status_code,
+                    error_messages=error_messages,
                 )
             )
 
@@ -224,11 +223,12 @@ def _import_and_create_bundle(
     if guid_mapping:
         guid_mapping.save()
 
-    if tags:
-        _add_tags(ts, [r for r in results if not r.is_error], tags)
+    if _some_tml_updated(import_policy, results):  # only update and share if there were actual updates.
+        if tags:
+            _add_tags(ts, [r for r in results if not r.is_error], tags)
 
-    if share_with:
-        _share_with(ts, [r for r in results if not r.is_error], share_with)
+        if share_with:
+            _share_with(ts, [r for r in results if not r.is_error], share_with)
 
     return results
 
@@ -302,7 +302,7 @@ def _upload_connections(
             )
 
         if tml_logs is not None:
-            filename = tml_file.filepath.name
+            filename = tml_file.filepath.name.split(".")[0]
             content_type = tml_file.tml.tml_type_name
             tml_file.tml.dump(tml_logs / f"{filename}.IMPORTED.{content_type}.tml")
 
@@ -331,14 +331,19 @@ def _upload_connections(
             )
 
         if not r.is_success:
+            status_code = r.reason_phrase
+            error_messages = str(r.status_code)
+            name = tml.name
+            _log_results_error(name=name, status_code=status_code, error_messages=error_messages)
+
             responses.append(
                 TMLImportResponse(
                     guid=tml.guid,
                     metadata_object_type="DATA_SOURCE",
                     tml_type_name="connection",
                     name=tml.name,
-                    status_code=r.reason_phrase,
-                    error_messages=str(r.status_code),
+                    status_code=status_code,
+                    error_messages=error_messages,
                 )
             )
 
@@ -431,7 +436,7 @@ def _upload_tml(
             guid_mapping.disambiguate(tml=tml_file.tml, delete_unmapped_guids=force_create)
 
         if tml_logs is not None:
-            filename = tml_file.filepath.name
+            filename = tml_file.filepath.name.split(".")[0]
             content_type = tml_file.tml.tml_type_name
             tml_file.tml.dump(tml_logs / f"{filename}.IMPORTED.{content_type}.tml")
 
@@ -451,6 +456,11 @@ def _upload_tml(
 
         if content["response"]["status"]["status_code"] != "ERROR":
             guids_to_map[old_guid] = guid
+
+        status_code = content["response"]["status"]["status_code"]
+        error_messages = content["response"]["status"].get("error_message", None)
+        name = tml_file.filepath.stem
+        _log_results_error(name=name, status_code=status_code, error_messages=error_messages)
 
         responses.append(
             TMLImportResponse(
@@ -576,6 +586,38 @@ def _show_results_as_table(results: List[TMLImportResponse]) -> None:
 
     for r in results:
         # table.add_row(r.status_code, r.tml_type_name, r.name, ','.join(r.error_messages))
-        table.add_row(r.status_code, r.guid, r.tml_type_name, ','.join(r.error_messages))
+        # table.add_row(r.status_code, r.guid, r.tml_type_name, ','.join(r.error_messages))
+        table.add_row(r.status_code, r.name, r.tml_type_name, ','.join(r.error_messages))
 
     rich_console.print(Align.center(table))
+
+
+def _log_results_error (name: str, status_code: str, error_messages: str) -> None:
+    """
+    Logs a message if there was a WARNING or ERROR.
+    """
+    msg = f"{name} -- ${error_messages}"
+
+    if status_code == "WARNING":
+        log.warning(msg=msg)
+    elif status_code == "ERROR":
+        log.error(msg=msg)
+
+
+def _some_tml_updated(import_policy: TMLImportPolicy, results: List[TMLImportResponse]) -> bool:
+    """
+    Returns True if any of the TML was updated.  This is known based on the policy and results:
+    * Validate - always False
+    * All or none - True if all the items don't have errors.
+    * Partial - True if any of the items don't have errors.
+    """
+    if import_policy == TMLImportPolicy.validate:  # if validating, then no content would be created.
+        return False
+
+    if import_policy == TMLImportPolicy.all_or_none:
+        return all([not r.is_error for r in results])  # if any of the results weren't an error, return true.
+
+    if import_policy == TMLImportPolicy.partial:
+        return any([not r.is_error for r in results])  # if any of the results weren't an error, return true.
+
+    return False  # this should never happen, but just in case a new value is added.
