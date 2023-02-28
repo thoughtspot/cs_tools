@@ -485,6 +485,7 @@ class RESTAPIv1(httpx.Client):
     ) -> httpx.Response:
         d = {
             "name": name,
+            "id": guid,
             "description": description,
             "type": external_database_type,
             "createEmpty": create_empty,
