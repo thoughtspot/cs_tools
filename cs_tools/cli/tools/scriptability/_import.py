@@ -12,6 +12,7 @@ import copy
 import re
 import traceback
 
+from thoughtspot_tml.utils import _recursive_scan
 from thoughtspot_tml.utils import determine_tml_type
 from rich.align import Align
 from rich.table import Table
@@ -121,6 +122,7 @@ def _import_and_validate(
         # content then it wouldn't.
         if guid_mapping is not None:
             guid_mapping.disambiguate(tml_file.tml, delete_unmapped_guids=True)
+            tml_file.tml = _remove_viz_guid(tml_file.tml)
 
         # strip GUIDs if doing force create and convert to a list of TML string.
         if force_create:
@@ -434,6 +436,7 @@ def _upload_tml(
         # if we are forcing the creation of new content, we want to delete guids that aren't mapped
         if guid_mapping:
             guid_mapping.disambiguate(tml=tml_file.tml, delete_unmapped_guids=force_create)
+            tml_file.tml = _remove_viz_guid(tml_file.tml)
 
         if tml_logs is not None:
             filename = tml_file.filepath.name.split(".")[0]
@@ -621,3 +624,12 @@ def _some_tml_updated(import_policy: TMLImportPolicy, results: List[TMLImportRes
         return any([not r.is_error for r in results])  # if any of the results weren't an error, return true.
 
     return False  # this should never happen, but just in case a new value is added.
+
+
+def _remove_viz_guid(tml):
+    attrs = _recursive_scan(tml, check=lambda attr: hasattr(attr, "viz_guid"))
+
+    for liveboard_visualization in attrs:
+        liveboard_visualization.viz_guid = None
+
+    return tml

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NewType
+from typing import NewType, List
 import pathlib
 
 from thoughtspot_tml.utils import disambiguate as _disambiguate
