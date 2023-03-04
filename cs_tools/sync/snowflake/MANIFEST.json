@@ -2,7 +2,7 @@
     "name": "snowflake",
     "syncer_class": "Snowflake",
     "requirements": [
-        "snowflake-sqlalchemy == 1.4.4"
+        "snowflake-sqlalchemy == 1.4.6"
     ],
     "pip_args": [
         ["--no-use-pep517"]
