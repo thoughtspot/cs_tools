@@ -57,7 +57,11 @@ def _cast(data: list[RecordsFormat], headers_to_types: Dict[str, str]) -> list[R
     column_names = list(sorted(headers_to_types.keys(), key=len, reverse=True))
 
     for row in data:
-        for column in row:
+        for column, value in row.items():
+            # no need to cast a NULL..
+            if value is None:
+                continue
+
             try:
                 # "column" or "total {column}" <-- any aggregation
                 column_name = column if column in column_names else next(c for c in column_names if c in column)
@@ -78,7 +82,7 @@ def _cast(data: list[RecordsFormat], headers_to_types: Dict[str, str]) -> list[R
                 _logged[column] = 1
                 cast_as_type = str
 
-            row[column] = cast_as_type(row[column])
+            row[column] = cast_as_type(value)
 
     return data
 
