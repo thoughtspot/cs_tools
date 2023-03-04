@@ -1,16 +1,21 @@
 from typing import List, Dict, Any
+import datetime as dt
+import tempfile
 import logging
+import pathlib
 import enum
+import uuid
 
-from snowflake.sqlalchemy import snowdialect, URL
 from pydantic.dataclasses import dataclass
+from snowflake.sqlalchemy import URL
 from pydantic import root_validator
+import pyarrow.parquet as pq
 import sqlalchemy as sa
+import pyarrow as pa
 
-from cs_tools.utils import chunks
 from cs_tools import __version__
 
-from .const import MAX_EXPRESSIONS_MAGIC_NUMBER
+from . import utils
 
 log = logging.getLogger(__name__)
 
@@ -49,9 +54,6 @@ class Snowflake:
 
     def __post_init_post_parse__(self):
         # silence the noise that snowflake dialect creates
-        # - they forcibly log EVERYTHING...
-        # - implement COMMIT: 93ee7cc, PR#275 prior to pypi release
-        snowdialect.SnowflakeDialect.supports_statement_cache = False
         logging.getLogger("snowflake").setLevel("WARNING")
 
         url = URL(
@@ -104,6 +106,55 @@ class Snowflake:
             with self.cnxn.begin():
                 self.cnxn.execute(t.delete())
 
-        for chunk in chunks(data, n=MAX_EXPRESSIONS_MAGIC_NUMBER):
-            with self.cnxn.begin():
-                self.cnxn.execute(t.insert(), chunk)
+        # ==============================================================================================================
+        # DEFINE WHERE TO UPLOAD
+        # ==============================================================================================================
+        stage_name = f"{self.database}.{self.schema_}.TMP_STAGE_{uuid.uuid4().hex}"
+
+        SQL_TEMP_STAGE = (
+            f"""
+                CREATE TEMPORARY STAGE "{stage_name}"
+                COMMENT = 'a temporary landing spot for CS Tools (+github: thoughtspot/cs_tools) syncer data dumps'
+                FILE_FORMAT = (
+                    TYPE = PARQUET
+                    COMPRESSION = AUTO
+                    NULL_IF = ( '\\N', 'None', 'none', 'null' )
+                )
+            """
+        )
+        r = self.cnxn.execute(SQL_TEMP_STAGE, _is_internal=True)
+        log.debug("Snowflake response\n%s", dict(r.first()))
+
+        # ==============================================================================================================
+        # SAVE & UPLOAD PARQUET
+        # ==============================================================================================================
+        COMPRESSION = "gzip"
+        fp = pathlib.Path(tempfile.gettempdir()) / f"output-{dt.datetime.now():%Y%m%dT%H%M%S}.parquet"
+        pq.write_table(pa.Table.from_pylist(data), fp, compression=COMPRESSION)
+
+        SQL_PUT = (
+            f"""
+                PUT 'file://{fp.as_posix()}' @"{stage_name}"
+                PARALLEL = 4
+                AUTO_COMPRESS = FALSE
+                SOURCE_COMPRESSION = {COMPRESSION.upper()}
+            """
+        )
+        r = self.cnxn.execute(SQL_PUT, _is_internal=True)
+        log.debug("Snowflake response\n%s", dict(r.first()))
+
+        # ==============================================================================================================
+        # CONVERT PARQUET to TABLE
+        # ==============================================================================================================
+        table_name = f"{self.database}.{self.schema_}.{table.upper()}"
+
+        SQL_COPY_INTO = (
+            f"""
+                COPY INTO {table_name} ({','.join([c.key for c in t.columns])})
+                FROM (SELECT {','.join(map(utils.parse_field, t.columns))} FROM @"{stage_name}")
+                ON_ERROR = ABORT_STATEMENT
+                PURGE = TRUE
+            """
+        )
+        r = self.cnxn.execute(SQL_COPY_INTO, _is_internal=True)
+        log.debug("Snowflake response\n%s", dict(r.first()))
