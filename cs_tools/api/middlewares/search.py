@@ -33,11 +33,11 @@ def _fix_for_scal_101507(row: RecordsFormat) -> RecordsFormat:
     return row
 
 
-def _to_records(columns: List[str], rows: list[RecordsFormat]) -> list[RecordsFormat]:
+def _to_records(columns: List[str], rows: List[RecordsFormat]) -> List[RecordsFormat]:
     return [dict(zip(columns, _fix_for_scal_101507(row))) for row in rows]
 
 
-def _cast(data: list[RecordsFormat], headers_to_types: Dict[str, str]) -> list[RecordsFormat]:
+def _cast(data: List[RecordsFormat], headers_to_types: Dict[str, str]) -> list[RecordsFormat]:
     """
     Cast data coming back from Search API to their intended column types.
     """
@@ -211,8 +211,8 @@ class SearchMiddleware:
             if offset % 500_000 == 0:
                 log.warning(
                     f"using the Data API to extract {offset / 1_000_000: >4,.1f}M+ "
-                    f"rows is not a scalable practice, consider adding a filter or "
-                    f"extracting directly from the underlying data source instead!"
+                    f"rows is not scalable, consider adding a filter or extracting "
+                    f"directly from the underlying data source instead!"
                 )
 
         # Get the data types

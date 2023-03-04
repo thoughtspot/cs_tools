@@ -63,10 +63,14 @@ class DSyncer(Dependency):
         if hasattr(self._syncer, "__is_database__") and self.models is not None:
             log.debug(f"creating tables {self.models} in {self._syncer}")
             [t.__table__.to_metadata(self.metadata) for t in self.models if t.metadata is not self.metadata]
-            self.metadata.create_all(self._syncer.cnxn, tables=[t.__table__ for t in self.models])
+            self.metadata.create_all(self._syncer.cnxn)#, tables=[t.__table__.tablename for t in self.models])
 
     def __exit__(self, *e):
-        # reserved for shutdown work if we need to tidy up the database?
+
+        # https://stackoverflow.com/a/58984188
+        if hasattr(self._syncer, "__is_database__") and hasattr(self._syncer, "cnxn"):
+            self._syncer.cnxn.close()
+
         return
 
     #
