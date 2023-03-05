@@ -17,6 +17,7 @@ from cs_tools.cli.ux import CSToolsApp
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import MetadataObjectType
 from cs_tools.cli.dependencies.syncer import DSyncer
+from cs_tools import utils
 
 from . import _extended_rest_api_v1
 from . import layout
@@ -504,11 +505,14 @@ def remove(
                 this_task.skip()
             else:
                 for unique_type in [c["type"] for c in to_delete]:
-                    _extended_rest_api_v1.metadata_delete(
-                        ts.api,
-                        metadata_type=unique_type,
-                        guids=[content["guid"] for content in to_delete if content["type"] == unique_type]
-                    )
+                    content = [content["guid"] for content in to_delete if content["type"] == unique_type]
+
+                    for chunk in utils.chunks(content, n=50):
+                        _extended_rest_api_v1.metadata_delete(
+                            ts.api,
+                            metadata_type=unique_type,
+                            guids=list(chunk)
+                        )
 
         with tasks["deleting_tag"] as this_task:
             if delete_tag:
