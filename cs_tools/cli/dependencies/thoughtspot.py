@@ -10,10 +10,9 @@ import click
 
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.settings import _meta_config, CSToolsConfig
+from cs_tools.settings import _meta_config as meta, CSToolsConfig
 from cs_tools.const import APP_DIR
 
-meta = _meta_config.load()
 log = logging.getLogger(__name__)
 
 

@@ -9,7 +9,7 @@ import rich
 
 from cs_tools.programmatic import get_cs_tool
 from cs_tools.cli._logging import _setup_logging
-from cs_tools.settings import _meta_config
+from cs_tools.settings import _meta_config as meta
 from cs_tools._version import __version__
 from cs_tools.cli.ux import rich_console, CSToolsApp, CSToolsOption as Opt
 from cs_tools.errors import CSToolsError
@@ -18,7 +18,6 @@ from cs_tools.cli import _config, _tools, _self, _log
 from cs_tools import utils
 
 log = logging.getLogger(__name__)
-meta = _meta_config.load()
 app = CSToolsApp(
     name="cs_tools",
     help=f"""

@@ -5,6 +5,7 @@ import pathlib
 import logging
 import urllib
 import json
+import uuid
 import re
 
 from pydantic.types import DirectoryPath, FilePath
@@ -21,81 +22,93 @@ from cs_tools import utils
 log = logging.getLogger(__name__)
 
 
-class _meta_config(BaseModel):
+class MetaConfig(BaseModel):
     """
-
-    [default]
-    config = 'my-config-name'
-
-    [latest_release]
-    version = v104
-    published_at = 10202019210
+    Store information about this environment.
     """
+    install_uuid: uuid.UUID
     default_config_name: str = None
-    latest_release_version: str = None
-    latest_release_date: dt.date = None
+    last_remote_check: dt.datetime = dt.datetime(year=2012, month=6, day=1)
+    remote_version: str = None
+    remote_date: dt.date = None
+
+    @classmethod
+    def load_and_convert_toml(cls):
+        """Migrate from the old format."""
+        file = APP_DIR.joinpath(".meta-config.toml")
+        data = toml.load(file)
+
+        self = cls(
+            install_uuid=uuid.uuid4().hex,
+            default_config_name=data.get("default", {}).get("config", None),
+            # last_remote_check= ... ,
+            latest_release_version=data.get("latest_release", {}).get("version", None),
+            latest_release_date=data.get("latest_release", {}).get("published_at", None),
+        )
+
+        self.save()
+        file.unlink()
+        return self
 
     @classmethod
     def load(cls):
-        fp = APP_DIR / ".meta-config.toml"
+        """Read the meta-config."""
+        # OLD FORMAT
+        if APP_DIR.joinpath(".meta-config.toml").exists():
+            self = cls.load_and_convert_toml()
 
-        # constants
-        EPOCH = dt.datetime(2012, 6, 1)
-        NOW = dt.datetime.now()
-        ONE_HOUR = 3600  # seconds
+        # NEW FORMAT
+        elif APP_DIR.joinpath(".meta-config.json").exists():
+            file = APP_DIR.joinpath(".meta-config.json")
+            data = json.loads(file.read_text())
+            self = cls(**data)
 
-        data = {}
-        modified_at = EPOCH
+        else:
+            self = cls(install_uuid=uuid.uuid4().hex)
 
-        if fp.exists():
-            fp_stat = fp.stat()
-            disk = toml.load(fp)
-
-            if disk["default"].get("config") is not None:
-                data["default_config_name"] = disk["default"]["config"]
-
-            if data.get("latest_release") is not None:
-                data["latest_release_version"] = disk["latest_release"]["version"]
-                data["latest_release_date"] = disk["latest_release"]["published_at"]
-
-            modified_at = dt.datetime.fromtimestamp(fp_stat.st_mtime)
-
-        # predicates to check
-        have_not_checked_5h = (NOW - modified_at).total_seconds() > (ONE_HOUR * 5)
-        local_lt_remote = AwesomeVersion(__version__) <= AwesomeVersion(data.get("latest_release_version", "9.9.9"))
-
-        # fetch latest remote version
-        if have_not_checked_5h and local_lt_remote:
-
-            try:
-                r = get_latest_cs_tools_release(allow_beta=AwesomeVersion(__version__).beta, timeout=0.0001)
-                data["latest_release_version"] = r["name"]
-                data["latest_release_date"] = dt.datetime.strptime(r["published_at"], "%Y-%m-%dT%H:%M:%SZ").date()
-                return cls(**data).save()
-
-            except urllib.error.URLError:
-                log.info("fetching latest CS Tools release version timed out")
-
-            except Exception as e:
-                log.info(f"could not fetch release url: {e}")
-
-        return cls(**data)
-
-    def save(self) -> None:
-        fp = APP_DIR / ".meta-config.toml"
-        data = {
-            "default": {"config": self.default_config_name},
-            "latest_release": {"version": self.latest_release_version, "published_at": self.latest_release_date},
-        }
-        
-        fp.write_text(toml.dumps(data))
+        self.check_remote_version()
         return self
 
+    def save(self) -> None:
+        """Store the meta-config."""
+        file = APP_DIR.joinpath(".meta-config.json")
+        data = self.json(indent=4)
+        file.write_text(data)
+
+    def check_remote_version(self) -> None:
+        """Check GitHub for the latest cs_tools version."""
+        venv_version = AwesomeVersion(__version__)
+        remote_delta = dt.timedelta(hours=5) if venv_version.beta else dt.timedelta(days=5)
+        current_time = dt.datetime.now()
+
+        # don't check too often
+        if (current_time - self.last_remote_check) <= remote_delta:
+            return
+
+        try:
+            data = get_latest_cs_tools_release(allow_beta=venv_version.beta, timeout=0.05)
+            self.last_remote_check = current_time
+            self.remote_version = data["name"]
+            self.remote_date = dt.datetime.strptime(data["published_at"], "%Y-%m-%dT%H:%M:%SZ").date()
+            self.save()
+
+        except urllib.error.URLError:
+            log.info("fetching latest CS Tools release version timed out")
+
+        except Exception as e:
+            log.info(f"could not fetch release url: {e}")
+
     def newer_version_string(self) -> str:
-        if AwesomeVersion(__version__) >= AwesomeVersion(self.latest_release_version or "0.0.0"):
+        """Return the CLI new version media string."""
+        if AwesomeVersion(__version__) >= AwesomeVersion(self.remote_version or "v0.0.0"):
             return ""
-        url = f"https://github.com/thoughtspot/cs_tools/releases/tag/{self.latest_release_version}"
-        return f"[green]Newer version available![/] [cyan][link={url}]{self.latest_release_version}[/][/]"
+
+        url = f"https://github.com/thoughtspot/cs_tools/releases/tag/{self.remote_version}"
+        return f"[green]Newer version available![/] [cyan][link={url}]{self.remote_version}[/][/]"
+
+
+# GLOBAL SCOPE
+_meta_config = MetaConfig.load()
 
 
 class Settings(BaseModel):
@@ -184,8 +197,8 @@ class CSToolsConfig(Settings):
 
     @classmethod
     def get_default_config_name(cls) -> str:
-        """ """
-        return _meta_config.load().default_config_name
+        """Return the default config name."""
+        return _meta_config.default_config_name
 
     def dict(self) -> Any:
         """
@@ -239,10 +252,10 @@ class CSToolsConfig(Settings):
           name of the configuration file
         """
         if config is None:
-            meta = _meta_config.load(config)
-            config = meta["default"]["config"]
+            if _meta_config.default_config_name is None:
+                raise ConfigDoesNotExist(name="[b green]default[/]")
 
-        return cls.from_toml(APP_DIR / f"cluster-cfg_{config}.toml", **passthru)
+        return cls.from_toml(APP_DIR / f"cluster-cfg_{_meta_config.default_config_name}.toml", **passthru)
 
     @classmethod
     def from_parse_args(cls, name: str, *, validate: bool = True, **passthru) -> "CSToolsConfig":

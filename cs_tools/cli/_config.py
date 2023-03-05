@@ -10,7 +10,7 @@ import toml
 
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.settings import _meta_config, CSToolsConfig
+from cs_tools.settings import _meta_config as meta, CSToolsConfig
 from cs_tools.errors import CSToolsError
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsArgument as Arg
@@ -19,7 +19,6 @@ from cs_tools.cli.ux import CSToolsApp
 from cs_tools.const import APP_DIR
 from cs_tools import utils
 
-meta = _meta_config.load()
 app = CSToolsApp(
     name="config",
     help="""
@@ -95,8 +94,9 @@ def create(
     message = f'saved cluster configuration file "{config}"'
 
     if is_default:
-        _meta_config(config)
         message += "as the default"
+        meta.default_config_name = config
+        meta.save()
 
     rich_console.print(message)
 
@@ -174,10 +174,9 @@ def modify(
     message = f'saved cluster configuration file "{config}"'
 
     if is_default:
-        meta = _meta_config.load()
+        message += " as the default"
         meta.default_config_name = config
         meta.save()
-        message += " as the default"
 
     rich_console.print(message)
 
@@ -226,8 +225,6 @@ def show(config: str = Opt(None, help="optionally, display the contents of a par
             error=NotImplementedError("[yellow]no config files found just yet!"),
             mitigation="Run [blue]cs_tools config create --help[/] for more information",
         )
-
-    meta = _meta_config.load()
 
     if config is not None:
         fp = APP_DIR / f"cluster-cfg_{config}.toml"

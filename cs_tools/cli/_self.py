@@ -11,7 +11,7 @@ import typer
 
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 from cs_tools._version import __version__
-from cs_tools.settings import _meta_config
+from cs_tools.settings import _meta_config as meta
 from cs_tools.updater import CSToolsVirtualEnvironment
 from cs_tools.updater import FishPath, WindowsPath, UnixPath
 from cs_tools.cli.ux import CSToolsOption as Opt
@@ -21,7 +21,6 @@ from cs_tools.cli.ux import rich_console
 from cs_tools.const import APP_DIR
 
 log = logging.getLogger(__name__)
-meta = _meta_config()
 app = typer.Typer(
     cls=CSToolsGroup,
     name="self",
