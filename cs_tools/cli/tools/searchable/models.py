@@ -2,6 +2,8 @@ from typing import Optional, List
 import datetime as dt
 import logging
 
+from pydantic.datetime_parse import parse_datetime
+from pydantic import validator
 from sqlmodel import SQLModel, Field
 
 log = logging.getLogger(__name__)
@@ -17,6 +19,10 @@ class User(SQLModel, table=True):
     created: dt.datetime
     modified: dt.datetime
     user_type: str
+
+    @validator("created", "modified", pre=True)
+    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
+        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
 
     @classmethod
     def from_api_v1(cls, data) -> "User":
@@ -46,6 +52,10 @@ class Group(SQLModel, table=True):
     created: dt.datetime
     modified: dt.datetime
     group_type: str
+
+    @validator("created", "modified", pre=True)
+    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
+        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
 
     @classmethod
     def from_api_v1(cls, data) -> "Group":
@@ -91,6 +101,10 @@ class Tag(SQLModel, table=True):
     modified: dt.datetime
     color: Optional[str]
 
+    @validator("created", "modified", pre=True)
+    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
+        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
+
     @classmethod
     def from_api_v1(cls, data) -> List["Tag"]:
         return cls(
@@ -113,6 +127,10 @@ class MetadataObject(SQLModel, table=True):
     modified: dt.datetime
     object_type: str
     object_subtype: Optional[str]
+
+    @validator("created", "modified", pre=True)
+    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
+        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
 
     @classmethod
     def from_api_v1(cls, data) -> "MetadataObject":
@@ -186,6 +204,10 @@ class DependentObject(SQLModel, table=True):
     created: dt.datetime
     modified: dt.datetime
     object_type: str
+
+    @validator("created", "modified", pre=True)
+    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
+        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
 
     @classmethod
     def from_api_v1(cls, data) -> "DependentObject":
