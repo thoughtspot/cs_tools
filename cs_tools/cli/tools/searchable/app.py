@@ -173,27 +173,32 @@ def bi_server(
             data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
             seed = dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
+            # CLUSTER BY --> TIMESTAMP , ANSWER_BOOK_GUID , USER_GUID
+            data.sort(key=lambda r: tuple(map(str, (r["Timestamp"], r["Answer Book GUID"], r["User Id"]))))
+
             renamed = [
                 {
                     "sk_dummy": f"{seed}-{idx}",
-                    "incident_id": _["Incident Id"],
-                    "timestamp": _["Timestamp"],
-                    "url": _["URL"],
-                    "http_response_code": _["HTTP Response Code"],
-                    "browser_type": _["Browser Type"],
-                    "browser_version": _["Browser Version"],
-                    "client_type": _["Client Type"],
-                    "client_id": _["Client Id"],
-                    "answer_book_guid": _["Answer Book GUID"],
-                    "viz_id": _["Viz Id"],
-                    "user_id": _["User Id"],
-                    "user_action": _["User Action"],
-                    "query_text": _["Query Text"],
-                    "response_size": _["Total Response Size"],
-                    "latency_us": _["Total Latency (us)"],
-                    "impressions": _["Total Impressions"],
+                    "incident_id": r["Incident Id"],
+                    "timestamp": r["Timestamp"],
+                    "url": r["URL"],
+                    "http_response_code": r["HTTP Response Code"],
+                    "browser_type": r["Browser Type"],
+                    "browser_version": r["Browser Version"],
+                    "client_type": r["Client Type"],
+                    "client_id": r["Client Id"],
+                    "answer_book_guid": r["Answer Book GUID"],
+                    "viz_id": r["Viz Id"],
+                    "user_id": r["User Id"],
+                    "user_action": r["User Action"],
+                    "query_text": r["Query Text"],
+                    "response_size": r["Total Response Size"],
+                    "latency_us": r["Total Latency (us)"],
+                    "impressions": r["Total Impressions"],
                 }
-                for idx, _ in enumerate(data)
+                for idx, r in enumerate(data)
+                # care for data quality errors..
+                if None not in (r["URL"], r["Incident Id"])
             ]
 
         with tasks["syncer_dump"]:
