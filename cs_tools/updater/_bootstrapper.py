@@ -161,6 +161,8 @@ def cli():
             "\n".format(b=_BLUE, g=_GREEN, y=_YELLOW, x=_RESET)
         )
 
+    _cleanup()
+
     return 0
 
 
@@ -398,7 +400,7 @@ def get_cs_tools_venv(**passthru):
         log.info("Downloaded as '{updater}'".format(updater=updater_py))
 
     # Hack the PATH var so we can import from _updater
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, here.as_posix())
 
     try:
         from _updater import CSToolsVirtualEnvironment
@@ -412,8 +414,22 @@ def get_cs_tools_venv(**passthru):
     return CSToolsVirtualEnvironment(**passthru)
 
 
+def _cleanup():
+    # type: () -> None
+    """Remove temporary files for bootstrapping the CS Tools environment."""
+    import pathlib
+
+    here = pathlib.Path(__file__).parent
+
+    for filename in ("_updater.py", ):
+        try:
+            here.joinpath(filename).unlink()
+        except FileNotFoundError:
+            pass
+
+
 def get_path_manipulator(venv):
-    # type: () -> CSToolsVirtualEnvironment
+    # type: () -> _updater.ShellProfilePath
     """Get the system's ShellProfile. This is a CS Tools abstraction."""
     import _updater
 
@@ -453,7 +469,7 @@ def get_latest_cs_tools_release(allow_beta=False, timeout=None):
     """
     Get the latest CS Tools release.
     """
-    releases = http_request("https://api.github.com/repos/thoughtspot/cs_tools/releases", timeout=None)
+    releases = http_request("https://api.github.com/repos/thoughtspot/cs_tools/releases", timeout=timeout)
 
     for release in releases:
         if release["prerelease"] and not allow_beta:
@@ -468,7 +484,8 @@ def get_latest_cs_tools_release(allow_beta=False, timeout=None):
 # ======================================================================================================================
 
 
-def main():  # -> int
+def main():
+    # type: () -> int
     if sys.version_info >= (3, 7):
         return cli()
 
