@@ -27,7 +27,7 @@ class ConfirmationPrompt(PromptBase):
         from pynput import keyboard
         import time
 
-        with keyboard.Listener(on_press=self.handle_kb_input):
+        with keyboard.Listener(on_press=self.handle_kb_input, suppress=True):
             self.waiting = True
             self._started_at = time.perf_counter()
 
