@@ -19,5 +19,6 @@ def build_table() -> Table:
     table.add_column("Status", justify="center", width=10)  # 4 + length of "status"
     table.add_column("Type", justify="center", width=13)    # 4 + length of "liveboard"
     table.add_column("GUID", justify="center", width=40)    # 4 + length of a guid
-    table.add_column("Name", width=150 - 10 - 13 - 40, no_wrap=True)
+    table.add_column("Name", width=30, no_wrap=True)
+    table.add_column("Error", width=150 - 10 - 13 - 40 - 30, no_wrap=True)
     return Align.center(table)

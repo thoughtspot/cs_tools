@@ -1,14 +1,13 @@
 import datetime as dt
-from typing import List
 import logging
 import pathlib
+import shutil
 
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import TZAwareDateTimeType, SyncerProtocolType
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsArgument as Arg
 from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.types import GUID
@@ -18,7 +17,6 @@ from cs_tools.types import TMLImportPolicy
 from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml import Table
 
-from ._version import __version__
 from . import transform
 from . import layout
 from . import models
@@ -34,31 +32,26 @@ def deploy(
     ctx: typer.Context,
     connection_guid: GUID = Opt(
         ...,
-        help=(
-            "if Falcon, use [b blue]falcon[/], otherwise to find your connection guid, go to Data > Connections > your "
-            "connection, and copying the ID in the URL"
-        )
+        help="if Falcon, use [b blue]falcon[/], otherwise find your guid in the Connection URL in the Data Workspace",
     ),
     database: str = Opt(
         ...,
-        help=(
-            "if Falcon, database is likely [b blue]cs_tools[/], otherwise it is the name of the database which holds "
-            "CS Tools Searchable data"
-        )
+        help="if Falcon, use [b blue]cs_tools[/], otherwise use the name of the database which holds Searchable data",
     ),
     schema: str = Opt(
         ...,
         help=(
-            "if Falcon, schema is likely [b blue]falcon_default_schema[/], otherwise it is the name of the database "
-            "which holds name of the schema which holds CS Tools Searchable data"
+            "if Falcon, use [b blue]falcon_default_schema[/], otherwise use the name of the schema which holds "
+            "Searchable data"
         )
     ),
+    export: pathlib.Path = Opt(None, help="download the TML files of the SpotApp", file_okay=False),
 ):
     """
     Deploy the Searchable SpotApp.
     """
     ts = ctx.obj.thoughtspot
-    is_falcon = connection_guid == "falcon"
+    is_falcon = connection_guid.lower() == "falcon"
     
     tasks = [
         ("connection_details", f"Getting details for connection {'' if is_falcon else connection_guid}"),
@@ -73,7 +66,13 @@ def deploy(
                 this_task.skip()
             else:
                 r = ts.api.metadata_list(metadata_type="DATA_SOURCE", fetch_guids=[connection_guid])
-                data = r.json()["headers"][0]
+                d = r.json()
+
+                if not ["headers"]:
+                    log.error(f"Could not find a connection with guid {connection_guid}")
+                    raise typer.Exit(1)
+
+                data = d["headers"][0]
                 connection_guid = data["id"]
                 connection_name = data["name"]
 
@@ -84,7 +83,6 @@ def deploy(
             for file in here.glob("**/*.tml"):
                 tml_cls = determine_tml_type(path=file)
                 tml = tml_cls.load(file)
-                tml.guid = None
 
                 if isinstance(tml, Table):
                     tml.table.db = database
@@ -92,24 +90,39 @@ def deploy(
                     
                     if is_falcon:
                         tml.table.connection = None
+                        tml.table.name = tml.table.name.lower()
+
                     else:
                         tml.table.connection.name = connection_name
                         tml.table.connection.fqn = connection_guid
 
                 tmls.append(tml)
 
-    #     with tasks["deploy_spotapp"]:
-    #         response = ts.tml.to_import(tmls, policy=TMLImportPolicy.all_or_none)
+                if export is not None:
+                    shutil.copy(file, export)
 
-    # status_emojis = {"OK": ":white_heavy_check_mark:", "WARNING": ":pinching_hand:", "ERROR": ":cross_mark:"}
-    # centered_table = layout.build_table()
+        with tasks["deploy_spotapp"] as this_task:
+            if export is not None:
+                this_task.skip()
+                raise typer.Exit(0)
 
-    # for response in response:
-    #     status = status_emojis.get(response.status_code, ":cross_mark:")
-    #     guid = response.guid or "[gray]{null}"
-    #     centered_table.renderable.add_row(status, response.tml_type_name, guid, response.name)
+            imported = set()
 
-    # rich_console.print(centered_table)
+            while len(imported) < len(tmls):
+                to_import = [tml for tml in tmls if tml.guid not in imported]
+                responses = ts.tml.to_import(to_import, policy=TMLImportPolicy.partial)
+                imported.update(response.guid for response in responses if response.is_success)
+
+                status_emojis = {"OK": ":white_heavy_check_mark:", "WARNING": ":pinching_hand:", "ERROR": ":cross_mark:"}
+                centered_table = layout.build_table()
+
+                for response in responses:
+                    status = status_emojis.get(response.status_code, ":cross_mark:")
+                    guid = response.guid or "[gray]{null}"
+                    errors = '; '.join(response.error_messages) or "[gray]{null}"
+                    centered_table.renderable.add_row(status, response.tml_type_name, guid, response.name, errors)
+
+                rich_console.print(centered_table)
 
 
 @app.command(dependencies=[thoughtspot])
@@ -126,19 +139,20 @@ def bi_server(
         None,
         custom_type=TZAwareDateTimeType(),
         metavar="YYYY-MM-DD",
-        help="lower bound of rows to select from TS: BI Server",
+        help="inclusive lower bound of rows to select from TS: BI Server",
     ),
     to_date: dt.datetime = Opt(
         None,
         custom_type=TZAwareDateTimeType(),
         metavar="YYYY-MM-DD",
-        help="upper bound of rows to select from TS: BI Server",
+        help="inclusive upper bound of rows to select from TS: BI Server",
     ),
     include_today: bool = Opt(False, "--include-today", help="pull partial day data", show_default=False),
 ):
     """
     Extract usage statistics from your ThoughtSpot platform.
 
+    To extract one day of data, set [b cyan]--from-date[/] and [b cyan]--to-date[/] to the same value.
     \b
     Fields extracted from TS: BI Server
         - incident id           - timestamp detailed    - url
