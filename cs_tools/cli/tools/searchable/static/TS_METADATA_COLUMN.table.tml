@@ -6,6 +6,7 @@ table:
   db_table: TS_METADATA_COLUMN
   connection:
     name: CS Tools
+    fqn: 8ac29e17-fe9f-4efd-99ac-8e8059b72c89
   columns:
   - name: COLUMN_GUID
     db_column_name: COLUMN_GUID
@@ -121,10 +122,12 @@ table:
   - name: REL_TS_VW_SOURCE_OBJECT-TS_METADATA_OBJECT
     destination:
       name: TS_VW_SOURCE_OBJECT
+      fqn: 0ee8a371-bb6a-4953-8118-67ecae3eb2f3
     "on": "[TS_METADATA_COLUMN::OBJECT_GUID] = [TS_VW_SOURCE_OBJECT::SOURCE_GUID]"
     type: INNER
   - name: REL_TS_METADATA_COLUMN-TS_METADATA_OBJECT
     destination:
       name: TS_METADATA_OBJECT
-    "on": "([TS_METADATA_COLUMN::OBJECT_GUID] = [TS_METADATA_OBJECT::OBJECT_GUID])"
+      fqn: abbc71f0-ba37-4505-b8d9-1d0babac8ddb
+    "on": "[TS_METADATA_COLUMN::OBJECT_GUID] = [TS_METADATA_OBJECT::OBJECT_GUID]"
     type: INNER

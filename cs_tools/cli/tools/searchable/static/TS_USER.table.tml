@@ -6,6 +6,7 @@ table:
   db_table: TS_USER
   connection:
     name: CS Tools
+    fqn: 8ac29e17-fe9f-4efd-99ac-8e8059b72c89
   columns:
   - name: USER_GUID
     db_column_name: USER_GUID

@@ -6,6 +6,7 @@ table:
   db_table: TS_DEPENDENT_OBJECT
   connection:
     name: CS Tools
+    fqn: 8ac29e17-fe9f-4efd-99ac-8e8059b72c89
   columns:
   - name: DEPENDENT_GUID
     db_column_name: DEPENDENT_GUID
@@ -58,18 +59,15 @@ table:
     db_column_properties:
       data_type: VARCHAR
   joins_with:
-  - name: REL_DEPENDENT_OBJECT-TS_USER
-    destination:
-      name: TS_USER
-    "on": "([TS_DEPENDENT_OBJECT::AUTHOR_GUID] = [TS_USER::USER_GUID])"
-    type: INNER
-  - name: REL_DEPENDENT_OBJECT-TS_TAGGED_OBJECT
-    destination:
-      name: TS_TAGGED_OBJECT
-    "on": "([TS_DEPENDENT_OBJECT::DEPENDENT_GUID] = [TS_TAGGED_OBJECT::OBJECT_GUID])"
-    type: INNER
   - name: REL_DEPENDENT_OBJECT-TS_METADATA_COLUMN
     destination:
       name: TS_METADATA_COLUMN
-    "on": "([TS_DEPENDENT_OBJECT::COLUMN_GUID] = [TS_METADATA_COLUMN::COLUMN_GUID])"
+      fqn: 76f33272-c7a2-45ae-b0f7-61506182fed2
+    "on": "[TS_DEPENDENT_OBJECT::COLUMN_GUID] = [TS_METADATA_COLUMN::COLUMN_GUID]"
+    type: INNER
+  - name: REL_DEPENDENT_OBJECT-TS_USER
+    destination:
+      name: TS_USER
+      fqn: e571cf91-9988-4080-aff0-696d1507d2eb
+    "on": "[TS_DEPENDENT_OBJECT::AUTHOR_GUID] = [TS_USER::USER_GUID]"
     type: INNER

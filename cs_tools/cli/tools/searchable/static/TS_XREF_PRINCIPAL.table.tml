@@ -6,6 +6,7 @@ table:
   db_table: TS_XREF_PRINCIPAL
   connection:
     name: CS Tools
+    fqn: 8ac29e17-fe9f-4efd-99ac-8e8059b72c89
   columns:
   - name: PRINCIPAL_GUID
     db_column_name: PRINCIPAL_GUID
@@ -23,10 +24,12 @@ table:
   - name: REL_TS_XREF_PRINCIPAL-TS_USER
     destination:
       name: TS_USER
-    "on": "([TS_XREF_PRINCIPAL::PRINCIPAL_GUID] = [TS_USER::USER_GUID])"
+      fqn: e571cf91-9988-4080-aff0-696d1507d2eb
+    "on": "[TS_XREF_PRINCIPAL::PRINCIPAL_GUID] = [TS_USER::USER_GUID]"
     type: INNER
   - name: REL_TS_XREF_PRINCIPAL-TS_GROUP
     destination:
       name: TS_GROUP
-    "on": "([TS_XREF_PRINCIPAL::GROUP_GUID] = [TS_GROUP::GROUP_GUID])"
+      fqn: 8040695c-a83f-46e8-ab3d-e01b1b513395
+    "on": "[TS_XREF_PRINCIPAL::GROUP_GUID] = [TS_GROUP::GROUP_GUID]"
     type: INNER

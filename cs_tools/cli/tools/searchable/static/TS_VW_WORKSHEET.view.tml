@@ -4,7 +4,8 @@ view:
   tables:
   - id: TS_METADATA_OBJECT
     name: TS_METADATA_OBJECT
-  search_query: "[OBJECT_TYPE].worksheet [OBJECT_GUID] [NAME]"
+    fqn: abbc71f0-ba37-4505-b8d9-1d0babac8ddb
+  search_query: "[OBJECT_SUBTYPE].worksheet [OBJECT_GUID] [NAME]"
   view_columns:
   - name: OBJECT_GUID
     search_output_column: OBJECT_GUID
@@ -18,5 +19,6 @@ view:
   - name: REL_TS_VW_WORKSHEET-TS_METADATA_OBJECT
     destination:
       name: TS_METADATA_OBJECT
+      fqn: abbc71f0-ba37-4505-b8d9-1d0babac8ddb
     "on": "[TS_VW_WORKSHEET::OBJECT_GUID] = [TS_METADATA_OBJECT::OBJECT_GUID]"
     type: INNER

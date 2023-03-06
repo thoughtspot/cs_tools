@@ -6,6 +6,7 @@ table:
   db_table: TS_GROUP
   connection:
     name: CS Tools
+    fqn: 8ac29e17-fe9f-4efd-99ac-8e8059b72c89
   columns:
   - name: GROUP_GUID
     db_column_name: GROUP_GUID

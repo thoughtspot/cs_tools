@@ -6,6 +6,7 @@ table:
   db_table: TS_BI_SERVER
   connection:
     name: CS Tools
+    fqn: 8ac29e17-fe9f-4efd-99ac-8e8059b72c89
   columns:
   - name: SK_DUMMY
     db_column_name: SK_DUMMY
@@ -68,12 +69,6 @@ table:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
-  - name: VIZ_ID
-    db_column_name: VIZ_ID
-    properties:
-      column_type: ATTRIBUTE
-    db_column_properties:
-      data_type: VARCHAR
   - name: USER_ID
     db_column_name: USER_ID
     properties:
@@ -117,23 +112,33 @@ table:
     db_column_properties:
       data_type: DOUBLE
   joins_with:
-  - name: REL_TS_BI_SERVER-TS_DEPENDENT_OBJECT
-    destination:
-      name: TS_DEPENDENT_OBJECT
-    "on": "([TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_DEPENDENT_OBJECT::DEPENDENT_GUID])"
-    type: LEFT_OUTER
   - name: REL_TS_BI_SERVER-TS_VW_WORKSHEET_DEPENDENT
     destination:
       name: TS_VW_WORKSHEET_DEPENDENT
+      fqn: e613a84b-49a9-4bff-9d8b-81fb35e0f092
     "on": "[TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_VW_WORKSHEET_DEPENDENT::DEPENDENT_GUID]"
     type: INNER
   - name: REL_TS_BI_SERVER-TS_USER
     destination:
       name: TS_USER
-    "on": "([TS_BI_SERVER::USER_ID] = [TS_USER::USER_GUID])"
+      fqn: e571cf91-9988-4080-aff0-696d1507d2eb
+    "on": "[TS_BI_SERVER::USER_ID] = [TS_USER::USER_GUID]"
+    type: INNER
+  - name: REL_TS_BI_SERVER-TS_DEPENDENT_OBJECT
+    destination:
+      name: TS_DEPENDENT_OBJECT
+      fqn: 83fa2082-051e-4760-b0c3-42f80c43c40e
+    "on": "[TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_DEPENDENT_OBJECT::DEPENDENT_GUID]"
+    type: LEFT_OUTER
+  - name: SYS_CONSTRAINT_7d5a8977-f229-477e-b1cb-eb65d7e34355
+    destination:
+      name: TS_METADATA_OBJECT
+      fqn: abbc71f0-ba37-4505-b8d9-1d0babac8ddb
+    "on": "[TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_METADATA_OBJECT::OBJECT_GUID]"
     type: INNER
   - name: REL_TS_BI_SERVER-TS_USER_VIEW
     destination:
       name: TS_USER_VIEW
+      fqn: 084ec359-3642-48fb-9027-1efb55e88b0e
     "on": "[TS_BI_SERVER::USER_ID] = [TS_USER_VIEW::USER_ID]"
     type: INNER

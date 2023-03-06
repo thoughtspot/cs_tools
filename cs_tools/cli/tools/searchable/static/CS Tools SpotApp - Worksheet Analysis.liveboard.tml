@@ -1,0 +1,773 @@
+guid: 495300c5-886a-42b0-9fbe-e7a9e489c2b1
+liveboard:
+  name: CS Tools Spot App - Worksheet Analysis
+  description: "This view is designed to help product managers understand the user interactions with a worksheet to help make decisions about what content is beneficial. \n*Warning: AdHoc searches will be omitted due to no saved dependents to connect them to the worksheets"
+  visualizations:
+  - id: Viz_1
+    answer:
+      name: Worksheet Columns Usage
+      description: Shows dependents and usage of the columns in a worksheet. Helps you understand what is popular and unused. Ad-hoc search data is missing because there is no way to tie it to he worksheets.
+      tables:
+      - id: CS Tools - Column Usage
+        name: CS Tools - Column Usage
+        fqn: e43c254b-695e-4e15-b958-5d5741182bbe
+      search_query: "[Parent] [Column Name] [Column Type] [is_formula] [Parent Type].worksheet [# Dependents] [# Activities] [Parent].'ts: bi server' sort by [# Dependents] sort by [Column Name]"
+      answer_columns:
+      - name: Parent
+      - name: Column Name
+      - name: Column Type
+      - name: is_formula
+      - name: '# Dependents'
+      - name: '# Activities'
+      table:
+        table_columns:
+        - column_id: Parent
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Column Name
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Column Type
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: is_formula
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Dependents'
+          headline_aggregation: SUM
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Parent
+        - Column Name
+        - Column Type
+        - is_formula
+        - '# Dependents'
+        - '# Activities'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Column Name\",\"width\": 153.61189718807447}]}"
+      chart:
+        type: COLUMN
+        chart_columns:
+        - column_id: Parent
+        - column_id: Column Name
+        - column_id: Column Type
+        - column_id: is_formula
+        - column_id: '# Dependents'
+        - column_id: '# Activities'
+        axis_configs:
+        - x:
+          - Column Name
+          "y":
+          - '# Dependents'
+          - '# Activities'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"Column Type\",\"columnProperty\": {}},{\"columnId\": \"Column Name\",\"columnProperty\": {}},{\"columnId\": \"# Dependents\",\"columnProperty\": {}},{\"columnId\": \"Parent\",\"columnProperty\": {}},{\"columnId\": \"is_formula\",\"columnProperty\": {}},{\"columnId\": \"# Activities\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"6858cbd9-efc8-46d7-82bd-c90101e83b4f\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Dependents\"],\"isOpposite\": false}},{\"id\": \"c831640f-058e-4ca7-8ff3-98a4db226481\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Activities\"],\"isOpposite\": true}},{\"id\": \"4607c53b-736d-4907-aeb2-38fac7a19924\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Column Name\"]}}]}"
+      display_mode: TABLE_MODE
+    viz_guid: 8c6a37c0-2572-4e89-af63-f049fe6e1f7b
+  - id: Viz_2
+    answer:
+      name: Active Users
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [Worksheet] [Activity Timestamp].monthly sort by [Activity Timestamp] [Activity Timestamp].monthly [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_embed_view [User Action].pinboard_view [# Users]"
+      answer_columns:
+      - name: '# Activities'
+      - name: Worksheet
+      - name: Month(Activity Timestamp)
+      - name: '# Users'
+      table:
+        table_columns:
+        - column_id: Worksheet
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Month(Activity Timestamp)
+          headline_aggregation: MIN-MAX
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Worksheet
+        - Month(Activity Timestamp)
+        - '# Activities'
+        - '# Users'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Worksheet\",\"width\": 126.41353652056527},{\"columnId\": \"# Activities\",\"width\": 123.78223912856159}],\"wrapTableHeader\": true}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Worksheet
+        - column_id: Month(Activity Timestamp)
+        - column_id: '# Activities'
+        - column_id: '# Users'
+        axis_configs:
+        - x:
+          - Month(Activity Timestamp)
+          "y":
+          - '# Users'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"Month(Activity Timestamp)\",\"columnProperty\": {}},{\"columnId\": \"# Users\",\"columnProperty\": {}},{\"columnId\": \"Worksheet\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"1b5b54a7-d1ab-479f-a9c2-5c3893e4e55b\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Users\"],\"isOpposite\": false}},{\"id\": \"40722e4a-7637-4a73-b988-f6fd58705856\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Activity Timestamp)\"]}}],\"systemSeriesColors\": [{\"serieName\": \"# Activities\",\"color\": \"#2770ef\"},{\"serieName\": \"# Users\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: d21c6b5d-ca85-4dcf-b81a-cef7e26c3399
+  - id: Viz_3
+    answer:
+      name: Activities System Wide
+      description: 'Answer and Liveboards views. Ad hoc search omitted. '
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [Worksheet] [Activity Timestamp].monthly sort by [Activity Timestamp] [Activity Timestamp].monthly [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_embed_view [User Action].pinboard_view"
+      answer_columns:
+      - name: '# Activities'
+      - name: Worksheet
+      - name: Month(Activity Timestamp)
+      table:
+        table_columns:
+        - column_id: Worksheet
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Month(Activity Timestamp)
+          headline_aggregation: MIN-MAX
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Worksheet
+        - Month(Activity Timestamp)
+        - '# Activities'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Worksheet\",\"width\": 126.41353652056527},{\"columnId\": \"# Activities\",\"width\": 123.78223912856159}],\"wrapTableHeader\": true}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Worksheet
+        - column_id: Month(Activity Timestamp)
+        - column_id: '# Activities'
+        axis_configs:
+        - x:
+          - Month(Activity Timestamp)
+          "y":
+          - '# Activities'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"Month(Activity Timestamp)\",\"columnProperty\": {}},{\"columnId\": \"Worksheet\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"c3b65be8-7510-4fb8-8477-6523b426a39c\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Activities\"],\"isOpposite\": false}},{\"id\": \"6c7fa4bd-293c-4f19-a096-ee25af7ebc67\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Activity Timestamp)\"]}}],\"systemSeriesColors\": [{\"serieName\": \"# Activities\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: ca1e8c9b-c187-4696-a46a-4803b14f113e
+  - id: Viz_4
+    answer:
+      name: Usage Trend
+      description: Null represents Ad Hoc Searches
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [Worksheet] [Activity Timestamp].monthly sort by [Activity Timestamp] [Activity Timestamp].monthly [Dependent Type] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_embed_view [User Action].pinboard_view"
+      answer_columns:
+      - name: '# Activities'
+      - name: Worksheet
+      - name: Month(Activity Timestamp)
+      - name: Dependent Type
+      table:
+        table_columns:
+        - column_id: Worksheet
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Month(Activity Timestamp)
+          headline_aggregation: MIN-MAX
+        - column_id: Dependent Type
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Worksheet
+        - Month(Activity Timestamp)
+        - Dependent Type
+        - '# Activities'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Worksheet\",\"width\": 126.41353652056527},{\"columnId\": \"# Activities\",\"width\": 123.78223912856159}],\"wrapTableHeader\": true}"
+      chart:
+        type: STACKED_COLUMN
+        chart_columns:
+        - column_id: Worksheet
+        - column_id: Month(Activity Timestamp)
+        - column_id: Dependent Type
+        - column_id: '# Activities'
+        axis_configs:
+        - x:
+          - Month(Activity Timestamp)
+          "y":
+          - '# Activities'
+          color:
+          - Dependent Type
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"Dependent Type\",\"columnProperty\": {}},{\"columnId\": \"Month(Activity Timestamp)\",\"columnProperty\": {}},{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"Worksheet\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"8fc06894-76fc-4d24-b343-76feac27100f\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Activities\"],\"isOpposite\": false}},{\"id\": \"513a68a8-6fbd-46d2-aedf-10746f6b44bd\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Activity Timestamp)\"]}}],\"systemSeriesColors\": [{\"serieName\": \"# Activities\",\"color\": \"#FF8142\"},{\"serieName\": \"{null}\",\"color\": \"#721F27\"},{\"serieName\": \"(sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"ae details ws\",\"color\": \"#B6313E\"},{\"serieName\": \"ae sdr distribution ws\",\"color\": \"#F9B3B9\"},{\"serieName\": \"csm community points\",\"color\": \"#F04152\"},{\"serieName\": \"calendar test\",\"color\": \"#2F3947\"},{\"serieName\": \"campaign ebc results ws\",\"color\": \"#A2ACBA\"},{\"serieName\": \"case created solved\",\"color\": \"#47515F\"},{\"serieName\": \"cases created vs solved - monthly\",\"color\": \"#BEC6D0\"},{\"serieName\": \"certification exam worksheet\",\"color\": \"#747E8C\"},{\"serieName\": \"consensus\",\"color\": \"#7A3D1F\"},{\"serieName\": \"consensus v2\",\"color\": \"#FFA97E\"},{\"serieName\": \"credit usage worksheet\",\"color\": \"#C26232\"},{\"serieName\": \"credits purchased\",\"color\": \"#FFCCB3\"},{\"serieName\": \"crunchbase account ws\",\"color\": \"#FF8142\"},{\"serieName\": \"customer health ws\",\"color\": \"#422E75\"},{\"serieName\": \"discount analysis\",\"color\": \"#B094F8\"},{\"serieName\": \"discover monitoring data\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ft mp + ga website worksheet\",\"color\": \"#D1C0FB\"},{\"serieName\": \"free trial conversion worksheet [wip]\",\"color\": \"#8C62F5\"},{\"serieName\": \"freetrial tsbi\",\"color\": \"#1c222b\"},{\"serieName\": \"ga website\",\"color\": \"#59616c\"},{\"serieName\": \"ga website- aby test\",\"color\": \"#262e39\"},{\"serieName\": \"gc demo dataset\",\"color\": \"#828891\"},{\"serieName\": \"gs csm health score\",\"color\": \"#2f3947\"},{\"serieName\": \"gtm\",\"color\": \"#785F1A\"},{\"serieName\": \"gtm  waterfall\",\"color\": \"#FCD977\"},{\"serieName\": \"gtm -- demo\",\"color\": \"#BF982A\"},{\"serieName\": \"gtm ae contribution\",\"color\": \"#FDE9AF\"},{\"serieName\": \"gtm ae productivity\",\"color\": \"#FCC838\"},{\"serieName\": \"gtm callhome stats new\",\"color\": \"#22636B\"},{\"serieName\": \"gtm callhome stats\",\"color\": \"#82DFE9\"},{\"serieName\": \"gtm campaign member\",\"color\": \"#369FAA\"},{\"serieName\": \"gtm campaigns\",\"color\": \"#B5ECF2\"},{\"serieName\": \"gtm clari forecast\",\"color\": \"#48D1E0\"},{\"serieName\": \"gtm clari forecast -- demo\",\"color\": \"#163772\"},{\"serieName\": \"gtm community\",\"color\": \"#71A1F4\"},{\"serieName\": \"gtm community knowledge articles\",\"color\": \"#2359B6\"},{\"serieName\": \"gtm credit modeling\",\"color\": \"#ABC7F9\"},{\"serieName\": \"gtm data dictionary\",\"color\": \"#2E75F0\"},{\"serieName\": \"gtm gainsight\",\"color\": \"#721F27\"},{\"serieName\": \"gtm gong\",\"color\": \"#F47E89\"},{\"serieName\": \"gtm metadata\",\"color\": \"#B6313E\"},{\"serieName\": \"gtm pipeline waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"gtm projects\",\"color\": \"#F04152\"},{\"serieName\": \"gtm stage targets and actuals\",\"color\": \"#2F3947\"},{\"serieName\": \"gtm staged targets actuals l1 - (do not use)\",\"color\": \"#A2ACBA\"},{\"serieName\": \"gtm stages targets actuals l1\",\"color\": \"#47515F\"},{\"serieName\": \"gtm stages targets actuals l2\",\"color\": \"#BEC6D0\"},{\"serieName\": \"gtm vivun\",\"color\": \"#747E8C\"},{\"serieName\": \"intercom\",\"color\": \"#7A3D1F\"},{\"serieName\": \"jira biz ops\",\"color\": \"#FFA97E\"},{\"serieName\": \"jira data ops\",\"color\": \"#C26232\"},{\"serieName\": \"lcm & cluster's upgrade schedule\",\"color\": \"#FFCCB3\"},{\"serieName\": \"nrr records\",\"color\": \"#FF8142\"},{\"serieName\": \"opportunity & product gaps - new\",\"color\": \"#422E75\"},{\"serieName\": \"pai ws\",\"color\": \"#B094F8\"},{\"serieName\": \"pm customer warehouse\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ps: capacity management\",\"color\": \"#D1C0FB\"},{\"serieName\": \"ps: project delivery\",\"color\": \"#8C62F5\"},{\"serieName\": \"ps: project maintenance\",\"color\": \"#1c222b\"},{\"serieName\": \"ps: services sales\",\"color\": \"#59616c\"},{\"serieName\": \"pardot\",\"color\": \"#262e39\"},{\"serieName\": \"peopleai activity ws\",\"color\": \"#828891\"},{\"serieName\": \"product usage\",\"color\": \"#2f3947\"},{\"serieName\": \"sfdc account all ws\",\"color\": \"#785F1A\"},{\"serieName\": \"sfdc gainsight & asana - gtm\",\"color\": \"#FCD977\"},{\"serieName\": \"sfdc survey\",\"color\": \"#BF982A\"},{\"serieName\": \"skilljar\",\"color\": \"#FDE9AF\"},{\"serieName\": \"test sales forecast achieved ws\",\"color\": \"#FCC838\"},{\"serieName\": \"ts: bi server\",\"color\": \"#22636B\"},{\"serieName\": \"trial -> opportunity conversion worksheet\",\"color\": \"#82DFE9\"},{\"serieName\": \"use case\",\"color\": \"#369FAA\"},{\"serieName\": \"ws tag test\",\"color\": \"#B5ECF2\"},{\"serieName\": \"you can book me bookings (ycbm)\",\"color\": \"#48D1E0\"},{\"serieName\": \"[dev] ps: services sales\",\"color\": \"#163772\"},{\"serieName\": \"{null}, {null}\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, (sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, ae sdr distribution ws\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, csm community points\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, calendar test\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, campaign ebc results ws\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, case created solved\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, certification exam worksheet\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, consensus\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, consensus v2\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, credit usage worksheet\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, credits purchased\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, customer health ws\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, discount analysis\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, discover monitoring data\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ft mp + ga website worksheet\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, ga website\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, ga website- aby test\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, gc demo dataset\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, gs csm health score\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, gtm\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, gtm  waterfall\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, gtm -- demo\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, gtm ae contribution\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, gtm ae productivity\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats new\",\"color\": \"#FCD977\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats\",\"color\": \"#BF982A\"},{\"serieName\": \"pinboard_answer_book, gtm campaign member\",\"color\": \"#FDE9AF\"},{\"serieName\": \"pinboard_answer_book, gtm campaigns\",\"color\": \"#FCC838\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast\",\"color\": \"#22636B\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast -- demo\",\"color\": \"#82DFE9\"},{\"serieName\": \"pinboard_answer_book, gtm community\",\"color\": \"#369FAA\"},{\"serieName\": \"pinboard_answer_book, gtm community knowledge articles\",\"color\": \"#B5ECF2\"},{\"serieName\": \"pinboard_answer_book, gtm credit modeling\",\"color\": \"#48D1E0\"},{\"serieName\": \"pinboard_answer_book, gtm gainsight\",\"color\": \"#163772\"},{\"serieName\": \"pinboard_answer_book, gtm gong\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_answer_book, gtm metadata\",\"color\": \"#2359B6\"},{\"serieName\": \"pinboard_answer_book, gtm pipeline waterfall\",\"color\": \"#ABC7F9\"},{\"serieName\": \"pinboard_answer_book, gtm projects\",\"color\": \"#2E75F0\"},{\"serieName\": \"pinboard_answer_book, gtm stage targets and actuals\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l1\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l2\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, gtm vivun\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, intercom\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, jira biz ops\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, nrr records\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, opportunity & product gaps - new\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, pai ws\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, pm customer warehouse\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, ps: capacity management\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, ps: project delivery\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, ps: project maintenance\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ps: services sales\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, pardot\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, peopleai activity ws\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, product usage\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, sfdc account all ws\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, sfdc survey\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, skilljar\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, ts: bi server\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, trial -> opportunity conversion worksheet\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, use case\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, [dev] ps: services sales\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, (sample) retail - apparel\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, ae details ws\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, ae sdr distribution ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, case created solved\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, cases created vs solved - monthly\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, certification exam worksheet\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, consensus\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, consensus v2\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, credit usage worksheet\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, crunchbase account ws\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, discover monitoring data\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, freetrial tsbi\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ga website\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, gs csm health score\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, gtm\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, gtm  waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"question_answer_book, gtm -- demo\",\"color\": \"#F04152\"},{\"serieName\": \"question_answer_book, gtm ae productivity\",\"color\": \"#2F3947\"},{\"serieName\": \"question_answer_book, gtm callhome stats new\",\"color\": \"#A2ACBA\"},{\"serieName\": \"question_answer_book, gtm callhome stats\",\"color\": \"#47515F\"},{\"serieName\": \"question_answer_book, gtm campaign member\",\"color\": \"#BEC6D0\"},{\"serieName\": \"question_answer_book, gtm campaigns\",\"color\": \"#747E8C\"},{\"serieName\": \"question_answer_book, gtm clari forecast\",\"color\": \"#7A3D1F\"},{\"serieName\": \"question_answer_book, gtm community\",\"color\": \"#FFA97E\"},{\"serieName\": \"question_answer_book, gtm community knowledge articles\",\"color\": \"#C26232\"},{\"serieName\": \"question_answer_book, gtm credit modeling\",\"color\": \"#FFCCB3\"},{\"serieName\": \"question_answer_book, gtm data dictionary\",\"color\": \"#FF8142\"},{\"serieName\": \"question_answer_book, gtm gainsight\",\"color\": \"#422E75\"},{\"serieName\": \"question_answer_book, gtm gong\",\"color\": \"#B094F8\"},{\"serieName\": \"question_answer_book, gtm metadata\",\"color\": \"#6A4ABA\"},{\"serieName\": \"question_answer_book, gtm pipeline waterfall\",\"color\": \"#D1C0FB\"},{\"serieName\": \"question_answer_book, gtm projects\",\"color\": \"#8C62F5\"},{\"serieName\": \"question_answer_book, gtm stage targets and actuals\",\"color\": \"#1c222b\"},{\"serieName\": \"question_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#59616c\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l1\",\"color\": \"#262e39\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l2\",\"color\": \"#828891\"},{\"serieName\": \"question_answer_book, gtm vivun\",\"color\": \"#2f3947\"},{\"serieName\": \"question_answer_book, intercom\",\"color\": \"#785F1A\"},{\"serieName\": \"question_answer_book, jira data ops\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, nrr records\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, pai ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, pm customer warehouse\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, ps: capacity management\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, ps: project delivery\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, ps: services sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, pardot\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, peopleai activity ws\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, sfdc survey\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, skilljar\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, test sales forecast achieved ws\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ts: bi server\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, use case\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, ws tag test\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, you can book me bookings (ycbm)\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book\",\"color\": \"#2E75F0\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: c978b4fe-47ce-45ba-a3ec-c0a02a78cd6d
+  - id: Viz_5
+    answer:
+      name: Top Users - past 90 days
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_view [Activity Timestamp].'last 90 days' [# Answers] [# Liveboards] [User] sort by [# Activities] descending top 20"
+      answer_columns:
+      - name: '# Activities'
+      - name: '# Answers'
+      - name: '# Liveboards'
+      - name: User
+      table:
+        table_columns:
+        - column_id: User
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Answers'
+          headline_aggregation: SUM
+        - column_id: '# Liveboards'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - User
+        - '# Activities'
+        - '# Answers'
+        - '# Liveboards'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"07c6c7e1-b470-4c50-a9cd-47300a08e549\",\"width\": 136.41353652056526},{\"columnId\": \"# Activities\",\"width\": 79.66459206973806},{\"columnId\": \"# Answers\",\"width\": 62.57872458065258},{\"columnId\": \"# Liveboards\",\"width\": 91.46195176068476}],\"orderedColumnIds\": [\"User\",\"9885e0bc-a50d-43f3-8e60-2ffaf1d2fadd\",\"# Activities\",\"# Answers\",\"# Liveboards\"]}"
+      chart:
+        type: BUBBLE
+        chart_columns:
+        - column_id: User
+        - column_id: '# Activities'
+        - column_id: '# Answers'
+        - column_id: '# Liveboards'
+        axis_configs:
+        - x:
+          - '# Activities'
+          "y":
+          - '# Answers'
+          size: '# Liveboards'
+          category:
+          - User
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"User\",\"columnProperty\": {}},{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"# Liveboards\",\"columnProperty\": {}},{\"columnId\": \"# Answers\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"94857881-8c23-4c00-b65e-fc3904258aeb\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Answers\"],\"isOpposite\": false}},{\"id\": \"6ad901b3-f147-4cf2-9947-aa2302f84cb1\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"# Activities\"]}}],\"systemSeriesColors\": [{\"serieName\": \"# Activities\",\"color\": \"#FF8142\"},{\"serieName\": \"{null}\",\"color\": \"#721F27\"},{\"serieName\": \"(sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"ae details ws\",\"color\": \"#B6313E\"},{\"serieName\": \"ae sdr distribution ws\",\"color\": \"#F9B3B9\"},{\"serieName\": \"csm community points\",\"color\": \"#F04152\"},{\"serieName\": \"calendar test\",\"color\": \"#2F3947\"},{\"serieName\": \"campaign ebc results ws\",\"color\": \"#A2ACBA\"},{\"serieName\": \"case created solved\",\"color\": \"#47515F\"},{\"serieName\": \"cases created vs solved - monthly\",\"color\": \"#BEC6D0\"},{\"serieName\": \"certification exam worksheet\",\"color\": \"#747E8C\"},{\"serieName\": \"consensus\",\"color\": \"#7A3D1F\"},{\"serieName\": \"consensus v2\",\"color\": \"#FFA97E\"},{\"serieName\": \"credit usage worksheet\",\"color\": \"#C26232\"},{\"serieName\": \"credits purchased\",\"color\": \"#FFCCB3\"},{\"serieName\": \"crunchbase account ws\",\"color\": \"#FF8142\"},{\"serieName\": \"customer health ws\",\"color\": \"#422E75\"},{\"serieName\": \"discount analysis\",\"color\": \"#B094F8\"},{\"serieName\": \"discover monitoring data\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ft mp + ga website worksheet\",\"color\": \"#D1C0FB\"},{\"serieName\": \"free trial conversion worksheet [wip]\",\"color\": \"#8C62F5\"},{\"serieName\": \"freetrial tsbi\",\"color\": \"#1c222b\"},{\"serieName\": \"ga website\",\"color\": \"#59616c\"},{\"serieName\": \"ga website- aby test\",\"color\": \"#262e39\"},{\"serieName\": \"gc demo dataset\",\"color\": \"#828891\"},{\"serieName\": \"gs csm health score\",\"color\": \"#2f3947\"},{\"serieName\": \"gtm\",\"color\": \"#785F1A\"},{\"serieName\": \"gtm  waterfall\",\"color\": \"#FCD977\"},{\"serieName\": \"gtm -- demo\",\"color\": \"#BF982A\"},{\"serieName\": \"gtm ae contribution\",\"color\": \"#FDE9AF\"},{\"serieName\": \"gtm ae productivity\",\"color\": \"#FCC838\"},{\"serieName\": \"gtm callhome stats new\",\"color\": \"#22636B\"},{\"serieName\": \"gtm callhome stats\",\"color\": \"#82DFE9\"},{\"serieName\": \"gtm campaign member\",\"color\": \"#369FAA\"},{\"serieName\": \"gtm campaigns\",\"color\": \"#B5ECF2\"},{\"serieName\": \"gtm clari forecast\",\"color\": \"#48D1E0\"},{\"serieName\": \"gtm clari forecast -- demo\",\"color\": \"#163772\"},{\"serieName\": \"gtm community\",\"color\": \"#71A1F4\"},{\"serieName\": \"gtm community knowledge articles\",\"color\": \"#2359B6\"},{\"serieName\": \"gtm credit modeling\",\"color\": \"#ABC7F9\"},{\"serieName\": \"gtm data dictionary\",\"color\": \"#2E75F0\"},{\"serieName\": \"gtm gainsight\",\"color\": \"#721F27\"},{\"serieName\": \"gtm gong\",\"color\": \"#F47E89\"},{\"serieName\": \"gtm metadata\",\"color\": \"#B6313E\"},{\"serieName\": \"gtm pipeline waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"gtm projects\",\"color\": \"#F04152\"},{\"serieName\": \"gtm stage targets and actuals\",\"color\": \"#2F3947\"},{\"serieName\": \"gtm staged targets actuals l1 - (do not use)\",\"color\": \"#A2ACBA\"},{\"serieName\": \"gtm stages targets actuals l1\",\"color\": \"#47515F\"},{\"serieName\": \"gtm stages targets actuals l2\",\"color\": \"#BEC6D0\"},{\"serieName\": \"gtm vivun\",\"color\": \"#747E8C\"},{\"serieName\": \"intercom\",\"color\": \"#7A3D1F\"},{\"serieName\": \"jira biz ops\",\"color\": \"#FFA97E\"},{\"serieName\": \"jira data ops\",\"color\": \"#C26232\"},{\"serieName\": \"lcm & cluster's upgrade schedule\",\"color\": \"#FFCCB3\"},{\"serieName\": \"nrr records\",\"color\": \"#FF8142\"},{\"serieName\": \"opportunity & product gaps - new\",\"color\": \"#422E75\"},{\"serieName\": \"pai ws\",\"color\": \"#B094F8\"},{\"serieName\": \"pm customer warehouse\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ps: capacity management\",\"color\": \"#D1C0FB\"},{\"serieName\": \"ps: project delivery\",\"color\": \"#8C62F5\"},{\"serieName\": \"ps: project maintenance\",\"color\": \"#1c222b\"},{\"serieName\": \"ps: services sales\",\"color\": \"#59616c\"},{\"serieName\": \"pardot\",\"color\": \"#262e39\"},{\"serieName\": \"peopleai activity ws\",\"color\": \"#828891\"},{\"serieName\": \"product usage\",\"color\": \"#2f3947\"},{\"serieName\": \"sfdc account all ws\",\"color\": \"#785F1A\"},{\"serieName\": \"sfdc gainsight & asana - gtm\",\"color\": \"#FCD977\"},{\"serieName\": \"sfdc survey\",\"color\": \"#BF982A\"},{\"serieName\": \"skilljar\",\"color\": \"#FDE9AF\"},{\"serieName\": \"test sales forecast achieved ws\",\"color\": \"#FCC838\"},{\"serieName\": \"ts: bi server\",\"color\": \"#22636B\"},{\"serieName\": \"trial -> opportunity conversion worksheet\",\"color\": \"#82DFE9\"},{\"serieName\": \"use case\",\"color\": \"#369FAA\"},{\"serieName\": \"ws tag test\",\"color\": \"#B5ECF2\"},{\"serieName\": \"you can book me bookings (ycbm)\",\"color\": \"#48D1E0\"},{\"serieName\": \"[dev] ps: services sales\",\"color\": \"#163772\"},{\"serieName\": \"{null}, {null}\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, (sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, ae sdr distribution ws\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, csm community points\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, calendar test\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, campaign ebc results ws\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, case created solved\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, certification exam worksheet\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, consensus\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, consensus v2\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, credit usage worksheet\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, credits purchased\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, customer health ws\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, discount analysis\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, discover monitoring data\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ft mp + ga website worksheet\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, ga website\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, ga website- aby test\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, gc demo dataset\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, gs csm health score\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, gtm\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, gtm  waterfall\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, gtm -- demo\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, gtm ae contribution\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, gtm ae productivity\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats new\",\"color\": \"#FCD977\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats\",\"color\": \"#BF982A\"},{\"serieName\": \"pinboard_answer_book, gtm campaign member\",\"color\": \"#FDE9AF\"},{\"serieName\": \"pinboard_answer_book, gtm campaigns\",\"color\": \"#FCC838\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast\",\"color\": \"#22636B\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast -- demo\",\"color\": \"#82DFE9\"},{\"serieName\": \"pinboard_answer_book, gtm community\",\"color\": \"#369FAA\"},{\"serieName\": \"pinboard_answer_book, gtm community knowledge articles\",\"color\": \"#B5ECF2\"},{\"serieName\": \"pinboard_answer_book, gtm credit modeling\",\"color\": \"#48D1E0\"},{\"serieName\": \"pinboard_answer_book, gtm gainsight\",\"color\": \"#163772\"},{\"serieName\": \"pinboard_answer_book, gtm gong\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_answer_book, gtm metadata\",\"color\": \"#2359B6\"},{\"serieName\": \"pinboard_answer_book, gtm pipeline waterfall\",\"color\": \"#ABC7F9\"},{\"serieName\": \"pinboard_answer_book, gtm projects\",\"color\": \"#2E75F0\"},{\"serieName\": \"pinboard_answer_book, gtm stage targets and actuals\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l1\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l2\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, gtm vivun\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, intercom\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, jira biz ops\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, nrr records\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, opportunity & product gaps - new\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, pai ws\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, pm customer warehouse\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, ps: capacity management\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, ps: project delivery\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, ps: project maintenance\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ps: services sales\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, pardot\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, peopleai activity ws\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, product usage\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, sfdc account all ws\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, sfdc survey\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, skilljar\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, ts: bi server\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, trial -> opportunity conversion worksheet\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, use case\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, [dev] ps: services sales\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, (sample) retail - apparel\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, ae details ws\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, ae sdr distribution ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, case created solved\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, cases created vs solved - monthly\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, certification exam worksheet\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, consensus\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, consensus v2\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, credit usage worksheet\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, crunchbase account ws\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, discover monitoring data\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, freetrial tsbi\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ga website\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, gs csm health score\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, gtm\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, gtm  waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"question_answer_book, gtm -- demo\",\"color\": \"#F04152\"},{\"serieName\": \"question_answer_book, gtm ae productivity\",\"color\": \"#2F3947\"},{\"serieName\": \"question_answer_book, gtm callhome stats new\",\"color\": \"#A2ACBA\"},{\"serieName\": \"question_answer_book, gtm callhome stats\",\"color\": \"#47515F\"},{\"serieName\": \"question_answer_book, gtm campaign member\",\"color\": \"#BEC6D0\"},{\"serieName\": \"question_answer_book, gtm campaigns\",\"color\": \"#747E8C\"},{\"serieName\": \"question_answer_book, gtm clari forecast\",\"color\": \"#7A3D1F\"},{\"serieName\": \"question_answer_book, gtm community\",\"color\": \"#FFA97E\"},{\"serieName\": \"question_answer_book, gtm community knowledge articles\",\"color\": \"#C26232\"},{\"serieName\": \"question_answer_book, gtm credit modeling\",\"color\": \"#FFCCB3\"},{\"serieName\": \"question_answer_book, gtm data dictionary\",\"color\": \"#FF8142\"},{\"serieName\": \"question_answer_book, gtm gainsight\",\"color\": \"#422E75\"},{\"serieName\": \"question_answer_book, gtm gong\",\"color\": \"#B094F8\"},{\"serieName\": \"question_answer_book, gtm metadata\",\"color\": \"#6A4ABA\"},{\"serieName\": \"question_answer_book, gtm pipeline waterfall\",\"color\": \"#D1C0FB\"},{\"serieName\": \"question_answer_book, gtm projects\",\"color\": \"#8C62F5\"},{\"serieName\": \"question_answer_book, gtm stage targets and actuals\",\"color\": \"#1c222b\"},{\"serieName\": \"question_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#59616c\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l1\",\"color\": \"#262e39\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l2\",\"color\": \"#828891\"},{\"serieName\": \"question_answer_book, gtm vivun\",\"color\": \"#2f3947\"},{\"serieName\": \"question_answer_book, intercom\",\"color\": \"#785F1A\"},{\"serieName\": \"question_answer_book, jira data ops\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, nrr records\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, pai ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, pm customer warehouse\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, ps: capacity management\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, ps: project delivery\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, ps: services sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, pardot\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, peopleai activity ws\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, sfdc survey\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, skilljar\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, test sales forecast achieved ws\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ts: bi server\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, use case\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, ws tag test\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, you can book me bookings (ycbm)\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book\",\"color\": \"#2E75F0\"}]}"
+      display_mode: TABLE_MODE
+    viz_guid: 547c0ccc-353b-4321-81da-55979b9f401d
+  - id: Viz_6
+    answer:
+      name: Who are the top content creators recently
+      description: Based on modified date in the past 90 days
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_view [Dependent Modified].'last 90 days' [# Answers] [# Liveboards] [Dependent Author Username] [# Users] [# Dependents] sort by [# Dependents] descending"
+      answer_columns:
+      - name: '# Activities'
+      - name: '# Answers'
+      - name: '# Liveboards'
+      - name: Dependent Author Username
+      - name: '# Users'
+      - name: '# Dependents'
+      table:
+        table_columns:
+        - column_id: Dependent Author Username
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Answers'
+          headline_aggregation: SUM
+        - column_id: '# Liveboards'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        - column_id: '# Dependents'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Dependent Author Username
+        - '# Activities'
+        - '# Answers'
+        - '# Liveboards'
+        - '# Users'
+        - '# Dependents'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"07c6c7e1-b470-4c50-a9cd-47300a08e549\",\"width\": 136.41353652056526},{\"columnId\": \"ebf5984a-dafa-4be0-8c6f-b0c746506d83\",\"width\": 178.70588235294116},{\"columnId\": \"# Activities\",\"width\": 73.19400383444395}],\"orderedColumnIds\": [\"Dependent Author Username\",\"# Dependents\",\"# Answers\",\"# Liveboards\",\"# Users\",\"# Activities\"]}"
+      chart:
+        type: COLUMN
+        chart_columns:
+        - column_id: Dependent Author Username
+        - column_id: '# Activities'
+        - column_id: '# Answers'
+        - column_id: '# Liveboards'
+        - column_id: '# Users'
+        - column_id: '# Dependents'
+        axis_configs:
+        - x:
+          - Dependent Author Username
+          "y":
+          - '# Activities'
+          - '# Answers'
+          - '# Liveboards'
+          - '# Users'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"# Answers\",\"columnProperty\": {}},{\"columnId\": \"Dependent Author Username\",\"columnProperty\": {}},{\"columnId\": \"# Dependents\",\"columnProperty\": {}},{\"columnId\": \"# Liveboards\",\"columnProperty\": {}},{\"columnId\": \"# Users\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"0e791f15-5a87-4ffc-b159-bcee83677c54\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Activities\"],\"isOpposite\": false}},{\"id\": \"c266028c-91f4-480c-90bc-3843fd7ccd71\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Answers\"],\"isOpposite\": true}},{\"id\": \"dad72b94-3d71-4dc7-85ae-afa65d365c28\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Liveboards\"],\"isOpposite\": true}},{\"id\": \"28fbebd2-63e7-4bc5-9f7d-9c7e851bcadf\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Users\"],\"isOpposite\": true}},{\"id\": \"28bde04d-5250-4880-9ecf-f8b09308915a\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Dependent Author Username\"]}}],\"systemSeriesColors\": [{\"serieName\": \"# Activities\",\"color\": \"#FF8142\"},{\"serieName\": \"{null}\",\"color\": \"#721F27\"},{\"serieName\": \"(sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"ae details ws\",\"color\": \"#B6313E\"},{\"serieName\": \"ae sdr distribution ws\",\"color\": \"#F9B3B9\"},{\"serieName\": \"csm community points\",\"color\": \"#F04152\"},{\"serieName\": \"calendar test\",\"color\": \"#2F3947\"},{\"serieName\": \"campaign ebc results ws\",\"color\": \"#A2ACBA\"},{\"serieName\": \"case created solved\",\"color\": \"#47515F\"},{\"serieName\": \"cases created vs solved - monthly\",\"color\": \"#BEC6D0\"},{\"serieName\": \"certification exam worksheet\",\"color\": \"#747E8C\"},{\"serieName\": \"consensus\",\"color\": \"#7A3D1F\"},{\"serieName\": \"consensus v2\",\"color\": \"#FFA97E\"},{\"serieName\": \"credit usage worksheet\",\"color\": \"#C26232\"},{\"serieName\": \"credits purchased\",\"color\": \"#FFCCB3\"},{\"serieName\": \"crunchbase account ws\",\"color\": \"#FF8142\"},{\"serieName\": \"customer health ws\",\"color\": \"#422E75\"},{\"serieName\": \"discount analysis\",\"color\": \"#B094F8\"},{\"serieName\": \"discover monitoring data\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ft mp + ga website worksheet\",\"color\": \"#D1C0FB\"},{\"serieName\": \"free trial conversion worksheet [wip]\",\"color\": \"#8C62F5\"},{\"serieName\": \"freetrial tsbi\",\"color\": \"#1c222b\"},{\"serieName\": \"ga website\",\"color\": \"#59616c\"},{\"serieName\": \"ga website- aby test\",\"color\": \"#262e39\"},{\"serieName\": \"gc demo dataset\",\"color\": \"#828891\"},{\"serieName\": \"gs csm health score\",\"color\": \"#2f3947\"},{\"serieName\": \"gtm\",\"color\": \"#785F1A\"},{\"serieName\": \"gtm  waterfall\",\"color\": \"#FCD977\"},{\"serieName\": \"gtm -- demo\",\"color\": \"#BF982A\"},{\"serieName\": \"gtm ae contribution\",\"color\": \"#FDE9AF\"},{\"serieName\": \"gtm ae productivity\",\"color\": \"#FCC838\"},{\"serieName\": \"gtm callhome stats new\",\"color\": \"#22636B\"},{\"serieName\": \"gtm callhome stats\",\"color\": \"#82DFE9\"},{\"serieName\": \"gtm campaign member\",\"color\": \"#369FAA\"},{\"serieName\": \"gtm campaigns\",\"color\": \"#B5ECF2\"},{\"serieName\": \"gtm clari forecast\",\"color\": \"#48D1E0\"},{\"serieName\": \"gtm clari forecast -- demo\",\"color\": \"#163772\"},{\"serieName\": \"gtm community\",\"color\": \"#71A1F4\"},{\"serieName\": \"gtm community knowledge articles\",\"color\": \"#2359B6\"},{\"serieName\": \"gtm credit modeling\",\"color\": \"#ABC7F9\"},{\"serieName\": \"gtm data dictionary\",\"color\": \"#2E75F0\"},{\"serieName\": \"gtm gainsight\",\"color\": \"#721F27\"},{\"serieName\": \"gtm gong\",\"color\": \"#F47E89\"},{\"serieName\": \"gtm metadata\",\"color\": \"#B6313E\"},{\"serieName\": \"gtm pipeline waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"gtm projects\",\"color\": \"#F04152\"},{\"serieName\": \"gtm stage targets and actuals\",\"color\": \"#2F3947\"},{\"serieName\": \"gtm staged targets actuals l1 - (do not use)\",\"color\": \"#A2ACBA\"},{\"serieName\": \"gtm stages targets actuals l1\",\"color\": \"#47515F\"},{\"serieName\": \"gtm stages targets actuals l2\",\"color\": \"#BEC6D0\"},{\"serieName\": \"gtm vivun\",\"color\": \"#747E8C\"},{\"serieName\": \"intercom\",\"color\": \"#7A3D1F\"},{\"serieName\": \"jira biz ops\",\"color\": \"#FFA97E\"},{\"serieName\": \"jira data ops\",\"color\": \"#C26232\"},{\"serieName\": \"lcm & cluster's upgrade schedule\",\"color\": \"#FFCCB3\"},{\"serieName\": \"nrr records\",\"color\": \"#FF8142\"},{\"serieName\": \"opportunity & product gaps - new\",\"color\": \"#422E75\"},{\"serieName\": \"pai ws\",\"color\": \"#B094F8\"},{\"serieName\": \"pm customer warehouse\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ps: capacity management\",\"color\": \"#D1C0FB\"},{\"serieName\": \"ps: project delivery\",\"color\": \"#8C62F5\"},{\"serieName\": \"ps: project maintenance\",\"color\": \"#1c222b\"},{\"serieName\": \"ps: services sales\",\"color\": \"#59616c\"},{\"serieName\": \"pardot\",\"color\": \"#262e39\"},{\"serieName\": \"peopleai activity ws\",\"color\": \"#828891\"},{\"serieName\": \"product usage\",\"color\": \"#2f3947\"},{\"serieName\": \"sfdc account all ws\",\"color\": \"#785F1A\"},{\"serieName\": \"sfdc gainsight & asana - gtm\",\"color\": \"#FCD977\"},{\"serieName\": \"sfdc survey\",\"color\": \"#BF982A\"},{\"serieName\": \"skilljar\",\"color\": \"#FDE9AF\"},{\"serieName\": \"test sales forecast achieved ws\",\"color\": \"#FCC838\"},{\"serieName\": \"ts: bi server\",\"color\": \"#22636B\"},{\"serieName\": \"trial -> opportunity conversion worksheet\",\"color\": \"#82DFE9\"},{\"serieName\": \"use case\",\"color\": \"#369FAA\"},{\"serieName\": \"ws tag test\",\"color\": \"#B5ECF2\"},{\"serieName\": \"you can book me bookings (ycbm)\",\"color\": \"#48D1E0\"},{\"serieName\": \"[dev] ps: services sales\",\"color\": \"#163772\"},{\"serieName\": \"{null}, {null}\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, (sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, ae sdr distribution ws\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, csm community points\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, calendar test\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, campaign ebc results ws\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, case created solved\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, certification exam worksheet\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, consensus\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, consensus v2\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, credit usage worksheet\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, credits purchased\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, customer health ws\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, discount analysis\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, discover monitoring data\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ft mp + ga website worksheet\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, ga website\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, ga website- aby test\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, gc demo dataset\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, gs csm health score\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, gtm\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, gtm  waterfall\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, gtm -- demo\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, gtm ae contribution\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, gtm ae productivity\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats new\",\"color\": \"#FCD977\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats\",\"color\": \"#BF982A\"},{\"serieName\": \"pinboard_answer_book, gtm campaign member\",\"color\": \"#FDE9AF\"},{\"serieName\": \"pinboard_answer_book, gtm campaigns\",\"color\": \"#FCC838\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast\",\"color\": \"#22636B\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast -- demo\",\"color\": \"#82DFE9\"},{\"serieName\": \"pinboard_answer_book, gtm community\",\"color\": \"#369FAA\"},{\"serieName\": \"pinboard_answer_book, gtm community knowledge articles\",\"color\": \"#B5ECF2\"},{\"serieName\": \"pinboard_answer_book, gtm credit modeling\",\"color\": \"#48D1E0\"},{\"serieName\": \"pinboard_answer_book, gtm gainsight\",\"color\": \"#163772\"},{\"serieName\": \"pinboard_answer_book, gtm gong\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_answer_book, gtm metadata\",\"color\": \"#2359B6\"},{\"serieName\": \"pinboard_answer_book, gtm pipeline waterfall\",\"color\": \"#ABC7F9\"},{\"serieName\": \"pinboard_answer_book, gtm projects\",\"color\": \"#2E75F0\"},{\"serieName\": \"pinboard_answer_book, gtm stage targets and actuals\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l1\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l2\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, gtm vivun\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, intercom\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, jira biz ops\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, nrr records\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, opportunity & product gaps - new\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, pai ws\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, pm customer warehouse\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, ps: capacity management\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, ps: project delivery\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, ps: project maintenance\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ps: services sales\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, pardot\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, peopleai activity ws\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, product usage\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, sfdc account all ws\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, sfdc survey\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, skilljar\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, ts: bi server\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, trial -> opportunity conversion worksheet\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, use case\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, [dev] ps: services sales\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, (sample) retail - apparel\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, ae details ws\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, ae sdr distribution ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, case created solved\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, cases created vs solved - monthly\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, certification exam worksheet\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, consensus\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, consensus v2\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, credit usage worksheet\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, crunchbase account ws\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, discover monitoring data\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, freetrial tsbi\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ga website\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, gs csm health score\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, gtm\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, gtm  waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"question_answer_book, gtm -- demo\",\"color\": \"#F04152\"},{\"serieName\": \"question_answer_book, gtm ae productivity\",\"color\": \"#2F3947\"},{\"serieName\": \"question_answer_book, gtm callhome stats new\",\"color\": \"#A2ACBA\"},{\"serieName\": \"question_answer_book, gtm callhome stats\",\"color\": \"#47515F\"},{\"serieName\": \"question_answer_book, gtm campaign member\",\"color\": \"#BEC6D0\"},{\"serieName\": \"question_answer_book, gtm campaigns\",\"color\": \"#747E8C\"},{\"serieName\": \"question_answer_book, gtm clari forecast\",\"color\": \"#7A3D1F\"},{\"serieName\": \"question_answer_book, gtm community\",\"color\": \"#FFA97E\"},{\"serieName\": \"question_answer_book, gtm community knowledge articles\",\"color\": \"#C26232\"},{\"serieName\": \"question_answer_book, gtm credit modeling\",\"color\": \"#FFCCB3\"},{\"serieName\": \"question_answer_book, gtm data dictionary\",\"color\": \"#FF8142\"},{\"serieName\": \"question_answer_book, gtm gainsight\",\"color\": \"#422E75\"},{\"serieName\": \"question_answer_book, gtm gong\",\"color\": \"#B094F8\"},{\"serieName\": \"question_answer_book, gtm metadata\",\"color\": \"#6A4ABA\"},{\"serieName\": \"question_answer_book, gtm pipeline waterfall\",\"color\": \"#D1C0FB\"},{\"serieName\": \"question_answer_book, gtm projects\",\"color\": \"#8C62F5\"},{\"serieName\": \"question_answer_book, gtm stage targets and actuals\",\"color\": \"#1c222b\"},{\"serieName\": \"question_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#59616c\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l1\",\"color\": \"#262e39\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l2\",\"color\": \"#828891\"},{\"serieName\": \"question_answer_book, gtm vivun\",\"color\": \"#2f3947\"},{\"serieName\": \"question_answer_book, intercom\",\"color\": \"#785F1A\"},{\"serieName\": \"question_answer_book, jira data ops\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, nrr records\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, pai ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, pm customer warehouse\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, ps: capacity management\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, ps: project delivery\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, ps: services sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, pardot\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, peopleai activity ws\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, sfdc survey\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, skilljar\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, test sales forecast achieved ws\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ts: bi server\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, use case\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, ws tag test\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, you can book me bookings (ycbm)\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book\",\"color\": \"#2E75F0\"}]}"
+      display_mode: TABLE_MODE
+    viz_guid: 483fb852-e951-40d9-b9c9-fdbc9cbf3822
+  - id: Viz_7
+    answer:
+      name: Who’s content gets used the most by others
+      description: Which content creators have been most influential in the past 90 days (Who are the influencers)
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      formulas:
+      - id: Influence Indicator
+        name: Influence Indicator
+        expr: "if ( [Dependent Author Username] = [User] ) then 'created by user' else 'created by influencer'"
+        was_auto_generated: false
+      search_query: "[# Activities] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_view [Dependent Modified].'last 90 days' [# Answers] [# Liveboards] [# Users] [# Dependents] [Dependent Author Username] [Influence Indicator] != 'created by user' sort by [# Users] descending"
+      answer_columns:
+      - name: '# Activities'
+      - name: '# Answers'
+      - name: '# Liveboards'
+      - name: '# Users'
+      - name: '# Dependents'
+      - name: Dependent Author Username
+      table:
+        table_columns:
+        - column_id: Dependent Author Username
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Answers'
+          headline_aggregation: SUM
+        - column_id: '# Liveboards'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        - column_id: '# Dependents'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Dependent Author Username
+        - '# Activities'
+        - '# Answers'
+        - '# Liveboards'
+        - '# Users'
+        - '# Dependents'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"07c6c7e1-b470-4c50-a9cd-47300a08e549\",\"width\": 136.41353652056526},{\"columnId\": \"ebf5984a-dafa-4be0-8c6f-b0c746506d83\",\"width\": 178.70588235294116},{\"columnId\": \"# Activities\",\"width\": 73.19400383444395}],\"orderedColumnIds\": [\"Dependent Author Username\",\"# Dependents\",\"# Answers\",\"# Liveboards\",\"# Users\",\"# Activities\",\"Influence Indicator\",\"7f876cda-bc5b-4a3a-bff8-8b9719cd09dd\"]}"
+      chart:
+        type: COLUMN
+        chart_columns:
+        - column_id: Dependent Author Username
+        - column_id: '# Activities'
+        - column_id: '# Answers'
+        - column_id: '# Liveboards'
+        - column_id: '# Users'
+        - column_id: '# Dependents'
+        axis_configs:
+        - x:
+          - Dependent Author Username
+          "y":
+          - '# Activities'
+          - '# Answers'
+          - '# Liveboards'
+          - '# Users'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"Dependent Author Username\",\"columnProperty\": {}},{\"columnId\": \"# Answers\",\"columnProperty\": {}},{\"columnId\": \"# Dependents\",\"columnProperty\": {}},{\"columnId\": \"# Liveboards\",\"columnProperty\": {}},{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"# Users\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"d367b39b-0d3a-4483-ab79-6cc8c18c0c42\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Activities\"],\"isOpposite\": false}},{\"id\": \"d944bb9c-ecb2-4594-9fea-49e3b4f13995\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Answers\"],\"isOpposite\": true}},{\"id\": \"4be6cdb8-8106-48d1-99ae-5c4246b19579\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Liveboards\"],\"isOpposite\": true}},{\"id\": \"0cf42606-362c-455f-ab85-d1ba5c26d829\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Users\"],\"isOpposite\": true}},{\"id\": \"297d29d6-db15-4a24-893b-2554c284f9fa\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Dependent Author Username\"]}}],\"systemSeriesColors\": [{\"serieName\": \"# Activities\",\"color\": \"#FF8142\"},{\"serieName\": \"{null}\",\"color\": \"#721F27\"},{\"serieName\": \"(sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"ae details ws\",\"color\": \"#B6313E\"},{\"serieName\": \"ae sdr distribution ws\",\"color\": \"#F9B3B9\"},{\"serieName\": \"csm community points\",\"color\": \"#F04152\"},{\"serieName\": \"calendar test\",\"color\": \"#2F3947\"},{\"serieName\": \"campaign ebc results ws\",\"color\": \"#A2ACBA\"},{\"serieName\": \"case created solved\",\"color\": \"#47515F\"},{\"serieName\": \"cases created vs solved - monthly\",\"color\": \"#BEC6D0\"},{\"serieName\": \"certification exam worksheet\",\"color\": \"#747E8C\"},{\"serieName\": \"consensus\",\"color\": \"#7A3D1F\"},{\"serieName\": \"consensus v2\",\"color\": \"#FFA97E\"},{\"serieName\": \"credit usage worksheet\",\"color\": \"#C26232\"},{\"serieName\": \"credits purchased\",\"color\": \"#FFCCB3\"},{\"serieName\": \"crunchbase account ws\",\"color\": \"#FF8142\"},{\"serieName\": \"customer health ws\",\"color\": \"#422E75\"},{\"serieName\": \"discount analysis\",\"color\": \"#B094F8\"},{\"serieName\": \"discover monitoring data\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ft mp + ga website worksheet\",\"color\": \"#D1C0FB\"},{\"serieName\": \"free trial conversion worksheet [wip]\",\"color\": \"#8C62F5\"},{\"serieName\": \"freetrial tsbi\",\"color\": \"#1c222b\"},{\"serieName\": \"ga website\",\"color\": \"#59616c\"},{\"serieName\": \"ga website- aby test\",\"color\": \"#262e39\"},{\"serieName\": \"gc demo dataset\",\"color\": \"#828891\"},{\"serieName\": \"gs csm health score\",\"color\": \"#2f3947\"},{\"serieName\": \"gtm\",\"color\": \"#785F1A\"},{\"serieName\": \"gtm  waterfall\",\"color\": \"#FCD977\"},{\"serieName\": \"gtm -- demo\",\"color\": \"#BF982A\"},{\"serieName\": \"gtm ae contribution\",\"color\": \"#FDE9AF\"},{\"serieName\": \"gtm ae productivity\",\"color\": \"#FCC838\"},{\"serieName\": \"gtm callhome stats new\",\"color\": \"#22636B\"},{\"serieName\": \"gtm callhome stats\",\"color\": \"#82DFE9\"},{\"serieName\": \"gtm campaign member\",\"color\": \"#369FAA\"},{\"serieName\": \"gtm campaigns\",\"color\": \"#B5ECF2\"},{\"serieName\": \"gtm clari forecast\",\"color\": \"#48D1E0\"},{\"serieName\": \"gtm clari forecast -- demo\",\"color\": \"#163772\"},{\"serieName\": \"gtm community\",\"color\": \"#71A1F4\"},{\"serieName\": \"gtm community knowledge articles\",\"color\": \"#2359B6\"},{\"serieName\": \"gtm credit modeling\",\"color\": \"#ABC7F9\"},{\"serieName\": \"gtm data dictionary\",\"color\": \"#2E75F0\"},{\"serieName\": \"gtm gainsight\",\"color\": \"#721F27\"},{\"serieName\": \"gtm gong\",\"color\": \"#F47E89\"},{\"serieName\": \"gtm metadata\",\"color\": \"#B6313E\"},{\"serieName\": \"gtm pipeline waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"gtm projects\",\"color\": \"#F04152\"},{\"serieName\": \"gtm stage targets and actuals\",\"color\": \"#2F3947\"},{\"serieName\": \"gtm staged targets actuals l1 - (do not use)\",\"color\": \"#A2ACBA\"},{\"serieName\": \"gtm stages targets actuals l1\",\"color\": \"#47515F\"},{\"serieName\": \"gtm stages targets actuals l2\",\"color\": \"#BEC6D0\"},{\"serieName\": \"gtm vivun\",\"color\": \"#747E8C\"},{\"serieName\": \"intercom\",\"color\": \"#7A3D1F\"},{\"serieName\": \"jira biz ops\",\"color\": \"#FFA97E\"},{\"serieName\": \"jira data ops\",\"color\": \"#C26232\"},{\"serieName\": \"lcm & cluster's upgrade schedule\",\"color\": \"#FFCCB3\"},{\"serieName\": \"nrr records\",\"color\": \"#FF8142\"},{\"serieName\": \"opportunity & product gaps - new\",\"color\": \"#422E75\"},{\"serieName\": \"pai ws\",\"color\": \"#B094F8\"},{\"serieName\": \"pm customer warehouse\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ps: capacity management\",\"color\": \"#D1C0FB\"},{\"serieName\": \"ps: project delivery\",\"color\": \"#8C62F5\"},{\"serieName\": \"ps: project maintenance\",\"color\": \"#1c222b\"},{\"serieName\": \"ps: services sales\",\"color\": \"#59616c\"},{\"serieName\": \"pardot\",\"color\": \"#262e39\"},{\"serieName\": \"peopleai activity ws\",\"color\": \"#828891\"},{\"serieName\": \"product usage\",\"color\": \"#2f3947\"},{\"serieName\": \"sfdc account all ws\",\"color\": \"#785F1A\"},{\"serieName\": \"sfdc gainsight & asana - gtm\",\"color\": \"#FCD977\"},{\"serieName\": \"sfdc survey\",\"color\": \"#BF982A\"},{\"serieName\": \"skilljar\",\"color\": \"#FDE9AF\"},{\"serieName\": \"test sales forecast achieved ws\",\"color\": \"#FCC838\"},{\"serieName\": \"ts: bi server\",\"color\": \"#22636B\"},{\"serieName\": \"trial -> opportunity conversion worksheet\",\"color\": \"#82DFE9\"},{\"serieName\": \"use case\",\"color\": \"#369FAA\"},{\"serieName\": \"ws tag test\",\"color\": \"#B5ECF2\"},{\"serieName\": \"you can book me bookings (ycbm)\",\"color\": \"#48D1E0\"},{\"serieName\": \"[dev] ps: services sales\",\"color\": \"#163772\"},{\"serieName\": \"{null}, {null}\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, (sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, ae sdr distribution ws\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, csm community points\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, calendar test\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, campaign ebc results ws\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, case created solved\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, certification exam worksheet\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, consensus\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, consensus v2\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, credit usage worksheet\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, credits purchased\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, customer health ws\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, discount analysis\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, discover monitoring data\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ft mp + ga website worksheet\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, ga website\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, ga website- aby test\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, gc demo dataset\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, gs csm health score\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, gtm\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, gtm  waterfall\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, gtm -- demo\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, gtm ae contribution\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, gtm ae productivity\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats new\",\"color\": \"#FCD977\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats\",\"color\": \"#BF982A\"},{\"serieName\": \"pinboard_answer_book, gtm campaign member\",\"color\": \"#FDE9AF\"},{\"serieName\": \"pinboard_answer_book, gtm campaigns\",\"color\": \"#FCC838\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast\",\"color\": \"#22636B\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast -- demo\",\"color\": \"#82DFE9\"},{\"serieName\": \"pinboard_answer_book, gtm community\",\"color\": \"#369FAA\"},{\"serieName\": \"pinboard_answer_book, gtm community knowledge articles\",\"color\": \"#B5ECF2\"},{\"serieName\": \"pinboard_answer_book, gtm credit modeling\",\"color\": \"#48D1E0\"},{\"serieName\": \"pinboard_answer_book, gtm gainsight\",\"color\": \"#163772\"},{\"serieName\": \"pinboard_answer_book, gtm gong\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_answer_book, gtm metadata\",\"color\": \"#2359B6\"},{\"serieName\": \"pinboard_answer_book, gtm pipeline waterfall\",\"color\": \"#ABC7F9\"},{\"serieName\": \"pinboard_answer_book, gtm projects\",\"color\": \"#2E75F0\"},{\"serieName\": \"pinboard_answer_book, gtm stage targets and actuals\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l1\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l2\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, gtm vivun\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, intercom\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, jira biz ops\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, nrr records\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, opportunity & product gaps - new\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, pai ws\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, pm customer warehouse\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, ps: capacity management\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, ps: project delivery\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, ps: project maintenance\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ps: services sales\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, pardot\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, peopleai activity ws\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, product usage\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, sfdc account all ws\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, sfdc survey\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, skilljar\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, ts: bi server\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, trial -> opportunity conversion worksheet\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, use case\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, [dev] ps: services sales\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, (sample) retail - apparel\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, ae details ws\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, ae sdr distribution ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, case created solved\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, cases created vs solved - monthly\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, certification exam worksheet\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, consensus\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, consensus v2\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, credit usage worksheet\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, crunchbase account ws\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, discover monitoring data\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, freetrial tsbi\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ga website\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, gs csm health score\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, gtm\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, gtm  waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"question_answer_book, gtm -- demo\",\"color\": \"#F04152\"},{\"serieName\": \"question_answer_book, gtm ae productivity\",\"color\": \"#2F3947\"},{\"serieName\": \"question_answer_book, gtm callhome stats new\",\"color\": \"#A2ACBA\"},{\"serieName\": \"question_answer_book, gtm callhome stats\",\"color\": \"#47515F\"},{\"serieName\": \"question_answer_book, gtm campaign member\",\"color\": \"#BEC6D0\"},{\"serieName\": \"question_answer_book, gtm campaigns\",\"color\": \"#747E8C\"},{\"serieName\": \"question_answer_book, gtm clari forecast\",\"color\": \"#7A3D1F\"},{\"serieName\": \"question_answer_book, gtm community\",\"color\": \"#FFA97E\"},{\"serieName\": \"question_answer_book, gtm community knowledge articles\",\"color\": \"#C26232\"},{\"serieName\": \"question_answer_book, gtm credit modeling\",\"color\": \"#FFCCB3\"},{\"serieName\": \"question_answer_book, gtm data dictionary\",\"color\": \"#FF8142\"},{\"serieName\": \"question_answer_book, gtm gainsight\",\"color\": \"#422E75\"},{\"serieName\": \"question_answer_book, gtm gong\",\"color\": \"#B094F8\"},{\"serieName\": \"question_answer_book, gtm metadata\",\"color\": \"#6A4ABA\"},{\"serieName\": \"question_answer_book, gtm pipeline waterfall\",\"color\": \"#D1C0FB\"},{\"serieName\": \"question_answer_book, gtm projects\",\"color\": \"#8C62F5\"},{\"serieName\": \"question_answer_book, gtm stage targets and actuals\",\"color\": \"#1c222b\"},{\"serieName\": \"question_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#59616c\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l1\",\"color\": \"#262e39\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l2\",\"color\": \"#828891\"},{\"serieName\": \"question_answer_book, gtm vivun\",\"color\": \"#2f3947\"},{\"serieName\": \"question_answer_book, intercom\",\"color\": \"#785F1A\"},{\"serieName\": \"question_answer_book, jira data ops\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, nrr records\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, pai ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, pm customer warehouse\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, ps: capacity management\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, ps: project delivery\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, ps: services sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, pardot\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, peopleai activity ws\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, sfdc survey\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, skilljar\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, test sales forecast achieved ws\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ts: bi server\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, use case\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, ws tag test\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, you can book me bookings (ycbm)\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book\",\"color\": \"#2E75F0\"}]}"
+      display_mode: TABLE_MODE
+    viz_guid: 1d2471ef-ad34-41f8-9e3c-c6f029f30bd1
+  - id: Viz_8
+    answer:
+      name: What is the most popular content - past 90 days
+      description: "Includes links to view the Answers/Liveboards - {Null} Dependent reflects Ad Hoc Searches"
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      formulas:
+      - id: Dependent Link
+        name: Dependent Link
+        expr: "if ( [Dependent Type] = 'pinboard_answer_book' ) then concat ( \"{caption}liveboard link{/caption}./#/pinboard/\" , [Dependent GUID] ) else if ( [Dependent Type] = 'question_answer_book' ) then concat ( \"{caption}answer link{/caption}./#/saved-answer/\" , [Dependent GUID] ) else 'no link avaialable'"
+        was_auto_generated: false
+      search_query: "[# Activities] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_view [Activity Timestamp].'last 90 days' [# Users] sort by [# Users] descending [Dependent] [Dependent Link] top 200"
+      answer_columns:
+      - name: '# Activities'
+      - name: '# Users'
+      - name: Dependent
+      - name: Dependent Link
+      table:
+        table_columns:
+        - column_id: Dependent
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Dependent Link
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Dependent
+        - Dependent Link
+        - '# Activities'
+        - '# Users'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"07c6c7e1-b470-4c50-a9cd-47300a08e549\",\"width\": 136.41353652056526},{\"columnId\": \"# Activities\",\"width\": 79.66459206973806},{\"columnId\": \"8a2fc434-4d90-4e64-a8ba-41c2e92fe777\",\"width\": 65.51990105124082},{\"columnId\": \"Dependent\",\"width\": 266.94117647058823},{\"columnId\": \"Dependent Link\",\"width\": 101.6470588235294}],\"orderedColumnIds\": [\"Dependent\",\"07c6c7e1-b470-4c50-a9cd-47300a08e549\",\"# Users\",\"# Activities\",\"8a2fc434-4d90-4e64-a8ba-41c2e92fe777\",\"6b22c3b5-a9f5-4df7-8432-fafb4f105d6c\",\"Dependent Link\"]}"
+      chart:
+        type: SCATTER
+        chart_columns:
+        - column_id: Dependent
+        - column_id: Dependent Link
+        - column_id: '# Activities'
+        - column_id: '# Users'
+        axis_configs:
+        - x:
+          - '# Activities'
+          "y":
+          - '# Users'
+          category:
+          - Dependent
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"Dependent\",\"columnProperty\": {}},{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"Dependent Link\",\"columnProperty\": {}},{\"columnId\": \"# Users\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"65e2dd14-6285-4da5-8166-c0a90bbb86da\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Users\"],\"isOpposite\": false}},{\"id\": \"341cf99a-c4f5-4726-8a8a-aa47c688adc4\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"# Activities\"]}}],\"systemSeriesColors\": [{\"serieName\": \"# Activities\",\"color\": \"#FF8142\"},{\"serieName\": \"{null}\",\"color\": \"#721F27\"},{\"serieName\": \"(sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"ae details ws\",\"color\": \"#B6313E\"},{\"serieName\": \"ae sdr distribution ws\",\"color\": \"#F9B3B9\"},{\"serieName\": \"csm community points\",\"color\": \"#F04152\"},{\"serieName\": \"calendar test\",\"color\": \"#2F3947\"},{\"serieName\": \"campaign ebc results ws\",\"color\": \"#A2ACBA\"},{\"serieName\": \"case created solved\",\"color\": \"#47515F\"},{\"serieName\": \"cases created vs solved - monthly\",\"color\": \"#BEC6D0\"},{\"serieName\": \"certification exam worksheet\",\"color\": \"#747E8C\"},{\"serieName\": \"consensus\",\"color\": \"#7A3D1F\"},{\"serieName\": \"consensus v2\",\"color\": \"#FFA97E\"},{\"serieName\": \"credit usage worksheet\",\"color\": \"#C26232\"},{\"serieName\": \"credits purchased\",\"color\": \"#FFCCB3\"},{\"serieName\": \"crunchbase account ws\",\"color\": \"#FF8142\"},{\"serieName\": \"customer health ws\",\"color\": \"#422E75\"},{\"serieName\": \"discount analysis\",\"color\": \"#B094F8\"},{\"serieName\": \"discover monitoring data\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ft mp + ga website worksheet\",\"color\": \"#D1C0FB\"},{\"serieName\": \"free trial conversion worksheet [wip]\",\"color\": \"#8C62F5\"},{\"serieName\": \"freetrial tsbi\",\"color\": \"#1c222b\"},{\"serieName\": \"ga website\",\"color\": \"#59616c\"},{\"serieName\": \"ga website- aby test\",\"color\": \"#262e39\"},{\"serieName\": \"gc demo dataset\",\"color\": \"#828891\"},{\"serieName\": \"gs csm health score\",\"color\": \"#2f3947\"},{\"serieName\": \"gtm\",\"color\": \"#785F1A\"},{\"serieName\": \"gtm  waterfall\",\"color\": \"#FCD977\"},{\"serieName\": \"gtm -- demo\",\"color\": \"#BF982A\"},{\"serieName\": \"gtm ae contribution\",\"color\": \"#FDE9AF\"},{\"serieName\": \"gtm ae productivity\",\"color\": \"#FCC838\"},{\"serieName\": \"gtm callhome stats new\",\"color\": \"#22636B\"},{\"serieName\": \"gtm callhome stats\",\"color\": \"#82DFE9\"},{\"serieName\": \"gtm campaign member\",\"color\": \"#369FAA\"},{\"serieName\": \"gtm campaigns\",\"color\": \"#B5ECF2\"},{\"serieName\": \"gtm clari forecast\",\"color\": \"#48D1E0\"},{\"serieName\": \"gtm clari forecast -- demo\",\"color\": \"#163772\"},{\"serieName\": \"gtm community\",\"color\": \"#71A1F4\"},{\"serieName\": \"gtm community knowledge articles\",\"color\": \"#2359B6\"},{\"serieName\": \"gtm credit modeling\",\"color\": \"#ABC7F9\"},{\"serieName\": \"gtm data dictionary\",\"color\": \"#2E75F0\"},{\"serieName\": \"gtm gainsight\",\"color\": \"#721F27\"},{\"serieName\": \"gtm gong\",\"color\": \"#F47E89\"},{\"serieName\": \"gtm metadata\",\"color\": \"#B6313E\"},{\"serieName\": \"gtm pipeline waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"gtm projects\",\"color\": \"#F04152\"},{\"serieName\": \"gtm stage targets and actuals\",\"color\": \"#2F3947\"},{\"serieName\": \"gtm staged targets actuals l1 - (do not use)\",\"color\": \"#A2ACBA\"},{\"serieName\": \"gtm stages targets actuals l1\",\"color\": \"#47515F\"},{\"serieName\": \"gtm stages targets actuals l2\",\"color\": \"#BEC6D0\"},{\"serieName\": \"gtm vivun\",\"color\": \"#747E8C\"},{\"serieName\": \"intercom\",\"color\": \"#7A3D1F\"},{\"serieName\": \"jira biz ops\",\"color\": \"#FFA97E\"},{\"serieName\": \"jira data ops\",\"color\": \"#C26232\"},{\"serieName\": \"lcm & cluster's upgrade schedule\",\"color\": \"#FFCCB3\"},{\"serieName\": \"nrr records\",\"color\": \"#FF8142\"},{\"serieName\": \"opportunity & product gaps - new\",\"color\": \"#422E75\"},{\"serieName\": \"pai ws\",\"color\": \"#B094F8\"},{\"serieName\": \"pm customer warehouse\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ps: capacity management\",\"color\": \"#D1C0FB\"},{\"serieName\": \"ps: project delivery\",\"color\": \"#8C62F5\"},{\"serieName\": \"ps: project maintenance\",\"color\": \"#1c222b\"},{\"serieName\": \"ps: services sales\",\"color\": \"#59616c\"},{\"serieName\": \"pardot\",\"color\": \"#262e39\"},{\"serieName\": \"peopleai activity ws\",\"color\": \"#828891\"},{\"serieName\": \"product usage\",\"color\": \"#2f3947\"},{\"serieName\": \"sfdc account all ws\",\"color\": \"#785F1A\"},{\"serieName\": \"sfdc gainsight & asana - gtm\",\"color\": \"#FCD977\"},{\"serieName\": \"sfdc survey\",\"color\": \"#BF982A\"},{\"serieName\": \"skilljar\",\"color\": \"#FDE9AF\"},{\"serieName\": \"test sales forecast achieved ws\",\"color\": \"#FCC838\"},{\"serieName\": \"ts: bi server\",\"color\": \"#22636B\"},{\"serieName\": \"trial -> opportunity conversion worksheet\",\"color\": \"#82DFE9\"},{\"serieName\": \"use case\",\"color\": \"#369FAA\"},{\"serieName\": \"ws tag test\",\"color\": \"#B5ECF2\"},{\"serieName\": \"you can book me bookings (ycbm)\",\"color\": \"#48D1E0\"},{\"serieName\": \"[dev] ps: services sales\",\"color\": \"#163772\"},{\"serieName\": \"{null}, {null}\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, (sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, ae sdr distribution ws\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, csm community points\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, calendar test\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, campaign ebc results ws\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, case created solved\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, certification exam worksheet\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, consensus\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, consensus v2\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, credit usage worksheet\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, credits purchased\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, customer health ws\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, discount analysis\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, discover monitoring data\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ft mp + ga website worksheet\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, ga website\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, ga website- aby test\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, gc demo dataset\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, gs csm health score\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, gtm\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, gtm  waterfall\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, gtm -- demo\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, gtm ae contribution\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, gtm ae productivity\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats new\",\"color\": \"#FCD977\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats\",\"color\": \"#BF982A\"},{\"serieName\": \"pinboard_answer_book, gtm campaign member\",\"color\": \"#FDE9AF\"},{\"serieName\": \"pinboard_answer_book, gtm campaigns\",\"color\": \"#FCC838\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast\",\"color\": \"#22636B\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast -- demo\",\"color\": \"#82DFE9\"},{\"serieName\": \"pinboard_answer_book, gtm community\",\"color\": \"#369FAA\"},{\"serieName\": \"pinboard_answer_book, gtm community knowledge articles\",\"color\": \"#B5ECF2\"},{\"serieName\": \"pinboard_answer_book, gtm credit modeling\",\"color\": \"#48D1E0\"},{\"serieName\": \"pinboard_answer_book, gtm gainsight\",\"color\": \"#163772\"},{\"serieName\": \"pinboard_answer_book, gtm gong\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_answer_book, gtm metadata\",\"color\": \"#2359B6\"},{\"serieName\": \"pinboard_answer_book, gtm pipeline waterfall\",\"color\": \"#ABC7F9\"},{\"serieName\": \"pinboard_answer_book, gtm projects\",\"color\": \"#2E75F0\"},{\"serieName\": \"pinboard_answer_book, gtm stage targets and actuals\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l1\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l2\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, gtm vivun\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, intercom\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, jira biz ops\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, nrr records\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, opportunity & product gaps - new\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, pai ws\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, pm customer warehouse\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, ps: capacity management\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, ps: project delivery\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, ps: project maintenance\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ps: services sales\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, pardot\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, peopleai activity ws\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, product usage\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, sfdc account all ws\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, sfdc survey\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, skilljar\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, ts: bi server\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, trial -> opportunity conversion worksheet\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, use case\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, [dev] ps: services sales\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, (sample) retail - apparel\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, ae details ws\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, ae sdr distribution ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, case created solved\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, cases created vs solved - monthly\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, certification exam worksheet\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, consensus\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, consensus v2\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, credit usage worksheet\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, crunchbase account ws\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, discover monitoring data\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, freetrial tsbi\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ga website\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, gs csm health score\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, gtm\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, gtm  waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"question_answer_book, gtm -- demo\",\"color\": \"#F04152\"},{\"serieName\": \"question_answer_book, gtm ae productivity\",\"color\": \"#2F3947\"},{\"serieName\": \"question_answer_book, gtm callhome stats new\",\"color\": \"#A2ACBA\"},{\"serieName\": \"question_answer_book, gtm callhome stats\",\"color\": \"#47515F\"},{\"serieName\": \"question_answer_book, gtm campaign member\",\"color\": \"#BEC6D0\"},{\"serieName\": \"question_answer_book, gtm campaigns\",\"color\": \"#747E8C\"},{\"serieName\": \"question_answer_book, gtm clari forecast\",\"color\": \"#7A3D1F\"},{\"serieName\": \"question_answer_book, gtm community\",\"color\": \"#FFA97E\"},{\"serieName\": \"question_answer_book, gtm community knowledge articles\",\"color\": \"#C26232\"},{\"serieName\": \"question_answer_book, gtm credit modeling\",\"color\": \"#FFCCB3\"},{\"serieName\": \"question_answer_book, gtm data dictionary\",\"color\": \"#FF8142\"},{\"serieName\": \"question_answer_book, gtm gainsight\",\"color\": \"#422E75\"},{\"serieName\": \"question_answer_book, gtm gong\",\"color\": \"#B094F8\"},{\"serieName\": \"question_answer_book, gtm metadata\",\"color\": \"#6A4ABA\"},{\"serieName\": \"question_answer_book, gtm pipeline waterfall\",\"color\": \"#D1C0FB\"},{\"serieName\": \"question_answer_book, gtm projects\",\"color\": \"#8C62F5\"},{\"serieName\": \"question_answer_book, gtm stage targets and actuals\",\"color\": \"#1c222b\"},{\"serieName\": \"question_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#59616c\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l1\",\"color\": \"#262e39\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l2\",\"color\": \"#828891\"},{\"serieName\": \"question_answer_book, gtm vivun\",\"color\": \"#2f3947\"},{\"serieName\": \"question_answer_book, intercom\",\"color\": \"#785F1A\"},{\"serieName\": \"question_answer_book, jira data ops\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, nrr records\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, pai ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, pm customer warehouse\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, ps: capacity management\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, ps: project delivery\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, ps: services sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, pardot\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, peopleai activity ws\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, sfdc survey\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, skilljar\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, test sales forecast achieved ws\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ts: bi server\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, use case\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, ws tag test\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, you can book me bookings (ycbm)\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book\",\"color\": \"#2E75F0\"}]}"
+      display_mode: TABLE_MODE
+    viz_guid: a4f9378c-d749-42a7-991e-0ce56622c107
+  - id: Viz_9
+    answer:
+      name: Group Engagement
+      description: Based on past 90 days activites
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_view [Activity Timestamp].'last 90 days' [# Answers] [# Liveboards] [Group] [# Users] sort by [# Users] descending"
+      answer_columns:
+      - name: '# Activities'
+      - name: '# Answers'
+      - name: '# Liveboards'
+      - name: Group
+      - name: '# Users'
+      table:
+        table_columns:
+        - column_id: Group
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Answers'
+          headline_aggregation: SUM
+        - column_id: '# Liveboards'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Group
+        - '# Activities'
+        - '# Answers'
+        - '# Liveboards'
+        - '# Users'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"07c6c7e1-b470-4c50-a9cd-47300a08e549\",\"width\": 136.41353652056526},{\"columnId\": \"ebf5984a-dafa-4be0-8c6f-b0c746506d83\",\"width\": 178.70588235294116},{\"columnId\": \"# Activities\",\"width\": 73.19400383444395}],\"orderedColumnIds\": [\"Group\",\"# Users\",\"# Answers\",\"# Liveboards\",\"# Activities\"]}"
+      chart:
+        type: BUBBLE
+        chart_columns:
+        - column_id: Group
+        - column_id: '# Activities'
+        - column_id: '# Answers'
+        - column_id: '# Liveboards'
+        - column_id: '# Users'
+        axis_configs:
+        - x:
+          - '# Answers'
+          "y":
+          - '# Liveboards'
+          color:
+          - Group
+          size: '# Users'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"# Answers\",\"columnProperty\": {}},{\"columnId\": \"Group\",\"columnProperty\": {}},{\"columnId\": \"# Users\",\"columnProperty\": {}},{\"columnId\": \"# Liveboards\",\"columnProperty\": {}},{\"columnId\": \"# Activities\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"4d8da6a9-b6ab-46e3-96f3-6c8ecc36504b\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Liveboards\"],\"isOpposite\": false}},{\"id\": \"3a6f5727-3032-4aca-99b9-d4d743b144e0\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"# Answers\"]}}],\"systemSeriesColors\": [{\"serieName\": \"# Activities\",\"color\": \"#FF8142\"},{\"serieName\": \"{null}\",\"color\": \"#721F27\"},{\"serieName\": \"(sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"ae details ws\",\"color\": \"#B6313E\"},{\"serieName\": \"ae sdr distribution ws\",\"color\": \"#F9B3B9\"},{\"serieName\": \"csm community points\",\"color\": \"#F04152\"},{\"serieName\": \"calendar test\",\"color\": \"#2F3947\"},{\"serieName\": \"campaign ebc results ws\",\"color\": \"#A2ACBA\"},{\"serieName\": \"case created solved\",\"color\": \"#47515F\"},{\"serieName\": \"cases created vs solved - monthly\",\"color\": \"#BEC6D0\"},{\"serieName\": \"certification exam worksheet\",\"color\": \"#747E8C\"},{\"serieName\": \"consensus\",\"color\": \"#7A3D1F\"},{\"serieName\": \"consensus v2\",\"color\": \"#FFA97E\"},{\"serieName\": \"credit usage worksheet\",\"color\": \"#C26232\"},{\"serieName\": \"credits purchased\",\"color\": \"#FFCCB3\"},{\"serieName\": \"crunchbase account ws\",\"color\": \"#FF8142\"},{\"serieName\": \"customer health ws\",\"color\": \"#422E75\"},{\"serieName\": \"discount analysis\",\"color\": \"#B094F8\"},{\"serieName\": \"discover monitoring data\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ft mp + ga website worksheet\",\"color\": \"#D1C0FB\"},{\"serieName\": \"free trial conversion worksheet [wip]\",\"color\": \"#8C62F5\"},{\"serieName\": \"freetrial tsbi\",\"color\": \"#1c222b\"},{\"serieName\": \"ga website\",\"color\": \"#59616c\"},{\"serieName\": \"ga website- aby test\",\"color\": \"#262e39\"},{\"serieName\": \"gc demo dataset\",\"color\": \"#828891\"},{\"serieName\": \"gs csm health score\",\"color\": \"#2f3947\"},{\"serieName\": \"gtm\",\"color\": \"#785F1A\"},{\"serieName\": \"gtm  waterfall\",\"color\": \"#FCD977\"},{\"serieName\": \"gtm -- demo\",\"color\": \"#BF982A\"},{\"serieName\": \"gtm ae contribution\",\"color\": \"#FDE9AF\"},{\"serieName\": \"gtm ae productivity\",\"color\": \"#FCC838\"},{\"serieName\": \"gtm callhome stats new\",\"color\": \"#22636B\"},{\"serieName\": \"gtm callhome stats\",\"color\": \"#82DFE9\"},{\"serieName\": \"gtm campaign member\",\"color\": \"#369FAA\"},{\"serieName\": \"gtm campaigns\",\"color\": \"#B5ECF2\"},{\"serieName\": \"gtm clari forecast\",\"color\": \"#48D1E0\"},{\"serieName\": \"gtm clari forecast -- demo\",\"color\": \"#163772\"},{\"serieName\": \"gtm community\",\"color\": \"#71A1F4\"},{\"serieName\": \"gtm community knowledge articles\",\"color\": \"#2359B6\"},{\"serieName\": \"gtm credit modeling\",\"color\": \"#ABC7F9\"},{\"serieName\": \"gtm data dictionary\",\"color\": \"#2E75F0\"},{\"serieName\": \"gtm gainsight\",\"color\": \"#721F27\"},{\"serieName\": \"gtm gong\",\"color\": \"#F47E89\"},{\"serieName\": \"gtm metadata\",\"color\": \"#B6313E\"},{\"serieName\": \"gtm pipeline waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"gtm projects\",\"color\": \"#F04152\"},{\"serieName\": \"gtm stage targets and actuals\",\"color\": \"#2F3947\"},{\"serieName\": \"gtm staged targets actuals l1 - (do not use)\",\"color\": \"#A2ACBA\"},{\"serieName\": \"gtm stages targets actuals l1\",\"color\": \"#47515F\"},{\"serieName\": \"gtm stages targets actuals l2\",\"color\": \"#BEC6D0\"},{\"serieName\": \"gtm vivun\",\"color\": \"#747E8C\"},{\"serieName\": \"intercom\",\"color\": \"#7A3D1F\"},{\"serieName\": \"jira biz ops\",\"color\": \"#FFA97E\"},{\"serieName\": \"jira data ops\",\"color\": \"#C26232\"},{\"serieName\": \"lcm & cluster's upgrade schedule\",\"color\": \"#FFCCB3\"},{\"serieName\": \"nrr records\",\"color\": \"#FF8142\"},{\"serieName\": \"opportunity & product gaps - new\",\"color\": \"#422E75\"},{\"serieName\": \"pai ws\",\"color\": \"#B094F8\"},{\"serieName\": \"pm customer warehouse\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ps: capacity management\",\"color\": \"#D1C0FB\"},{\"serieName\": \"ps: project delivery\",\"color\": \"#8C62F5\"},{\"serieName\": \"ps: project maintenance\",\"color\": \"#1c222b\"},{\"serieName\": \"ps: services sales\",\"color\": \"#59616c\"},{\"serieName\": \"pardot\",\"color\": \"#262e39\"},{\"serieName\": \"peopleai activity ws\",\"color\": \"#828891\"},{\"serieName\": \"product usage\",\"color\": \"#2f3947\"},{\"serieName\": \"sfdc account all ws\",\"color\": \"#785F1A\"},{\"serieName\": \"sfdc gainsight & asana - gtm\",\"color\": \"#FCD977\"},{\"serieName\": \"sfdc survey\",\"color\": \"#BF982A\"},{\"serieName\": \"skilljar\",\"color\": \"#FDE9AF\"},{\"serieName\": \"test sales forecast achieved ws\",\"color\": \"#FCC838\"},{\"serieName\": \"ts: bi server\",\"color\": \"#22636B\"},{\"serieName\": \"trial -> opportunity conversion worksheet\",\"color\": \"#82DFE9\"},{\"serieName\": \"use case\",\"color\": \"#369FAA\"},{\"serieName\": \"ws tag test\",\"color\": \"#B5ECF2\"},{\"serieName\": \"you can book me bookings (ycbm)\",\"color\": \"#48D1E0\"},{\"serieName\": \"[dev] ps: services sales\",\"color\": \"#163772\"},{\"serieName\": \"{null}, {null}\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, (sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, ae sdr distribution ws\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, csm community points\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, calendar test\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, campaign ebc results ws\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, case created solved\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, certification exam worksheet\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, consensus\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, consensus v2\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, credit usage worksheet\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, credits purchased\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, customer health ws\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, discount analysis\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, discover monitoring data\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ft mp + ga website worksheet\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, ga website\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, ga website- aby test\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, gc demo dataset\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, gs csm health score\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, gtm\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, gtm  waterfall\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, gtm -- demo\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, gtm ae contribution\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, gtm ae productivity\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats new\",\"color\": \"#FCD977\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats\",\"color\": \"#BF982A\"},{\"serieName\": \"pinboard_answer_book, gtm campaign member\",\"color\": \"#FDE9AF\"},{\"serieName\": \"pinboard_answer_book, gtm campaigns\",\"color\": \"#FCC838\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast\",\"color\": \"#22636B\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast -- demo\",\"color\": \"#82DFE9\"},{\"serieName\": \"pinboard_answer_book, gtm community\",\"color\": \"#369FAA\"},{\"serieName\": \"pinboard_answer_book, gtm community knowledge articles\",\"color\": \"#B5ECF2\"},{\"serieName\": \"pinboard_answer_book, gtm credit modeling\",\"color\": \"#48D1E0\"},{\"serieName\": \"pinboard_answer_book, gtm gainsight\",\"color\": \"#163772\"},{\"serieName\": \"pinboard_answer_book, gtm gong\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_answer_book, gtm metadata\",\"color\": \"#2359B6\"},{\"serieName\": \"pinboard_answer_book, gtm pipeline waterfall\",\"color\": \"#ABC7F9\"},{\"serieName\": \"pinboard_answer_book, gtm projects\",\"color\": \"#2E75F0\"},{\"serieName\": \"pinboard_answer_book, gtm stage targets and actuals\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l1\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l2\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, gtm vivun\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, intercom\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, jira biz ops\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, nrr records\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, opportunity & product gaps - new\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, pai ws\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, pm customer warehouse\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, ps: capacity management\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, ps: project delivery\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, ps: project maintenance\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ps: services sales\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, pardot\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, peopleai activity ws\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, product usage\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, sfdc account all ws\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, sfdc survey\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, skilljar\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, ts: bi server\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, trial -> opportunity conversion worksheet\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, use case\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, [dev] ps: services sales\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, (sample) retail - apparel\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, ae details ws\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, ae sdr distribution ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, case created solved\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, cases created vs solved - monthly\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, certification exam worksheet\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, consensus\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, consensus v2\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, credit usage worksheet\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, crunchbase account ws\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, discover monitoring data\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, freetrial tsbi\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ga website\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, gs csm health score\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, gtm\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, gtm  waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"question_answer_book, gtm -- demo\",\"color\": \"#F04152\"},{\"serieName\": \"question_answer_book, gtm ae productivity\",\"color\": \"#2F3947\"},{\"serieName\": \"question_answer_book, gtm callhome stats new\",\"color\": \"#A2ACBA\"},{\"serieName\": \"question_answer_book, gtm callhome stats\",\"color\": \"#47515F\"},{\"serieName\": \"question_answer_book, gtm campaign member\",\"color\": \"#BEC6D0\"},{\"serieName\": \"question_answer_book, gtm campaigns\",\"color\": \"#747E8C\"},{\"serieName\": \"question_answer_book, gtm clari forecast\",\"color\": \"#7A3D1F\"},{\"serieName\": \"question_answer_book, gtm community\",\"color\": \"#FFA97E\"},{\"serieName\": \"question_answer_book, gtm community knowledge articles\",\"color\": \"#C26232\"},{\"serieName\": \"question_answer_book, gtm credit modeling\",\"color\": \"#FFCCB3\"},{\"serieName\": \"question_answer_book, gtm data dictionary\",\"color\": \"#FF8142\"},{\"serieName\": \"question_answer_book, gtm gainsight\",\"color\": \"#422E75\"},{\"serieName\": \"question_answer_book, gtm gong\",\"color\": \"#B094F8\"},{\"serieName\": \"question_answer_book, gtm metadata\",\"color\": \"#6A4ABA\"},{\"serieName\": \"question_answer_book, gtm pipeline waterfall\",\"color\": \"#D1C0FB\"},{\"serieName\": \"question_answer_book, gtm projects\",\"color\": \"#8C62F5\"},{\"serieName\": \"question_answer_book, gtm stage targets and actuals\",\"color\": \"#1c222b\"},{\"serieName\": \"question_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#59616c\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l1\",\"color\": \"#262e39\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l2\",\"color\": \"#828891\"},{\"serieName\": \"question_answer_book, gtm vivun\",\"color\": \"#2f3947\"},{\"serieName\": \"question_answer_book, intercom\",\"color\": \"#785F1A\"},{\"serieName\": \"question_answer_book, jira data ops\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, nrr records\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, pai ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, pm customer warehouse\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, ps: capacity management\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, ps: project delivery\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, ps: services sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, pardot\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, peopleai activity ws\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, sfdc survey\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, skilljar\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, test sales forecast achieved ws\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ts: bi server\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, use case\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, ws tag test\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, you can book me bookings (ycbm)\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book\",\"color\": \"#2E75F0\"}]}"
+      display_mode: TABLE_MODE
+    viz_guid: 2738f034-9ba9-487b-8bd2-95dc7e94e086
+  - id: Viz_10
+    answer:
+      name: Activities
+      description: past 90 days
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [Worksheet] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_view [Activity Timestamp].'last 90 days' [# Answers] [# Liveboards] [# Users] sort by [# Users] descending"
+      answer_columns:
+      - name: '# Activities'
+      - name: Worksheet
+      - name: '# Answers'
+      - name: '# Liveboards'
+      - name: '# Users'
+      table:
+        table_columns:
+        - column_id: Worksheet
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Answers'
+          headline_aggregation: SUM
+        - column_id: '# Liveboards'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Worksheet
+        - '# Activities'
+        - '# Answers'
+        - '# Liveboards'
+        - '# Users'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Worksheet\",\"width\": 136.41353652056526},{\"columnId\": \"# Activities\",\"width\": 79.66459206973806}],\"orderedColumnIds\": [\"Worksheet\",\"# Users\",\"# Activities\",\"# Answers\",\"# Liveboards\"]}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Worksheet
+        - column_id: '# Activities'
+        - column_id: '# Answers'
+        - column_id: '# Liveboards'
+        - column_id: '# Users'
+        axis_configs:
+        - "y":
+          - '# Activities'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"Worksheet\",\"columnProperty\": {}},{\"columnId\": \"# Answers\",\"columnProperty\": {}},{\"columnId\": \"# Liveboards\",\"columnProperty\": {}},{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"# Users\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"16e7c507-1291-4381-9048-1d3d56c7678d\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Activities\"],\"isOpposite\": false}},{\"id\": \"8d67bd15-8b82-4ea3-960f-5babff6574ff\",\"properties\": {\"axisType\": \"X\"}}]}"
+      display_mode: CHART_MODE
+    viz_guid: 8443c9ab-d142-402e-bde8-2b1708e6579e
+  - id: Viz_11
+    answer:
+      name: Users
+      description: past 90 days
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [Worksheet] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_view [Activity Timestamp].'last 90 days' [# Answers] [# Liveboards] [# Users] sort by [# Users] descending"
+      answer_columns:
+      - name: '# Activities'
+      - name: Worksheet
+      - name: '# Answers'
+      - name: '# Liveboards'
+      - name: '# Users'
+      table:
+        table_columns:
+        - column_id: Worksheet
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Answers'
+          headline_aggregation: SUM
+        - column_id: '# Liveboards'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Worksheet
+        - '# Activities'
+        - '# Answers'
+        - '# Liveboards'
+        - '# Users'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Worksheet\",\"width\": 136.41353652056526},{\"columnId\": \"# Activities\",\"width\": 79.66459206973806}],\"orderedColumnIds\": [\"Worksheet\",\"# Users\",\"# Activities\",\"# Answers\",\"# Liveboards\"]}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Worksheet
+        - column_id: '# Activities'
+        - column_id: '# Answers'
+        - column_id: '# Liveboards'
+        - column_id: '# Users'
+        axis_configs:
+        - "y":
+          - '# Users'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"# Users\",\"columnProperty\": {}},{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"# Answers\",\"columnProperty\": {}},{\"columnId\": \"Worksheet\",\"columnProperty\": {}},{\"columnId\": \"# Liveboards\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"e7d92a4a-b3f7-4a01-b6b1-6a0fb8af57b4\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Users\"],\"isOpposite\": false}},{\"id\": \"445d89df-19f5-4ea4-86f4-85a921ed1f26\",\"properties\": {\"axisType\": \"X\"}}]}"
+      display_mode: CHART_MODE
+    viz_guid: 4ae370b4-2b32-4f62-84c7-600e71fcf4ae
+  - id: Viz_12
+    answer:
+      name: Answers
+      description: Past 90 Days
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [Worksheet] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_view [Activity Timestamp].'last 90 days' [# Answers] [# Liveboards] [# Users] sort by [# Users] descending"
+      answer_columns:
+      - name: '# Activities'
+      - name: Worksheet
+      - name: '# Answers'
+      - name: '# Liveboards'
+      - name: '# Users'
+      table:
+        table_columns:
+        - column_id: Worksheet
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Answers'
+          headline_aggregation: SUM
+        - column_id: '# Liveboards'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Worksheet
+        - '# Activities'
+        - '# Answers'
+        - '# Liveboards'
+        - '# Users'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Worksheet\",\"width\": 136.41353652056526},{\"columnId\": \"# Activities\",\"width\": 79.66459206973806}],\"orderedColumnIds\": [\"Worksheet\",\"# Users\",\"# Activities\",\"# Answers\",\"# Liveboards\"]}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Worksheet
+        - column_id: '# Activities'
+        - column_id: '# Answers'
+        - column_id: '# Liveboards'
+        - column_id: '# Users'
+        axis_configs:
+        - "y":
+          - '# Answers'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"# Users\",\"columnProperty\": {}},{\"columnId\": \"# Liveboards\",\"columnProperty\": {}},{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"# Answers\",\"columnProperty\": {}},{\"columnId\": \"Worksheet\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"4ea1e673-4c18-4e44-ae4a-b7f8d26bb3cd\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Answers\"],\"isOpposite\": false}},{\"id\": \"5d201236-e75b-4fb8-ab59-bd4eb864d359\",\"properties\": {\"axisType\": \"X\"}}]}"
+      display_mode: CHART_MODE
+    viz_guid: 01a15ca2-0efe-4101-b5ae-85c8699677d1
+  - id: Viz_13
+    answer:
+      name: Liveboards
+      description: Past 90 Days
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      search_query: "[# Activities] [Worksheet] [User Action].answer_unsaved [User Action].answer_view [User Action].pinboard_view [Activity Timestamp].'last 90 days' [# Answers] [# Liveboards] [# Users] sort by [# Users] descending"
+      answer_columns:
+      - name: '# Activities'
+      - name: Worksheet
+      - name: '# Answers'
+      - name: '# Liveboards'
+      - name: '# Users'
+      table:
+        table_columns:
+        - column_id: Worksheet
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Answers'
+          headline_aggregation: SUM
+        - column_id: '# Liveboards'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - Worksheet
+        - '# Activities'
+        - '# Answers'
+        - '# Liveboards'
+        - '# Users'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Worksheet\",\"width\": 136.41353652056526},{\"columnId\": \"# Activities\",\"width\": 79.66459206973806}],\"orderedColumnIds\": [\"Worksheet\",\"# Users\",\"# Activities\",\"# Answers\",\"# Liveboards\"]}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Worksheet
+        - column_id: '# Activities'
+        - column_id: '# Answers'
+        - column_id: '# Liveboards'
+        - column_id: '# Users'
+        axis_configs:
+        - "y":
+          - '# Liveboards'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"# Users\",\"columnProperty\": {}},{\"columnId\": \"Worksheet\",\"columnProperty\": {}},{\"columnId\": \"# Liveboards\",\"columnProperty\": {}},{\"columnId\": \"# Answers\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"1b3a9be2-4754-4d0d-85c5-30ccd3b39301\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Liveboards\"],\"isOpposite\": false}},{\"id\": \"5cc2b903-7519-41e3-ab3b-8760d83579c2\",\"properties\": {\"axisType\": \"X\"}}]}"
+      display_mode: CHART_MODE
+    viz_guid: 1e7fc6e9-989d-4634-994d-3ce1b9332d37
+  - id: Viz_14
+    answer:
+      name: User Action Breakdown - past 90 days
+      description: What types of actions are users taking (Ad hoc search not included)
+      tables:
+      - id: CS Tools - BI Server
+        name: CS Tools - BI Server
+        fqn: a7afe074-d9f9-4a97-af8b-065762b464b2
+      formulas:
+      - id: Dependent Link
+        name: Dependent Link
+        expr: "if ( [Dependent Type] = 'pinboard_answer_book' ) then concat ( \"{caption}liveboard link{/caption}./#/pinboard/\" , [Dependent GUID] ) else if ( [Dependent Type] = 'question_answer_book' ) then concat ( \"{caption}answer link{/caption}./#/saved-answer/\" , [Dependent GUID] ) else 'no link avaialable'"
+        was_auto_generated: false
+      search_query: "[# Activities] [Activity Timestamp].'last 90 days' [# Users] [User Action] [Worksheet] sort by [Worksheet] sort by [# Activities] descending [User Action] != 'invalid'"
+      answer_columns:
+      - name: '# Activities'
+      - name: '# Users'
+      - name: User Action
+      - name: Worksheet
+      table:
+        table_columns:
+        - column_id: User Action
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: Worksheet
+          headline_aggregation: COUNT_DISTINCT
+        - column_id: '# Activities'
+          headline_aggregation: SUM
+        - column_id: '# Users'
+          headline_aggregation: SUM
+        ordered_column_ids:
+        - User Action
+        - Worksheet
+        - '# Activities'
+        - '# Users'
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"07c6c7e1-b470-4c50-a9cd-47300a08e549\",\"width\": 136.41353652056526},{\"columnId\": \"# Activities\",\"width\": 79.66459206973806},{\"columnId\": \"8a2fc434-4d90-4e64-a8ba-41c2e92fe777\",\"width\": 65.51990105124082},{\"columnId\": \"f2503837-61fe-45cb-bfe1-c9de57e7056d\",\"width\": 266.94117647058823},{\"columnId\": \"1979cc88-cab6-4bf1-9d50-c5c1974c0028\",\"width\": 101.6470588235294}],\"orderedColumnIds\": [\"Worksheet\",\"User Action\",\"# Users\",\"# Activities\"]}"
+      chart:
+        type: PIE
+        chart_columns:
+        - column_id: User Action
+        - column_id: Worksheet
+        - column_id: '# Activities'
+        - column_id: '# Users'
+        axis_configs:
+        - x:
+          - User Action
+          "y":
+          - '# Activities'
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {}},\"columnProperties\": [{\"columnId\": \"# Activities\",\"columnProperty\": {}},{\"columnId\": \"User Action\",\"columnProperty\": {}},{\"columnId\": \"# Users\",\"columnProperty\": {}},{\"columnId\": \"Worksheet\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"05ce1929-0af5-4971-ac85-6f46f4c99676\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"# Activities\"],\"isOpposite\": false}},{\"id\": \"fb2d66f9-a372-4285-bd61-df422918d812\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"User Action\"]}}],\"systemSeriesColors\": [{\"serieName\": \"# Activities\",\"color\": \"#FF8142\"},{\"serieName\": \"{null}\",\"color\": \"#721F27\"},{\"serieName\": \"(sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"ae details ws\",\"color\": \"#B6313E\"},{\"serieName\": \"ae sdr distribution ws\",\"color\": \"#F9B3B9\"},{\"serieName\": \"csm community points\",\"color\": \"#F04152\"},{\"serieName\": \"calendar test\",\"color\": \"#2F3947\"},{\"serieName\": \"campaign ebc results ws\",\"color\": \"#A2ACBA\"},{\"serieName\": \"case created solved\",\"color\": \"#47515F\"},{\"serieName\": \"cases created vs solved - monthly\",\"color\": \"#BEC6D0\"},{\"serieName\": \"certification exam worksheet\",\"color\": \"#747E8C\"},{\"serieName\": \"consensus\",\"color\": \"#7A3D1F\"},{\"serieName\": \"consensus v2\",\"color\": \"#FFA97E\"},{\"serieName\": \"credit usage worksheet\",\"color\": \"#C26232\"},{\"serieName\": \"credits purchased\",\"color\": \"#FFCCB3\"},{\"serieName\": \"crunchbase account ws\",\"color\": \"#FF8142\"},{\"serieName\": \"customer health ws\",\"color\": \"#422E75\"},{\"serieName\": \"discount analysis\",\"color\": \"#B094F8\"},{\"serieName\": \"discover monitoring data\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ft mp + ga website worksheet\",\"color\": \"#D1C0FB\"},{\"serieName\": \"free trial conversion worksheet [wip]\",\"color\": \"#8C62F5\"},{\"serieName\": \"freetrial tsbi\",\"color\": \"#1c222b\"},{\"serieName\": \"ga website\",\"color\": \"#59616c\"},{\"serieName\": \"ga website- aby test\",\"color\": \"#262e39\"},{\"serieName\": \"gc demo dataset\",\"color\": \"#828891\"},{\"serieName\": \"gs csm health score\",\"color\": \"#2f3947\"},{\"serieName\": \"gtm\",\"color\": \"#785F1A\"},{\"serieName\": \"gtm  waterfall\",\"color\": \"#FCD977\"},{\"serieName\": \"gtm -- demo\",\"color\": \"#BF982A\"},{\"serieName\": \"gtm ae contribution\",\"color\": \"#FDE9AF\"},{\"serieName\": \"gtm ae productivity\",\"color\": \"#FCC838\"},{\"serieName\": \"gtm callhome stats new\",\"color\": \"#22636B\"},{\"serieName\": \"gtm callhome stats\",\"color\": \"#82DFE9\"},{\"serieName\": \"gtm campaign member\",\"color\": \"#369FAA\"},{\"serieName\": \"gtm campaigns\",\"color\": \"#B5ECF2\"},{\"serieName\": \"gtm clari forecast\",\"color\": \"#48D1E0\"},{\"serieName\": \"gtm clari forecast -- demo\",\"color\": \"#163772\"},{\"serieName\": \"gtm community\",\"color\": \"#71A1F4\"},{\"serieName\": \"gtm community knowledge articles\",\"color\": \"#2359B6\"},{\"serieName\": \"gtm credit modeling\",\"color\": \"#ABC7F9\"},{\"serieName\": \"gtm data dictionary\",\"color\": \"#2E75F0\"},{\"serieName\": \"gtm gainsight\",\"color\": \"#721F27\"},{\"serieName\": \"gtm gong\",\"color\": \"#F47E89\"},{\"serieName\": \"gtm metadata\",\"color\": \"#B6313E\"},{\"serieName\": \"gtm pipeline waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"gtm projects\",\"color\": \"#F04152\"},{\"serieName\": \"gtm stage targets and actuals\",\"color\": \"#2F3947\"},{\"serieName\": \"gtm staged targets actuals l1 - (do not use)\",\"color\": \"#A2ACBA\"},{\"serieName\": \"gtm stages targets actuals l1\",\"color\": \"#47515F\"},{\"serieName\": \"gtm stages targets actuals l2\",\"color\": \"#BEC6D0\"},{\"serieName\": \"gtm vivun\",\"color\": \"#747E8C\"},{\"serieName\": \"intercom\",\"color\": \"#7A3D1F\"},{\"serieName\": \"jira biz ops\",\"color\": \"#FFA97E\"},{\"serieName\": \"jira data ops\",\"color\": \"#C26232\"},{\"serieName\": \"lcm & cluster's upgrade schedule\",\"color\": \"#FFCCB3\"},{\"serieName\": \"nrr records\",\"color\": \"#FF8142\"},{\"serieName\": \"opportunity & product gaps - new\",\"color\": \"#422E75\"},{\"serieName\": \"pai ws\",\"color\": \"#B094F8\"},{\"serieName\": \"pm customer warehouse\",\"color\": \"#6A4ABA\"},{\"serieName\": \"ps: capacity management\",\"color\": \"#D1C0FB\"},{\"serieName\": \"ps: project delivery\",\"color\": \"#8C62F5\"},{\"serieName\": \"ps: project maintenance\",\"color\": \"#1c222b\"},{\"serieName\": \"ps: services sales\",\"color\": \"#59616c\"},{\"serieName\": \"pardot\",\"color\": \"#262e39\"},{\"serieName\": \"peopleai activity ws\",\"color\": \"#828891\"},{\"serieName\": \"product usage\",\"color\": \"#2f3947\"},{\"serieName\": \"sfdc account all ws\",\"color\": \"#785F1A\"},{\"serieName\": \"sfdc gainsight & asana - gtm\",\"color\": \"#FCD977\"},{\"serieName\": \"sfdc survey\",\"color\": \"#BF982A\"},{\"serieName\": \"skilljar\",\"color\": \"#FDE9AF\"},{\"serieName\": \"test sales forecast achieved ws\",\"color\": \"#FCC838\"},{\"serieName\": \"ts: bi server\",\"color\": \"#22636B\"},{\"serieName\": \"trial -> opportunity conversion worksheet\",\"color\": \"#82DFE9\"},{\"serieName\": \"use case\",\"color\": \"#369FAA\"},{\"serieName\": \"ws tag test\",\"color\": \"#B5ECF2\"},{\"serieName\": \"you can book me bookings (ycbm)\",\"color\": \"#48D1E0\"},{\"serieName\": \"[dev] ps: services sales\",\"color\": \"#163772\"},{\"serieName\": \"{null}, {null}\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, (sample) retail - apparel\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, ae sdr distribution ws\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, csm community points\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, calendar test\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, campaign ebc results ws\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, case created solved\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, certification exam worksheet\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, consensus\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, consensus v2\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, credit usage worksheet\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, credits purchased\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, customer health ws\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, discount analysis\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, discover monitoring data\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ft mp + ga website worksheet\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, ga website\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, ga website- aby test\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, gc demo dataset\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, gs csm health score\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, gtm\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, gtm  waterfall\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, gtm -- demo\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, gtm ae contribution\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, gtm ae productivity\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats new\",\"color\": \"#FCD977\"},{\"serieName\": \"pinboard_answer_book, gtm callhome stats\",\"color\": \"#BF982A\"},{\"serieName\": \"pinboard_answer_book, gtm campaign member\",\"color\": \"#FDE9AF\"},{\"serieName\": \"pinboard_answer_book, gtm campaigns\",\"color\": \"#FCC838\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast\",\"color\": \"#22636B\"},{\"serieName\": \"pinboard_answer_book, gtm clari forecast -- demo\",\"color\": \"#82DFE9\"},{\"serieName\": \"pinboard_answer_book, gtm community\",\"color\": \"#369FAA\"},{\"serieName\": \"pinboard_answer_book, gtm community knowledge articles\",\"color\": \"#B5ECF2\"},{\"serieName\": \"pinboard_answer_book, gtm credit modeling\",\"color\": \"#48D1E0\"},{\"serieName\": \"pinboard_answer_book, gtm gainsight\",\"color\": \"#163772\"},{\"serieName\": \"pinboard_answer_book, gtm gong\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_answer_book, gtm metadata\",\"color\": \"#2359B6\"},{\"serieName\": \"pinboard_answer_book, gtm pipeline waterfall\",\"color\": \"#ABC7F9\"},{\"serieName\": \"pinboard_answer_book, gtm projects\",\"color\": \"#2E75F0\"},{\"serieName\": \"pinboard_answer_book, gtm stage targets and actuals\",\"color\": \"#721F27\"},{\"serieName\": \"pinboard_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#F47E89\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l1\",\"color\": \"#B6313E\"},{\"serieName\": \"pinboard_answer_book, gtm stages targets actuals l2\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book, gtm vivun\",\"color\": \"#F04152\"},{\"serieName\": \"pinboard_answer_book, intercom\",\"color\": \"#2F3947\"},{\"serieName\": \"pinboard_answer_book, jira biz ops\",\"color\": \"#A2ACBA\"},{\"serieName\": \"pinboard_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#47515F\"},{\"serieName\": \"pinboard_answer_book, nrr records\",\"color\": \"#BEC6D0\"},{\"serieName\": \"pinboard_answer_book, opportunity & product gaps - new\",\"color\": \"#747E8C\"},{\"serieName\": \"pinboard_answer_book, pai ws\",\"color\": \"#7A3D1F\"},{\"serieName\": \"pinboard_answer_book, pm customer warehouse\",\"color\": \"#FFA97E\"},{\"serieName\": \"pinboard_answer_book, ps: capacity management\",\"color\": \"#C26232\"},{\"serieName\": \"pinboard_answer_book, ps: project delivery\",\"color\": \"#FFCCB3\"},{\"serieName\": \"pinboard_answer_book, ps: project maintenance\",\"color\": \"#FF8142\"},{\"serieName\": \"pinboard_answer_book, ps: services sales\",\"color\": \"#422E75\"},{\"serieName\": \"pinboard_answer_book, pardot\",\"color\": \"#B094F8\"},{\"serieName\": \"pinboard_answer_book, peopleai activity ws\",\"color\": \"#6A4ABA\"},{\"serieName\": \"pinboard_answer_book, product usage\",\"color\": \"#D1C0FB\"},{\"serieName\": \"pinboard_answer_book, sfdc account all ws\",\"color\": \"#8C62F5\"},{\"serieName\": \"pinboard_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#1c222b\"},{\"serieName\": \"pinboard_answer_book, sfdc survey\",\"color\": \"#59616c\"},{\"serieName\": \"pinboard_answer_book, skilljar\",\"color\": \"#262e39\"},{\"serieName\": \"pinboard_answer_book, ts: bi server\",\"color\": \"#828891\"},{\"serieName\": \"pinboard_answer_book, trial -> opportunity conversion worksheet\",\"color\": \"#2f3947\"},{\"serieName\": \"pinboard_answer_book, use case\",\"color\": \"#785F1A\"},{\"serieName\": \"pinboard_answer_book, [dev] ps: services sales\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, (sample) retail - apparel\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, ae details ws\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, ae sdr distribution ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, case created solved\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, cases created vs solved - monthly\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, certification exam worksheet\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, consensus\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, consensus v2\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, credit usage worksheet\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, crunchbase account ws\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, discover monitoring data\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, free trial conversion worksheet [wip]\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, freetrial tsbi\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ga website\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, gs csm health score\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, gtm\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, gtm  waterfall\",\"color\": \"#F9B3B9\"},{\"serieName\": \"question_answer_book, gtm -- demo\",\"color\": \"#F04152\"},{\"serieName\": \"question_answer_book, gtm ae productivity\",\"color\": \"#2F3947\"},{\"serieName\": \"question_answer_book, gtm callhome stats new\",\"color\": \"#A2ACBA\"},{\"serieName\": \"question_answer_book, gtm callhome stats\",\"color\": \"#47515F\"},{\"serieName\": \"question_answer_book, gtm campaign member\",\"color\": \"#BEC6D0\"},{\"serieName\": \"question_answer_book, gtm campaigns\",\"color\": \"#747E8C\"},{\"serieName\": \"question_answer_book, gtm clari forecast\",\"color\": \"#7A3D1F\"},{\"serieName\": \"question_answer_book, gtm community\",\"color\": \"#FFA97E\"},{\"serieName\": \"question_answer_book, gtm community knowledge articles\",\"color\": \"#C26232\"},{\"serieName\": \"question_answer_book, gtm credit modeling\",\"color\": \"#FFCCB3\"},{\"serieName\": \"question_answer_book, gtm data dictionary\",\"color\": \"#FF8142\"},{\"serieName\": \"question_answer_book, gtm gainsight\",\"color\": \"#422E75\"},{\"serieName\": \"question_answer_book, gtm gong\",\"color\": \"#B094F8\"},{\"serieName\": \"question_answer_book, gtm metadata\",\"color\": \"#6A4ABA\"},{\"serieName\": \"question_answer_book, gtm pipeline waterfall\",\"color\": \"#D1C0FB\"},{\"serieName\": \"question_answer_book, gtm projects\",\"color\": \"#8C62F5\"},{\"serieName\": \"question_answer_book, gtm stage targets and actuals\",\"color\": \"#1c222b\"},{\"serieName\": \"question_answer_book, gtm staged targets actuals l1 - (do not use)\",\"color\": \"#59616c\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l1\",\"color\": \"#262e39\"},{\"serieName\": \"question_answer_book, gtm stages targets actuals l2\",\"color\": \"#828891\"},{\"serieName\": \"question_answer_book, gtm vivun\",\"color\": \"#2f3947\"},{\"serieName\": \"question_answer_book, intercom\",\"color\": \"#785F1A\"},{\"serieName\": \"question_answer_book, jira data ops\",\"color\": \"#FCD977\"},{\"serieName\": \"question_answer_book, lcm & cluster's upgrade schedule\",\"color\": \"#BF982A\"},{\"serieName\": \"question_answer_book, nrr records\",\"color\": \"#FDE9AF\"},{\"serieName\": \"question_answer_book, pai ws\",\"color\": \"#FCC838\"},{\"serieName\": \"question_answer_book, pm customer warehouse\",\"color\": \"#22636B\"},{\"serieName\": \"question_answer_book, ps: capacity management\",\"color\": \"#82DFE9\"},{\"serieName\": \"question_answer_book, ps: project delivery\",\"color\": \"#369FAA\"},{\"serieName\": \"question_answer_book, ps: services sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"question_answer_book, pardot\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book, peopleai activity ws\",\"color\": \"#163772\"},{\"serieName\": \"question_answer_book, sfdc gainsight & asana - gtm\",\"color\": \"#71A1F4\"},{\"serieName\": \"question_answer_book, sfdc survey\",\"color\": \"#2359B6\"},{\"serieName\": \"question_answer_book, skilljar\",\"color\": \"#ABC7F9\"},{\"serieName\": \"question_answer_book, test sales forecast achieved ws\",\"color\": \"#2E75F0\"},{\"serieName\": \"question_answer_book, ts: bi server\",\"color\": \"#721F27\"},{\"serieName\": \"question_answer_book, use case\",\"color\": \"#F47E89\"},{\"serieName\": \"question_answer_book, ws tag test\",\"color\": \"#B6313E\"},{\"serieName\": \"question_answer_book, you can book me bookings (ycbm)\",\"color\": \"#F9B3B9\"},{\"serieName\": \"pinboard_answer_book\",\"color\": \"#48D1E0\"},{\"serieName\": \"question_answer_book\",\"color\": \"#2E75F0\"},{\"serieName\": \"answer_add_new_filter\",\"color\": \"#C26232\"},{\"serieName\": \"answer_pinboard_context\",\"color\": \"#FFCCB3\"},{\"serieName\": \"answer_unsaved\",\"color\": \"#FF8142\"},{\"serieName\": \"answer_view\",\"color\": \"#6A4ABA\"},{\"serieName\": \"answer_view_list\",\"color\": \"#D1C0FB\"},{\"serieName\": \"answer_view_save\",\"color\": \"#8C62F5\"},{\"serieName\": \"answer_viz_context_view\",\"color\": \"#262e39\"},{\"serieName\": \"data_chart_config\",\"color\": \"#828891\"},{\"serieName\": \"data_export\",\"color\": \"#2f3947\"},{\"serieName\": \"data_show_underlying_row\",\"color\": \"#BF982A\"},{\"serieName\": \"data_show_underlying_viz\",\"color\": \"#FDE9AF\"},{\"serieName\": \"pinboard_admin_view\",\"color\": \"#FCC838\"},{\"serieName\": \"pinboard_ad_hoc\",\"color\": \"#369FAA\"},{\"serieName\": \"pinboard_embed_view\",\"color\": \"#B5ECF2\"},{\"serieName\": \"pinboard_filter\",\"color\": \"#48D1E0\"},{\"serieName\": \"pinboard_insight_view\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_print_filter\",\"color\": \"#2359B6\"},{\"serieName\": \"pinboard_print_view\",\"color\": \"#ABC7F9\"},{\"serieName\": \"pinboard_view\",\"color\": \"#2E75F0\"}]}"
+      display_mode: TABLE_MODE
+    viz_guid: 897fd8f1-cb79-44ed-9fa7-9d7fe2315060
+  filters:
+  - column:
+    - CS Tools - Column Usage::Parent
+    - CS Tools - BI Server::Worksheet
+    oper: in
+    values:
+    - gtm
+    is_mandatory: false
+  layout:
+    tiles:
+    - visualization_id: Viz_2
+      size: SMALL
+    - visualization_id: Viz_3
+      size: SMALL
+    - visualization_id: Viz_11
+      size: EXTRA_SMALL
+    - visualization_id: Viz_13
+      size: EXTRA_SMALL
+    - visualization_id: Viz_10
+      size: EXTRA_SMALL
+    - visualization_id: Viz_12
+      size: EXTRA_SMALL
+    - visualization_id: Viz_14
+      size: SMALL
+    - visualization_id: Viz_4
+      size: SMALL
+    - visualization_id: Viz_5
+      size: MEDIUM_SMALL
+    - visualization_id: Viz_1
+      size: LARGE
+    - visualization_id: Viz_6
+      size: MEDIUM_SMALL
+    - visualization_id: Viz_7
+      size: MEDIUM_SMALL
+    - visualization_id: Viz_8
+      size: MEDIUM
+    - visualization_id: Viz_9
+      size: MEDIUM

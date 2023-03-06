@@ -4,20 +4,24 @@ worksheet:
   description: ThoughtSpot usage data linked to meta data from CS Tools Searchable Content
   tables:
   - name: TS_BI_SERVER
+    fqn: 3a60f1f3-e6a8-4e13-95e5-0484ef766497
   - name: TS_DEPENDENT_OBJECT
+    fqn: 83fa2082-051e-4760-b0c3-42f80c43c40e
   - name: TS_GROUP
+    fqn: 8040695c-a83f-46e8-ab3d-e01b1b513395
   - name: TS_METADATA_OBJECT
+    fqn: abbc71f0-ba37-4505-b8d9-1d0babac8ddb
   - name: TS_USER
+    fqn: e571cf91-9988-4080-aff0-696d1507d2eb
   - name: TS_USER_VIEW
+    fqn: 084ec359-3642-48fb-9027-1efb55e88b0e
   - name: TS_VW_WORKSHEET
+    fqn: b761fd8b-c07d-433e-af31-00c65e386e86
   - name: TS_VW_WORKSHEET_DEPENDENT
+    fqn: e613a84b-49a9-4bff-9d8b-81fb35e0f092
   - name: TS_XREF_PRINCIPAL
+    fqn: 0b1f212d-7c72-4e83-8d35-abde0dc8ae03
   joins:
-  - name: REL_TS_BI_SERVER-TS_VW_WORKSHEET_DEPENDENT
-    source: TS_BI_SERVER
-    destination: TS_VW_WORKSHEET_DEPENDENT
-    type: LEFT_OUTER
-    is_one_to_one: false
   - name: REL_TS_BI_SERVER-TS_USER_VIEW
     source: TS_BI_SERVER
     destination: TS_USER_VIEW
@@ -27,6 +31,11 @@ worksheet:
     source: TS_BI_SERVER
     destination: TS_USER
     type: INNER
+    is_one_to_one: false
+  - name: REL_TS_BI_SERVER-TS_VW_WORKSHEET_DEPENDENT
+    source: TS_BI_SERVER
+    destination: TS_VW_WORKSHEET_DEPENDENT
+    type: LEFT_OUTER
     is_one_to_one: false
   - name: REL_DEPENDENT_OBJECT-TS_USER
     source: TS_DEPENDENT_OBJECT
@@ -99,19 +108,19 @@ worksheet:
     table: TS_USER
     join_path:
     - join:
-      - REL_TS_XREF_PRINCIPAL-TS_USER
-    - join:
       - REL_TS_BI_SERVER-TS_VW_WORKSHEET_DEPENDENT
       - REL_TS_VW_WORKSHEET_DEPENDENT-TS_VW_WORKSHEET
       - REL_TS_VW_WORKSHEET-TS_METADATA_OBJECT
       - REL_TS_USER-TS_METADATA_OBJECT
+    - join:
+      - REL_TS_XREF_PRINCIPAL-TS_USER
   - id: TS_USER_3
     table: TS_USER
     join_path:
     - join:
-      - REL_TS_XREF_PRINCIPAL-TS_USER
-    - join:
       - REL_TS_BI_SERVER-TS_USER
+    - join:
+      - REL_TS_XREF_PRINCIPAL-TS_USER
   - id: TS_USER_VIEW_1
     table: TS_USER_VIEW
     join_path:

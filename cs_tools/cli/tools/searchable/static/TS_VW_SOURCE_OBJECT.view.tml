@@ -4,7 +4,8 @@ view:
   tables:
   - id: TS_METADATA_OBJECT
     name: TS_METADATA_OBJECT
-  search_query: "[CREATED] [CREATED].detailed [DESCRIPTION] [MODIFIED] [MODIFIED].detailed [NAME] [OBJECT_GUID] [OBJECT_TYPE] [OBJECT_TYPE] != [OBJECT_TYPE].pinboard_answer_book [OBJECT_TYPE].question_answer_book [OBJECT_TYPE].worksheet sort by [OBJECT_TYPE]"
+    fqn: abbc71f0-ba37-4505-b8d9-1d0babac8ddb
+  search_query: "[CREATED] [CREATED].detailed [DESCRIPTION] [MODIFIED] [MODIFIED].detailed [NAME] [OBJECT_GUID] [OBJECT_TYPE] [OBJECT_TYPE] != [OBJECT_TYPE].pinboard_answer_book [OBJECT_TYPE].question_answer_book [OBJECT_SUBTYPE] != 'worksheet'"
   view_columns:
   - name: CREATED
     search_output_column: CREATED

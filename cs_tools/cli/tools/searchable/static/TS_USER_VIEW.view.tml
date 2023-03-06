@@ -1,10 +1,11 @@
-guid: 3648b867-88e7-4613-a2c9-25a991c2ab65
+guid: 084ec359-3642-48fb-9027-1efb55e88b0e
 view:
   name: TS_USER_VIEW
   description: View of TS BI Server user behavior (oldest and most recent login times)
   tables:
   - id: TS_BI_SERVER
     name: TS_BI_SERVER
+    fqn: 3a60f1f3-e6a8-4e13-95e5-0484ef766497
   formulas:
   - id: First Login
     name: First Login
@@ -14,21 +15,21 @@ view:
     name: Last Login
     expr: "max ( [TIMESTAMP] )"
     was_auto_generated: false
-  search_query: "[Last Login] [Last Login].detailed [First Login] [USER_ID]"
+  search_query: "[USER_ID] [First Login] [First Login].detailed [Last Login] [Last Login].detailed"
   view_columns:
   - name: USER_ID
     search_output_column: USER_ID
     properties:
       column_type: ATTRIBUTE
-  - name: Last Login
-    search_output_column: Last Login
-    properties:
-      column_type: ATTRIBUTE
-      aggregation: MAX
-      index_type: DONT_INDEX
   - name: First Login
     search_output_column: First Login
     properties:
       column_type: ATTRIBUTE
       aggregation: MIN
+      index_type: DONT_INDEX
+  - name: Last Login
+    search_output_column: Last Login
+    properties:
+      column_type: ATTRIBUTE
+      aggregation: MAX
       index_type: DONT_INDEX

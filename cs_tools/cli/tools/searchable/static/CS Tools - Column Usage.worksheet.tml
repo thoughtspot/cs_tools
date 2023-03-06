@@ -4,10 +4,15 @@ worksheet:
   description: Worksheet designed to assist in product management decisions by understanding which columns are used in answers and liveboards
   tables:
   - name: TS_BI_SERVER
+    fqn: 3a60f1f3-e6a8-4e13-95e5-0484ef766497
   - name: TS_DEPENDENT_OBJECT
+    fqn: 83fa2082-051e-4760-b0c3-42f80c43c40e
   - name: TS_METADATA_COLUMN
+    fqn: 76f33272-c7a2-45ae-b0f7-61506182fed2
   - name: TS_METADATA_OBJECT
+    fqn: abbc71f0-ba37-4505-b8d9-1d0babac8ddb
   - name: TS_VW_SOURCE_OBJECT
+    fqn: 0ee8a371-bb6a-4953-8118-67ecae3eb2f3
   joins:
   - name: REL_TS_BI_SERVER-TS_DEPENDENT_OBJECT
     source: TS_BI_SERVER
