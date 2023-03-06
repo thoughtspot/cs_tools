@@ -37,7 +37,9 @@ class TMLMiddleware:
         Import TML objects.
         """
         r = self.ts.api.metadata_tml_import(
-                import_objects=[t.dumps() if not isinstance(t, str) else t for t in tmls], import_policy=policy
+                import_objects=[t.dumps() if not isinstance(t, str) else t for t in tmls],
+                import_policy=policy,
+                force_create=force,
             )
 
         responses = []
