@@ -3,8 +3,9 @@ This file contains the methods to execute the 'scriptability import' command.
 """
 from __future__ import annotations
 
+import datetime
 from dataclasses import dataclass
-from typing import List, Dict, Union
+from typing import List, Dict
 import pathlib
 import logging
 import time
@@ -12,20 +13,18 @@ import copy
 import re
 import traceback
 
+from thoughtspot_tml.utils import _recursive_scan
 from thoughtspot_tml.utils import determine_tml_type
-from thoughtspot_tml.types import TMLObject
 from rich.align import Align
 from rich.table import Table
 from httpx import HTTPStatusError
-import typer
 
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.errors import CSToolsError
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsArgument as Arg
-from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.types import ShareModeAccessLevel, TMLSupportedContent, MetadataObjectType, TMLImportPolicy, GUID
 from cs_tools.api import _utils
+from cs_tools.utils import chunks
 
 from .util import GUIDMapping, TMLFile
 
@@ -75,7 +74,7 @@ def to_import(
     Import TML from a file or directory into ThoughtSpot.
 
     \b
-    cs_tools dependends on thoughtspot_tml. The GUID file is produced from
+    cs_tools depends on thoughtspot_tml. The GUID file is produced from
     thoughtspot_tml and requires a specific format. For further information on the
     GUID File, see
 
@@ -125,22 +124,19 @@ def _import_and_validate(
         # content then it wouldn't.
         if guid_mapping is not None:
             guid_mapping.disambiguate(tml_file.tml, delete_unmapped_guids=True)
+            tml_file.tml = _remove_viz_guid(tml_file.tml)
 
         # strip GUIDs if doing force create and convert to a list of TML string.
         if force_create:
             tml_file.tml.guid = None
 
         if tml_logs is not None:
-            filename = tml_file.filepath.stem
+            filename = tml_file.filepath.name.split(".")[0]
             content_type = tml_file.tml.tml_type_name
             tml_file.tml.dump(tml_logs / f"{filename}.IMPORTED.{content_type}.tml")
 
         log.info(f"validating {tml_file.filepath.name}")
         tml_files.append(tml_file)
-
-    #
-    #
-    #
 
     with rich_console.status(f"[bold green]importing {path.name}[/]"):
         r = ts.api.metadata_tml_import(
@@ -152,14 +148,21 @@ def _import_and_validate(
         results: List[TMLImportResponse] = []
 
         for tml_file, content in zip(tml_files, r.json()["object"]):
+            status_code = content["response"]["status"]["status_code"]
+            error_messages = content["response"]["status"].get("error_message", None)
+            name = tml_file.filepath.stem
+
+            _log_results(tml_logs=tml_logs, name=name, status_code=status_code, error_messages=error_messages)
+
+
             results.append(
                 TMLImportResponse(
                     guid=content["response"].get("header", {}).get("id_guid", tml_file.tml.guid),
                     metadata_object_type=TMLSupportedContent[tml_file.tml.tml_type_name].value,
                     tml_type_name=tml_file.tml.tml_type_name,
-                    name=tml_file.filepath.stem,
-                    status_code=content["response"]["status"]["status_code"],
-                    error_messages=content["response"]["status"].get("error_message", None),
+                    name=name,
+                    status_code=status_code,
+                    error_messages=error_messages,
                 )
             )
 
@@ -224,11 +227,12 @@ def _import_and_create_bundle(
     if guid_mapping:
         guid_mapping.save()
 
-    if tags:
-        _add_tags(ts, [r for r in results if not r.is_error], tags)
+    if _some_tml_updated(import_policy, results):  # only update and share if there were actual updates.
+        if tags:
+            _add_tags(ts, [r for r in results if not r.is_error], tags)
 
-    if share_with:
-        _share_with(ts, [r for r in results if not r.is_error], share_with)
+        if share_with:
+            _share_with(ts, [r for r in results if not r.is_error], share_with)
 
     return results
 
@@ -302,7 +306,7 @@ def _upload_connections(
             )
 
         if tml_logs is not None:
-            filename = tml_file.filepath.name
+            filename = tml_file.filepath.name.split(".")[0]
             content_type = tml_file.tml.tml_type_name
             tml_file.tml.dump(tml_logs / f"{filename}.IMPORTED.{content_type}.tml")
 
@@ -331,14 +335,19 @@ def _upload_connections(
             )
 
         if not r.is_success:
+            status_code = r.reason_phrase
+            error_messages = str(r.status_code)
+            name = tml.name
+            _log_results(tml_logs=tml_logs, name=name, status_code=status_code, error_messages=error_messages)
+
             responses.append(
                 TMLImportResponse(
                     guid=tml.guid,
                     metadata_object_type="DATA_SOURCE",
                     tml_type_name="connection",
                     name=tml.name,
-                    status_code=r.reason_phrase,
-                    error_messages=str(r.status_code),
+                    status_code=status_code,
+                    error_messages=error_messages,
                 )
             )
 
@@ -429,9 +438,10 @@ def _upload_tml(
         # if we are forcing the creation of new content, we want to delete guids that aren't mapped
         if guid_mapping:
             guid_mapping.disambiguate(tml=tml_file.tml, delete_unmapped_guids=force_create)
+            tml_file.tml = _remove_viz_guid(tml_file.tml)
 
         if tml_logs is not None:
-            filename = tml_file.filepath.name
+            filename = tml_file.filepath.name.split(".")[0]
             content_type = tml_file.tml.tml_type_name
             tml_file.tml.dump(tml_logs / f"{filename}.IMPORTED.{content_type}.tml")
 
@@ -451,6 +461,11 @@ def _upload_tml(
 
         if content["response"]["status"]["status_code"] != "ERROR":
             guids_to_map[old_guid] = guid
+
+        status_code = content["response"]["status"]["status_code"]
+        error_messages = content["response"]["status"].get("error_message", None)
+        name = tml_file.filepath.stem
+        _log_results(tml_logs=tml_logs, name=name, status_code=status_code, error_messages=error_messages)
 
         responses.append(
             TMLImportResponse(
@@ -550,14 +565,12 @@ def _wait_for_metadata(ts: ThoughtSpot, guids: List[GUID]) -> None:
         n += 1
         log.info(f"checking {len(guids): >3} guids, n={n}")
 
-        r_c = ts.api.metadata_list(metadata_type="DATA_SOURCE", fetch_guids=list(guids), show_hidden=False)
-        r_t = ts.api.metadata_list(metadata_type="LOGICAL_TABLE", fetch_guids=list(guids), show_hidden=False)
-        r_a = ts.api.metadata_list(metadata_type="QUESTION_ANSWER_BOOK", fetch_guids=list(guids), show_hidden=False)
-        r_p = ts.api.metadata_list(metadata_type="PINBOARD_ANSWER_BOOK", fetch_guids=list(guids), show_hidden=False)
+        for metadata_type in ("DATA_SOURCE", "LOGICAL_TABLE", "QUESTION_ANSWER_BOOK", "PINBOARD_ANSWER_BOOK"):
+            for chunk in chunks(list(set(guids).difference(ready_guids)), n=25):
+                r = ts.api.metadata_list(metadata_type=metadata_type, fetch_guids=list(chunk), show_hidden=False)
 
-        for response in (r_c, r_t, r_a, r_p):
-            for header in response.json()["headers"]:
-                ready_guids.add(header["id"])
+                for metadata_object in r.json()["headers"]:
+                    ready_guids.add(metadata_object["id"])
 
         time.sleep(5.0)
 
@@ -576,6 +589,50 @@ def _show_results_as_table(results: List[TMLImportResponse]) -> None:
 
     for r in results:
         # table.add_row(r.status_code, r.tml_type_name, r.name, ','.join(r.error_messages))
-        table.add_row(r.status_code, r.guid, r.tml_type_name, ','.join(r.error_messages))
+        # table.add_row(r.status_code, r.guid, r.tml_type_name, ','.join(r.error_messages))
+        table.add_row(r.status_code, r.name, r.tml_type_name, ','.join(r.error_messages))
 
     rich_console.print(Align.center(table))
+
+
+def _log_results(tml_logs: pathlib.Path, name: str, status_code: str, error_messages: str) -> None:
+    """
+    Logs a message if there was a WARNING or ERROR.
+    """
+    msg = f"{name} -- {error_messages}"
+
+    with open(tml_logs / "import.issues", "a") as logfile:
+        if status_code == "WARNING":
+            log.warning(msg=msg)
+        elif status_code == "ERROR":
+            log.error(msg=msg)
+
+        logfile.write(f"{status_code} -- {msg}\n")
+
+
+def _some_tml_updated(import_policy: TMLImportPolicy, results: List[TMLImportResponse]) -> bool:
+    """
+    Returns True if any of the TML was updated.  This is known based on the policy and results:
+    * Validate - always False
+    * All or none - True if/ all the items don't have errors.
+    * Partial - True if any of the items don't have errors.
+    """
+    if import_policy == TMLImportPolicy.validate:  # if validating, then no content would be created.
+        return False
+
+    if import_policy == TMLImportPolicy.all_or_none:
+        return all([not r.is_error for r in results])  # if any of the results weren't an error, return true.
+
+    if import_policy == TMLImportPolicy.partial:
+        return any([not r.is_error for r in results])  # if any of the results weren't an error, return true.
+
+    return False  # this should never happen, but just in case a new value is added.
+
+
+def _remove_viz_guid(tml):
+    attrs = _recursive_scan(tml, check=lambda attr: hasattr(attr, "viz_guid"))
+
+    for liveboard_visualization in attrs:
+        liveboard_visualization.viz_guid = None
+
+    return tml
