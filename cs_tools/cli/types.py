@@ -11,6 +11,7 @@ import typer
 import click
 
 from cs_tools.cli.dependencies.syncer import DSyncer
+from cs_tools.errors import ConfigDoesNotExist
 from cs_tools._compat import StrEnum
 
 log = logging.getLogger(__name__)
@@ -131,7 +132,10 @@ class SyncerProtocolType(click.ParamType):
             definition_fp = pathlib.Path(definition)
 
             if not definition_fp.exists():
-                raise ...
+                raise ConfigDoesNotExist(
+                    error="Syncer definition [b blue]{name}[/] does not exist.",
+                    name=definition_fp.as_posix()
+                )
 
             return {"definition_fp": definition_fp}
 
