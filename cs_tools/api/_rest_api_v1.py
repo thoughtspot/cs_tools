@@ -600,7 +600,7 @@ class RESTAPIv1:
         if hasattr(self, "_redirected_url_due_to_tsload_load_balancer"):
             url = self._redirected_url_due_to_tsload_load_balancer
         else:
-            url = self.base_url.copy_with(port=8442)
+            url = self.session.base_url.copy_with(port=8442)
 
         return url
 
@@ -616,7 +616,6 @@ class RESTAPIv1:
         # Further reading on what can be passed to `data`
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body
-        timeout = self.timeout if timeout is UNDEFINED else timeout
         r = self.post("ts_dataservice/v1/public/tql/query", timeout=timeout, json=data)
         return r
 
@@ -624,7 +623,6 @@ class RESTAPIv1:
         # Further reading on what can be passed to `data`
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body_2
-        timeout = self.timeout if timeout is UNDEFINED else timeout
         r = self.post("ts_dataservice/v1/public/tql/script", timeout=timeout, json=data)
         return r
 
@@ -636,7 +634,6 @@ class RESTAPIv1:
 
     def dataservice_dataload_initialize(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path="/ts_dataservice/v1/public/loads")
-        timeout = self.timeout if timeout is UNDEFINED else timeout
         r = self.post(fullpath, timeout=timeout, json=data)
         return r
 
@@ -647,7 +644,6 @@ class RESTAPIv1:
         # Processing of the dataload happens concurrently, and this function may be
         # called multiple times to paralellize the full data load across multiple files.
         fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
-        timeout = self.timeout if timeout is UNDEFINED else timeout
         r = self.post(fullpath, timeout=timeout, files={"upload-file": fd})
         return r
 
