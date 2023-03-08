@@ -64,7 +64,11 @@ class TSLoadNodeRedirectCache:
         keep = {}
 
         for cycle_id, redirect_info in self.load().items():
-            init_ts = redirect_info.get("dataload_initialize") or redirect_info["load_datetime"]
+            init_ts = redirect_info.get("dataload_initialize") or redirect_info.get("load_datetime")
+
+            # if the format is not known
+            if init_ts is None:
+                continue
 
             if (NOW - init_ts) <= DAYS_TO_KEEP:
                 keep[cycle_id] = redirect_info
