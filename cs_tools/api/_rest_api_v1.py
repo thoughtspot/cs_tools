@@ -563,7 +563,7 @@ class RESTAPIv1:
             "id": dumps(guids),
             "permission": {
                 "permissions": {
-                    principal_guid: {"shareMode": access_level.value} for principal_guid, access_level in permissions.items()
+                    principal_guid: {"shareMode": access_level} for principal_guid, access_level in permissions.items()
                 }
             },
             # we don't support these options
