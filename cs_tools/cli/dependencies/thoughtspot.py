@@ -118,8 +118,10 @@ class DThoughtSpot(Dependency):
         ctx.obj.thoughtspot = ThoughtSpot(cfg)
 
         if cfg.verbose:
-            to_file_handler = next((h for h in logging.getLogger().handlers if h.name == "to_file"))
+            root_logger = logging.getLogger()
+            to_file_handler = next((h for h in root_logger.handlers if h.name == "to_file"))
             to_file_handler.setLevel(5)
+            root_logger.setLevel(5)
 
         if self.login:
             ctx.obj.thoughtspot.login()
