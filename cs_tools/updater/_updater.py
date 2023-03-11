@@ -294,12 +294,21 @@ class UnixPath:
         return addition
 
     def get_shell_profiles(self) -> List[pathlib.Path]:
-        profiles = [self.home.joinpath(".profile")]
+        profiles = []
 
+        # .profile is the base shell profile
+        #  - if it doesn't exist, we'll create it 
+        base_profile = self.home.joinpath(".profile")
+        base_profile.touch(exist_ok=True)
+        profiles.append(base_profile)
+
+        # .zprofile is for login shells
+        # .zshrc is for interactive shells
         if "zsh" in os.environ.get("SHELL", ""):
             zdotdir = pathlib.Path(os.getenv("ZDOTDIR", self.home))
-            profiles.append(zdotdir.joinpath(".zprofile"))
-            profiles.append(zdotdir.joinpath(".zshrc"))
+
+            for profile in [".zprofile", ".zshrc"]:
+                profiles.append(zdotdir.joinpath(profile))
 
         # .bash_profile is for login shells
         # .bashrc is for interactive shells
