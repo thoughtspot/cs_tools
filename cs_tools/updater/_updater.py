@@ -315,7 +315,7 @@ class UnixPath:
                 continue
 
             if self.profile_snippet not in profile.read_text():
-                log.info(f"Adding the '{self.bin_dir}' PATH snippet to {profile}")
+                log.info(f"Adding the '{self.bin_dir}' PATH snippet to '{profile.resolve()}'")
 
                 with profile.open(mode="a") as f:
                     f.write(self.profile_snippet)
@@ -328,7 +328,7 @@ class UnixPath:
             contents = profile.read_text()
 
             if self.profile_snippet in contents:
-                log.info(f"Removing the '{self.bin_dir}' PATH snippet from {profile}")
+                log.info(f"Removing the '{self.bin_dir}' PATH snippet from '{profile.resolve()}'")
                 contents = contents.replace(self.profile_snippet, "")
 
                 with profile.open(mode="w") as f:
