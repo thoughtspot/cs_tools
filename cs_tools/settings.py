@@ -10,13 +10,14 @@ import re
 
 from pydantic.types import DirectoryPath, FilePath
 from awesomeversion import AwesomeVersion
-from pydantic import validator, AnyHttpUrl, BaseModel
+from pydantic import validator, AnyHttpUrl, BaseModel, Field
 import toml
 
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 from cs_tools._version import __version__
 from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.const import APP_DIR
+from cs_tools.cli import _analytics
 from cs_tools import utils
 
 log = logging.getLogger(__name__)
@@ -26,28 +27,27 @@ class MetaConfig(BaseModel):
     """
     Store information about this environment.
     """
-    install_uuid: uuid.UUID
+    install_uuid: uuid.UUID = Field(default_factory=uuid.uuid4)
     default_config_name: str = None
     last_remote_check: dt.datetime = dt.datetime(year=2012, month=6, day=1)
     remote_version: str = None
     remote_date: dt.date = None
+    last_analytics_checkpoint: dt.datetime = dt.datetime(year=2012, month=6, day=1)
 
     @classmethod
     def load_and_convert_toml(cls):
         """Migrate from the old format."""
-        file = APP_DIR.joinpath(".meta-config.toml")
-        data = toml.load(file)
+        data = toml.load(APP_DIR.joinpath(".meta-config.toml"))
 
         self = cls(
-            install_uuid=uuid.uuid4().hex,
+            # install_uuid=...,
             default_config_name=data.get("default", {}).get("config", None),
             # last_remote_check= ... ,
             latest_release_version=data.get("latest_release", {}).get("version", None),
             latest_release_date=data.get("latest_release", {}).get("published_at", None),
+            # last_analytics_checkpoint= ...,
         )
 
-        self.save()
-        file.unlink()
         return self
 
     @classmethod
@@ -56,15 +56,25 @@ class MetaConfig(BaseModel):
         # OLD FORMAT
         if APP_DIR.joinpath(".meta-config.toml").exists():
             self = cls.load_and_convert_toml()
+            self.save()
 
+            # REMOVE OLD DATA
+            APP_DIR.joinpath(".meta-config.toml").unlink()
+        
         # NEW FORMAT
         elif APP_DIR.joinpath(".meta-config.json").exists():
             file = APP_DIR.joinpath(".meta-config.json")
             data = json.loads(file.read_text())
             self = cls(**data)
 
+        # NEVER SEEN BEFORE
         else:
-            self = cls(install_uuid=uuid.uuid4().hex)
+            self = cls()
+
+        # SET UP THE DATABASE
+        if not APP_DIR.joinpath("analytics.db").exists():
+            syncer = _analytics.get_database()
+            syncer.dump("runtime_environment", data=[_analytics.RuntimeEnvironment(envt_uuid=self.install_uuid).dict()])
 
         self.check_remote_version()
         return self

@@ -1,9 +1,13 @@
 from __future__ import annotations
 from typing import Any, Dict
+import datetime as dt
+import traceback
 import logging
+import sys
 
 from rich.panel import Panel
 from rich.text import Text
+from sqlmodel import Session
 import typer
 import rich
 
@@ -97,7 +101,21 @@ def run() -> int:
     """
     Entrypoint into cs_tools.
     """
+    from cs_tools.settings import _meta_config
+    from cs_tools.cli import _analytics
     from cs_tools.cli import _monkey
+
+    this_run_data = _analytics.CommandExecution(
+        envt_uuid=_meta_config.install_uuid,
+        start_dt=dt.datetime.now(),
+        end_dt=None,
+        os_args=" ".join(["cs_tools", *sys.argv[1:]]),
+        tool_name=None,
+        command_name=None,
+        is_success=None,
+        is_known_error=None,
+        traceback=None,
+    )
 
     _setup_logging()
     _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
@@ -108,14 +126,21 @@ def run() -> int:
     app.add_typer(_log.app)
 
     try:
-        app()
+        return_code = app(standalone_mode=False)
 
     except CSToolsError as e:
+        return_code = 1
+        this_run_data.is_known_error = True
+        this_run_data.traceback = "\n".join(traceback.format_exception(e))
+
         log.debug(e, exc_info=True)
         rich_console.log(e)
-        return 1
 
-    except Exception:
+    except Exception as e:
+        return_code = 1
+        this_run_data.is_known_error = False
+        this_run_data.traceback = "\n".join(traceback.format_exception(e))
+
         log.debug("whoopsie, something went wrong!", exc_info=True)
 
         import random
@@ -123,7 +148,7 @@ def run() -> int:
         import typer       # main cli library
         import click       # supporting cli library
 
-        traceback = rich.traceback.Traceback(
+        rich_traceback = rich.traceback.Traceback(
             width=150,
             extra_lines=3,
             word_wrap=False,
@@ -154,12 +179,19 @@ def run() -> int:
             subtitle="Run [b blue]cs_tools logs report[/] to send us your last error."
         )
 
+        # fmt: off
         rich_console.print(
-            rich.align.Align.center(traceback),
+            rich.align.Align.center(rich_traceback),
             "\n",
             rich.align.Align.center(text),
             "\n"
         )
-        return 1
+        # fmt: on
 
-    return 0
+    # Add the analytics to the local database
+    this_run_data.is_success = not bool(return_code)
+    this_run_data.end_dt = dt.datetime.now()
+    syncer = _analytics.get_database()
+    syncer.dump("command_execution", data=[this_run_data.dict()])
+
+    return return_code
