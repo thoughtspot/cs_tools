@@ -205,11 +205,6 @@ class CSToolsConfig(Settings):
             return v
         return {k: pathlib.Path(f).resolve() for k, f in v.items()}
 
-    @classmethod
-    def get_default_config_name(cls) -> str:
-        """Return the default config name."""
-        return _meta_config.default_config_name
-
     def dict(self) -> Any:
         """
         Wrapper around model.dict to handle path types.

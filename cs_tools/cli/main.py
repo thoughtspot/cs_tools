@@ -7,7 +7,7 @@ import sys
 
 from rich.panel import Panel
 from rich.text import Text
-from sqlmodel import Session
+import click
 import typer
 import rich
 
@@ -128,13 +128,19 @@ def run() -> int:
     try:
         return_code = app(standalone_mode=False)
 
+    except click.ClickException as e:
+        return_code = 1
+        this_run_data.is_known_error = True
+        this_run_data.traceback = str(e)
+        log.error(e)
+
     except CSToolsError as e:
         return_code = 1
         this_run_data.is_known_error = True
         this_run_data.traceback = "\n".join(traceback.format_exception(e))
 
         log.debug(e, exc_info=True)
-        rich_console.log(e)
+        log.error(e)
 
     except Exception as e:
         return_code = 1
@@ -146,7 +152,6 @@ def run() -> int:
         import random
         import contextlib  # dependencies
         import typer       # main cli library
-        import click       # supporting cli library
 
         rich_traceback = rich.traceback.Traceback(
             width=150,

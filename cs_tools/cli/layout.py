@@ -63,9 +63,10 @@ class WorkTask:
 
     def __post_init__(self, rich_live: Live=None):
         self._live = rich_live
+        self._total_duration: int = 0
         self._started_at: dt.datetime = None
-        self._stopped_at: dt.datetime = None
         self._skipped = False
+        self._stopped = False
 
     @property
     def started_at(self) -> dt.datetime:
@@ -73,8 +74,12 @@ class WorkTask:
 
     @property
     def duration(self) -> dt.timedelta:
-        end = self._stopped_at or dt.datetime.now()
-        return end - self.started_at
+        delta = dt.timedelta(seconds=self._total_duration)
+
+        if self._stopped:
+            return delta
+
+        return (dt.datetime.now() - self.started_at) + delta
 
     def skip(self) -> None:
         self._skipped = True
@@ -94,7 +99,8 @@ class WorkTask:
         if not self._skipped:
             self.status = ":white_heavy_check_mark:" if exc is None else ":cross_mark:"
 
-        self._stopped_at = dt.datetime.now()
+        self._total_duration += (dt.datetime.now() - self._started_at).total_seconds()
+        self._stopped = True
         self._live.refresh()
 
     @property

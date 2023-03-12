@@ -91,7 +91,7 @@ def cli():
         "\n"
         "Ideally, you will only need to run this one time, and then your environment can be fully managed by CS Tools "
         "itself."
-        "\n{y}If you run into any issues, please reach out to us on GitHub or by submitted to the Google Form below.{x}"
+        "\n{y}If you run into any issues, please reach out to us on GitHub or by submitting to the Google Form below.{x}"
         "\n"
         "\n    Google Forms: {b}{google_forms}{x}"
         "\n          GitHub: {b}{github_issues}{x}"
@@ -102,6 +102,7 @@ def cli():
             github_issues="https://github.com/thoughtspot/cs_tools/issues/new/choose"
         )
     )
+
     log.debug(
         "\n"
         "\n    [PLATFORM DETAILS]"
@@ -213,6 +214,8 @@ def _setup_logging(verbose=True):
 
     # CONSOLE LOGGER IS PRETTY
     handler = logging.StreamHandler()
+    handler.name = "console"
+
     format_ = ColorSupportedFormatter(datefmt="%H:%M:%S")
     handler.setFormatter(format_)
     handler.setLevel(logging.INFO if not verbose else logging.DEBUG)
@@ -220,6 +223,8 @@ def _setup_logging(verbose=True):
 
     # FILE LOGGER IS VERBOSE
     handler = InMemoryUntilErrorHandler(directory=pathlib.Path.cwd(), prefix="cs_tools-bootstrap-error-")
+    handler.name = "disk"
+
     format_ = logging.Formatter(fmt="%(levelname)-8s | %(asctime)s | %(filename)s:%(lineno)d | %(message)s")
     handler.setFormatter(format_)
     handler.setLevel(logging.DEBUG)
@@ -408,6 +413,7 @@ def get_cs_tools_venv(**passthru):
         log.info(
             "Unable to find the CS Tools _updater.py, try getting at "
             "{b}https://github.com/thoughtspot/cs_tools/releases/latest{x}"
+            .format(b=_BLUE, x=_RESET)
         )
         raise SystemExit(1)
 
@@ -487,7 +493,17 @@ def get_latest_cs_tools_release(allow_beta=False, timeout=None):
 def main():
     # type: () -> int
     if sys.version_info >= (3, 7):
-        return cli()
+        try:
+            return_code = cli()
+        except Exception:
+            disk_handler = next(h for h in log.root.handlers if h.name == "disk")
+            log.warning(
+                "Unexpected error in bootstrapper, see {b}{logfile}{x} for details.."
+                .format(b=_BLUE, logfile=disk_handler.baseFilename, x=_RESET)
+            )
+            return_code = 1
+
+        return return_code
 
     # =====================
     # VERSION CHECK FAILED

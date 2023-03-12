@@ -90,7 +90,7 @@ class DThoughtSpot(Dependency):
         ctx = click.get_current_context()
         args, options, flags = split_args_from_opts(ctx.args)
 
-        config = options.pop("config", CSToolsConfig.get_default_config_name())
+        config = options.pop("config", meta.default_config_name)
 
         # click interpreted `--config NAME` as an Argument value because the argument itself
         # was missing.
@@ -99,7 +99,7 @@ class DThoughtSpot(Dependency):
                 ctx.fail(f"Missing argument '{name.upper()}'")
 
         if config is None:
-            ctx.fail("no environment specified for --config")
+            ctx.fail("Missing [b blue]--config[/], and no [b green]default config[/] is set")
 
         # add flags to options
         options = {**options, **{k: True for k in flags}}
