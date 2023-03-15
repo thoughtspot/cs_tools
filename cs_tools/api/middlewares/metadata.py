@@ -56,7 +56,7 @@ class MetadataMiddleware:
         }
 
         sharing_access = []
-        user_guids = [user["id"] for user in self.ts.user.all()]
+        group_guids = [group["id"] for group in self.ts.group.all()]
 
         for chunk in utils.chunks(guids, n=chunksize):
             r = self.ts.api.security_metadata_permissions(metadata_type=type_to_supertype[type.value], guids=chunk)
@@ -71,10 +71,10 @@ class MetadataMiddleware:
                         "share_mode": permission["shareMode"],
                     }
 
-                    if shared_to_principal_guid in user_guids:
-                        d["shared_to_user_guid"] = shared_to_principal_guid
-                    else:
+                    if shared_to_principal_guid in group_guids:
                         d["shared_to_group_guid"] = shared_to_principal_guid
+                    else:
+                        d["shared_to_user_guid"] = shared_to_principal_guid
 
                     sharing_access.append(d)
 
