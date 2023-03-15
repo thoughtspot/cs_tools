@@ -37,7 +37,7 @@ class MetadataMiddleware:
         *,
         type: Union[MetadataObjectType, MetadataObjectSubtype],
         permission_type: PermissionType = PermissionType.explicit,
-        chunksize: int = 15,
+        chunksize: int = 25,
     ) -> RecordsFormat:
         """ """
         type_to_supertype = {
