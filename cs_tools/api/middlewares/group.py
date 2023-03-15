@@ -25,6 +25,24 @@ class GroupMiddleware:
         self.ts = ts
 
     @validate_arguments
+    def all(self, batchsize: int = 50) -> RecordsFormat:
+        """
+        Get all groups in ThoughtSpot.
+        """
+        groups = []
+
+        while True:
+            # user/list doesn't offer batching..
+            r = self.ts.api.metadata_list(metadata_type="USER_GROUP", batchsize=batchsize, offset=len(groups))
+            data = r.json()
+            groups.extend(data["headers"])
+
+            if data["isLastBatch"]:
+                break
+
+        return groups
+
+    @validate_arguments
     def guid_for(self, group_name: str) -> GUID:
         """
         Return the GUID for a given Group.
