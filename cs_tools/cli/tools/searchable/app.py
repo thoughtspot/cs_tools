@@ -223,6 +223,11 @@ def bi_server(
 def gather(
     ctx: typer.Context,
     # tables: List[str] = Opt(None, help="table names to collect data on, can be specified multiple times"),
+    include_column_access: bool = Opt(
+        False,
+        "--include-column-access",
+        help="if specified, include security controls for Column Level Security as well",
+    ),
     export: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(models=models.METADATA_MODELS),
@@ -340,8 +345,10 @@ def gather(
                     "SQL_VIEW",
                     "LOGICAL_TABLE",
                 ),
-                "LOGICAL_COLUMN": ("FORMULA", "CALENDAR_TABLE", "LOGICAL_COLUMN"),
             }
+
+            if include_column_access:
+                types["LOGICAL_COLUMN"] = ("FORMULA", "CALENDAR_TABLE", "LOGICAL_COLUMN")
 
             data = []
 
@@ -350,17 +357,10 @@ def gather(
             #    will take an incredibly long amount of time to complete. We can probably
             #    find a better algorithm.
             #
-            for type_, subtypes in types.items():
-                guids = [_["id"] for _ in content if _["metadata_type"] in subtypes]
-                r = ts.metadata.permissions(guids, type=type_)
+            for metadata_type, metadata_subtypes in types.items():
+                guids = [_["id"] for _ in content if _["metadata_type"] in metadata_subtypes]
+                r = ts.metadata.permissions(guids, type=metadata_type)
                 data.extend(transform.to_sharing_access(r))
-
-                # DEV NOTE:
-                #   this does not exist in TS apis as of 2022/03, the call below only
-                #   retrieves inherited/effective sharing access for the authenticated
-                #   user
-                #
-                # r = ts.metadata.permissions(guids, type=type_, permission_type='EFFECTIVE')
 
         with tasks["syncer_dump_access_controls"]:
             export.dump("ts_sharing_access", data=data)
