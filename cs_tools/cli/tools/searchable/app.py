@@ -102,7 +102,7 @@ def deploy(
                     shutil.copy(file, export)
 
         with tasks["deploy_spotapp"] as this_task:
-            if export is not None:
+            if syncer is not None:
                 this_task.skip()
                 raise typer.Exit(0)
 
@@ -128,7 +128,7 @@ def deploy(
 @app.command(dependencies=[thoughtspot])
 def bi_server(
     ctx: typer.Context,
-    export: DSyncer = Opt(
+    syncer: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(models=models.BISERVER_MODELS),
         help="protocol and path for options to pass to the syncer",
@@ -178,7 +178,7 @@ def bi_server(
 
     tasks = [
         ("gather_search", "Collecting data from [b blue]TS: BI Server"),
-        ("syncer_dump", f"Writing rows to [b blue]{export.name}"),
+        ("syncer_dump", f"Writing rows to [b blue]{syncer.name}"),
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
@@ -216,7 +216,7 @@ def bi_server(
             ]
 
         with tasks["syncer_dump"]:
-            export.dump("ts_bi_server", data=renamed)
+            syncer.dump("ts_bi_server", data=renamed)
 
 
 @app.command(dependencies=[thoughtspot])
@@ -228,7 +228,7 @@ def gather(
         "--include-column-access",
         help="if specified, include security controls for Column Level Security as well",
     ),
-    export: DSyncer = Opt(
+    syncer: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(models=models.METADATA_MODELS),
         help="protocol and path for options to pass to the syncer",
@@ -246,22 +246,22 @@ def gather(
 
     tasks = [
         ("gather_groups", "Collecting [b blue]Groups [white]and[/] Privileges"),
-        ("syncer_dump_groups", f"Writing [b blue]Groups[/] to {export.name}"),
-        ("syncer_dump_group_privileges", f"Writing [b blue]Groups Privileges[/] to {export.name}"),
+        ("syncer_dump_groups", f"Writing [b blue]Groups[/] to {syncer.name}"),
+        ("syncer_dump_group_privileges", f"Writing [b blue]Groups Privileges[/] to {syncer.name}"),
         ("gather_users", "Collecting [b blue]Users"),
-        ("syncer_dump_users", f"Writing [b blue]Users[/] to {export.name}"),
-        ("syncer_dump_associations", f"Writing [b blue]User [white]and[/] Group Associations[/] to {export.name}"),
+        ("syncer_dump_users", f"Writing [b blue]Users[/] to {syncer.name}"),
+        ("syncer_dump_associations", f"Writing [b blue]User [white]and[/] Group Associations[/] to {syncer.name}"),
         ("gather_tags", "Collecting [b blue]Tags"),
-        ("syncer_dump_tags", f"Writing [b blue]Tags[/] to {export.name}"),
+        ("syncer_dump_tags", f"Writing [b blue]Tags[/] to {syncer.name}"),
         ("gather_metadata", "Collecting [b blue]Metadata"),
-        ("syncer_dump_metadata", f"Writing [b blue]Metadata[/] to {export.name}"),
+        ("syncer_dump_metadata", f"Writing [b blue]Metadata[/] to {syncer.name}"),
         ("gather_metadata_columns", "Collecting [b blue]Metadata Columns"),
-        ("syncer_dump_metadata_columns", f"Writing [b blue]Metadata Columns[/] to {export.name}"),
-        ("syncer_dump_synonyms", f"Writing [b blue]Synonyms[/] to {export.name}"),
+        ("syncer_dump_metadata_columns", f"Writing [b blue]Metadata Columns[/] to {syncer.name}"),
+        ("syncer_dump_synonyms", f"Writing [b blue]Synonyms[/] to {syncer.name}"),
         ("gather_dependents", "Collecting [b blue]Dependencies"),
-        ("syncer_dump_dependents", f"Writing [b blue]Metadata Dependents[/] to {export.name}"),
+        ("syncer_dump_dependents", f"Writing [b blue]Metadata Dependents[/] to {syncer.name}"),
         ("gather_access_controls", "Collecting [b blue]Sharing Access Controls"),
-        ("syncer_dump_access_controls", f"Writing [b blue]Sharing Access Controls[/] to {export.name}"),
+        ("syncer_dump_access_controls", f"Writing [b blue]Sharing Access Controls[/] to {syncer.name}"),
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
@@ -272,22 +272,22 @@ def gather(
         with tasks["syncer_dump_groups"]:
             xref = transform.to_principal_association(r.json())
             data = transform.to_group(r.json())
-            export.dump("ts_group", data=data)
+            syncer.dump("ts_group", data=data)
 
         with tasks["syncer_dump_group_privileges"]:
             data = transform.to_group_privilege(r.json())
-            export.dump("ts_group_privilege", data=data)
+            syncer.dump("ts_group_privilege", data=data)
 
         with tasks["gather_users"]:
             r = ts.api.user_read()
 
         with tasks["syncer_dump_users"]:
             data = transform.to_user(r.json())
-            export.dump("ts_user", data=data)
+            syncer.dump("ts_user", data=data)
 
         with tasks["syncer_dump_associations"]:
             data = [*xref, *transform.to_principal_association(r.json())]
-            export.dump("ts_xref_principal", data=data)
+            syncer.dump("ts_xref_principal", data=data)
             del xref
 
         with tasks["gather_tags"]:
@@ -295,7 +295,7 @@ def gather(
 
         with tasks["syncer_dump_tags"]:
             data = transform.to_tag(r)
-            export.dump("ts_tag", data=data)
+            syncer.dump("ts_tag", data=data)
 
         with tasks["gather_metadata"]:
             content = [
@@ -306,10 +306,10 @@ def gather(
 
         with tasks["syncer_dump_metadata"]:
             data = transform.to_metadata_object(content)
-            export.dump("ts_metadata_object", data=data)
+            syncer.dump("ts_metadata_object", data=data)
 
             data = transform.to_tagged_object(content)
-            export.dump("ts_tagged_object", data=data)
+            syncer.dump("ts_tagged_object", data=data)
 
         with tasks["gather_metadata_columns"]:
             guids = [_["id"] for _ in content if not _["metadata_type"].endswith("BOOK")]
@@ -317,11 +317,11 @@ def gather(
 
         with tasks["syncer_dump_metadata_columns"]:
             col_ = transform.to_metadata_column(data)
-            export.dump("ts_metadata_column", data=col_)
+            syncer.dump("ts_metadata_column", data=col_)
 
         with tasks["syncer_dump_synonyms"]:
             syn_ = transform.to_column_synonym(data)
-            export.dump("ts_column_synonym", data=syn_)
+            syncer.dump("ts_column_synonym", data=syn_)
 
         with tasks["gather_dependents"]:
             types = ("LOGICAL_COLUMN", "FORMULA", "CALENDAR_TABLE")
@@ -330,7 +330,7 @@ def gather(
 
         with tasks["syncer_dump_dependents"]:
             data = transform.to_dependent_object(r)
-            export.dump("ts_dependent_object", data=data)
+            syncer.dump("ts_dependent_object", data=data)
 
         with tasks["gather_access_controls"]:
             types = {
@@ -363,4 +363,4 @@ def gather(
                 data.extend(transform.to_sharing_access(r))
 
         with tasks["syncer_dump_access_controls"]:
-            export.dump("ts_sharing_access", data=data)
+            syncer.dump("ts_sharing_access", data=data)

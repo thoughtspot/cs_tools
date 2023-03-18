@@ -97,6 +97,9 @@ def connection_check(
         rich_help_panel="Syncer Options",
     )
 ):
+    """
+    Check a Connection's metadata against the external data platform.
+    """
     ts = ctx.obj.thoughtspot
 
     r = ts.api.connection_export(guid=connection_guid)
@@ -172,9 +175,12 @@ def connection_check(
         log.info("[b green]No columns[/] are out of sync with the external database!")
         raise typer.Exit(0)
 
-    oos_column = len(column_sync)
+    bye_column = sum(1 for c in column_sync if c.is_missing_external)
     oos_table = len({c.fully_qualified_name for c in column_sync})
-    log.warning(f"[b yellow]{oos_column} columns across {oos_table} tables are out of sync in [b blue]{tml.name}")
+    log.warning(
+        f"[b yellow]{len(column_sync) - bye_column} columns out of sync and {bye_column} missing across {oos_table} "
+        f"tables in [b blue]{tml.name} ({tml.guid})"
+    )
 
     if syncer is None:
         table = layout.build_table()
@@ -182,7 +188,7 @@ def connection_check(
         rich_console.print(table)
 
     else:
-        syncer.dump(f"connection-rationalize", data=[column.dict() for column in column_sync])
+        syncer.dump(f"connection-check", data=[column.dict() for column in column_sync])
 
 
 @app.command(dependencies=[thoughtspot], name="export")

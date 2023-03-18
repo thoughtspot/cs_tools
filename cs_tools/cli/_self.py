@@ -19,6 +19,7 @@ from cs_tools.cli.ux import CSToolsCommand
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
 from cs_tools.const import APP_DIR
+from cs_tools.cli import _analytics
 
 log = logging.getLogger(__name__)
 app = typer.Typer(
@@ -51,7 +52,6 @@ def update(
     if venv_name is not None:
         os.environ["CS_TOOLS_CONFIG_DIRNAME"] = venv_name
 
-    venv = CSToolsVirtualEnvironment(find_links=offline)
     release = get_latest_cs_tools_release()
     requires = "cs_tools[cli]"
 
@@ -68,12 +68,18 @@ def update(
             raise typer.Exit(0)
 
     log.info("Upgrading CS Tools and its dependencies.")
+    venv = CSToolsVirtualEnvironment(find_links=offline)
 
     try:
         rc = venv.pip("install", requires, "--upgrade")
         log.debug(rc)
     except RuntimeError:  # OSError when pip on Windows can't upgrade itself~
         pass
+
+    syncer = _analytics.get_database()
+    syncer.dump("runtime_environment", data=[_analytics.RuntimeEnvironment(envt_uuid=meta.install_uuid).dict()])
+
+    # Would you like to send Analytics to CS Tools?
 
 
 @app.command(cls=CSToolsCommand)

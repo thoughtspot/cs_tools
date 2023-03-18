@@ -88,7 +88,7 @@ def identify(
         help="content with this tag (case sensitive) will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria (applied with OR)",
     ),
-    report: DSyncer = Opt(
+    syncer: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
@@ -112,7 +112,7 @@ def identify(
         ("gather_ts_bi", "Getting content usage and activity statistics"),
         ("gather_supporting_filter_criteria", "Getting supporting metadata for content identification"),
         ("gather_metadata", "Getting existing content metadata"),
-        ("syncer_report", f"Writing Archiver report{f' to {report.name}' if report is not None else ''}"),
+        ("syncer_report", f"Writing Archiver syncer{f' to {report.name}' if syncer is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items to tag with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("tagging_content", "Tagging content in ThoughtSpot"),
@@ -198,9 +198,9 @@ def identify(
             tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
 
         with tasks["syncer_report"] as this_task:
-            if report is not None:
+            if syncer is not None:
                 to_archive = [{**_, "operation": "identify"} for _ in to_archive]
-                report.dump("archiver_report", data=to_archive)
+                syncer.dump("archiver_report", data=to_archive)
             else:
                 this_task.skip()
 
@@ -242,7 +242,7 @@ def revert(
     dry_run: bool = Opt(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
     no_prompt: bool = Opt(False, "--no-prompt", help="disable the confirmation prompt"),
     delete_tag: bool = Opt(False, "--delete-tag", help="after untagging identified content, remove the tag itself"),
-    report: DSyncer = Opt(
+    syncer: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
@@ -256,7 +256,7 @@ def revert(
 
     tasks = [
         ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver report{f' to {report.name}' if report is not None else ''}"),
+        ("syncer_report", f"Writing Archiver syncer{f' to {report.name}' if syncer is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("untagging_content", f"Removing [b blue]{tag_name}[/] from content in ThoughtSpot"),
@@ -320,9 +320,9 @@ def revert(
             tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
 
         with tasks["syncer_report"] as this_task:
-            if report is not None:
+            if syncer is not None:
                 to_revert = [{**_, "operation": "revert"} for _ in to_revert]
-                report.dump("archiver_report", data=to_revert)
+                syncer.dump("archiver_report", data=to_revert)
             else:
                 this_task.skip()
 
@@ -374,7 +374,7 @@ def remove(
     dry_run: bool = Opt(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
     no_prompt: bool = Opt(False, "--no-prompt", help="disable the confirmation prompt"),
     delete_tag: bool = Opt(False, "--delete-tag", help="after deleting identified content, remove the tag itself"),
-    report: DSyncer = Opt(
+    syncer: DSyncer = Opt(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
@@ -404,7 +404,7 @@ def remove(
 
     tasks = [
         ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver report{f' to {report.name}' if report is not None else ''}"),
+        ("syncer_report", f"Writing Archiver syncer{f' to {report.name}' if syncer is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("export_content", f"Exporting content as TML{f' to {directory}' if directory is not None else ''}"),
@@ -469,9 +469,9 @@ def remove(
             tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
 
         with tasks["syncer_report"] as this_task:
-            if report is not None:
+            if syncer is not None:
                 to_delete = [{**_, "operation": "revert"} for _ in to_delete]
-                report.dump("archiver_report", data=to_delete)
+                syncer.dump("archiver_report", data=to_delete)
             else:
                 this_task.skip()
 
