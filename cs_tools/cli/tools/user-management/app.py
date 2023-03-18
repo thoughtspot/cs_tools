@@ -1,6 +1,7 @@
 from typing import List
 import itertools as it
 import logging
+import json
 
 import typer
 import httpx
@@ -212,16 +213,22 @@ def rename(
 @app.command(dependencies=[thoughtspot])
 def sync(
     ctx: typer.Context,
-    syncer: DSyncer = Arg(
+    apply_changes: bool = Opt(
+        False,
+        "--apply-changes / --dry-run",
+        help="test your sync to ThoughtSpot",
+    ),
+    new_user_password: str = Opt(None, help="password to set for all newly created users"),
+    remove_deleted: bool = Opt(
+        False,
+        "--remove-deleted",
+        help="delete users and groups not found after loading from the syncer"
+    ),
+    syncer: DSyncer = Opt(
         ...,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
-    ),
-    export: bool = Opt(
-        False,
-        "--export",
-        help="if specified, dump principals to the syncer",
-        rich_help_panel="Export Options"
+        rich_help_panel="Syncer Options"
     ),
     users: str = Opt(
         "ts_auth_sync_users",
@@ -238,16 +245,10 @@ def sync(
         help="directive to find associations to sync at",
         rich_help_panel="Syncer Options"
     ),
-    new_user_password: str = Opt(None, help="password to set for all newly created users"),
-    remove_deleted: bool = Opt(
+    export: bool = Opt(
         False,
-        "--remove-deleted",
-        help="delete users and groups not found after loading from the syncer"
-    ),
-    apply_changes: bool = Opt(
-        False,
-        "--apply-changes / --dry-run",
-        help="test your sync to ThoughtSpot",
+        "--export",
+        help="if specified, dump principals to the syncer instead of loading into ThoughtSpot",
     ),
     create_empty: bool = Opt(
         False,
@@ -322,18 +323,29 @@ def sync(
         with tasks["sync_principals"]:
             principals = work._form_principals(u, g, x)
 
-            r = ts.api.user_sync(
-                principals=principals,
-                apply_changes=apply_changes,
-                remove_deleted=remove_deleted,
-                password=new_user_password,
-            )
+            try:
+                r = ts.api.user_sync(
+                    principals=principals,
+                    apply_changes=apply_changes,
+                    remove_deleted=remove_deleted,
+                    password=new_user_password,
+                )
+            except httpx.HTTPStatusError as e:
+                r = e.response
+                d = r.json()
+                err = " ".join(json.loads(d["debug"]))
 
-            data = r.json()
+                if "password" in err.casefold():
+                    log.warning(f"{err.strip()}, did you use [b cyan]--new-user-password[/]?")
+                    raise typer.Exit(0)
+
+                raise e from None
+
+            else:
+                data = r.json()
 
     for principal_type in ("groups", "users"):
         centered_table = layout.build_table()
-        centered_table.title = f"Synced {principal_type.title()}"
 
         create = data[principal_type + "Added"]
         update = data[principal_type + "Updated"]
@@ -341,7 +353,14 @@ def sync(
         rows = it.zip_longest(create, update, delete)
 
         for idx, row in enumerate(rows, start=1):
-            centered_table.add_row(rows)
 
-        centered_table.footer = f"{idx} principals synced to ThoughtSpot"
+            if idx < 10:
+                centered_table.renderable.add_row(*row)
+            elif idx == 10:
+                centered_table.renderable.add_row("", "...", "", end_section=True)
+            elif idx > 10:
+                continue
+
+        centered_table.renderable.title = f"Synced {principal_type.title()}"
+        centered_table.renderable.footer = f"Hello world"
         rich_console.print(centered_table)
