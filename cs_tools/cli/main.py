@@ -137,15 +137,15 @@ def run() -> int:
     except CSToolsError as e:
         return_code = 1
         this_run_data.is_known_error = True
-        this_run_data.traceback = "\n".join(traceback.format_exception(e))
+        this_run_data.traceback = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
 
         log.debug(e, exc_info=True)
-        log.error(e)
+        rich_console.print(Align.center(e))
 
     except Exception as e:
         return_code = 1
         this_run_data.is_known_error = False
-        this_run_data.traceback = "\n".join(traceback.format_exception(e))
+        this_run_data.traceback = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
 
         log.debug("whoopsie, something went wrong!", exc_info=True)
 
