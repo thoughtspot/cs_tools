@@ -5,6 +5,7 @@ import traceback
 import logging
 import sys
 
+from rich.align import Align
 from rich.panel import Panel
 from rich.text import Text
 import click
@@ -94,6 +95,7 @@ def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
             name=tool.name,
             context_settings=ctx_settings,
             rich_help_panel=tool.app.rich_help_panel,
+            hidden=tool.privacy != "public",
         )
 
 
@@ -171,8 +173,8 @@ def run() -> int:
             )
         )
 
-        text = rich.panel.Panel(
-            rich.text.Text.from_markup(
+        text = Panel(
+            Text.from_markup(
                 f"\nIf you encounter this message more than once, please help by letting us know!"
                 f"\n"
                 f"\n    Google Forms: [b blue][link={google_forms}]{google_forms}[/link][/]"
@@ -186,9 +188,9 @@ def run() -> int:
 
         # fmt: off
         rich_console.print(
-            rich.align.Align.center(rich_traceback),
+            Align.center(rich_traceback),
             "\n",
-            rich.align.Align.center(text),
+            Align.center(text),
             "\n"
         )
         # fmt: on

@@ -1,5 +1,8 @@
 from typing import Any
 
+from rich.panel import Panel
+from rich.text import Text
+
 
 class CSToolsError(Exception):
     """
@@ -17,8 +20,8 @@ class CSToolsError(Exception):
         self.extra_context = ctx
 
     def __rich__(self) -> str:
-        m = f"[b red]{self.__dict__['error']}[/]"
-        
+        m = ""
+
         if self.__dict__["reason"]:
             m += f"\n[white]{self.__dict__['reason']}[/]"
 
@@ -29,11 +32,14 @@ class CSToolsError(Exception):
                 f"\n[b yellow]{self.__dict__['mitigation']}[/]"
             )
 
-        # enforce trailing newline
-        m += "\n\n"
+        text = Panel(
+            Text.from_markup(m.format(**self.extra_context)),
+            border_style="b red",
+            title=self.error,
+            expand=False,
+        )
 
-        # inject any other context
-        return m.format(**self.extra_context)
+        return text
 
     def __str__(self) -> str:
         return self.error
