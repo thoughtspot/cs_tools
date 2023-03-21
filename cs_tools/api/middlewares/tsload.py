@@ -150,7 +150,7 @@ class TSLoadMiddleware:
         redirect_info = self._cache_fp.get_for(cycle_id)
 
         if redirect_info is not None:
-            redirect_url = self.ts.api.base_url.copy_with(host=redirect_info["host"], port=redirect_info["port"])
+            redirect_url = self.ts.api.session.base_url.copy_with(host=redirect_info["host"], port=redirect_info["port"])
             self.ts.api._redirected_url_due_to_tsload_load_balancer = redirect_url
 
             log.debug(f"redirecting to: {redirect_url}")
