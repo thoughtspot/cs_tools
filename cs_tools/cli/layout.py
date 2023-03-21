@@ -81,27 +81,36 @@ class WorkTask:
 
         return (dt.datetime.now() - self.started_at) + delta
 
+    def start(self) -> None:
+        self.status = ":fire:"
+        self._started_at = dt.datetime.now()
+        self._live.refresh()
+
     def skip(self) -> None:
         self._skipped = True
         self.status = None
+
+    def stop(self, error: bool = False) -> None:
+        if not self._skipped:
+            self.status = ":cross_mark:" if error else ":white_heavy_check_mark:"
+
+        self._total_duration += (dt.datetime.now() - self._started_at).total_seconds()
+        self._stopped = True
+        self._live.refresh()
 
     def bind_display(self, rich_live: Live) -> None:
         self._live = rich_live
         return self
 
     def __enter__(self):
-        self.status = ":fire:"
-        self._started_at = dt.datetime.now()
-        self._live.refresh()
+        self.start()
         return self
 
     def __exit__(self, exc_type, exc, trace) -> None:
-        if not self._skipped:
-            self.status = ":white_heavy_check_mark:" if exc is None else ":cross_mark:"
+        self.stop(error=bool(exc))
 
-        self._total_duration += (dt.datetime.now() - self._started_at).total_seconds()
-        self._stopped = True
-        self._live.refresh()
+        if exc is not None:
+            raise exc
 
     @property
     def values(self) -> Tuple[str]:
