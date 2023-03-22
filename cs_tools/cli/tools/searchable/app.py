@@ -102,7 +102,7 @@ def deploy(
                     shutil.copy(file, export)
 
         with tasks["deploy_spotapp"] as this_task:
-            if syncer is not None:
+            if export is not None:
                 this_task.skip()
                 raise typer.Exit(0)
 
