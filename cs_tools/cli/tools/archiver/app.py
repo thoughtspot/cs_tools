@@ -146,7 +146,7 @@ def identify(
                 # CHECK: TS: BI ACTIVITY -or- CONTENT MODIFICATION
                 checks.append(
                     metadata_object["id"] not in ts_bi_data
-                    or (metadata_object["modified"] / 1000) >= pendulum.now().subtract(days=recent_modified).timestamp()
+                    or (metadata_object["modified"] / 1000) <= pendulum.now().subtract(days=recent_modified).timestamp()
                 )
 
                 # CHECK: AUTHOR IN APPROVED GROUPS
