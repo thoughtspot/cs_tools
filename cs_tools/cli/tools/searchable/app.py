@@ -168,7 +168,7 @@ def bi_server(
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions]"
-        + ("" if compact else " [user action] != {null} 'invalid'")
+        + ("" if not compact else " [User Action] != [User Action].invalid [User Action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if include_today else " [timestamp] != 'today'")
