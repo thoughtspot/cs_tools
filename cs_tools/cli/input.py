@@ -1,5 +1,6 @@
-from pynput.keyboard import Controller, Key, KeyCode
 from rich.prompt import PromptBase
+from pynput import keyboard
+import time
 
 
 class ConfirmationPrompt(PromptBase):
@@ -10,23 +11,20 @@ class ConfirmationPrompt(PromptBase):
         self.timeout = timeout
         self.waiting = False
         self.response = None
-        self.kb = Controller()
+        self.kb = keyboard.Controller()
 
     def handle_kb_input(self, key):
-        if key == KeyCode.from_char("y"):
+        if key == keyboard.KeyCode.from_char("y"):
             self.waiting = False
             self.response = "y"
 
-        if key == KeyCode.from_char("n"):
+        if key == keyboard.KeyCode.from_char("n"):
             self.waiting = False
             self.response = "n"
 
-        self.kb.press(Key.backspace)
+        self.kb.press(keyboard.Key.backspace)
 
     def ask(self, with_prompt: bool = True) -> bool:
-        from pynput import keyboard
-        import time
-
         with keyboard.Listener(on_press=self.handle_kb_input, suppress=True):
             self.waiting = True
             self._started_at = time.perf_counter()

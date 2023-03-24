@@ -112,7 +112,7 @@ def identify(
         ("gather_ts_bi", "Getting content usage and activity statistics"),
         ("gather_supporting_filter_criteria", "Getting supporting metadata for content identification"),
         ("gather_metadata", "Getting existing content metadata"),
-        ("syncer_report", f"Writing Archiver syncer{f' to {report.name}' if syncer is not None else ''}"),
+        ("syncer_report", f"Writing Archiver syncer{f' to {syncer.name}' if syncer is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items to tag with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("tagging_content", "Tagging content in ThoughtSpot"),
@@ -256,7 +256,7 @@ def revert(
 
     tasks = [
         ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver syncer{f' to {report.name}' if syncer is not None else ''}"),
+        ("syncer_report", f"Writing Archiver syncer{f' to {syncer.name}' if syncer is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("untagging_content", f"Removing [b blue]{tag_name}[/] from content in ThoughtSpot"),
@@ -404,7 +404,7 @@ def remove(
 
     tasks = [
         ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver syncer{f' to {report.name}' if syncer is not None else ''}"),
+        ("syncer_report", f"Writing Archiver syncer{f' to {syncer.name}' if syncer is not None else ''}"),
         ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
         ("confirmation_prompt", "Confirmation prompt"),
         ("export_content", f"Exporting content as TML{f' to {directory}' if directory is not None else ''}"),
