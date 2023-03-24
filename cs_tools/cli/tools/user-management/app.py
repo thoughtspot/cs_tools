@@ -264,15 +264,15 @@ def sync(
         +-------------+--------------+----------+-----------------------------+
         |  Principal  |  in Syncer?  |  in TS?  |  Result                     |
         +-------------+--------------+----------+-----------------------------+
-        |    USER     |     FALSE    |   TRUE   |  [green]CREATE[/]  in  ThoughtSpot    |
+        |    USER     |     TRUE     |   FALSE  |  [green]CREATE[/]  in  ThoughtSpot    |
         |    USER     |     TRUE     |   TRUE   |  [yellow]UPDATE[/]  in  ThoughtSpot    |
         |    USER     |     FALSE    |   FALSE  |    { no action taken }      |
-        |    USER     |     TRUE     |   FALSE  |  [red]REMOVE[/] from ThoughtSpot**  |
+        |    USER     |     FALSE    |   TRUE   |  [red]REMOVE[/] from ThoughtSpot**  |
         |---------------------------------------------------------------------|
-        |    GROUP    |     FALSE    |   TRUE   |  [green]CREATE[/]  in  ThoughtSpot    |
+        |    GROUP    |     TRUE     |   FALSE  |  [green]CREATE[/]  in  ThoughtSpot    |
         |    GROUP    |     TRUE     |   TRUE   |  [yellow]UPDATE[/]  in  ThoughtSpot    |
         |    GROUP    |     FALSE    |   FALSE  |    { no action taken }      |
-        |    GROUP    |     TRUE     |   FALSE  |  [red]REMOVE[/] from ThoughtSpot**  |
+        |    GROUP    |     FALSE    |   TRUE   |  [red]REMOVE[/] from ThoughtSpot**  |
         +-------------+--------------+----------+-----------------------------+
 
          * [yellow]UPDATE[/] includes GROUP reassignment, if applicable
