@@ -87,7 +87,7 @@ def deploy(
                 if isinstance(tml, Table):
                     tml.table.db = database
                     tml.table.schema = schema
-                    
+
                     if is_falcon:
                         tml.table.connection = None
                         tml.table.name = tml.table.name.lower()
@@ -99,7 +99,7 @@ def deploy(
                 tmls.append(tml)
 
                 if export is not None:
-                    shutil.copy(file, export)
+                    tml.dump(export.joinpath(file.name))
 
         with tasks["deploy_spotapp"] as this_task:
             if export is not None:
