@@ -89,8 +89,21 @@ def deploy(
                     tml.table.schema = schema
 
                     if is_falcon:
+                        # can we use TQL to join stats_tomcat_tomcat to our data?
+                        # need to redefine any worksheet that uses TS_BI_SERVER
+                        #
+
+                        # Falcon customizations
+                        # - remove connection
+                        # - remove top level guid
+                        # - lower physical tablename
+                        # - lower phyiscal column names
+                        # - remove FQNs
                         tml.table.connection = None
                         tml.table.name = tml.table.name.lower()
+                        tml.table.fqn = None
+
+                        for column in tml.table
 
                     else:
                         tml.table.connection.name = connection_name

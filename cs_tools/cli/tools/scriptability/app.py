@@ -188,7 +188,7 @@ def connection_check(
         rich_console.print(table)
 
     else:
-        syncer.dump(f"connection-check", data=[column.dict() for column in column_sync])
+        syncer.dump("connection-check", data=[column.dict() for column in column_sync])
 
 
 @app.command(dependencies=[thoughtspot], name="export")
