@@ -601,13 +601,14 @@ def _log_results(tml_logs: pathlib.Path, name: str, status_code: str, error_mess
     """
     msg = f"{name} -- {error_messages}"
 
-    with open(tml_logs / "import.issues", "a") as logfile:
-        if status_code == "WARNING":
-            log.warning(msg=msg)
-        elif status_code == "ERROR":
-            log.error(msg=msg)
+    if tml_logs:
+        with open(tml_logs / "import.issues", "a") as logfile:
+            if status_code == "WARNING":
+                log.warning(msg=msg)
+            elif status_code == "ERROR":
+                log.error(msg=msg)
 
-        logfile.write(f"{status_code} -- {msg}\n")
+            logfile.write(f"{status_code} -- {msg}\n")
 
 
 def _some_tml_updated(import_policy: TMLImportPolicy, results: List[TMLImportResponse]) -> bool:
