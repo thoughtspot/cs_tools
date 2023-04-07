@@ -85,10 +85,8 @@ cli = [
 ]
 dev = [
     "cs_tools[cli]",
-    "pip-tools",
-    "black",
     "coverage[toml]",
-    "isort",
+    "ruff",
     "nox",
     "rich",
     "ward",
@@ -103,22 +101,37 @@ cstools = "cs_tools.cli.main:run"
 [tool.setuptools.dynamic]
 version = {attr = "cs_tools._version.__version__"}
 
-[tool.isort]
-profile = "black"
-line_length = 120
-from_first = true
-length_sort = true
-reverse_sort = true
+# [tool.isort]
+# profile = "black"
+# line_length = 120
+# from_first = true
+# length_sort = true
+# reverse_sort = true
 
-[tool.black]
+[tool.ruff]
 line-length = 120
-exclude = '''
-(
-      __pycache__   # ignore compiled bytecode
-    | \.venv*       # ignore virtual environments
-    | \.nox         # ignore virtual environments
-)
-'''
+select = [
+    "A",     # flake8-builtins: https://pypi.org/project/flake8-builtins/
+    "ARG",   # flake8-unused-arguments: https://pypi.org/project/flake8-unused-arguments/
+    "B",     # flake8-bugbear: https://pypi.org/project/flake8-bugbear/
+    "C4",    # flake8-comprehensions: https://pypi.org/project/flake8-comprehensions/
+    "C90",   # mccabe: https://pypi.org/project/mccabe/
+    "COM",   # flake8-commas: https://pypi.org/project/flake8-commas/
+    "E",     # pycodestyle: https://pypi.org/project/pycodestyle/
+    "F",     # pyflakes: https://pypi.org/project/pyflakes/
+    "Q",     # flake8-quotes: https://pypi.org/project/flake8-quotes/
+    "RUF",   # ruff-specific: https://beta.ruff.rs/docs/rules/#ruff-specific-rules-ruf
+    "TCH",   # flake8-type-checking: https://pypi.org/project/flake8-type-checking/
+]
+src = ["cs_tools"]
+exclude = [
+    "__pycache__",   # ignore compiled bytecode
+    ".venv*",        # ignore virtual environments
+    ".nox",          # ignore virtual environments
+
+    # project specific ignores
+    "*compat.py",    # ignore compatibles
+]
 
 [tool.ward]
 path = "tests/"
