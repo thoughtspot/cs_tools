@@ -103,7 +103,7 @@ def deploy(
                         tml.table.name = tml.table.name.lower()
                         tml.table.fqn = None
 
-                        for column in tml.table
+                        # for column in tml.table
 
                     else:
                         tml.table.connection.name = connection_name

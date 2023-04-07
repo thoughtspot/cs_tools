@@ -120,6 +120,44 @@ def pip():
 
 
 @app.command(cls=CSToolsCommand, hidden=True)
+def download(
+    directory: pathlib.Path = Opt(..., help="location to download the python binaries to"),
+    platform: str = Opt(..., help="tag which describes the OS and CPU architecture of the target environment"),
+    python_version: AwesomeVersion = Opt(
+        ...,
+        metavar="X.Y",
+        help="major and minor version of your python install",
+        custom_type=AwesomeVersion,
+    ),
+    beta: bool = Opt(False, help="whether or not to download the latest pre-release binary"),
+):
+    """
+    Generate an offline binary.
+
+    Customers without outside access to the internet will need to install from a local
+    directory instead. This commanad will download the necessary files in order to do
+    so. Have the customer execute the below command so you have the necessary
+    information to generate this binary.
+
+       [b blue]python -m sysconfig[/]
+
+    """
+    release_info = get_latest_cs_tools_release(allow_beta=beta)
+    release_tag = release_info["tag_name"]
+
+    venv = CSToolsVirtualEnvironment()
+    venv.pip(
+        "download", f"cs_tools @ https://github.com/thoughtspot/cs_tools/archive/{release_tag}.zip",
+        "--only-binary", ":all:",
+        "--dest", directory.as_posix(),
+        "--implementation", "cp",
+        "--python-version", f"{python_version.major}{python_version.minor}",
+        "--platform", platform.replace("-", "_"),
+        "--platform", "any",
+    )
+
+
+@app.command(cls=CSToolsCommand, hidden=True)
 def uninstall(
     delete_configs: bool = Opt(False, "--delete-configs", help="delete all the configurations in CS Tools directory")
 ):
