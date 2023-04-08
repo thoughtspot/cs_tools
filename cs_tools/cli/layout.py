@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, InitVar
 from typing import Callable, List, NewType, Tuple, Union
+import contextlib
 
 from rich.console import Console, RenderableType
 from rich.align import Align
@@ -22,7 +23,7 @@ def _default_layout(data: List[WorkTask]) -> Table:
         row_styles=("dim", ""),
         title_style="white",
         caption_style="white",
-        show_footer=True
+        show_footer=True,
     )
 
     table.add_column("Status", justify="center", width=10)       # 4 + length of title
@@ -63,7 +64,7 @@ class WorkTask:
 
     def __post_init__(self, rich_live: Live=None):
         self._live = rich_live
-        self._total_duration: int = 0
+        self._total_duration: dt.timedelta = dt.timedelta(seconds=0)
         self._started_at: dt.datetime = None
         self._skipped = False
         self._stopped = False
@@ -74,33 +75,34 @@ class WorkTask:
 
     @property
     def duration(self) -> dt.timedelta:
-        delta = dt.timedelta(seconds=self._total_duration)
-
         if self._stopped:
-            return delta
+            return self._total_duration
 
-        return (dt.datetime.now() - self.started_at) + delta
+        return (dt.datetime.now() - self.started_at) + self._total_duration
 
-    def start(self) -> None:
-        self.status = ":fire:"
-        self._started_at = dt.datetime.now()
-        self._live.refresh()
+    @property
+    def values(self) -> Tuple[str]:
+        started_at = "" if self.started_at is None else self.started_at.strftime("%H:%M:%S")
+        duration = "" if self.started_at is None else f"{self.duration.total_seconds(): >6.2f}"
+        return self.status, started_at, duration, self.description
 
     def skip(self) -> None:
         self._skipped = True
         self.status = None
 
+    def start(self) -> None:
+        self.status = ":fire:"
+        self._started_at = dt.datetime.now()
+        self._stopped = False
+        self._live.refresh()
+
     def stop(self, error: bool = False) -> None:
         if not self._skipped:
             self.status = ":cross_mark:" if error else ":white_heavy_check_mark:"
 
-        self._total_duration += (dt.datetime.now() - self._started_at).total_seconds()
+        self._total_duration += (dt.datetime.now() - self._started_at)
         self._stopped = True
         self._live.refresh()
-
-    def bind_display(self, rich_live: Live) -> None:
-        self._live = rich_live
-        return self
 
     def __enter__(self):
         self.start()
@@ -111,12 +113,6 @@ class WorkTask:
 
         if exc is not None:
             raise exc
-
-    @property
-    def values(self) -> Tuple[str]:
-        started_at = "" if self.started_at is None else self.started_at.strftime("%H:%M:%S")
-        duration = "" if self.started_at is None else f"{self.duration.total_seconds(): >6.2f}"
-        return self.status, started_at, duration, self.description
 
 
 class LiveTasks(Live):
@@ -164,20 +160,10 @@ class LiveTasks(Live):
                 return work_item
         raise KeyError(f"no task found with name '{task_name}'")
 
-    def draw(self) -> None:
-        """
-        Draw the renderable.
-        """
-        with self._lock:
-            self._renderable = self.layout(self.work_items)
-
     def refresh(self) -> None:
         """
         Draw and refresh the Live.
         """
-        self.draw()
-        super().refresh()
-
-    def __enter__(self):
-        self.draw()
-        return super().__enter__()
+        with self._lock:
+            self._renderable = self.layout(self.work_items)
+            super().refresh()
