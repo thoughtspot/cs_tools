@@ -41,8 +41,9 @@ dependencies = [
 
     "awesomeversion >= 22.9.0",
     "httpx >= 0.23.3",
-    "pydantic >= 1.10.4",
+    "pydantic <= 2.0",
     "pendulum >= 2.1.2",
+    "rich >= 13.0.0",
     "thoughtspot_tml >= 2.0.4",
     "toml >= 0.10.2",
 
@@ -73,13 +74,16 @@ cli = [
 
     "horde @ https://github.com/boonhapus/horde/archive/dev.zip",
     "pynput == 1.7.6",
-    "rich == 12.6.0",
     "sqlmodel == 0.0.8",
-    "typer[all] == 0.7.0",
 
-    # TODO: switch with Starlite...
-    "uvicorn == 0.20.0",
-    "fastapi == 0.89.1",
+    # NOTE: why not typer[all] ? ... @tiangolo is an AFK maintainer, but typer is so good..  see #524
+    "typer >= 0.7.0",
+    "colorama >= 0.4.3",
+    "shellingham >= 1.3.0",
+
+    # TODO: switch with LiteStar...
+    "uvicorn >= 0.20.0",
+    "fastapi >= 0.89.1",
     # Jinja2 = "^3.1.2"
     # starlette = "0.20.4"
 ]
@@ -88,8 +92,10 @@ dev = [
     "coverage[toml]",
     "ruff",
     "nox",
-    "rich",
-    "ward",
+    "ward == 0.67.2b0",
+]
+docs = [
+    "cs_tools[cli]",
     "mkdocs-material",
 ]
 
