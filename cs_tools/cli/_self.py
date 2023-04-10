@@ -41,8 +41,9 @@ def update(
     beta: bool = Opt(False, "--beta", help="pin your install to a pre-release build"),
     offline: pathlib.Path = Opt(
         None,
-        help="install cs_tools from a distributable directory instead of from remote",
-        metavar="cs_tools.zip",
+        help="install cs_tools from a distributable directory instead of from github",
+        file_okay=False,
+        resolve_path=True,
     ),
     venv_name: str = Opt(None, "--venv-name", hidden=True),
 ):
@@ -129,7 +130,7 @@ def download(
         help="major and minor version of your python install",
         custom_type=AwesomeVersion,
     ),
-    beta: bool = Opt(False, help="whether or not to download the latest pre-release binary"),
+    beta: bool = Opt(False, "--beta", help="if included, download the latest pre-release binary"),
 ):
     """
     Generate an offline binary.
@@ -146,15 +147,42 @@ def download(
     release_tag = release_info["tag_name"]
 
     venv = CSToolsVirtualEnvironment()
+
+    # freeze our own environment, which has all the dependencies needed to build
+    frozen = {req for req in venv.pip("freeze", "--quiet") if "cs_tools" not in req}
+
+    # add packaging stuff since we'll see --no-index
+    frozen.update(("setuptools", "wheel"))
+
+    # add in version specific constraints (in case they don't get exported from the current environment)
+    if python_version < "3.11.0":
+        frozen.add("strenum >= 0.4.9")            # from cs_tools
+        frozen.add("tomli >= 1.1.0")              # from ...
+
+    if python_version < "3.10.0":
+        frozen.add("zipp >= 3.11.0")              # from horde
+
+    if python_version < "3.8.0":
+        frozen.add("typing_extensions >= 4.4.0")  # from cs_tools
+
+    if "win" in platform:
+        frozen.add("pyreadline3 == 3.4.1")        # from cs_tools
+
+    # add in the latest release
+    frozen.add(f"cs_tools @ https://github.com/thoughtspot/cs_tools/archive/{release_tag}.zip")
+
     venv.pip(
-        "download", f"cs_tools @ https://github.com/thoughtspot/cs_tools/archive/{release_tag}.zip",
-        "--only-binary", ":all:",
+        "download", *frozen,
+        "--no-deps",  # we've build all the dependencies above
         "--dest", directory.as_posix(),
         "--implementation", "cp",
         "--python-version", f"{python_version.major}{python_version.minor}",
         "--platform", platform.replace("-", "_"),
-        "--platform", "any",
     )
+
+    # rename .zip files we author to their actual package names
+    directory.joinpath("dev.zip").rename(directory / "horde-1.0.0.zip")
+    directory.joinpath(f"{release_tag}.zip").rename(directory / f"cs_tools-{release_tag[1:]}.zip")
 
 
 @app.command(cls=CSToolsCommand, hidden=True)
