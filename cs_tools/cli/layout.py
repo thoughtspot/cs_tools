@@ -148,7 +148,7 @@ class LiveTasks(Live):
 
         for work_item in items:
             if isinstance(work_item, tuple):
-                work_item = WorkTask(name=work_item[0], description=work_item[1], _live=self)
+                work_item = WorkTask(name=work_item[0], description=work_item[1])
 
             self._work_items.append(work_item)
 
