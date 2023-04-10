@@ -84,7 +84,6 @@ class CSToolsVirtualEnvironment:
 
     def pip(self, *args, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment's pip."""
-        # fmt: off
         required_general_args = (
             # ignore environment variables and user configuration
             "--isolated",
@@ -97,7 +96,6 @@ class CSToolsVirtualEnvironment:
             "--trusted-host", "pypi.org",
             "--trusted-host", "pypi.python.org",
         )
-        # fmt: on
 
         if self.find_links is not None:
             required_general_args = (*required_general_args, "--find-links", self.find_links.as_posix())
