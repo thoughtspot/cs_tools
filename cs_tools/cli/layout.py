@@ -1,15 +1,17 @@
 from __future__ import annotations
-from dataclasses import dataclass, InitVar
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 from typing import Callable, List, NewType, Tuple, Union
-import contextlib
 
-from rich.console import Console, RenderableType
 from rich.align import Align
 from rich.table import Table
 from rich.live import Live
 from rich import box
 
 import datetime as dt
+
+if TYPE_CHECKING:
+    from rich.console import Console, RenderableType
 
 
 _TaskName = NewType("_TaskName", str)
@@ -60,10 +62,8 @@ class WorkTask:
     name: str
     description: str
     status: str = ":popcorn:"
-    _live: InitVar[Live] = None
 
-    def __post_init__(self, rich_live: Live=None):
-        self._live = rich_live
+    def __post_init__(self):
         self._total_duration: dt.timedelta = dt.timedelta(seconds=0)
         self._started_at: dt.datetime = None
         self._skipped = False
@@ -94,7 +94,6 @@ class WorkTask:
         self.status = ":fire:"
         self._started_at = dt.datetime.now()
         self._stopped = False
-        self._live.refresh()
 
     def stop(self, error: bool = False) -> None:
         if not self._skipped:
@@ -102,7 +101,6 @@ class WorkTask:
 
         self._total_duration += (dt.datetime.now() - self._started_at)
         self._stopped = True
-        self._live.refresh()
 
     def __enter__(self):
         self.start()
