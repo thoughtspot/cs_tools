@@ -256,11 +256,13 @@ class CSToolsConfig(Settings):
         config: str
           name of the configuration file
         """
-        if config is None:
-            if _meta_config.default_config_name is None:
-                raise ConfigDoesNotExist(name="[b green]default[/]")
+        if config is None and _meta_config.default_config_name is not None:
+            config = _meta_config.default_config_name
 
-        return cls.from_toml(APP_DIR / f"cluster-cfg_{_meta_config.default_config_name}.toml", **passthru)
+        if config is None:
+            raise ConfigDoesNotExist(name=f"[b green]{config}")
+
+        return cls.from_toml(APP_DIR / f"cluster-cfg_{config}.toml", **passthru)
 
     @classmethod
     def from_parse_args(cls, name: str, *, validate: bool = True, **passthru) -> "CSToolsConfig":
