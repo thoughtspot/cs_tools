@@ -131,6 +131,9 @@ def run() -> int:
     try:
         return_code = app(standalone_mode=False)
 
+    except click.Abort:
+        return_code = 0
+
     except click.ClickException as e:
         return_code = 1
         this_run_data.is_known_error = True
