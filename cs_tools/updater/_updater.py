@@ -112,6 +112,7 @@ class CSToolsVirtualEnvironment:
 
         # Ensure `pip` is at least V20.3 so that backtracking is available
         self.pip("install", "pip>=20.3", "--upgrade")
+        self.pip("install", "pip >= 23.1", "--upgrade")
 
     def reset(self) -> None:
         """Reset the virtual environment to base."""
