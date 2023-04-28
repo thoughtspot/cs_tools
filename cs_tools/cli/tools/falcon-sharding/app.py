@@ -117,7 +117,7 @@ def deploy(
 @app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
-    syncer: DSyncer = Arg(
+    syncer: DSyncer = Opt(
         ...,
         help="protocol and path for options to pass to the syncer",
         metavar="protocol://DEFINITION.toml",
