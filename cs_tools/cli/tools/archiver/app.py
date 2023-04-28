@@ -53,7 +53,7 @@ def identify(
     content: ContentType = Opt(
         ContentType.all_user_content,
         help="type of content to mark for archival",
-        rich_help_panel="Content Identification Criteria (applied with OR)"
+        rich_help_panel="Content Identification Criteria"
     ),
     recent_activity: int = Opt(
         ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE,
@@ -63,30 +63,30 @@ def identify(
             "[dim]\[default: all TS: BI history][/]"
         ),
         show_default=False,
-        rich_help_panel="Content Identification Criteria (applied with OR)"
+        rich_help_panel="Content Identification Criteria"
     ),
     recent_modified: int = Opt(
         100,
         help="content without recent edits will be [b green]selected[/] (exceeds days threshold)",
-        rich_help_panel="Content Identification Criteria (applied with OR)",
+        rich_help_panel="Content Identification Criteria",
     ),
     only_groups: str = Opt(
         None,
         custom_type=MultipleChoiceType(),
         help="content not authored by users in these groups will be [b red]filtered[/], comma separated",
-        rich_help_panel="Content Identification Criteria (applied with OR)",
+        rich_help_panel="Content Identification Criteria",
     ),
     ignore_groups: str = Opt(
         None,
         custom_type=MultipleChoiceType(),
         help="content authored by users in these groups will be [b red]filtered[/], comma separated",
-        rich_help_panel="Content Identification Criteria (applied with OR)",
+        rich_help_panel="Content Identification Criteria",
     ),
     ignore_tags: str = Opt(
         None,
         custom_type=MultipleChoiceType(),
         help="content with this tag (case sensitive) will be [b red]filtered[/], comma separated",
-        rich_help_panel="Content Identification Criteria (applied with OR)",
+        rich_help_panel="Content Identification Criteria",
     ),
     syncer: DSyncer = Opt(
         None,
@@ -143,11 +143,13 @@ def identify(
                 n_content_in_ts += 1
                 checks = []
 
-                # CHECK: TS: BI ACTIVITY -or- CONTENT MODIFICATION
-                checks.append(
-                    metadata_object["id"] not in ts_bi_data
-                    or (metadata_object["modified"] / 1000) <= pendulum.now().subtract(days=recent_modified).timestamp()
-                )
+                metadata_modified = pendulum.from_timestamp(metadata_object["modified"] / 1000, tz=ts.platform.timezone)
+
+                # CHECK: NO TS: BI ACTIVITY WITHIN X DAYS
+                checks.append(metadata_object["id"] not in ts_bi_data)
+
+                # CHECK: NO MODIFICATIONS WITHIN Y DAYS
+                checks.append(metadata_modified <= pendulum.now().subtract(days=recent_modified))
 
                 # CHECK: AUTHOR IN APPROVED GROUPS
                 if only_groups is not None:
@@ -159,14 +161,14 @@ def identify(
 
                 # CHECK: METADATA DOES NOT CONTAIN ANY IGNORED TAG
                 if ignore_tags is not None:
-                    checks.append(not set(t["name"] for t in metadata_object["tags"]).intersection(ignore_tags))
+                    checks.append(not {t["name"] for t in metadata_object["tags"]}.intersection(ignore_tags))
 
                 if all(checks):
                     to_archive.append(
                         {
                             "type": metadata_object["metadata_type"],
                             "guid": metadata_object["id"],
-                            "modified": metadata_object["modified"],
+                            "modified": metadata_modified,
                             "author_guid": metadata_object["author"],
                             "author": metadata_object.get("authorDisplayName", "{null}"),
                             "name": metadata_object["name"],
@@ -181,21 +183,22 @@ def identify(
             table = layout.build_table(
                         title=f"Content to tag with [b blue]{tag_name}",
                         caption=(
-                            f"25 random items ({len(to_archive)} [b blue]{tag_name}[/] [dim]|[/] {n_content_in_ts} in "
+                            f"25 latest items ({len(to_archive)} [b blue]{tag_name}[/] [dim]|[/] {n_content_in_ts} in "
                             f"ThoughtSpot)"
                         ),
                     )
 
-            for row in random.sample(to_archive, k=min(25, len(to_archive))):
+            # for row in random.sample(to_archive, k=min(25, len(to_archive))):
+            for row in sorted(to_archive, key=lambda e: e["modified"], reverse=True)[:25]:
                 table.add_row(
                     MetadataObjectType(row["type"]).name.title().replace("_", " "),
                     row["guid"],
-                    pendulum.from_timestamp(row["modified"] / 1000, tz=ts.platform.timezone).strftime("%Y-%m-%d"),
+                    row["modified"].strftime("%Y-%m-%d"),
                     row["author"],
                     row["name"],
                 )
 
-            tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
+            tasks.layout = layout.combined_layout(original_layout=tasks.layout, new_layout=table)
 
         with tasks["syncer_report"] as this_task:
             if syncer is not None:
