@@ -91,10 +91,12 @@ class CSToolsVirtualEnvironment:
             "--no-cache-dir",
             # don't ping for new versions of pip -- it doesn't matter and is noisy
             "--disable-pip-version-check",
-            # trust installs from the official python package index
+            # trust installs from the official python package index and the thoughtspot github repos
             "--trusted-host", "files.pythonhost.org",
             "--trusted-host", "pypi.org",
             "--trusted-host", "pypi.python.org",
+            "--trusted-host", "github.com",
+            "--trusted-host", "codeload.github.com",
         )
 
         if self.find_links is not None:
@@ -110,14 +112,13 @@ class CSToolsVirtualEnvironment:
         self.venv_path.mkdir(parents=True, exist_ok=True)
         self.run(sys.executable, "-m", "venv", self.venv_path.as_posix())
 
-        # Ensure `pip` is at least V20.3 so that backtracking is available
-        self.pip("install", "pip>=20.3", "--upgrade")
+        # Ensure `pip` is at least V23.1 so that backjumping is available
         self.pip("install", "pip >= 23.1", "--upgrade")
 
     def reset(self) -> None:
         """Reset the virtual environment to base."""
         installed = self.venv_path.joinpath("INSTALLED-REQUIREMENTS.txt")
-        installed.write_text('\n'.join(self.pip("freeze")))
+        installed.write_text("\n".join(self.pip("freeze")))
 
         if installed.stat().st_size:
             self.pip("uninstall", "-r", installed.as_posix(), "-y")
