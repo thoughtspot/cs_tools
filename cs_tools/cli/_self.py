@@ -7,6 +7,7 @@ import os
 
 from awesomeversion import AwesomeVersion
 from rich.panel import Panel
+import sqlalchemy as sa
 import typer
 
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
@@ -93,9 +94,9 @@ def info():
     Get information on your install.
     """
     if platform.system() == "Windows":
-        source = pathlib.Path(sys.executable).parent.joinpath("Activate.ps1")
+        source = f"\"{pathlib.Path(sys.executable).parent.joinpath('Activate.ps1')}\""
     else:
-        source = f"source {pathlib.Path(sys.executable).parent.joinpath('activate')}"
+        source = f"source \"{pathlib.Path(sys.executable).parent.joinpath('activate')}\""
 
     rich_console.print(
         Panel.fit(
