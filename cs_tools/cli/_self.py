@@ -77,8 +77,12 @@ def update(
     except RuntimeError:  # OSError when pip on Windows can't upgrade itself~
         pass
 
-    syncer = _analytics.get_database()
-    syncer.dump("runtime_environment", data=[_analytics.RuntimeEnvironment(envt_uuid=meta.install_uuid).dict()])
+
+    try:
+        syncer = _analytics.get_database()
+        syncer.dump("runtime_environment", data=[_analytics.RuntimeEnvironment(envt_uuid=meta.install_uuid).dict()])
+    except sa.exc.OperationalError:
+        pass
 
     # Would you like to send Analytics to CS Tools?
 
