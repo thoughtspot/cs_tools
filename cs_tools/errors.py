@@ -35,7 +35,7 @@ class CSToolsError(Exception):
         text = Panel(
             Text.from_markup(m.format(**self.extra_context)),
             border_style="b red",
-            title=self.error,
+            title=self.error.format(**self.extra_context),
             expand=False,
         )
 
