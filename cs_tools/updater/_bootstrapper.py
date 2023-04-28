@@ -457,11 +457,12 @@ def http_request(url, to_json=True, timeout=None):
     import json
     import ssl
 
+    # Disable SSL verfication checks.
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    with urllib.request.urlopen(url, timeout=None, context=ctx) as r:
+    with urllib.request.urlopen(url, timeout=timeout, context=ctx) as r:
         data = r.read()
 
     if to_json:
