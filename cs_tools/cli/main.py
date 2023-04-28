@@ -8,6 +8,7 @@ import sys
 from rich.align import Align
 from rich.panel import Panel
 from rich.text import Text
+import sqlalchemy as sa
 import click
 import typer
 import rich
@@ -198,7 +199,11 @@ def run() -> int:
     # Add the analytics to the local database
     this_run_data.is_success = not bool(return_code)
     this_run_data.end_dt = dt.datetime.now()
-    syncer = _analytics.get_database()
-    syncer.dump("command_execution", data=[this_run_data.dict()])
+
+    try:
+        syncer = _analytics.get_database()
+        syncer.dump("command_execution", data=[this_run_data.dict()])
+    except sa.exc.OperationalError:
+        pass
 
     return return_code
