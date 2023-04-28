@@ -28,7 +28,10 @@ def build_table(**table_kwargs) -> Table:
     return table
 
 
-def combined_layout(tasks: LiveTasks, *, original_layout: Table, new_layout: Table) -> None:
+def combined_layout(*, original_layout: Table, new_layout: Table) -> None:
 
-    with tasks._lock:
-        tasks._renderable = Group(original_layout(tasks.work_items), Align.center(new_layout))
+    def _layout(work_items):
+        renderable = Group(original_layout(work_items), Align.center(new_layout))
+        return renderable
+
+    return _layout
