@@ -155,8 +155,8 @@ class TSLoadMiddleware:
 
             log.debug(f"redirecting to: {redirect_url}")
             self.ts.api.dataservice_dataload_session(
-                username=self.config.auth["frontend"].username,
-                password=utils.reveal(self.config.auth["frontend"].password).decode(),
+                username=self.ts.config.auth["frontend"].username,
+                password=utils.reveal(self.ts.config.auth["frontend"].password).decode(),
             )
 
     def _check_privileges(self) -> None:
