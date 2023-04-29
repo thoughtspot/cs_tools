@@ -6,6 +6,7 @@ import logging
 import pathlib
 import shutil
 import site
+import venv
 import sys
 import os
 
@@ -76,7 +77,21 @@ class CSToolsVirtualEnvironment:
         else:
             user_directory = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", "~/.config"))
 
-        return pathlib.Path(user_directory).expanduser() / self.config_directory_name / ".cs_tools"
+        desired = pathlib.Path(user_directory).expanduser() / self.config_directory_name / ".cs_tools"
+
+        # BPO-45337 - handle Micrsoft Store downloads
+        #
+        #   @steve.dower
+        #     We *could* limit this to when it's under AppData, but I think limiting it to Windows is enough.
+        #     If the realpath generated a different path, we should warn the caller.
+        #     If someone is looking at the output they'll get an important hint.
+        #
+        #   Further reading: https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes
+        if IS_WINDOWS:
+            context = venv.EnvBuilder().ensure_directories(desired)
+            desired = pathlib.Path(context.env_dir).resolve()
+
+        return desired
 
     def python(self, *args, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment."""
