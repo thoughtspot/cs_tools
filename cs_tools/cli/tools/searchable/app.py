@@ -52,6 +52,13 @@ def deploy(
     """
     ts = ctx.obj.thoughtspot
     is_falcon = connection_guid.lower() == "falcon"
+
+    if is_falcon:
+        log.warning(
+            "[b yellow]The SpotApp is only configured for Connections at this time. Please reach out to the CS Tools "
+            "team or your Solutions Consultant to get on the waitlist.",
+        )
+        raise typer.Abort()
     
     tasks = [
         ("connection_details", f"Getting details for connection {'' if is_falcon else connection_guid}"),
@@ -88,26 +95,27 @@ def deploy(
                     tml.table.db = database
                     tml.table.schema = schema
 
-                    if is_falcon:
-                        # can we use TQL to join stats_tomcat_tomcat to our data?
-                        # need to redefine any worksheet that uses TS_BI_SERVER
-                        #
+                    # if is_falcon:
+                    #     # can we use TQL to join stats_tomcat_tomcat to our data?
+                    #     # need to redefine any worksheet that uses TS_BI_SERVER
+                    #     #
 
-                        # Falcon customizations
-                        # - remove connection
-                        # - remove top level guid
-                        # - lower physical tablename
-                        # - lower phyiscal column names
-                        # - remove FQNs
-                        tml.table.connection = None
-                        tml.table.name = tml.table.name.lower()
-                        tml.table.fqn = None
+                    #     # Falcon customizations
+                    #     # - remove connection
+                    #     # - remove top level guid
+                    #     # - lower physical tablename
+                    #     # - lower phyiscal column names
+                    #     # - remove FQNs
+                    #     tml.table.connection = None
+                    #     tml.table.name = tml.table.name.lower()
+                    #     tml.table.fqn = None
 
-                        # for column in tml.table
+                    #     for column in tml.table:
+                    #         column.db_column_name = column.db_column_name.lower()
 
-                    else:
-                        tml.table.connection.name = connection_name
-                        tml.table.connection.fqn = connection_guid
+                    # else:
+                    tml.table.connection.name = connection_name
+                    tml.table.connection.fqn = connection_guid
 
                 tmls.append(tml)
 
@@ -366,9 +374,9 @@ def gather(
             data = []
 
             # NOTE:
-            #    In the case the ThoughtSpot cluster has a high number of users, this block
-            #    will take an incredibly long amount of time to complete. We can probably
-            #    find a better algorithm.
+            #    In the case the ThoughtSpot cluster has a high number of users, the
+            #    column access block will take an incredibly long amount of time to
+            #    complete. We can probably find a better algorithm.
             #
             for metadata_type, metadata_subtypes in types.items():
                 guids = [_["id"] for _ in content if _["metadata_type"] in metadata_subtypes]
