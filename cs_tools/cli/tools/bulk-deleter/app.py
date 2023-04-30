@@ -7,7 +7,7 @@ import typer
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsOption as Opt
+
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.dependencies.syncer import DSyncer
 
@@ -25,8 +25,8 @@ app = CSToolsApp(help="""Bulk delete metadata objects from your ThoughtSpot plat
 @app.command(dependencies=[thoughtspot])
 def single(
     ctx: typer.Context,
-    object_type: types.AcceptedObjectType = Opt(..., help="type of the metadata to delete"),
-    object_guid: str = Opt(..., help="guid to delete"),
+    object_type: types.AcceptedObjectType = typer.Option(..., help="type of the metadata to delete"),
+    object_guid: str = typer.Option(..., help="guid to delete"),
 ):
     """
     Removes a specific object from ThoughtSpot.
@@ -56,13 +56,13 @@ def single(
 @app.command(dependencies=[thoughtspot])
 def from_tabular(
     ctx: typer.Context,
-    syncer: DSyncer = Opt(
+    syncer: DSyncer = typer.Option(
         ...,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    deletion: str = Opt(..., help="directive to find content to delete", rich_help_panel="Syncer Options"),
+    deletion: str = typer.Option(..., help="directive to find content to delete", rich_help_panel="Syncer Options"),
 ):
     """
     Remove many objects from ThoughtSpot.

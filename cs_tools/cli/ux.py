@@ -20,40 +20,6 @@ WARNING_PRIVATE = (
 )
 
 
-class CSToolsArgumentInfo(typer.models.ArgumentInfo):
-    """
-    Override to add .custom_type , for implementing click.ParamType
-    """
-    def __init__(self, *a, custom_type: Any = None, **kw):
-        self.custom_type = custom_type
-        super().__init__(*a, **kw)
-
-
-class CSToolsOptionInfo(typer.models.OptionInfo):
-    """
-    Override to add .custom_type , for implementing click.ParamType
-    """
-    def __init__(self, *a, custom_type: Any = None, **kw):
-        self.custom_type = custom_type
-        super().__init__(*a, **kw)
-
-
-def CSToolsArgument(default, **passthru) -> typer.models.ArgumentInfo:
-    """
-    Typer does this with a function definition, even though they behave like classes.
-    """
-    passthru["show_default"] = passthru.get("show_default", default not in (..., None))
-    return CSToolsArgumentInfo(default=default, **passthru)
-
-
-def CSToolsOption(default, *param_decls, **passthru) -> typer.models.OptionInfo:
-    """
-    Typer does this with a function definition, even though they behave like classes.
-    """
-    passthru["show_default"] = passthru.get("show_default", default not in (..., None))
-    return CSToolsOptionInfo(default=default, param_decls=param_decls, **passthru)
-
-
 class CSToolsCommand(typer.core.TyperCommand):
     def __init__(self, **passthru):
         ctx_settings = passthru.pop("context_settings") or {}

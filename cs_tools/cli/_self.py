@@ -15,7 +15,6 @@ from cs_tools._version import __version__
 from cs_tools.settings import _meta_config as meta
 from cs_tools.updater import CSToolsVirtualEnvironment
 from cs_tools.updater import FishPath, WindowsPath, UnixPath
-from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsCommand
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
@@ -39,14 +38,14 @@ app = typer.Typer(
 @app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
 @app.command(cls=CSToolsCommand)
 def update(
-    beta: bool = Opt(False, "--beta", help="pin your install to a pre-release build"),
-    offline: pathlib.Path = Opt(
+    beta: bool = typer.Option(False, "--beta", help="pin your install to a pre-release build"),
+    offline: pathlib.Path = typer.Option(
         None,
         help="install cs_tools from a distributable directory instead of from github",
         file_okay=False,
         resolve_path=True,
     ),
-    venv_name: str = Opt(None, "--venv-name", hidden=True),
+    venv_name: str = typer.Option(None, "--venv-name", hidden=True),
 ):
     """
     Upgrade CS Tools.
@@ -127,15 +126,15 @@ def pip():
 
 @app.command(cls=CSToolsCommand, hidden=True)
 def download(
-    directory: pathlib.Path = Opt(..., help="location to download the python binaries to"),
-    platform: str = Opt(..., help="tag which describes the OS and CPU architecture of the target environment"),
-    python_version: AwesomeVersion = Opt(
+    directory: pathlib.Path = typer.Option(..., help="location to download the python binaries to"),
+    platform: str = typer.Option(..., help="tag which describes the OS and CPU architecture of the target environment"),
+    python_version: AwesomeVersion = typer.Option(
         ...,
         metavar="X.Y",
         help="major and minor version of your python install",
         custom_type=AwesomeVersion,
     ),
-    beta: bool = Opt(False, "--beta", help="if included, download the latest pre-release binary"),
+    beta: bool = typer.Option(False, "--beta", help="if included, download the latest pre-release binary"),
 ):
     """
     Generate an offline binary.
@@ -192,7 +191,7 @@ def download(
 
 @app.command(cls=CSToolsCommand, hidden=True)
 def uninstall(
-    delete_configs: bool = Opt(False, "--delete-configs", help="delete all the configurations in CS Tools directory")
+    delete_configs: bool = typer.Option(False, "--delete-configs", help="delete all the configurations in CS Tools directory")
 ):
     """
     Remove CS Tools.

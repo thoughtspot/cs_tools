@@ -3,9 +3,9 @@ import shutil
 
 import typer
 
-from cs_tools.cli.ux import CSToolsArgument as Arg
+
 from cs_tools.cli.ux import CSToolsCommand
-from cs_tools.cli.ux import CSToolsOption as Opt
+
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
 from cs_tools.const import APP_DIR
@@ -15,10 +15,10 @@ app = typer.Typer(cls=CSToolsGroup, name="logs", hidden=True)
 
 @app.command(cls=CSToolsCommand)
 def report(
-    save_path: pathlib.Path = Arg(
+    save_path: pathlib.Path = typer.Argument(
         None, help="location on disk to save logs to", metavar="DIRECTORY", file_okay=False, resolve_path=True,
     ),
-    latest: int = Opt(1, help="number of most recent logfiles to export", min=1),
+    latest: int = typer.Option(1, help="number of most recent logfiles to export", min=1),
 ):
     """
     Grab logs to share with ThoughtSpot.

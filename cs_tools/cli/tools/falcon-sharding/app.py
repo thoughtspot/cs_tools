@@ -8,8 +8,6 @@ import typer
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsArgument as Arg
-from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.types import TMLImportPolicy
@@ -47,16 +45,16 @@ app = CSToolsApp(
 @app.command(dependencies=[thoughtspot])
 def deploy(
     ctx: typer.Context,
-    falcon_database: str = Opt("cs_tools", help="name of the database where data is gathered to"),
-    nodes: int = Opt(..., help='number of nodes serving your ThoughtSpot cluster'),
-    cpu_per_node: int = Opt(56, help='number of CPUs serving each node'),
-    threshold: int = Opt(
+    falcon_database: str = typer.Option("cs_tools", help="name of the database where data is gathered to"),
+    nodes: int = typer.Option(..., help='number of nodes serving your ThoughtSpot cluster'),
+    cpu_per_node: int = typer.Option(56, help='number of CPUs serving each node'),
+    threshold: int = typer.Option(
         55_000_000,
         help='unsharded row threshold, once exceeded a table will be a candidate for sharding'
     ),
-    ideal_rows: int = Opt(20_000_000, help='ideal rows per shard'),
-    min_rows: int = Opt(15_000_000, help='minumum rows per shard'),
-    max_rows: int = Opt(20_000_000, help='maximum rows per shard')
+    ideal_rows: int = typer.Option(20_000_000, help='ideal rows per shard'),
+    min_rows: int = typer.Option(15_000_000, help='minumum rows per shard'),
+    max_rows: int = typer.Option(20_000_000, help='maximum rows per shard')
 ):
     """
     Deploy the Sharding Recommender SpotApp.
@@ -117,7 +115,7 @@ def deploy(
 @app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
-    syncer: DSyncer = Opt(
+    syncer: DSyncer = typer.Option(
         ...,
         help="protocol and path for options to pass to the syncer",
         metavar="protocol://DEFINITION.toml",

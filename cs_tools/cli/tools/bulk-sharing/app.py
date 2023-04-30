@@ -6,8 +6,6 @@ import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsArgument as Arg
-from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.types import GUID, ShareModeAccessLevel
 
@@ -29,7 +27,7 @@ app = CSToolsApp(
 
 
 @app.command(dependencies=[thoughtspot])
-def cls_ui(ctx: typer.Context, webserver_port: int = Opt(5000, help="port to host the webserver on")):
+def cls_ui(ctx: typer.Context, webserver_port: int = typer.Option(5000, help="port to host the webserver on")):
     """
     Start the built-in webserver which runs the security management interface.
     """
@@ -51,11 +49,11 @@ def cls_ui(ctx: typer.Context, webserver_port: int = Opt(5000, help="port to hos
 @app.command(dependencies=[thoughtspot])
 def single(
     ctx: typer.Context,
-    group: str = Opt(..., help="group to share with"),
-    permission: ShareModeAccessLevel = Opt(..., help="permission type to assign"),
-    table: str = Opt(None, help='name of the table to share'),
-    table_guid: GUID = Opt(None, help='guid of the table to share'),
-    connection_guid: GUID = Opt(None, help='guid of the connction to share all tables for'),
+    group: str = typer.Option(..., help="group to share with"),
+    permission: ShareModeAccessLevel = typer.Option(..., help="permission type to assign"),
+    table: str = typer.Option(None, help='name of the table to share'),
+    table_guid: GUID = typer.Option(None, help='guid of the table to share'),
+    connection_guid: GUID = typer.Option(None, help='guid of the connction to share all tables for'),
 ):
     """
     Share a Table or Connection with a Group.

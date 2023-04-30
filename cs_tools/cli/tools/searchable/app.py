@@ -8,7 +8,7 @@ import typer
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import TZAwareDateTimeType, SyncerProtocolType
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsOption as Opt
+
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.types import GUID
 from cs_tools.cli.dependencies.syncer import DSyncer
@@ -30,22 +30,22 @@ app = CSToolsApp(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 @app.command(dependencies=[thoughtspot])
 def deploy(
     ctx: typer.Context,
-    connection_guid: GUID = Opt(
+    connection_guid: GUID = typer.Option(
         ...,
         help="if Falcon, use [b blue]falcon[/], otherwise find your guid in the Connection URL in the Data Workspace",
     ),
-    database: str = Opt(
+    database: str = typer.Option(
         ...,
         help="if Falcon, use [b blue]cs_tools[/], otherwise use the name of the database which holds Searchable data",
     ),
-    schema: str = Opt(
+    schema: str = typer.Option(
         ...,
         help=(
             "if Falcon, use [b blue]falcon_default_schema[/], otherwise use the name of the schema which holds "
             "Searchable data"
         )
     ),
-    export: pathlib.Path = Opt(None, help="download the TML files of the SpotApp", file_okay=False),
+    export: pathlib.Path = typer.Option(None, help="download the TML files of the SpotApp", file_okay=False),
 ):
     """
     Deploy the Searchable SpotApp.
@@ -149,26 +149,26 @@ def deploy(
 @app.command(dependencies=[thoughtspot])
 def bi_server(
     ctx: typer.Context,
-    syncer: DSyncer = Opt(
+    syncer: DSyncer = typer.Option(
         None,
         custom_type=SyncerProtocolType(models=models.BISERVER_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    compact: bool = Opt(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
-    from_date: dt.datetime = Opt(
+    compact: bool = typer.Option(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
+    from_date: dt.datetime = typer.Option(
         None,
         custom_type=TZAwareDateTimeType(),
         metavar="YYYY-MM-DD",
         help="inclusive lower bound of rows to select from TS: BI Server",
     ),
-    to_date: dt.datetime = Opt(
+    to_date: dt.datetime = typer.Option(
         None,
         custom_type=TZAwareDateTimeType(),
         metavar="YYYY-MM-DD",
         help="inclusive upper bound of rows to select from TS: BI Server",
     ),
-    include_today: bool = Opt(False, "--include-today", help="pull partial day data", show_default=False),
+    include_today: bool = typer.Option(False, "--include-today", help="pull partial day data", show_default=False),
 ):
     """
     Extract usage statistics from your ThoughtSpot platform.
@@ -243,13 +243,13 @@ def bi_server(
 @app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
-    # tables: List[str] = Opt(None, help="table names to collect data on, can be specified multiple times"),
-    include_column_access: bool = Opt(
+    # tables: List[str] = typer.Option(None, help="table names to collect data on, can be specified multiple times"),
+    include_column_access: bool = typer.Option(
         False,
         "--include-column-access",
         help="if specified, include security controls for Column Level Security as well",
     ),
-    syncer: DSyncer = Opt(
+    syncer: DSyncer = typer.Option(
         None,
         custom_type=SyncerProtocolType(models=models.METADATA_MODELS),
         help="protocol and path for options to pass to the syncer",

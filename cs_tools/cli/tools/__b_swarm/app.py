@@ -8,7 +8,7 @@ import horde
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import CSToolsOption as Opt
+
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.dependencies.syncer import DSyncer
@@ -37,23 +37,23 @@ def _handle_exception(event: horde.events.Event) -> None:
 @_async.coro
 async def random_access(
     ctx: typer.Context,
-    token: str = Opt(..., metavar="GUID", help="trusted auth token"),
-    worksheet: str = Opt(..., metavar="GUID", help="dependents of this worksheet will be targeted for this test run"),
+    token: str = typer.Option(..., metavar="GUID", help="trusted auth token"),
+    worksheet: str = typer.Option(..., metavar="GUID", help="dependents of this worksheet will be targeted for this test run"),
     # UI parameters
-    users: int = Opt(..., help="total number of users to spawn", rich_help_panel="Spawner Options"),
-    spawn_rate: int = Opt(1, help="number of users to spawn each second", rich_help_panel="Spawner Options"),
-    runtime: int = Opt(
+    users: int = typer.Option(..., help="total number of users to spawn", rich_help_panel="Spawner Options"),
+    spawn_rate: int = typer.Option(1, help="number of users to spawn each second", rich_help_panel="Spawner Options"),
+    runtime: int = typer.Option(
         None,
         help="execution time (in seconds) of the test, omit to run forever",
         rich_help_panel="Spawner Options"
     ),
-    syncer: DSyncer = Opt(
+    syncer: DSyncer = typer.Option(
         None,
         custom_type=SyncerProtocolType(models=[models.PerformanceEvent]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    dismiss_eula: bool = Opt(False, "--dismiss-concurrency-warning", hidden=True)
+    dismiss_eula: bool = typer.Option(False, "--dismiss-concurrency-warning", hidden=True)
 ):
     """
     Target a Worksheet for concurrency testing.
@@ -88,25 +88,25 @@ async def random_access(
 # @_async.coro
 # async def content_opens(
 #     ctx: typer.Context,
-#     token: str = Opt(..., metavar="GUID", help="trusted auth token"),
-#     worksheet: str = Opt(..., metavar="GUID", help="dependents of this worksheet will be targeted for this test run"),
+#     token: str = typer.Option(..., metavar="GUID", help="trusted auth token"),
+#     worksheet: str = typer.Option(..., metavar="GUID", help="dependents of this worksheet will be targeted for this test run"),
 #     # Spawner Options
-#     users: int = Opt(..., help="total number of users to spawn", rich_help_panel="Spawner Options"),
-#     spawn_rate: int = Opt(1, help="number of users to spawn each second", rich_help_panel="Spawner Options"),
-#     runtime: int = Opt(
+#     users: int = typer.Option(..., help="total number of users to spawn", rich_help_panel="Spawner Options"),
+#     spawn_rate: int = typer.Option(1, help="number of users to spawn each second", rich_help_panel="Spawner Options"),
+#     runtime: int = typer.Option(
 #         None,
 #         help="execution time (in seconds) of the test, omit to run forever",
 #         rich_help_panel="Spawner Options"
 #     ),
 #     # Syncer Options
-#     syncer: DSyncer = Opt(
+#     syncer: DSyncer = typer.Option(
 #         None,
 #         custom_type=SyncerProtocolType(models=[models.PerformanceEvent]),
 #         help="protocol and path for options to pass to the syncer",
 #         rich_help_panel="Syncer Options",
 #     ),
 #     # Hidden Options
-#     dismiss_eula: bool = Opt(False, "--dismiss-concurrency-warning", hidden=True)
+#     dismiss_eula: bool = typer.Option(False, "--dismiss-concurrency-warning", hidden=True)
 # ):
 #     """
 #     Target a Worksheet for concurrency testing.

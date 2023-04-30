@@ -12,7 +12,7 @@ from cs_tools.cli.input import ConfirmationPrompt
 from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
 from cs_tools._compat import StrEnum
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsOption as Opt
+
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import MetadataObjectType
@@ -47,15 +47,15 @@ app = CSToolsApp(
 @app.command(dependencies=[thoughtspot])
 def identify(
     ctx: typer.Context,
-    tag_name: str = Opt("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
-    dry_run: bool = Opt(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
-    no_prompt: bool = Opt(False, "--no-prompt", help="disable the confirmation prompt"),
-    content: ContentType = Opt(
+    tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+    content: ContentType = typer.Option(
         ContentType.all_user_content,
         help="type of content to mark for archival",
         rich_help_panel="Content Identification Criteria"
     ),
-    recent_activity: int = Opt(
+    recent_activity: int = typer.Option(
         ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE,
         help=(
             "content without recent views will be [b green]selected[/] (exceeds days threshold) "
@@ -65,30 +65,30 @@ def identify(
         show_default=False,
         rich_help_panel="Content Identification Criteria"
     ),
-    recent_modified: int = Opt(
+    recent_modified: int = typer.Option(
         100,
         help="content without recent edits will be [b green]selected[/] (exceeds days threshold)",
         rich_help_panel="Content Identification Criteria",
     ),
-    only_groups: str = Opt(
+    only_groups: str = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
         help="content not authored by users in these groups will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria",
     ),
-    ignore_groups: str = Opt(
+    ignore_groups: str = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
         help="content authored by users in these groups will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria",
     ),
-    ignore_tags: str = Opt(
+    ignore_tags: str = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
         help="content with this tag (case sensitive) will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria",
     ),
-    syncer: DSyncer = Opt(
+    syncer: DSyncer = typer.Option(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
@@ -241,11 +241,11 @@ def identify(
 @app.command(dependencies=[thoughtspot])
 def revert(
     ctx: typer.Context,
-    tag_name: str = Opt("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
-    dry_run: bool = Opt(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
-    no_prompt: bool = Opt(False, "--no-prompt", help="disable the confirmation prompt"),
-    delete_tag: bool = Opt(False, "--delete-tag", help="after untagging identified content, remove the tag itself"),
-    syncer: DSyncer = Opt(
+    tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+    delete_tag: bool = typer.Option(False, "--delete-tag", help="after untagging identified content, remove the tag itself"),
+    syncer: DSyncer = typer.Option(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
@@ -373,24 +373,24 @@ def revert(
 @app.command(dependencies=[thoughtspot])
 def remove(
     ctx: typer.Context,
-    tag_name: str = Opt("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
-    dry_run: bool = Opt(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
-    no_prompt: bool = Opt(False, "--no-prompt", help="disable the confirmation prompt"),
-    delete_tag: bool = Opt(False, "--delete-tag", help="after deleting identified content, remove the tag itself"),
-    syncer: DSyncer = Opt(
+    tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+    delete_tag: bool = typer.Option(False, "--delete-tag", help="after deleting identified content, remove the tag itself"),
+    syncer: DSyncer = typer.Option(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    directory: pathlib.Path = Opt(
+    directory: pathlib.Path = typer.Option(
         None,
         metavar="DIRECTORY",
         help="folder/directory to export TML objects to",
         file_okay=False,
         rich_help_panel="TML Export Options",
     ),
-    export_only: bool = Opt(
+    export_only: bool = typer.Option(
         False,
         "--export-only",
         help="export all tagged content, but don't remove it from",

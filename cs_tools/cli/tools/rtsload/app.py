@@ -4,8 +4,6 @@ import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsArgument as Arg
-from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.const import FMT_TSLOAD_TRUE_FALSE, FMT_TSLOAD_DATETIME, FMT_TSLOAD_TIME, FMT_TSLOAD_DATE
 
@@ -25,8 +23,8 @@ app = CSToolsApp(
 @app.command(dependencies=[thoughtspot])
 def status(
     ctx: typer.Context,
-    cycle_id: str = Arg(..., help="data load cycle id"),
-    # bad_records: str = Opt(
+    cycle_id: str = typer.Argument(..., help="data load cycle id"),
+    # bad_records: str = typer.Option(
     #     None,
     #     '--bad_records_file',
     #     help='file to use for storing rows that failed to load',
@@ -67,73 +65,73 @@ def status(
 @app.command(dependencies=[thoughtspot])
 def file(
     ctx: typer.Context,
-    file: pathlib.Path = Arg(
+    file: pathlib.Path = typer.Argument(
         ..., help="path to file to execute", metavar="FILE.csv", dir_okay=False, resolve_path=True
     ),
-    target_database: str = Opt(
+    target_database: str = typer.Option(
         ..., "--target_database", help="specifies the target database into which tsload should load the data"
     ),
-    target_table: str = Opt(..., "--target_table", help="specifies the target database"),
-    target_schema: str = Opt("falcon_default_schema", "--target_schema", help="specifies the target schema"),
-    empty_target: bool = Opt(
+    target_table: str = typer.Option(..., "--target_table", help="specifies the target database"),
+    target_schema: str = typer.Option("falcon_default_schema", "--target_schema", help="specifies the target schema"),
+    empty_target: bool = typer.Option(
         False,
         "--empty_target/--noempty_target",
         show_default=False,
         help="data in the target table is to be removed before the new data is loaded (default: --noempty_target)",
     ),
-    max_ignored_rows: int = Opt(
+    max_ignored_rows: int = typer.Option(
         0,
         "--max_ignored_rows",
         help="maximum number of rows that can be ignored for successful load. If number of ignored rows exceeds this limit, the load is aborted",
     ),
-    date_format: str = Opt(
+    date_format: str = typer.Option(
         FMT_TSLOAD_DATE,
         "--date_format",
         help="format string for date values, accepts format spec by the strptime datetime library",
     ),
-    date_time_format: str = Opt(
+    date_time_format: str = typer.Option(
         FMT_TSLOAD_DATETIME,
         "--date_time_format",
         help="format string for datetime values, accepts format spec by the strptime datetime library",
     ),
-    time_format: str = Opt(
+    time_format: str = typer.Option(
         FMT_TSLOAD_TIME,
         "--time_format",
         help="format string for time values, accepts format spec by the strptime datetime library",
     ),
-    skip_second_fraction: bool = Opt(
+    skip_second_fraction: bool = typer.Option(
         False,
         "--skip_second_fraction",
         show_default=False,
         help="when true, skip fractional part of seconds: milliseconds, microseconds, or nanoseconds from either datetime or time values if that level of granularity is present in the source data",
     ),
-    field_separator: str = Opt("|", "--field_separator", help="field delimiter used in the input file"),
-    null_value: str = Opt("", "--null_value", help="escape character in source data"),
-    boolean_representation: str = Opt(
+    field_separator: str = typer.Option("|", "--field_separator", help="field delimiter used in the input file"),
+    null_value: str = typer.Option("", "--null_value", help="escape character in source data"),
+    boolean_representation: str = typer.Option(
         FMT_TSLOAD_TRUE_FALSE, "--boolean_representation", help="format in which boolean values are represented"
     ),
-    has_header_row: bool = Opt(
+    has_header_row: bool = typer.Option(
         False, "--has_header_row", show_default=False, help="indicates that the input file contains a header row"
     ),
-    escape_character: str = Opt(
+    escape_character: str = typer.Option(
         '"', "--escape_character", help="specifies the escape character used in the input file"
     ),
-    enclosing_character: str = Opt('"', "--enclosing_character", help="enclosing character in csv source format"),
-    # bad_records: str = Opt(
+    enclosing_character: str = typer.Option('"', "--enclosing_character", help="enclosing character in csv source format"),
+    # bad_records: str = typer.Option(
     #     None,
     #     '--bad_records_file',
     #     help='file to use for storing rows that failed to load',
     #     metavar='protocol://DEFINITION.toml',
     #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
     # ),
-    flexible: bool = Opt(
+    flexible: bool = typer.Option(
         False,
         "--flexible",
         show_default=False,
         help="whether input data file exactly matches target schema",
         hidden=True,
     ),
-    http_timeout: int = Opt(False, "--timeout", help="network call timeout threshold"),
+    http_timeout: int = typer.Option(False, "--timeout", help="network call timeout threshold"),
 ):
     """
     Load a file using the remote tsload service.

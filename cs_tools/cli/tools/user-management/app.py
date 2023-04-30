@@ -11,8 +11,6 @@ from cs_tools.api._utils import SYSTEM_USERS
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import MetadataType, MultipleChoiceType, SyncerProtocolType
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsArgument as Arg
-from cs_tools.cli.ux import CSToolsOption as Opt
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.dependencies.syncer import DSyncer
 
@@ -27,24 +25,24 @@ app = CSToolsApp(help="""Manage Users and Groups in bulk.""")
 @app.command(dependencies=[thoughtspot])
 def transfer(
     ctx: typer.Context,
-    from_username: str = Opt(..., "--from", help="username of the current content owner"),
-    to_username: str = Opt(..., "--to", help="username to transfer content to"),
-    tags: str = Opt(
+    from_username: str = typer.Option(..., "--from", help="username of the current content owner"),
+    to_username: str = typer.Option(..., "--to", help="username to transfer content to"),
+    tags: str = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
         help="if specified, only move content marked with one or more of these tags",
     ),
-    metadata_types: List[MetadataType] = Opt(
+    metadata_types: List[MetadataType] = typer.Option(
         None,
         custom_type=MetadataType(to_system_types=True, include_subtype=True),
         help="if specified, only move specific types of objects",
     ),
-    guids: str = Opt(
+    guids: str = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
         help="if specified, only move specific objects",
     ),
-    include_dataflow: bool = Opt(False, "--include-dataflow", help="whether or not to include DataFlow jobs"),
+    include_dataflow: bool = typer.Option(False, "--include-dataflow", help="whether or not to include DataFlow jobs"),
 ):
     """
     Transfer ownership of objects from one User to another.
@@ -116,15 +114,15 @@ def transfer(
 @app.command(dependencies=[thoughtspot])
 def rename(
     ctx: typer.Context,
-    from_username: str = Opt(None, "--from", help="current username"),
-    to_username: str = Opt(None, "--to", help="new username"),
-    syncer: DSyncer = Opt(
+    from_username: str = typer.Option(None, "--from", help="current username"),
+    to_username: str = typer.Option(None, "--to", help="new username"),
+    syncer: DSyncer = typer.Option(
         None,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options"
     ),
-    remapping: str = Opt(None, help="directive to find usernames to sync at", rich_help_panel="Syncer Options"),
+    remapping: str = typer.Option(None, help="directive to find usernames to sync at", rich_help_panel="Syncer Options"),
 ):
     """
     Rename Users from one username to another.
@@ -213,44 +211,44 @@ def rename(
 @app.command(dependencies=[thoughtspot])
 def sync(
     ctx: typer.Context,
-    apply_changes: bool = Opt(
+    apply_changes: bool = typer.Option(
         False,
         "--apply-changes / --dry-run",
         help="test your sync to ThoughtSpot",
     ),
-    new_user_password: str = Opt(None, help="password to set for all newly created users"),
-    remove_deleted: bool = Opt(
+    new_user_password: str = typer.Option(None, help="password to set for all newly created users"),
+    remove_deleted: bool = typer.Option(
         False,
         "--remove-deleted",
         help="delete users and groups not found after loading from the syncer"
     ),
-    syncer: DSyncer = Opt(
+    syncer: DSyncer = typer.Option(
         ...,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options"
     ),
-    users: str = Opt(
+    users: str = typer.Option(
         "ts_auth_sync_users",
         help="directive to find users to sync at",
         rich_help_panel="Syncer Options"
     ),
-    groups: str = Opt(
+    groups: str = typer.Option(
         "ts_auth_sync_groups",
         help="directive to find groups to sync at",
         rich_help_panel="Syncer Options"
     ),
-    associations: str = Opt(
+    associations: str = typer.Option(
         "ts_auth_sync_xref",
         help="directive to find associations to sync at",
         rich_help_panel="Syncer Options"
     ),
-    export: bool = Opt(
+    export: bool = typer.Option(
         False,
         "--export",
         help="if specified, dump principals to the syncer instead of loading into ThoughtSpot",
     ),
-    create_empty: bool = Opt(
+    create_empty: bool = typer.Option(
         False,
         "--create-empty",
         help="write the structure of principal data to your syncer without any data",

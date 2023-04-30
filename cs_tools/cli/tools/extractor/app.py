@@ -7,7 +7,7 @@ from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools._compat import StrEnum
 from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsOption as Opt
+
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.dependencies.syncer import DSyncer
 
@@ -26,16 +26,16 @@ class SearchableDataSource(StrEnum):
 @app.command(dependencies=[thoughtspot])
 def search(
     ctx: typer.Context,
-    query: str = Opt(..., help="search terms to issue against the dataset"),
-    dataset: str = Opt(..., help="name of the worksheet, view, or table to search against"),
-    data_type: SearchableDataSource = Opt("worksheet", help="type of object to search"),
-    syncer: DSyncer = Opt(
+    query: str = typer.Option(..., help="search terms to issue against the dataset"),
+    dataset: str = typer.Option(..., help="name of the worksheet, view, or table to search against"),
+    data_type: SearchableDataSource = typer.Option("worksheet", help="type of object to search"),
+    syncer: DSyncer = typer.Option(
         ...,
         custom_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    target: str = Opt(..., help="directive to load Search data to", rich_help_panel="Syncer Options"),
+    target: str = typer.Option(..., help="directive to load Search data to", rich_help_panel="Syncer Options"),
 ):
     """
     Search a dataset from the command line.
