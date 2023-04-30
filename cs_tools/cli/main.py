@@ -17,10 +17,9 @@ from cs_tools.programmatic import get_cs_tool
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.settings import _meta_config as meta
 from cs_tools._version import __version__
-from cs_tools.cli.ux import rich_console, CSToolsApp, CSToolsOption as Opt
+from cs_tools.cli.ux import rich_console, CSToolsApp
 from cs_tools.errors import CSToolsError
 from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES
-from cs_tools.cli import _config, _tools, _self, _log
 from cs_tools import utils
 
 log = logging.getLogger(__name__)
@@ -65,7 +64,7 @@ app = CSToolsApp(
 
 
 @app.callback(invoke_without_command=True)
-def main(version: bool = Opt(False, "--version", help="Show the version and exit.")):
+def main(version: bool = typer.Option(False, "--version", help="Show the version and exit.")):
     if version:
         rich_console.print(
             "\n",
@@ -106,7 +105,12 @@ def run() -> int:
     """
     from cs_tools.settings import _meta_config
     from cs_tools.cli import _analytics
+    
+    # monkey-patch the typer implementation
     from cs_tools.cli import _monkey
+
+    # import all our tools
+    from cs_tools.cli import _config, _tools, _self, _log
 
     this_run_data = _analytics.CommandExecution(
         envt_uuid=_meta_config.install_uuid,

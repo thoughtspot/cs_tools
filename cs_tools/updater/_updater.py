@@ -69,7 +69,7 @@ class CSToolsVirtualEnvironment:
         return output
 
     def get_venv_path(self) -> pathlib.Path:
-        """Resolve to a User configuration directory."""
+        """Resolve to a User configuration-supported virtual environment directory."""
         if IS_WINDOWS:
             user_directory = pathlib.Path(os.environ.get("APPDATA", "~"))
         elif IS_MACOSX:
@@ -77,21 +77,21 @@ class CSToolsVirtualEnvironment:
         else:
             user_directory = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", "~/.config"))
 
-        desired = pathlib.Path(user_directory).expanduser() / self.config_directory_name / ".cs_tools"
+        cs_tools_venv_dir = pathlib.Path(user_directory).expanduser() / self.config_directory_name / ".cs_tools"
 
         # BPO-45337 - handle Micrsoft Store downloads
-        #
         #   @steve.dower
         #     We *could* limit this to when it's under AppData, but I think limiting it to Windows is enough.
         #     If the realpath generated a different path, we should warn the caller.
         #     If someone is looking at the output they'll get an important hint.
         #
         #   Further reading: https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes
+        #
         if IS_WINDOWS:
-            context = venv.EnvBuilder().ensure_directories(desired)
-            desired = pathlib.Path(context.env_dir).resolve()
+            context = venv.EnvBuilder().ensure_directories(cs_tools_venv_dir)
+            cs_tools_venv_dir = pathlib.Path(context.env_dir).resolve()
 
-        return desired
+        return cs_tools_venv_dir
 
     def python(self, *args, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment."""

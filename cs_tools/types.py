@@ -113,6 +113,7 @@ class GroupPrivilege(StrEnum):
     can_use_experimental_features = "EXPERIMENTALFEATUREPRIVILEGE"
     can_invoke_custom_r_analysis = "RANALYSIS"
     can_manage_sync = "SYNCMANAGEMENT"
+    can_preview_thoughtspot_sage = "PREVIEW_THOUGHTSPOT_SAGE"
     can_schedule_for_others = "JOBSCHEDULING"
     has_spotiq_privilege = "A3ANALYSIS"
     can_administer_and_bypass_rls = "BYPASSRLS"
