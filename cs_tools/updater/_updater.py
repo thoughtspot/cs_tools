@@ -117,8 +117,8 @@ class CSToolsVirtualEnvironment:
             "--trusted-host", "codeload.github.com",
         )
 
-        if self.find_links is not None:
-            required_general_args = (*required_general_args, "--find-links", self.find_links.as_posix())
+        if "install" in args and self.find_links is not None:
+            required_general_args = (*required_general_args, "--no-index", "--find-links", self.find_links.as_posix())
 
         return self.python("-m", "pip", *required_general_args, *args, **kwargs)
 
