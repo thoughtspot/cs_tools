@@ -139,10 +139,10 @@ def rename(
         | fake.user      | fake.user@thoughtspot.com |
         +----------------+---------------------------+
     """
-    if None in (from_username, to_username):
-        rich_console.print(
-            f"You must supply both [b blue]--from[/], and [b blue]--to[/], "
-            f"got [b blue]--from '{from_username}' --to '{to_username}'"
+    if syncer is None and None in (from_username, to_username):
+        log.warning(
+            f"You must supply both [b blue]--from[/] and [b blue]--to[/], got [b blue]--from[/] "
+            f"[dim]{from_username or '{empty}'}[/] [b blue]--to[/] [dim]{to_username or '{empty}'}[/]",
         )
         raise typer.Exit(-1)
 
@@ -185,7 +185,7 @@ def rename(
                 responses.append(r)
 
         with tasks["update_users"]:
-            for from_username, to_username, r in zip(users_map.items(), responses):
+            for (from_username, to_username), r in zip(users_map.items(), responses):
                 if r.is_error or from_username in SYSTEM_USERS:
                     continue
 
