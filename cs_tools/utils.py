@@ -1,10 +1,16 @@
 from __future__ import annotations
-from typing import Optional, Callable, Any, Dict
+from typing import TYPE_CHECKING
+from typing import Literal, Optional, Callable, Any, Dict
 from base64 import urlsafe_b64encode as b64e
 from base64 import urlsafe_b64decode as b64d
 import collections.abc
 import zlib
+import io
 
+import rich
+
+if TYPE_CHECKING:
+    import pathlib
 
 def chunks(iter_, *, n: int) -> iter:
     """
@@ -116,3 +122,61 @@ class State:
 
     def __delattr__(self, key: Any) -> None:
         del self._state[key]
+
+
+def svg_screenshot(
+    *renderables: tuple[rich.console.RenderableType],
+    path: pathlib.Path,
+    console: rich.console.Console = None,
+    width: int | Literal["fit"] | None = None,
+    centered: bool = False,
+    **svg_kwargs,
+) -> None:
+    """
+    Save a rich Renderable as an SVG to path.
+
+    Parameters
+    ----------
+    *renderables: tuple[rich.console.RenderableType]
+      objects to render for the screenshot
+
+    path: pathlib.Path
+      full path to where the screenshot will be saved
+
+    console: rich.console.Console  [default: None]
+      the console to use for screenshots, respects theming
+
+    width: int or 'fit'  [default: console.width]
+      maximum width of the console in the screenshot
+
+    centered: bool  [default: False]
+      whether or not to center the renderable in the screenshot
+
+    **svg_kwargs
+      passthru keyword arguments to Console.save_svg
+      https://rich.readthedocs.io/en/latest/reference/console.html#rich.console.Console.save_svg
+    """
+    if console is None:
+        console = rich.console.Console()
+
+    renderable = rich.console.Group(*renderables)
+
+    if centered:
+        renderable = rich.align.Align.center(renderable)
+
+    # Set up for capturing
+    context = {"width": console.width, "file": console.file, "record": console.record}
+
+    if width == "fit":
+        console.width = console.measure(renderable).maximum
+
+    if isinstance(width, (int, float)):
+        console.width = int(width)
+
+    console.record = True
+    console.file = io.StringIO()
+    console.print(renderable)
+    console.save_svg(path, **svg_kwargs)
+
+    for attribute, value in context.items():
+        setattr(console, attribute, value)
