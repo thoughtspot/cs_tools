@@ -1,14 +1,17 @@
 import sysconfig
+import datetime as dt
 import platform
+import getpass
 import logging
 import pathlib
 import sys
 import os
+import io
 
 from awesomeversion import AwesomeVersion
-from rich.panel import Panel
 import sqlalchemy as sa
 import typer
+import rich
 
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 from cs_tools._version import __version__
@@ -19,6 +22,7 @@ from cs_tools.cli.ux import CSToolsCommand
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
 from cs_tools.const import APP_DIR
+from cs_tools.utils import svg_screenshot
 from cs_tools.cli import _analytics
 
 log = logging.getLogger(__name__)
@@ -88,27 +92,43 @@ def update(
 
 
 @app.command(cls=CSToolsCommand)
-def info():
+def info(
+    directory: pathlib.Path = typer.Option(None, "--directory", help="export an image to share with the CS Tools team"),
+    anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
+):
     """
     Get information on your install.
     """
     if platform.system() == "Windows":
-        source = f"\"{pathlib.Path(sys.executable).parent.joinpath('Activate.ps1')}\""
+        source = f"{pathlib.Path(sys.executable).parent.joinpath('Activate.ps1')}"
     else:
         source = f"source \"{pathlib.Path(sys.executable).parent.joinpath('activate')}\""
 
-    rich_console.print(
-        Panel.fit(
-            f"\n           CS Tools: [b yellow]{__version__}[/]"
-            f"\n     Python Version: [b yellow]Python {sys.version}[/]"
-            f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"
-            f"\n  Configs Directory: [b yellow]{APP_DIR}[/]"
-            f"\nActivate VirtualEnv: [b yellow]{source}[/]"
-            f"\n      Platform Tags: [b yellow]{sysconfig.get_platform()}[/]"
-            f"\n",
-            padding=(0, 4, 0, 4)
-        )
+    text = (
+        f"\n           CS Tools: [b yellow]{__version__}[/]"
+        f"\n     Python Version: [b yellow]Python {sys.version}[/]"
+        f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"
+        f"\n  Configs Directory: [b yellow]{APP_DIR}[/]"
+        f"\nActivate VirtualEnv: [b yellow]{source}[/]"
+        f"\n      Platform Tags: [b yellow]{sysconfig.get_platform()}[/]"
+        f"\n"
     )
+
+    if anonymous:
+        text = text.replace(getpass.getuser(), " [dim]{anonymous}[/] ")
+
+    renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
+    rich_console.print(renderable)
+
+    if directory is not None:
+        svg_screenshot(
+            renderable,
+            path=directory / f"cs-tools-info-{dt.datetime.now():%Y-%m-%d}.svg",
+            console=rich_console,
+            centered=True,
+            width="fit",
+            title="cs_tools self info",
+        )
 
 
 @app.command(cls=CSToolsCommand, hidden=True)
