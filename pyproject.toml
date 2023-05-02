@@ -130,6 +130,7 @@ select = [
     "RUF",   # ruff-specific: https://beta.ruff.rs/docs/rules/#ruff-specific-rules-ruf
     "TCH",   # flake8-type-checking: https://pypi.org/project/flake8-type-checking/
 ]
+ignore = ["B008"]
 src = ["cs_tools"]
 exclude = [
     "__pycache__",   # ignore compiled bytecode
@@ -143,16 +144,11 @@ exclude = [
 [tool.ward]
 path = "tests/"
 
-[tool.coverage.run]
-branch = true
-include = [
-    "src/**.py",
-]
-omit = [
-    "src/thoughtspot_tml/_scriptability.py",
-    "src/thoughtspot_tml/_compat.py",
-    "__init__.py",
-]
+# [tool.coverage.run]
+# branch = true
+# include = [
+#     "cs_tools/**.py",
+# ]
 
 [tool.coverage.report]
 exclude_lines = [
