@@ -559,12 +559,12 @@ class RESTAPIv1:
         permissions: Dict[GUID, ShareModeAccessLevel],
     ) -> httpx.Response:
         d = {
-            "type": metadata_type,
+            "type": str(metadata_type),
             "id": dumps(guids),
             "permission": {
                 "permissions": {
-                    principal_guid: {"shareMode": access_level} for principal_guid, access_level in permissions.items()
-                }
+                    principal_guid: {"shareMode": str(access)} for principal_guid, access in permissions.items()
+                },
             },
             # we don't support these options
             "emailshares": UNDEFINED,

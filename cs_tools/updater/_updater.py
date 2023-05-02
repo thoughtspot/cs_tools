@@ -59,6 +59,9 @@ class CSToolsVirtualEnvironment:
                 else:
                     logger = log.info
 
+                if not line:
+                    continue
+
                 logger(line)
                 output.append(line)
 
