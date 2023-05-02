@@ -177,7 +177,7 @@ def rename(
                     continue
 
                 try:
-                    r = ts.api.user_read(name=from_username)
+                    r = ts.api.user_read(username=from_username)
                 except httpx.HTTPStatusError as e:
                     log.error(f"failed to find user [b blue]{from_username}[/]")
                     r = e.response
