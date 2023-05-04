@@ -609,6 +609,11 @@ def _log_results(tml_logs: pathlib.Path, name: str, status_code: str, error_mess
                 log.error(msg=msg)
 
             logfile.write(f"{status_code} -- {msg}\n")
+    else:
+        if status_code == "WARNING":
+            log.warning(msg=msg)
+        elif status_code == "ERROR":
+            log.error(msg=msg)
 
 
 def _some_tml_updated(import_policy: TMLImportPolicy, results: List[TMLImportResponse]) -> bool:
