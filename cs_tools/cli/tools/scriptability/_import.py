@@ -326,8 +326,9 @@ def _upload_connections(
             )
 
         else:
+            guid = guid_mapping.get_mapped_guid(tml.guid) if guid_mapping else tml.guid
             r = ts.api.connection_update(
-                guid=guid_mapping.get_mapped_guid(tml.guid),
+                guid=guid,
                 name=tml.name,
                 description="",
                 external_database_type=tml.connection.type,
