@@ -33,11 +33,12 @@ class Snowflake:
 
     snowflake_account_identifier: str
     username: str
-    password: str
+    password: str = None
     warehouse: str
     role: str
     database: str
     schema_: str = "PUBLIC"  # Field(default='PUBLIC', alias='schema')
+    private_key: pathlib.Path = None
     auth_type: AuthType = AuthType.local
     truncate_on_load: bool = True
 
@@ -71,6 +72,9 @@ class Snowflake:
         if self.auth_type != AuthType.local:
             connect_args["authenticator"] = "externalbrowser"
 
+        if self.private_key is not None:
+            connect_args["private_key"] = self._fetch_secret()
+
         self.engine = sa.create_engine(url, connect_args=connect_args)
         self.cnxn = self.engine.connect()
         self.metadata = sa.MetaData(schema=self.schema_)
@@ -80,6 +84,29 @@ class Snowflake:
         w = self.warehouse
         r = self.role
         return f"<Database ({self.name}) sync: user='{u}', warehouse='{w}', role='{r}'>"
+
+    #
+
+    def _fetch_secret(self, private_key_fp: pathlib.Path) -> bytes:
+        """Ripped from Snowflake documentation."""
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.backends import default_backend
+        import os
+
+        pem_data = private_key_fp.read_bytes()
+        password = os.environ.get("PRIVATE_KEY_PASSPHRASE", None)
+
+        if password is not None:
+            password = password.encode()
+
+        private_key = serialization.load_pem_private_key(data=pem_data, password=password, backend=default_backend())
+        pk_as_bytes = private_key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+
+        return pk_as_bytes
 
     # MANDATORY PROTOCOL MEMBERS
 
