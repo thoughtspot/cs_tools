@@ -7,17 +7,23 @@ on:
       - holiday-planning
 
 jobs:
-  build:
+ build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]
+        os: [ubuntu-latest]
     env:
       DISPLAY: :0
-
-  deploy:
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.x
+          python-version: ${{ matrix.python-version }}
 
       # GitHub Actions is headless, so we need an x-server
       - name: Setup xvfb (Linux)
@@ -27,7 +33,12 @@ jobs:
           # start xvfb in the background
           sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
 
-      - run: pip install -e .[docs]
-      - run: cs_tools config create --config non-prod --host https://my1.thoughtspot.cloud --username cs_tools --password THIS_IS_FAKE --default --overwrite
-      - run: mkdocs build
+      - name: Install Python dependencies
+        run: pip install -e .[docs]
+
+      - name: Create a CS Tools configuration
+        run: cs_tools config create --config non-prod --host https://my1.thoughtspot.cloud --username cs_tools --password THIS_IS_FAKE --default --overwrite
+
+      - name: Build and Deploy Documentation
+        run: mkdocs build
       # - run: mkdocs gh-deploy --force
