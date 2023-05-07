@@ -6,10 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cs_tools"
 dynamic = ["version"]
-description = """\
-	Tools created by the ThoughtSpot PS/CS organization to assist implementation and \
-    administration of your platform.\
-"""
+description = "Scale your ThoughtSpot adoption with tools created by the ThoughtSpot Solutions Consulting organization."
 readme = "README.md"
 requires-python = ">=3.7"
 license = {file = "LICENSE"}
@@ -98,6 +95,9 @@ dev = [
 docs = [
     "cs_tools[cli]",
     "mkdocs-material",
+    # Plugins..
+    "mkdocs-glightbox",
+    "mkdocs-open-in-new-tab",
 ]
 
 
