@@ -2,15 +2,19 @@ name: Deploy docs to GH Pages
 
 on:
   push:
-    branches: 
+    branches:
       - master
+      - holiday-planning
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.x
-      - run: pip install mkdocs-material 
-      - run: mkdocs gh-deploy --force
+      - run: pip install -e .[docs]
+      - run: cs_tools config create --config non-prod --host https://my1.thoughtspot.cloud --username cs_tools --password THIS_IS_FAKE --default --overwrite
+      - run: mkdocs build
+      # - run: mkdocs gh-deploy --force
