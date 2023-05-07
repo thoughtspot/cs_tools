@@ -1,11 +1,12 @@
 from typing import List
+import getpass
 import pathlib
 
 from rich.prompt import Confirm, Prompt
 from rich.markup import escape
-from rich.rule import Rule
 import pydantic
 import typer
+import rich
 import toml
 
 from cs_tools.thoughtspot import ThoughtSpot
@@ -60,6 +61,7 @@ def create(
     ),
     verbose: bool = typer.Option(False, "--verbose", help="enable verbose logging by default", show_default=False),
     is_default: bool = typer.Option(False, "--default", help="set as the default configuration", show_default=False),
+    overwrite: bool = typer.Option(False, "--overwrite", hidden=True),
 ):
     """
     Create a new config file.
@@ -81,7 +83,7 @@ def create(
     cfg = CSToolsConfig.from_parse_args(config, **args)
     file = APP_DIR / f"cluster-cfg_{config}.toml"
 
-    if file.exists() and not Confirm.ask(
+    if file.exists() and not overwrite and not Confirm.ask(
         f'\n[yellow]cluster configuration file "{config}" already exists, would ' f"you like to overwrite it?"
     ):
         raise typer.Exit()
@@ -92,7 +94,7 @@ def create(
     message = f'saved cluster configuration file "{config}"'
 
     if is_default:
-        message += "as the default"
+        message += " as the default"
         meta.default_config_name = config
         meta.save()
 
@@ -212,7 +214,10 @@ def check(config: str = typer.Option(..., help="config file identifier", metavar
 
 
 @app.command(no_args_is_help=0)  # this is abuse, pay it no mind
-def show(config: str = typer.Option(None, help="optionally, display the contents of a particular config", metavar="NAME")):
+def show(
+    config: str = typer.Option(None, help="optionally, display the contents of a particular config", metavar="NAME"),
+    anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
+):
     """
     Display the currently saved config files.
     """
@@ -237,15 +242,28 @@ def show(config: str = typer.Option(None, help="optionally, display the contents
 
         not_ = " not" if config == meta.default_config_name else ""
         default = f"[b blue]{config}[/] is{not_} the [green]default[/] configuration"
-        link = f" :computer_disk: [white][link={fp}]{fp.name}"
+        path = fp.parent.as_posix().replace(getpass.getuser(), " [dim]{anonymous}[/] ")
 
-        rich_console.print(
-            f"\n:file_folder: [link={fp.parent}]{fp.parent}",
-            f"\n:page_facing_up: {default}",
-            "\n",
-            Rule(title="[green]" + "~" * 10 + link, characters="~", align="left"),
-            f"\n[b blue]{contents}",
+        if anonymous:
+            new_contents = []
+
+            for line in contents.split("\n"):
+                if line.startswith("password"):
+                    continue
+
+                new_contents.append(line.replace(getpass.getuser(), " [dim]{anonymous}[/] "))
+
+            contents = "\n".join(new_contents)
+
+        text = (
+            f"\n:file_folder: [link={fp.parent}]{path}[/]"
+            f"\n:page_facing_up: {default}"
+            "\n"
+            f"\n[b blue]{contents}"
         )
+
+        renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
+        rich_console.print(renderable)
         raise typer.Exit()
 
     PREFIX = "cluster-cfg_"

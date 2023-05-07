@@ -105,6 +105,8 @@ def info(
         source = f"source \"{pathlib.Path(sys.executable).parent.joinpath('activate')}\""
 
     text = (
+        f"\n       [b blue]Info snapshot[/] taken on [b green]{dt.datetime.now().date()}[/]"
+        f"\n"
         f"\n           CS Tools: [b yellow]{__version__}[/]"
         f"\n     Python Version: [b yellow]Python {sys.version}[/]"
         f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"

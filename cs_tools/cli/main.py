@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import Any, Dict
 import datetime as dt
+import contextlib
 import traceback
 import logging
+import random
 import sys
 
 from rich.align import Align
@@ -135,7 +137,7 @@ def run() -> int:
     try:
         return_code = app(standalone_mode=False)
 
-    except click.Abort:
+    except (click.Abort, typer.Abort):
         return_code = 0
 
     except click.ClickException as e:
@@ -158,10 +160,6 @@ def run() -> int:
         this_run_data.traceback = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
 
         log.debug("whoopsie, something went wrong!", exc_info=True)
-
-        import random
-        import contextlib  # dependencies
-        import typer       # main cli library
 
         rich_traceback = rich.traceback.Traceback(
             width=150,

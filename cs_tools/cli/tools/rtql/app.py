@@ -54,12 +54,6 @@ def file(
 ):
     """
     Run multiple commands within TQL on a remote server.
-    \f
-    DEV NOTE:
-
-        This command is akin to using the shell command cat with TQL.
-
-            cat create-schema.sql | tql
     """
     ts = ctx.obj.thoughtspot
     r = ts.tql.script(file, http_timeout=http_timeout)
@@ -96,13 +90,6 @@ def command(
     Run a single TQL command on a remote server.
 
     By default, this command will accept input from a pipe.
-
-    \f
-    DEV NOTE:
-
-        This command is akin to using the shell command echo with TQL.
-
-            echo SELECT * FROM db.schema.table | tql
     """
     ts = ctx.obj.thoughtspot
 
