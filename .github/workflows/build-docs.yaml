@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - holiday-planning
 
 jobs:
  build:
@@ -41,4 +40,6 @@ jobs:
 
       - name: Build and Deploy Documentation
         run: mkdocs build
-      # - run: mkdocs gh-deploy --force
+
+      - name: Deploy Documentation
+        run: mkdocs gh-deploy --force
