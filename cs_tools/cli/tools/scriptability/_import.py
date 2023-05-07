@@ -326,8 +326,9 @@ def _upload_connections(
             )
 
         else:
+            guid = guid_mapping.get_mapped_guid(tml.guid) if guid_mapping else tml.guid
             r = ts.api.connection_update(
-                guid=guid_mapping.get_mapped_guid(tml.guid),
+                guid=guid,
                 name=tml.name,
                 description="",
                 external_database_type=tml.connection.type,
@@ -601,13 +602,19 @@ def _log_results(tml_logs: pathlib.Path, name: str, status_code: str, error_mess
     """
     msg = f"{name} -- {error_messages}"
 
-    with open(tml_logs / "import.issues", "a") as logfile:
+    if tml_logs:
+        with open(tml_logs / "import.issues", "a") as logfile:
+            if status_code == "WARNING":
+                log.warning(msg=msg)
+            elif status_code == "ERROR":
+                log.error(msg=msg)
+
+            logfile.write(f"{status_code} -- {msg}\n")
+    else:
         if status_code == "WARNING":
             log.warning(msg=msg)
         elif status_code == "ERROR":
             log.error(msg=msg)
-
-        logfile.write(f"{status_code} -- {msg}\n")
 
 
 def _some_tml_updated(import_policy: TMLImportPolicy, results: List[TMLImportResponse]) -> bool:

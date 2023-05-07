@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union, Tuple
 import collections
 import pathlib
 import logging
@@ -16,7 +16,7 @@ from httpx import HTTPStatusError
 
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
-from cs_tools.types import TMLSupportedContent, GUID
+from cs_tools.types import TMLSupportedContent, TMLSupportedContentSubtype, GUID
 
 log = logging.getLogger(__name__)
 
@@ -56,10 +56,24 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
     if org is not None:
         ts.org.switch(org)
 
+    include_subtypes = None
     if include_types is not None:
-        include_types = [TMLSupportedContent[t] for t in include_types]
+        include_types = [t.lower() for t in include_types]
+        # have to do subtypes first since types is overwritten.
+        include_subtypes = [str(TMLSupportedContentSubtype.from_friendly_type(t)) for t in include_types
+                            if str(TMLSupportedContentSubtype.from_friendly_type(t))]
+        include_types = [str(TMLSupportedContent.from_friendly_type(t)) for t in include_types]
 
+    exclude_subtypes = None
+    if exclude_types is not None:
+        exclude_types = [t.lower() for t in exclude_types]
+        # have to do subtypes first since types is overwritten.
+        exclude_subtypes = [str(TMLSupportedContentSubtype.from_friendly_type(t)) for t in exclude_types
+                            if str(TMLSupportedContentSubtype.from_friendly_type(t))]
+        exclude_types = [str(TMLSupportedContent.from_friendly_type(t)) for t in exclude_types]
+    # some types you always want to exclude.
     exclude_types = (exclude_types or []) + ["LOGICAL_COLUMN", "LOGICAL_RELATIONSHIP", "USER", "USER_GROUP"]
+    exclude_subtypes = (exclude_subtypes or [])
 
     log.debug(
         f"EXPORT args"
@@ -68,7 +82,9 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
         f"\nauthor={author}"
         f"\npattern={pattern}"
         f"\ninclude_types={include_types}"
+        f"\ninclude_subtypes={include_subtypes}"
         f"\nexclude_types={exclude_types}"
+        f"\nexclude_subtypes={exclude_subtypes}"
     )
 
     # Scenarios to support
@@ -84,7 +100,9 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
             author=author,
             pattern=pattern,
             include_types=include_types,
+            include_subtypes=include_subtypes,
             exclude_types=exclude_types,
+            exclude_subtypes=exclude_subtypes,
         )
 
     results: list[TMLExportResponse] = []

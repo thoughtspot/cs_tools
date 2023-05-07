@@ -48,7 +48,7 @@ class TMLMiddleware:
             responses.append(
                 TMLAPIResponse(
                     guid=content["response"].get("header", {}).get("id_guid", None),
-                    metadata_object_type=TMLSupportedContent.from_friendly_type(tml.tml_type_name).value,
+                    metadata_object_type=TMLSupportedContent.type_from_friendly_type(tml.tml_type_name).value,
                     tml_type_name=tml.tml_type_name,
                     name=content["response"].get("header", {}).get("name", tml.name),
                     status_code=content["response"]["status"]["status_code"],

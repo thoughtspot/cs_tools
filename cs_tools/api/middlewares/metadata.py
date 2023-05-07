@@ -162,8 +162,9 @@ class MetadataMiddleware:
         author: GUID = None,
         pattern: str = None,
         include_types: List[str] = None,
-        exclude_types: List[str] = None,
         include_subtypes: List[str] = None,
+        exclude_types: List[str] = None,
+        exclude_subtypes: List[str] = None,
     ) -> RecordsFormat:
         """
         Find all object which meet the predicates in the keyword args.
@@ -181,7 +182,9 @@ class MetadataMiddleware:
             metadata_list_kw["pattern"] = pattern
 
         for metadata_type in MetadataObjectType:
-            if exclude_types is not None and (metadata_type in exclude_types):
+            # can't exclude logical tables because they have sub-types.  Logical tables will be checked on subtype.
+            if exclude_types is not None and metadata_type is not MetadataObjectType.logical_table \
+                    and (metadata_type in exclude_types):
                 continue
 
             if include_types is not None and (metadata_type not in include_types):
@@ -197,7 +200,11 @@ class MetadataMiddleware:
                 for header in data["headers"]:
                     subtype = header.get("type", None)
 
+                    # All subtypes will be retrieved, so need to filter the subtype appropriately.
+                    # Mainly applies to LOGICAL_TABLE.
                     if (include_subtypes is not None) and (subtype is not None) and (subtype not in include_subtypes):
+                        continue
+                    elif (exclude_subtypes is not None) and (subtype is not None) and (subtype in exclude_subtypes):
                         continue
 
                     header["metadata_type"] = metadata_type

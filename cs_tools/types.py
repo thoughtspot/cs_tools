@@ -166,6 +166,22 @@ class TMLSupportedContent(StrEnum):
         return cls[friendly_type]
 
 
+class TMLSupportedContentSubtype(StrEnum):
+    connection = ""
+    table = "ONE_TO_ONE_LOGICAL"
+    view = "AGGR_WORKSHEET"
+    sql_view = "SQL_VIEW"
+    sqlview = "SQL_VIEW"
+    worksheet = "WORKSHEET"
+    pinboard = ""
+    liveboard = ""
+    answer = ""
+
+    @classmethod
+    def from_friendly_type(cls, friendly_type: str) -> TMLSupportedContentSubtype:
+        return cls[friendly_type]
+
+
 # ======================================================================================================================
 # CS Tools Middleware output types
 # ======================================================================================================================
