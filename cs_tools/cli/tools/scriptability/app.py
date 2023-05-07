@@ -222,7 +222,7 @@ def scriptability_export(
         "--export-associated",
         help="if specified, also export related content"
     ),
-    org: str = Opt(None, help="name or ID of the org to export from", hidden=False),
+    org: str = typer.Option(None, help="name or ID of the org to export from"),
 ):
     """
     Exports TML from ThoughtSpot.
