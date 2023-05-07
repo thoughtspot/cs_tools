@@ -7,6 +7,10 @@ on:
       - holiday-planning
 
 jobs:
+  build:
+    env:
+      DISPLAY: :0
+
   deploy:
     runs-on: ubuntu-latest
     steps:
@@ -14,6 +18,15 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: 3.x
+
+      # GitHub Actions is headless, so we need an x-server
+      - name: Setup xvfb (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+          # start xvfb in the background
+          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+
       - run: pip install -e .[docs]
       - run: cs_tools config create --config non-prod --host https://my1.thoughtspot.cloud --username cs_tools --password THIS_IS_FAKE --default --overwrite
       - run: mkdocs build
