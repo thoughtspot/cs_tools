@@ -107,8 +107,11 @@ class CSToolsScreenshotExtension(Extension):
         """Add CSToolsScreenshot to Markdown instance."""
         MAGIC_NUMBER = 100  # no idea, it's supposed to be a priority ???
 
+        screenshotter = CSToolsScreenshotProcesser(md.parser)
+        screenshotter.BASE_FILEPATH.mkdir(exist_ok=True)
+
         md.registerExtension(self)
-        md.parser.blockprocessors.register(CSToolsScreenshotProcesser(md.parser), "cs_tools_screenshot", MAGIC_NUMBER)
+        md.parser.blockprocessors.register(screenshotter, "cs_tools_screenshot", MAGIC_NUMBER)
 
 
 def makeExtension(**kwargs) -> CSToolsScreenshotExtension:
