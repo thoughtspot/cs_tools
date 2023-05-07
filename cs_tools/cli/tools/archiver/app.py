@@ -511,6 +511,8 @@ def remove(
                     content = [content["guid"] for content in to_delete if content["type"] == unique_type]
 
                     for chunk in utils.chunks(content, n=50):
+                        chunk = list(chunk)
+                        log.info(f"Attempting to delete {len(chunk)} {unique_type}s")
                         _extended_rest_api_v1.metadata_delete(
                             ts.api,
                             metadata_type=unique_type,
