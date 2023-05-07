@@ -4,24 +4,64 @@ hide:
 ---
 
 <style>
-  /* Hide the "Edit on Github" button and paragraph header link */
-  .md-content__button { display: none; }
-  .md-typeset .headerlink { display: none; }
+    /* I absolutely hate declared heights in CSS, but I also hate uneven items. */
+    .admonition, details[open] { height: 215px; }
+    img#with-fill-height { height: 100px; }
+    .grid-even-columns { align-items: start; }
+
+    @media (width < 1500px) {
+        .grid-even-columns[data-columns="3"] {
+            grid-template-columns: repeat(1, 1fr);
+        }
+        .md-typeset .admonition {
+            height: auto;
+            margin: 0em;
+        }
+        .md-typeset details {
+            height: auto;
+            margin: 0em 0em 1rem 0em;
+        }
+    }
 </style>
 
-# __Getting Started__ with `cs_tools`
+# __Getting Started__ with `cs_tools` { hidden="" }
 
-This document should talk you through everything you need to get started with __CS Tools__.
+<div class=grid-even-columns markdown="block" data-columns=3>
+!!! success "We'll learn how to.."
+    - [x] Install __CS Tools__
+    - [x] Set up a __configuration file__
+    - [x] Run a popular tool: __Archiver__{ .fc-purple }
+    - [x] Export data with a __Syncer__
+    - [x] Schedule __Archiver__{ .fc-purple } to run regularly
 
-In this tutorial, we’ll learn how to..
+!!! note "See one of these boxes?"
+    <center markdown="block">
+    It can contain <b class=fc-red>IMPORTANT</b> or <b class=fc-purple>HIGHLIGHTED</b> information.
 
-  1. Install or Upgrade __CS Tools__
-  2. Set up a __configuration file__ to access __ThoughtSpot__
-  3. Run one of the most popular tools: __Archiver__{ .fc-purple }
-  4. Create a __Syncer definition__ to interact with an external data source
-  5. Schedule __Archiver__{ .fc-purple } to run regularly
+    === "<span class=fc-blue>:material-information: Details</span>"
+        More information to consider about a feature.
 
-There are many utilities that come installed with __CS Tools__, make sure to read through the documentation carefully
-and check back often for new updates.
+    === "<span class=fc-green>:material-fire: Tips</span>"
+        Useful information to make your implementation go smoother.
 
-![cs_tools-output](./assets/terminal-screenshot.png)
+    === "<span class=fc-orange>:material-alert: Warnings</span>"
+        Things to watch out for when using this feature.
+
+    === "<span class=fc-red>:material-lightning-bolt-circle: Danger</span>"
+        Potentially disruptive features, use with caution!
+
+    === "<span class=fc-purple>:material-test-tube: Experimental</span>"
+        New or provisional features of __CS Tools__.
+
+    </center>
+
+??? abstract "You might need to expand it"
+    <center>
+    <b>in order to see all the detailed information.</b>
+
+    :wave:{ #with-fill-height }
+    </center>
+
+</div>
+
+~cs~tools cs_tools --help

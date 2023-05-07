@@ -22,47 +22,31 @@ We'll define for __CS Tools__ which data storage we're using, and then pass that
     - Google BigQuery
     - Google Sheets
 
-??? question "Don't see your favorite data format above?"
-
-    __This is for highly advanced users!__{ .fc-coral }
-
-    __Syncers__ follow a documented protocol, if you're savvy with coding in Python, visit the
-    [__Syncer Protocol__][syncer-protocol] documentation page and learn about how you can write and supply your own
-    custom syncer.
-
 ---
 
-With __Archiver__{ .fc-purple }, we can supply a __Syncer__{ .fc-blue } by passing the `--report` option.
+With __Archiver__{ .fc-purple }, we can supply a __Syncer__{ .fc-blue } by passing the `--syncer` option.
 
 Along with the `--dry-run` option, this will allow to inspect the Answers and Liveboards that would be marked for
 deletion, all without ever affecting the platform we're targeting.
 
 <center>
-``` mermaid
-  %%{init: { "securityLevel": "loose" }}%%
-graph LR
-  %% nodes
-  A[ThoughtSpot &#8203 ]
-  %% A["<img src='https://imageio.forbes.com/specials-images/imageserve/5d7912fb0762110008c1ec70/0x0.jpg'; width='30' />"]
-  B{{archiver identify<br/>--report csv://default<br/>--dry-run}}
-  C{CSV<br/>Syncer}
-  D[archiver-report.csv]
-
-  %% links
-  A --> | APIs | B
-  subgraph cs_tools
-  B -.- | using | C;
-  end
-  C ---> | dump | D;
-```
+![test](/assets/images/syncer-arch.svg){ width=85% }
 </center>
 
 ---
 
 ## Set up the CSV Syncer
 
-To keep things simple, let's define a definition file for the CSV Syncer. This will allow us to export data that various
-tools produce directly to a file. You can find all the configuration settings for syncers in [their section of the
+The syntax for defining a Syncer configuration (called a "definition file") is a simple URI, but it can be confusing at
+first. All Syncers can take their arguments either in the form of a definition file, or directly on the command line.
+
+!!! info inline end "Syncer Syntax"
+    <b><span class=fc-purple>csv</span> :// <span class=fc-blue>/fullpath/to/your/configuration.toml</span></b>
+
+    It's broken into 3 parts.. the <b class=fc-purple>protocol</b>, a separator, and the <b class=fc-blue>definition</b>.
+
+To keep things simple, let's define a configuration for the CSV Syncer. This will allow us to export data that various
+tools produce directly to a directory. You can find all the configuration settings for syncers in [their section of the
 documentation][syncer-csv].
 
 The CSV syncer is simple, all that's __required__{ .fc-coral } is the directory location to export data to. Follow the
@@ -73,25 +57,33 @@ folder.
 
 === ":fontawesome-brands-windows: Windows"
 
-    ```powershell
-    echo "[configuration]" > $env:USERPROFILE\\Downloads\\report.toml
-    echo "directory = `"$env:USERPROFILE\\Downloads\\`"" >> $env:USERPROFILE\\Downloads\\report.toml
-    ```
+    === "Command Format"
+        <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+        ```powershell
+        --syncer csv://directory=$env:USERPROFILE\\Downloads
+        ```
 
-=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
+    === "File Format"
+        <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+        ```toml
+        [configuration]
+        directory = "$env:USERPROFILE\\Downloads"
+        ```
 
-    ```bash
-    echo "[configuration]" >> $HOME/Downloads/report.toml
-    echo "directory = \"$HOME/Downloads\"" >> $HOME/Downloads/report.toml
-    ```
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :material-application-braces-outline: Mac, Linux, ThoughtSpot cluster"
 
-=== ":fontawesome-brands-centos: ThoughtSpot cluster"
+    === "Command Format"
+        <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+        ```bash
+        --syncer csv://directory=$HOME/Downloads
+        ```
 
-    ```bash
-    mkdir $HOME/Downloads
-    echo "[configuration]" >> $HOME/Downloads/report.toml
-    echo "directory = \"$HOME/Downloads\"" >> $HOME/Downloads/report.toml
-    ```
+    === "File Format"
+        <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+        ```toml
+        [configuration]
+        directory = "$HOME/Downloads"
+        ```
 
 ??? info "Full CSV Syncer definition example"
 
@@ -119,49 +111,18 @@ folder.
 ## Specifying the Syncer
 
 We've created a way for __CS Tools__ to export data to CSV, but how do we use it? Remember, __Archiver__{ .fc-purple }
-has an option called `--report protocol://DEFINITION.toml`.
+has an option called `--syncer protocol://DEFINITION.toml`.
 
 All __Syncers__{ .fc-blue } in __CS Tools__ follow a standard format, called a protocol. Additionally, each
 __Syncer__{ .fc-blue } can be customized using their own set of parameters. For example, a __CSV Syncer__ and a
 __Snowflake Syncer__ require different setup information to be used.
 
-Whenever you need to specify a __Syncer__{ .fc-blue }, you'll do so by providing the __protocol name__ followed by the
-__location of your syncer definition file__, separated by the three characters `://`. This is identical to the
-components that make up many common URI syntax like `https://`, `ftp://`, and `mailto://`.
-
-Examples of the __Syncer__{ .fc-blue } protocol URI syntax, all pointing to the same location. The contents of this file
-should be changed based on what __Syncer__{ .fc-blue } you want to use.
-
-  - `csv://$HOME/Downloads/report.toml`
-  - `snowflake://$HOME/Downloads/report.toml`
-  - `sqlite://$HOME/Downloads/report.toml`
-  - `gsheets://$HOME/Downloads/report.toml`
+Whenever you need to specify a __Syncer__{ .fc-blue }, you'll do so by providing the __protocol name__{ .fc-purple }
+followed by the __location of your syncer definition file__{ .fc-blue }, separated by the three characters `://`. This
+is identical to the components that make up many common URI syntax like `https://`, `ftp://`, and `mailto://`.
 
 You can find the full details for each __Syncer__{ .fc-blue } definition, as well as their protocol name in our
-[documentation][syncer-all]{ target='secondary' }.
-
-
-## Default Syncer
-
-Typing the full protocol out to the __Syncer__{ .fc-blue } definition file can sometimes be difficult. For this reason,
-you can add a default for each type of protocol to your __CS Tools__ config file.
-
-Let's set the CSV Syncer we created earlier to be the default for our current configuration.
-
-=== ":fontawesome-brands-windows: Windows"
-
-    ```powershell
-    cs_tools config modify --config non-prod --syncer csv://$env:USERPROFILE\Downloads\report.toml
-    ```
-
-=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
-
-    ```bash
-    cs_tools config modify --config non-prod --syncer csv://$HOME/Downloads/report.toml
-    ```
-
-After we successfully modify our `non-prod` config, we can then specify the CSV syncer using the following syntax
-`csv://default`.
+[documentation][syncer-all].
 
 !!! tip
 
@@ -175,17 +136,19 @@ Now that we've learned everything about how to use our CSV Syncer, let's try the
 
 === ":fontawesome-brands-windows: Windows"
 
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
     ```powershell
     cs_tools tools archiver identify `
-    --report csv://default `
+    --syncer csv://directory=$env:USERPROFILE\\Downloads `
     --dry-run
     ```
 
-=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :material-application-braces-outline: Mac, Linux, ThoughtSpot cluster"
 
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
     ```bash
     cs_tools tools archiver identify \
-    --report csv://default \
+    --syncer csv://directory=$HOME/Downloads \
     --dry-run
     ```
 
@@ -209,6 +172,6 @@ to regularly visit the state of metadata in our cluster.
 __In the final section__, we'll explore ways to schedule the tools on both Windows and Unix platforms.
 
 
-[syncer-protocol]: ../syncer/protocol.md
+<!-- [syncer-protocol]: ../syncer/protocol.md -->
 [syncer-all]: ../syncer/what-is.md
 [syncer-csv]: ../syncer/csv.md

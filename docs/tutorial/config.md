@@ -1,18 +1,13 @@
-<style>
-  /* Hide the "Edit on Github" button */
-  .md-content__button { display: none; }
-</style>
-
 # Configuration Files
 
-__CS Tools__ is built on top of the __ThoughtSpot__ [REST APIs][ts-rest-v1].
+__CS Tools__ is built on top of the __ThoughtSpot__ [REST APIs][ts-rest-apis].
 
-In order to interact with the APIs, __ThoughtSpot__ enforces that you must log in as an authorized user. If you do not
+In order to interact with the APIs, __ThoughtSpot__ enforces that you must log in as an Authorized User. If you do not
 have a local account in __ThoughtSpot__ already, you can create one to use with __CS Tools__ as a service account[^1].
 
 Whatever permissions this User has, will be the same security context that __CS Tools__ utilizes.
 
-![cs_tools-config-create](./assets/cs_tools-config-create.png)
+~cs~tools cs_tools config create --help
 
 
 ## Set up a config file
@@ -21,7 +16,7 @@ The command we'll use to set up a new config is `cs_tools config create`. This c
 below.
 
 === "config"
-    __[required]__{ .fc-coral }
+    __[required]__{ .fc-red }
 
     `--config non-prod`
 
@@ -31,7 +26,7 @@ below.
     __This name will be referenced in each of the tools' commands.__
 
 === "host, port"
-    __[required]__{ .fc-coral }
+    __[required]__{ .fc-red }
 
     `--host https://my-company.thoughtspot.cloud/`
 
@@ -40,7 +35,7 @@ below.
     resource.
 
 === "username, password"
-    __[required]__{ .fc-coral }
+    __[required]__{ .fc-red }
 
     `--username cs_tools`
 
@@ -59,12 +54,12 @@ below.
 === "syncer"
     __[optional]__{ .fc-purple }
 
-    `--syncer /Users/$USER/work/cfgs`
+    `--syncer protocol://DEFINITION.toml`
 
     Set default syncers within your configuration file. This can be supplied multiple times, once for each type of
     syncer.
 
-    You'll learn more about syncers later in this tutorial.
+    __You'll learn more about syncers later in this tutorial.__{ .fc-purple }
 
 === "disable_sso"
     __[optional]__{ .fc-purple }
@@ -106,39 +101,32 @@ below.
 
 ---
 
-<center>
-__Putting it all together..__{ .fc-blue }
-</center>
-
 === ":fontawesome-brands-windows: Windows"
 
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
     ```powershell
     cs_tools config create `
-    --config non-prod `
-    --host https://my-company.thoughtspot.cloud/ `
-    --username cs_tools `
-    --disable_sso `
-    --default
+      --config non-prod `
+      --username cs_tools `
+      --disable_sso `
+      --default
     ```
 
-=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: Mac, Linux, ThoughtSpot cluster"
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :material-application-braces-outline: Mac, Linux, ThoughtSpot cluster"
 
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
     ```bash
     cs_tools config create \
-    --config non-prod \
-    --host https://my-company.thoughtspot.cloud/ \
-    --username cs_tools \
-    --disable_sso \
-    --default
+      --config non-prod \
+      --username cs_tools \
+      --disable_sso \
+      --default
     ```
 
 
 ## Check your config
 
-<figure markdown>
-  <figcaption>cs_tools config check --config non-prod</figcaption>
-  ![cs_tools-config-check](./assets/cs_tools-config-check.png)
-</figure>
+~cs~tools cs_tools config check --help
 
 
 ## Example Configuration File
@@ -149,30 +137,8 @@ You can view all the currently configured environments by using the `cs_tools co
 
     For security reasons, your password lives obfuscated both in memory and the configuration file upon being captured by `cs_tools`. It is only decrypted once per run, when authorizing with your ThoughtSpot platform.
 
-<center>
-*cs_tools config show --config production*
-</center>
+~cs~tools cs_tools config show --config non-prod --anonymous
 
-```toml
-
-Cluster configs located at: ~/.config/cs_tools
-
-[default]
-~/.config/cs_tools/cluster-cfg_non-prod.toml
-
-name = "non-prod"
-verbose = false
-temp_dir = "//172.16.0.10/cs_tools/tmp"
-
-[thoughtspot]
-host = "https://my-company.thoughtspot.cloud/"
-disable_ssl = false
-disable_sso = true
-
-[auth.frontend]
-username = "cs_tools"
-password = "aBcDEf1GhIJkLMnOPQRStuVx"
-```
 
 ## Exploring the Tools
 
@@ -188,5 +154,5 @@ our __ThoughtSpot__ cluster clean while it grows.
     [certain scenarios][ts-rest-license-matrix]. Local Users, or Basic Auth, is unrestricted across all __ThoughtSpot__
     license types.
 
-[ts-rest-v1]: https://developers.thoughtspot.com/docs/?pageid=rest-api-v1
+[ts-rest-apis]: https://developers.thoughtspot.com/docs/?pageid=rest-apis
 [ts-rest-license-matrix]: https://developers.thoughtspot.com/docs/?pageid=license-feature-matrix
