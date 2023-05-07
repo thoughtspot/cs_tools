@@ -19,7 +19,7 @@ from cs_tools.settings import _meta_config as meta
 from cs_tools._version import __version__
 from cs_tools.cli.ux import rich_console, CSToolsApp
 from cs_tools.errors import CSToolsError
-from cs_tools.const import DOCS_BASE_URL, GDRIVE_FORM, TOOLS_DIR, GH_ISSUES
+from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, TOOLS_DIR, GH_ISSUES
 from cs_tools import utils
 
 log = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ app = CSToolsApp(
         f":bookmark: v{__version__} "
         f":books: [cyan][link={DOCS_BASE_URL}]Documentation[/] "
         f"🛟 [link={GH_ISSUES}]Get Help[/] "
-        f":memo: [link={GDRIVE_FORM}]Feedback[/][/] "
+        f":memo: [link={GH_DISCUSS}]Feedback[/][/] "
         + (
             f":computer_disk: [green]{meta.default_config_name}[/] (default)"
             if meta.default_config_name is not None
