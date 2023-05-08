@@ -17,7 +17,7 @@ hide:
 
 <div class=grid-even-columns data-columns=2>
     <div class=grid-even-columns data-columns=1 style="justify-items: center; gap: 0;">
-        <img src=assets/images/logo-transparent.png style="width: 55%;">
+        <img src=/cs_tools/assets/images/logo-transparent.png style="width: 55%;">
         <center><span class=fc-blue><b>Scale your Administration and Adoption with tools created by the <br><span class=fc-black>ThoughtSpot Solutions Consulting</span> organization.</b></span></center>
         <ul class="task-list">
             <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled="" checked=""><span class="task-list-indicator"></span></label>
@@ -43,7 +43,7 @@ hide:
             </li>
         </ul>
     </div>
-    <img src=terminal-screenshots/cs_tools___help.svg>
+    <img src=/cs_tools/terminal-screenshots/cs_tools___help.svg>
 </div>
 
 <!-- This gets hidden due to the CSS rule above, we just need it to generate the SVG -->
