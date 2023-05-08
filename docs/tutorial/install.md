@@ -85,7 +85,7 @@ you will be able to run upgrades from directly within the __CS Tools__ applicati
 
     The default terminal app is limited to 256 colors. We recommend installing a newer terminal such as [iterm2](https://iterm2.com/), [Kitty](https://sw.kovidgoyal.net/kitty/), or [WezTerm](https://wezfurlong.org/wezterm/).
 
-    ### ::fontawesome-brands-linux: Linux (all distros)
+    ### :fontawesome-brands-linux: Linux (all distros)
 
     All Linux distros come with a terminal emulator that can run __CS Tools__.
 
