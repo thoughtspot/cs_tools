@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from typing import Literal, Optional, Callable, Any, Dict
+from typing import Optional, Callable, Any, Dict
 from base64 import urlsafe_b64encode as b64e
 from base64 import urlsafe_b64decode as b64d
 import collections.abc
@@ -8,6 +8,8 @@ import zlib
 import io
 
 import rich
+
+from cs_tools._compat import Literal
 
 if TYPE_CHECKING:
     import pathlib
