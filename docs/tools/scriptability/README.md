@@ -1,53 +1,36 @@
 # Scriptability
 
-This tool allows user to simplify and automate the export and import of ThoughtSpot TML from and to the same or different instances.
+Scriptability allows user to simplify and automate the export and import of ThoughtSpot content via TML.
 
-There are several use cases where exporting and importing TML is useful:
+The following are the primary use cases for the scriptability tool:
 
-1. Export TML for version control.
-2. Export TML for migration to a different ThoughtSpot instance.
-3. Export TML to modify and create copies, such as for different customers or in different languages.
+1. Export content for version control.
+2. Migrate content to other clusters and orgs.
+3. Make multiple copies of content, such as creating variations for different customers.
 
 ??? danger "__This tool creates and updates content.  Regular shapshots are recommended!__"
 
     When importing content, it is possisible to accidentally overwrite content or create 
     multiple copies of content when you didn't intend to, just by using the wrong parameters.
-    You should make sure you have a snapshot or backup prior to making large changes.
+    You should make sure you have a snapshot prior to making large changes.
 
 ??? important "Scriptability enforces content rules"
 
     <span class=fc-coral>You __must__ have at least the __`Can Manage Data`__ privilege
-    in ThoughtSpot to use this tool.</span>
+    in ThoughtSpot to use scriptability.</span>
 
-    When exporting the TML, you will need content permissions to the content to be exported.  
-    When importing the TML it will be created as the authenticated user of the tool.
+    When exporting TML, you will need content permissions to the content to be exported.  
+    When importing the TML it will be created as the authenticated user from the configuration.
 
 This version of `cs_tools scriptability` supports the following:
 
 * All TML types _and_ connections can be exported and imported with or without related content
-* Orgs are now supported for those instances where it's being used.
+* Orgs are supported for those instances where it's being used.
 
-__Export__
+!!! warning "TML is complex and the uses are varied"
 
-* Export TML based on a GUID
-* Export TML based on the author
-* Export TML based on a ThoughtSpot TAG
-* Export only TML that matches a pattern
-
-__Import__
-
-* Import TML (update and create new) with complex dependency handling (updated)
-* Share and tag content when importing
-
-__Compare__
-
-* Compare two TML files for differences
-
-!!! warning "TML is complex and this tool is new."
-
-    The scriptability tool has been tested in a number of complex scenarios.  But TML export and import is 
-    complex with a variety of different scenarios.  It is anticipated that some scenarios have not been 
-    tested for and won't work.  Please provide feedback on errors and unsupported scenarios by 
+    The scriptability tool has been tested with a variety of complex scenarios.  It is anticipated that some scenarios 
+    have not been tested for and won't work.  Please provide feedback on errors and unsupported scenarios by 
     entering a [new issue][gh-issue].
 
 !!! warning "Limitations"
@@ -57,16 +40,15 @@ __Compare__
 
     The following are some known issues when using the tool:
 
-    * Worksheets based on SQL Views can sometimes fail.  This is a TML limitation.
+    * There are rare scenarios where there is content you can access, but not download.  In these cases you will get an error message.
 
-    * There are scenarios where there is content you can access, but not download.  In these cases you will get an error message.
-
-    In general, any changes with dependencies are likely to cause errors in the current version.  
+    In general, any changes that break dependencies are likely to throw errors.
 
 ??? important "New features being considered for upcoming releases"
 
     The following features are being considered for an upcoming release:
 
+    * Generate metadata info for the exports and imports (e.g. name, guid, type, etc.)
     * Set the author on import
     * Get only content modified since a given date
     * Automatic versioning of mapping files
@@ -81,19 +63,27 @@ __Compare__
 
 ## Detailed scenarios
 
+=== "Testing connections"
+
+    ThoughtSpot connections map to a database connection.  If the database is updated, the connection may no longer work.
+    The only way to test in the UI is to check each connecition by searching or viewing data.  However, with scriptability
+    you can test all connections via the command line using the `scriptability connection-check` command.
+
 === "Exporting TML"
 
-    Some customers want to back up the metadata as TML in the file system or a version control system (VCS), such as `git`.  This is done simply by using the `scriptability --export` and saving the files to a directory.  Then you can use the VCS to add the TML. 
+    Some customers want to back up the metadata as TML in the file system or a version control system (VCS), such as `git`.  This is done simply by using the `scriptability export` and saving the files to a directory.  Then use the VCS to manage the TML. 
 
 === "Migrate content"
 
-    Migrating content consist of exporting, (optionally) modifying, and then importing content.  You will want to do the following for this scenario:
+    Migrating content consist of exporting, (optionally) modifying, and then importing content.  Migration can happen 
+    between ThoughtSpot Instances, such as from a development to a production instance.  It can also be used to migrate
+    content between orgs.
 
-    1. Create the connection and tables manually if they don't exist.  This step is needed because the scriptability tool doesn't currently support connections.
-    2. Create a mapping file for tables if one doesn't exist.  Note that you can use `scriptability create-mapping` to create a new, empty mapping file.
-    3. Export the TML to be migrated using `scriptability export`.
-    4. (Optional) Modify the TML as appropriate.  
-    5. Import the TML using `scriptability import --force-create`.  The `force-create` parameter will make sure the content is created as new and not updating existing content.
+    You will want to do the following for this scenario:
+
+    1. Export the TML to be migrated using `scriptability export`.
+    2. (Optional) Modify the TML as appropriate.  
+    3. Import the TML using `scriptability import --force-create`.  The `force-create` parameter will make sure the content is created as new and not updating existing content.
 
     NOTE: To migrate changes, simply leave out the `--force-create` parameter.  New content will automatically be created and existing content (based on the mapping file) will be updated.
 
@@ -111,7 +101,7 @@ __Compare__
 
     1. Export the TML using `scriptability export`.
     2. Modify the TML for the group, such as different column names.
-    3. Import the TML using `scriptability import` without the `--force-create` flag.
+    3. Import the TML using `scriptability import`.
 
     In this scenario a mapping file _may_ be needed if the content comes from different connections.  In that case you may also want separate mapping files for each group to make a copy for.
 
@@ -124,10 +114,9 @@ of tables if there are more than one with the same name in the system being impo
 provide the GUID as an FQN in the TML file, you will get an error on import, because ThoughtSpot won't 
 know which table is being referred to.
 
-The default name for the GUID mapping file is `guid.mapping.json`, but you can use whatever name you like 
-since it's specified as a parameter.  The GUID mapping file is only used for importing TML.  When creating 
-content, the GUID mapping file is updated as content is created with new GUID mappings.  
-This allows it to be used later for updating content.
+The default name for the GUID mapping file is `guid.mapping.json`, but this can be changed in the parameter.
+The GUID mapping file is only used for importing TML.  When creating content, the GUID mapping file is updated as 
+content is created with new GUID mappings.  This allows it to be used later for updating content.
 
 The GUID mapping file is created and loaded by the [thoughtspot_tml] project.  More details can be found 
 [there](https://github.com/thoughtspot/thoughtspot_tml).  
