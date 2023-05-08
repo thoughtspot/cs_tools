@@ -97,7 +97,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 
     <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
     ```powershell
-    (Invoke-WebRequest ` # (1)!
+    (Invoke-WebRequest `# (1)!
         -Uri https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py `
         -UseBasicParsing `
     ).Content | python - --install # (2)!
