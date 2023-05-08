@@ -47,7 +47,7 @@ hide:
 </div>
 
 <!-- This gets hidden due to the CSS rule above, we just need it to generate the SVG -->
-~cs~tools cs_tools --help  
+~cs~tools cs_tools --help
 
 <span class=grid-even-columns data-columns=3>
     <a class=md-button style="text-align: center" href=tutorial/install/>:octicons-tools-16: Get the Tools</a>

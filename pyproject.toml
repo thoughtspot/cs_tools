@@ -66,7 +66,6 @@ cli = [
     #   need an extra process to grab the grandchild dependencies so our direct reliance
     #   doesn't break when a child updates.
     #
-    #   see dist/build.py for this purpose
 
     # platform-specific
     "pyreadline3 == 3.4.1 ; sys_platform == 'win32'",
