@@ -89,7 +89,7 @@ class CSToolsScreenshotProcesser(BlockProcessor):
 
                 # Add to the parent
                 pathsafe_command = self._path_safe_command(cs_tools_command)
-                svg = SubElement(parent, f"object class={self.CLASS_NAME} data='/terminal-screenshots/{pathsafe_command}.svg'")
+                svg = SubElement(parent, f"object class={self.CLASS_NAME} data='/cs_tools/terminal-screenshots/{pathsafe_command}.svg'")
 
                 # This is recursive, hence why it looks weird (assigning new parent as this child element)
                 self.parser.parseBlocks(parent=svg, blocks=[])

@@ -27,13 +27,13 @@ Now that we've decided how to track our content, we're ready to schedule our com
     Find the Task Scheduler in your system utilities.
 
     === "Create a New Task."
-        ![windows-task](/assets/images/windows-schedule-task.png)
+        ![windows-task](/cs_tools/assets/images/windows-schedule-task.png)
 
     === "Weekly Recurring Trigger."
-        ![windows-trigger](/assets/images/windows-schedule-trigger.png)
+        ![windows-trigger](/cs_tools/assets/images/windows-schedule-trigger.png)
 
     === "Targeting `cs_tools`."
-        ![windows-target](/assets/images/windows-schedule-target.png)
+        ![windows-target](/cs_tools/assets/images/windows-schedule-target.png)
 
 === ":fontawesome-brands-apple:, :fontawesome-brands-linux:, :fontawesome-brands-centos: crontab"
 
@@ -64,13 +64,9 @@ __CS Tools__ project. Be sure to check out the rest of the documentation, and al
 
 [:octicons-mark-github-16: Source code](https://github.com/thoughtspot/cs_tools){ .md-button }
 </div>
-<!-- !!! info "[__All the Tools__][docs-tools]"
-!!! info "[__Get Help__][google-form-help]"
-!!! info "[__GitHub Issues__][github-help]"
-!!! info "[__ThoughtSpot Community__][search-cs_tools]"
- -->
+
+
 [cronguru]: https://crontab.guru/
 [schtasks]: https://docs.microsoft.com/en-us/previous-versions/orphan-topics/ws.10/cc772785(v=ws.10)?redirectedfrom=MSDN
-[docs-tools]: ../cs-tools/overview.md
 [github-help]: https://github.com/thoughtspot/cs_tools/issues/new/choose
 [search-cs_tools]: https://community.thoughtspot.com/s/global-search/cs_tools
