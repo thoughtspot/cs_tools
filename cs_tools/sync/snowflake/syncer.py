@@ -8,7 +8,7 @@ import uuid
 
 from pydantic.dataclasses import dataclass
 from snowflake.sqlalchemy import URL
-from pydantic import root_validator
+from pydantic import root_validator, Field
 import pyarrow.parquet as pq
 import sqlalchemy as sa
 import pyarrow as pa
@@ -33,14 +33,14 @@ class Snowflake:
 
     snowflake_account_identifier: str
     username: str
-    password: str = None
     warehouse: str
     role: str
     database: str
-    schema_: str = "PUBLIC"  # Field(default='PUBLIC', alias='schema')
-    private_key: pathlib.Path = None
-    auth_type: AuthType = AuthType.local
-    truncate_on_load: bool = True
+    password: str = Field(default=None)
+    schema_: str = Field(default="PUBLIC")  #, alias='schema')
+    private_key: pathlib.Path = Field(default=None)
+    auth_type: AuthType = Field(default=AuthType.local)
+    truncate_on_load: bool = Field(default=True)
 
     # DATABASE ATTRIBUTES
     __is_database__ = True
@@ -51,6 +51,10 @@ class Snowflake:
         # if we don't use pydantic, we don't get easy post-init setup. Whatever.
         if "schema" in values:
             values["schema_"] = values.pop("schema")
+
+        if (values.get("password"), values.get("private_key")) == (None, None):
+            raise ValueError("You must include either [b blue]password[/] or [b blue]private_key[/].")
+
         return values
 
     def __post_init_post_parse__(self):

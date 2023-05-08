@@ -163,7 +163,7 @@ class DSyncer(Dependency):
         except pydantic.ValidationError as e:
             raise SyncerError(
                 proto=self.protocol,
-                definition=self.definition_fp,
+                definition=self.definition_fp or "CLI Input",
                 errors="\n  ".join([f"[blue]{_['loc'][0]}[/]: {_['msg']}" for _ in e.errors()]),
                 reason="[blue]{definition}[/] has incorrect parameters.\n\n  {errors}",
                 mitigation=(
