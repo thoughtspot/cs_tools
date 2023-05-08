@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import logging
 import enum
 import csv
@@ -9,13 +9,12 @@ from sqlalchemy_redshift import dialect
 import sqlalchemy as sa
 import s3fs
 
-
 log = logging.getLogger(__name__)
 
 
 class AuthType(enum.Enum):
-    local = 'local'
-    okta = 'okta'
+    local = "local"
+    okta = "okta"
 
 
 @dataclass
@@ -23,6 +22,7 @@ class Redshift:
     """
     Interact with an AWS Redshift database.
     """
+
     username: str
     password: str
     database: str
@@ -42,12 +42,12 @@ class Redshift:
         if self.auth_type == AuthType.local:
             connect_args = {}
             url = sa.engine.URL.create(
-                drivername='redshift+redshift_connector',
+                drivername="redshift+redshift_connector",
                 host=self.aws_endpoint,
                 port=self.port,
                 database=self.database,
                 username=self.username,
-                password=self.password
+                password=self.password,
             )
 
         elif self.auth_type == AuthType.okta:
@@ -69,15 +69,15 @@ class Redshift:
             #     password=self.password
             # )
             raise NotImplementedError(
-                'our implementation is best-effort, but lacks testing.. see the source '
-                'code for ideas on how to implement MFA to Okta.'
+                "our implementation is best-effort, but lacks testing.. see the source "
+                "code for ideas on how to implement MFA to Okta."
             )
 
         self.engine = sa.create_engine(url, connect_args=connect_args)
         self.cnxn = self.engine.connect()
 
         # decorators must be declared here, SQLAlchemy doesn't care about instances
-        sa.event.listen(sa.schema.MetaData, 'after_create', self.capture_metadata)
+        sa.event.listen(sa.schema.MetaData, "after_create", self.capture_metadata)
 
     def capture_metadata(self, metadata, cnxn, **kw):
         self.metadata = metadata
@@ -89,7 +89,7 @@ class Redshift:
 
     @property
     def name(self) -> str:
-        return 'redshift'
+        return "redshift"
 
     def load(self, table: str) -> List[Dict[str, Any]]:
         t = self.metadata.tables[table]
@@ -100,6 +100,10 @@ class Redshift:
         return [dict(_) for _ in r]
 
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+        if not data:
+            log.warning(f"no data to write to syncer {self}")
+            return
+
         t = self.metadata.tables[table]
 
         if self.truncate_on_load:
@@ -108,11 +112,11 @@ class Redshift:
 
         # 1. Load file to S3
         fs = s3fs.S3FileSystem(key=self.aws_access_key, secret=self.aws_secret_key)
-        fp = f's3://{self.s3_bucket_name}/ts_{table}.csv'
+        fp = f"s3://{self.s3_bucket_name}/ts_{table}.csv"
 
-        with io.StringIO() as buf, fs.open(fp, 'w') as f:
+        with io.StringIO() as buf, fs.open(fp, "w") as f:
             header = list(data[0].keys())
-            writer = csv.DictWriter(buf, fieldnames=header, dialect='excel', delimiter='|')
+            writer = csv.DictWriter(buf, fieldnames=header, dialect="excel", delimiter="|")
             writer.writeheader()
             writer.writerows(data)
 

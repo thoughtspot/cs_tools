@@ -1,7 +1,12 @@
 blank_issues_enabled: false
 contact_links:
+
+  - name: CS Tools Question or Feature Request
+    url: https://github.com/thoughtspot/cs_tools/discussions
+
   - name: CS Tools Documentation
     url: https://cs_tools.thoughtspot.com
+
   - name: Read the Dev Tools EULA
     url: https://github.com/thoughtspot/cs_tools/blob/master/ThoughtSpot_Dev_Tools_EULA.pdf
     about: These Dev Tools are provided as-is as an accomodation to you, the client.

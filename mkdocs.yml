@@ -1,76 +1,57 @@
 site_name: CS Tools
 site_url: https://cs_tools.thoughtspot.com/
 site_description: >-
-  Tools created by the ThoughtSpot PS/CS organization to assist implementation and
-  administration of your platform.
+  Scale your ThoughtSpot adoption with tools created by the ThoughtSpot Solutions Consulting organization.
 
 repo_name: thoughtspot/cs_tools
 repo_url: https://github.com/thoughtspot/cs_tools
-edit_uri: tree/docs/docs/
 
 copyright: Copyright &copy; 2021 ThoughtSpot Inc. All Rights Reserved
 
+docs_dir: docs
+
 theme:
   name: material
-  logo: assets/logo_white.png
+  logo: assets/images/thoughtspot-logo-white.png
+  custom_dir: docs/.overrides
   features:
-    - header.autohide
-    - navigation.instant
+    - announce.dismiss
+    - content.code.copy
+    - content.code.annotate
+    - navigation.footer
+    - navigation.tracking
     - navigation.tabs
-
+    - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.instant
+  favicon: assets/images/favicon.svg
+  icon:
+    repo: fontawesome/brands/github
   font:
     text: Optimo-Plain
     code: BB Roller Mono
-
-  icon:
-    repo: fontawesome/brands/github
-
   palette:
     - media: "(prefers-color-scheme: light)"
-      primary: indigo
-      accent: blue
-      scheme: default
-      # scheme: thoughtspot-light
+      scheme: thoughtspot-light
       toggle:
-        icon: material/lightbulb-outline
-        name: switch to dark mode
+        icon: material/brightness-7
+        name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
-      primary: blue
-      accent: indigo
       scheme: slate
-      # scheme: thoughtspot-dark
+      primary: indigo
+      accent: indigo
       toggle:
-        icon: material/lightbulb
-        name: switch to light mode
+        icon: material/brightness-4
+        name: Switch to light mode
 
-markdown_extensions:
-  - admonition
-  - attr_list
-  - footnotes
-  - md_in_html
-  - pymdownx.caret
-  - pymdownx.details
-  - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
-      options:
-        custom_icons:
-          - assets/overrides/.icons
-  - pymdownx.highlight
-  - pymdownx.keys
-  - pymdownx.mark
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:
-      alternate_style: true 
-  - pymdownx.tilde
-  - toc:
-      permalink: true
+extra_css:
+  - stylesheets/extra.css
 
 extra:
+  # Necessary after 1.4.0 since we offer a beta.
+  #
+  # version:
+  #   provider: mike
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/thoughtspot/cs_tools
@@ -80,11 +61,42 @@ extra:
       link: mailto:nicholas.cooper@thoughtspot.com
       name: email the team
 
-extra_css:
-  - css/custom.css
+markdown_extensions:
+  - attr_list
+  - admonition
+  - cs_tools.md_ext.screenshotter
+  - def_list
+  - footnotes
+  - md_in_html
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true 
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
 
-extra_javascript:
-  - js/konami.js
+plugins:
+  - glightbox
+  - open-in-new-tab
 
 nav:
   - Home: index.md
@@ -96,20 +108,19 @@ nav:
     - "Using Syncers": tutorial/syncer.md
     - "Schedule the Archiver": tutorial/schedule.md
   - Tools:
-    - cs-tools/overview.md
-    - Archiver: cs-tools/archiver/README.md
-    - Extractor: cs-tools/extractor/README.md
-    - Remote TQL: cs-tools/rtql/README.md
-    - Remote tsload: cs-tools/rtsload/README.md
-    - Security Sharing: cs-tools/security-sharing/README.md
-    - User Management: cs-tools/user-management/README.md
-    - Bulk Deleter: cs-tools/bulk-deleter/README.md
-    - Searchable: cs-tools/searchable/README.md
-    - 🔐 Scriptability: cs-tools/scriptability/README.md
-    - 🔐 Sharding Recommender: cs-tools/sharding-recommender/README.md
+    - tools/index.md
+    - Archiver: tools/archiver/README.md
+    - Bulk Deleter: tools/bulk-deleter/README.md
+    - Bulk Sharing: tools/bulk-sharing/README.md
+    - Extractor: tools/extractor/README.md
+    - Falcon Sharding: tools/falcon-sharding/README.md
+    - Remote TQL: tools/rtql/README.md
+    - Remote tsload: tools/rtsload/README.md
+    - Scriptability: tools/scriptability/README.md
+    - Searchable: tools/searchable/README.md
+    - User Management: tools/user-management/README.md
   - Syncers:
     - "What's a Syncer?": syncer/what-is.md
-    - The Protocol: syncer/protocol.md
     - ThoughtSpot Falcon: syncer/falcon.md
     - Snowflake: syncer/snowflake.md
     - Google BigQuery: syncer/bigquery.md
@@ -120,15 +131,8 @@ nav:
     - SQLite: syncer/sqlite.md
     # - JSON: syncer/json.md
   - Changelog:
+    - v1.4.0: changelog/1.4.0.md
     - v1.3.0: changelog/1.3.0.md
     - v1.2.0: changelog/1.2.0.md
     - v1.1.0: changelog/1.1.0.md
     - v1.0.0: changelog/1.0.0.md
-  - 🤓:
-    - for-developers/contributing.md
-    - for-developers/environment-setup.md
-    # - for-developers/your-first-tool.md
-    # - for-developers/project-architecture.md
-    - for-developers/writing-documentation.md
-    - "What is Markdown?": for-developers/what-is-markdown.md
-    # - for-developers/FAQ.md

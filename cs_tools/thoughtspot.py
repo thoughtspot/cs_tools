@@ -1,38 +1,54 @@
-import datetime as dt
+from __future__ import annotations
+
 import platform
+import datetime as dt
 import logging
 import json
 import sys
+import os
 
 import httpx
-import click
 
-from cs_tools.errors import ThoughtSpotUnavailable, AuthenticationError
-from cs_tools.util import reveal
-from cs_tools.api._rest_api_v1 import _RESTAPIv1
-from cs_tools._version import __version__
+from cs_tools.api._rest_api_v1 import RESTAPIv1
 from cs_tools.api.middlewares import (
-    AnswerMiddleware, ConnectionMiddleware, GroupMiddleware, MetadataMiddleware, PinboardMiddleware, SearchMiddleware,
-    TagMiddleware, TQLMiddleware, TSLoadMiddleware, UserMiddleware
+    LogicalTableMiddleware,
+    PinboardMiddleware,
+    MetadataMiddleware,
+    TSLoadMiddleware,
+    SearchMiddleware,
+    AnswerMiddleware,
+    GroupMiddleware,
+    UserMiddleware,
+    TMLMiddleware,
+    TQLMiddleware,
+    TagMiddleware,
+    OrgMiddleware,
 )
-from cs_tools.data.models import ThoughtSpotPlatform, LoggedInUser
-
+from cs_tools.settings import CSToolsConfig
+from cs_tools._version import __version__
+from cs_tools.errors import ThoughtSpotUnavailable, AuthenticationError
+from cs_tools.types import ThoughtSpotPlatform, LoggedInUser
+from cs_tools import utils
 
 log = logging.getLogger(__name__)
 
 
 class ThoughtSpot:
-    """
-    """
-    def __init__(self, config):
-        self.config = config
-        self._rest_api = _RESTAPIv1(config, ts=self)
-        self._logged_in_user = None
-        self._platform = None
+    """ """
 
-        # Middleware endpoints. These are logically grouped interactions within
-        # ThoughtSpot so that working with the REST and GraphQL apis is simpler
-        # to do.
+    def __init__(self, config: CSToolsConfig):
+        self.config = config
+        self._rest_api_v1 = RESTAPIv1(config.thoughtspot.fullpath, verify=not config.thoughtspot.disable_ssl)
+        # self._rest_api_v2 = RESTAPIv2()
+
+        # assigned at self.login()
+        self._logged_in_user: LoggedInUser = None
+        self._platform: ThoughtSpotPlatform = None
+
+        # ==============================================================================================================
+        # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
+        # ==============================================================================================================
+        self.org = OrgMiddleware(self)
         self.search = SearchMiddleware(self)
         self.user = UserMiddleware(self)
         self.group = GroupMiddleware(self)
@@ -40,30 +56,27 @@ class ThoughtSpot:
         self.metadata = MetadataMiddleware(self)
         self.pinboard = self.liveboard = PinboardMiddleware(self)
         self.answer = AnswerMiddleware(self)
-        self.connection = ConnectionMiddleware(self)
-        # self.worksheet
-        # self.table
+        # self.connection
+        self.logical_table = LogicalTableMiddleware(self)
         self.tag = TagMiddleware(self)
+        self.tml = TMLMiddleware(self)
         self.tql = TQLMiddleware(self)
         self.tsload = TSLoadMiddleware(self)
 
     @property
-    def api(self) -> _RESTAPIv1:
+    def api(self) -> RESTAPIv1:
         """
         Access the REST API.
         """
-        return self._rest_api
+        return self._rest_api_v1
 
     @property
     def me(self) -> LoggedInUser:
         """
         Return information about the logged in user.
         """
-        if not hasattr(self, '_logged_in_user'):
-            raise RuntimeError(
-                'attempted to access user details before logging into the '
-                'ThoughtSpot platform'
-            )
+        if not hasattr(self, "_logged_in_user"):
+            raise RuntimeError("attempted to access user details before logging into the " "ThoughtSpot platform")
 
         return self._logged_in_user
 
@@ -72,11 +85,8 @@ class ThoughtSpot:
         """
         Return information about the ThoughtSpot platform.
         """
-        if not hasattr(self, '_this_platform'):
-            raise RuntimeError(
-                'attempted to access platform details before logging into the '
-                'ThoughtSpot platform'
-            )
+        if not hasattr(self, "_this_platform"):
+            raise RuntimeError("attempted to access platform details before logging into the " "ThoughtSpot platform")
 
         return self._this_platform
 
@@ -84,48 +94,67 @@ class ThoughtSpot:
         """
         Log in to ThoughtSpot.
         """
+
         try:
-            r = self.api._session.login(
-                username=self.config.auth['frontend'].username,
-                password=reveal(self.config.auth['frontend'].password).decode(),
-                rememberme=True,
-                disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
-            )
+
+            if os.environ.get("THOUGHTSPOT_SECRET_KEY") is not None:
+                r = self.api._trusted_auth(
+                    username=self.config.auth["frontend"].username,
+                    secret=os.environ["THOUGHTSPOT_SECRET_KEY"]
+                )
+
+            else:
+                r = self.api.session_login(
+                    username=self.config.auth["frontend"].username,
+                    password=utils.reveal(self.config.auth["frontend"].password).decode(),
+                    # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
+                )
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
                 raise AuthenticationError(
                     config_name=self.config.name,
-                    config_username=self.config.auth['frontend'].username,
-                    debug=''.join(json.loads(e.response.json().get('debug', []))),
-                    incident_id=e.response.json().get('incident_id_guid', '<missing>')
+                    config_username=self.config.auth["frontend"].username,
+                    debug="".join(json.loads(e.response.json().get("debug", []))),
+                    incident_id=e.response.json().get("incident_id_guid", "<missing>"),
                 )
             raise e
+
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-            host = self.config.thoughtspot.host
-            rzn = (
-                f'cannot see url [blue]{host}[/] from the current machine'
-                f'\n\n>>> [yellow]{e}[/]'
-            )
-            raise ThoughtSpotUnavailable(reason=rzn) from None
+            rzn = "Cannot connect to ThoughtSpot ( [b blue]{host}[/] ) from your computer"
+            fwd = "Is your [white]ThoughtSpot[/] accessible outside of the VPN? \n\n[white]>>>[/] {exc}"
+            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host, exc=e) from None
 
-        # got a response, but couldn't make sense of it
-        try:
-            data = r.json()
-        except json.JSONDecodeError:
-            if 'Enter the activation code to enable service' in r.text:
-                info = {
-                    'reason': "It is in 'Economy Mode'.",
-                    'mitigation': f'Activate it at [url]{self.config.thoughtspot.host}'
-                }
+        # .session_login() returns 200 OK , but the instance is unavailable for the API
+        if "Site Maintenance".casefold() in r.text.casefold():
+            site_states = [
+                ("Enable service", "Your cluster is in Economy Mode.", "Visit [b blue]{host}[/] to start it."),
+                ("Service will be online shortly", "Your cluster is starting.", "Contact ThoughtSpot with any issues."),
+                ("Estimated time to complete", "Your cluster is upgrading.", "Contact ThoughtSpot with any issues."),
+            ]
+
+            for page_response, rzn, fwd in site_states:
+                if page_response.casefold() in r.text.casefold():
+                    break
             else:
-                info = {'reason': 'for an unknown reason.'}
+                rzn = "Your cluster is not allowing API access."
+                fwd = "Check the logs for more details."
+                log.debug(r.text)
 
-            raise ThoughtSpotUnavailable(**info) from None
+            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host)
 
-        self._logged_in_user = LoggedInUser.from_session_info(data)
-        self._this_platform = ThoughtSpotPlatform.from_session_info(data)
+        # ==============================================================================================================
+        # GOOD TO GO , INTERACT WITH THE APIs
+        # ==============================================================================================================
 
-        log.debug(f"""execution context...
+        r = self.api.session_info()
+        d = r.json()
+
+        self._logged_in_user = LoggedInUser.from_api_v1_session_info(d)
+        self._this_platform = ThoughtSpotPlatform.from_api_v1_session_info(d)
+
+        log.debug(
+            f"""execution context...
 
         [CS TOOLS COMMAND]
         cs_tools {' '.join(sys.argv[1:])}
@@ -146,21 +175,14 @@ class ThoughtSpot:
 
         [LOGGED IN USER]
         user_id: {self._logged_in_user.guid}
-        username: {self._logged_in_user.name}
+        username: {self._logged_in_user.username}
         display_name: {self._logged_in_user.display_name}
         privileges: {list(map(str, self._logged_in_user.privileges))}
-        """)
+        """
+        )
 
     def logout(self) -> None:
         """
         Log out of ThoughtSpot.
         """
-        self.api._session.logout()
-
-    def __enter__(self):
-        self.login()
-        return self
-
-    def __exit__(self, exception_type, exception_value, exception_traceback):
-        if self._logged_in_user is not None:
-            self.logout()
+        self.api.session_logout()

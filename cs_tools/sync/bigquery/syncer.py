@@ -1,14 +1,14 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import pathlib
 import logging
 
 from pydantic.dataclasses import dataclass
-from cs_tools.const import APP_DIR
 from google.cloud import bigquery
 import sqlalchemy as sa
 
-from . import sanitize
+from cs_tools.const import APP_DIR
 
+from . import sanitize
 
 log = logging.getLogger(__name__)
 
@@ -23,9 +23,10 @@ class BigQuery:
     - Enable the BigQuery Storage API.
     - Setup Authentication.
     """
+
     project_name: str
     dataset: str
-    credentials_file: pathlib.Path = APP_DIR / 'bigquery' / 'credentials.json'
+    credentials_file: pathlib.Path = APP_DIR / "bigquery" / "credentials.json"
     truncate_on_load: bool = True
 
     # DATABASE ATTRIBUTES
@@ -40,14 +41,13 @@ class BigQuery:
 
     def __post_init_post_parse__(self):
         self.engine = sa.create_engine(
-                          f'bigquery://{self.project_name}/{self.dataset}',
-                          credentials_path=self.credentials_file
-                      )
+            f"bigquery://{self.project_name}/{self.dataset}", credentials_path=self.credentials_file
+        )
 
         self.cnxn = self.engine.connect()
 
         # decorators must be declared here, SQLAlchemy doesn't care about instances
-        sa.event.listen(sa.schema.MetaData, 'after_create', self.capture_metadata)
+        sa.event.listen(sa.schema.MetaData, "after_create", self.capture_metadata)
 
     def capture_metadata(self, metadata, cnxn, **kw):
         self.metadata = metadata
@@ -59,7 +59,7 @@ class BigQuery:
 
     @property
     def name(self) -> str:
-        return 'bigquery'
+        return "bigquery"
 
     def load(self, table: str) -> List[Dict[str, Any]]:
         t = self.metadata.tables[table]
@@ -70,6 +70,10 @@ class BigQuery:
         return [dict(_) for _ in r]
 
     def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+        if not data:
+            log.warning(f"no data to write to syncer {self}")
+            return
+
         t = self.metadata.tables[table]
 
         if self.truncate_on_load:
@@ -89,7 +93,7 @@ class BigQuery:
         # transactions and rollback logic is not REALLY possible without more
         # orchestration.
         #
-        t = self.bq.get_table(f'{self.project_name}.{self.dataset}.{table}')
+        t = self.bq.get_table(f"{self.project_name}.{self.dataset}.{table}")
         d = sanitize.clean_for_bq(data)
 
         cfg = bigquery.LoadJobConfig(schema=t.schema)

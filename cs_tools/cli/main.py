@@ -1,222 +1,214 @@
+from __future__ import annotations
 from typing import Any, Dict
-import logging.config
-import functools as ft
 import datetime as dt
-import platform
+import contextlib
+import traceback
 import logging
+import random
+import sys
 
-from typer import Argument as A_, Option as O_  # noqa
-import pendulum
+from rich.align import Align
+from rich.panel import Panel
+from rich.text import Text
+import sqlalchemy as sa
+import click
 import typer
+import rich
 
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT
-from cs_tools.cli.loader import CSTool
-from cs_tools.cli.tools import console, CSToolsGroup, CSToolsCommand, setup_thoughtspot
+from cs_tools.programmatic import get_cs_tool
+from cs_tools.cli._logging import _setup_logging
+from cs_tools.settings import _meta_config as meta
 from cs_tools._version import __version__
+from cs_tools.cli.ux import rich_console, CSToolsApp
 from cs_tools.errors import CSToolsError
-from cs_tools.const import APP_DIR, TOOLS_DIR
-from cs_tools.util import State
-
-from .tools.app_tools import app as tools_app
-from .app_config import app as cfg_app
-from .app_log import app as log_app
-
+from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, TOOLS_DIR, GH_ISSUES
+from cs_tools import utils
 
 log = logging.getLogger(__name__)
-
-
-app = typer.Typer(
-    cls=CSToolsGroup,
+app = CSToolsApp(
     name="cs_tools",
-    help="""
-    Welcome to CS Tools!
-
-    These are scripts and utilities used to assist in the development,
-    implementation, and administration of your ThoughtSpot platform.
-
-    All tools are provided as-is. While every effort has been made to
-    test and certify use of these tools in the various supported
-    ThoughtSpot deployments, each environment is different!
-
-    [hint]You should ALWAYS take a snapshot before you make any
-    significant changes to your environment![/]
+    help=f"""
+    :wave: [green]Welcome[/] to [b]CS Tools[/]!
 
     \b
-    [secondary]For additional help, please visit our documentation![/]
-    [url][link=https://thoughtspot.github.io/cs_tools/]https://thoughtspot.github.io/cs_tools/[/link][/]
+    These are scripts and utilities used to assist in the development, implementation,
+    and administration of your ThoughtSpot platform.
+
+    Lost already? Check out our [cyan][link={DOCS_BASE_URL}/tutorial/config/]Tutorial[/][/]!
+
+    {meta.newer_version_string()}
+
+    :sparkles: [yellow]All tools are provided as-is[/] :sparkles:
+    :floppy_disk: [red]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
     """,
     add_completion=False,
     context_settings={
         # global settings
-        'help_option_names': ['--help', '--helpfull'],
-        'obj': State(),
-
+        "help_option_names": ["--help", "-h"],
+        "obj": utils.State(),
         # allow responsive console design
-        'max_content_width': console.width,
-
+        "max_content_width": rich_console.width,
         # allow case-insensitive commands
-        'token_normalize_func': lambda x: x.lower()
+        "token_normalize_func": lambda x: x.lower(),
     },
-    options_metavar='[--version, --help]',
+    epilog=(
+        f":bookmark: v{__version__} "
+        f":books: [cyan][link={DOCS_BASE_URL}]Documentation[/] "
+        f"🛟 [link={GH_ISSUES}]Get Help[/] "
+        f":memo: [link={GH_DISCUSS}]Feedback[/][/] "
+        + (
+            f":computer_disk: [green]{meta.default_config_name}[/] (default)"
+            if meta.default_config_name is not None
+            else ""
+        )
+    ),
 )
 
 
-@app.command('platform', cls=CSToolsCommand, hidden=True)
-@depends(
-    'thoughtspot',
-    ft.partial(setup_thoughtspot, login=False),
-    options=[CONFIG_OPT],
-)
-def _platform(ctx: typer.Context):
-    """
-    Return details about this machine for debugging purposes.
-    """
-    ts = ctx.obj.thoughtspot
-
-    m = f"""[b yellow]
-        [PLATFORM DETAILS]
-        system: {platform.system()} (detail: {platform.platform()})
-        python: {platform.python_version()}
-        ran at: {pendulum.now().format('dddd, MMMM Do YYYY @ HH:mm:ss A (zz)')}
-        cs_tools: v{__version__}
-    """
-
-    try:
-        ts.login()
-    except Exception as e:
-        exc = type(e).__name__
-        msg = str(e).replace('\n', '\n      ')
-        m += f"""
-        [LOGIN ERROR]
-        {exc}: {msg}
-        """
-    else:
-        m += f"""
-        [THOUGHTSPOT]
-        cluster id: {ts.platform.cluster_id}
-        cluster: {ts.platform.cluster_name}
-        url: {ts.platform.url}
-        timezone: {ts.platform.timezone}
-        branch: {ts.platform.deployment}
-        version: {ts.platform.version}
-
-        [LOGGED IN USER]
-        user_id: {ts.me.guid}
-        username: {ts.me.name}
-        display_name: {ts.me.display_name}
-        privileges: {list(map(lambda e: e.name, ts.me.privileges))}
-        """
-        ts.logout()
-
-    console.print(m)
-
-
-def _setup_logging() -> None:
-    now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
-
-    logging.config.dictConfig({
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'verbose': {
-                'format': '[%(levelname)s - %(asctime)s] [%(name)s - %(module)s.%(funcName)s %(lineno)d] %(message)s'
-            }
-        },
-        'handlers': {
-            'to_file': {
-                'formatter': 'verbose',
-                'level': 'DEBUG',     # user can override in their config file
-                'class': 'logging.FileHandler',
-                # RotatingFileHandler.__init__ params...
-                'filename': f'{APP_DIR}/logs/{now}.log',
-                'mode': 'w',          # Create a new file for each run of cs_tools.
-                'encoding': 'utf-8',  # Handle unicode fun.
-                'delay': True         # Don't create a file if no logging is done.
-            },
-            'to_console': {
-                'level': 'INFO',
-                'class': 'rich.logging.RichHandler',
-                # rich.__init__ params...
-                'console': console,
-                'show_level': False,
-                'markup': True,
-                'log_time_format': '[%X]'
-            }
-        },
-        'loggers': {},
-        'root': {
-            'level': 'DEBUG',
-            'handlers': ['to_file', 'to_console']
-        }
-    })
-
-    # ROTATE LOGS
-    logs_dir = APP_DIR / 'logs'
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
-    # keep only the last 25 logfiles
-    lifo = sorted(logs_dir.iterdir(), reverse=True)
-
-    for idx, log in enumerate(lifo):
-        if idx > 25:
-            log.unlink()
-
-    # SILENCE NOISY LOGS
-    logging.getLogger('urllib3').setLevel(logging.ERROR)
-    logging.getLogger('httpx').setLevel(logging.ERROR)
+@app.callback(invoke_without_command=True)
+def main(version: bool = typer.Option(False, "--version", help="Show the version and exit.")):
+    if version:
+        rich_console.print(
+            "\n",
+            Panel.fit(Text(__version__, justify="center"), title="CS Tools", padding=(1, 0, 1, 0)),
+            "\n"
+        )
+        raise typer.Exit(0)
 
 
 def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
-    ctx_settings['obj'].tools = {}
+    ctx_settings["obj"].tools = {}
 
     for path in TOOLS_DIR.iterdir():
-        if path.is_dir():
-            tool = CSTool(path)
+        if path.name == "__pycache__" or not path.is_dir():
+            continue
 
-            if tool.privacy == 'unknown':
-                continue
+        tool = get_cs_tool(path.name)
 
-            # add tool to the global state
-            ctx_settings['obj'].tools[tool.name] = tool
+        if tool.privacy == "unknown":
+            continue
 
-            # add tool to the cli
-            tools_app.add_typer(
-                tool.app,
-                name=tool.name,
-                context_settings=ctx_settings,
-                hidden=tool.privacy != 'public',
-            )
+        # add tool to the global state
+        ctx_settings["obj"].tools[tool.name] = tool
+
+        # add tool to the cli
+        tools_app.add_typer(
+            tool.app,
+            name=tool.name,
+            context_settings=ctx_settings,
+            rich_help_panel=tool.app.rich_help_panel,
+            hidden=tool.privacy != "public",
+        )
 
 
-def run():
+def run() -> int:
     """
     Entrypoint into cs_tools.
     """
-    _setup_logging()
-    _setup_tools(tools_app, ctx_settings=app.info.context_settings)
+    from cs_tools.settings import _meta_config
+    from cs_tools.cli import _analytics
+    
+    # monkey-patch the typer implementation
+    from cs_tools.cli import _monkey
 
-    app.add_typer(tools_app)
-    app.add_typer(cfg_app)
-    app.add_typer(log_app)
+    # import all our tools
+    from cs_tools.cli import _config, _tools, _self, _log
+
+    this_run_data = _analytics.CommandExecution(
+        envt_uuid=_meta_config.install_uuid,
+        start_dt=dt.datetime.now(),
+        end_dt=None,
+        os_args=" ".join(["cs_tools", *sys.argv[1:]]),
+        tool_name=None,
+        command_name=None,
+        is_success=None,
+        is_known_error=None,
+        traceback=None,
+    )
+
+    _setup_logging()
+    _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
+
+    app.add_typer(_tools.app)
+    app.add_typer(_config.app)
+    app.add_typer(_self.app)
+    app.add_typer(_log.app)
 
     try:
-        app()
+        return_code = app(standalone_mode=False)
+
+    except (click.Abort, typer.Abort):
+        return_code = 0
+
+    except click.ClickException as e:
+        return_code = 1
+        this_run_data.is_known_error = True
+        this_run_data.traceback = str(e)
+        log.error(e)
+
+    except CSToolsError as e:
+        return_code = 1
+        this_run_data.is_known_error = True
+        this_run_data.traceback = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
+
+        log.debug(e, exc_info=True)
+        rich_console.print(Align.center(e))
+
     except Exception as e:
-        log.debug('whoopsie, something went wrong!', exc_info=True)
+        return_code = 1
+        this_run_data.is_known_error = False
+        this_run_data.traceback = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
 
-        if hasattr(e, 'cli_msg_template'):
-            log.info(f'[error]{e}\n')
-        else:
-            GF = 'https://forms.gle/sh6hyBSS2mnrwWCa9'
-            GH = 'https://github.com/thoughtspot/cs_tools/issues/new/choose'
+        log.debug("whoopsie, something went wrong!", exc_info=True)
 
-            log.exception(
-                '[yellow]This is an unhandled error!! :cold_sweat:'
-                '\n\nIf you encounter this message more than once, please help by '
-                'letting us know at one of the links below:'
-                f'\n\n  Google Forms: [link={GF}]{GF}[/link]'
-                f'\n        GitHub: [link={GH}]{GH}[/link]'
-                '\n\n[/][error]'
+        rich_traceback = rich.traceback.Traceback(
+            width=150,
+            extra_lines=3,
+            word_wrap=False,
+            show_locals=False,
+            suppress=[typer, click, contextlib],
+            max_frames=10,
+        )
+
+        google_forms = "https://forms.gle/sh6hyBSS2mnrwWCa9"
+        github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
+        suprised_emoji = random.choice(
+            (
+                ":cold_sweat:", ":astonished:", ":anguished:", ":person_shrugging:", ":sweat:", ":scream:",
+                ":sweat_smile:", ":nerd_face:"
             )
-            console.print('')
+        )
+
+        text = Panel(
+            Text.from_markup(
+                f"\nIf you encounter this message more than once, please help by letting us know!"
+                f"\n"
+                f"\n    Google Forms: [b blue][link={google_forms}]{google_forms}[/link][/]"
+                f"\n          GitHub: [b blue][link={github_issue}]{github_issue}[/link][/]"
+                f"\n"
+            ),
+            border_style="yellow",
+            title=f"{suprised_emoji}  This is an unhandled error!  {suprised_emoji}",
+            subtitle="Run [b blue]cs_tools logs report[/] to send us your last error."
+        )
+
+        # fmt: off
+        rich_console.print(
+            Align.center(rich_traceback),
+            "\n",
+            Align.center(text),
+            "\n"
+        )
+        # fmt: on
+
+    # Add the analytics to the local database
+    this_run_data.is_success = not bool(return_code)
+    this_run_data.end_dt = dt.datetime.now()
+
+    try:
+        syncer = _analytics.get_database()
+        syncer.dump("command_execution", data=[this_run_data.dict()])
+    except sa.exc.OperationalError:
+        pass
+
+    return return_code

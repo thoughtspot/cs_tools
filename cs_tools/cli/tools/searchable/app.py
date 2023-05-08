@@ -1,148 +1,179 @@
 import datetime as dt
-import pathlib
-import zipfile
 import logging
+import pathlib
+import shutil
 
-from typer import Argument as A_, Option as O_  # noqa
-import oyaml as yaml
 import typer
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.types import TZAwareDateTimeType, SyncerProtocolType
+from cs_tools.cli.ux import rich_console
 
-from ._version import __version__
+from cs_tools.cli.ux import CSToolsApp
+from cs_tools.types import GUID
+from cs_tools.cli.dependencies.syncer import DSyncer
+from cs_tools.cli.layout import LiveTasks
+from cs_tools.types import TMLImportPolicy
+from thoughtspot_tml.utils import determine_tml_type
+from thoughtspot_tml import Table
+
 from . import transform
-
+from . import layout
+from . import models
 
 log = logging.getLogger(__name__)
 
 
-app = typer.Typer(
-    help="""
-    Explore your ThoughtSpot metadata, in ThoughtSpot!
-    """,
-    cls=CSToolsGroup
-)
+app = CSToolsApp(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
-def spotapp(
+@app.command(dependencies=[thoughtspot])
+def deploy(
     ctx: typer.Context,
-    directory: pathlib.Path = A_(
+    connection_guid: GUID = typer.Option(
         ...,
-        help='location on your machine to copy the SpotApp to',
-        file_okay=False,
-        resolve_path=True
+        help="if Falcon, use [b blue]falcon[/], otherwise find your guid in the Connection URL in the Data Workspace",
     ),
-
-    # NOTE: make optional for Falcon
-    connection_guid: str = O_(
+    database: str = typer.Option(
+        ...,
+        help="if Falcon, use [b blue]cs_tools[/], otherwise use the name of the database which holds Searchable data",
+    ),
+    schema: str = typer.Option(
         ...,
         help=(
-            'TML details: find your connection guid by going to Data > '
-            'Connections > your connection, and copying the GUID in the URL'
+            "if Falcon, use [b blue]falcon_default_schema[/], otherwise use the name of the schema which holds "
+            "Searchable data"
         )
     ),
-    database: str = O_(
-        ...,
-        help=(
-            'TML details: find your database by editing an existing Table in '
-            'your connection, and look at the path TABLE:DB'
-        )
-    ),
-    schema: str = O_(
-        ...,
-        help=(
-            'TML details: find your database by editing an existing Table in '
-            'your connection, and look at the path TABLE:SCHEMA'
-        )
-    )
+    export: pathlib.Path = typer.Option(None, help="download the TML files of the SpotApp", file_okay=False),
 ):
     """
-    Copy the Searchable SpotApp to your machine.
-
-    [yellow]This SpotApp is in beta! It will grow and get better over time.[/]
-
-    Currently the SpotApp performs the Modeling for Search aspect of the entire data
-    model and that is it.
+    Deploy the Searchable SpotApp.
     """
     ts = ctx.obj.thoughtspot
+    is_falcon = connection_guid.lower() == "falcon"
 
-    r = ts.api.metadata.details(id=[connection_guid], type='DATA_SOURCE')
-    connection_name = next(
-        cnxn['header']['name']
-        for cnxn in r.json()['storables']
-        if cnxn['header']['id'] == connection_guid
-    )
+    if is_falcon:
+        log.warning(
+            "[b yellow]The SpotApp is only configured for Connections at this time. Please reach out to the CS Tools "
+            "team or your Solutions Consultant to get on the waitlist.",
+        )
+        raise typer.Abort()
+    
+    tasks = [
+        ("connection_details", f"Getting details for connection {'' if is_falcon else connection_guid}"),
+        ("customize_spotapp", "Customizing [b blue]Searchable Worksheets[/] to your environment"),
+        ("deploy_spotapp", "Deploying the SpotApp to ThoughtSpot"),
+    ]
 
-    HERE = pathlib.Path(__file__).parent
-    tml = {}
+    with LiveTasks(tasks, console=rich_console) as tasks:
 
-    with zipfile.ZipFile(HERE / 'mfs.zip', mode='r') as z:
-        for file in z.infolist():
-            with z.open(file, 'r') as f:
-                data = yaml.safe_load(f)
-                data['table']['connection']['name'] = connection_name
-                data['table']['connection']['fqn'] = connection_guid
-                data['table']['db'] = database
-                data['table']['schema'] = schema
-                tml[file] = data
+        with tasks["connection_details"] as this_task:
+            if is_falcon:
+                this_task.skip()
+            else:
+                r = ts.api.metadata_list(metadata_type="DATA_SOURCE", fetch_guids=[connection_guid])
+                d = r.json()
 
-    NAME = f'CS Tools Searchable SpotApp (v{__version__})'
+                if not ["headers"]:
+                    log.error(f"Could not find a connection with guid {connection_guid}")
+                    raise typer.Exit(1)
 
-    with zipfile.ZipFile(directory / f'{NAME}.zip', mode='w') as z:
-        for file, content in tml.items():
-            z.writestr(file, yaml.safe_dump(content))
+                data = d["headers"][0]
+                connection_guid = data["id"]
+                connection_name = data["name"]
 
-    console.print(f'moved the [blue]{NAME}[/] to {directory}')
+        with tasks["customize_spotapp"]:
+            here = pathlib.Path(__file__).parent
+            tmls = []
+
+            for file in here.glob("**/*.tml"):
+                tml_cls = determine_tml_type(path=file)
+                tml = tml_cls.load(file)
+
+                if isinstance(tml, Table):
+                    tml.table.db = database
+                    tml.table.schema = schema
+
+                    # if is_falcon:
+                    #     # can we use TQL to join stats_tomcat_tomcat to our data?
+                    #     # need to redefine any worksheet that uses TS_BI_SERVER
+                    #     #
+
+                    #     # Falcon customizations
+                    #     # - remove connection
+                    #     # - remove top level guid
+                    #     # - lower physical tablename
+                    #     # - lower phyiscal column names
+                    #     # - remove FQNs
+                    #     tml.table.connection = None
+                    #     tml.table.name = tml.table.name.lower()
+                    #     tml.table.fqn = None
+
+                    #     for column in tml.table:
+                    #         column.db_column_name = column.db_column_name.lower()
+
+                    # else:
+                    tml.table.connection.name = connection_name
+                    tml.table.connection.fqn = connection_guid
+
+                tmls.append(tml)
+
+                if export is not None:
+                    tml.dump(export.joinpath(file.name))
+
+        with tasks["deploy_spotapp"] as this_task:
+            if export is not None:
+                this_task.skip()
+                raise typer.Exit(0)
+
+            imported = set()
+
+            while len(imported) < len(tmls):
+                to_import = [tml for tml in tmls if tml.guid not in imported]
+                responses = ts.tml.to_import(to_import, policy=TMLImportPolicy.partial)
+                imported.update(response.guid for response in responses if response.is_success)
+
+                status_emojis = {"OK": ":white_heavy_check_mark:", "WARNING": ":pinching_hand:", "ERROR": ":cross_mark:"}
+                centered_table = layout.build_table()
+
+                for response in responses:
+                    status = status_emojis.get(response.status_code, ":cross_mark:")
+                    guid = response.guid or "[gray]{null}"
+                    errors = '; '.join(response.error_messages) or "[gray]{null}"
+                    centered_table.renderable.add_row(status, response.tml_type_name, guid, response.name, errors)
+
+                rich_console.print(centered_table)
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def bi_server(
     ctx: typer.Context,
-    # Note:
-    # really this is a SyncerProtocolType type,
-    # but typer does not yet support click.ParamType,
-    # so we can fake it with a callback :~)
-    export: str = A_(
-        ...,
-        help='protocol and path for options to pass to the syncer',
-        metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    ),
-    compact: bool = O_(True, '--compact / --full', help='if compact, exclude NULL and INVALID user actions'),
-    from_date: dt.datetime = O_(
+    syncer: DSyncer = typer.Option(
         None,
-        metavar='YYYY-MM-DD',
-        help='lower bound of rows to select from TS: BI Server',
-        callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
+        custom_type=SyncerProtocolType(models=models.BISERVER_MODELS),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
     ),
-    to_date: dt.datetime = O_(
+    compact: bool = typer.Option(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
+    from_date: dt.datetime = typer.Option(
         None,
-        metavar='YYYY-MM-DD',
-        help='upper bound of rows to select from TS: BI Server',
-        callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
+        custom_type=TZAwareDateTimeType(),
+        metavar="YYYY-MM-DD",
+        help="inclusive lower bound of rows to select from TS: BI Server",
     ),
-    include_today: bool = O_(False, '--include-today', help='pull partial day data', show_default=False),
+    to_date: dt.datetime = typer.Option(
+        None,
+        custom_type=TZAwareDateTimeType(),
+        metavar="YYYY-MM-DD",
+        help="inclusive upper bound of rows to select from TS: BI Server",
+    ),
+    include_today: bool = typer.Option(False, "--include-today", help="pull partial day data", show_default=False),
 ):
     """
     Extract usage statistics from your ThoughtSpot platform.
 
+    To extract one day of data, set [b cyan]--from-date[/] and [b cyan]--to-date[/] to the same value.
     \b
     Fields extracted from TS: BI Server
         - incident id           - timestamp detailed    - url
@@ -158,7 +189,7 @@ def bi_server(
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions]"
-        + ("" if compact else " [user action] != {null} 'invalid'")
+        + ("" if not compact else " [User Action] != [User Action].invalid [User Action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if include_today else " [timestamp] != 'today'")
@@ -166,112 +197,63 @@ def bi_server(
 
     ts = ctx.obj.thoughtspot
 
-    with console.status('[bold green]getting TS: BI Server data..'):
-        data = ts.search(SEARCH_TOKENS, worksheet='TS: BI Server')
+    tasks = [
+        ("gather_search", "Collecting data from [b blue]TS: BI Server"),
+        ("syncer_dump", f"Writing rows to [b blue]{syncer.name}"),
+    ]
 
-    with console.status(f'[bold green]writing TS: BI Server to {export.name}..'):
-        seed = dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-        renamed = [
-            {
-                'sk_dummy': f'{seed}-{idx}',
-                'incident_id': _['Incident Id'],
-                'timestamp': dt.datetime.fromtimestamp(_['Timestamp'] or 0),
-                'url': _['URL'],
-                'http_response_code': _['HTTP Response Code'],
-                'browser_type': _['Browser Type'],
-                'browser_version': _['Browser Version'],
-                'client_type': _['Client Type'],
-                'client_id': _['Client Id'],
-                'answer_book_guid': _['Answer Book GUID'],
-                'viz_id': _['Viz Id'],
-                'user_id': _['User Id'],
-                'user_action': _['User Action'],
-                'query_text': _['Query Text'],
-                'response_size': _['Total Response Size'],
-                'latency_us': _['Total Latency (us)'],
-                'impressions': _['Total Impressions']
-            }
-            for idx, _ in enumerate(data)
-        ]
+    with LiveTasks(tasks, console=rich_console) as tasks:
 
-        export.dump('ts_bi_server', data=renamed)
+        with tasks["gather_search"]:
+            data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
+            seed = dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
+            # CLUSTER BY --> TIMESTAMP , ANSWER_BOOK_GUID , USER_GUID
+            data.sort(key=lambda r: tuple(map(str, (r["Timestamp"], r["Answer Book GUID"], r["User Id"]))))
 
-@app.command(cls=CSToolsCommand, hidden=True)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
-def event_logs(
-    ctx: typer.Context,
-    # Note:
-    # really this is a SyncerProtocolType type,
-    # but typer does not yet support click.ParamType,
-    # so we can fake it with a callback :~)
-    # export: str = A_(
-    #     ...,
-    #     help='protocol and path for options to pass to the syncer',
-    #     metavar='protocol://DEFINITION.toml',
-    #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    # ),
-    from_date: dt.datetime = O_(
-        None,
-        metavar='YYYY-MM-DD',
-        help='lower bound of logs to retrieve',
-        callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
-    ),
-    to_date: dt.datetime = O_(
-        None,
-        metavar='YYYY-MM-DD',
-        help='upper bound of logs to retrieve',
-        callback=lambda ctx, to: TZAwareDateTimeType().convert(to, ctx=ctx, locality='server')
-    )
-):
-    """
-    Collect security audit events.
+            renamed = [
+                {
+                    "sk_dummy": f"{seed}-{idx}",
+                    "incident_id": r["Incident Id"],
+                    "timestamp": r["Timestamp"],
+                    "url": r["URL"],
+                    "http_response_code": r["HTTP Response Code"],
+                    "browser_type": r["Browser Type"],
+                    "browser_version": r["Browser Version"],
+                    "client_type": r["Client Type"],
+                    "client_id": r["Client Id"],
+                    "answer_book_guid": r["Answer Book GUID"],
+                    "viz_id": r["Viz Id"],
+                    "user_id": r["User Id"],
+                    "user_action": r["User Action"],
+                    "query_text": r["Query Text"],
+                    "response_size": r["Total Response Size"],
+                    "latency_us": r["Total Latency (us)"],
+                    "impressions": r["Total Impressions"],
+                }
+                for idx, r in enumerate(data)
+                # care for data quality errors..
+                if None not in (r["URL"], r["Incident Id"])
+            ]
 
-    [yellow]You must have administrator access to query security logs.[/]
-    """
-    ts = ctx.obj.thoughtspot
-
-    t = ''
-
-    if from_date is not None:
-        t += f' from {from_date.to_datetime_string()}'
-        from_date = from_date.timestamp() * 1000
-
-    if to_date is not None:
-        t += f', to {to_date.to_datetime_string()}'
-        to_date = to_date.timestamp() * 1000
-
-    with console.status(f'[bold green]getting security logs{t}..'):
-        r = ts.api.logs.topics(fromEpoch=from_date, toEpoch=to_date)
-        # data = r.json()
-        print(r, r.content)
-
-    # export.dump(data)
+        with tasks["syncer_dump"]:
+            syncer.dump("ts_bi_server", data=renamed)
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def gather(
     ctx: typer.Context,
-    # Note:
-    # really this is a SyncerProtocolType type,
-    # but typer does not yet support click.ParamType,
-    # so we can fake it with a callback :~)
-    export: str = A_(
-        ...,
-        help='protocol and path for options to pass to the syncer',
-        metavar='protocol://DEFINITION.toml',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
+    # tables: List[str] = typer.Option(None, help="table names to collect data on, can be specified multiple times"),
+    include_column_access: bool = typer.Option(
+        False,
+        "--include-column-access",
+        help="if specified, include security controls for Column Level Security as well",
+    ),
+    syncer: DSyncer = typer.Option(
+        None,
+        custom_type=SyncerProtocolType(models=models.METADATA_MODELS),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
     ),
 ):
     """
@@ -283,96 +265,123 @@ def gather(
     """
     ts = ctx.obj.thoughtspot
 
-    with console.status('[bold green]getting groups..'):
-        r = ts.api.request('GET', 'group', privacy='public')
+    tasks = [
+        ("gather_groups", "Collecting [b blue]Groups [white]and[/] Privileges"),
+        ("syncer_dump_groups", f"Writing [b blue]Groups[/] to {syncer.name}"),
+        ("syncer_dump_group_privileges", f"Writing [b blue]Groups Privileges[/] to {syncer.name}"),
+        ("gather_users", "Collecting [b blue]Users"),
+        ("syncer_dump_users", f"Writing [b blue]Users[/] to {syncer.name}"),
+        ("syncer_dump_associations", f"Writing [b blue]User [white]and[/] Group Associations[/] to {syncer.name}"),
+        ("gather_tags", "Collecting [b blue]Tags"),
+        ("syncer_dump_tags", f"Writing [b blue]Tags[/] to {syncer.name}"),
+        ("gather_metadata", "Collecting [b blue]Metadata"),
+        ("syncer_dump_metadata", f"Writing [b blue]Metadata[/] to {syncer.name}"),
+        ("gather_metadata_columns", "Collecting [b blue]Metadata Columns"),
+        ("syncer_dump_metadata_columns", f"Writing [b blue]Metadata Columns[/] to {syncer.name}"),
+        ("syncer_dump_synonyms", f"Writing [b blue]Synonyms[/] to {syncer.name}"),
+        ("gather_dependents", "Collecting [b blue]Dependencies"),
+        ("syncer_dump_dependents", f"Writing [b blue]Metadata Dependents[/] to {syncer.name}"),
+        ("gather_access_controls", "Collecting [b blue]Sharing Access Controls"),
+        ("syncer_dump_access_controls", f"Writing [b blue]Sharing Access Controls[/] to {syncer.name}"),
+    ]
 
-    with console.status(f'[bold green]writing groups to {export.name}..'):
-        xref = transform.to_principal_association(r.json())
-        data = transform.to_group(r.json())
-        export.dump('ts_group', data=data)
+    with LiveTasks(tasks, console=rich_console) as tasks:
 
-        data = transform.to_group_privilege(r.json())
-        export.dump('ts_group_privilege', data=data)
+        with tasks["gather_groups"]:
+            r = ts.api.group_read()
 
-    with console.status('[bold green]getting users..'):
-        r = ts.api.request('GET', 'user', privacy='public')
+        with tasks["syncer_dump_groups"]:
+            xref = transform.to_principal_association(r.json())
+            data = transform.to_group(r.json())
+            syncer.dump("ts_group", data=data)
 
-    with console.status(f'[bold green]writing users to {export.name}..'):
-        data = transform.to_user(r.json())
-        export.dump('ts_user', data=data)
+        with tasks["syncer_dump_group_privileges"]:
+            data = transform.to_group_privilege(r.json())
+            syncer.dump("ts_group_privilege", data=data)
 
-        data = [*xref, *transform.to_principal_association(r.json())]
-        export.dump('ts_xref_principal', data=data)
-        del xref
+        with tasks["gather_users"]:
+            r = ts.api.user_read()
 
-    with console.status('[bold green]getting tags..'):
-        r = ts.tag.all()
+        with tasks["syncer_dump_users"]:
+            data = transform.to_user(r.json())
+            syncer.dump("ts_user", data=data)
 
-    with console.status(f'[bold green]writing tags to {export.name}..'):
-        data = transform.to_tag(r)
-        export.dump('ts_tag', data=data)
+        with tasks["syncer_dump_associations"]:
+            data = [*xref, *transform.to_principal_association(r.json())]
+            syncer.dump("ts_xref_principal", data=data)
+            del xref
 
-    with console.status('[bold green]getting metadata..'):
-        content = ts.metadata.all(exclude_system_content=False)
+        with tasks["gather_tags"]:
+            r = ts.tag.all()
 
-    with console.status(f'[bold green]writing metadata to {export.name}..'):
-        data = transform.to_metadata_object(content)
-        export.dump('ts_metadata_object', data=data)
+        with tasks["syncer_dump_tags"]:
+            data = transform.to_tag(r)
+            syncer.dump("ts_tag", data=data)
 
-        data = transform.to_tagged_object(content)
-        export.dump('ts_tagged_object', data=data)
+        with tasks["gather_metadata"]:
+            content = [
+                *ts.logical_table.all(exclude_system_content=False),
+                *ts.answer.all(exclude_system_content=False),
+                *ts.liveboard.all(exclude_system_content=False),
+            ]
 
-    with console.status('[bold green]getting columns..'):
-        guids = [_['id'] for _ in content if not _['type'].endswith('BOOK')]
-        data = ts.metadata.columns(guids, include_hidden=True)
+        with tasks["syncer_dump_metadata"]:
+            data = transform.to_metadata_object(content)
+            syncer.dump("ts_metadata_object", data=data)
 
-    with console.status(f'[bold green]writing columns to {export.name}..'):
-        col_ = transform.to_metadata_column(data)
-        export.dump('ts_metadata_column', data=col_)
-        # del cdata
+            data = transform.to_tagged_object(content)
+            syncer.dump("ts_tagged_object", data=data)
 
-    with console.status(f'[bold green]writing synonyms to {export.name}..'):
-        syn_ = transform.to_column_synonym(data)
-        export.dump('ts_column_synonym', data=syn_)
+        with tasks["gather_metadata_columns"]:
+            guids = [_["id"] for _ in content if not _["metadata_type"].endswith("BOOK")]
+            data = ts.logical_table.columns(guids, include_hidden=True)
 
-    with console.status('[bold green]getting dependents..'):
-        types = ('LOGICAL_COLUMN', 'FORMULA', 'CALENDAR_TABLE')
-        guids = [_['column_guid'] for _ in data]
-        r = ts.metadata.dependents(guids, for_columns=True)
+        with tasks["syncer_dump_metadata_columns"]:
+            col_ = transform.to_metadata_column(data)
+            syncer.dump("ts_metadata_column", data=col_)
 
-    with console.status(f'[bold green]writing dependents to {export.name}..'):
-        data = transform.to_dependent_object(r)
-        export.dump('ts_dependent_object', data=data)
+        with tasks["syncer_dump_synonyms"]:
+            syn_ = transform.to_column_synonym(data)
+            syncer.dump("ts_column_synonym", data=syn_)
 
-    with console.status('[bold green]getting sharing access..'):
-        types = {
-            'QUESTION_ANSWER_BOOK': ('QUESTION_ANSWER_BOOK', ),
-            'PINBOARD_ANSWER_BOOK': ('PINBOARD_ANSWER_BOOK', ),
-            'LOGICAL_TABLE': (
-                'ONE_TO_ONE_LOGICAL', 'USER_DEFINED', 'WORKSHEET', 'AGGR_WORKSHEET',
-                'MATERIALIZED_VIEW', 'SQL_VIEW', 'LOGICAL_TABLE'
-            ),
-            'LOGICAL_COLUMN': ('FORMULA', 'CALENDAR_TABLE', 'LOGICAL_COLUMN')
-        }
+        with tasks["gather_dependents"]:
+            types = ("LOGICAL_COLUMN", "FORMULA", "CALENDAR_TABLE")
+            guids = [_["column_guid"] for _ in data]
+            r = ts.metadata.dependents(guids, for_columns=True)
 
-        data = []
+        with tasks["syncer_dump_dependents"]:
+            data = transform.to_dependent_object(r)
+            syncer.dump("ts_dependent_object", data=data)
 
-        # NOTE:
-        #    In the case the ThoughtSpot cluster has a high number of users, this block
-        #    will take an incredibly long amount of time to complete. We can probably
-        #    find a better algorithm.
-        #
-        for type_, subtypes in types.items():
-            guids = [_['id'] for _ in content if _['type'] in subtypes]
-            r = ts.metadata.permissions(guids, type=type_)
-            data.extend(transform.to_sharing_access(r))
+        with tasks["gather_access_controls"]:
+            types = {
+                "QUESTION_ANSWER_BOOK": ("QUESTION_ANSWER_BOOK",),
+                "PINBOARD_ANSWER_BOOK": ("PINBOARD_ANSWER_BOOK",),
+                "LOGICAL_TABLE": (
+                    "ONE_TO_ONE_LOGICAL",
+                    "USER_DEFINED",
+                    "WORKSHEET",
+                    "AGGR_WORKSHEET",
+                    "MATERIALIZED_VIEW",
+                    "SQL_VIEW",
+                    "LOGICAL_TABLE",
+                ),
+            }
 
-            # DEV NOTE:
-            #   this does not exist in TS apis as of 2022/03, the call below only
-            #   retrieves inherited/effective sharing access for the authenticated
-            #   user
+            if include_column_access:
+                types["LOGICAL_COLUMN"] = ("FORMULA", "CALENDAR_TABLE", "LOGICAL_COLUMN")
+
+            data = []
+
+            # NOTE:
+            #    In the case the ThoughtSpot cluster has a high number of users, the
+            #    column access block will take an incredibly long amount of time to
+            #    complete. We can probably find a better algorithm.
             #
-            # r = ts.metadata.permissions(guids, type=type_, permission_type='EFFECTIVE')
+            for metadata_type, metadata_subtypes in types.items():
+                guids = [_["id"] for _ in content if _["metadata_type"] in metadata_subtypes]
+                r = ts.metadata.permissions(guids, type=metadata_type)
+                data.extend(transform.to_sharing_access(r))
 
-    with console.status(f'[bold green]writing sharing access to {export.name}..'):
-        export.dump('ts_sharing_access', data=data)
+        with tasks["syncer_dump_access_controls"]:
+            syncer.dump("ts_sharing_access", data=data)

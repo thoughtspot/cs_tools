@@ -4,17 +4,18 @@ try:
     import readline
 except ModuleNotFoundError:  # womp, we're on Windows!
     from pyreadline import Readline
+
     readline = Readline()
 
 
 # OS X uses libedit
 # force emacs bindings and add auto complete on tab
 try:
-    if 'libedit' in readline.__doc__:
-        readline.parse_and_bind('bind -e')
+    if "libedit" in readline.__doc__:
+        readline.parse_and_bind("bind -e")
         readline.parse_and_bind('bind "\t" rl_complete')
 except TypeError:
-    readline.parse_and_bind('tab: complete')
+    readline.parse_and_bind("tab: complete")
 
 
 class TQLCompleter:
@@ -30,7 +31,8 @@ class TQLCompleter:
     tokens
       candidates for autocompletion
     """
-    def __init__(self, tokens: Dict[str, list]=None, max_to_display: int=30):
+
+    def __init__(self, tokens: Dict[str, list] = None, max_to_display: int = 30):
         self.tokens = tokens if tokens is not None else {}
         self.max_to_display = max_to_display
         readline.set_completer(self.complete)
@@ -70,27 +72,27 @@ class TQLCompleter:
         results = []
 
         # case INSENSITIVE matching for language tokens
-        if 'language' in self.tokens:
+        if "language" in self.tokens:
             matched = []
 
-            for token in self.tokens['language']:
+            for token in self.tokens["language"]:
                 if token.casefold().startswith(text.casefold()):
                     tok = token.lower() if text[-1].islower() else token.upper()
-                    matched.append(f'{tok} ')
+                    matched.append(f"{tok} ")
 
             matched.sort()
-            results.extend(matched[:self.max_to_display])
+            results.extend(matched[: self.max_to_display])
 
         # case SENSITIVE matching for language tokens
-        if 'schema' in self.tokens:
+        if "schema" in self.tokens:
             matched = []
 
-            for token in self.tokens['schema']:
+            for token in self.tokens["schema"]:
                 if token.startswith(text):
-                    matched.append(f'{token} ')
+                    matched.append(f"{token} ")
 
             matched.sort()
-            results.extend(matched[:self.max_to_display])
+            results.extend(matched[: self.max_to_display])
 
         results.append(None)
         return results[state]

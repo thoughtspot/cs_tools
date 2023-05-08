@@ -8,7 +8,7 @@ the explicit details of how to do so.
 
 We've implemented syncers to many popular data storage formats.
 
-!!! attention "In Beta"
+!!! example "In Beta"
 
     The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
     __provisional basis__. It may change significantly in future releases and its

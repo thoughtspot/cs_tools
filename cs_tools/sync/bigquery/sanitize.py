@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import datetime as dt
 import json
 
@@ -6,8 +6,7 @@ from .const import BIG_QUERY_DATETIME_FORMAT
 
 
 def clean_datetime(o: Any) -> str:
-    """
-    """
+    """ """
     if isinstance(o, dt.datetime):
         return o.strftime(BIG_QUERY_DATETIME_FORMAT)
     return o
