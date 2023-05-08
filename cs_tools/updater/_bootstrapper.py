@@ -93,12 +93,10 @@ def cli():
         "itself."
         "\n{y}If you run into any issues, please reach out to us on GitHub or by submitting to the Google Form below.{x}"
         "\n"
-        "\n    Google Forms: {b}{google_forms}{x}"
         "\n          GitHub: {b}{github_issues}{x}"
         "\n"
         .format(
             b=_BLUE, g=_GREEN, y=_YELLOW, x=_RESET,
-            google_forms="https://forms.gle/sh6hyBSS2mnrwWCa9",
             github_issues="https://github.com/thoughtspot/cs_tools/issues/new/choose"
         )
     )
