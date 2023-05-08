@@ -111,4 +111,4 @@ __In the next section__, we'll learn about __Syncers__{ .fc-blue } and how you c
 information that __Archiver__{ .fc-purple } produces.
 
 
-[cs-tools-docs]: https://thoughtspot.github.io/cs_tools/cs-tools/overview/
+[cs-tools-docs]: /cs_tools/cs-tools/overview/

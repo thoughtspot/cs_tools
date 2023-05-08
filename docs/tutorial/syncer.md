@@ -30,7 +30,7 @@ Along with the `--dry-run` option, this will allow to inspect the Answers and Li
 deletion, all without ever affecting the platform we're targeting.
 
 <center>
-![test](/assets/images/syncer-arch.svg){ width=85% }
+![test](/cs_tools/assets/images/syncer-arch.svg){ width=85% }
 </center>
 
 ---
@@ -172,6 +172,5 @@ to regularly visit the state of metadata in our cluster.
 __In the final section__, we'll explore ways to schedule the tools on both Windows and Unix platforms.
 
 
-<!-- [syncer-protocol]: ../syncer/protocol.md -->
 [syncer-all]: ../syncer/what-is.md
 [syncer-csv]: ../syncer/csv.md
