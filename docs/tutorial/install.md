@@ -79,7 +79,7 @@ you will be able to run upgrades from directly within the __CS Tools__ applicati
 
     ### :fontawesome-brands-windows: Windows
 
-    The new [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701?hl=en-gb&gl=GB) runs Textual apps beautifully.
+    The new [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701?hl=en-gb&gl=GB) runs __CS Tools__ beautifully.
 
     ### :fontawesome-brands-apple: Mac OS
 
