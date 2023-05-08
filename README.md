@@ -1,16 +1,9 @@
 <p align="center">
-  <a href="https://www.thoughtspot.com/">
-    <img width="400" src="docs/assets/cs_tools logo black.png" alt='ThoughtSpot | CS Tools'>
-  </a>
-</p>
-
-<p align="center">
-  CS Tools is a command line utility written by the __ThoughtSpot__ Professional Services
-  & Customer Success teams, meant to augment built-in platform functionality, and help
-  with the administration of your __ThoughtSpot__ environment.
-</p>
-
-<p align="center">
+  <img width="400" src="docs/assets/images/logo-transparent.png" alt='ThoughtSpot | CS Tools'>
+  <br/>
+  <i>Scale your <b>ThoughtSpot</b> adoption with tools created by the <b>ThoughtSpot Solutions Consulting</b> organization.</i>
+  <br/>
+  <br/>
   <b>Learn more in our documentation
   <br/>
   <a href="https://thoughtspot.github.io/cs_tools/">
@@ -20,9 +13,10 @@
 </p>
 
 ## Features
-- Low-fuss distribution and installation on MacOS, Linux, and Windows
-- Supports Software version 7.2.1+ and the latest two Cloud releases
-- Enhanced security in Falcon with remote TQL and tsload workflows
+- Explore your ThoughtSpot data with the Searchable SpotApp
+- Clean stale and unused content with Archiver
+- Extract your ThoughtSpot data to popular formats with Syncers
+- Support for Software 8.4.1+ and the Latest Cloud release
+- Universally installable for Windows, MacOS, and Linux
 - Multiple-cluster support (Dev, QA, Prod)
-- Scheduler-friendly execution
-- __ThoughtSpot__ Admin SpotApp
+- Scheduler-friendly execution 
