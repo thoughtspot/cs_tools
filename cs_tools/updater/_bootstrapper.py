@@ -393,7 +393,7 @@ def get_cs_tools_venv(**passthru):
         updater_url = (
             "https://api.github.com/repos/thoughtspot/cs_tools"
             "/contents/{path}"
-            "?ref=holiday%2Dplanning"  # TODO: remove before release
+            # "?ref=holiday%2Dplanning"  # TODO: remove before release
             .format(path=updater_path)
         )
 
