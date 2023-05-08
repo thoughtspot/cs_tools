@@ -208,15 +208,24 @@ def _import_and_create_bundle(
             }
 
             if cnxn_files:
-                r, connection_tables = _upload_connections(**kw, connection_file_bundles=cnxn_files)
-                results.extend(r)
+                try:
+                    r, connection_tables = _upload_connections(**kw, connection_file_bundles=cnxn_files)
+                    results.extend(r)
+                except Exception as e:
+                    log.error(f"error uploading connections: {e}, see logs for details.")
+                    log.debug(e, exc_info=True)
+                    connection_tables = {}
             else:
                 # connection name --> table names
                 connection_tables: Dict[str, str] = {}
 
             if tml_files:
-                r = _upload_tml(**kw, tml_file_bundles=tml_files, connection_tables=connection_tables)
-                results.extend(r)
+                try:
+                    r = _upload_tml(**kw, tml_file_bundles=tml_files, connection_tables=connection_tables)
+                    results.extend(r)
+                except Exception as e:
+                    log.error(f"error uploading content: {e}, see logs for details.")
+                    log.debug(e, exc_info=True)
 
     # log the error, but let any content that got imported still get tagged and shared
     except Exception as e:
@@ -434,7 +443,12 @@ def _upload_tml(
     if not updated:
         return responses
 
+    old_guids = []
+
     for tml_file in updated:
+        # remember the original GUIDs since they can change with the mapping.
+        old_guid = tml_file.tml.guid if tml_file.tml.guid else tml_file.filepath.name.split('.')[0]
+        old_guids.append(old_guid)
 
         # if we are forcing the creation of new content, we want to delete guids that aren't mapped
         if guid_mapping:
@@ -454,8 +468,9 @@ def _upload_tml(
 
     guids_to_map: Dict[GUID, GUID] = {}
 
+    guid_cnt = 0
     for tml_file, content in zip(updated, r.json()["object"]):
-        old_guid = tml_file.tml.guid if tml_file.tml.guid else tml_file.filepath.name.split('.')[0]
+        old_guid = old_guids[guid_cnt]; guid_cnt += 1
         guid = content["response"].get("header", {}).get("id_guid", tml_file.tml.guid)
         type = content["response"].get("header", {}).get("type", tml_file.tml.tml_type_name)
         name = content["response"].get("header", {}).get("name", tml_file.filepath.stem)
