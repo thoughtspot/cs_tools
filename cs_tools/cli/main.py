@@ -170,7 +170,6 @@ def run() -> int:
             max_frames=10,
         )
 
-        google_forms = "https://forms.gle/sh6hyBSS2mnrwWCa9"
         github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
         suprised_emoji = random.choice(
             (
@@ -183,7 +182,6 @@ def run() -> int:
             Text.from_markup(
                 f"\nIf you encounter this message more than once, please help by letting us know!"
                 f"\n"
-                f"\n    Google Forms: [b blue][link={google_forms}]{google_forms}[/link][/]"
                 f"\n          GitHub: [b blue][link={github_issue}]{github_issue}[/link][/]"
                 f"\n"
             ),
