@@ -75,6 +75,20 @@ you will be able to run upgrades from directly within the __CS Tools__ applicati
 
     Reach out to the [__CS Tools team on Discussions__][gh-discussions] with this information so we can help you get started.
 
+!!! tip inline end "Your platform"
+
+    ### :fontawesome-brands-windows: Windows
+
+    The new [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701?hl=en-gb&gl=GB) runs Textual apps beautifully.
+
+    ### :fontawesome-brands-apple: Mac OS
+
+    The default terminal app is limited to 256 colors. We recommend installing a newer terminal such as [iterm2](https://iterm2.com/), [Kitty](https://sw.kovidgoyal.net/kitty/), or [WezTerm](https://wezfurlong.org/wezterm/).
+
+    ### ::fontawesome-brands-linux: Linux (all distros)
+
+    All Linux distros come with a terminal emulator that can run __CS Tools__.
+
 Follow the steps below to get __CS Tools__ installed on your platform.
 
 === ":fontawesome-brands-windows: Windows"
