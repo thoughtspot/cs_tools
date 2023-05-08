@@ -63,7 +63,7 @@ __ThoughtSpot__ cluster through the [REST APIs][ts-rest-apis].
 The __CS Tools__ bootstrapper will install or upgrade your isolated __CS Tools__ environment. After the first install,
 you will be able to run upgrades from directly within the __CS Tools__ application.
 
-??? question "Don't have access to the outside internat?"
+??? question "Don't have access to the outside internet?"
 
     __You still have options!__{ .fc-green } We offer an offline binary to install, but require a bit of information first. 
 
