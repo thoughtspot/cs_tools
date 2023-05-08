@@ -1,11 +1,14 @@
+from typing import List
 import importlib
 import pathlib
 import types
 
 from pydantic.dataclasses import dataclass
+from typer.testing import CliRunner, Result
 import typer
 
-from cs_tools.const import PACKAGE_DIR
+from cs_tools.cli.ux import WARNING_PRIVATE, WARNING_BETA
+from cs_tools.const import PACKAGE_DIR, GH_ISSUES
 
 
 @dataclass
@@ -33,15 +36,63 @@ class CSTool:
     In that tools will exist in the cs_tools.cli.tools directory, and have an
     associated documentation page.
     """
+
     directory: pathlib.Path
-    docs_base_path: pathlib.Path = PACKAGE_DIR / 'docs' / 'cs-tools'
+    docs_base_path: pathlib.Path = PACKAGE_DIR / "docs" / "cs-tools"
+
+    def __post_init_post_parse__(self):
+        if self.privacy == "unknown":
+            return
+
+        self.app.rich_help_panel = "Available Tools"
+
+        # Augment CLI Info
+        if self.privacy == "beta":
+            self.app.rich_help_panel = f"[BETA Tools] [green]give feedback :point_right: [cyan][link={GH_ISSUES}]GitHub"
+            self.app.info.help += WARNING_BETA
+
+        if self.privacy == "private":
+            self.app.rich_help_panel = "[PRIVATE Tools] :yellow_circle: [yellow]uses internal APIs, use with caution!"
+            self.app.info.help += WARNING_PRIVATE
+
+        self.app.info.epilog = f":bookmark: v{self.version} :scroll: [cyan][link={self.docs_url}]Documentation"
 
     @property
-    def app(self) -> typer.Typer:
+    def privacy(self) -> str:
         """
-        Access a tool's underlying typer app.
+        Determines the privacy level of a cs_tool.
+
+        One of..
+            beta - an unreleased tool
+            private - a released tool which uses internal APIs
+            public - a released tool which uses no internal APIs
+            unknown - a catch-all for invalid tools
+
+        Only public tools show up in the default cli help text. Other classes
+        of tools may be shown with additional undocumented flags.
         """
-        return self.lib.app
+        if self.directory.stem.startswith("__b_"):
+            return "beta"
+
+        if self.directory.stem.startswith("__"):
+            return "unknown"
+
+        if self.directory.stem.startswith("_"):
+            return "private"
+
+        if not self.directory.stem.startswith("_"):
+            return "public"
+
+        return "unknown"
+
+    @property
+    def name(self) -> str:
+        """
+        Clean up and expose the tool's name.
+        """
+        to_trim = {"beta": len("__b_"), "private": len("_"), "public": len("")}
+        n = to_trim.get(self.privacy, 0)
+        return self.directory.stem[n:]
 
     @property
     def lib(self) -> types.ModuleType:
@@ -52,58 +103,25 @@ class CSTool:
         cs_tools/cli/tools.. but we could expand this to customer created tools
         in the future.
         """
-        if not hasattr(self, '_lib'):
-            import_path = f'cs_tools.cli.tools.{self.directory.name}'
+        if not hasattr(self, "_lib"):
+            import_path = f"cs_tools.cli.tools.{self.directory.name}"
             self._lib = importlib.import_module(import_path)
 
         return self._lib
 
     @property
-    def name(self) -> str:
+    def app(self) -> typer.Typer:
         """
-        Clean up and expose the tool's name.
+        Access a tool's underlying typer app.
         """
-        to_trim = {
-            'example': len(''),
-            'beta': len('__b_'),
-            'private': len('_'),
-            'public': len(''),
-        }
-
-        n = to_trim[self.privacy]
-        return self.directory.stem[n:]
+        return self.lib.app
 
     @property
-    def privacy(self) -> str:
+    def docs_url(self) -> str:
         """
-        Determines the privacy level of a cs_tool.
-
-        One of..
-            example - a template tool
-            beta - an unreleased tool
-            private - a released tool which uses internal APIs
-            public - a released tool which uses no internal APIs
-            unknown - a catch-all for invalid tools
-
-        Only public tools show up in the default cli help text. Other classes
-        of tools may be shown with additional undocumented flags.
+        References the documentation page.
         """
-        if self.directory.stem == '__example_app__':
-            return 'example'
-
-        if self.directory.stem.startswith('__b_'):
-            return 'beta'
-
-        if self.directory.stem.startswith('__'):
-            return 'unknown'
-
-        if self.directory.stem.startswith('_'):
-            return 'private'
-
-        if not self.directory.stem.startswith('_'):
-            return 'public'
-
-        return 'unknown'
+        return f"https://thoughtspot.github.io/cs_tools/cs-tools/{self.name}/"
 
     @property
     def version(self) -> str:
@@ -112,5 +130,20 @@ class CSTool:
         """
         return self.lib.__version__
 
+    def invoke(self, command: str, args: List[str] = None) -> Result:
+        """
+        Run a command in this tool's app.
+        """
+        if args is None:
+            args = []
+
+        from cs_tools import utils
+
+        self.lib.app.info.context_settings = {"obj": utils.State()}
+
+        runner = CliRunner()
+        result = runner.invoke(app=self.lib.app, args=[command, *args], catch_exceptions=False)
+        return result
+
     def __repr__(self) -> str:
-        return f'<{self.privacy.title()}Tool: {self.name}>'
+        return f"<{self.privacy.title()}Tool: {self.name}>"

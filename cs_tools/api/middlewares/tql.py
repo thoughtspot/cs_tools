@@ -1,4 +1,6 @@
-from typing import Any, Dict, List, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import pathlib
 import logging
 import json
@@ -6,41 +8,38 @@ import json
 from pydantic.typing import Annotated
 from pydantic import validate_arguments, Field
 
-from cs_tools.data.enums import Privilege
 from cs_tools.errors import InsufficientPrivileges
+from cs_tools.types import GroupPrivilege, RecordsFormat
 
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
-REQUIRED_PRIVILEGES = set([
-    Privilege.can_administer_thoughtspot,
-    Privilege.can_manage_data
-])
 
 
 def _to_table(headers, rows=None):
     if rows is None:
         rows = []
 
-    header = [column['name'] for column in headers]
-    data = [dict(zip(header, row['v'])) for row in rows]
+    header = [column["name"] for column in headers]
+    data = [dict(zip(header, row["v"])) for row in rows]
     return data
 
 
 class TQLMiddleware:
-    """
-    """
-    def __init__(self, ts):
+    """ """
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
     def _check_privileges(self) -> None:
         """
+        Determine if the user has necessary Data Manager privileges.
         """
-        if not set(self.ts.me.privileges).intersection(REQUIRED_PRIVILEGES):
-            raise InsufficientPrivileges(
-                user=self.ts.me,
-                service='remote TQL',
-                required_privileges=', '.join(REQUIRED_PRIVILEGES)
-            )
+        REQUIRED = set([GroupPrivilege.can_administer_thoughtspot, GroupPrivilege.can_manage_data])
+
+        if not set(self.ts.me.privileges).intersection(REQUIRED):
+            raise InsufficientPrivileges(user=self.ts.me, service="remote TQL", required_privileges=", ".join(REQUIRED))
 
     @validate_arguments
     def query(
@@ -49,9 +48,9 @@ class TQLMiddleware:
         *,
         sample: int = 50,
         database: str = None,
-        schema_: Annotated[str, Field(alias='schema')] = 'falcon_default_schema',
-        http_timeout: int = 60.0
-    ) -> Tuple[List[Dict[str, str]], List[Dict[str, Any]]]:
+        schema_: Annotated[str, Field(alias="schema")] = "falcon_default_schema",
+        http_timeout: int = 60.0,
+    ) -> RecordsFormat:
         """
 
         Parameters
@@ -65,33 +64,27 @@ class TQLMiddleware:
         self._check_privileges()
 
         data = {
-            'context': {
-                'database': database,
-                'schema': schema_,
-                'server_schema_version': -1
-            },
-            'options': {
-                'query_options': {
-                    'pagination': {},
-                    'query_results_apply_top_row_count': sample,
+            "context": {"database": database, "schema": schema_, "server_schema_version": -1},
+            "options": {
+                "query_options": {
+                    "pagination": {},
+                    "query_results_apply_top_row_count": sample,
                 }
             },
-            'query': {
-                'statement': statement
-            }
+            "query": {"statement": statement},
         }
 
-        r = self.ts.api.ts_dataservice.query(data, timeout=http_timeout)
+        r = self.ts.api.dataservice_query(data=data, timeout=http_timeout)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []
 
         for row in i:
-            if 'table' in row['result']:
-                out.append({'data': _to_table(**row['result']['table'])})
+            if "table" in row["result"]:
+                out.append({"data": _to_table(**row["result"]["table"])})
 
-            if 'message' in row['result']:
-                out.append({'messages': row['result']['message']})
+            if "message" in row["result"]:
+                out.append({"messages": row["result"]["message"]})
 
         return out
 
@@ -101,74 +94,57 @@ class TQLMiddleware:
         command: str,
         *,
         database: str = None,
-        schema_: str = 'falcon_default_schema',
+        schema_: str = "falcon_default_schema",
         raise_errors: bool = False,
-        http_timeout: int = 60.0
-    ) -> List[Dict[str, Any]]:
-        """
-        """
+        http_timeout: int = 60.0,
+    ) -> RecordsFormat:
+        """ """
         self._check_privileges()
 
-        if not command.strip().endswith(';'):
-            command = f'{command.strip()};'
+        if not command.strip().endswith(";"):
+            command = f"{command.strip()};"
 
         data = {
-            'context': {
-                'database': database,
-                'schema': schema_,
-                'server_schema_version': -1
-            },
-            'query': {
-                'statement': command
-            }
+            "context": {"database": database, "schema": schema_, "server_schema_version": -1},
+            "query": {"statement": command},
         }
 
-        r = self.ts.api.ts_dataservice.query(data, timeout=http_timeout)
+        r = self.ts.api.dataservice_query(data=data, timeout=http_timeout)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []
 
         for row in i:
-            if 'table' in row['result']:
-                out.append({'data': _to_table(**row['result']['table'])})
+            if "table" in row["result"]:
+                out.append({"data": _to_table(**row["result"]["table"])})
 
-            if 'message' in row['result']:
-                out.append({'messages': row['result']['message']})
+            if "message" in row["result"]:
+                out.append({"messages": row["result"]["message"]})
 
         return out
 
     @validate_arguments
-    def script(
-        self,
-        fp: pathlib.Path,
-        *,
-        raise_errors: bool = False,
-        http_timeout: int = 60.0
-    ) -> List[Dict[str, Any]]:
-        """
-        """
+    def script(self, fp: pathlib.Path, *, raise_errors: bool = False, http_timeout: int = 60.0) -> RecordsFormat:
+        """ """
         self._check_privileges()
 
         with fp.open() as f:
             data = {
-                'context': {
-                    'schema': 'falcon_default_schema',
-                    'server_schema_version': -1
-                },
-                'script_type': 1,
-                'script': f.read()
+                "context": {"schema": "falcon_default_schema", "server_schema_version": -1},
+                "script_type": 1,
+                "script": f.read(),
             }
 
-        r = self.ts.api.ts_dataservice.script(data, timeout=http_timeout)
+        r = self.ts.api.dataservice_script(data=data, timeout=http_timeout)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []
 
         for row in i:
-            if 'table' in row['result']:
-                out.append({'data': _to_table(**row['result']['table'])})
+            if "table" in row["result"]:
+                out.append({"data": _to_table(**row["result"]["table"])})
 
-            if 'message' in row['result']:
-                out.append({'messages': row['result']['message']})
+            if "message" in row["result"]:
+                out.append({"messages": row["result"]["message"]})
 
         return out

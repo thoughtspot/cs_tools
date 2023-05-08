@@ -1,19 +1,24 @@
-from typing import Any, Dict, List, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Union
 import logging
 
 from pydantic import validate_arguments
 
-from cs_tools.data.enums import MetadataCategory
 from cs_tools.errors import ContentDoesNotExist
+from cs_tools.types import MetadataCategory, RecordsFormat
+from cs_tools.api import _utils
 
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
 
 
 class AnswerMiddleware:
-    """
-    """
-    def __init__(self, ts):
+    """ """
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
     @validate_arguments
@@ -22,9 +27,11 @@ class AnswerMiddleware:
         *,
         tags: Union[str, List[str]] = None,
         category: MetadataCategory = MetadataCategory.all,
+        hidden: bool = False,
+        auto_created: bool = False,
         exclude_system_content: bool = True,
-        chunksize: int = 500
-    ) -> List[Dict[str, Any]]:
+        chunksize: int = 500,
+    ) -> RecordsFormat:
         """
         Get all answers in ThoughtSpot.
 
@@ -41,38 +48,34 @@ class AnswerMiddleware:
 
         Returns
         -------
-        answers : List[Dict[str, Any]]
+        answers : list[Dict[str, Any]]
           all answer headers
         """
         if isinstance(tags, str):
             tags = [tags]
 
-        offset = 0
         answers = []
 
         while True:
-            r = self.ts.api._metadata.list(
-                    type='QUESTION_ANSWER_BOOK',
-                    category=category,
-                    tagname=tags,
-                    batchsize=chunksize,
-                    offset=offset
-                )
+            r = self.ts.api.metadata_list(
+                metadata_type="QUESTION_ANSWER_BOOK",
+                category=category,
+                tag_names=tags or _utils.UNDEFINED,
+                show_hidden=hidden,
+                auto_created=auto_created,
+                batchsize=chunksize,
+                offset=len(answers),
+            )
 
             data = r.json()
-            to_extend = data['headers']
-            offset += len(to_extend)
+            to_extend = data["headers"]
 
             if exclude_system_content:
-                to_extend = [
-                    answer
-                    for answer in to_extend
-                    if answer.get('authorName') not in ('system', 'tsadmin', 'su')
-                ]
+                to_extend = [answer for answer in to_extend if answer.get("authorName") not in _utils.SYSTEM_USERS]
 
-            answers.extend(to_extend)
+            answers.extend([{"metadata_type": "QUESTION_ANSWER_BOOK", **answer} for answer in to_extend])
 
-            if not to_extend and not answers:
+            if not answers:
                 info = {
                     "incl": "exclude" if exclude_system_content else "include",
                     "category": category,
@@ -83,11 +86,11 @@ class AnswerMiddleware:
                         "\n  - [blue]{category.value}[/] {type}"
                         "\n  - [blue]{incl}[/] admin-generated {type}"
                         "\n  - with tags [blue]{tags}"
-                    )
+                    ),
                 }
                 raise ContentDoesNotExist(type="answers", **info)
 
-            if data['isLastBatch']:
+            if data["isLastBatch"]:
                 break
 
         return answers

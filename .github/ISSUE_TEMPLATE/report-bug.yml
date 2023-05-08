@@ -7,15 +7,14 @@ body:
       value: >-
         ## *Thanks for your interest in cs_tools!* :tada:
 
-        This project is maintained by the Professional Services and Customer Success
-        organizations at ThoughtSpot, meant to augment built-in platform tools, help
-        with administration of and enhance adoption within your ThoughtSpot environment.
+        This project is maintained by the Solutions Consulting organization at ThoughtSpot. It is our passion project!
 
-        That said, it is our passion project! While we make every opportunity to keep up
-        to date, resolve issues, well-document our tools, and provide a great
-        experience; **if you have a true support issue or are missing critical
-        functionality** of your ThoughtSpot platform, we absolutely encourage you to
-        reach out to your designated account team!
+        While we make every opportunity to keep up to date, resolve issues, well-document our tools, and provide a great
+        experience..
+
+        If you find something is wrong with your ThoughtSpot cluster, please open a [Support Case](https://community.thoughtspot.com/s/contactsupport).
+
+        If you wish you had a feature in ThoughtSpot, please open a [__Product Idea__](https://community.thoughtspot.com/s/ideas).
 
   - type: checkboxes
     id: checks
@@ -25,10 +24,11 @@ body:
       options:
         - label: I have read and agreed to the ThoughtSpot Dev Tools EULA.
           required: true
+
         - label: >-
-            I understand that if I have a critical issue with ThoughtSpot, I should
-            reach out to my account team instead of cs_tools.
+            I understand that if I have a critical issue with ThoughtSpot, I should reach out to my designated Account Executive and Solutions Consultant team instead of cs_tools.
           required: true
+
         - label: I searched the cs_tools documentation, with the integrated search.
           required: true
 
@@ -36,28 +36,9 @@ body:
     id: platform-configuration
     attributes:
       label: Platform Configuration
-      description: Please include the output of `cs_tools platform`.
-      placeholder: >-
-        (.cs_tools) C:\work\thoughtspot\cs_tools>cs_tools platform
+      description: Please include the output of `cs_tools self info --anonymous --directory .`.
+      placeholder: Drag the cs-tools-info-YYYY-mm-dd.svg into this window.
 
-                [PLATFORM DETAILS]
-                system: Windows (detail: Windows-10-10.0.19041-SP0)
-                python: 3.8.5
-                datetime: 2021-09-04 14:16:10-0500
-                cs_tools: 1.2.0
-    validations:
-      required: true
- 
-  - type: textarea
-    id: example
-    attributes:
-      label: Example Command
-      description: >-
-        Please add a self-contained, [minimal, reproducible, example](https://stackoverflow.com/help/minimal-reproducible-example)
-        with your use case.
-
-        If we can copy it, run it, and see it right away, there's a much higher chance
-        we'll be able to help you.
     validations:
       required: true
 
@@ -70,5 +51,7 @@ body:
 
         Write a short description telling us what you are doing, what you expect to
         happen, and what is currently happening.
+
+        If we can copy it, run it, and see it right away, there's a much higher chance we'll be able to help you.
     validations:
       required: true

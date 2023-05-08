@@ -1,19 +1,16 @@
-import functools as ft
 import pathlib
 import sys
 
-from typer import Argument as A_, Option as O_
 import typer
 import rich
 
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin, thoughtspot
+from cs_tools.cli.ux import rich_console
+from cs_tools.cli.ux import CSToolsApp
+
 from .interactive import InteractiveTQL
 
-
-app = typer.Typer(
+app = CSToolsApp(
     help="""
     Enable querying the ThoughtSpot TQL CLI from a remote machine.
 
@@ -25,29 +22,16 @@ app = typer.Typer(
       https://docs.thoughtspot.com/latest/reference/sql-cli-commands.html
       https://docs.thoughtspot.com/latest/reference/tql-service-api-ref.html
     """,
-    cls=CSToolsGroup,
-    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    ft.partial(setup_thoughtspot, login=False),
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot_nologin])
 def interactive(
     ctx: typer.Context,
-    debug: bool = O_(False, '--debug', help='print the entire response to console'),
-    autocomplete: bool = O_(
-        False,
-        '--autocomplete',
-        help='toggle auto complete feature',
-        show_default=False
-    ),
-    schema: str = O_('falcon_default_schema', help='schema name to use'),
-    http_timeout: int = O_(60.0, '--timeout', help='network call timeout threshold')
+    debug: bool = typer.Option(False, "--debug", help="print the entire response to console"),
+    autocomplete: bool = typer.Option(False, "--autocomplete", help="toggle auto complete feature", show_default=False),
+    schema: str = typer.Option("falcon_default_schema", help="schema name to use"),
+    http_timeout: int = typer.Option(60.0, "--timeout", help="network call timeout threshold"),
 ):
     """
     Run an interactive TQL session as if you were on the cluster.
@@ -58,120 +42,85 @@ def interactive(
     For a list of all commands, type "help" after invoking tql
     """
     ts = ctx.obj.thoughtspot
-    tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=console, http_timeout=http_timeout)
+    tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=rich_console, http_timeout=http_timeout)
     tql.run()
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def file(
     ctx: typer.Context,
-    file: pathlib.Path=A_(
-        ...,
-        metavar='FILE.tql',
-        help='path to file to execute, default to stdin'
-    ),
-    http_timeout: int = O_(60.0, '--timeout', help='network call timeout threshold')
+    file: pathlib.Path = typer.Argument(..., metavar="FILE.tql", help="path to file to execute, default to stdin"),
+    http_timeout: int = typer.Option(60.0, "--timeout", help="network call timeout threshold"),
 ):
     """
     Run multiple commands within TQL on a remote server.
-    \f
-    DEV NOTE:
-
-        This command is akin to using the shell command cat with TQL.
-
-            cat create-schema.sql | tql
     """
     ts = ctx.obj.thoughtspot
     r = ts.tql.script(file, http_timeout=http_timeout)
 
-    color_map = {
-        'INFO': '[white]',
-        'ERROR': '[red]'
-    }
+    color_map = {"INFO": "[white]", "ERROR": "[red]"}
 
     for response in r:
-        if 'messages' in response:
-            for message in response['messages']:
-                c = color_map.get(message['type'], '[yellow]')
-                m = message['value']
+        if "messages" in response:
+            for message in response["messages"]:
+                c = color_map.get(message["type"], "[yellow]")
+                m = message["value"]
 
-                if m.strip() == 'Statement executed successfully.':
-                    c = '[bold green]'
-                if m.strip().endswith(';'):
-                    c = '[cyan]'
+                if m.strip() == "Statement executed successfully.":
+                    c = "[bold green]"
+                if m.strip().endswith(";"):
+                    c = "[cyan]"
 
-                console.print(c + m, end='')
+                rich_console.print(c + m, end="")
 
-        if 'data' in response:
-            t = rich.table.Table(*response['data'][0].keys(), box=rich.box.HORIZONTALS)
-            [t.add_row(*_.values()) for _ in response['data']]
-            console.print('\n', t)
+        if "data" in response:
+            t = rich.table.Table(*response["data"][0].keys(), box=rich.box.HORIZONTALS)
+            [t.add_row(*_.values()) for _ in response["data"]]
+            rich_console.print("\n", t)
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def command(
     ctx: typer.Context,
-    command: str=A_('-', help='TQL query to execute', metavar='"SELECT ..."'),
-    schema: str=O_('falcon_default_schema', help='schema name to use'),
-    http_timeout: int = O_(60.0, '--timeout', help='network call timeout threshold')
+    command: str = typer.Argument("-", help="TQL query to execute", metavar='"SELECT ..."'),
+    schema: str = typer.Option("falcon_default_schema", help="schema name to use"),
+    http_timeout: int = typer.Option(60.0, "--timeout", help="network call timeout threshold"),
 ):
     """
     Run a single TQL command on a remote server.
 
     By default, this command will accept input from a pipe.
-
-    \f
-    DEV NOTE:
-
-        This command is akin to using the shell command echo with TQL.
-
-            echo SELECT * FROM db.schema.table | tql
     """
     ts = ctx.obj.thoughtspot
 
-    if command == '-':
+    if command == "-":
         if sys.stdin.isatty():
             command = None
         else:
-            command = '\n'.join(sys.stdin.readlines())
+            command = "\n".join(sys.stdin.readlines())
 
     if not command:
-        console.print('[red]no valid input given to rtql command')
+        rich_console.print("[red]no valid input given to rtql command")
         raise typer.Exit()
 
     r = ts.tql.command(command, schema_=schema, http_timeout=http_timeout)
 
-    color_map = {
-        'INFO': '[white]',
-        'ERROR': '[red]'
-    }
+    color_map = {"INFO": "[white]", "ERROR": "[red]"}
 
     for response in r:
-        if 'messages' in response:
-            for message in response['messages']:
-                c = color_map.get(message['type'], '[yellow]')
-                m = message['value']
+        if "messages" in response:
+            for message in response["messages"]:
+                c = color_map.get(message["type"], "[yellow]")
+                m = message["value"]
 
-                if m.strip() == 'Statement executed successfully.':
-                    c = '[bold green]'
-                if m.strip().endswith(';'):
-                    c = '[cyan]'
+                if m.strip() == "Statement executed successfully.":
+                    c = "[bold green]"
+                if m.strip().endswith(";"):
+                    c = "[cyan]"
 
-                console.print(c + m, end='')
+                rich_console.print(c + m, end="")
 
-        if 'data' in response:
-            t = rich.table.Table(*response['data'][0].keys(), box=rich.box.HORIZONTALS)
-            [t.add_row(*_.values()) for _ in response['data']]
-            console.print('\n', t)
+        if "data" in response:
+            t = rich.table.Table(*response["data"][0].keys(), box=rich.box.HORIZONTALS)
+            [t.add_row(*_.values()) for _ in response["data"]]
+            rich_console.print("\n", t)

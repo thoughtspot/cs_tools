@@ -1,1 +1,1 @@
-from .answer import AnswerUser
+from .random import ScopedRandomZombie

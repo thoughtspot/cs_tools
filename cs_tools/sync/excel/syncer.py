@@ -1,6 +1,6 @@
-from typing import Any, Dict, List
-import logging
+from typing import List, Dict, Any
 import pathlib
+import logging
 import enum
 
 from pydantic.dataclasses import dataclass
@@ -8,13 +8,12 @@ import openpyxl
 
 from . import sanitize
 
-
 log = logging.getLogger(__name__)
 
 
 class InsertMode(enum.Enum):
-    append = 'APPEND'
-    overwrite = 'OVERWRITE'
+    append = "APPEND"
+    overwrite = "OVERWRITE"
 
 
 @dataclass
@@ -22,6 +21,7 @@ class Excel:
     """
     Interact with Excel.
     """
+
     filepath: pathlib.Path
     mode: InsertMode = InsertMode.overwrite
 
@@ -47,7 +47,7 @@ class Excel:
 
     @property
     def name(self) -> str:
-        return 'excel'
+        return "excel"
 
     def load(self, tab_name: str) -> List[Dict[str, Any]]:
         t = self._get_or_create_tab(tab_name)
@@ -67,6 +67,10 @@ class Excel:
 
     def dump(self, tab_name: str, *, data: List[Dict[str, Any]]) -> None:
         t = self._get_or_create_tab(tab_name)
+
+        if not data:
+            log.warning(f"no data to write to syncer {self}")
+            return
 
         if self.mode == InsertMode.overwrite:
             t.delete_rows(0, t.max_row + 1)

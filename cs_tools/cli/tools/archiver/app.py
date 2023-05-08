@@ -1,42 +1,38 @@
-from typing import Any, Dict, List, Tuple
-import logging
+import functools as ft
 import pathlib
+import logging
+import random
 
-from typer import Argument as A_, Option as O_  # noqa
 import pendulum
-import click
 import typer
 
-from cs_tools.cli.dependency import depends
-from cs_tools.cli.tools.common import setup_thoughtspot, teardown_thoughtspot
-from cs_tools.cli.options import CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT
-from cs_tools.cli.types import CommaSeparatedValuesType, SyncerProtocolType
-from cs_tools.cli.util import base64_to_file
-from cs_tools.cli.ux import console, CSToolsGroup, CSToolsCommand
+from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.layout import LiveTasks
+from cs_tools.cli.input import ConfirmationPrompt
+from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
+from cs_tools._compat import StrEnum
+from cs_tools.cli.ux import rich_console
+
+from cs_tools.cli.ux import CSToolsApp
 from cs_tools.errors import ContentDoesNotExist
+from cs_tools.types import MetadataObjectType
+from cs_tools.cli.dependencies.syncer import DSyncer
+from cs_tools import utils
 
-from .enums import ContentType, UserActions
-from .util import DataTable
-
+from . import _extended_rest_api_v1
+from . import layout
 
 log = logging.getLogger(__name__)
+ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE = 3650
 
 
-def _get_content(ts, *, tags) -> Tuple[List[Dict[str, Any]]]:
-    try:
-        answers = [{'content_type': 'answer', **_} for _ in ts.answer.all(tags=tags)]
-    except ContentDoesNotExist:
-        answers = []
-
-    try:
-        liveboard = [{'content_type': 'liveboard', **_} for _ in ts.liveboard.all(tags=tags)]
-    except ContentDoesNotExist:
-        liveboard = []
-
-    return answers, liveboard
+class ContentType(StrEnum):
+    answer = "answer"
+    liveboard = "liveboard"
+    all_user_content = "all"
 
 
-app = typer.Typer(
+app = CSToolsApp(
     help="""
     Manage stale answers and liveboards within your platform.
 
@@ -45,447 +41,486 @@ app = typer.Typer(
     pursuits. Archiver enables you to identify, tag, export, and remove that potentially
     abandoned content.
     """,
-    cls=CSToolsGroup,
-    options_metavar='[--version, --help]'
 )
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def identify(
-    ctx: click.Context,
-    tag_name: str = O_(
-        'INACTIVE',
-        '--tag',
-        help='tag name to use for labeling objects to archive (case sensitive)'
+    ctx: typer.Context,
+    tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+    content: ContentType = typer.Option(
+        ContentType.all_user_content,
+        help="type of content to mark for archival",
+        rich_help_panel="Content Identification Criteria"
     ),
-    content: ContentType = O_('all', help='type of content to archive'),
-    recent_activity: int = O_(
-        3650,
-        help='days to IGNORE for content viewed or access [default: all history]',
-        show_default=False
-    ),
-    recent_modified: int = O_(
-        100,
-        help='days to IGNORE for content created or modified',
-    ),
-    ignore_tag: List[str] = O_(
-        None,
-        help='tagged content to ignore (case sensitive), can be specified multiple times',
-        callback=lambda ctx, to: CommaSeparatedValuesType().convert(to, ctx=ctx),
-    ),
-    dry_run: bool = O_(
-        False,
-        '--dry-run',
-        help='test your selection criteria, doesn\'t apply tags',
+    recent_activity: int = typer.Option(
+        ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE,
+        help=(
+            "content without recent views will be [b green]selected[/] (exceeds days threshold) "
+            # fake the default value in the CLI output
+            "[dim]\[default: all TS: BI history][/]"
+        ),
         show_default=False,
+        rich_help_panel="Content Identification Criteria"
     ),
-    no_prompt: bool = O_(
-        False,
-        '--no-prompt',
-        help='disable the confirmation prompt',
-        show_default=False
+    recent_modified: int = typer.Option(
+        100,
+        help="content without recent edits will be [b green]selected[/] (exceeds days threshold)",
+        rich_help_panel="Content Identification Criteria",
     ),
-    report: str = O_(
+    only_groups: str = typer.Option(
         None,
-        metavar='protocol://DEFINITION.toml',
-        help='generates a list of content to be archived, utilizes protocol syntax',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    )
+        custom_type=MultipleChoiceType(),
+        help="content not authored by users in these groups will be [b red]filtered[/], comma separated",
+        rich_help_panel="Content Identification Criteria",
+    ),
+    ignore_groups: str = typer.Option(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="content authored by users in these groups will be [b red]filtered[/], comma separated",
+        rich_help_panel="Content Identification Criteria",
+    ),
+    ignore_tags: str = typer.Option(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="content with this tag (case sensitive) will be [b red]filtered[/], comma separated",
+        rich_help_panel="Content Identification Criteria",
+    ),
+    syncer: DSyncer = typer.Option(
+        None,
+        custom_type=SyncerProtocolType(),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
 ):
+    # fmt: off
     """
-    Identify objects which objects can be archived.
+    Identify content which can be archived.
 
-    [yellow]Identification criteria will skip content owned by "System User" (system)
-    and "Administrator" (tsadmin)[/]
-
-    ThoughtSpot stores usage activity (default: 6 months of interactions) by user in the
-    platform. If a user views, edits, or creates an Answer or Liveboard, ThoughtSpot
-    knows about it. This can be used as a proxy to understanding what content is
-    actively being used.
+    :police_car_light: [yellow]Content owned by system level accounts ([b blue]tsadmin[/], [b blue]system[/], [b blue]etc[/].) will be ignored.[/] :police_car_light:
     """
+    # fmt: on
+    if None not in (only_groups, ignore_groups):
+        rich_console.log("[b red]Select either [b blue]--only-groups[/] or [b blue]--include-groups[/], but not both!")
+        raise typer.Exit(1)
+
     ts = ctx.obj.thoughtspot
-    tz = ts.platform.tz
-    actions = UserActions.strigified(sep="', '", context=content)
 
-    with console.status('[bold green]retrieving objects usage..[/]'):
-        data = ts.search(
-            f"[user action] = '{actions}' "
-            f"[timestamp].'last {recent_activity} days' "
-            r"[timestamp].'today' "
-            r"[answer book guid]",
-            worksheet='TS: BI Server'
-        )
+    tasks = [
+        ("gather_ts_bi", "Getting content usage and activity statistics"),
+        ("gather_supporting_filter_criteria", "Getting supporting metadata for content identification"),
+        ("gather_metadata", "Getting existing content metadata"),
+        ("syncer_report", f"Writing Archiver syncer{f' to {syncer.name}' if syncer is not None else ''}"),
+        ("results_preview", f"Showing a sample of 25 items to tag with [b blue]{tag_name}"),
+        ("confirmation_prompt", "Confirmation prompt"),
+        ("tagging_content", "Tagging content in ThoughtSpot"),
+    ]
 
-    # SELECTION LOGIC
-    # 1. Get all existing GUIDs in the platform.  (metadata/list)
-    # 2. Filter out recently modified GUIDs.      (object.created , object.modified)
-    # 3. Filter out recently accessed GUIDs.      (TS: BI Server)
-    #
-    content_in_platform = 0
-    to_archive = []
-    seen_recently = set(obj['Answer Book GUID'] for obj in data)
-    recently = pendulum.now(tz=tz).subtract(days=recent_modified)
-    tags_to_ignore = [t.casefold() for t in ignore_tag]
+    with LiveTasks(tasks, console=rich_console) as tasks:
 
-    if content.value in ('all', 'answer'):
-        with console.status('[bold green]retrieving existing answers..[/]'):
-            for answer in ts.answer.all():
-                content_in_platform += 1
-                add = pendulum.from_timestamp(answer['created'] / 1000, tz=tz)
-                mod = pendulum.from_timestamp(answer['modified'] / 1000, tz=tz)
-                tag = [t['name'].casefold() for t in answer['tags']]
+        with tasks["gather_ts_bi"]:
+            ts_bi_rows = ts.search(
+                f"[user action] != [user action].answer_unsaved [user action].{{null}} "
+                f"[answer book guid] != [answer book guid].{{null}} "
+                f"[timestamp].'last {recent_activity} days' "
+                f"[timestamp].'today' "
+                f"[answer book guid]",
+                worksheet="TS: BI Server",
+            )
+            ts_bi_data = {row["Answer Book GUID"] for row in ts_bi_rows}
 
-                if (
-                    add >= recently
-                    or mod >= recently
-                    or set(tag).intersection(tags_to_ignore)
-                    or answer['id'] in seen_recently
-                ):
-                    continue
+        with tasks["gather_supporting_filter_criteria"]:
+            only_user_guids = [ts.group.users_in(group, is_directly_assigned=True) for group in (only_groups or [])]
+            ignore_user_guids = [ts.group.users_in(group, is_directly_assigned=True) for group in (ignore_groups or [])]
 
-                to_archive.append({
-                    'content_type': 'answer',
-                    'guid': answer['id'],
-                    'name': answer['name'],
-                    'created_at': add.diff_for_humans(),
-                    'modified_at': mod.diff_for_humans(),
-                    'author': answer.get('authorName')
-                })
+        with tasks["gather_metadata"]:
+            to_archive = []
+            n_content_in_ts = 0
 
-    if content.value in ('all', 'liveboard'):
-        with console.status('[bold green]retrieving existing liveboards..[/]'):
-            for liveboard in ts.liveboard.all():
-                content_in_platform += 1
-                add = pendulum.from_timestamp(liveboard['created'] / 1000, tz=tz)
-                mod = pendulum.from_timestamp(liveboard['modified'] / 1000, tz=tz)
-                tag = [t['name'].casefold() for t in liveboard['tags']]
+            for metadata_object in [*ts.answer.all(), *ts.liveboard.all()]:
+                n_content_in_ts += 1
+                checks = []
 
-                if (
-                    add >= recently
-                    or mod >= recently
-                    or set(tag).intersection(tags_to_ignore)
-                    or liveboard['id'] in seen_recently
-                ):
-                    continue
+                metadata_modified = pendulum.from_timestamp(metadata_object["modified"] / 1000, tz=ts.platform.timezone)
 
-                to_archive.append({
-                    'content_type': 'liveboard',
-                    'guid': liveboard['id'],
-                    'name': liveboard['name'],
-                    'created_at': add.diff_for_humans(),
-                    'modified_at': mod.diff_for_humans(),
-                    'author': liveboard.get('authorName')
-                })
+                # CHECK: NO TS: BI ACTIVITY WITHIN X DAYS
+                checks.append(metadata_object["id"] not in ts_bi_data)
 
-    if not to_archive:
-        console.log('no stale content found')
-        raise typer.Exit()
+                # CHECK: NO MODIFICATIONS WITHIN Y DAYS
+                checks.append(metadata_modified <= pendulum.now().subtract(days=recent_modified))
 
-    table_kw = {
-        'title': f"[green]Archive Results[/]: Tagging content with [cyan]{tag_name}",
-        'caption': f'{len(to_archive)} items tagged ({content_in_platform} in cluster)'
-    }
+                # CHECK: AUTHOR IN APPROVED GROUPS
+                if only_groups is not None:
+                    checks.append(metadata_object["author"] in only_user_guids)
 
-    console.log(DataTable(to_archive, **table_kw), justify='center')
+                # CHECK: AUTHOR NOT IN IGNORED GROUPS
+                if ignore_groups is not None:
+                    checks.append(metadata_object["author"] not in ignore_user_guids)
 
-    if report is not None:
-        to_archive = [{**_, 'operation': 'identify'} for _ in to_archive]
-        report.dump('archiver_report', data=to_archive)
+                # CHECK: METADATA DOES NOT CONTAIN ANY IGNORED TAG
+                if ignore_tags is not None:
+                    checks.append(not {t["name"] for t in metadata_object["tags"]}.intersection(ignore_tags))
 
-    if dry_run:
-        raise typer.Exit(-1)
+                if all(checks):
+                    to_archive.append(
+                        {
+                            "type": metadata_object["metadata_type"],
+                            "guid": metadata_object["id"],
+                            "modified": metadata_modified,
+                            "author_guid": metadata_object["author"],
+                            "author": metadata_object.get("authorDisplayName", "{null}"),
+                            "name": metadata_object["name"],
+                        }
+                    )
 
-    tag = ts.tag.get(tag_name, create_if_not_exists=True)
-    contents = {'answer': [], 'liveboard': []}
-    [contents[c['content_type']].append(c['guid']) for c in to_archive]
+        if not to_archive:
+            rich_console.log("[b yellow]no stale content was found in your [white]ThoughtSpot[/] cluster")
+            raise typer.Exit(0)
 
-    # PROMPT FOR INPUT
-    if not no_prompt:
-        typer.confirm(
-            f'\nWould you like to continue with tagging {len(to_archive)} objects?',
-            abort=True
-        )
+        with tasks["results_preview"] as this_task:
+            table = layout.build_table(
+                        title=f"Content to tag with [b blue]{tag_name}",
+                        caption=(
+                            f"25 latest items ({len(to_archive)} [b blue]{tag_name}[/] [dim]|[/] {n_content_in_ts} in "
+                            f"ThoughtSpot)"
+                        ),
+                    )
 
-    if contents['answer']:
-        ts.api.metadata.assigntag(
-            id=contents['answer'],
-            type=['QUESTION_ANSWER_BOOK'] * len(contents['answer']),
-            tagid=[tag['id']] * len(contents['answer'])
-        )
+            # for row in random.sample(to_archive, k=min(25, len(to_archive))):
+            for row in sorted(to_archive, key=lambda e: e["modified"], reverse=True)[:25]:
+                table.add_row(
+                    MetadataObjectType(row["type"]).name.title().replace("_", " "),
+                    row["guid"],
+                    row["modified"].strftime("%Y-%m-%d"),
+                    row["author"],
+                    row["name"],
+                )
 
-    if contents['liveboard']:
-        ts.api.metadata.assigntag(
-            id=contents['liveboard'],
-            type=['PINBOARD_ANSWER_BOOK'] * len(contents['liveboard']),
-            tagid=[tag['id']] * len(contents['liveboard'])
-        )
+            tasks.layout = layout.combined_layout(original_layout=tasks.layout, new_layout=table)
+
+        with tasks["syncer_report"] as this_task:
+            if syncer is not None:
+                to_archive = [{**_, "operation": "identify"} for _ in to_archive]
+                syncer.dump("archiver_report", data=to_archive)
+            else:
+                this_task.skip()
+
+        if dry_run:
+            raise typer.Exit(-1)
+
+        with tasks["confirmation_prompt"] as this_task:
+            if no_prompt:
+                this_task.skip()
+            else:
+                this_task.description = prompt = (
+                    f":point_right: Continue with tagging {len(to_archive):,} objects? [b magenta](y/N)"
+                )
+
+                if not ConfirmationPrompt(prompt, console=rich_console).ask(with_prompt=False):
+                    this_task.description = "Confirmation [b red]Denied[/] (no tagging performed)"
+                    raise typer.Exit(0)
+
+                this_task.description = "Confirmation [b green]Approved[/]"
+
+        with tasks["tagging_content"]:
+            tag_guid = ts.tag.get(tag_name, create_if_not_exists=True)
+            to_tag_guids = []
+            to_tag_types = []
+            to_tag_names = []
+
+            for content in to_archive:
+                to_tag_guids.append(content["guid"])
+                to_tag_types.append(content["type"])
+                to_tag_names.append(tag_guid["id"])
+
+            ts.api.metadata_assign_tag(metadata_guids=to_tag_guids, metadata_types=to_tag_types, tag_guids=to_tag_names)
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def revert(
     ctx: typer.Context,
-    tag_name: str = O_(
-        'INACTIVE',
-        '--tag',
-        help='tag name to revert on labeled content (case sensitive)'
-    ),
-    delete_tag: bool = O_(
-        False,
-        '--delete-tag',
-        help='remove the tag itself, after untagging identified content',
-        show_default=False
-    ),
-    dry_run: bool = O_(
-        False,
-        '--dry-run',
-        show_default=False,
-        help='test your selection criteria, doesn\'t revert tags'
-    ),
-    no_prompt: bool = O_(
-        False,
-        '--no-prompt',
-        show_default=False,
-        help='disable the confirmation prompt'
-    ),
-    report: str = O_(
+    tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+    delete_tag: bool = typer.Option(False, "--delete-tag", help="after untagging identified content, remove the tag itself"),
+    syncer: DSyncer = typer.Option(
         None,
-        metavar='protocol://DEFINITION.toml',
-        help='generates a list of content to be reverted, utilizes protocol syntax',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    )
+        custom_type=SyncerProtocolType(),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
 ):
     """
-    Remove objects from the temporary archive.
+    Remove content with the identified --tag.
     """
     ts = ctx.obj.thoughtspot
-    tz = ts.platform.tz
 
-    to_unarchive = []
-    answers, liveboards = _get_content(ts, tags=tag_name)
+    tasks = [
+        ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
+        ("syncer_report", f"Writing Archiver syncer{f' to {syncer.name}' if syncer is not None else ''}"),
+        ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
+        ("confirmation_prompt", "Confirmation prompt"),
+        ("untagging_content", f"Removing [b blue]{tag_name}[/] from content in ThoughtSpot"),
+        ("deleting_tag", f"Removing the [b blue]{tag_name}[/] tag from ThoughtSpot"),
+    ]
 
-    for content in (*answers, *liveboards):
-        add = pendulum.from_timestamp(content['created'] / 1000, tz=tz)
-        mod = pendulum.from_timestamp(content['modified'] / 1000, tz=tz)
-        to_unarchive.append({
-            'content_type': content['content_type'],
-            'guid': content['id'],
-            'name': content['name'],
-            'created_at': add.diff_for_humans(),
-            'modified_at': mod.diff_for_humans(),
-            'author': content.get('authorName')
-        })
+    with LiveTasks(tasks, console=rich_console) as tasks:
 
-    if not to_unarchive:
-        console.log(f"no content found with the tag '{tag_name}'")
-        raise typer.Exit()
+        with tasks["gather_metadata"]:
+            to_revert = []
 
-    table_kw = {
-        'title': f"[green]Unarchive Results[/]: Untagging content with [cyan]{tag_name}",
-        'caption': f'Total of {len(to_unarchive)} items tagged..'
-    }
+            try:
+                to_revert.extend(
+                    {
+                        "type": answer["metadata_type"],
+                        "guid": answer["id"],
+                        "modified": answer["modified"],
+                        "author_guid": answer["author"],
+                        "author": answer.get("authorDisplayName", "{null}"),
+                        "name": answer["name"],
+                    }
+                    for answer in ts.answer.all(tags=[tag_name])
+                )
+            except ContentDoesNotExist:
+                pass
 
-    console.log(DataTable(to_unarchive, **table_kw), justify='center')
+            try:
+                to_revert.extend(
+                    {
+                        "type": liveboard["metadata_type"],
+                        "guid": liveboard["id"],
+                        "modified": liveboard["modified"],
+                        "author_guid": liveboard["author"],
+                        "author": liveboard.get("authorDisplayName", "{null}"),
+                        "name": liveboard["name"],
+                    }
+                    for liveboard in ts.liveboard.all(tags=[tag_name])
+                )
+            except ContentDoesNotExist:
+                pass
 
-    if report is not None:
-        to_unarchive = [{**_, 'operation': 'revert'} for _ in to_unarchive]
-        report.dump('archiver_report', data=to_unarchive)
+        if not to_revert:
+            rich_console.log(f"[b yellow]no [b blue]{tag_name}[/] content was found in [white]ThoughtSpot[/]")
+            raise typer.Exit(0)
 
-    if dry_run:
-        raise typer.Exit()
+        with tasks["results_preview"] as this_task:
+            table = layout.build_table(
+                        title=f"Content to untag [b blue]{tag_name}",
+                        caption=f"25 random items ({len(to_revert)} [b blue]{tag_name}[/] in ThoughtSpot)",
+                    )
 
-    tag = ts.tag.get(tag_name)
+            for row in random.sample(to_revert, k=min(25, len(to_revert))):
+                table.add_row(
+                    MetadataObjectType(row["type"]).name.title().replace("_", " "),
+                    row["guid"],
+                    pendulum.from_timestamp(row["modified"] / 1000, tz=ts.platform.timezone).strftime("%Y-%m-%d"),
+                    row["author"],
+                    row["name"],
+                )
 
-    contents = {'answer': [], 'liveboard': []}
-    [contents[c['content_type']].append(c['guid']) for c in to_unarchive]
+            tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
 
-    # PROMPT FOR INPUT
-    if not no_prompt:
-        typer.confirm(
-            f'\nWould you like to continue with untagging {len(to_unarchive)} objects?',
-            abort=True
-        )
+        with tasks["syncer_report"] as this_task:
+            if syncer is not None:
+                to_revert = [{**_, "operation": "revert"} for _ in to_revert]
+                syncer.dump("archiver_report", data=to_revert)
+            else:
+                this_task.skip()
 
-    if contents['answer']:
-        ts.api.metadata.unassigntag(
-            id=contents['answer'],
-            type=['QUESTION_ANSWER_BOOK'] * len(contents['answer']),
-            tagid=[tag['id']] * len(contents['answer'])
-        )
+        if dry_run:
+            raise typer.Exit(-1)
 
-    if contents['liveboard']:
-        ts.api.metadata.unassigntag(
-            id=contents['liveboard'],
-            type=['PINBOARD_ANSWER_BOOK'] * len(contents['liveboard']),
-            tagid=[tag['id']] * len(contents['liveboard'])
-        )
+        with tasks["confirmation_prompt"] as this_task:
+            if no_prompt:
+                this_task.skip()
+            else:
+                this_task.description = prompt = (
+                    f":point_right: Continue with untagging {len(to_revert):,} objects? [b magenta](y/N)"
+                )
 
-    if delete_tag:
-        ts.tag.delete(tag['name'])
+                if not ConfirmationPrompt(prompt, console=rich_console).ask(with_prompt=False):
+                    this_task.description = "Confirmation [b red]Denied[/] (no tagging performed)"
+                    raise typer.Exit(0)
+
+                this_task.description = "Confirmation [b green]Approved[/]"
+
+        with tasks["untagging_content"]:
+            tag_guid = ts.tag.get(tag_name, create_if_not_exists=True)
+            to_revert_guids = []
+            to_revert_types = []
+            to_revert_names = []
+
+            for content in to_revert:
+                to_revert_guids.append(content["guid"])
+                to_revert_types.append(content["type"])
+                to_revert_names.append(tag_guid["id"])
+
+            ts.api.metadata_unassign_tag(
+                metadata_guids=to_revert_guids,
+                metadata_types=to_revert_types,
+                tag_guids=to_revert_names,
+            )
+
+        with tasks["deleting_tag"] as this_task:
+            if delete_tag:
+                ts.tag.delete(tag_name=tag_name)
+            else:
+                this_task.skip()
 
 
-@app.command(cls=CSToolsCommand)
-@depends(
-    'thoughtspot',
-    setup_thoughtspot,
-    options=[CONFIG_OPT, VERBOSE_OPT, TEMP_DIR_OPT],
-    teardown=teardown_thoughtspot,
-)
+@app.command(dependencies=[thoughtspot])
 def remove(
     ctx: typer.Context,
-    tag_name: str = O_(
-        'INACTIVE',
-        '--tag',
-        help='tag name to use to remove objects (case sensitive)'
-    ),
-    export_tml: pathlib.Path = O_(
+    tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+    delete_tag: bool = typer.Option(False, "--delete-tag", help="after deleting identified content, remove the tag itself"),
+    syncer: DSyncer = typer.Option(
         None,
-        metavar='FILE.zip',
-        dir_okay=False,
-        resolve_path=True,
-        help='if set, path to export tagged objects as a zipfile',
+        custom_type=SyncerProtocolType(),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
     ),
-    delete_tag: bool = O_(
-        False,
-        '--delete-tag',
-        show_default=False,
-        help='remove the tag itself, after deleting identified content',
-    ),
-    export_only: bool = O_(
-        False,
-        '--export-only',
-        show_default=False,
-        help='export all tagged content, but do not remove it from that platform'
-    ),
-    dry_run: bool = O_(
-        False,
-        '--dry-run',
-        show_default=False,
-        help='test your selection criteria, doesn\'t delete content'
-    ),
-    no_prompt: bool = O_(
-        False,
-        '--no-prompt',
-        show_default=False,
-        help='disable the confirmation prompt'
-    ),
-    report: str = O_(
+    directory: pathlib.Path = typer.Option(
         None,
-        metavar='protocol://DEFINITION.toml',
-        help='generates a list of content to be reverted, utilizes protocol syntax',
-        callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    )
+        metavar="DIRECTORY",
+        help="folder/directory to export TML objects to",
+        file_okay=False,
+        rich_help_panel="TML Export Options",
+    ),
+    export_only: bool = typer.Option(
+        False,
+        "--export-only",
+        help="export all tagged content, but don't remove it from",
+        rich_help_panel="TML Export Options",
+    ),
 ):
     """
     Remove objects from the ThoughtSpot platform.
+
+    If the export --directory is specified, content identified with --tag will be saved
+    as TML before being deleted from the ThoughtSpot platform.
     """
     ts = ctx.obj.thoughtspot
-    tz = ts.platform.tz
 
-    if export_tml is not None:
-        if not export_tml.as_posix().endswith('zip'):
-            console.print(f'[error]Path must be a valid zipfile! Got: [blue]{export_tml}')
+    tasks = [
+        ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
+        ("syncer_report", f"Writing Archiver syncer{f' to {syncer.name}' if syncer is not None else ''}"),
+        ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
+        ("confirmation_prompt", "Confirmation prompt"),
+        ("export_content", f"Exporting content as TML{f' to {directory}' if directory is not None else ''}"),
+        ("delete_content", f"Deleting [b blue]{tag_name}[/] content in ThoughtSpot"),
+        ("deleting_tag", f"Removing the [b blue]{tag_name}[/] tag from ThoughtSpot"),
+    ]
+
+    with LiveTasks(tasks, console=rich_console) as tasks:
+
+        with tasks["gather_metadata"]:
+            to_delete = []
+
+            try:
+                to_delete.extend(
+                    {
+                        "type": answer["metadata_type"],
+                        "guid": answer["id"],
+                        "modified": answer["modified"],
+                        "author_guid": answer["author"],
+                        "author": answer.get("authorDisplayName", "{null}"),
+                        "name": answer["name"],
+                    }
+                    for answer in ts.answer.all(tags=[tag_name])
+                )
+            except ContentDoesNotExist:
+                pass
+
+            try:
+                to_delete.extend(
+                    {
+                        "type": liveboard["metadata_type"],
+                        "guid": liveboard["id"],
+                        "modified": liveboard["modified"],
+                        "author_guid": liveboard["author"],
+                        "author": liveboard.get("authorDisplayName", "{null}"),
+                        "name": liveboard["name"],
+                    }
+                    for liveboard in ts.liveboard.all(tags=[tag_name])
+                )
+            except ContentDoesNotExist:
+                pass
+
+        if not to_delete:
+            rich_console.log(f"[b yellow]no [b blue]{tag_name}[/] content was found in [white]ThoughtSpot[/]")
+            raise typer.Exit(0)
+
+        with tasks["results_preview"] as this_task:
+            table = layout.build_table(
+                        title=f"Content to remove [b blue]{tag_name}[/]",
+                        caption=f"25 random items ({len(to_delete)} [b blue]{tag_name}[/] in ThoughtSpot)",
+                    )
+
+            for row in random.sample(to_delete, k=min(25, len(to_delete))):
+                table.add_row(
+                    MetadataObjectType(row["type"]).name.title().replace("_", " "),
+                    row["guid"],
+                    pendulum.from_timestamp(row["modified"] / 1000, tz=ts.platform.timezone).strftime("%Y-%m-%d"),
+                    row["author"],
+                    row["name"],
+                )
+
+            tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
+
+        with tasks["syncer_report"] as this_task:
+            if syncer is not None:
+                to_delete = [{**_, "operation": "revert"} for _ in to_delete]
+                syncer.dump("archiver_report", data=to_delete)
+            else:
+                this_task.skip()
+
+        if dry_run:
             raise typer.Exit(-1)
 
-        if export_tml.exists():
-            console.print(f'[yellow]Zipfile [blue]{export_tml}[/] already exists!')
-            typer.confirm('Would you like to overwrite it?', abort=True)
+        with tasks["confirmation_prompt"] as this_task:
+            if no_prompt:
+                this_task.skip()
+            else:
+                operation = "exporting" if export_only else "removing"
+                this_task.description = prompt = (
+                    f":point_right: Continue with {operation} {len(to_delete):,} objects? [b magenta](y/N)"
+                )
 
-    to_unarchive = []
-    answers, liveboards = _get_content(ts, tags=tag_name)
+                if not ConfirmationPrompt(prompt, console=rich_console).ask(with_prompt=False):
+                    this_task.description = "Confirmation [b red]Denied[/] (no removal performed)"
+                    raise typer.Exit(0)
 
-    for content in (*answers, *liveboards):
-        add = pendulum.from_timestamp(content['created'] / 1000, tz=tz)
-        mod = pendulum.from_timestamp(content['modified'] / 1000, tz=tz)
-        to_unarchive.append({
-            'content_type': content['content_type'],
-            'guid': content['id'],
-            'name': content['name'],
-            'created_at': add.diff_for_humans(),
-            'modified_at': mod.diff_for_humans(),
-            'author': content.get('authorName')
-        })
+                this_task.description = "Confirmation [b green]Approved[/]"
 
-    if not to_unarchive:
-        console.log(f'no content found with the tag [blue]{tag_name}')
-        raise typer.Exit()
+        with tasks["export_content"] as this_task:
+            if directory is None:
+                this_task.skip()
+            else:
+                for tml in ts.tml.to_export(guids=[content["guid"] for content in to_delete], iterator=True):
+                    tml.dump(directory / f"{tml.guid}.{tml.tml_type_name}.tml")
 
-    table_kw = {
-        'title': (
-            "[green]Remove Results[/]: Removing"
-            + ('' if export_tml is None else ' and exporting')
-            + f" content with [cyan]{tag_name}"
-        ),
-        'caption': f'Total of {len(to_unarchive)} items tagged..'
-    }
+        with tasks["delete_content"] as this_task:
+            if export_only:
+                this_task.skip()
+            else:
+                for unique_type in [c["type"] for c in to_delete]:
+                    content = [content["guid"] for content in to_delete if content["type"] == unique_type]
 
-    console.log(DataTable(to_unarchive, **table_kw), justify='center')
+                    for chunk in utils.chunks(content, n=50):
+                        chunk = list(chunk)
+                        log.info(f"Attempting to delete {len(chunk)} {unique_type}s")
+                        _extended_rest_api_v1.metadata_delete(
+                            ts.api,
+                            metadata_type=unique_type,
+                            guids=list(chunk)
+                        )
 
-    if report is not None:
-        to_unarchive = [{**_, 'operation': 'remove'} for _ in to_unarchive]
-        report.dump('archiver_report', data=to_unarchive)
-
-    if dry_run:
-        raise typer.Exit()
-
-    tag = ts.tag.get(tag_name)
-
-    contents = {'answer': [], 'liveboard': []}
-    [contents[c['content_type']].append(c['guid']) for c in to_unarchive]
-
-    # PROMPT FOR INPUT
-    if not no_prompt:
-        if export_only:
-            op = 'exporting'
-        elif export_tml:
-            op = 'exporting and removing'
-        else:
-            op = 'removing'
-
-        typer.confirm(
-            f'\nWould you like to continue with {op} {len(to_unarchive)} objects?',
-            abort=True
-        )
-
-    if export_tml is not None:
-        r = ts.api._metadata.edoc_export_epack(
-                request={
-                    'object': [
-                        *[{'id': id, 'type': 'QUESTION_ANSWER_BOOK'} for id in contents['answer']],
-                        *[{'id': id, 'type': 'PINBOARD_ANSWER_BOOK'} for id in contents['liveboard']]
-                    ],
-                    'export_dependencies': False
-                }
-            )
-
-        if not r.json().get('zip_file'):
-            console.log(
-                '[error]attempted to export TML, but the API response failed, please '
-                're-run the command with --verbose flag to capture more log details'
-            )
-            raise typer.Exit(-1)
-
-        base64_to_file(r.json()['zip_file'], filepath=export_tml)
-
-    if export_only:
-        raise typer.Exit()
-
-    if answers:
-        ts.api._metadata.delete(id=contents['answer'], type='QUESTION_ANSWER_BOOK')
-
-    if liveboards:
-        ts.api._metadata.delete(id=contents['liveboard'], type='PINBOARD_ANSWER_BOOK')
-
-    if delete_tag:
-        ts.tag.delete(tag['name'])
+        with tasks["deleting_tag"] as this_task:
+            if delete_tag:
+                ts.tag.delete(tag_name=tag_name)
+            else:
+                this_task.skip()

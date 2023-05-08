@@ -3,7 +3,7 @@ hide:
   - toc
 ---
 
-??? attention "In Beta"
+??? example "In Beta"
 
     The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
     __provisional basis__. It may change significantly in future releases and its

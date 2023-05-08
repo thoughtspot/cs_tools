@@ -1,22 +1,22 @@
-from typing import Any, Dict, List
-import logging
+from typing import List, Dict, Any
 import pathlib
+import logging
 import enum
 
 from pydantic.dataclasses import dataclass
-from cs_tools.const import APP_DIR
 import gspread
+
+from cs_tools.const import APP_DIR
 
 from .const import GOOGLE_SHEET_DEFAULT_SIZE
 from . import sanitize
-
 
 log = logging.getLogger(__name__)
 
 
 class InsertMode(enum.Enum):
-    append = 'APPEND'
-    overwrite = 'OVERWRITE'
+    append = "APPEND"
+    overwrite = "OVERWRITE"
 
 
 @dataclass
@@ -38,9 +38,10 @@ class GoogleSheets:
     credentials_file: pathlib.Path, default cs_tools-app-directory/gspread/credentials.json
       absolute path to your credentials file
     """
+
     spreadsheet: str
     mode: InsertMode = InsertMode.overwrite
-    credentials_file: pathlib.Path = APP_DIR / 'gsheets' / 'credentials.json'
+    credentials_file: pathlib.Path = APP_DIR / "gsheets" / "credentials.json"
 
     def __post_init_post_parse__(self):
         self.client = gspread.service_account(filename=self.credentials_file)
@@ -61,7 +62,7 @@ class GoogleSheets:
 
     @property
     def name(self) -> str:
-        return 'gsheets'
+        return "gsheets"
 
     def load(self, tab_name: str) -> List[Dict[str, Any]]:
         t = self._get_or_create_tab(tab_name)
@@ -75,12 +76,16 @@ class GoogleSheets:
     def dump(self, tab_name: str, *, data: List[Dict[str, Any]]) -> None:
         t = self._get_or_create_tab(tab_name)
 
+        if not data:
+            log.warning(f"no data to write to syncer {self}")
+            return
+
         if self.mode == InsertMode.overwrite:
             XN = gspread.utils.rowcol_to_a1(t.row_count, t.col_count)
-            t.batch_clear([f'A2:{XN}'])
+            t.batch_clear([f"A2:{XN}"])
 
         # write the header if it does not exist
-        if not t.get('A1'):
+        if not t.get("A1"):
             t.append_row(list(data[0].keys()))
 
         d = sanitize.clean_for_gsheets(data)

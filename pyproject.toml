@@ -1,27 +1,24 @@
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
 
 
-[tool.poetry]
+[project]
 name = "cs_tools"
-version = "1.3.5"
-description = """\
-	Tools created by the ThoughtSpot PS/CS organization to assist implementation and \
-    administration of your platform.\
-"""
-authors = [
-	"boonhapus <nicholas.cooper@thoughtspot.com>",
-	"billdback-ts <bill.back@thoughtspot.com>",
-	"devinmcpherson-ts <devin.mcpherson@thoughtspot.com>",
-	"mishathoughtspot <misha.beek@thoughtspot.com>"
-]
-maintainers = ["boonhapus <nicholas.cooper@thoughtspot.com>"]
-license = "Proprietary"
+dynamic = ["version"]
+description = "Scale your ThoughtSpot adoption with tools created by the ThoughtSpot Solutions Consulting organization."
 readme = "README.md"
-homepage = "https://thoughtspot.github.io/cs_tools/"
-repository = "https://github.com/thoughtspot/cs_tools"
-documentation = "https://thoughtspot.github.io/cs_tools/"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+authors = [
+	{name = "boonhapus", email="nicholas.cooper@thoughtspot.com"},
+	{name = "billdback-ts", email="bill.back@thoughtspot.com"},
+	{name = "devinmcpherson-ts", email="devin.mcpherson@thoughtspot.com"},
+	{name = "mishathoughtspot", email="misha.beek@thoughtspot.com"},
+]
+maintainers = [
+    {name = "boonhapus", email="nicholas.cooper@thoughtspot.com"},
+]
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
@@ -29,63 +26,135 @@ classifiers = [
     "Operating System :: OS Independent",
     "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
-packages = [
-    { include = "cs_tools" }
+
+dependencies = [
+    # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
+    "pip >= 23.1",
+
+    "awesomeversion >= 22.9.0",
+    "httpx >= 0.24.0",
+    "pydantic <= 2.0",
+    "pendulum >= 2.1.2",
+    "rich >= 13.0.0",
+    "sqlmodel >= 0.0.8",
+    "thoughtspot_tml >= 2.0.4",
+    "toml >= 0.10.2",
+
+    # version specific
+    "strenum >= 0.4.9; python_version < '3.11.0'",
+    "typing_extensions >= 4.4.0; python_version < '3.8.0'",
 ]
-# include = []
-# exclude = []
 
 
-[tool.poetry.dependencies]
-# Accept new incoming python versions
-python = ">= 3.6.8 , < 4.0.0"
+[project.urls]
+homepage = "https://thoughtspot.github.io/cs_tools/"
+repository = "https://github.com/thoughtspot/cs_tools"
+documentation = "https://thoughtspot.github.io/cs_tools/"
 
-# Poetry doesn't solve for itself, so we need to keep this guy around
-# possibly a bug? poetry#5004
-poetry-core = "^1.0.0a0"
+[project.optional-dependencies]
+cli = [
+    # pin these dependencies explicitly so we can ensure they work across environments
+    # 
+    # DEV NOTE @boonhapus 2023/01/14
+    #   these are only the direct dependencies, NOT the transitive dependencies.. so we
+    #   need an extra process to grab the grandchild dependencies so our direct reliance
+    #   doesn't break when a child updates.
+    #
 
-# Upgrades here require removing support for py36
-click = "< 8.1.0"
-httpx = "< 0.23.0"
-Jinja2 = "< 3.1.0"
-starlette = "< 0.20.0"
-uvicorn = "< 0.17.0"
+    # platform-specific
+    "pyreadline3 == 3.4.1 ; sys_platform == 'win32'",
 
-# Platform locked dependencies
-pyreadline3 = { version = "*",  markers = "sys_platform == 'win32'" }
+    "horde @ https://github.com/boonhapus/horde/archive/dev.zip",
+    "pynput == 1.7.6",
 
-# Accept updates on core dependencies, as long as they support py36
-fastapi = "*"
-oyaml = "*"
-pendulum = "*"
-pydantic = "*"
-python-dateutil = "*"
-rich = "*"
-sqlmodel = "*"
-thoughtspot-tml = ">= 1.1.0"
-toml = "*"
-typer = "*"
+    # NOTE: why not typer[all] ? ... @tiangolo is an AFK maintainer, but typer is so good..  see #524
+    "typer >= 0.7.0",
+    "colorama >= 0.4.3",
+    "shellingham >= 1.3.0",
+
+    # TODO: switch with LiteStar...
+    "uvicorn >= 0.20.0",
+    "fastapi >= 0.89.1",
+    # Jinja2 = "^3.1.2"
+    # starlette = "0.20.4"
+]
+dev = [
+    "cs_tools[cli]",
+    "coverage[toml]",
+    "ruff",
+    "nox",
+    "ward == 0.67.2b0",
+]
+docs = [
+    "cs_tools[cli]",
+    "mkdocs-material",
+    # Plugins..
+    "mkdocs-glightbox",
+    "mkdocs-open-in-new-tab",
+]
 
 
-[tool.poetry.dev-dependencies]
-mkdocs-material = { version = "*", python = ">= 3.7 , < 4.0.0" }
-flake8 = { version = "*",  python = ">= 3.7 , < 4.0.0" }
-coverage = { version = "*",  python = ">= 3.7 , < 4.0.0" }
-isort = { version = "*",  python = ">= 3.7 , < 4.0.0" }
-black = { version = "*",  python = ">= 3.7 , < 4.0.0" }
-ward = { version = "*",  python = ">= 3.7 , < 4.0.0" }
+[project.scripts]
+cs_tools = "cs_tools.cli.main:run"
+cstools = "cs_tools.cli.main:run"
 
+[tool.setuptools.dynamic]
+version = {attr = "cs_tools._version.__version__"}
 
-[tool.poetry.scripts]
-cs_tools = "cs_tools.cli:run"
-cstools = "cs_tools.cli:run"
+# [tool.isort]
+# profile = "black"
+# line_length = 120
+# from_first = true
+# length_sort = true
+# reverse_sort = true
 
+[tool.ruff]
+line-length = 120
+select = [
+    "A",     # flake8-builtins: https://pypi.org/project/flake8-builtins/
+    "ARG",   # flake8-unused-arguments: https://pypi.org/project/flake8-unused-arguments/
+    "B",     # flake8-bugbear: https://pypi.org/project/flake8-bugbear/
+    "C4",    # flake8-comprehensions: https://pypi.org/project/flake8-comprehensions/
+    "C90",   # mccabe: https://pypi.org/project/mccabe/
+    "COM",   # flake8-commas: https://pypi.org/project/flake8-commas/
+    "E",     # pycodestyle: https://pypi.org/project/pycodestyle/
+    "F",     # pyflakes: https://pypi.org/project/pyflakes/
+    "Q",     # flake8-quotes: https://pypi.org/project/flake8-quotes/
+    "RUF",   # ruff-specific: https://beta.ruff.rs/docs/rules/#ruff-specific-rules-ruf
+    "TCH",   # flake8-type-checking: https://pypi.org/project/flake8-type-checking/
+]
+ignore = ["B008"]
+src = ["cs_tools"]
+exclude = [
+    "__pycache__",   # ignore compiled bytecode
+    ".venv*",        # ignore virtual environments
+    ".nox",          # ignore virtual environments
+
+    # project specific ignores
+    "*compat.py",    # ignore compatibles
+]
 
 [tool.ward]
-path = "tests"
+path = "tests/"
+
+# [tool.coverage.run]
+# branch = true
+# include = [
+#     "cs_tools/**.py",
+# ]
+
+[tool.coverage.report]
+exclude_lines = [
+    "# pragma: no cover",
+    "# pragma: peephole optimzer",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+]

@@ -1,6 +1,23 @@
 from operator import attrgetter
+from typing import Any, Dict
+import datetime as dt
 import zipfile
 import io
+
+
+def clean_datetime(row: Dict[str, Any], *, date_time_format: str) -> Dict[str, Any]:
+    """
+    Enforce a specific format for datetime values.
+    """
+    out = {}
+
+    for key, value in row.items():
+        if isinstance(value, (dt.datetime, dt.date)):
+            value = value.strftime(date_time_format)
+
+        out[key] = value
+
+    return out
 
 
 class StringToBytesAdapter:
@@ -11,6 +28,7 @@ class StringToBytesAdapter:
     file-like object, however csv.writer dialects accept string data only. So
     we can write an adapter that automatically encodes the data.
     """
+
     def __init__(self, csv_in_zipfile: io.BytesIO):
         self.csv_in_zipfile = csv_in_zipfile
         self.close = self.csv_in_zipfile.close
@@ -30,13 +48,8 @@ class ZipFile(zipfile.ZipFile):
         We can probably clean this implementation up a little bit more, but it
         works now and cleanliness is a problem for bored future-me.
     """
-    def open(
-        self,
-        member: str,
-        *,
-        mode: str = 'r',
-        remove: bool = True
-    ) -> StringToBytesAdapter:
+
+    def open(self, member: str, *, mode: str = "r", remove: bool = True) -> StringToBytesAdapter:
         """
         Access a member of the archive as a binary file-like object.
 
@@ -59,7 +72,7 @@ class ZipFile(zipfile.ZipFile):
         -------
         string-like file: StringToBytesAdapter
         """
-        if remove and mode == 'a' and member in self.namelist():
+        if remove and mode == "a" and member in self.namelist():
             self.remove(member)
 
         f: io.IOBase = super().open(member, mode=mode)
@@ -80,14 +93,12 @@ class ZipFile(zipfile.ZipFile):
         -------
         None
         """
-        if self.mode != 'a':
-            raise RuntimeError('remove() requires mode \'a\'')
+        if self.mode != "a":
+            raise RuntimeError("remove() requires mode 'a'")
         if not self.fp:
-            raise ValueError('Attempt to write to ZIP archive that was already closed')
+            raise ValueError("Attempt to write to ZIP archive that was already closed")
         if self._writing:
-            raise ValueError(
-                'Can\'t write to ZIP archive while an open writing handle exists.'
-            )
+            raise ValueError("Can't write to ZIP archive while an open writing handle exists.")
 
         if not isinstance(member, zipfile.ZipInfo):
             member = self.getinfo(member)
@@ -100,7 +111,7 @@ class ZipFile(zipfile.ZipFile):
         # get a sorted filelist by header offset, in case the dir order
         # doesn't match the actual entry order
         entry_offset = 0
-        filelist = sorted(self.filelist, key=attrgetter('header_offset'))
+        filelist = sorted(self.filelist, key=attrgetter("header_offset"))
 
         for i, info in enumerate(filelist):
             # find the target member

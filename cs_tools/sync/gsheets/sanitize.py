@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List, Dict, Any
 import datetime as dt
 import json
 
@@ -9,6 +9,7 @@ class MaybeDateTimeEncoder(json.JSONEncoder):
     """
     Include a check for datetime.datetime.
     """
+
     def default(self, o: Any):
         if isinstance(o, dt.datetime):
             return o.strftime(GOOGLE_SHEET_DATETIME_FORMAT)

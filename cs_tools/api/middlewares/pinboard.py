@@ -1,19 +1,24 @@
-from typing import Any, Dict, List, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Union
 import logging
 
 from pydantic import validate_arguments
 
-from cs_tools.data.enums import MetadataCategory
 from cs_tools.errors import ContentDoesNotExist
+from cs_tools.types import MetadataCategory, RecordsFormat
+from cs_tools.api import _utils
 
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
 
 
 class PinboardMiddleware:
-    """
-    """
-    def __init__(self, ts):
+    """ """
+
+    def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
     @validate_arguments
@@ -23,8 +28,8 @@ class PinboardMiddleware:
         tags: Union[str, List[str]] = None,
         category: MetadataCategory = MetadataCategory.all,
         exclude_system_content: bool = True,
-        chunksize: int = 500
-    ) -> List[Dict[str, Any]]:
+        chunksize: int = 500,
+    ) -> RecordsFormat:
         """
         Get all pinboards in ThoughtSpot.
 
@@ -41,29 +46,32 @@ class PinboardMiddleware:
 
         Returns
         -------
-        pinboards : List[Dict[str, Any]]
+        pinboards : api._types.RECORDS
           all pinboard headers
         """
         if isinstance(tags, str):
             tags = [tags]
 
-        offset = 0
         pinboards = []
 
         while True:
-            r = self.ts.api._metadata.list(
-                    type='PINBOARD_ANSWER_BOOK',
-                    category=category,
-                    tagname=tags,
-                    batchsize=chunksize,
-                    offset=offset
-                )
+            r = self.ts.api.metadata_list(
+                metadata_type="PINBOARD_ANSWER_BOOK",
+                category=category,
+                tag_names=tags or _utils.UNDEFINED,
+                batchsize=chunksize,
+                offset=len(pinboards)
+            )
 
             data = r.json()
-            pinboards.extend(data['headers'])
-            offset += len(data['headers'])
+            to_extend = data["headers"]
 
-            if not data['headers'] and not pinboards:
+            if exclude_system_content:
+                to_extend = [pinboard for pinboard in to_extend if pinboard.get("authorName") not in _utils.SYSTEM_USERS]
+
+            pinboards.extend([{"metadata_type": "PINBOARD_ANSWER_BOOK", **pinboard} for pinboard in to_extend])
+
+            if not pinboards:
                 info = {
                     "incl": "exclude" if exclude_system_content else "include",
                     "category": category,
@@ -71,21 +79,14 @@ class PinboardMiddleware:
                     "reason": (
                         "Zero {type} matched the following filters"
                         "\n"
-                        "\n  - [blue]{category.value}[/] {type}"
-                        "\n  - [blue]{incl}[/] admin-generated {type}"
-                        "\n  - with tags [blue]{tags}"
-                    )
+                        "\n  - [b blue]{category.value}[/] {type}"
+                        "\n  - [b blue]{incl}[/] admin-generated {type}"
+                        "\n  - with tags [b blue]{tags}"
+                    ),
                 }
-                raise ContentDoesNotExist(type="pinboards", **info)
+                raise ContentDoesNotExist(type="liveboards", **info)
 
-            if data['isLastBatch']:
+            if data["isLastBatch"]:
                 break
-
-        if exclude_system_content:
-            pinboards = [
-                pinboard
-                for pinboard in pinboards
-                if pinboard.get('authorName') not in ('system', 'tsadmin', 'su')
-            ]
 
         return pinboards
