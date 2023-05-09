@@ -360,6 +360,21 @@ def _upload_connections(
                     create_empty=True,
                     metadata=tml.to_rest_api_v1_metadata(),
                 )
+
+                # create doesn't create tables.  So get the updated GUID (if any) and then call update.
+                if r.is_success:
+
+                    results = r.json()
+                    guid = results["header"]["id"]
+
+                    # Now update to create the tables.
+                    r = ts.api.connection_update(
+                        guid=guid,
+                        name=tml.name,
+                        description="",
+                        external_database_type=tml.connection.type,
+                        metadata=tml.to_rest_api_v1_metadata(),
+                    )
             else:
                 r = ts.api.connection_update(
                     guid=guid,
