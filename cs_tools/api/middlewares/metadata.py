@@ -202,9 +202,9 @@ class MetadataMiddleware:
 
                     # All subtypes will be retrieved, so need to filter the subtype appropriately.
                     # Mainly applies to LOGICAL_TABLE.
-                    if (include_subtypes is not None) and (subtype is not None) and (subtype not in include_subtypes):
+                    if include_subtypes and subtype and (subtype not in include_subtypes):
                         continue
-                    elif (exclude_subtypes is not None) and (subtype is not None) and (subtype in exclude_subtypes):
+                    elif exclude_subtypes and subtype and (subtype in exclude_subtypes):
                         continue
 
                     header["metadata_type"] = metadata_type
