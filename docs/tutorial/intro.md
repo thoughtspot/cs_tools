@@ -8,20 +8,6 @@ hide:
     .admonition, details[open] { height: 215px; }
     img#with-fill-height { height: 100px; }
     .grid-even-columns { align-items: start; }
-
-    @media (width < 1500px) {
-        .grid-even-columns[data-columns="3"] {
-            grid-template-columns: repeat(1, 1fr);
-        }
-        .md-typeset .admonition {
-            height: auto;
-            margin: 0em;
-        }
-        .md-typeset details {
-            height: auto;
-            margin: 0em 0em 1rem 0em;
-        }
-    }
 </style>
 
 # __Getting Started__ with `cs_tools` { hidden="" }
