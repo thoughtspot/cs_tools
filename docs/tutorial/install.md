@@ -114,7 +114,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
     ```bash
     curl \
         --silent --show-error --location-trusted \
-        https://raw.githubusercontent.com/thoughtspot/cs_tools/holiday-planning/cs_tools/updater/_bootstrapper.py \
+        https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py \
         | python3 - --install # (2)!
     ```
 
@@ -135,7 +135,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
     ```bash
     curl \
         --silent --show-error --location-trusted \
-        https://raw.githubusercontent.com/thoughtspot/cs_tools/holiday-planning/cs_tools/updater/_bootstrapper.py \
+        https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py \
         | python3 - --install # (2)!
     ```
 

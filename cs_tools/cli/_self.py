@@ -85,7 +85,7 @@ def update(
         data = {"envt_uuid": meta.install_uuid, "cs_tools_version": release["tag_name"]}
         syncer = _analytics.get_database()
         syncer.dump("runtime_environment", data=[_analytics.RuntimeEnvironment(**data).dict()])
-    except sa.exc.OperationalError:
+    except (sa.exc.OperationalError, sa.exc.IntegrityError):
         pass
 
     # Would you like to send Analytics to CS Tools?
