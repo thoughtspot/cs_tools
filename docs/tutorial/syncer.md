@@ -1,7 +1,9 @@
-<style>
-  /* Hide the "Edit on Github" button */
-  .md-content__button { display: none; }
+---
+hide:
+    - toc
+---
 
+<style>
   /* Make better use of whitespace for supported syncers */
   .admonition.tip > ul { columns: 3; }
 </style>
@@ -30,7 +32,7 @@ Along with the `--dry-run` option, this will allow to inspect the Answers and Li
 deletion, all without ever affecting the platform we're targeting.
 
 <center>
-![test](/cs_tools/assets/images/syncer-arch.svg){ width=85% }
+![syncer-architecture](../assets/images/syncer-arch.svg){ width=85% }
 </center>
 
 ---

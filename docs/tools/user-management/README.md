@@ -1,3 +1,8 @@
+---
+hide:
+    - toc
+---
+
 # User Management
 
 Users and Groups can be managed on an individual basis in the Admin panel of your
@@ -13,16 +18,16 @@ activities when onboarding or offboarding many users at once.
 ## CLI preview
 
 === "user-management --help"
-    ~cs~tools cs_tools tools user-management --help
+    ~cs~tools ../.. cs_tools tools user-management --help
 
 === "user-management rename"
-    ~cs~tools cs_tools tools user-management rename --help
+    ~cs~tools ../.. cs_tools tools user-management rename --help
 
 === "user-management sync"
-    ~cs~tools cs_tools tools user-management sync --help
+    ~cs~tools ../.. cs_tools tools user-management sync --help
 
 === "user-management transfer"
-    ~cs~tools cs_tools tools user-management transfer --help
+    ~cs~tools ../.. cs_tools tools user-management transfer --help
 
 ---
 

@@ -1,3 +1,8 @@
+---
+hide:
+    - toc
+---
+
 <style>
   .tabbed-block ul ul ul { columns: 3; }
 </style>
@@ -25,16 +30,16 @@ provide value to others in your platform.
 ## CLI preview
 
 === "searchable --help"
-    ~cs~tools cs_tools tools searchable --help
+    ~cs~tools ../.. cs_tools tools searchable --help
 
 === "searchable gather"
-    ~cs~tools cs_tools tools searchable gather --help
+    ~cs~tools ../.. cs_tools tools searchable gather --help
 
 === "searchable bi-server"
-    ~cs~tools cs_tools tools searchable bi-server --help
+    ~cs~tools ../.. cs_tools tools searchable bi-server --help
 
 === "searchable deploy"
-    ~cs~tools cs_tools tools searchable deploy --help
+    ~cs~tools ../.. cs_tools tools searchable deploy --help
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 hide:
-  - toc
+    - toc
 ---
 
 <style>
@@ -50,4 +50,4 @@ hide:
 
 </div>
 
-~cs~tools cs_tools --help
+~cs~tools ../.. cs_tools --help

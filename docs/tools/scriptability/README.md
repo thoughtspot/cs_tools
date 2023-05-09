@@ -1,3 +1,8 @@
+---
+hide:
+    - toc
+---
+
 # Scriptability
 
 Scriptability allows user to simplify and automate the export and import of ThoughtSpot content via TML.
@@ -124,19 +129,19 @@ The GUID mapping file is created and loaded by the [thoughtspot_tml] project.  M
 ## CLI preview
 
 === "scriptability --help"
-    ~cs~tools cs_tools tools scriptability --help
+    ~cs~tools ../.. cs_tools tools scriptability --help
 
 === "scriptability connection-check"
-    ~cs~tools cs_tools tools scriptability connection-check --help
+    ~cs~tools ../.. cs_tools tools scriptability connection-check --help
 
 === "scriptability export"
-    ~cs~tools cs_tools tools scriptability export --help
+    ~cs~tools ../.. cs_tools tools scriptability export --help
 
 === "scriptability import"
-    ~cs~tools cs_tools tools scriptability import --help
+    ~cs~tools ../.. cs_tools tools scriptability import --help
 
 === "scriptability compare"
-    ~cs~tools cs_tools tools scriptability compare --help
+    ~cs~tools ../.. cs_tools tools scriptability compare --help
 
 ---
 
