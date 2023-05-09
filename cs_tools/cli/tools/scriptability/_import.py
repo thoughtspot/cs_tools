@@ -3,7 +3,6 @@ This file contains the methods to execute the 'scriptability import' command.
 """
 from __future__ import annotations
 
-import datetime
 from dataclasses import dataclass
 from typing import List, Dict
 import pathlib
@@ -44,9 +43,13 @@ class TMLImportResponse:
         self.error_messages = self._process_errors()
 
     def _process_errors(self) -> List[str]:
-        if self.error_messages is None:
-            return []
-        return [_.strip() for _ in re.split("<br/>|\n", self.error_messages) if _.strip()]
+        res = []
+        if not self.error_messages:
+            try:  # most, but not all errors are in this format
+                res = [_.strip() for _ in re.split("<br/>|\n", self.error_messages) if _.strip()]
+            except Exception as e:
+                res = self.error_messages
+        return res
 
     @property
     def is_success(self) -> bool:
@@ -335,14 +338,36 @@ def _upload_connections(
             )
 
         else:
+            # there is a special scenario that can cause errors.  If the user doesn't specify that this is a create,
+            # but the connection doesn't exist, then the update API would give a 400 error.  So we have to check
+            # if the connection exists, and if not, create it.
             guid = guid_mapping.get_mapped_guid(tml.guid) if guid_mapping else tml.guid
-            r = ts.api.connection_update(
-                guid=guid,
-                name=tml.name,
-                description="",
-                external_database_type=tml.connection.type,
-                metadata=tml.to_rest_api_v1_metadata(),
-            )
+
+            is_new = False
+            try:
+                r = ts.api.connection_fetch_connection(guid=guid)
+            except HTTPStatusError as e:
+                if e.response.status_code == 400:  # the API will return a 400 if the connection doesn't exist.
+                    is_new = True
+                else:
+                    raise e
+
+            if is_new:  # it's new, so create it.
+                r = ts.api.connection_create(
+                    name=tml.name,
+                    description="",
+                    external_database_type=tml.connection.type,
+                    create_empty=True,
+                    metadata=tml.to_rest_api_v1_metadata(),
+                )
+            else:
+                r = ts.api.connection_update(
+                    guid=guid,
+                    name=tml.name,
+                    description="",
+                    external_database_type=tml.connection.type,
+                    metadata=tml.to_rest_api_v1_metadata(),
+                )
 
         if not r.is_success:
             status_code = r.reason_phrase
@@ -372,7 +397,7 @@ def _upload_connections(
                     tml_type_name="connection",
                     name=data["header"]["name"],
                     status_code=r.reason_phrase if r.reason_phrase else "OK",
-                    error_messages=str(r.status_code),
+                    error_messages=None,
                 )
             )
 
@@ -401,6 +426,9 @@ def _upload_connections(
 
                 for table in data["logicalTableList"]:
                     old_guid = old_table_guids.get(table["header"]["name"])
+                    if not old_guid:
+                        log.warning(f"Could not find old guid for table {table['header']['name']}")
+                        continue
                     new_guid = table["header"]["id"]
                     guid_mapping.set_mapped_guid(old_guid, new_guid)
 
@@ -606,7 +634,8 @@ def _show_results_as_table(results: List[TMLImportResponse]) -> None:
     for r in results:
         # table.add_row(r.status_code, r.tml_type_name, r.name, ','.join(r.error_messages))
         # table.add_row(r.status_code, r.guid, r.tml_type_name, ','.join(r.error_messages))
-        table.add_row(r.status_code, r.name, r.tml_type_name, ','.join(r.error_messages))
+        error_messages = ','.join(r.error_messages) if r.error_messages else ""
+        table.add_row(r.status_code, r.name, r.tml_type_name, ','.join(error_messages))
 
     rich_console.print(Align.center(table))
 
