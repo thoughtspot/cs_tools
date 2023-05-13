@@ -40,7 +40,7 @@ class RuntimeEnvironment(SQLModel, table=True):
     __tablename__ = "runtime_environment"
 
     envt_uuid: str = Field(max_length=32, primary_key=True)
-    cs_tools_version: str = Field(default=cs_tools.__version__, primary_key=True)
+    cs_tools_version: str = Field(primary_key=True)
     capture_dt: dt.datetime = Field(default_factory=dt.datetime.now)
     operating_system: str = Field(default_factory=platform.system)
     is_thoughtspot_cluster: str = Field(default_factory=lambda: bool(shutil.which("tscli")))
@@ -48,16 +48,18 @@ class RuntimeEnvironment(SQLModel, table=True):
     python_version: str = Field(default_factory=platform.python_version)
     envt_company_name: Optional[str] = None
 
+    @validator("envt_uuid", pre=True)
+    def _uuid_to_hex_string(cls, value: Union[uuid.UUID, str]) -> str:
+        if isinstance(value, uuid.UUID):
+            return value.hex
+        return value
+
     @validator("envt_company_name", pre=True)
     def _str_lower(cls, value: str) -> str:
         if value is None:
             return value
 
         return str(value).casefold()
-
-    @validator("envt_uuid", pre=True)
-    def _uuid_to_hex_string(cls, value: uuid.UUID) -> str:
-        return value.hex
 
 
 class CommandExecution(SQLModel, table=True):
@@ -79,11 +81,13 @@ class CommandExecution(SQLModel, table=True):
     traceback: Optional[str] = None
 
     @validator("envt_uuid", pre=True)
-    def _uuid_to_hex_string(cls, value: uuid.UUID) -> str:
-        return value.hex
+    def _uuid_to_hex_string(cls, value: Union[uuid.UUID, str]) -> str:
+        if isinstance(value, uuid.UUID):
+            return value.hex
+        return value
 
     @validator("tool_name")
-    def _extract_tool_name(cls, value: str, values: Dict[str, Any]) -> Optional[str]:
+    def _extract_tool_name(cls, values: Dict[str, Any]) -> Optional[str]:
         """Here, `value` will always be None."""
         _, _, tools = values["os_args"].partition(" tools ")
 
@@ -94,7 +98,7 @@ class CommandExecution(SQLModel, table=True):
         return None
 
     @validator("command_name")
-    def _extract_command_name(cls, value: str, values: Dict[str, Any]) -> Optional[str]:
+    def _extract_command_name(cls, values: Dict[str, Any]) -> Optional[str]:
         """Here, `value` will always be None."""
         _, _, tools = values["os_args"].partition(" tools ")
 
