@@ -294,6 +294,15 @@ class ThoughtSpotPlatform(pydantic.BaseModel):
             "cluster_id": config_info["selfClusterId"],
         }
 
+        version = data["version"]
+        version_parts = version.split(".")
+        if len(version_parts) == 1:
+            version += ".0.0"
+        elif len(version_parts) == 2:
+            version += ".0"
+
+        data["version"] = version
+
         return cls(**data)
 
     class Config:
