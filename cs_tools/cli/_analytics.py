@@ -35,8 +35,11 @@ def get_database() -> sa.engine.Engine:
 
     # START A FRESH DATABASE AS OF 1.4.3 ANALYTICS RELEASE
     with db.begin() as transaction:
-        r = transaction.execute(sa.func.max(RuntimeEnvironment.cs_tools_version))
-        latest_version = r.scalar() or "0.0.0"
+        try:
+            r = transaction.execute(sa.func.max(RuntimeEnvironment.cs_tools_version))
+            latest_version = r.scalar() or "0.0.0"
+        except sa.exc.OperationalError:
+            latest_version = "0.0.0"
 
         if AwesomeVersion(latest_version) < AwesomeVersion("1.4.3"):
             SQLModel.metadata.drop_all(bind=db)
