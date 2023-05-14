@@ -1,3 +1,8 @@
+---
+hide:
+    - toc
+---
+
 # Remote TQL
 
 This solution allows you to interact with the TQL utility from a remote machine. There
@@ -23,16 +28,16 @@ are three command for remote TQL:
 ## CLI preview
 
 === "rtql --help"
-    ~cs~tools cs_tools tools rtql --help
+    ~cs~tools ../.. cs_tools tools rtql --help
 
 === "rtql command"
-    ~cs~tools cs_tools tools rtql command --help
+    ~cs~tools ../.. cs_tools tools rtql command --help
 
 === "rtql file"
-    ~cs~tools cs_tools tools rtql file --help
+    ~cs~tools ../.. cs_tools tools rtql file --help
 
 === "rtql interactive"
-    ~cs~tools cs_tools tools rtql interactive --help
+    ~cs~tools ../.. cs_tools tools rtql interactive --help
 
 ---
 

@@ -1,3 +1,8 @@
+---
+hide:
+    - toc
+---
+
 # Archiver
 
 Archiver allows the ThoughtSpot admin to survey and identify all the content that users
@@ -15,16 +20,16 @@ holding references to all of these objects as well.
 ## CLI preview
 
 === "archiver --help"
-    ~cs~tools cs_tools tools archiver --help
+    ~cs~tools ../.. cs_tools tools archiver --help
 
 === "archiver identify"
-    ~cs~tools cs_tools tools archiver identify --help
+    ~cs~tools ../.. cs_tools tools archiver identify --help
 
 === "archiver revert"
-    ~cs~tools cs_tools tools archiver revert --help
+    ~cs~tools ../.. cs_tools tools archiver revert --help
 
 === "archiver remove"
-    ~cs~tools cs_tools tools archiver remove --help
+    ~cs~tools ../.. cs_tools tools archiver remove --help
 
 ---
 

@@ -97,7 +97,7 @@
     grid-template-columns: repeat(var(--column-count, 1), 1fr);
 }
 
-@media (width > 1220px) {
+@media (width > 1500px) {
     .grid-even-columns[data-columns="1"] {
         --column-count: 1;
     }
@@ -109,5 +109,16 @@
     }
     .grid-even-columns[data-columns="4"] {
         --column-count: 4;
+    }
+}
+
+@media (width <= 1500px) {
+    .md-typeset .admonition {
+        height: auto;
+        margin: 0em;
+    }
+    .md-typeset details {
+        height: auto;
+        margin: 0em 0em 1rem 0em;
     }
 }

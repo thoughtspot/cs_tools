@@ -1,3 +1,8 @@
+---
+hide:
+    - toc
+---
+
 # Configuration Files
 
 __CS Tools__ is built on top of the __ThoughtSpot__ [REST APIs][ts-rest-apis].
@@ -7,7 +12,7 @@ have a local account in __ThoughtSpot__ already, you can create one to use with 
 
 Whatever permissions this User has, will be the same security context that __CS Tools__ utilizes.
 
-~cs~tools cs_tools config create --help
+~cs~tools ../.. cs_tools config create --help
 
 
 ## Set up a config file
@@ -126,7 +131,7 @@ below.
 
 ## Check your config
 
-~cs~tools cs_tools config check --help
+~cs~tools ../.. cs_tools config check --help
 
 
 ## Example Configuration File
@@ -137,7 +142,7 @@ You can view all the currently configured environments by using the `cs_tools co
 
     For security reasons, your password lives obfuscated both in memory and the configuration file upon being captured by `cs_tools`. It is only decrypted once per run, when authorizing with your ThoughtSpot platform.
 
-~cs~tools cs_tools config show --config non-prod --anonymous
+~cs~tools ../.. cs_tools config show --config non-prod --anonymous
 
 
 ## Exploring the Tools
