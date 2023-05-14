@@ -106,7 +106,6 @@ def maybe_send_analytics_data() -> None:
             transaction.execute(stmt)
 
     host = "https://cs-tools-analytics.vercel.app"
-    host = "http://127.0.0.1:8001"
 
     with db.begin() as transaction:
         stmt = sa.select(RuntimeEnvironment)
@@ -114,7 +113,7 @@ def maybe_send_analytics_data() -> None:
         r_runtimes = httpx.post(f"{host}/analytics/runtimes", data=rows, follow_redirects=True)
 
         stmt = sa.select(CommandExecution).where(CommandExecution.start_dt >= meta.last_analytics_checkpoint)
-        rows = json.dumps([dict(row) for row in transaction.execute(stmt).mappings()][-3:], cls=utils.DateTimeEncoder)
+        rows = json.dumps([dict(row) for row in transaction.execute(stmt).mappings()], cls=utils.DateTimeEncoder)
         r_commands = httpx.post(f"{host}/analytics/commands", data=rows, follow_redirects=True)
 
     if r_runtimes.is_success and r_commands.is_success:

@@ -245,9 +245,10 @@ def show(
 
         not_ = " not" if config == meta.default_config_name else ""
         default = f"[b blue]{config}[/] is{not_} the [green]default[/] configuration"
-        path = fp.parent.as_posix().replace(getpass.getuser(), " [dim]{anonymous}[/] ")
+        path = fp.parent.as_posix()
 
         if anonymous:
+            path = path.replace(getpass.getuser(), " [dim]{anonymous}[/] ")
             new_contents = []
 
             for line in contents.split("\n"):
