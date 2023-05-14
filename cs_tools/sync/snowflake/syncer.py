@@ -6,9 +6,8 @@ import pathlib
 import enum
 import uuid
 
-from pydantic.dataclasses import dataclass
 from snowflake.sqlalchemy import URL
-from pydantic import root_validator, Field
+from pydantic import root_validator, Field, BaseModel
 import pyarrow.parquet as pq
 import sqlalchemy as sa
 import pyarrow as pa
@@ -25,8 +24,7 @@ class AuthType(enum.Enum):
     multi_factor = "multi-factor"
 
 
-@dataclass
-class Snowflake:
+class Snowflake(BaseModel, extra="allow"):
     """
     Interact with a Snowflake database.
     """
@@ -37,7 +35,7 @@ class Snowflake:
     role: str
     database: str
     password: str = Field(default=None)
-    schema_: str = Field(default="PUBLIC")  #, alias='schema')
+    schema_: str = Field(default="PUBLIC", alias="schema")
     private_key: pathlib.Path = Field(default=None)
     auth_type: AuthType = Field(default=AuthType.local)
     truncate_on_load: bool = Field(default=True)
@@ -47,11 +45,7 @@ class Snowflake:
 
     @root_validator(pre=True)
     def prepare_aliases(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        # for some reason, Field(..., alias='...') doesn't work with dataclass but also
-        # if we don't use pydantic, we don't get easy post-init setup. Whatever.
-        if "schema" in values:
-            values["schema_"] = values.pop("schema")
-
+        """ """
         if (values.get("password"), values.get("private_key")) == (None, None):
             raise ValueError("You must include either [b blue]password[/] or [b blue]private_key[/].")
 
