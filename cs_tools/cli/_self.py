@@ -10,6 +10,7 @@ import io
 
 from awesomeversion import AwesomeVersion
 import sqlalchemy as sa
+import httpx
 import typer
 import rich
 
@@ -40,7 +41,6 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
-@app.command(cls=CSToolsCommand)
 def update(
     beta: bool = typer.Option(False, "--beta", help="pin your install to a pre-release build"),
     offline: pathlib.Path = typer.Option(
@@ -48,6 +48,11 @@ def update(
         help="install cs_tools from a distributable directory instead of from github",
         file_okay=False,
         resolve_path=True,
+    ),
+    force_reinstall: bool = typer.Option(
+        False,
+        "--force-reinstall",
+        help="reinstall all packages even if they are already up-to-date."
     ),
     venv_name: str = typer.Option(None, "--venv-name", hidden=True),
 ):
@@ -57,7 +62,6 @@ def update(
     if venv_name is not None:
         os.environ["CS_TOOLS_CONFIG_DIRNAME"] = venv_name
 
-    release = get_latest_cs_tools_release()
     requires = "cs_tools[cli]"
 
     if offline:
@@ -68,7 +72,7 @@ def update(
         log.info(f"Found version: [b cyan]{release['tag_name']}")
         requires += f" @ https://github.com/thoughtspot/cs_tools/archive/{release['tag_name']}.zip"
 
-        if AwesomeVersion(release["tag_name"]) <= AwesomeVersion(__version__):
+        if not force_reinstall and AwesomeVersion(release["tag_name"]) <= AwesomeVersion(__version__):
             log.info("CS Tools is [b green]already up to date[/]!")
             raise typer.Exit(0)
 
@@ -82,13 +86,16 @@ def update(
         pass
 
     try:
-        data = {"envt_uuid": meta.install_uuid, "cs_tools_version": release["tag_name"]}
-        syncer = _analytics.get_database()
-        syncer.dump("runtime_environment", data=[_analytics.RuntimeEnvironment(**data).dict()])
+        row = _analytics.RuntimeEnvironment(envt_uuid=meta.install_uuid, cs_tools_version=release["tag_name"])
+
+        with _analytics.get_database().begin() as transaction:
+            stmt = sa.insert(_analytics.RuntimeEnvironment).values([row.dict()])
+            transaction.execute(stmt)
+
     except (sa.exc.OperationalError, sa.exc.IntegrityError):
         pass
 
-    # Would you like to send Analytics to CS Tools?
+    _analytics.maybe_send_analytics_data()
 
 
 @app.command(cls=CSToolsCommand)

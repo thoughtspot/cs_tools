@@ -1,5 +1,5 @@
 from ipaddress import IPv4Address
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, Optional
 import datetime as dt
 import pathlib
 import logging
@@ -17,7 +17,6 @@ from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 from cs_tools._version import __version__
 from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.const import APP_DIR
-from cs_tools.cli import _analytics
 from cs_tools import utils
 
 log = logging.getLogger(__name__)
@@ -33,6 +32,8 @@ class MetaConfig(BaseModel):
     remote_version: str = None
     remote_date: dt.date = None
     last_analytics_checkpoint: dt.datetime = dt.datetime(year=2012, month=6, day=1)
+    analytics_opt_in: Optional[bool] = None
+    company_name: Optional[str] = None
 
     @classmethod
     def load_and_convert_toml(cls):
@@ -71,11 +72,6 @@ class MetaConfig(BaseModel):
         else:
             self = cls()
 
-        # SET UP THE DATABASE
-        if not APP_DIR.joinpath("analytics.db").exists():
-            syncer = _analytics.get_database()
-            syncer.dump("runtime_environment", data=[_analytics.RuntimeEnvironment(envt_uuid=self.install_uuid).dict()])
-
         self.check_remote_version()
         return self
 
@@ -96,7 +92,7 @@ class MetaConfig(BaseModel):
             return
 
         try:
-            data = get_latest_cs_tools_release(allow_beta=venv_version.beta, timeout=0.05)
+            data = get_latest_cs_tools_release(allow_beta=venv_version.beta, timeout=0.15)
             self.last_remote_check = current_time
             self.remote_version = data["name"]
             self.remote_date = dt.datetime.strptime(data["published_at"], "%Y-%m-%dT%H:%M:%SZ").date()
@@ -110,7 +106,7 @@ class MetaConfig(BaseModel):
 
     def newer_version_string(self) -> str:
         """Return the CLI new version media string."""
-        if AwesomeVersion(__version__) >= AwesomeVersion(self.remote_version or "v0.0.0"):
+        if AwesomeVersion(self.remote_version or "v0.0.0") <= AwesomeVersion(__version__):
             return ""
 
         url = f"https://github.com/thoughtspot/cs_tools/releases/tag/{self.remote_version}"
@@ -134,7 +130,6 @@ class TSCloudURL(str):
     """
     Validator to match against a ThoughtSpot cloud URL.
     """
-
     REGEX = re.compile(r"(?:https:\/\/)?(.*\.thoughtspot\.cloud)(?:\/.*)?")
 
     @classmethod

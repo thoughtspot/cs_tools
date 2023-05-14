@@ -16,6 +16,7 @@ from cs_tools.errors import CSToolsError
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.const import APP_DIR
+from cs_tools.cli import _analytics
 from cs_tools import utils
 
 app = CSToolsApp(
@@ -99,6 +100,7 @@ def create(
         meta.save()
 
     rich_console.print(message)
+    _analytics.prompt_for_opt_in()
 
 
 @app.command()
@@ -179,6 +181,7 @@ def modify(
         meta.save()
 
     rich_console.print(message)
+    _analytics.prompt_for_opt_in()
 
 
 @app.command()

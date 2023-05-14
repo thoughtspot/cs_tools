@@ -114,17 +114,11 @@ def run() -> int:
     # import all our tools
     from cs_tools.cli import _config, _tools, _self, _log
 
-    this_run_data = _analytics.CommandExecution(
-        envt_uuid=_meta_config.install_uuid,
-        start_dt=dt.datetime.now(),
-        end_dt=None,
-        os_args=" ".join(["cs_tools", *sys.argv[1:]]),
-        tool_name=None,
-        command_name=None,
-        is_success=None,
-        is_known_error=None,
-        traceback=None,
-    )
+    this_run_data = {
+        "envt_uuid": _meta_config.install_uuid,
+        "start_dt": dt.datetime.now(),
+        "os_args": " ".join(["cs_tools", *sys.argv[1:]]),
+    }
 
     _setup_logging()
     _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
@@ -137,27 +131,27 @@ def run() -> int:
     try:
         return_code = app(standalone_mode=False)
 
-    except (click.Abort, typer.Abort):
+    except (click.Abort, typer.Abort) as e:
         return_code = 0
 
     except click.ClickException as e:
         return_code = 1
-        this_run_data.is_known_error = True
-        this_run_data.traceback = str(e)
+        this_run_data["is_known_error"] = True
+        this_run_data["traceback"] = str(e)
         log.error(e)
 
     except CSToolsError as e:
         return_code = 1
-        this_run_data.is_known_error = True
-        this_run_data.traceback = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
+        this_run_data["is_known_error"] = True
+        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
 
         log.debug(e, exc_info=True)
         rich_console.print(Align.center(e))
 
     except Exception as e:
         return_code = 1
-        this_run_data.is_known_error = False
-        this_run_data.traceback = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
+        this_run_data["is_known_error"] = False
+        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
 
         log.debug("whoopsie, something went wrong!", exc_info=True)
 
@@ -199,14 +193,13 @@ def run() -> int:
         )
         # fmt: on
 
-    # Add the analytics to the local database
-    this_run_data.is_success = not bool(return_code)
-    this_run_data.end_dt = dt.datetime.now()
+    this_run_data["is_success"] = return_code in (0, None)
+    this_run_data["end_dt"] = dt.datetime.now()
+    this_run = _analytics.CommandExecution(**this_run_data)
 
-    try:
-        syncer = _analytics.get_database()
-        syncer.dump("command_execution", data=[this_run_data.dict()])
-    except sa.exc.OperationalError:
-        pass
+    # Add the analytics to the local database
+    with _analytics.get_database().begin() as transaction:
+        stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
+        transaction.execute(stmt)
 
     return return_code
