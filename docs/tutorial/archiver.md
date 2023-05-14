@@ -1,10 +1,15 @@
+---
+hide:
+    - toc
+---
+
 # Running the Tools
 
 Now that we've configured our environment, let's explore the tools!
 
 You can find all of the tools by either visiting the [documentation][cs-tools-docs] or by typing..
 
-~cs~tools cs_tools tools --help
+~cs~tools ../.. cs_tools tools --help
 
 ## Archiver: Maintaining metadata
 
@@ -15,7 +20,7 @@ As the number of users grow, so does the content that they create. Even though n
 within __ThoughtSpot__, maintaining unused references to this content still requires resources. Additionally, excess
 metadata can slow down the backup, restore, and cluster upgrades processes.
 
-~cs~tools cs_tools tools archiver --help
+~cs~tools ../.. cs_tools tools archiver --help
 
 From the available commands, we can come up with an administrative process to help maintain a clean environment. You
 can use the below framework with __Archiver__{ .fc-purple}.
@@ -111,4 +116,4 @@ __In the next section__, we'll learn about __Syncers__{ .fc-blue } and how you c
 information that __Archiver__{ .fc-purple } produces.
 
 
-[cs-tools-docs]: /cs_tools/cs-tools/overview/
+[cs-tools-docs]: ../index.md

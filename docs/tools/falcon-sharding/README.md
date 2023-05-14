@@ -1,3 +1,8 @@
+---
+hide:
+    - toc
+---
+
 # Falcon Sharding
 
 This solution allows you to extract key data about Falcon tables to help guide on the
@@ -18,13 +23,13 @@ help guide you through the process.
 ## CLI preview
 
 === "falcon-sharding --help"
-    ~cs~tools cs_tools tools falcon-sharding --help
+    ~cs~tools ../.. cs_tools tools falcon-sharding --help
 
 === "sharding-recommender gather"
-    ~cs~tools cs_tools tools falcon-sharding gather --help
+    ~cs~tools ../.. cs_tools tools falcon-sharding gather --help
 
 === "sharding-recommender deploy"
-    ~cs~tools cs_tools tools falcon-sharding deploy --help
+    ~cs~tools ../.. cs_tools tools falcon-sharding deploy --help
 
 ---
 

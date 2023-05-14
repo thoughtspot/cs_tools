@@ -27,15 +27,15 @@ Now that we've decided how to track our content, we're ready to schedule our com
     Find the Task Scheduler in your system utilities.
 
     === "Create a New Task."
-        ![windows-task](/cs_tools/assets/images/windows-schedule-task.png)
+        ![windows-task](../assets/images/windows-schedule-task.png)
 
     === "Weekly Recurring Trigger."
-        ![windows-trigger](/cs_tools/assets/images/windows-schedule-trigger.png)
+        ![windows-trigger](../assets/images/windows-schedule-trigger.png)
 
     === "Targeting `cs_tools`."
-        ![windows-target](/cs_tools/assets/images/windows-schedule-target.png)
+        ![windows-target](../assets/images/windows-schedule-target.png)
 
-=== ":fontawesome-brands-apple:, :fontawesome-brands-linux:, :fontawesome-brands-centos: crontab"
+=== ":fontawesome-brands-apple: :fontawesome-brands-linux: :fontawesome-brands-centos: crontab"
 
     !!! hint "Need help?"
 

@@ -60,6 +60,9 @@ class DSyncer(Dependency):
         log.debug(f"initializing syncer: {Syncer}")
         self.__Syncer_init__(Syncer, **cfg["configuration"])
 
+        if hasattr(self._syncer, "__post_init_post_parse__"):
+            self._syncer.__post_init_post_parse__()
+
         if hasattr(self._syncer, "__is_database__") and self.models is not None:
             log.debug(f"creating tables {self.models} in {self._syncer}")
             [t.__table__.to_metadata(self.metadata) for t in self.models if t.metadata is not self.metadata]

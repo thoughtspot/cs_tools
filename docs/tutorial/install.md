@@ -1,3 +1,8 @@
+---
+hide:
+    - toc
+---
+
 # Installing & Upgrading the Tools
 
 __CS Tools__ is a command line utility written in :fontawesome-brands-python: __Python__ which connects to your
@@ -151,12 +156,12 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 
     Try using __CS Tools__ itself!
 
-    ~cs~tools cs_tools self upgrade --help
+    ~cs~tools ../.. cs_tools self upgrade --help
 
 
 Try running __CS Tools__ by typing..
 
-~cs~tools cs_tools self info --anonymous
+~cs~tools ../.. cs_tools self info --anonymous
 
 !!! info "Where can I reach out for help?"
 

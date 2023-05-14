@@ -4,7 +4,9 @@ from typing import Optional, Callable, Any, Dict
 from base64 import urlsafe_b64encode as b64e
 from base64 import urlsafe_b64decode as b64d
 import collections.abc
+import datetime as dt
 import zlib
+import json
 import io
 
 import rich
@@ -182,3 +184,10 @@ def svg_screenshot(
 
     for attribute, value in context.items():
         setattr(console, attribute, value)
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    """ """
+    def default(self, object_: Any) -> Any:
+        if isinstance(object_, (dt.date, dt.datetime)):
+            return object_.isoformat()

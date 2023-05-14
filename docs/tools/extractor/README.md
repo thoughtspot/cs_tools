@@ -1,3 +1,8 @@
+---
+hide:
+    - toc
+---
+
 # Extractor
 
 It is often difficult to programmatically use the result set of a query that runs in the
@@ -12,10 +17,10 @@ See [Components of a search query][search-components].
 ## CLI preview
 
 === "extractor --help"
-    ~cs~tools cs_tools tools extractor --help
+    ~cs~tools ../.. cs_tools tools extractor --help
 
 === "extractor search"
-    ~cs~tools cs_tools tools extractor search --help
+    ~cs~tools ../.. cs_tools tools extractor search --help
 
 ---
 
