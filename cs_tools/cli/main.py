@@ -137,13 +137,13 @@ def run() -> int:
     except click.ClickException as e:
         return_code = 1
         this_run_data["is_known_error"] = True
-        this_run_data["traceback"] = str(e)
+        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__, limit=5))
         log.error(e)
 
     except CSToolsError as e:
         return_code = 1
         this_run_data["is_known_error"] = True
-        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
+        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__, limit=5))
 
         log.debug(e, exc_info=True)
         rich_console.print(Align.center(e))
@@ -151,7 +151,7 @@ def run() -> int:
     except Exception as e:
         return_code = 1
         this_run_data["is_known_error"] = False
-        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__))
+        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__, limit=5))
 
         log.debug("whoopsie, something went wrong!", exc_info=True)
 
@@ -163,6 +163,7 @@ def run() -> int:
             suppress=[typer, click, contextlib],
             max_frames=10,
         )
+
 
         github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
         suprised_emoji = random.choice(
