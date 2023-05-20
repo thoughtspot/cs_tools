@@ -6,8 +6,6 @@ import enum
 from pydantic.dataclasses import dataclass
 import gspread
 
-from cs_tools.const import APP_DIR
-
 from .const import GOOGLE_SHEET_DEFAULT_SIZE
 from . import sanitize
 
@@ -35,13 +33,13 @@ class GoogleSheets:
     mode: str, default 'overwrite'
       either "append" or "overwrite"
 
-    credentials_file: pathlib.Path, default cs_tools-app-directory/gspread/credentials.json
+    credentials_file: pathlib.Path
       absolute path to your credentials file
     """
 
     spreadsheet: str
     mode: InsertMode = InsertMode.overwrite
-    credentials_file: pathlib.Path = APP_DIR / "gsheets" / "credentials.json"
+    credentials_file: pathlib.Path
 
     def __post_init_post_parse__(self):
         self.client = gspread.service_account(filename=self.credentials_file)

@@ -4,11 +4,10 @@ import shutil
 import typer
 
 
+from cs_tools.updater import CSToolsVirtualEnvironment
 from cs_tools.cli.ux import CSToolsCommand
-
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
-from cs_tools.const import APP_DIR
 
 app = typer.Typer(cls=CSToolsGroup, name="logs", hidden=True)
 
@@ -30,7 +29,8 @@ def report(
     save_path.mkdir(parents=True, exist_ok=True)
     rich_console.print(f"\nSaving logs to [b blue link={save_path.resolve().as_posix()}]{save_path.resolve()}[/]\n")
 
-    sorted_newest = sorted(APP_DIR.joinpath("logs").iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
+    logs_dir = CSToolsVirtualEnvironment().app_dir.joinpath("logs")
+    sorted_newest = sorted(logs_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
 
     for i, log in enumerate(sorted_newest, start=1):
         if i <= latest:

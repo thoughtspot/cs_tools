@@ -21,6 +21,7 @@ import sqlalchemy as sa
 import httpx
 from rich.panel import Panel
 
+from cs_tools.updater import CSToolsVirtualEnvironment
 from cs_tools.settings import _meta_config as meta
 from cs_tools.cli.ux import rich_console
 from cs_tools import utils
@@ -31,7 +32,7 @@ log = logging.getLogger(__name__)
 
 def get_database() -> sa.engine.Engine:
     """Get the local SQLite Analytics database."""
-    db_path = cs_tools.const.APP_DIR.resolve().joinpath('analytics.db')
+    db_path = CSToolsVirtualEnvironment().app_dir.resolve().joinpath('analytics.db')
     db_path_exists = db_path.exists()
     db = sa.create_engine(f"sqlite:///{db_path}", future=True)
 
