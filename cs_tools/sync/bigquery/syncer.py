@@ -6,8 +6,6 @@ from pydantic.dataclasses import dataclass
 from google.cloud import bigquery
 import sqlalchemy as sa
 
-from cs_tools.const import APP_DIR
-
 from . import sanitize
 
 log = logging.getLogger(__name__)
@@ -26,7 +24,7 @@ class BigQuery:
 
     project_name: str
     dataset: str
-    credentials_file: pathlib.Path = APP_DIR / "bigquery" / "credentials.json"
+    credentials_file: pathlib.Path
     truncate_on_load: bool = True
 
     # DATABASE ATTRIBUTES
