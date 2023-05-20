@@ -71,7 +71,6 @@ cli = [
     "pyreadline3 == 3.4.1 ; sys_platform == 'win32'",
 
     "horde @ https://github.com/boonhapus/horde/archive/dev.zip",
-    "pynput == 1.7.6",
 
     # NOTE: why not typer[all] ? ... @tiangolo is an AFK maintainer, but typer is so good..  see #524
     "typer >= 0.7.0",
