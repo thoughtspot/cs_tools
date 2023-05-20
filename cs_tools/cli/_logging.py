@@ -47,6 +47,7 @@ def _setup_logging() -> None:
     _monkeypatch_logging_trace()
     _rotate_logs(n_files_to_keep=25)
 
+    logging.getLogger("httpcore").setLevel("INFO")
     logging.getLogger("httpx").setLevel("INFO")
 
     config = {
