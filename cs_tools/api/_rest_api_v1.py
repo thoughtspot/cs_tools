@@ -85,10 +85,26 @@ class RESTAPIv1:
 
         try:
             r = self.session.request(method, endpoint, **request_kw)
+
         except httpx.RequestError as e:
             log.debug("Something went wrong calling the ThoughtSpot API", exc_info=True)
             log.warning(f"Could not connect to your ThoughtSpot cluster: {e}")
             raise e from None
+
+        except httpx.HTTPStatusError as e:
+            attempts = 0
+
+            # exponential backoff to 3 attempts (4s, 16s, 64s)
+            while r.status_code in (httpx.codes.GATEWAY_TIMEOUT, httpx.codes.BAD_GATEWAY):
+                attempts += 1
+
+                if attempts > 3:
+                    break
+
+                backoff = 4 ** attempts
+                log.warning(f"Your ThoughtSpot cluster didn't respond to '{method} {endpoint}', backing off for {backoff}s")
+                time.sleep(backoff)
+                r = self.session.request(method, endpoint, **request_kw)
 
         log.debug(f"<< HTTP: {r.status_code}")
 
@@ -96,21 +112,8 @@ class RESTAPIv1:
             TRACE = 5
             log.log(TRACE, "<< CONTENT:\n\n%s", r.text)
 
-        attempts = 0
-
-        # exponential backoff to 3 attempts (4s, 16s, 64s)
-        while r.status_code in (httpx.codes.GATEWAY_TIMEOUT, httpx.codes.BAD_GATEWAY):
-            attempts += 1
-
-            if attempts > 3:
-                break
-
-            backoff = 4 ** attempts
-            log.warning(f"Your ThoughtSpot cluster didn't respond to '{method} {endpoint}', backing off for {backoff}s")
-            time.sleep(backoff)
-            r = self.session.request(method, endpoint, **request_kw)
-
         if r.is_error:
+            log.log(TRACE, ">> HEADERS:\n\n%s", r.request.headers)
             r.raise_for_status()
 
         return r
