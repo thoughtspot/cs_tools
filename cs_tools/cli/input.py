@@ -1,48 +1,75 @@
 from typing import TextIO
+from typing import Any
+import functools as ft
+import threading
 import platform
 import time
 
-from rich.console import Console
+from rich.console import Console, Renderable
 from rich.prompt import Confirm, InvalidResponse
-from rich.panel import Panel
 from rich.text import Text
+
 
 class ConfirmationPrompt(Confirm):
 
-    def __init__(self, prompt: str = "", *, console: Console, with_prompt: bool = True, timeout: float = 60.0, **kw):
-        super().__init__(prompt, console=console, choices=["y", "N"])
+    def __init__(
+        self,
+        prompt: str = "",
+        *,
+        console: Console,
+        with_prompt: bool = True,
+        timeout: float = 60.0,
+        **passthru,
+    ):
+        super().__init__(prompt, console=console, choices=["y", "N"], **passthru)
         self.prompt_suffix = " "
         self.with_prompt = with_prompt
         self.timeout = timeout
 
     @classmethod
-    def ask(cls, *a, default = ..., stream = None, **kw):
-        _prompt = cls(*a, **kw)
+    def ask(
+        cls,
+        prompt: Renderable = "",
+        *,
+        with_prompt: bool,
+        timeout: float = 60.0,
+        default: Any = ...,
+        stream: TextIO = None,
+        **passthru,
+    ):
+        """Semantic convenience method around class creation."""
+        _prompt = cls(prompt, with_prompt=with_prompt, timeout=timeout, **passthru)
         return _prompt(default=default, stream=stream)
 
-    # def make_prompt(self, default) -> Text:
-    #     """ """
-    #     if not self.with_prompt or default == ...:
-    #         return Text("")
-    #     return Panel.fit(Text.from_markup(default))
-
     def process_response(self, value: str) -> bool:
+        """Validate that the response is one of [y,N]."""
         value = value.strip().casefold()
         if value not in [choice.casefold() for choice in self.choices]:
             raise InvalidResponse(self.validate_error_message)
         return value == "y"
 
-    def get_input(self, console: Console, prompt: Text, password: bool, stream: TextIO=None) -> str:
-        """ """
+    def get_input(self, console: Console, prompt: Text, **ignored) -> str:  # noqa: ARG002
+        """Take input."""
         console.show_cursor(False)
-        console.print(prompt, end="")
-        response = self._background_keyboard_input()
+
+        if self.with_prompt:
+            console.print(prompt)
+
+        event = threading.Event()
+        self.response = None
+        background_task = ft.partial(self._background_keyboard_input, done_event=event)
+        threading.Thread(target=background_task).start()
+        event.wait()
+
         console.show_cursor(True)
-        return response
+        return self.response
 
-    def _background_keyboard_input(self) -> str:
-        """ """
+    def _background_keyboard_input(self, done_event: threading.Event) -> str:
+        """
+        This method must be used in a threading.Thread.
 
+        It will take input from stdin, but not display it to the terminal.
+        """
         if platform.system() == "Windows":
             import msvcrt
             started_at = time.perf_counter()
@@ -51,6 +78,10 @@ class ConfirmationPrompt(Confirm):
                 if msvcrt.kbhit():
                     char = msvcrt.getwch()
                     break
+
+                # so we're not crushing the CPU
+                time.sleep(0.05)
+
             else:
                 char = "N"
 
@@ -62,7 +93,6 @@ class ConfirmationPrompt(Confirm):
 
             SEND_IMMEDIATELY = termios.TCSANOW
             SEND_AFTER_READ  = termios.TCSADRAIN
-            SEND_AND_DISCARD = termios.TCSAFLUSH
             old_stdin_parameters = termios.tcgetattr(sys.stdin)
 
             try:
@@ -87,10 +117,5 @@ class ConfirmationPrompt(Confirm):
                 # restore the old sys.stdin
                 termios.tcsetattr(sys.stdin, SEND_IMMEDIATELY, old_stdin_parameters)
 
-        return char
-
-
-if __name__ == "__main__":
-    console = Console()
-    response = ConfirmationPrompt.ask(prompt="Continue", console=console, timeout=1)
-    print(response)
+        self.response = char
+        done_event.set()
