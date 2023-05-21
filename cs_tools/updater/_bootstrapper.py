@@ -113,8 +113,8 @@ def cli():
             system=platform.system(), detail=platform.platform(),
             platform_tag=sysconfig.get_platform(),
             py_version=platform.python_version(),
-            now=dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S %z')
-        )
+            now=dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S %z"),
+        ),
     )
     # fmt: on
 
@@ -425,11 +425,21 @@ def _cleanup():
 
     here = pathlib.Path(__file__).parent
 
-    for filename in ("_updater.py", ):
-        try:
-            here.joinpath(filename).unlink()
-        except FileNotFoundError:
-            pass
+    # don't run the cleanup step within the development environment
+    if "updater" in here.as_posix():
+        return
+
+    for pathname in ("__pycache__", "_updater.py"):
+        path = here.joinpath(pathname)
+
+        if path.is_dir():
+            shutil.rmtree(path, ignore_errors=True)
+
+        if path.is_file():
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def get_path_manipulator(venv):
