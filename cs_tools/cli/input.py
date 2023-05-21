@@ -48,7 +48,7 @@ class ConfirmationPrompt(Confirm):
             raise InvalidResponse(self.validate_error_message)
         return value == "y"
 
-    def get_input(self, console: Console, prompt: Text, **ignored) -> str:  # noqa: ARG002
+    def get_input(self, console: Console, prompt: Text, *args, **kwargs) -> str:  # noqa: ARG002
         """Take input."""
         console.show_cursor(False)
 
