@@ -5,7 +5,7 @@ import threading
 import platform
 import time
 
-from rich.console import Console, Renderable
+from rich.console import Console, RenderableType
 from rich.prompt import Confirm, InvalidResponse
 from rich.text import Text
 
@@ -29,7 +29,7 @@ class ConfirmationPrompt(Confirm):
     @classmethod
     def ask(
         cls,
-        prompt: Renderable = "",
+        prompt: RenderableType = "",
         *,
         with_prompt: bool,
         timeout: float = 60.0,

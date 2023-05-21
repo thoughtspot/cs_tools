@@ -142,6 +142,7 @@ def run() -> int:
 
     except (click.Abort, typer.Abort) as e:
         return_code = 0
+        rich_console.print("[b yellow]Stopping -- cancelled by user..\n")
 
     except click.ClickException as e:
         return_code = 1
