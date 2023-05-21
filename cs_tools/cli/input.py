@@ -60,14 +60,15 @@ class ConfirmationPrompt(Confirm):
             import sys
 
             s = selectors.DefaultSelector()
-            s.register(fileobj=sys.stdin.fileno(), events=selectors.EVENT_READ)
+            s.register(fileobj=sys.stdin, events=selectors.EVENT_READ)
             events = s.select(timeout=self.timeout)
 
             if events:
                 selector_key, event = events[0]
                 char = selector_key.fileobj.readline().strip()
             else:
-                termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
+                termios.tcflush(sys.stdin, termios.TCIFLUSH)
+                char = "N"
 
         # else:
         #     import termios
