@@ -1,10 +1,11 @@
+from __future__ import annotations
 import traceback
 import logging
 
-from horde.environment import Environment
-import horde.events
+# from horde.environment import Environment
+# import horde.events
 import typer
-import horde
+# import horde
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
@@ -13,11 +14,11 @@ from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.dependencies.syncer import DSyncer
 
-from . import strategies
+# from . import strategies
 from . import _async
 from . import models
-from . import work
-from . import ui
+# from . import work
+# from . import ui
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(help="Run automated tests against your ThoughtSpot cluster.")

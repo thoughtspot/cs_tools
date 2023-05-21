@@ -12,10 +12,10 @@ import toml
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.settings import _meta_config as meta, CSToolsConfig
+from cs_tools.updater import CSToolsVirtualEnvironment
 from cs_tools.errors import CSToolsError
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsApp
-from cs_tools.const import APP_DIR
 from cs_tools.cli import _analytics
 from cs_tools import utils
 
@@ -44,7 +44,7 @@ def create(
         help='password when logging into ThoughtSpot, if "prompt" then hide input',
     ),
     temp_dir: pathlib.Path = typer.Option(
-        APP_DIR,
+        CSToolsVirtualEnvironment().app_dir,
         "--temp_dir",
         help="location on disk to save temporary files",
         file_okay=False,
@@ -82,7 +82,7 @@ def create(
         "syncer": syncers,
     }
     cfg = CSToolsConfig.from_parse_args(config, **args)
-    file = APP_DIR / f"cluster-cfg_{config}.toml"
+    file = CSToolsVirtualEnvironment().app_dir / f"cluster-cfg_{config}.toml"
 
     if file.exists() and not overwrite and not Confirm.ask(
         f'\n[yellow]cluster configuration file "{config}" already exists, would ' f"you like to overwrite it?"
@@ -148,7 +148,7 @@ def modify(
     if password == "prompt":
         password = Prompt.ask("[yellow](your input is hidden)[/]\nPassword", console=rich_console, password=True)
 
-    file = APP_DIR / f"cluster-cfg_{config}.toml"
+    file = CSToolsVirtualEnvironment().app_dir / f"cluster-cfg_{config}.toml"
     old = CSToolsConfig.from_toml(file).dict()
     kw = {
         "host": host,
@@ -224,7 +224,8 @@ def show(
     """
     Display the currently saved config files.
     """
-    configs = [f for f in APP_DIR.iterdir() if f.name.startswith("cluster-cfg_")]
+    app_dir = CSToolsVirtualEnvironment().app_dir
+    configs = [f for f in app_dir.iterdir() if f.name.startswith("cluster-cfg_")]
 
     if not configs:
         raise CSToolsError(
@@ -233,7 +234,7 @@ def show(
         )
 
     if config is not None:
-        fp = APP_DIR / f"cluster-cfg_{config}.toml"
+        fp = app_dir / f"cluster-cfg_{config}.toml"
 
         try:
             contents = escape(fp.open().read())
@@ -283,7 +284,7 @@ def show(
 
     rich_console.print(
         f"\n[b]ThoughtSpot[/] cluster configurations are located at"
-        f"\n  [b blue][link={APP_DIR}]{APP_DIR}[/][/]"
+        f"\n  [b blue][link={app_dir}]{app_dir}[/][/]"
         f"\n"
         f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
         f"\n" + "\n".join(cfg_list) + "\n"

@@ -16,7 +16,7 @@ import toml
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 from cs_tools._version import __version__
 from cs_tools.errors import ConfigDoesNotExist
-from cs_tools.const import APP_DIR
+from cs_tools.updater import CSToolsVirtualEnvironment
 from cs_tools import utils
 
 log = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class MetaConfig(BaseModel):
     @classmethod
     def load_and_convert_toml(cls):
         """Migrate from the old format."""
-        data = toml.load(APP_DIR.joinpath(".meta-config.toml"))
+        data = toml.load(CSToolsVirtualEnvironment().app_dir.joinpath(".meta-config.toml"))
 
         self = cls(
             # install_uuid=...,
@@ -54,17 +54,19 @@ class MetaConfig(BaseModel):
     @classmethod
     def load(cls):
         """Read the meta-config."""
+        app_dir = CSToolsVirtualEnvironment().app_dir
+
         # OLD FORMAT
-        if APP_DIR.joinpath(".meta-config.toml").exists():
+        if app_dir.joinpath(".meta-config.toml").exists():
             self = cls.load_and_convert_toml()
             self.save()
 
             # REMOVE OLD DATA
-            APP_DIR.joinpath(".meta-config.toml").unlink()
+            app_dir.joinpath(".meta-config.toml").unlink()
         
         # NEW FORMAT
-        elif APP_DIR.joinpath(".meta-config.json").exists():
-            file = APP_DIR.joinpath(".meta-config.json")
+        elif app_dir.joinpath(".meta-config.json").exists():
+            file = app_dir.joinpath(".meta-config.json")
             data = json.loads(file.read_text())
             self = cls(**data)
 
@@ -77,7 +79,7 @@ class MetaConfig(BaseModel):
 
     def save(self) -> None:
         """Store the meta-config."""
-        file = APP_DIR.joinpath(".meta-config.json")
+        file = CSToolsVirtualEnvironment().app_dir.joinpath(".meta-config.json")
         data = self.json(indent=4)
         file.write_text(data)
 
@@ -192,7 +194,7 @@ class CSToolsConfig(Settings):
     auth: Dict[str, AuthConfig]
     syncer: Dict[str, FilePath] = None
     verbose: bool = False
-    temp_dir: DirectoryPath = APP_DIR
+    temp_dir: DirectoryPath = CSToolsVirtualEnvironment().app_dir
 
     @validator("syncer")
     def resolve_path(v: Any) -> str:
@@ -257,7 +259,7 @@ class CSToolsConfig(Settings):
         if config is None:
             raise ConfigDoesNotExist(name=f"[b green]{config}")
 
-        return cls.from_toml(APP_DIR / f"cluster-cfg_{config}.toml", **passthru)
+        return cls.from_toml(CSToolsVirtualEnvironment().app_dir / f"cluster-cfg_{config}.toml", **passthru)
 
     @classmethod
     def from_parse_args(cls, name: str, *, validate: bool = True, **passthru) -> "CSToolsConfig":

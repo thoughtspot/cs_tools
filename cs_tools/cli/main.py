@@ -19,6 +19,7 @@ from cs_tools.programmatic import get_cs_tool
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.settings import _meta_config as meta
 from cs_tools._version import __version__
+from cs_tools.updater import CSToolsVirtualEnvironment
 from cs_tools.cli.ux import rich_console, CSToolsApp
 from cs_tools.errors import CSToolsError
 from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, TOOLS_DIR, GH_ISSUES
@@ -76,6 +77,13 @@ def main(version: bool = typer.Option(False, "--version", help="Show the version
         raise typer.Exit(0)
 
 
+def _ensure_directories() -> None:
+    """ """
+    venv = CSToolsVirtualEnvironment()
+    venv.app_dir.joinpath(".cache").mkdir(parents=True, exist_ok=True)
+    venv.app_dir.joinpath(".logs").mkdir(parents=True, exist_ok=True)
+
+
 def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
     ctx_settings["obj"].tools = {}
 
@@ -120,6 +128,7 @@ def run() -> int:
         "os_args": " ".join(["cs_tools", *sys.argv[1:]]),
     }
 
+    _ensure_directories()
     _setup_logging()
     _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
 
@@ -133,6 +142,7 @@ def run() -> int:
 
     except (click.Abort, typer.Abort) as e:
         return_code = 0
+        rich_console.print("[b yellow]Stopping -- cancelled by user..\n")
 
     except click.ClickException as e:
         return_code = 1

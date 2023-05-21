@@ -218,12 +218,13 @@ def identify(
                     f":point_right: Continue with tagging {len(to_archive):,} objects? [b magenta](y/N)"
                 )
 
-                if not ConfirmationPrompt(prompt, console=rich_console).ask(with_prompt=False):
+                if not ConfirmationPrompt.ask(prompt, console=rich_console, with_prompt=False):
                     this_task.description = "Confirmation [b red]Denied[/] (no tagging performed)"
                     raise typer.Exit(0)
 
                 this_task.description = "Confirmation [b green]Approved[/]"
 
+        raise
         with tasks["tagging_content"]:
             tag_guid = ts.tag.get(tag_name, create_if_not_exists=True)
             to_tag_guids = []
@@ -340,7 +341,7 @@ def revert(
                     f":point_right: Continue with untagging {len(to_revert):,} objects? [b magenta](y/N)"
                 )
 
-                if not ConfirmationPrompt(prompt, console=rich_console).ask(with_prompt=False):
+                if not ConfirmationPrompt.ask(prompt, console=rich_console, with_prompt=False):
                     this_task.description = "Confirmation [b red]Denied[/] (no tagging performed)"
                     raise typer.Exit(0)
 
@@ -490,7 +491,7 @@ def remove(
                     f":point_right: Continue with {operation} {len(to_delete):,} objects? [b magenta](y/N)"
                 )
 
-                if not ConfirmationPrompt(prompt, console=rich_console).ask(with_prompt=False):
+                if not ConfirmationPrompt.ask(prompt, console=rich_console, with_prompt=False):
                     this_task.description = "Confirmation [b red]Denied[/] (no removal performed)"
                     raise typer.Exit(0)
 

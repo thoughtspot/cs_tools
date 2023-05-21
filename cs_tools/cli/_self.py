@@ -22,7 +22,6 @@ from cs_tools.updater import FishPath, WindowsPath, UnixPath
 from cs_tools.cli.ux import CSToolsCommand
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
-from cs_tools.const import APP_DIR
 from cs_tools.utils import svg_screenshot
 from cs_tools.cli import _analytics
 
@@ -118,7 +117,7 @@ def info(
         f"\n           CS Tools: [b yellow]{__version__}[/]"
         f"\n     Python Version: [b yellow]Python {sys.version}[/]"
         f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"
-        f"\n  Configs Directory: [b yellow]{APP_DIR}[/]"
+        f"\n  Configs Directory: [b yellow]{CSToolsVirtualEnvironment().app_dir}[/]"
         f"\nActivate VirtualEnv: [b yellow]{source}[/]"
         f"\n      Platform Tags: [b yellow]{sysconfig.get_platform()}[/]"
         f"\n"
