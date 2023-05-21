@@ -60,17 +60,19 @@ class ConfirmationPrompt(Confirm):
             import sys
             import tty
 
+            SEND_IMMEDIATELY = termios.TCSANOW
+            SEND_AFTER_READ  = termios.TCSADRAIN
+            SEND_AND_DISCARD = termios.TCSAFLUSH
             old_stdin_parameters = termios.tcgetattr(sys.stdin)
 
             try:
-                # https://manpages.debian.org/bullseye/manpages-dev/termios.3.en.html
-                tty.setraw(sys.stdin)
+                # set the parameters associated with the terminal
+                tty.setcbreak(sys.stdin, when=SEND_AFTER_READ)
                 new_stdin_parameters = termios.tcgetattr(sys.stdin)
                 new_stdin_parameters[3] = new_stdin_parameters[3] & ~termios.ECHO
+                termios.tcsetattr(sys.stdin, SEND_IMMEDIATELY, new_stdin_parameters)
 
-                # set the parameters associated with the terminal
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, new_stdin_parameters)
-
+                # listen for single-key events ... notice .read(1) -> SEND_AND_DISCARD
                 s = selectors.DefaultSelector()
                 s.register(fileobj=sys.stdin, events=selectors.EVENT_READ)
                 events = s.select(timeout=self.timeout)
@@ -79,12 +81,11 @@ class ConfirmationPrompt(Confirm):
                     selector_key, event = events[0]
                     char = selector_key.fileobj.read(1)
                 else:
-                    termios.tcflush(sys.stdin, termios.TCIFLUSH)
                     char = "N"
 
-            # restore the old sys.stdin
             finally:
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_stdin_parameters)
+                # restore the old sys.stdin
+                termios.tcsetattr(sys.stdin, SEND_IMMEDIATELY, old_stdin_parameters)
 
         return char
 
