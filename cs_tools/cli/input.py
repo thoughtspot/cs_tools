@@ -42,10 +42,10 @@ class ConfirmationPrompt(Confirm):
 
     def _background_keyboard_input(self) -> str:
         """ """
-        started_at = time.perf_counter()
 
         if platform.system() == "Windows":
             import msvcrt
+            started_at = time.perf_counter()
 
             while (time.perf_counter() - started_at) < self.timeout:
                 if msvcrt.kbhit():
@@ -55,24 +55,39 @@ class ConfirmationPrompt(Confirm):
                 char = "N"
 
         else:
+            import selectors
             import termios
             import sys
-            import tty
 
-            fd = sys.stdin.fileno()
-            old_stdin = termios.tcgetattr(fd)
+            s = selectors.DefaultSelector()
+            s.register(fileobj=sys.stdin.fileno(), events=selectors.EVENT_READ)
+            events = s.select(timeout=self.timeout)
 
-            try:
-                # https://manpages.debian.org/bullseye/manpages-dev/termios.3.en.html
-                tty.setraw(fd)
-                new_stdin = termios.tcgetattr(fd)
-                new_stdin[3] = new_stdin[3] & ~termios.ECHO
-                termios.tcsetattr(fd, termios.TCSADRAIN, new_stdin)
-                char = input("")
+            if events:
+                selector_key, event = events[0]
+                char = selector_key.fileobj.readline().strip()
+            else:
+                termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
 
-            finally:
-                char = "N"
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_stdin)
+        # else:
+        #     import termios
+        #     import sys
+        #     import tty
+
+        #     fd = sys.stdin.fileno()
+        #     old_stdin = termios.tcgetattr(fd)
+
+        #     try:
+        #         # https://manpages.debian.org/bullseye/manpages-dev/termios.3.en.html
+        #         tty.setraw(fd)
+        #         new_stdin = termios.tcgetattr(fd)
+        #         new_stdin[3] = new_stdin[3] & ~termios.ECHO
+        #         termios.tcsetattr(fd, termios.TCSADRAIN, new_stdin)
+        #         char = input("")
+
+        #     finally:
+        #         char = "N"
+        #         termios.tcsetattr(fd, termios.TCSADRAIN, old_stdin)
 
         print(f"GOT: {char}")
         return char
