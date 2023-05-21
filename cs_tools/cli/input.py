@@ -58,39 +58,34 @@ class ConfirmationPrompt(Confirm):
             import selectors
             import termios
             import sys
+            import tty
 
-            s = selectors.DefaultSelector()
-            s.register(fileobj=sys.stdin, events=selectors.EVENT_READ)
-            events = s.select(timeout=self.timeout)
+            old_stdin_parameters = termios.tcgetattr(sys.stdin)
 
-            if events:
-                selector_key, event = events[0]
-                char = selector_key.fileobj.readline().strip()
-            else:
-                termios.tcflush(sys.stdin, termios.TCIFLUSH)
-                char = "N"
+            try:
+                # https://manpages.debian.org/bullseye/manpages-dev/termios.3.en.html
+                tty.setraw(sys.stdin)
+                new_stdin_parameters = termios.tcgetattr(sys.stdin)
+                new_stdin_parameters[3] = new_stdin_parameters[3] & ~termios.ECHO
 
-        # else:
-        #     import termios
-        #     import sys
-        #     import tty
+                # set the parameters associated with the terminal
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, new_stdin_parameters)
 
-        #     fd = sys.stdin.fileno()
-        #     old_stdin = termios.tcgetattr(fd)
+                s = selectors.DefaultSelector()
+                s.register(fileobj=sys.stdin, events=selectors.EVENT_READ)
+                events = s.select(timeout=self.timeout)
 
-        #     try:
-        #         # https://manpages.debian.org/bullseye/manpages-dev/termios.3.en.html
-        #         tty.setraw(fd)
-        #         new_stdin = termios.tcgetattr(fd)
-        #         new_stdin[3] = new_stdin[3] & ~termios.ECHO
-        #         termios.tcsetattr(fd, termios.TCSADRAIN, new_stdin)
-        #         char = input("")
+                if events:
+                    selector_key, event = events[0]
+                    char = selector_key.fileobj.read(1)
+                else:
+                    termios.tcflush(sys.stdin, termios.TCIFLUSH)
+                    char = "N"
 
-        #     finally:
-        #         char = "N"
-        #         termios.tcsetattr(fd, termios.TCSADRAIN, old_stdin)
+            # restore the old sys.stdin
+            finally:
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_stdin_parameters)
 
-        print(f"GOT: {char}")
         return char
 
 
