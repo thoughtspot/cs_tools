@@ -11,7 +11,7 @@ import click
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.settings import _meta_config as meta, CSToolsConfig
-from cs_tools.const import APP_DIR
+from cs_tools.updater import CSToolsVirtualEnvironment
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ CONFIG_OPT = TyperOption(
 
 TEMP_DIR_OPT = TyperOption(
     param_decls=["--temp_dir"],
-    default=APP_DIR.as_posix(),
+    default=CSToolsVirtualEnvironment().app_dir.as_posix(),
     help="location on disk to save temporary files",
     show_default=False,
     metavar="PATH",
@@ -114,7 +114,7 @@ class DThoughtSpot(Dependency):
         if args:
             log.warning(f"[b yellow]Ignoring extra arguments ({' '.join(args)})")
 
-        cfg = CSToolsConfig.from_toml(APP_DIR / f"cluster-cfg_{config}.toml", **options)
+        cfg = CSToolsConfig.from_toml(CSToolsVirtualEnvironment().app_dir / f"cluster-cfg_{config}.toml", **options)
         ctx.obj.thoughtspot = ThoughtSpot(cfg)
 
         if cfg.verbose:

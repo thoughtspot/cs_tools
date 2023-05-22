@@ -1,43 +1,121 @@
-from rich.prompt import PromptBase
-from pynput import keyboard
+from typing import TextIO
+from typing import Any
+import functools as ft
+import threading
+import platform
 import time
 
+from rich.console import Console, RenderableType
+from rich.prompt import Confirm, InvalidResponse
+from rich.text import Text
 
-class ConfirmationPrompt(PromptBase):
 
-    def __init__(self, prompt: str, *, console, timeout: int = 60):
-        super().__init__(prompt, console=console, choices=["y", "N"])
-        self.prompt_suffix = ""
+class ConfirmationPrompt(Confirm):
+
+    def __init__(
+        self,
+        prompt: str = "",
+        *,
+        console: Console,
+        with_prompt: bool = True,
+        timeout: float = 60.0,
+        **passthru,
+    ):
+        super().__init__(prompt, console=console, choices=["y", "N"], **passthru)
+        self.prompt_suffix = " "
+        self.with_prompt = with_prompt
         self.timeout = timeout
-        self.waiting = False
+
+    @classmethod
+    def ask(
+        cls,
+        prompt: RenderableType = "",
+        *,
+        with_prompt: bool,
+        timeout: float = 60.0,
+        default: Any = ...,
+        stream: TextIO = None,
+        **passthru,
+    ):
+        """Semantic convenience method around class creation."""
+        _prompt = cls(prompt, with_prompt=with_prompt, timeout=timeout, **passthru)
+        return _prompt(default=default, stream=stream)
+
+    def process_response(self, value: str) -> bool:
+        """Validate that the response is one of [y,N]."""
+        value = value.strip().casefold()
+        if value not in [choice.casefold() for choice in self.choices]:
+            raise InvalidResponse(self.validate_error_message)
+        return value == "y"
+
+    def get_input(self, console: Console, prompt: Text, *args, **kwargs) -> str:  # noqa: ARG002
+        """Take input."""
+        console.show_cursor(False)
+
+        if self.with_prompt:
+            console.print(prompt)
+
+        event = threading.Event()
         self.response = None
-        self.kb = keyboard.Controller()
+        background_task = ft.partial(self._background_keyboard_input, done_event=event)
+        threading.Thread(target=background_task).start()
+        event.wait()
 
-    def handle_kb_input(self, key):
-        if key == keyboard.KeyCode.from_char("y"):
-            self.waiting = False
-            self.response = "y"
+        console.show_cursor(True)
+        return self.response
 
-        if key == keyboard.KeyCode.from_char("n"):
-            self.waiting = False
-            self.response = "n"
+    def _background_keyboard_input(self, done_event: threading.Event) -> str:
+        """
+        This method must be used in a threading.Thread.
 
-        self.kb.press(keyboard.Key.backspace)
+        It will take input from stdin, but not display it to the terminal.
+        """
+        if platform.system() == "Windows":
+            import msvcrt
+            started_at = time.perf_counter()
 
-    def ask(self, with_prompt: bool = True) -> bool:
-        with keyboard.Listener(on_press=self.handle_kb_input, suppress=True):
-            self.waiting = True
-            self._started_at = time.perf_counter()
-
-            if with_prompt:
-                self.console.print(self.make_prompt(...))
-
-            while self.waiting:
-                time.sleep(0.1)
-
-                if (time.perf_counter() - self._started_at) > self.timeout:
-                    self.waiting = False
-                    self.response = "n"
+            while (time.perf_counter() - started_at) < self.timeout:
+                if msvcrt.kbhit():
+                    char = msvcrt.getwch()
                     break
 
-        return self.response == "y"
+                # so we're not crushing the CPU
+                time.sleep(0.05)
+
+            else:
+                char = "N"
+
+        else:
+            import selectors
+            import termios
+            import sys
+            import tty
+
+            SEND_IMMEDIATELY = termios.TCSANOW
+            SEND_AFTER_READ  = termios.TCSADRAIN
+            old_stdin_parameters = termios.tcgetattr(sys.stdin)
+
+            try:
+                # set the parameters associated with the terminal
+                tty.setcbreak(sys.stdin, when=SEND_AFTER_READ)
+                new_stdin_parameters = termios.tcgetattr(sys.stdin)
+                new_stdin_parameters[3] = new_stdin_parameters[3] & ~termios.ECHO
+                termios.tcsetattr(sys.stdin, SEND_IMMEDIATELY, new_stdin_parameters)
+
+                # listen for single-key events ... notice .read(1) -> SEND_AND_DISCARD
+                s = selectors.DefaultSelector()
+                s.register(fileobj=sys.stdin, events=selectors.EVENT_READ)
+                events = s.select(timeout=self.timeout)
+
+                if events:
+                    selector_key, event = events[0]
+                    char = selector_key.fileobj.read(1)
+                else:
+                    char = "N"
+
+            finally:
+                # restore the old sys.stdin
+                termios.tcsetattr(sys.stdin, SEND_IMMEDIATELY, old_stdin_parameters)
+
+        self.response = char
+        done_event.set()

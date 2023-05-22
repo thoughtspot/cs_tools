@@ -29,6 +29,10 @@ class CSToolsVirtualEnvironment:
         return self.exe.exists()
 
     @property
+    def app_dir(self) -> pathlib.Path:
+        return self.venv_path.parent.resolve()
+
+    @property
     def config_directory_name(self) -> str:
         return os.environ.get("CS_TOOLS_CONFIG_DIRNAME", "cs_tools")
 

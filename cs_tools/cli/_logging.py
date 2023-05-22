@@ -2,8 +2,8 @@ import logging.config
 import datetime as dt
 import logging
 
+from cs_tools.updater import CSToolsVirtualEnvironment
 from cs_tools.cli.ux import rich_console
-from cs_tools.const import APP_DIR
 
 
 def _monkeypatch_logging_trace():
@@ -29,7 +29,10 @@ def _monkeypatch_logging_trace():
 
 
 def _rotate_logs(n_files_to_keep: int) -> None:
-    logs_dir = APP_DIR / "logs"
+    """ """
+    venv = CSToolsVirtualEnvironment()
+
+    logs_dir = venv.app_dir.joinpath("logs").resolve()
     logs_dir.mkdir(parents=True, exist_ok=True)
 
     lifo = sorted(logs_dir.iterdir(), reverse=True)
@@ -44,6 +47,7 @@ def _setup_logging() -> None:
     _monkeypatch_logging_trace()
     _rotate_logs(n_files_to_keep=25)
 
+    logging.getLogger("httpcore").setLevel("INFO")
     logging.getLogger("httpx").setLevel("INFO")
 
     config = {
@@ -84,7 +88,7 @@ def _setup_logging() -> None:
         "log_time_format": "[%X]",
     }
 
-    logs_dir = APP_DIR / "logs"
+    logs_dir = CSToolsVirtualEnvironment().app_dir.joinpath("logs")
     logs_dir.mkdir(parents=True, exist_ok=True)
     now = dt.datetime.now().strftime("%Y-%m-%dT%H_%M_%S")
 
