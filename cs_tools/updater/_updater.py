@@ -104,7 +104,7 @@ class CSToolsVirtualEnvironment:
         """Run a command in the virtual environment."""
         return self.run(self.exe.as_posix(), *args, **kwargs)
 
-    def pip(self, *args, **kwargs) -> sp.CompletedProcess:
+    def pip(self, command: str, *args, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment's pip."""
         required_general_args = (
             # ignore environment variables and user configuration
@@ -121,10 +121,10 @@ class CSToolsVirtualEnvironment:
             "--trusted-host", "codeload.github.com",
         )
 
-        if "install" in args and self.find_links is not None:
-            required_general_args = (*required_general_args, "--no-index", "--find-links", self.find_links.as_posix())
+        if command == "install" and self.find_links is not None:
+            args = (*args, "--no-index", "--find-links", self.find_links.as_posix())
 
-        return self.python("-m", "pip", *required_general_args, *args, **kwargs)
+        return self.python("-m", "pip", command, *required_general_args, *args, **kwargs)
 
     def make(self) -> None:
         """Create the virtual environment."""
