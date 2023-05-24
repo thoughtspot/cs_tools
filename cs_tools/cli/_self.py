@@ -184,8 +184,8 @@ def download(
     # freeze our own environment, which has all the dependencies needed to build
     frozen = {req for req in venv.pip("freeze", "--quiet") if "cs_tools" not in req}
 
-    # add packaging stuff since we'll see --no-index
-    frozen.update(("setuptools", "wheel"))
+    # add packaging stuff since we'll use --no-deps
+    frozen.update(("setuptools", "wheel", "pip >= 23.1", "poetry-core >= 1.0.0a9"))
 
     # add in version specific constraints (in case they don't get exported from the current environment)
     if python_version < "3.11.0":
@@ -206,7 +206,7 @@ def download(
 
     venv.pip(
         "download", *frozen,
-        "--no-deps",  # we've build all the dependencies above
+        "--no-deps",  # we shouldn't need transitive dependencies, since we've build all the dependencies above
         "--dest", directory.as_posix(),
         "--implementation", "cp",
         "--python-version", f"{python_version.major}{python_version.minor}",
@@ -214,7 +214,7 @@ def download(
     )
 
     # rename .zip files we author to their actual package names
-    directory.joinpath("dev.zip").rename(directory / "horde-1.0.0.zip")
+    # directory.joinpath("dev.zip").rename(directory / "horde-1.0.0.zip")
     directory.joinpath(f"{release_tag}.zip").rename(directory / f"cs_tools-{release_tag[1:]}.zip")
 
 
