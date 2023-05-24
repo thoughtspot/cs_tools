@@ -84,14 +84,16 @@ def cli():
 
     args = parser.parse_args()
     _setup_logging(args.verbose)
+    
+    # remove any pre-existing work from a historical install
+    _cleanup()
 
-    # fmt: off
     log.info(
         "{g}Welcome to the CS Tools Bootstrapper!{x}"
         "\n"
         "Ideally, you will only need to run this one time, and then your environment can be fully managed by CS Tools "
         "itself."
-        "\n{y}If you run into any issues, please reach out to us on GitHub or by submitting to the Google Form below.{x}"
+        "\n{y}If you run into any issues, please reach out to us on GitHub Discussions below.{x}"
         "\n"
         "\n          GitHub: {b}{github_issues}{x}"
         "\n"
@@ -102,7 +104,6 @@ def cli():
     )
 
     log.debug(
-        "\n"
         "\n    [PLATFORM DETAILS]"
         "\n    Python Version: {py_version}"
         "\n       System Info: {system} (detail: {detail})"
@@ -116,51 +117,52 @@ def cli():
             now=dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S %z"),
         ),
     )
-    # fmt: on
 
-    venv = get_cs_tools_venv(find_links=args.offline_mode)
-    path = get_path_manipulator(venv)
+    try:
+        venv = get_cs_tools_venv(find_links=args.offline_mode)
+        path = get_path_manipulator(venv)
 
-    if args.install or args.reinstall:
-        if not venv.exists:
-            log.info("Creating the CS Tools virtual environment.")
-            venv.make()
+        if args.install or args.reinstall:
+            if not venv.exists:
+                log.info("Creating the CS Tools virtual environment.")
+                venv.make()
 
-        if args.reinstall:
-            log.info("Resetting the CS Tools virtual environment.")
+            if args.reinstall:
+                log.info("Resetting the CS Tools virtual environment.")
+                path.unset()
+                venv.reset()
+
+            requires = "cs_tools[cli]"
+
+            if args.offline_mode:
+                log.info("Using the offline binary found at {p}{off}{x}".format(p=_PURPLE, x=_RESET, off=venv.find_links))
+            else:
+                log.info("Getting the latest CS Tools {beta}release.".format(beta="beta " if args.beta else ""))
+                release = get_latest_cs_tools_release(allow_beta=args.beta)
+                log.info("Found version: {p}{tag}{x}".format(p=_PURPLE, x=_RESET, tag=release["tag_name"]))
+                requires += " @ https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(tag=release["tag_name"])
+
+            log.info("Installing CS Tools and its dependencies.")
+            venv.pip("install", requires, "--upgrade", "--progress-bar", "on" if args.verbose else "off")
+            path.add()
+
+        if args.uninstall:
+            log.info("Uninstalling CS Tools and its dependencies.")
+            shutil.rmtree(venv.venv_path, ignore_errors=True)
             path.unset()
-            venv.reset()
 
-        requires = "cs_tools[cli]"
+        log.info("{g}Done!{x} Thank you for trying CS Tools.".format(g=_GREEN, x=_RESET))
 
-        if args.offline_mode:
-            log.info("Using the offline binary found at {p}{off}{x}".format(p=_PURPLE, x=_RESET, off=venv.find_links))
-        else:
-            log.info("Getting the latest CS Tools {beta}release.".format(beta="beta " if args.beta else ""))
-            release = get_latest_cs_tools_release(allow_beta=args.beta)
-            log.info("Found version: {p}{tag}{x}".format(p=_PURPLE, x=_RESET, tag=release["tag_name"]))
-            requires += " @ https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(tag=release["tag_name"])
+        if args.install or args.reinstall:
+            log.info(
+                "{y}You're almost there! Please {g}restart your shell{x} {y}and then execute the command below.{x}"
+                "\n"
+                "\n{b}cs_tools --version{x}"
+                "\n".format(b=_BLUE, g=_GREEN, y=_YELLOW, x=_RESET)
+            )
 
-        log.info("Installing CS Tools and its dependencies.")
-        venv.pip("install", requires, "--upgrade", "--progress-bar", "on" if args.verbose else "off")
-        path.add()
-
-    if args.uninstall:
-        log.info("Uninstalling CS Tools and its dependencies.")
-        shutil.rmtree(venv.venv_path, ignore_errors=True)
-        path.unset()
-
-    log.info("{g}Done!{x} Thank you for trying CS Tools.".format(g=_GREEN, x=_RESET))
-
-    if args.install or args.reinstall:
-        log.info(
-            "{y}You're almost there! Please {g}restart your shell{x} {y}and then execute the command below.{x}"
-            "\n"
-            "\n{b}cs_tools --version{x}"
-            "\n".format(b=_BLUE, g=_GREEN, y=_YELLOW, x=_RESET)
-        )
-
-    _cleanup()
+    finally:
+        _cleanup()
 
     return 0
 
@@ -389,15 +391,9 @@ def get_cs_tools_venv(**passthru):
 
     if not updater_py.exists():
         log.info("Missing '{updater}', downloading from GitHub".format(updater=updater_py))
-        updater_path = "cs_tools/updater/_updater.py"
-        updater_url = (
-            "https://api.github.com/repos/thoughtspot/cs_tools"
-            "/contents/{path}"
-            # "?ref=holiday%2Dplanning"  # TODO: remove before release
-            .format(path=updater_path)
-        )
-
-        data = http_request(updater_url)
+        
+        url = "https://api.github.com/repos/thoughtspot/cs_tools/contents/cs_tools/updater/_updater.py{commitish}"
+        data = http_request(url.format(commitish="?ref=offline-install-bootstrapper"))
         data = http_request(data["download_url"], to_json=False)
         updater_py.write_text(data.decode())
         log.info("Downloaded as '{updater}'".format(updater=updater_py))
@@ -429,7 +425,7 @@ def _cleanup():
     if "updater" in here.as_posix():
         return
 
-    for pathname in ("__pycache__", "_updater.py"):
+    for pathname in ("__pycache__", "_updater.py", "_bootstrapper.py"):
         path = here.joinpath(pathname)
 
         if path.is_dir():
