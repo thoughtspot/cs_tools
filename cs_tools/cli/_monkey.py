@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from typing import Any
 
+import cs_tools.cli.ux
 import cs_tools
 import typer
 
