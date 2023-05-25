@@ -391,9 +391,8 @@ def get_cs_tools_venv(**passthru):
 
     if not updater_py.exists():
         log.info("Missing '{updater}', downloading from GitHub".format(updater=updater_py))
-        
-        url = "https://api.github.com/repos/thoughtspot/cs_tools/contents/cs_tools/updater/_updater.py{commitish}"
-        data = http_request(url.format(commitish="?ref=offline-install-bootstrapper"))
+        url = "https://api.github.com/repos/thoughtspot/cs_tools/contents/cs_tools/updater/_updater.py"
+        data = http_request(url)
         data = http_request(data["download_url"], to_json=False)
         updater_py.write_text(data.decode())
         log.info("Downloaded as '{updater}'".format(updater=updater_py))
