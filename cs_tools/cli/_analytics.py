@@ -39,12 +39,16 @@ def get_database() -> sa.engine.Engine:
     # START A FRESH DATABASE AS OF 1.4.3 ANALYTICS RELEASE
     with db.begin() as transaction:
         try:
-            r = transaction.execute(sa.func.max(RuntimeEnvironment.cs_tools_version))
-            latest_version = r.scalar() or "0.0.0"
+            r = transaction.execute(sa.text("""SELECT COUNT(*), MAX(cs_tools_version) FROM runtime_environment"""))
+            n_rows, latest_version = r.first()
+            latest_version = "0.0.0" if latest_version is None else latest_version
+
         except sa.exc.OperationalError:
+            log.debug("Error fetching data from the database", exc_info=True)
+            n_rows = 0
             latest_version = "0.0.0"
 
-        if AwesomeVersion(latest_version) < AwesomeVersion("1.4.5"):
+        if n_rows > 1 and AwesomeVersion(latest_version) <= AwesomeVersion("1.4.5"):
             SQLModel.metadata.drop_all(bind=db)
     
     SQLModel.metadata.create_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
