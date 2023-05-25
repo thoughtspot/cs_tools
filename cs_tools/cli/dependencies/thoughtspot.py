@@ -4,6 +4,7 @@ import logging
 import inspect
 
 from typer.core import TyperOption
+import threading
 import typer
 import httpx
 import click
@@ -81,12 +82,25 @@ def split_args_from_opts(extra_args: List[str]) -> Tuple[List[str], Dict[str, An
 class DThoughtSpot(Dependency):
     login: bool = True
 
+    def _send_analytics_in_background(self) -> None:
+        DO_NOT_SEND_ANALYTICS = meta.analytics_opt_in in (None, False)
+
+        if DO_NOT_SEND_ANALYTICS:
+            return
+
+        from cs_tools.cli import _analytics
+
+        background = threading.Thread(target=_analytics.maybe_send_analytics_data)
+        background.start()
+
     def __call__(self, ctx: typer.Context):
         if hasattr(ctx.obj, "thoughtspot"):
             return ctx.obj.thoughtspot
         return self
 
     def __enter__(self):
+        self._send_analytics_in_background()
+
         ctx = click.get_current_context()
         args, options, flags = split_args_from_opts(ctx.args)
 
