@@ -44,7 +44,7 @@ def get_database() -> sa.engine.Engine:
         except sa.exc.OperationalError:
             latest_version = "0.0.0"
 
-        if AwesomeVersion(latest_version) < AwesomeVersion("1.4.3"):
+        if AwesomeVersion(latest_version) < AwesomeVersion("1.4.5"):
             SQLModel.metadata.drop_all(bind=db)
     
     SQLModel.metadata.create_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
@@ -140,9 +140,9 @@ def maybe_send_analytics_data() -> None:
     if all(analytics_checkpoints):
         meta.last_analytics_checkpoint = dt.datetime.utcnow()
         meta.save()
-        log.info("Sent!")
+        log.debug("Sent analytics to CS Tools!")
     else:
-        log.warning("Failed to send analytics.")
+        log.debug("Failed to send analytics.")
 
 
 class RuntimeEnvironment(SQLModel, table=True):
@@ -186,6 +186,7 @@ class CommandExecution(SQLModel, table=True):
     __tablename__ = "command_execution"
 
     envt_uuid: str = Field(max_length=32, primary_key=True)
+    cs_tools_version: str = Field(primary_key=True)
     start_dt: dt.datetime = Field(primary_key=True)
     end_dt: dt.datetime
     is_success: bool
