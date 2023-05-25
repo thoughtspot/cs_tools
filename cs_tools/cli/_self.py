@@ -7,11 +7,9 @@ import pathlib
 import shutil
 import sys
 import os
-import io
 
 from awesomeversion import AwesomeVersion
 import sqlalchemy as sa
-import httpx
 import typer
 import rich
 
@@ -95,8 +93,6 @@ def update(
 
     except (sa.exc.OperationalError, sa.exc.IntegrityError):
         pass
-
-    # _analytics.maybe_send_analytics_data()
 
 
 @app.command(cls=CSToolsCommand)

@@ -124,6 +124,7 @@ def run() -> int:
 
     this_run_data = {
         "envt_uuid": _meta_config.install_uuid,
+        "cs_tools_version": __version__,
         "start_dt": dt.datetime.now(),
         "os_args": " ".join(["cs_tools", *sys.argv[1:]]),
     }
