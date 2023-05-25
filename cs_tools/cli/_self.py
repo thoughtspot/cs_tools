@@ -4,6 +4,7 @@ import platform
 import getpass
 import logging
 import pathlib
+import shutil
 import sys
 import os
 import io
@@ -176,13 +177,14 @@ def download(
        [b blue]python -m sysconfig[/]
 
     """
+    requirements = directory.joinpath("requirements")
     release_info = get_latest_cs_tools_release(allow_beta=beta)
     release_tag = release_info["tag_name"]
 
     venv = CSToolsVirtualEnvironment()
 
     # freeze our own environment, which has all the dependencies needed to build
-    frozen = {req for req in venv.pip("freeze", "--quiet") if "cs_tools" not in req}
+    frozen = {req for req in venv.pip("freeze", "--quiet") if "cs-tools" not in req}
 
     # add packaging stuff since we'll use --no-deps
     frozen.update(("setuptools", "wheel", "pip >= 23.1", "poetry-core >= 1.0.0a9"))
@@ -207,7 +209,7 @@ def download(
     venv.pip(
         "download", *frozen,
         "--no-deps",  # we shouldn't need transitive dependencies, since we've build all the dependencies above
-        "--dest", directory.as_posix(),
+        "--dest", requirements.as_posix(),
         "--implementation", "cp",
         "--python-version", f"{python_version.major}{python_version.minor}",
         "--platform", platform.replace("-", "_"),
@@ -215,7 +217,14 @@ def download(
 
     # rename .zip files we author to their actual package names
     # directory.joinpath("dev.zip").rename(directory / "horde-1.0.0.zip")
-    directory.joinpath(f"{release_tag}.zip").rename(directory / f"cs_tools-{release_tag[1:]}.zip")
+    requirements.joinpath(f"{release_tag}.zip").rename(requirements / f"cs_tools-{release_tag[1:]}.zip")
+
+    from cs_tools.updater import _bootstrapper, _updater
+
+    shutil.copy(_bootstrapper.__file__, requirements.joinpath("_bootstrapper.py"))
+    shutil.copy(_updater.__file__, requirements.joinpath("_updater.py"))
+    shutil.make_archive(directory.joinpath(f"cs-tools_{__version__}_{platform}_{python_version}"), "zip", requirements)
+    shutil.rmtree(requirements)
 
 
 @app.command(cls=CSToolsCommand, hidden=True)
