@@ -247,14 +247,14 @@ def show(
         path = fp.parent.as_posix()
 
         if anonymous:
-            path = path.replace(getpass.getuser(), " [dim]{anonymous}[/] ")
+            path = utils.anonymize(path)
             new_contents = []
 
             for line in contents.split("\n"):
                 if line.startswith("password"):
                     continue
 
-                new_contents.append(line.replace(getpass.getuser(), " [dim]{anonymous}[/] "))
+                new_contents.append(utils.anonymize(line))
 
             contents = "\n".join(new_contents)
 
