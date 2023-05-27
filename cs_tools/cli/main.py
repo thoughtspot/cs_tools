@@ -1,8 +1,8 @@
 from __future__ import annotations
+from traceback import format_exception
 from typing import Any, Dict
 import datetime as dt
 import contextlib
-import traceback
 import logging
 import random
 import sys
@@ -148,13 +148,13 @@ def run() -> int:
     except click.ClickException as e:
         return_code = 1
         this_run_data["is_known_error"] = True
-        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__, limit=5))
+        this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
         log.error(e)
 
     except CSToolsError as e:
         return_code = 1
         this_run_data["is_known_error"] = True
-        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__, limit=5))
+        this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
 
         log.debug(e, exc_info=True)
         rich_console.print(Align.center(e))
@@ -162,7 +162,7 @@ def run() -> int:
     except Exception as e:
         return_code = 1
         this_run_data["is_known_error"] = False
-        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__, limit=5))
+        this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
 
         log.debug("whoopsie, something went wrong!", exc_info=True)
 

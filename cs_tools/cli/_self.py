@@ -1,7 +1,6 @@
 import sysconfig
 import datetime as dt
 import platform
-import getpass
 import logging
 import pathlib
 import shutil
@@ -38,8 +37,8 @@ app = typer.Typer(
 )
 
 
+@app.command(cls=CSToolsCommand, name="update")
 @app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
-@app.command(cls=CSToolsCommand, name="update", hidden=True)
 def update(
     beta: bool = typer.Option(False, "--beta", help="pin your install to a pre-release build"),
     offline: pathlib.Path = typer.Option(
@@ -51,7 +50,7 @@ def update(
     force_reinstall: bool = typer.Option(
         False,
         "--force-reinstall",
-        help="reinstall all packages even if they are already up-to-date."
+        help="reinstall all packages even if they are already up-to-date.",
     ),
     venv_name: str = typer.Option(None, "--venv-name", hidden=True),
 ):
@@ -114,20 +113,20 @@ def info(
         f"\n           CS Tools: [b yellow]{__version__}[/]"
         f"\n     Python Version: [b yellow]Python {sys.version}[/]"
         f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"
-        f"\n  Configs Directory: [b yellow]{CSToolsVirtualEnvironment().app_dir}[/]"
+        f"\n  Configs Directory: [b yellow]{cs_tools_venv.app_dir}[/]"
         f"\nActivate VirtualEnv: [b yellow]{source}[/]"
         f"\n      Platform Tags: [b yellow]{sysconfig.get_platform()}[/]"
         f"\n"
     )
 
     if anonymous:
-        text = text.replace(getpass.getuser(), " [dim]{anonymous}[/] ")
+        text = utils.anonymize(text)
 
     renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
     rich_console.print(renderable)
 
     if directory is not None:
-        svg_screenshot(
+        utils.svg_screenshot(
             renderable,
             path=directory / f"cs-tools-info-{dt.datetime.now():%Y-%m-%d}.svg",
             console=rich_console,
