@@ -166,6 +166,9 @@ class CSToolsVirtualEnvironment:
         installed.unlink()
 
 
+cs_tools_venv = CSToolsVirtualEnvironment()
+
+
 @dataclass
 class FishPath:
     """

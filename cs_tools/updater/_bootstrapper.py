@@ -381,7 +381,7 @@ def cli_type_filepath(fp):
     return path
 
 
-def get_cs_tools_venv(**passthru):
+def get_cs_tools_venv(find_links):
     # type: () -> CSToolsVirtualEnvironment
     """Get the CS Tools Virtual Environment."""
     import pathlib
@@ -401,7 +401,7 @@ def get_cs_tools_venv(**passthru):
     sys.path.insert(0, here.as_posix())
 
     try:
-        from _updater import CSToolsVirtualEnvironment
+        from _updater import cs_tools_venv
     except ModuleNotFoundError:
         log.info(
             "Unable to find the CS Tools _updater.py, try getting at "
@@ -410,7 +410,10 @@ def get_cs_tools_venv(**passthru):
         )
         raise SystemExit(1)
 
-    return CSToolsVirtualEnvironment(**passthru)
+    if find_links is not None:
+        cs_tools_venv.with_offline_mode(find_links=find_links)
+
+    return cs_tools_venv
 
 
 def _cleanup():
