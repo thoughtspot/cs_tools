@@ -19,7 +19,7 @@ from cs_tools.programmatic import get_cs_tool
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.settings import _meta_config as meta
 from cs_tools._version import __version__
-from cs_tools.updater import CSToolsVirtualEnvironment
+from cs_tools.updater import cs_tools_venv
 from cs_tools.cli.ux import rich_console, CSToolsApp
 from cs_tools.errors import CSToolsError
 from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, TOOLS_DIR, GH_ISSUES
@@ -79,7 +79,7 @@ def main(version: bool = typer.Option(False, "--version", help="Show the version
 
 def _ensure_directories() -> None:
     """ """
-    venv = CSToolsVirtualEnvironment()
+    venv = cs_tools_venv
     venv.app_dir.joinpath(".cache").mkdir(parents=True, exist_ok=True)
     venv.app_dir.joinpath(".logs").mkdir(parents=True, exist_ok=True)
 

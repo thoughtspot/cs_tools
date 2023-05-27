@@ -4,7 +4,7 @@ import shutil
 import typer
 
 
-from cs_tools.updater import CSToolsVirtualEnvironment
+from cs_tools.updater import cs_tools_venv
 from cs_tools.cli.ux import CSToolsCommand
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
@@ -29,7 +29,7 @@ def report(
     save_path.mkdir(parents=True, exist_ok=True)
     rich_console.print(f"\nSaving logs to [b blue link={save_path.resolve().as_posix()}]{save_path.resolve()}[/]\n")
 
-    logs_dir = CSToolsVirtualEnvironment().app_dir.joinpath("logs")
+    logs_dir = cs_tools_venv.app_dir.joinpath("logs")
     sorted_newest = sorted(logs_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
 
     for i, log in enumerate(sorted_newest, start=1):

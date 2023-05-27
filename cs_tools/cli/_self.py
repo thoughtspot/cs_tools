@@ -16,13 +16,13 @@ import rich
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 from cs_tools._version import __version__
 from cs_tools.settings import _meta_config as meta
-from cs_tools.updater import CSToolsVirtualEnvironment
+from cs_tools.updater import cs_tools_venv
 from cs_tools.updater import FishPath, WindowsPath, UnixPath
 from cs_tools.cli.ux import CSToolsCommand
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
-from cs_tools.utils import svg_screenshot
 from cs_tools.cli import _analytics
+from cs_tools import utils
 
 log = logging.getLogger(__name__)
 app = typer.Typer(
@@ -145,7 +145,7 @@ def pip():
     # if venv_name is not None:
     #     os.environ["CS_TOOLS_CONFIG_DIRNAME"] = venv_name
 
-    # venv = CSToolsVirtualEnvironment()
+    # venv = cs_tools_venv
     # venv.pip()
     raise NotImplementedError("Not yet.")
 
@@ -177,7 +177,7 @@ def download(
     release_info = get_latest_cs_tools_release(allow_beta=beta)
     release_tag = release_info["tag_name"]
 
-    venv = CSToolsVirtualEnvironment()
+    venv = cs_tools_venv
 
     # freeze our own environment, which has all the dependencies needed to build
     frozen = {req for req in venv.pip("freeze", "--quiet") if "cs-tools" not in req}
