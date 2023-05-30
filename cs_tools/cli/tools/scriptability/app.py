@@ -210,12 +210,12 @@ def scriptability_export(
     include_types: str = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
-        help="list of types to export: answer, liveboard, view, sqlview, table, connection",
+        help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
     ),
     exclude_types: str = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
-        help="list of types to exclude (overrides include): answer, liveboard, view, sqlview, table, connection",
+        help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",
     ),
     export_associated: bool = typer.Option(
         False, 
@@ -257,34 +257,36 @@ def scriptability_export(
 def scriptability_import(
     ctx: typer.Context,
     path: pathlib.Path = typer.Argument(
-        ..., help="file or directory to load TML from", file_okay=True, resolve_path=True
+        ..., help="Root folder to load TML from", file_okay=False, resolve_path=True
+    ),
+    guid: str = typer.Option(
+        None, help="Loads a specific file.  Assumes all dependencies are met.", file_okay=True, resolve_path=True
     ),
     import_policy: TMLImportPolicy = typer.Option(TMLImportPolicy.validate, help="The import policy type"),
     force_create: bool = typer.Option(False, "--force-create", help="will force a new object to be created"),
-    guid_file: Optional[pathlib.Path] = typer.Option(
-        None,
-        help="existing or new mapping file to map GUIDs from source instance to target instance",
-        dir_okay=False,
-        resolve_path=True,
-    ),
-    from_env: str = typer.Option(None, help="the source environment name importing from", rich_help_panel="GUID Mapping Options"),
-    to_env: str = typer.Option(None, help="the target environment name importing to", rich_help_panel="GUID Mapping Options"),
+    source: str = typer.Option(None, help="the source environment the TML came from",
+                               rich_help_panel="GUID Mapping Options"),
+    dest: str = typer.Option(None, help="the destination environment the TML is importing into",
+                             rich_help_panel="GUID Mapping Options"),
     tags: List[str] = typer.Option([], help="one or more tags to add to the imported content"),
     share_with: List[str] = typer.Option([], help="one or more groups to share the uploaded content with"),
-    tml_logs: pathlib.Path = typer.Option(
-        None,
-        help="full path to the directory to log sent TML. TML can change during load.",
-        exists=True,
-        file_okay=False,
-        resolve_path=True,
-    ),
     org: str = typer.Option(None, help="name of org to import to"),
+    include_types: str = typer.Option(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
+    ),
+    exclude_types: str = typer.Option(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",
+    ),
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
 
     \b
-    cs_tools dependends on thoughtspot_tml. The GUID file is produced from
+    cs_tools depends on thoughtspot_tml. The GUID file is produced from
     thoughtspot_tml and requires a specific format. For further information on the
     GUID File, see
 
@@ -293,15 +295,16 @@ def scriptability_import(
     to_import(
         ts=ctx.obj.thoughtspot,
         path=path,
+        guid=guid and GUID(guid),
         import_policy=import_policy,
         force_create=force_create,
-        guid_file=guid_file,
-        from_env=from_env,
-        to_env=to_env,
+        source=source,
+        dest=dest,
         tags=tags,
         share_with=share_with,
-        tml_logs=tml_logs,
         org=org,
+        include_types=include_types,
+        exclude_types=exclude_types,
     )
 
 

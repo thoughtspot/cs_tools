@@ -1,22 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import List, Union, Tuple
 import collections
-import pathlib
 import logging
 import re
+from dataclasses import dataclass
+from typing import List, Optional
 
+from awesomeversion import AwesomeVersion
+from httpx import HTTPStatusError
+from rich.table import Table
+from thoughtspot_tml import Connection
 from thoughtspot_tml.exceptions import TMLError
 from thoughtspot_tml.utils import determine_tml_type, disambiguate
-from thoughtspot_tml import Connection
-from awesomeversion import AwesomeVersion
-from rich.table import Table
-from httpx import HTTPStatusError
 
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
 from cs_tools.types import TMLSupportedContent, TMLSupportedContentSubtype, GUID
+from .tmlfs import ExportTMLFS
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class TMLExportResponse:
     tml_type_name: str
     name: str
     status_code: str  # ERROR, WARNING, OK
-    error_messages: List[str] = None
+    error_messages: Optional[List[str]] = None
 
     def __post_init__(self):
         self.error_messages = self._process_errors()
@@ -55,6 +55,8 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
 
     if org is not None:
         ts.org.switch(org)
+
+    tmlfs = ExportTMLFS(path, log)
 
     include_subtypes = None
     if include_types is not None:
@@ -116,9 +118,9 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
 
             try:
                 if metadata_type == TMLSupportedContent.connection:
-                    r = _download_connection(ts=ts, directory=path, guid=guid)
+                    r = _download_connection(ts=ts, tmlfs=tmlfs, guid=guid)
                 else:
-                    r = _download_tml(ts=ts, directory=path, guid=guid, export_associated=export_associated)
+                    r = _download_tml(ts=ts, tmlfs=tmlfs, guid=guid, export_associated=export_associated)
 
                 results.extend(r)
 
@@ -143,7 +145,7 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
         log.warning("No TML found matching the input conditions")
 
 
-def _download_connection(ts, directory: pathlib.Path, guid: GUID) -> list[TMLExportResponse]:
+def _download_connection(ts, tmlfs: ExportTMLFS, guid: GUID) -> list[TMLExportResponse]:
     """
     Download a connection.
 
@@ -151,6 +153,7 @@ def _download_connection(ts, directory: pathlib.Path, guid: GUID) -> list[TMLExp
     """
     r = ts.api.connection_export(guid=guid)
     tml = Connection.loads(r.text)
+    tml.guid = guid
 
     r = TMLExportResponse(
         guid=guid,
@@ -162,7 +165,7 @@ def _download_connection(ts, directory: pathlib.Path, guid: GUID) -> list[TMLExp
     )
 
     try:
-        tml.dump(directory / f"{guid}.connection.tml")
+        tmlfs.write_tml(tml=tml)
     except IOError:
         r.status_code = "ERROR"
         r.error_messages = [f"Error writing to file: {tml.name}"]
@@ -170,8 +173,7 @@ def _download_connection(ts, directory: pathlib.Path, guid: GUID) -> list[TMLExp
     return [r]
 
 
-def _download_tml(ts, directory: pathlib.Path, guid: GUID, export_associated: bool) -> list[TMLExportResponse]:
-
+def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -> list[TMLExportResponse]:
     # DEV NOTE: @billdback 2023/01/14 , we'll only download one parent at a time to account for FQN mapping
     r = ts.api.metadata_tml_export(
         export_guids=[guid],
@@ -231,7 +233,7 @@ def _download_tml(ts, directory: pathlib.Path, guid: GUID, export_associated: bo
             disambiguate(tml, guid_mapping=guid_name_map)
 
     for tml in tml_objects:
-        tml.dump(directory / f"{tml.guid}.{tml.tml_type_name}.tml")
+        tmlfs.write_tml(tml=tml)
 
     return results
 
@@ -247,7 +249,10 @@ def _show_results_as_table(results: list[TMLExportResponse]) -> None:
     table.add_column("Name", no_wrap=True, width=40)  # (150 - above) , 40% of available space
     table.add_column("Description", no_wrap=True, width=60)  # (150 - above) , 60% of available space
 
+    log.info("Export Results:\n")
     for r in sorted(results, key=lambda r: r.status_code):
+        log.info(f"{r.status_code} {r.guid} {r.name} {' '.join(r.error_messages)}")
         table.add_row(r.status_code, r.guid, r.name, " ".join(r.error_messages))
+
 
     rich_console.print(table)

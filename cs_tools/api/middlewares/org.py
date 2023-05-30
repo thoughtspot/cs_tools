@@ -67,7 +67,7 @@ class OrgMiddleware:
                 rzn = f"Invalid org specified, got '{org}'"
 
             raise CSToolsError(
-                error="Error setting org context.", reason=rzn, mitigation="Verify the org name or ID and try again."
+                error=f"Error setting org context for org {org}.", reason=rzn, mitigation="Verify the org name or ID and try again."
             )
 
         return org_id
