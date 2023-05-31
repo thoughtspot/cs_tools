@@ -1,7 +1,6 @@
 import sysconfig
 import datetime as dt
 import platform
-import getpass
 import logging
 import pathlib
 import shutil
@@ -16,13 +15,13 @@ import rich
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 from cs_tools._version import __version__
 from cs_tools.settings import _meta_config as meta
-from cs_tools.updater import CSToolsVirtualEnvironment
+from cs_tools.updater import cs_tools_venv
 from cs_tools.updater import FishPath, WindowsPath, UnixPath
 from cs_tools.cli.ux import CSToolsCommand
 from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.cli.ux import rich_console
-from cs_tools.utils import svg_screenshot
 from cs_tools.cli import _analytics
+from cs_tools import utils
 
 log = logging.getLogger(__name__)
 app = typer.Typer(
@@ -38,8 +37,8 @@ app = typer.Typer(
 )
 
 
+@app.command(cls=CSToolsCommand, name="update")
 @app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
-@app.command(cls=CSToolsCommand, name="update", hidden=True)
 def update(
     beta: bool = typer.Option(False, "--beta", help="pin your install to a pre-release build"),
     offline: pathlib.Path = typer.Option(
@@ -51,7 +50,7 @@ def update(
     force_reinstall: bool = typer.Option(
         False,
         "--force-reinstall",
-        help="reinstall all packages even if they are already up-to-date."
+        help="reinstall all packages even if they are already up-to-date.",
     ),
     venv_name: str = typer.Option(None, "--venv-name", hidden=True),
 ):
@@ -63,8 +62,9 @@ def update(
 
     requires = "cs_tools[cli]"
 
-    if offline:
+    if offline is not None:
         log.info(f"Using the offline binary found at [b magenta]{offline}")
+        cs_tools_venv.with_offline_mode(find_links=offline)
     else:
         log.info(f"Getting the latest CS Tools {'beta ' if beta else ''}release.")
         release = get_latest_cs_tools_release(allow_beta=beta)
@@ -76,23 +76,13 @@ def update(
             raise typer.Exit(0)
 
     log.info("Upgrading CS Tools and its dependencies.")
-    venv = CSToolsVirtualEnvironment(find_links=offline)
 
     try:
-        rc = venv.pip("install", requires, "--upgrade")
+        rc = cs_tools_venv.pip("install", requires, "--upgrade")
         log.debug(rc)
     except RuntimeError:  # OSError when pip on Windows can't upgrade itself~
         pass
 
-    try:
-        row = _analytics.RuntimeEnvironment(envt_uuid=meta.install_uuid, cs_tools_version=release["tag_name"])
-
-        with _analytics.get_database().begin() as transaction:
-            stmt = sa.insert(_analytics.RuntimeEnvironment).values([row.dict()])
-            transaction.execute(stmt)
-
-    except (sa.exc.OperationalError, sa.exc.IntegrityError):
-        pass
 
 
 @app.command(cls=CSToolsCommand)
@@ -114,20 +104,20 @@ def info(
         f"\n           CS Tools: [b yellow]{__version__}[/]"
         f"\n     Python Version: [b yellow]Python {sys.version}[/]"
         f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"
-        f"\n  Configs Directory: [b yellow]{CSToolsVirtualEnvironment().app_dir}[/]"
+        f"\n  Configs Directory: [b yellow]{cs_tools_venv.app_dir}[/]"
         f"\nActivate VirtualEnv: [b yellow]{source}[/]"
         f"\n      Platform Tags: [b yellow]{sysconfig.get_platform()}[/]"
         f"\n"
     )
 
     if anonymous:
-        text = text.replace(getpass.getuser(), " [dim]{anonymous}[/] ")
+        text = utils.anonymize(text)
 
     renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
     rich_console.print(renderable)
 
     if directory is not None:
-        svg_screenshot(
+        utils.svg_screenshot(
             renderable,
             path=directory / f"cs-tools-info-{dt.datetime.now():%Y-%m-%d}.svg",
             console=rich_console,
@@ -145,7 +135,7 @@ def pip():
     # if venv_name is not None:
     #     os.environ["CS_TOOLS_CONFIG_DIRNAME"] = venv_name
 
-    # venv = CSToolsVirtualEnvironment()
+    # venv = cs_tools_venv
     # venv.pip()
     raise NotImplementedError("Not yet.")
 
@@ -177,7 +167,7 @@ def download(
     release_info = get_latest_cs_tools_release(allow_beta=beta)
     release_tag = release_info["tag_name"]
 
-    venv = CSToolsVirtualEnvironment()
+    venv = cs_tools_venv
 
     # freeze our own environment, which has all the dependencies needed to build
     frozen = {req for req in venv.pip("freeze", "--quiet") if "cs-tools" not in req}

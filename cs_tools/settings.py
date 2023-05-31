@@ -16,7 +16,7 @@ import toml
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 from cs_tools._version import __version__
 from cs_tools.errors import ConfigDoesNotExist
-from cs_tools.updater import CSToolsVirtualEnvironment
+from cs_tools.updater import cs_tools_venv
 from cs_tools import utils
 
 log = logging.getLogger(__name__)
@@ -33,12 +33,13 @@ class MetaConfig(BaseModel):
     remote_date: dt.date = None
     last_analytics_checkpoint: dt.datetime = dt.datetime(year=2012, month=6, day=1)
     analytics_opt_in: Optional[bool] = None
-    company_name: Optional[str] = None
+    # company_name: Optional[str] = None  # DEPRECATED AS OF 1.4.6
+    record_thoughtspot_url: Optional[bool] = None
 
     @classmethod
     def load_and_convert_toml(cls):
         """Migrate from the old format."""
-        data = toml.load(CSToolsVirtualEnvironment().app_dir.joinpath(".meta-config.toml"))
+        data = toml.load(cs_tools_venv.app_dir.joinpath(".meta-config.toml"))
 
         self = cls(
             # install_uuid=...,
@@ -54,7 +55,7 @@ class MetaConfig(BaseModel):
     @classmethod
     def load(cls):
         """Read the meta-config."""
-        app_dir = CSToolsVirtualEnvironment().app_dir
+        app_dir = cs_tools_venv.app_dir
 
         # OLD FORMAT
         if app_dir.joinpath(".meta-config.toml").exists():
@@ -68,6 +69,10 @@ class MetaConfig(BaseModel):
         elif app_dir.joinpath(".meta-config.json").exists():
             file = app_dir.joinpath(".meta-config.json")
             data = json.loads(file.read_text())
+
+            if data.get("company_name", None) is not None:
+                data["record_thoughtspot_url"] = True
+
             self = cls(**data)
 
         # NEVER SEEN BEFORE
@@ -79,7 +84,7 @@ class MetaConfig(BaseModel):
 
     def save(self) -> None:
         """Store the meta-config."""
-        file = CSToolsVirtualEnvironment().app_dir.joinpath(".meta-config.json")
+        file = cs_tools_venv.app_dir.joinpath(".meta-config.json")
         data = self.json(indent=4)
         file.write_text(data)
 
@@ -125,7 +130,10 @@ class Settings(BaseModel):
     """
 
     class Config:
-        json_encoders = {FilePath: lambda v: v.resolve().as_posix(), DirectoryPath: lambda v: v.resolve().as_posix()}
+        json_encoders = {
+            FilePath: lambda v: v.resolve().as_posix(),
+            DirectoryPath: lambda v: v.resolve().as_posix(),
+        }
 
 
 class TSCloudURL(str):
@@ -194,7 +202,7 @@ class CSToolsConfig(Settings):
     auth: Dict[str, AuthConfig]
     syncer: Dict[str, FilePath] = None
     verbose: bool = False
-    temp_dir: DirectoryPath = CSToolsVirtualEnvironment().app_dir
+    temp_dir: DirectoryPath = cs_tools_venv.app_dir
 
     @validator("syncer")
     def resolve_path(v: Any) -> str:
@@ -259,7 +267,7 @@ class CSToolsConfig(Settings):
         if config is None:
             raise ConfigDoesNotExist(name=f"[b green]{config}")
 
-        return cls.from_toml(CSToolsVirtualEnvironment().app_dir / f"cluster-cfg_{config}.toml", **passthru)
+        return cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml", **passthru)
 
     @classmethod
     def from_parse_args(cls, name: str, *, validate: bool = True, **passthru) -> "CSToolsConfig":

@@ -1,5 +1,4 @@
 from typing import List
-import getpass
 import pathlib
 
 from rich.prompt import Confirm, Prompt
@@ -12,7 +11,7 @@ import toml
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.settings import _meta_config as meta, CSToolsConfig
-from cs_tools.updater import CSToolsVirtualEnvironment
+from cs_tools.updater import cs_tools_venv
 from cs_tools.errors import CSToolsError
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsApp
@@ -44,7 +43,7 @@ def create(
         help='password when logging into ThoughtSpot, if "prompt" then hide input',
     ),
     temp_dir: pathlib.Path = typer.Option(
-        CSToolsVirtualEnvironment().app_dir,
+        cs_tools_venv.app_dir,
         "--temp_dir",
         help="location on disk to save temporary files",
         file_okay=False,
@@ -82,7 +81,7 @@ def create(
         "syncer": syncers,
     }
     cfg = CSToolsConfig.from_parse_args(config, **args)
-    file = CSToolsVirtualEnvironment().app_dir / f"cluster-cfg_{config}.toml"
+    file = cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml"
 
     if file.exists() and not overwrite and not Confirm.ask(
         f'\n[yellow]cluster configuration file "{config}" already exists, would ' f"you like to overwrite it?"
@@ -148,7 +147,7 @@ def modify(
     if password == "prompt":
         password = Prompt.ask("[yellow](your input is hidden)[/]\nPassword", console=rich_console, password=True)
 
-    file = CSToolsVirtualEnvironment().app_dir / f"cluster-cfg_{config}.toml"
+    file = cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml"
     old = CSToolsConfig.from_toml(file).dict()
     kw = {
         "host": host,
@@ -168,7 +167,7 @@ def modify(
         cfg = CSToolsConfig(**new)
     except pydantic.ValidationError as e:
         rich_console.print(f"[error]{e}")
-        raise typer.Exit(-1)
+        raise typer.Exit(1) from None
 
     with file.open("w") as t:
         toml.dump(cfg.dict(), t)
@@ -195,7 +194,7 @@ def delete(config: str = typer.Option(..., help="config file identifier", metava
         file.unlink()
     except FileNotFoundError:
         rich_console.print(f'[yellow]cluster configuration file "{config}" does not exist')
-        raise typer.Exit()
+        raise typer.Exit(1) from None
 
     rich_console.print(f'removed cluster configuration file "{config}"')
 
@@ -224,8 +223,7 @@ def show(
     """
     Display the currently saved config files.
     """
-    app_dir = CSToolsVirtualEnvironment().app_dir
-    configs = [f for f in app_dir.iterdir() if f.name.startswith("cluster-cfg_")]
+    configs = [f for f in cs_tools_venv.app_dir.iterdir() if f.name.startswith("cluster-cfg_")]
 
     if not configs:
         raise CSToolsError(
@@ -234,7 +232,7 @@ def show(
         )
 
     if config is not None:
-        fp = app_dir / f"cluster-cfg_{config}.toml"
+        fp = cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml"
 
         try:
             contents = escape(fp.open().read())
@@ -242,21 +240,21 @@ def show(
             raise CSToolsError(
                 error=f"could not find [blue]{config}",
                 mitigation="Did you spell the cluster configuration name correctly?",
-            )
+            ) from None
 
         not_ = " not" if config == meta.default_config_name else ""
         default = f"[b blue]{config}[/] is{not_} the [green]default[/] configuration"
         path = fp.parent.as_posix()
 
         if anonymous:
-            path = path.replace(getpass.getuser(), " [dim]{anonymous}[/] ")
+            path = utils.anonymize(path)
             new_contents = []
 
             for line in contents.split("\n"):
                 if line.startswith("password"):
                     continue
 
-                new_contents.append(line.replace(getpass.getuser(), " [dim]{anonymous}[/] "))
+                new_contents.append(utils.anonymize(line))
 
             contents = "\n".join(new_contents)
 
@@ -284,8 +282,8 @@ def show(
 
     rich_console.print(
         f"\n[b]ThoughtSpot[/] cluster configurations are located at"
-        f"\n  [b blue][link={app_dir}]{app_dir}[/][/]"
+        f"\n  [b blue][link={cs_tools_venv.app_dir}]{cs_tools_venv.app_dir}[/][/]"
         f"\n"
         f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
-        f"\n" + "\n".join(cfg_list) + "\n"
+        f"\n" + "\n".join(cfg_list) + "\n",
     )

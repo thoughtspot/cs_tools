@@ -1,8 +1,8 @@
 from __future__ import annotations
+from traceback import format_exception
 from typing import Any, Dict
 import datetime as dt
 import contextlib
-import traceback
 import logging
 import random
 import sys
@@ -19,7 +19,7 @@ from cs_tools.programmatic import get_cs_tool
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.settings import _meta_config as meta
 from cs_tools._version import __version__
-from cs_tools.updater import CSToolsVirtualEnvironment
+from cs_tools.updater import cs_tools_venv
 from cs_tools.cli.ux import rich_console, CSToolsApp
 from cs_tools.errors import CSToolsError
 from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, TOOLS_DIR, GH_ISSUES
@@ -79,7 +79,7 @@ def main(version: bool = typer.Option(False, "--version", help="Show the version
 
 def _ensure_directories() -> None:
     """ """
-    venv = CSToolsVirtualEnvironment()
+    venv = cs_tools_venv
     venv.app_dir.joinpath(".cache").mkdir(parents=True, exist_ok=True)
     venv.app_dir.joinpath(".logs").mkdir(parents=True, exist_ok=True)
 
@@ -148,13 +148,13 @@ def run() -> int:
     except click.ClickException as e:
         return_code = 1
         this_run_data["is_known_error"] = True
-        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__, limit=5))
+        this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
         log.error(e)
 
     except CSToolsError as e:
         return_code = 1
         this_run_data["is_known_error"] = True
-        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__, limit=5))
+        this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
 
         log.debug(e, exc_info=True)
         rich_console.print(Align.center(e))
@@ -162,7 +162,7 @@ def run() -> int:
     except Exception as e:
         return_code = 1
         this_run_data["is_known_error"] = False
-        this_run_data["traceback"] = "\n".join(traceback.format_exception(type(e), e, e.__traceback__, limit=5))
+        this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
 
         log.debug("whoopsie, something went wrong!", exc_info=True)
 
@@ -174,7 +174,6 @@ def run() -> int:
             suppress=[typer, click, contextlib],
             max_frames=10,
         )
-
 
         github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
         suprised_emoji = random.choice(
@@ -196,22 +195,25 @@ def run() -> int:
             subtitle="Run [b blue]cs_tools logs report[/] to send us your last error."
         )
 
-        # fmt: off
         rich_console.print(
             Align.center(rich_traceback),
             "\n",
             Align.center(text),
             "\n"
         )
-        # fmt: on
 
     this_run_data["is_success"] = return_code in (0, None)
     this_run_data["end_dt"] = dt.datetime.now()
+    this_run_data["config_cluster_url"] = app.info.context_settings["obj"]
     this_run = _analytics.CommandExecution(**this_run_data)
 
     # Add the analytics to the local database
-    with _analytics.get_database().begin() as transaction:
-        stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
-        transaction.execute(stmt)
+    try:
+        with _analytics.get_database().begin() as transaction:
+            stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
+            transaction.execute(stmt)
+
+    except sa.exc.OperationalError:
+        log.debug("Error inserting into command execution", exc_info=True)
 
     return return_code
