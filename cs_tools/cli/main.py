@@ -175,7 +175,6 @@ def run() -> int:
             max_frames=10,
         )
 
-
         github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
         suprised_emoji = random.choice(
             (
@@ -196,26 +195,25 @@ def run() -> int:
             subtitle="Run [b blue]cs_tools logs report[/] to send us your last error."
         )
 
-        # fmt: off
         rich_console.print(
             Align.center(rich_traceback),
             "\n",
             Align.center(text),
             "\n"
         )
-        # fmt: on
 
     this_run_data["is_success"] = return_code in (0, None)
     this_run_data["end_dt"] = dt.datetime.now()
+    this_run_data["config_cluster_url"] = app.info.context_settings["obj"]
     this_run = _analytics.CommandExecution(**this_run_data)
 
     # Add the analytics to the local database
-    with _analytics.get_database().begin() as transaction:
-        stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
-        try:
+    try:
+        with _analytics.get_database().begin() as transaction:
+            stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
             transaction.execute(stmt)
-        except Exception as e:
-            log.error(f"Failed to add analytics to local database: {e}")
-            pass
+
+    except sa.exc.OperationalError:
+        log.debug("Error inserting into command execution", exc_info=True)
 
     return return_code

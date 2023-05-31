@@ -33,7 +33,7 @@ class MetaConfig(BaseModel):
     remote_date: dt.date = None
     last_analytics_checkpoint: dt.datetime = dt.datetime(year=2012, month=6, day=1)
     analytics_opt_in: Optional[bool] = None
-    # company_name: Optional[str] = None
+    # company_name: Optional[str] = None  # DEPRECATED AS OF 1.4.6
     record_thoughtspot_url: Optional[bool] = None
 
     @classmethod
@@ -69,6 +69,10 @@ class MetaConfig(BaseModel):
         elif app_dir.joinpath(".meta-config.json").exists():
             file = app_dir.joinpath(".meta-config.json")
             data = json.loads(file.read_text())
+
+            if data.get("company_name", None) is not None:
+                data["record_thoughtspot_url"] = True
+
             self = cls(**data)
 
         # NEVER SEEN BEFORE
@@ -126,7 +130,10 @@ class Settings(BaseModel):
     """
 
     class Config:
-        json_encoders = {FilePath: lambda v: v.resolve().as_posix(), DirectoryPath: lambda v: v.resolve().as_posix()}
+        json_encoders = {
+            FilePath: lambda v: v.resolve().as_posix(),
+            DirectoryPath: lambda v: v.resolve().as_posix(),
+        }
 
 
 class TSCloudURL(str):
