@@ -62,8 +62,9 @@ def update(
 
     requires = "cs_tools[cli]"
 
-    if offline:
+    if offline is not None:
         log.info(f"Using the offline binary found at [b magenta]{offline}")
+        cs_tools_venv.with_offline_mode(find_links=offline)
     else:
         log.info(f"Getting the latest CS Tools {'beta ' if beta else ''}release.")
         release = get_latest_cs_tools_release(allow_beta=beta)
@@ -75,23 +76,13 @@ def update(
             raise typer.Exit(0)
 
     log.info("Upgrading CS Tools and its dependencies.")
-    venv = CSToolsVirtualEnvironment(find_links=offline)
 
     try:
-        rc = venv.pip("install", requires, "--upgrade")
+        rc = cs_tools_venv.pip("install", requires, "--upgrade")
         log.debug(rc)
     except RuntimeError:  # OSError when pip on Windows can't upgrade itself~
         pass
 
-    try:
-        row = _analytics.RuntimeEnvironment(envt_uuid=meta.install_uuid, cs_tools_version=release["tag_name"])
-
-        with _analytics.get_database().begin() as transaction:
-            stmt = sa.insert(_analytics.RuntimeEnvironment).values([row.dict()])
-            transaction.execute(stmt)
-
-    except (sa.exc.OperationalError, sa.exc.IntegrityError):
-        pass
 
 
 @app.command(cls=CSToolsCommand)
