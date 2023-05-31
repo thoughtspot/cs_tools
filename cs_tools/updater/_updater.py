@@ -11,6 +11,7 @@ import sys
 import os
 
 log = logging.getLogger(__name__)
+logging.getLogger("venv").setLevel(logging.ERROR)
 IS_WINDOWS = sys.platform == "win32"
 IS_MACOSX = sys.platform == "darwin"
 
@@ -20,9 +21,9 @@ class CSToolsVirtualEnvironment:
     Manage the CS Tools virtual environment.
     """
 
-    def __init__(self, find_links: pathlib.Path = None):
+    def __init__(self):
         self.venv_path = self.get_venv_path()
-        self.find_links = find_links
+        self.find_links = None
 
     @property
     def exists(self) -> bool:
@@ -53,17 +54,16 @@ class CSToolsVirtualEnvironment:
             for line_bytes in proc.stdout:
                 line = line_bytes.decode().strip()
 
-                if line.startswith("-----"):  # progressbar
-                    continue
-
-                elif line.startswith(tuple(levels)):
+                if line.startswith(tuple(levels)):
                     log_level, _, line = line.partition(": ")
                     logger = levels[log_level]
 
                 else:
                     logger = log.info
 
-                if not line:
+                cant_uninstall_cs_tools_exe = "OSError" in line and "tools.exe" in line
+
+                if not line or cant_uninstall_cs_tools_exe:
                     continue
 
                 logger(line)
@@ -96,6 +96,16 @@ class CSToolsVirtualEnvironment:
         #
         if IS_WINDOWS:
             context = venv.EnvBuilder().ensure_directories(cs_tools_venv_dir)
+
+            if cs_tools_venv_dir.resolve() != pathlib.Path(context.env_dir).resolve():
+                log.debug(
+                    "Actual environment location may have moved due to redirects, links or junctions."
+                    "\n  Requested location: '%s'"
+                    "\n  Actual location:    '%s'",
+                    cs_tools_venv_dir,
+                    context.env_dir,
+                )
+
             cs_tools_venv_dir = pathlib.Path(context.env_dir).resolve()
 
         return cs_tools_venv_dir
@@ -126,12 +136,20 @@ class CSToolsVirtualEnvironment:
 
         return self.python("-m", "pip", command, *required_general_args, *args, **kwargs)
 
+    def with_offline_mode(self, find_links: pathlib.Path) -> None:
+        """Set CS Tools into offline mode, fetching requirements from path."""
+        self.find_links = find_links
+
     def make(self) -> None:
         """Create the virtual environment."""
         if self.exists:
             return
 
+        # ala venv.EnvBuilder.ensure_directories
         self.venv_path.mkdir(parents=True, exist_ok=True)
+
+        # Run with global/system python , equivalent to..
+        #   python -m venv $USER_DIR/cs_tools/.cs_tools
         self.run(sys.executable, "-m", "venv", self.venv_path.as_posix())
 
         # Ensure `pip` is at least V23.1 so that backjumping is available
@@ -146,6 +164,9 @@ class CSToolsVirtualEnvironment:
             self.pip("uninstall", "-r", installed.as_posix(), "-y")
 
         installed.unlink()
+
+
+cs_tools_venv = CSToolsVirtualEnvironment()
 
 
 @dataclass

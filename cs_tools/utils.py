@@ -5,6 +5,7 @@ from base64 import urlsafe_b64encode as b64e
 from base64 import urlsafe_b64decode as b64d
 import collections.abc
 import datetime as dt
+import getpass
 import zlib
 import json
 import io
@@ -61,6 +62,11 @@ def deep_update(old: dict, new: dict, *, ignore: Any = None) -> dict:
         old[k] = v
 
     return old
+
+
+def anonymize(text: str, *, anonymizer: str = " [dim]{anonymous}[/] ") -> str:
+    """Replace text with an anonymous value."""
+    return text.replace(getpass.getuser(), anonymizer)
 
 
 def obscure(data: bytes) -> bytes:

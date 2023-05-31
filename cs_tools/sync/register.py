@@ -9,7 +9,7 @@ import sys
 
 import pkg_resources
 
-from cs_tools.updater._updater import CSToolsVirtualEnvironment
+from cs_tools.updater._updater import cs_tools_venv
 from cs_tools.sync.protocol import SyncerProtocol
 from cs_tools.sync._compat import version
 from cs_tools.errors import SyncerProtocolError
@@ -40,8 +40,6 @@ def is_installed(package: str) -> bool:
 
 
 def ensure_dependencies(requirements: List[str], pip_args: List[str]) -> None:
-    venv = CSToolsVirtualEnvironment()
-
     for requirement, args in it.zip_longest(requirements, pip_args, fillvalue=[]):
         log.debug(f"processing requirement: {requirement}")
         req = pkg_resources.Requirement.parse(requirement)
@@ -51,7 +49,7 @@ def ensure_dependencies(requirements: List[str], pip_args: List[str]) -> None:
             continue
 
         log.info(f"installing package: {requirement}")
-        venv.pip("install", requirement, *args)
+        cs_tools_venv.pip("install", requirement, *args)
 
 
 def module_from_fp(fp: pathlib.Path) -> ModuleType:
