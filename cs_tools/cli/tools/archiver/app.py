@@ -224,7 +224,6 @@ def identify(
 
                 this_task.description = "Confirmation [b green]Approved[/]"
 
-        raise
         with tasks["tagging_content"]:
             tag_guid = ts.tag.get(tag_name, create_if_not_exists=True)
             to_tag_guids = []
