@@ -125,7 +125,7 @@ def run() -> int:
     this_run_data = {
         "envt_uuid": _meta_config.install_uuid,
         "cs_tools_version": __version__,
-        "start_dt": dt.datetime.now(),
+        "start_dt": dt.datetime.utcnow(),
         "os_args": " ".join(["cs_tools", *sys.argv[1:]]),
     }
 
@@ -203,7 +203,7 @@ def run() -> int:
         )
 
     this_run_data["is_success"] = return_code in (0, None)
-    this_run_data["end_dt"] = dt.datetime.now()
+    this_run_data["end_dt"] = dt.datetime.utcnow()
     this_run_data["config_cluster_url"] = app.info.context_settings["obj"]
     this_run = _analytics.CommandExecution(**this_run_data)
 
