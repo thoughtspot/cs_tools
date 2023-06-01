@@ -15,6 +15,7 @@ from httpx import HTTPStatusError
 from rich.align import Align
 from rich.table import Table
 from thoughtspot_tml._tml import TML
+from thoughtspot_tml.utils import _recursive_scan
 
 from cs_tools.cli.tools.scriptability.util import GUIDMapping
 from cs_tools.cli.ux import rich_console
@@ -22,8 +23,6 @@ from cs_tools.errors import CSToolsError
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.types import TMLImportPolicy, GUID, MetadataObjectType, ShareModeAccessLevel, TMLSupportedContent
 from cs_tools.utils import chunks
-from thoughtspot_tml.utils import _recursive_scan
-
 from .tmlfs import ImportTMLFS, TMLType
 
 log = logging.getLogger(__name__)
@@ -147,16 +146,21 @@ def _check_parameters(
     Checks the parameters to make sure they make sense together.  If not, then raise an exception.
     """
     if (source or dest) and not (source and dest):
-        raise CSToolsError("Must specify both a source and destination if using.")
+        error_msg = "source specified, but not destination" if source else "destination specified, but not source"
+        raise CSToolsError(error=error_msg, reason="Source and destination must both be specified.",
+                           mitigation="Specify both source and destination when using mapping.")
 
+    path_mitigation = "The path must exist and be a valid TML file system."
     if not path.exists():
-        raise CSToolsError(f"Path {path} does not exist.")
+        raise CSToolsError(error=f"Path {path} does not exist.", mitigation=path_mitigation)
 
     if not (path / ".tmlfs"):
-        raise CSToolsError(f"Path {path} does not appear to be a TML file system.")
+        raise CSToolsError(error=f"Path {path} does not appear to be a TML file system.", mitigation=path_mitigation)
 
     if guid and include_types or exclude_types:
-        raise CSToolsError("Cannot specify both a file and include/exclude types.")
+        raise CSToolsError(error="A guid and include/exclude specified.",
+                           reason="Cannot specify both a file and include/exclude types.",
+                           mitigation="Specify either a file or include/exclude types, but not both.")
 
 
 def _load_from_file(
@@ -171,11 +175,11 @@ def _load_from_file(
 
     tml = tmlfs.load_tml_for_guid(guid)
 
-    if tml.type == TMLType.CONNECTION:
+    if tml.tml_type_name == TMLType.connection:
         responses, connection_tables = _load_connections(ts, tmlfs, [tml], import_policy, force_create, mapping_file)
         all_responses.extend(responses)
     else:
-        responses, connection_tables = _load_tml(ts, tmlfs, [tml], import_policy, force_create, mapping_file)
+        responses = _load_tml(ts, tmlfs, [tml], import_policy, force_create, mapping_file)
         all_responses.extend(responses)
 
     return all_responses
@@ -381,20 +385,20 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
         guid = obj["response"].get("header", {}).get("id_guid")
         name = obj["response"].get("header", {}).get("name")
         subtype = obj["response"].get("header", {}).get("type", "")
-        type = obj["response"].get("header", {}).get("metadata_type")
+        metadata_type = obj["response"].get("header", {}).get("metadata_type")
 
         if obj["response"]["status"]["status_code"] != "ERROR":
             guids_to_map[old_guid] = guid
 
         status_code = obj["response"]["status"]["status_code"]
         error_messages = obj["response"]["status"].get("error_message", None)
-        log.info(f"Imported {type} {name} ({guid}) with status {status_code} and message {error_messages}")
+        log.info(f"Imported {metadata_type} {name} ({guid}) with status {status_code} and message {error_messages}")
 
         responses.append(
             TMLImportResponse(
                 guid=guid,
-                metadata_object_type=type,
-                tml_type_name=TMLSupportedContent.type_subtype_to_tml_type(type, subtype).value,
+                metadata_object_type=metadata_type,
+                tml_type_name=TMLSupportedContent.type_subtype_to_tml_type(metadata_type, subtype).value,
                 name=name,
                 status_code=status_code,
                 error_messages=error_messages
