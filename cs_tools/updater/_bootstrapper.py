@@ -86,7 +86,8 @@ def cli():
     _setup_logging(args.verbose)
     
     # remove any pre-existing work from a historical install
-    _cleanup()
+    if not args.offline_mode:
+        _cleanup()
 
     log.info(
         "{g}Welcome to the CS Tools Bootstrapper!{x}"

@@ -1,6 +1,8 @@
-from typing import List
+from typing import Dict, List
 import itertools as it
+import datetime as dt
 import logging
+import pathlib
 import json
 
 import typer
@@ -10,6 +12,7 @@ from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.api._utils import SYSTEM_USERS
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import MetadataType, MultipleChoiceType, SyncerProtocolType
+from cs_tools.updater import cs_tools_venv
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.dependencies.syncer import DSyncer
@@ -159,7 +162,7 @@ def rename(
     else:
         for row in syncer.load(remapping):
             users_map[row["from_username"]] = row["to_username"]
-    
+
     tasks = [
         ("gather_users", f"Getting information on {len(users_map)} existing Users in ThoughtSpot"),
         ("update_users", f"Attempting update for {len(users_map)} Users"),
@@ -169,7 +172,7 @@ def rename(
         failed = []
 
         with tasks["gather_users"]:
-            responses = []
+            responses: Dict[str, httpx.Response] = {}
 
             for from_username in users_map:
                 if from_username in SYSTEM_USERS:
@@ -180,17 +183,20 @@ def rename(
                     r = ts.api.user_read(username=from_username)
                 except httpx.HTTPStatusError as e:
                     log.error(f"failed to find user [b blue]{from_username}[/]")
-                    r = e.response
-
-                responses.append(r)
-
-        with tasks["update_users"]:
-            for (from_username, to_username), r in zip(users_map.items(), responses):
-                if r.is_error or from_username in SYSTEM_USERS:
+                    log.debug("detailed info", exc_info=True)
                     continue
 
+                responses[from_username] = r
+
+            # back up the state of users
+            filename = f"user-rename-{dt.datetime.now()::%Y%m%dT%H%M%S}"
+            with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
+                json.dump(responses, f, indent=4)
+
+        with tasks["update_users"]:
+            for from_username, r in responses.items():
                 user_info = r.json()
-                user_info["header"]["name"] = to_username
+                user_info["header"]["name"] = users_map[from_username]
 
                 try:
                     ts.api.user_update(user_guid=user_info["header"]["id"], content=user_info)
@@ -201,11 +207,7 @@ def rename(
                     failed.append(from_username)
 
     if failed:
-        log.warning(
-            f"[b yellow]Failed to update {len(failed)} Users"
-            f"\n - "
-            f"\n - ".join(failed)
-        )
+        log.warning(f"[b yellow]Failed to update {len(failed)} Users\n" + "\n - ".join(failed))
 
 
 @app.command(dependencies=[thoughtspot])
@@ -321,6 +323,12 @@ def sync(
         with tasks["sync_principals"]:
             principals = work._form_principals(u, g, x)
 
+            # back up the state of users
+            u, g, x = work._get_current_security(ts)
+            filename = f"user-sync-{dt.datetime.now():%Y%m%dT%H%M%S}"
+            with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
+                json.dump({"users": u, "groups": g, "memberships": x}, f, indent=4)
+
             try:
                 r = ts.api.user_sync(
                     principals=principals,
@@ -360,5 +368,4 @@ def sync(
                 continue
 
         centered_table.renderable.title = f"Synced {principal_type.title()}"
-        centered_table.renderable.footer = f"Hello world"
         rich_console.print(centered_table)
