@@ -107,9 +107,9 @@ class RESTAPIv1:
                 r = self.session.request(method, endpoint, **request_kw)
 
         log.debug(f"<< HTTP: {r.status_code}")
+        TRACE = 5
 
         if r.text:
-            TRACE = 5
             log.log(TRACE, "<< CONTENT:\n\n%s", r.text)
 
         if r.is_error:
