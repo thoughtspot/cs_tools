@@ -1,6 +1,8 @@
 from typing import Dict, List
 import itertools as it
+import datetime as dt
 import logging
+import pathlib
 import json
 
 import typer
@@ -10,6 +12,7 @@ from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.api._utils import SYSTEM_USERS
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import MetadataType, MultipleChoiceType, SyncerProtocolType
+from cs_tools.updater import cs_tools_venv
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.dependencies.syncer import DSyncer
@@ -185,6 +188,11 @@ def rename(
 
                 responses[from_username] = r
 
+            # back up the state of users
+            filename = f"user-rename-{dt.datetime.now()::%Y%m%dT%H%M%S}"
+            with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
+                json.dump(responses, f, indent=4)
+
         with tasks["update_users"]:
             for from_username, r in responses.items():
                 user_info = r.json()
@@ -314,6 +322,12 @@ def sync(
 
         with tasks["sync_principals"]:
             principals = work._form_principals(u, g, x)
+
+            # back up the state of users
+            u, g, x = work._get_current_security(ts)
+            filename = f"user-sync-{dt.datetime.now():%Y%m%dT%H%M%S}"
+            with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
+                json.dump({"users": u, "groups": g, "memberships": x}, f, indent=4)
 
             try:
                 r = ts.api.user_sync(
