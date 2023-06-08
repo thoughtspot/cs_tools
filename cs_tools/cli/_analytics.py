@@ -12,14 +12,15 @@ import logging
 import shutil
 import uuid
 import json
+import os
 
 from awesomeversion import AwesomeVersion
 from rich.prompt import Prompt
-from pydantic import validator
+from rich.panel import Panel
 from sqlmodel import SQLModel, Field
+from pydantic import validator
 import sqlalchemy as sa
 import httpx
-from rich.panel import Panel
 
 from cs_tools.updater import cs_tools_venv
 from cs_tools._version import __version__
@@ -32,8 +33,11 @@ log = logging.getLogger(__name__)
 
 def get_database() -> sa.engine.Engine:
     """Get the local SQLite Analytics database."""
-    db_path = cs_tools_venv.app_dir.resolve().joinpath("analytics.db")
-    db = sa.create_engine(f"sqlite:///{db_path}", future=True)
+    if os.getenv("CI"):
+        db = sa.create_engine("sqlite://", future=True)
+    else:
+        db_path = cs_tools_venv.app_dir.resolve().joinpath("analytics.db")
+        db = sa.create_engine(f"sqlite:///{db_path}", future=True)
 
     with db.begin() as transaction:
         try:
