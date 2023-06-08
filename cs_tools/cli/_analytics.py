@@ -22,10 +22,10 @@ import httpx
 from rich.panel import Panel
 
 from cs_tools.updater import cs_tools_venv
+from cs_tools._version import __version__
 from cs_tools.settings import _meta_config as meta
 from cs_tools.cli.ux import rich_console
 from cs_tools import utils
-import cs_tools
 
 log = logging.getLogger(__name__)
 
@@ -45,14 +45,14 @@ def get_database() -> sa.engine.Engine:
             latest_recorded_version = "0.0.0"
 
         # PERFROM AN ELEGANT DATABASE MIGRATION :~)
-        if AwesomeVersion(latest_recorded_version) < AwesomeVersion("1.4.6"):
+        if AwesomeVersion(latest_recorded_version) < AwesomeVersion("1.4.7"):
             SQLModel.metadata.drop_all(bind=db)
     
     SQLModel.metadata.create_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
 
     # SET UP THE DATABASE
-    if AwesomeVersion(latest_recorded_version) < AwesomeVersion("1.4.6"):
-        data = {"envt_uuid": meta.install_uuid, "cs_tools_version": cs_tools.__version__}
+    if AwesomeVersion(latest_recorded_version) < AwesomeVersion("1.4.7"):
+        data = {"envt_uuid": meta.install_uuid, "cs_tools_version": __version__}
 
         with db.begin() as transaction:
             stmt = sa.insert(RuntimeEnvironment).values([RuntimeEnvironment(**data).dict()])

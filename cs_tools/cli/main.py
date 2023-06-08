@@ -113,7 +113,6 @@ def run() -> int:
     """
     Entrypoint into cs_tools.
     """
-    from cs_tools.settings import _meta_config
     from cs_tools.cli import _analytics
     
     # monkey-patch the typer implementation
@@ -122,8 +121,11 @@ def run() -> int:
     # import all our tools
     from cs_tools.cli import _config, _tools, _self, _log
 
+    # first thing we do is request the database, this allows us to perform a migration if necessary
+    db = _analytics.get_database()
+
     this_run_data = {
-        "envt_uuid": _meta_config.install_uuid,
+        "envt_uuid": meta.install_uuid,
         "cs_tools_version": __version__,
         "start_dt": dt.datetime.utcnow(),
         "os_args": " ".join(["cs_tools", *sys.argv[1:]]),
@@ -141,7 +143,7 @@ def run() -> int:
     try:
         return_code = app(standalone_mode=False)
 
-    except (click.Abort, typer.Abort) as e:
+    except (click.Abort, typer.Abort):
         return_code = 0
         rich_console.print("[b yellow]Stopping -- cancelled by user..\n")
 
@@ -179,8 +181,8 @@ def run() -> int:
         suprised_emoji = random.choice(
             (
                 ":cold_sweat:", ":astonished:", ":anguished:", ":person_shrugging:", ":sweat:", ":scream:",
-                ":sweat_smile:", ":nerd_face:"
-            )
+                ":sweat_smile:", ":nerd_face:",
+            ),
         )
 
         text = Panel(
@@ -188,18 +190,18 @@ def run() -> int:
                 f"\nIf you encounter this message more than once, please help by letting us know!"
                 f"\n"
                 f"\n          GitHub: [b blue][link={github_issue}]{github_issue}[/link][/]"
-                f"\n"
+                f"\n",
             ),
             border_style="yellow",
             title=f"{suprised_emoji}  This is an unhandled error!  {suprised_emoji}",
-            subtitle="Run [b blue]cs_tools logs report[/] to send us your last error."
+            subtitle="Run [b blue]cs_tools logs report[/] to send us your last error.",
         )
 
         rich_console.print(
             Align.center(rich_traceback),
             "\n",
             Align.center(text),
-            "\n"
+            "\n",
         )
 
     this_run_data["is_success"] = return_code in (0, None)
@@ -209,7 +211,7 @@ def run() -> int:
 
     # Add the analytics to the local database
     try:
-        with _analytics.get_database().begin() as transaction:
+        with db.begin() as transaction:
             stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
             transaction.execute(stmt)
 
