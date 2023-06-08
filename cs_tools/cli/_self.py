@@ -8,7 +8,6 @@ import sys
 import os
 
 from awesomeversion import AwesomeVersion
-import sqlalchemy as sa
 import typer
 import rich
 
@@ -128,16 +127,11 @@ def info(
 
 
 @app.command(cls=CSToolsCommand, hidden=True)
-def pip():
-    """
-    Remove CS Tools.
-    """
-    # if venv_name is not None:
-    #     os.environ["CS_TOOLS_CONFIG_DIRNAME"] = venv_name
-
-    # venv = cs_tools_venv
-    # venv.pip()
-    raise NotImplementedError("Not yet.")
+def analytics():
+    """Re-prompt for analytics."""
+    meta.record_thoughtspot_url = None
+    meta.analytics_opt_in = None
+    _analytics.prompt_for_opt_in()
 
 
 @app.command(cls=CSToolsCommand, hidden=True)
