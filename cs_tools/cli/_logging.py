@@ -6,31 +6,8 @@ from cs_tools.updater import cs_tools_venv
 from cs_tools.cli.ux import rich_console
 
 
-def _monkeypatch_logging_trace():
-    """
-    """
-    # HTTPX defines the TRACE loglevel. (link: https://github.com/encode/httpx/blob/master/httpx/_utils.py#L232)
-    # 40 --> ERROR
-    # 30 --> WARNING
-    # 20 --> INFO
-    # 10 --> DEBUG
-    #  5 --> TRACE
-    #
-    # We just need to monkeypatch it into the logging environment.
-    def _trace_log_level(self, message, *args, **kwargs):
-        if self.isEnabledFor(5):
-            self._log(5, message, args, **kwargs)
-
-    def _log_to_root(message, *args, **kwargs):
-        logging.log(5, message, *args, **kwargs)
-
-    logging.getLoggerClass().trace = _trace_log_level
-    logging.trace = _log_to_root
-
-
 def _rotate_logs(n_files_to_keep: int) -> None:
-    """ """
-    logs_dir = cs_tools_venv.app_dir.joinpath("logs").resolve()
+    logs_dir = cs_tools_venv.app_dir.joinpath(".logs").resolve()
     logs_dir.mkdir(parents=True, exist_ok=True)
 
     lifo = sorted(logs_dir.iterdir(), reverse=True)
@@ -42,7 +19,6 @@ def _rotate_logs(n_files_to_keep: int) -> None:
 
 
 def _setup_logging() -> None:
-    _monkeypatch_logging_trace()
     _rotate_logs(n_files_to_keep=25)
 
     logging.getLogger("httpcore").setLevel("INFO")
@@ -86,7 +62,7 @@ def _setup_logging() -> None:
         "log_time_format": "[%X]",
     }
 
-    logs_dir = cs_tools_venv.app_dir.joinpath("logs")
+    logs_dir = cs_tools_venv.app_dir.joinpath(".logs")
     logs_dir.mkdir(parents=True, exist_ok=True)
     now = dt.datetime.now().strftime("%Y-%m-%dT%H_%M_%S")
 

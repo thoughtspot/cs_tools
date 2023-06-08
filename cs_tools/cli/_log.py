@@ -31,7 +31,7 @@ def report(
 
     _analytics.maybe_send_analytics_data()
 
-    logs_dir = cs_tools_venv.app_dir.joinpath("logs")
+    logs_dir = cs_tools_venv.app_dir.joinpath(".logs")
     sorted_newest = sorted(logs_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
 
     for i, log in enumerate(sorted_newest, start=1):
