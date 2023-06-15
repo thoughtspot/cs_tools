@@ -43,7 +43,7 @@ dependencies = [
     "pendulum >= 2.1.2",
     "rich >= 13.0.0",
     "sqlmodel >= 0.0.8",
-    "thoughtspot_tml >= 2.0.4",
+    "thoughtspot_tml @ https://github.com/thoughtspot/thoughtspot_tml/archive/v2.0.5.zip",
     "toml >= 0.10.2",
 
     # version specific
