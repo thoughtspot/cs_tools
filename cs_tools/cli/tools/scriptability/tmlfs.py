@@ -32,7 +32,7 @@ class TMLType(StrEnum):
     pinboard = "pinboard"
 
 
-class BaseTMLFileSystem(ABC):
+class BaseTMLFileSystem:
 
     def __init__(self, path: pathlib.Path, log_for: str, logger: logging.Logger):
         """
@@ -58,6 +58,43 @@ class BaseTMLFileSystem(ABC):
 
             logger.addHandler(file_handler)
 
+    @classmethod
+    def create_tml_file_system(cls, path: pathlib.Path) -> None:
+        """
+        Create a new file system object.  If the path does not exist, it will be created.  The structure of the file
+        system is:
+        root
+        - .tmlfs - hidden file with info about the file system.
+        - guid-mappings - guid mapping files with names of the form <source>-<dest>.json
+        - logs - log and import files
+          - export-yyyy.mm.dd-hh.mm.ss.log - log file for export
+          - import-yyyy.mm.dd-hh.mm.ss.log - log file for import
+          - imported - imported files
+            - yyyy.mm.dd-hh.mm.ss - folder for import
+        - connections - connection files
+        - tables - table files
+        - views - view files
+        - sql-views - SQL view files
+        - worksheets - worksheet files
+        - answers - answer files
+        - liveboards - liveboard files
+        :param path: The root path for the file system.  The FS will be created if it doesn't exist.  sub-folders will
+                     be created as needed to make sure they stay consistent with the structure.
+        """
+        if path.exists():
+            if not path.is_dir():
+                raise CSToolsError(f"TML Path {path} exists but is not a directory.")
+            else:
+                fsfile = path / ".tmlfs"
+                if not fsfile.exists():
+                    rich_console.log(f"Creating TML File System at {path}")
+
+        # now create the sub-folders.  If they already exist, then the creation will be ignored.
+        (path / "logs").mkdir(exist_ok=True)
+        (path / "guid-mappings").mkdir(exist_ok=True)
+
+        for tml_type in TMLType:
+            (path / tml_type).mkdir(exist_ok=True)
     def _create_log_path(self, log_for: str) -> pathlib.Path:
         """
         Creates a new log folder and sets the name for the log file.
@@ -74,6 +111,7 @@ class BaseTMLFileSystem(ABC):
         log_path.mkdir(parents=True, exist_ok=True)  # need full path in case the path doesn't yet exist.
 
         return log_path
+
 
     def log_tml(self, tml: TML, old_guid: GUID = None) -> None:
         """
@@ -112,45 +150,7 @@ class ExportTMLFS(BaseTMLFileSystem):
 
     def __init__(self, path: pathlib.Path, logger: logging.Logger):
         super().__init__(path=path, log_for="export", logger=logger)
-        self._create_tml_file_system(self.path)
-
-    @classmethod
-    def _create_tml_file_system(cls, path: pathlib.Path) -> None:
-        """
-        Create a new file system object.  If the path does not exist, it will be created.  The structure of the file
-        system is:
-        root
-        - .tmlfs - hidden file with info about the file system.
-        - guid-mappings - guid mapping files with names of the form <source>-<dest>.json
-        - logs - log and import files
-          - export-yyyy.mm.dd-hh.mm.ss.log - log file for export
-          - import-yyyy.mm.dd-hh.mm.ss.log - log file for import
-          - imported - imported files
-            - yyyy.mm.dd-hh.mm.ss - folder for import
-        - connections - connection files
-        - tables - table files
-        - views - view files
-        - sql-views - SQL view files
-        - worksheets - worksheet files
-        - answers - answer files
-        - liveboards - liveboard files
-        :param path: The root path for the file system.  The FS will be created if it doesn't exist.  sub-folders will
-                     be created as needed to make sure they stay consistent with the structure.
-        """
-        if path.exists():
-            if not path.is_dir():
-                raise CSToolsError(f"TML Path {path} exists but is not a directory.")
-            else:
-                fsfile = path / ".tmlfs"
-                if not fsfile.exists():
-                    rich_console.log(f"Creating TML File System at {path}")
-
-        # now create the sub-folders.  If they already exist, then the creation will be ignored.
-        (path / "logs").mkdir(exist_ok=True)
-        (path / "guid-mappings").mkdir(exist_ok=True)
-
-        for tml_type in TMLType:
-            (path / tml_type).mkdir(exist_ok=True)
+        self.create_tml_file_system(self.path)
 
     def write_tml(self, tml: TML) -> None:
         """

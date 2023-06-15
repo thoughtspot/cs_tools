@@ -7,7 +7,7 @@
 #
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional, Dict, List, Tuple
+from typing import Dict, List, Iterable
 import logging
 import pathlib
 
@@ -21,6 +21,7 @@ from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.ux import rich_console
 from cs_tools.types import GUID, TMLImportPolicy
 
+from .tmlfs import BaseTMLFileSystem
 from ._compare import compare
 from ._import import to_import
 from ._export import export
@@ -29,7 +30,7 @@ from . import layout
 log = logging.getLogger(__name__)
 app = CSToolsApp(
     help="""
-    Tool for easily migrating TML between instance.
+    Tool for migrating TML between instance.
 
     ThoughtSpot provides the ability to extract object metadata (tables, worksheets, liveboards, etc.) 
     in ThoughtSpot Modeling Language (TML) format, which is a text format based on YAML.  
@@ -59,7 +60,7 @@ class MetadataColumn:
         return self.is_missing_external or self.data_type_internal != self.data_type_external
 
     @property
-    def values(self) -> Tuple[str]:
+    def values(self) -> Iterable[str]:
         row = (
             self.database,
             self.schema,
@@ -187,6 +188,18 @@ def connection_check(
 
     else:
         syncer.dump("connection-check", data=[column.dict() for column in column_sync])
+
+
+@app.command(name="init-fs")
+def scriptability_init_fs(
+        directory: pathlib.Path = typer.Argument(
+            ..., help="directory to save TML to", file_okay=False, resolve_path=True, exists=True
+        )
+) -> None:
+    """
+    Creates a new TML file system in the specified directory.
+    """
+    BaseTMLFileSystem.create_tml_file_system(directory)
 
 
 @app.command(dependencies=[thoughtspot], name="export")
