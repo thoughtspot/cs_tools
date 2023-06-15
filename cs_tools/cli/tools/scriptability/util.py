@@ -31,7 +31,7 @@ class GUIDMapping:
       path to the mapping object
 
     remap_object_guid : bool, default = True
-      whether or not to remap the top-level tml.guid
+      whether to remap the top-level tml.guid
     """
 
     def __init__(self, source: EnvName, dest: EnvName, path: pathlib.Path, remap_object_guid: bool = True):

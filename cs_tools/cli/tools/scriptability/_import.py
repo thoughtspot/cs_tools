@@ -8,20 +8,22 @@ import pathlib
 import re
 import time
 from dataclasses import dataclass
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 from awesomeversion import AwesomeVersion
 from httpx import HTTPStatusError
 from rich.align import Align
 from rich.table import Table
+from thoughtspot_tml import Connection
 from thoughtspot_tml._tml import TML
+from thoughtspot_tml.exceptions import TMLDecodeError
 from thoughtspot_tml.utils import _recursive_scan
 
 from cs_tools.cli.tools.scriptability.util import GUIDMapping
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.types import TMLImportPolicy, GUID, MetadataObjectType, ShareModeAccessLevel, TMLSupportedContent
+from cs_tools.types import GUID, MetadataObjectType, ShareModeAccessLevel, TMLImportPolicy, TMLSupportedContent, TMLSupportedContentSubtype
 from cs_tools.utils import chunks
 from .tmlfs import ImportTMLFS, TMLType
 
@@ -176,7 +178,7 @@ def _load_from_file(
     tml = tmlfs.load_tml_for_guid(guid)
 
     if tml.tml_type_name == TMLType.connection:
-        responses, connection_tables = _load_connections(ts, tmlfs, [tml], import_policy, force_create, mapping_file)
+        responses = _load_connections(ts, tmlfs, [tml], import_policy, force_create, mapping_file)
         all_responses.extend(responses)
     else:
         responses = _load_tml(ts, tmlfs, [tml], import_policy, force_create, mapping_file)
@@ -204,8 +206,7 @@ def _load_from_dir(
     # First load the connections.  Those need to be done first and use different APIs.
     if types_to_import and TMLType.connection in types_to_import:
         connection_tml = tmlfs.load_tml([TMLType.connection])
-        responses, connection_tables = _load_connections(ts, tmlfs, connection_tml, import_policy, force_create,
-                                                         mapping_file)
+        responses = _load_connections(ts, tmlfs, connection_tml, import_policy, force_create, mapping_file)
         all_responses.extend(responses)
 
     # Now load all types remaining that were requested.
@@ -225,15 +226,19 @@ def _load_connections(
         import_policy: TMLImportPolicy,
         force_create: bool,
         mapping_file: GUIDMapping,
-) -> tuple[List[TMLImportResponse], Dict[str, List[str]]]:
+) -> List[TMLImportResponse]:
     responses: List[TMLImportResponse] = []
-    connection_tables: Dict[str, List[str]] = {}  # connection name --> table names
 
-    old_guids = [_.guid for _ in connection_tml if _.guid]
+    old_guids = []
+    for tml in connection_tml:
+        old_guid = tml.guid if tml.guid else None
+        old_guids.append(old_guid)
+        mapping_file.disambiguate(tml=tml, delete_unmapped_guids=force_create)
+        tmlfs.log_tml(tml=tml, old_guid=old_guid)
 
     if import_policy == TMLImportPolicy.validate:
         log.warning("Warning: connections don't support validate only policies.  Ignoring connections.")
-        return responses, connection_tables  # connection APIs don't support validate_only.
+        return responses  # connection APIs don't support validate_only.
 
     if import_policy == TMLImportPolicy.all_or_none:
         log.warning(
@@ -245,17 +250,17 @@ def _load_connections(
     _verify_connection_passwords(connection_tml)
 
     if force_create:
-        responses, connection_tables = _create_connections(ts, tmlfs, connection_tml=connection_tml)
+        responses = _create_connections(ts, tmlfs, connection_tml=connection_tml)
     else:
-        responses, connection_tables = _update_connections(ts, tmlfs, connection_tml=connection_tml,
-                                                           mapping_file=mapping_file)
+        responses = _update_connections(ts, tmlfs, connection_tml=connection_tml)
 
-    new_guids = [r.guid for r in responses if not r.is_error]
-    mapping_file.set_mapped_guids(old_guids, new_guids)  # might be the same, but that's OK.
+    # If some TML failed, then the GUIDs shouldn't be added to the map.
+    new_old_guids, new_guids = _get_guids_to_map(old_guids=old_guids, responses=responses)
+    mapping_file.set_mapped_guids(new_old_guids, new_guids)  # might be the same, but that's OK.
 
     _wait_for_metadata(ts=ts, guids=new_guids)
 
-    return responses, connection_tables
+    return responses
 
 
 def _verify_connection_passwords(connection_tml: [TML]) -> None:
@@ -282,7 +287,7 @@ def _create_connections(
         ts: ThoughtSpot,
         tmlfs: ImportTMLFS,
         connection_tml: [TML],
-) -> tuple[List[TMLImportResponse], Dict[str, List[str]]]:
+) -> List[TMLImportResponse]:
     """
     Creates a new connection.  Note that tables are not created as part of the conneciton and must be created
     separately.  This will create an empty connection.
@@ -292,11 +297,10 @@ def _create_connections(
     """
 
     responses: List[TMLImportResponse] = []
-    connection_tables: Dict[str, List[str]] = {}  # connection name --> table names
 
     for tml in connection_tml:
 
-        log.debug(f"Creating connection {tml.connection.name} ({tml.guid})")
+        log.info(f"Creating connection {tml.connection.name} ({tml.guid})")
         tmlfs.log_tml(tml)
 
         try:
@@ -339,18 +343,165 @@ def _create_connections(
                 )
 
         except HTTPStatusError as e:
-            rich_console.log(f"Error creating connection {tml.name}: {e}")
+            rich_console.log(f"Error creating connection {tml.name}: {e}.")
+            rich_console.log("\tVerify connection file and connection user.")
+            # needed to get a GUID to map for mapping.
+            responses.append(
+                TMLImportResponse(
+                    guid=tml.guid,  # Not sure if this will cause problems since it will map back to itself.
+                    metadata_object_type="DATA_SOURCE",
+                    tml_type_name="connection",
+                    name=tml.name,
+                    status_code="ERROR",
+                    error_messages=[e.response.content.decode("utf-8")]
+                )
+            )
 
-    return responses, connection_tables
+    return responses
 
 
 def _update_connections(ts: ThoughtSpot,
                         tmlfs: ImportTMLFS,
                         connection_tml: [TML],
-                        mapping_file: GUIDMapping,
-                        ) -> tuple[List[TMLImportResponse], Dict[str, List[str]]]:
-    # TODO implement
-    pass
+                        ) -> List[TMLImportResponse]:
+    """
+    Updates an existing connection.  Checks to see if the connection actually exists and will create if not.
+    Note that when creating a connection the tables aren't created.  But when updating, the tables are updated.
+    This is an artifact of how the connection APIs work.  Future releases are supposed to decouple connections
+    and tables.
+    :param ts: The ThoughtSpot instance.
+    :param tmlfs: The ThoughtSpot TML file system.
+    :param connection_tml: The TML for the connection to update.
+    """
+    responses: List[TMLImportResponse] = []
+
+    # connections are processed one at a time.
+    for tml in connection_tml:
+
+        # if it doesn't exist, we have to call and create it.
+        existing_connection = _get_connection(ts, tml.guid)
+        if not existing_connection:
+            create_responses = _create_connections(ts, tmlfs, [tml])
+            responses.extend(create_responses)
+
+        else:
+            # if it does exist, we have to update it.  Note that tables are only allowed to be created via TML (per
+            # scriptability rules, not API) to be consistent with create.
+            _remove_new_tables_from_connection(tml, existing_connection)
+
+            log.info(f"Updating connection {tml.connection.name} ({tml.guid})")
+            tmlfs.log_tml(tml)
+
+            try:
+                r = ts.api.connection_update(
+                    guid=tml.guid,
+                    name=tml.name,
+                    description="",
+                    external_database_type=tml.connection.type,
+                    metadata=tml.to_rest_api_v1_metadata(),
+                )
+
+                if not r.is_success:
+                    status_code = r.reason_phrase
+                    error_messages = str(r.status_code)
+                    name = tml.name
+                    log.error(f"Error updating connection {name} ({tml.guid}): {error_messages}")
+
+                    responses.append(
+                        TMLImportResponse(
+                            guid=tml.guid,
+                            metadata_object_type="DATA_SOURCE",
+                            tml_type_name="connection",
+                            name=tml.name,
+                            status_code=status_code,
+                            error_messages=[error_messages],
+                        )
+                    )
+
+                else:
+                    d = r.json()
+                    data = d.get("dataSource", d)
+
+                    responses.append(
+                        TMLImportResponse(
+                            guid=data["header"]["id"],
+                            metadata_object_type="DATA_SOURCE",
+                            tml_type_name="connection",
+                            name=data["header"]["name"],
+                            status_code="ERROR" if r.reason_phrase else "OK",
+                            error_messages=[r.reason_phrase],
+                        )
+                    )
+
+            except HTTPStatusError as e:
+                rich_console.log(f"Error updating connection {tml.name}: {e}")
+                # needed to get a GUID to map for mapping.
+                responses.append(
+                    TMLImportResponse(
+                        guid=tml.guid,  # Not sure if this will cause problems since it will map back to itself.
+                        metadata_object_type="DATA_SOURCE",
+                        tml_type_name="connection",
+                        name=tml.name,
+                        status_code="ERROR",
+                        error_messages=[e.args[0], e.response.content.decode("utf-8")]
+                    )
+                )
+
+    return responses
+
+
+def _get_connection(ts: ThoughtSpot, connection_guid: GUID) -> Optional[Connection, None]:
+    """
+    Returns true if the connection with the given GUID exists.
+    :param ts: The ThoughtSpot instance.
+    :param connection_guid: The GUID for the connection to check.
+    :return:  True if the connection exists.
+    """
+    try:
+        r = ts.api.connection_export(guid=connection_guid)
+        cnx = Connection.loads(r.text)
+        cnx.guid = connection_guid
+        return cnx
+    except HTTPStatusError as e:
+        if e.response.status_code == 400:  # the API will return a 400 if the connection doesn't exist.
+            return None
+        else:
+            raise CSToolsError(error=f"Unknown error checking for connection {connection_guid}: {e}",
+                               reason=str(e.response.content),
+                               mitigation="Verify TS connection and GUID")
+    except TMLDecodeError as e:
+        raise CSToolsError(error=f"Error decoding connection {connection_guid}: {e}",
+                           mitigation="Verify TS connection and GUID")
+
+
+def _remove_new_tables_from_connection(new_connection: Connection, existing_connection: Connection) -> None:
+    """
+    This is only relevant for updates of connections.  We are limiting creation of tables to table TML, so we need to
+    remove any new tables from the new connection.
+    :param new_connection: The new connection that might have new tables.  The tables will be removed.
+    :param existing_connection: The existing connection to use for comparison.
+    """
+
+    # This could be made more efficient, but there will likely be a small number of tables, so it's not worth it.
+
+    # The tables are list of tables inside the connection.  They can be different sizes.  Remove from the
+    # new connection any tables that aren't in the existing connection.
+    for cnt in range(max(len(new_connection.connection.table), len(existing_connection.connection.table))):
+        if cnt >= len(new_connection.connection.table):
+            break
+        table = new_connection.connection.table[cnt]
+
+        found = False
+        for (idx, existing_table) in enumerate(existing_connection.connection.table):
+            if table.external_table.db_name == existing_table.external_table.db_name \
+                    and table.external_table.schema_name == existing_table.external_table.schema_name \
+                    and table.external_table.table_name == existing_table.external_table.table_name:
+                found = True
+                break
+
+        if not found:  # this is a new table.
+            log.info(f"Removing new table {table.name} from connection {new_connection.name}")
+            new_connection.connection.table.remove(table)
 
 
 def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportPolicy, force_create: bool, mapping_file
@@ -360,6 +511,8 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
     old_guids = []
 
     for tml in tml_list:
+        log.info(f"Importing {tml.name} ({tml.guid})")
+
         # remember the original GUIDs since they can change with the mapping.
         old_guid = tml.guid
         old_guids.append(old_guid)
@@ -380,12 +533,19 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
     guid_cnt = 0
     for obj in r.json()["object"]:
         old_guid = old_guids[guid_cnt]
-        guid_cnt += 1
 
-        guid = obj["response"].get("header", {}).get("id_guid")
-        name = obj["response"].get("header", {}).get("name")
-        subtype = obj["response"].get("header", {}).get("type", "")
-        metadata_type = obj["response"].get("header", {}).get("metadata_type")
+        status_code = obj["response"]["status"]["status_code"]
+
+        if status_code == "ERROR":
+            guid = old_guid
+            name = tml_list[guid_cnt].name
+            metadata_type = TMLSupportedContent.from_friendly_type(tml_list[guid_cnt].tml_type_name)
+            # subtype = TMLSupportedContentSubtype.from_friendly_type(tml_list[guid_cnt].tml_type_name)
+        else:  # not an error
+            guid = obj["response"].get("header", {}).get("id_guid")
+            name = obj["response"].get("header", {}).get("name")
+            # subtype = obj["response"].get("header", {}).get("type", "")
+            metadata_type = obj["response"].get("header", {}).get("metadata_type")
 
         if obj["response"]["status"]["status_code"] != "ERROR":
             guids_to_map[old_guid] = guid
@@ -398,12 +558,14 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
             TMLImportResponse(
                 guid=guid,
                 metadata_object_type=metadata_type,
-                tml_type_name=TMLSupportedContent.type_subtype_to_tml_type(metadata_type, subtype).value,
+                tml_type_name=tml_list[guid_cnt].tml_type_name,
                 name=name,
                 status_code=status_code,
                 error_messages=error_messages
             )
         )
+
+    guid_cnt += 1
 
     # Have to make sure it's not an error.  is_success is False on warnings, but content is created.
     is_error_free = all(not r.is_error for r in responses)
@@ -411,11 +573,31 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
     if is_error_free or import_policy != TMLImportPolicy.all_or_none:
         for old_guid, new_guid in guids_to_map.items():
             mapping_file.set_mapped_guid(old_guid, new_guid)
-        mapping_file.save()
+            mapping_file.save()
 
         _wait_for_metadata(ts=ts, guids=[imported_object.guid for imported_object in responses])
 
     return responses
+
+
+def _get_guids_to_map(old_guids: List[GUID], responses: List[TMLImportResponse]) -> Tuple[List[GUID], List[GUID]]:
+    """
+    Returns a list of old guid to new guid mapping.  Responses that had errors are ignored because they didn't map.
+    :param old_guids: The old GUIDs for the imported content.
+    :param responses: The responses from the call.
+    :return: The old GUIDs and the new GUIDs to use for mapping.
+    """
+    idx = 0
+    new_old_guids = []
+    new_guids = []
+    for r in responses:
+        # don't map if there is an error or if there was no original GUID.
+        if not r.is_error and old_guids[idx]:
+            new_old_guids.append(old_guids[idx])
+            new_guids.append(r.guid)
+        idx += 1
+
+    return new_old_guids, new_guids
 
 
 def _wait_for_metadata(ts: ThoughtSpot, guids: List[GUID]) -> None:
@@ -466,10 +648,10 @@ def _show_results_as_table(results: List[TMLImportResponse]) -> None:
     table = Table(title="Import Results", width=150)
 
     table.add_column("Status", justify="center", width=10)  # 4 + length of literal: status
-    table.add_column("GUID", width=40)  # 4 + length of guid (36)
+    table.add_column("GUID", width=20)  # 4 + length of guid (36)  - was 40, but making shorter for longer error.
     # table.add_column("Type", justify="center", width=13)  # 4 + length of "worksheet"
     table.add_column("Name", justify="center", width=16)  # Will wrap the name.
-    table.add_column("Error", no_wrap=True, width=150 - 10 - 34 - 16)  # 150 max minus previous.
+    table.add_column("Error", width=150 - 10 - 20 - 16)  # 150 max minus previous.
 
     for r in results:
         try:
