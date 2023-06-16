@@ -4,10 +4,9 @@ import logging
 import inspect
 
 from typer.core import TyperOption
-import threading
-import typer
-import httpx
 import click
+import httpx
+import typer
 
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.thoughtspot import ThoughtSpot
@@ -89,8 +88,9 @@ class DThoughtSpot(Dependency):
             return
 
         from cs_tools.cli import _analytics
+        from cs_tools.utils import ExceptedThread
 
-        background = threading.Thread(target=_analytics.maybe_send_analytics_data)
+        background = ExceptedThread(target=_analytics.maybe_send_analytics_data)
         background.start()
 
     def __call__(self, ctx: typer.Context):
