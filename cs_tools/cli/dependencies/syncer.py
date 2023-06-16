@@ -139,11 +139,12 @@ class DSyncer(Dependency):
             except toml.TomlDecodeError:
                 raise SyncerError(
                     proto=proto,
+                    proto_url=proto.lower(),
                     definition=definition,
                     reason="Your definition file [blue]{definition}[/] is not correct.",
                     mitigation=(
                         "Visit the link below to see a full example."
-                        "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example"
+                        "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto_url}/#full-definition-example"
                     ),
                 )
 
@@ -166,11 +167,12 @@ class DSyncer(Dependency):
         except pydantic.ValidationError as e:
             raise SyncerError(
                 proto=self.protocol,
+                proto_url=self.protocol.lower(),
                 definition=self.definition_fp or "CLI Input",
                 errors="\n  ".join([f"[blue]{_['loc'][0]}[/]: {_['msg']}" for _ in e.errors()]),
                 reason="[blue]{definition}[/] has incorrect parameters.\n\n  {errors}",
                 mitigation=(
                     "Visit the link below to see a full example."
-                    "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/#full-definition-example"
+                    "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto_url}/#full-definition-example"
                 ),
             )
