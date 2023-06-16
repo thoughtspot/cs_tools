@@ -4,9 +4,11 @@ from typing import Optional, Callable, Any, Dict
 from base64 import urlsafe_b64encode as b64e
 from base64 import urlsafe_b64decode as b64d
 import collections.abc
+import threading
 import itertools as it
 import datetime as dt
 import getpass
+import logging
 import zlib
 import json
 import io
@@ -17,6 +19,9 @@ from cs_tools._compat import Literal
 
 if TYPE_CHECKING:
     import pathlib
+
+log = logging.getLogger(__name__)
+
 
 def chunks(iter_, *, n: int) -> iter:
     """
@@ -208,3 +213,16 @@ class DateTimeEncoder(json.JSONEncoder):
     def default(self, object_: Any) -> Any:
         if isinstance(object_, (dt.date, dt.datetime)):
             return object_.isoformat()
+
+
+class ExceptedThread(threading.Thread):
+    """
+    Drop the level of error reporting down from `warning` to `debug`.
+    """
+
+    def run(self) -> None:
+        try:
+            super().run()
+
+        except Exception:
+            log.debug(f"Something went wrong in {self}", exc_info=True)
