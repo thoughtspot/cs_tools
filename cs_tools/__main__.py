@@ -1,5 +1,16 @@
-# need to reroute to cli.main
-# - this is for the case where the cs_tools.exe gets purged in some corporate environments, but venv works fine
-#
-# check if [cli] installed, route to cs_tools.cli.main:run
-# if not, ... raise an error ? what happens if main isn't defined ? warnings.warn for cli not installed ?
+import logging
+
+try:
+    from cs_tools.cli.main import run
+
+except ImportError:
+    from cs_tools._version import __version__
+
+    logging.warning(
+        f"You are attempting to run cs_tools as a script (invoking cli mode), but have installed CS Tools as a package!"
+        f"\n\nPlease run the command below to invoke the tools directly."
+        f"\n  python -m pip install cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/v{__version__}.zip",
+    )
+
+else:
+    run()
