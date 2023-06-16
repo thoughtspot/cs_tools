@@ -42,23 +42,23 @@ def get_database() -> sa.engine.Engine:
     with db.begin() as transaction:
         try:
             r = transaction.execute(sa.text("""SELECT MAX(cs_tools_version) FROM runtime_environment"""))
-            latest_recorded_version = r.scalar() or "0.0.0"
+            latest_recorded_version = str(r.scalar()) or "0.0.0"
 
         except sa.exc.OperationalError:
             log.debug("Error fetching data from the database", exc_info=True)
             latest_recorded_version = "0.0.0"
 
-        # PERFROM AN ELEGANT DATABASE MIGRATION :~)
-        if AwesomeVersion(latest_recorded_version) < AwesomeVersion("1.4.7"):
-            SQLModel.metadata.drop_all(bind=db)
-    
-    SQLModel.metadata.create_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
+    # PERFROM AN ELEGANT DATABASE MIGRATION :~)
+    if __version__ == "1.4.8" and AwesomeVersion(latest_recorded_version) != AwesomeVersion("1.4.8"):
+        SQLModel.metadata.drop_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
 
     # SET UP THE DATABASE
-    if AwesomeVersion(latest_recorded_version) < AwesomeVersion("1.4.7"):
-        data = {"envt_uuid": meta.install_uuid, "cs_tools_version": __version__}
+    SQLModel.metadata.create_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
 
+    # INSERT OUR CURRENT ENVIRONMENT
+    if AwesomeVersion(latest_recorded_version) < AwesomeVersion(__version__):
         with db.begin() as transaction:
+            data = {"envt_uuid": meta.install_uuid, "cs_tools_version": __version__}
             stmt = sa.insert(RuntimeEnvironment).values([RuntimeEnvironment(**data).dict()])
             transaction.execute(stmt)
 
