@@ -150,7 +150,7 @@ def deploy(
 def bi_server(
     ctx: typer.Context,
     syncer: DSyncer = typer.Option(
-        None,
+        ...,
         custom_type=SyncerProtocolType(models=models.BISERVER_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
@@ -250,7 +250,7 @@ def gather(
         help="if specified, include security controls for Column Level Security as well",
     ),
     syncer: DSyncer = typer.Option(
-        None,
+        ...,
         custom_type=SyncerProtocolType(models=models.METADATA_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
