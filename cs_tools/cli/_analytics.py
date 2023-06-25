@@ -49,7 +49,7 @@ def get_database() -> sa.engine.Engine:
             latest_recorded_version = "0.0.0"
 
     # PERFROM AN ELEGANT DATABASE MIGRATION :~)
-    if __version__ == "1.4.8" and AwesomeVersion(latest_recorded_version) != AwesomeVersion("1.4.8"):
+    if __version__ == "1.4.9" and AwesomeVersion(latest_recorded_version) != AwesomeVersion("1.4.9"):
         SQLModel.metadata.drop_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
 
     # SET UP THE DATABASE
@@ -119,7 +119,7 @@ def maybe_send_analytics_data() -> None:
 
         if rows != "[]":
             r_runtimes = httpx.post(f"{host}/analytics/runtimes", data=rows, follow_redirects=True, timeout=None)
-            log.debug(r_runtimes.text)
+            log.debug(f"/analytics/runtimes :: {r_runtimes}")
             analytics_checkpoints.append(r_runtimes.is_success)
 
         stmt = sa.select(CommandExecution).where(CommandExecution.start_dt >= meta.last_analytics_checkpoint)
@@ -127,7 +127,7 @@ def maybe_send_analytics_data() -> None:
 
         if rows != "[]":
             r_commands = httpx.post(f"{host}/analytics/commands", data=rows, follow_redirects=True, timeout=None)
-            log.debug(r_commands.text)
+            log.debug(f"/analytics/commands :: {r_commands}")
             analytics_checkpoints.append(r_commands.is_success)
 
     if analytics_checkpoints == []:
@@ -153,7 +153,7 @@ class RuntimeEnvironment(SQLModel, table=True):
     cs_tools_version: str = Field(primary_key=True)
     capture_dt: dt.datetime = Field(default_factory=dt.datetime.utcnow)
     operating_system: str = Field(default_factory=platform.system)
-    is_thoughtspot_cluster: str = Field(default_factory=lambda: bool(shutil.which("tscli")))
+    is_thoughtspot_cluster: bool = Field(default_factory=lambda: bool(shutil.which("tscli")))
     python_platform_tag: str = Field(default_factory=sysconfig.get_platform)
     python_version: str = Field(default_factory=platform.python_version)
 
