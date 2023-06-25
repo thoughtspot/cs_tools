@@ -6,5 +6,5 @@ def dataflow_transfer_ownership(ts_client: httpx.Client, *, from_username: str, 
     Like /user/transfer/ownership , but for DataFlow.
     """
     d = {"fromUserName": from_username, "toUserName": to_username}
-    r = ts_client.post("dataflow/diapi/transferofownership", data=d)
+    r = ts_client.get("dataflow/diapi/transferofownership", data=d)
     return r

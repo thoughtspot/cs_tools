@@ -132,6 +132,7 @@ def analytics():
     meta.record_thoughtspot_url = None
     meta.analytics_opt_in = None
     _analytics.prompt_for_opt_in()
+    _analytics.maybe_send_analytics_data()
 
 
 @app.command(cls=CSToolsCommand, hidden=True)

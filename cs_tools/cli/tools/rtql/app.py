@@ -8,7 +8,6 @@ from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin, thoughtsp
 from cs_tools.cli.ux import rich_console
 from cs_tools.cli.ux import CSToolsApp
 
-from .interactive import InteractiveTQL
 
 app = CSToolsApp(
     help="""
@@ -28,7 +27,6 @@ app = CSToolsApp(
 @app.command(dependencies=[thoughtspot_nologin])
 def interactive(
     ctx: typer.Context,
-    debug: bool = typer.Option(False, "--debug", help="print the entire response to console"),
     autocomplete: bool = typer.Option(False, "--autocomplete", help="toggle auto complete feature", show_default=False),
     schema: str = typer.Option("falcon_default_schema", help="schema name to use"),
     http_timeout: int = typer.Option(60.0, "--timeout", help="network call timeout threshold"),
@@ -41,6 +39,8 @@ def interactive(
 
     For a list of all commands, type "help" after invoking tql
     """
+    from .interactive import InteractiveTQL
+
     ts = ctx.obj.thoughtspot
     tql = InteractiveTQL(ts, schema=schema, autocomplete=autocomplete, console=rich_console, http_timeout=http_timeout)
     tql.run()
