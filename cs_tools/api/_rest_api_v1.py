@@ -446,8 +446,9 @@ class RESTAPIv1:
             "id": guid,
             "includeColumns": include_columns,
             "config": config,
-            "authentication_type": authentication_type
+            "authentication_type": authentication_type,
         }
+
         r = self.post("callosum/v1/tspublic/v1/connection/fetchConnection", data=d)
         return r
 
