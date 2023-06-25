@@ -126,7 +126,7 @@ class LogicalTableMiddleware:
                             "spotiq_preference": column["spotiqPreference"],
                             "calendar_type": self._lookup_calendar_guid(column),
                             "is_formula": "formulaId" in column,
-                        }
+                        },
                     )
 
         return columns
