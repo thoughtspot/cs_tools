@@ -36,7 +36,7 @@ jobs:
         run: pip install -e .[docs]
 
       - name: Create a CS Tools configuration
-        run: cs_tools config create --config non-prod --host https://my1.thoughtspot.cloud --username cs_tools --password THIS_IS_FAKE --default --overwrite
+        run: cs_tools config create --config non-prod --host https://my1.thoughtspot.cloud --username cs_tools --password ***** --default --overwrite
 
       - name: Build and Deploy Documentation
         run: mkdocs build
