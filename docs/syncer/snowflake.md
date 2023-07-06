@@ -74,7 +74,7 @@ __Snowflake__ features out-of-the-box features like separation of storage and co
 [configuration]
 snowflake_account_identifier = 'thoughtspot'
 username = 'namey.namerson@thoughtspot.com'
-password = 'Really-Hard-Passphrase-to-Crack'
+password = '*********************'
 warehouse = 'DATALOAD_WH_XS'
 role = 'SYSADMIN'
 database = 'CS_TOOLS'
