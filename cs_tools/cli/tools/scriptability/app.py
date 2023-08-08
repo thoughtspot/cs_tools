@@ -6,11 +6,14 @@
 #   - add support for importing .zip files
 #
 from __future__ import annotations
+
+import sqlite3
 from dataclasses import dataclass
-from typing import Dict, List, Iterable
+from typing import Dict, Iterable, List, Optional
 import logging
 import pathlib
 
+import sqlalchemy
 import typer
 
 from cs_tools.cli.dependencies.syncer import DSyncer
@@ -21,7 +24,7 @@ from cs_tools.cli.ux import CSToolsApp
 from cs_tools.cli.ux import rich_console
 from cs_tools.types import GUID, TMLImportPolicy
 
-from .tmlfs import BaseTMLFileSystem
+from .tmlfs import app as tmlfsApp
 from ._compare import compare
 from ._import import to_import
 from ._export import export
@@ -39,6 +42,7 @@ app = CSToolsApp(
     """,
     options_metavar="[--version, --help]",
 )
+app.add_typer(tmlfsApp, name="tmlfs", help="TML file system operations")
 
 
 @dataclass
@@ -190,17 +194,6 @@ def connection_check(
         syncer.dump("connection-check", data=[column.dict() for column in column_sync])
 
 
-@app.command(name="init-fs")
-def scriptability_init_fs(
-        directory: pathlib.Path = typer.Argument(
-            ..., help="directory to save TML to", file_okay=False, resolve_path=True, exists=True
-        )
-) -> None:
-    """
-    Creates a new TML file system in the specified directory.
-    """
-    BaseTMLFileSystem.create_tml_file_system(directory)
-
 
 @app.command(dependencies=[thoughtspot], name="export")
 def scriptability_export(
@@ -220,12 +213,12 @@ def scriptability_export(
     ),
     author: str = typer.Option(None, help="objects authored by this username to export"),
     pattern: str = typer.Option(None, help=r"object names which meet a pattern, follows SQL LIKE operator (% as a wildcard)"),
-    include_types: str = typer.Option(
+    include_types: Optional[List[str]] = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
         help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
     ),
-    exclude_types: str = typer.Option(
+    exclude_types: Optional[List[str]] = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
         help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",
@@ -284,12 +277,12 @@ def scriptability_import(
     tags: List[str] = typer.Option([], help="one or more tags to add to the imported content"),
     share_with: List[str] = typer.Option([], help="one or more groups to share the uploaded content with"),
     org: str = typer.Option(None, help="name of org to import to"),
-    include_types: str = typer.Option(
+    include_types: Optional[List[str]] = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
         help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
     ),
-    exclude_types: str = typer.Option(
+    exclude_types: Optional[List[str]] = typer.Option(
         None,
         custom_type=MultipleChoiceType(),
         help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",

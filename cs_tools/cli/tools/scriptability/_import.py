@@ -565,7 +565,8 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
             )
         )
 
-    guid_cnt += 1
+        guid_cnt += 1
+
 
     # Have to make sure it's not an error.  is_success is False on warnings, but content is created.
     is_error_free = all(not r.is_error for r in responses)

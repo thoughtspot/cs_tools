@@ -59,7 +59,7 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
     tmlfs = ExportTMLFS(path, log)
 
     include_subtypes = None
-    if include_types is not None:
+    if include_types:
         include_types = [t.lower() for t in include_types]
         # have to do subtypes first since types is overwritten.
         include_subtypes = [str(TMLSupportedContentSubtype.from_friendly_type(t)) for t in include_types
@@ -67,7 +67,7 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
         include_types = [str(TMLSupportedContent.from_friendly_type(t)) for t in include_types]
 
     exclude_subtypes = None
-    if exclude_types is not None:
+    if exclude_types:
         exclude_types = [t.lower() for t in exclude_types]
         # have to do subtypes first since types is overwritten.
         exclude_subtypes = [str(TMLSupportedContentSubtype.from_friendly_type(t)) for t in exclude_types
@@ -210,8 +210,9 @@ def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -
                 tml = tml_type.loads(tml_document=content["edoc"])
                 tml_objects.append(tml)
 
-            except TMLError:
+            except TMLError as tml_error:
                 log.warning(f"[b red]Unable to parse '[b blue]{r.name}.{r.tml_type_name}.tml[/]' to a TML object.")
+                log.error(tml_error, exc_info=True)
                 log.debug(f"decode error for edoc:\n{content['edoc']}")
                 r.status_code = "WARNING"
                 r.error_messages = ["Unable to parse to TML object."]

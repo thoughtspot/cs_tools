@@ -4,8 +4,11 @@ related files.
 """
 import datetime
 import logging
+import os
 import pathlib
-from abc import ABC
+import shutil
+
+import typer
 from typing import List
 
 from thoughtspot_tml._tml import TML
@@ -17,6 +20,9 @@ from cs_tools.cli.tools.scriptability.util import GUIDMapping, EnvName
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
 from cs_tools.types import GUID
+
+
+TMLFS_FILENAME = ".tmlfs"
 
 
 class TMLType(StrEnum):
@@ -64,7 +70,7 @@ class BaseTMLFileSystem:
         Create a new file system object.  If the path does not exist, it will be created.  The structure of the file
         system is:
         root
-        - .tmlfs - hidden file with info about the file system.
+        - $TMLFS_FILENAME - hidden file with info about the file system.
         - guid-mappings - guid mapping files with names of the form <source>-<dest>.json
         - logs - log and import files
           - export-yyyy.mm.dd-hh.mm.ss.log - log file for export
@@ -85,7 +91,7 @@ class BaseTMLFileSystem:
             if not path.is_dir():
                 raise CSToolsError(f"TML Path {path} exists but is not a directory.")
             else:
-                fsfile = path / ".tmlfs"
+                fsfile = path / TMLFS_FILENAME
                 if not fsfile.exists():
                     rich_console.log(f"Creating TML File System at {path}")
 
@@ -211,3 +217,66 @@ class ImportTMLFS(BaseTMLFileSystem):
                     return tml_cls.load(f)
 
         raise CSToolsError(error=f"Could not find TML with GUID {guid}.", mitigation="Check the GUID and try again.")
+
+
+app = typer.Typer(
+    name="tmlsfs",
+    help="TML Scriptability File System",
+    add_completion=False,
+    invoke_without_command=True,
+    no_args_is_help=True,
+)
+
+
+@app.command(name="init")
+def scriptability_init_fs(
+        directory: pathlib.Path = typer.Argument(
+            ..., help="directory to save TML to", file_okay=False, resolve_path=True, exists=True
+        )
+) -> None:
+    """
+    Creates a new TML file system in the specified directory.
+    """
+    BaseTMLFileSystem.create_tml_file_system(directory)
+
+
+@app.command(name="cleanup")
+def scriptability_init_fs(
+        directory: pathlib.Path = typer.Argument(
+            ..., help="Root of the TML file system", file_okay=False, resolve_path=True, exists=True
+        ),
+        nbr_days: int = typer.Option(30, help="number of days to keep logs")
+) -> None:
+    """
+    Creates a new TML file system in the specified directory.
+    """
+    if not directory.exists():
+        raise CSToolsError(error=f"{directory} does not exist.",
+                           reason="An invalid directory was provided.",
+                           mitigation="Verify the the directory exists.")
+
+    if not is_tmlfs(directory):
+        raise CSToolsError(error=f"{directory} is not a TML file system.",
+                           reason="Only TML file systems can be cleaned up.",
+                           mitigation="Verify the the directory is the root of a TML file system.")
+
+    rich_console.log(f"Cleaning up logs in {directory} that are older than {nbr_days} days.")
+
+    now = datetime.datetime.now()
+    logdir = directory / "logs"
+    nbr_deleted = 0
+
+    for folder in os.listdir(logdir):
+        folder_path = os.path.join(logdir, folder)
+        folder_age = now - datetime.datetime.fromtimestamp(os.path.getmtime(folder_path))
+        if folder_age.days > nbr_days:
+            nbr_deleted += 1
+            rich_console.log(f"Removing {folder_path}")
+            shutil.rmtree(folder_path, ignore_errors=True)
+
+    rich_console.log(f"Removed {nbr_deleted} log folders.")
+
+
+def is_tmlfs(directory: pathlib.Path) -> bool:
+    """Returns true if the directory is a TML file system."""
+    return (directory / TMLFS_FILENAME).exists()

@@ -201,6 +201,9 @@ def run() -> int:
     # Add the analytics to the local database
     with _analytics.get_database().begin() as transaction:
         stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
-        transaction.execute(stmt)
+        try:  # BDB - TODO - don't check in.
+            transaction.execute(stmt)
+        except Exception:
+            pass
 
     return return_code

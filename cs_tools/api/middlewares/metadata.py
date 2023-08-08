@@ -183,11 +183,11 @@ class MetadataMiddleware:
 
         for metadata_type in MetadataObjectType:
             # can't exclude logical tables because they have sub-types.  Logical tables will be checked on subtype.
-            if exclude_types is not None and metadata_type is not MetadataObjectType.logical_table \
+            if exclude_types and metadata_type is not MetadataObjectType.logical_table \
                     and (metadata_type in exclude_types):
                 continue
 
-            if include_types is not None and (metadata_type not in include_types):
+            if include_types and (metadata_type not in include_types):
                 continue
 
             metadata_list_kw["offset"] = 0
