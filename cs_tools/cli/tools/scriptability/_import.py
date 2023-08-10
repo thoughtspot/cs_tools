@@ -463,7 +463,7 @@ def _get_connection(ts: ThoughtSpot, connection_guid: GUID) -> Optional[Connecti
         cnx.guid = connection_guid
         return cnx
     except HTTPStatusError as e:
-        if e.response.status_code == 400:  # the API will return a 400 if the connection doesn't exist.
+        if e.response.status_code == 404:  # the API will return a 400 if the connection doesn't exist.
             return None
         else:
             raise CSToolsError(error=f"Unknown error checking for connection {connection_guid}: {e}",
