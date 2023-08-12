@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NewType, List
+from typing import Dict, List, NewType
 import pathlib
 
 from thoughtspot_tml.utils import disambiguate as _disambiguate
@@ -64,6 +64,9 @@ class GUIDMapping:
         """
         for _ in range(len(from_guids)):
             self.set_mapped_guid(from_guids[_], to_guids[_])
+
+    def generate_mapping(self, from_environment: str, to_environment: str) -> Dict[GUID, GUID]:
+        return self.guid_mapper.generate_mapping(from_environment, to_environment)
 
     def disambiguate(self, tml: TMLObject, delete_unmapped_guids: bool = False) -> None:
         """

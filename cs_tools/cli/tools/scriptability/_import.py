@@ -102,9 +102,9 @@ def to_import(
     # if a source and destination were specified, then use the mapping file.  If not, use the`name` from the config.
     mapping_file: Optional[GUIDMapping] = None
     if source and dest:
-        mapping_file = tmlfs.get_mapping_file(source=source, dest=dest)
+        mapping_file = tmlfs.read_mapping_file(source=source, dest=dest)
     else:
-        mapping_file = tmlfs.get_mapping_file(source=ts.config.name, dest=ts.config.name)
+        mapping_file = tmlfs.read_mapping_file(source=ts.config.name, dest=ts.config.name)
 
     if guid:
         all_responses.extend(_load_from_file(ts=ts, tmlfs=tmlfs, guid=guid, import_policy=import_policy,
@@ -646,7 +646,7 @@ def _show_results_as_table(results: List[TMLImportResponse]) -> None:
     """
     Writes a pretty results table to the rich_console.
     """
-    table = Table(title="Import Results", width=150)
+    table = Table(title="Import Results", width=300)
 
     table.add_column("Status", justify="center", width=10)  # 4 + length of literal: status
     table.add_column("GUID", width=20)  # 4 + length of guid (36)  - was 40, but making shorter for longer error.

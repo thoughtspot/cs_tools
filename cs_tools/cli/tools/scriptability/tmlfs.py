@@ -21,7 +21,6 @@ from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
 from cs_tools.types import GUID
 
-
 TMLFS_FILENAME = ".tmlfs"
 
 
@@ -101,6 +100,7 @@ class BaseTMLFileSystem:
 
         for tml_type in TMLType:
             (path / tml_type).mkdir(exist_ok=True)
+
     def _create_log_path(self, log_for: str) -> pathlib.Path:
         """
         Creates a new log folder and sets the name for the log file.
@@ -118,7 +118,6 @@ class BaseTMLFileSystem:
 
         return log_path
 
-
     def log_tml(self, tml: TML, old_guid: GUID = None) -> None:
         """
         Logs a message to the import logs.   Note that this is determined by log time.   TODO - figure out
@@ -131,7 +130,7 @@ class BaseTMLFileSystem:
         tml_file = self._log_path / fn
         tml.dump(tml_file)
 
-    def get_mapping_file(self, source: str, dest: str) -> GUIDMapping:
+    def read_mapping_file(self, source: str, dest: str) -> GUIDMapping:
         """
         Returns a mapping file based on the source and destination. If one doesn't exist, it will be created.
         :param source: The source of the TML, e.g. Dev.
