@@ -56,8 +56,8 @@ class RESTAPIv1:
         self.session.headers.update(
             {
                 "x-requested-by": "CS Tools",
-                "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)"
-            }
+                "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)",
+            },
         )
 
     # PASSTHRU
@@ -179,7 +179,6 @@ class RESTAPIv1:
         self,
         *,
         username: str,
-        email: str,
         display_name: str,
         password: str,
         sharing_visibility: SharingVisibility = "DEFAULT",
@@ -190,13 +189,12 @@ class RESTAPIv1:
     ) -> httpx.Response:
         d = {
             "name": username,
-            "email": email,
-            "displayname": display_name,
             "password": password,
-            "visibility": sharing_visibility,
-            "usertype": user_type,
+            "displayname": display_name,
             "properties": user_properties,
             "groups": dumps(group_guids),
+            "usertype": user_type,
+            "visibility": sharing_visibility,
             "triggeredbyadmin": True,
         }
         r = self.post("callosum/v1/tspublic/v1/user", data=d)
