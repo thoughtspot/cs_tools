@@ -27,7 +27,7 @@ from ._compare import compare
 from ._import import to_import
 from ._export import export
 from . import layout
-from ._mapping_details import mapping_details
+from ._mapping import app as mappingApp
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(
@@ -41,7 +41,8 @@ app = CSToolsApp(
     """,
     options_metavar="[--version, --help]",
 )
-app.add_typer(tmlfsApp, name="tmlfs", help="TML file system operations")
+app.add_typer(tmlfsApp, name="tmlfs", help="TML file system tools")
+app.add_typer(mappingApp, name="mapping", help="TML GUID mapping tools")
 
 
 @dataclass
@@ -311,30 +312,6 @@ def scriptability_import(
         include_types=include_types,
         exclude_types=exclude_types,
     )
-
-
-@app.command(dependencies=[thoughtspot], name="mapping-details")
-def scriptability_mapping_details(
-        ctx: typer.Context,
-        path: pathlib.Path = typer.Argument(
-            ..., help="Root folder to TML file system", file_okay=False, resolve_path=True
-        ),
-        source: str = typer.Argument(..., help="the source environment the TML came from",
-                                   rich_help_panel="GUID Mapping Options"),
-        dest: str = typer.Argument(..., help="the destination environment the TML was importing into",
-                                 rich_help_panel="GUID Mapping Options"),
-        org: str = typer.Option(None, help="name of source org for metadata names"),
-):
-    """
-    Shows the mapping details for all the mapped GUIDs for a given source and destination.
-
-    :param ctx: The TS context from the tools.
-    :param path: The path to the TML file system.
-    :param source: The source used for the mapping.
-    :param dest: The destination used for the mapping.
-    :param org: The org to use for names.
-    """
-    mapping_details(ts=ctx.obj.thoughtspot, path=path, source=source, dest=dest, org=org)
 
 
 @app.command(name="compare")

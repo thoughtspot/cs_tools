@@ -25,6 +25,7 @@ from cs_tools.errors import CSToolsError
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.types import GUID, MetadataObjectType, ShareModeAccessLevel, TMLImportPolicy, TMLSupportedContent, TMLSupportedContentSubtype
 from cs_tools.utils import chunks
+from ._mapping import show_mapping_details
 from .tmlfs import ImportTMLFS, TMLType
 
 log = logging.getLogger(__name__)
@@ -133,6 +134,9 @@ def to_import(
             except HTTPStatusError as e:
                 log.error(f"Unable to share: {e.response.text}")
 
+    # display the mapping file details.
+    show_mapping_details(ts=ts, path=tmlfs.path, source=source, dest=dest, org=org)
+
     print('done')
 
 
@@ -149,8 +153,7 @@ def _check_parameters(
     """
     if (source or dest) and not (source and dest):
         error_msg = "source specified, but not destination" if source else "destination specified, but not source"
-        raise CSToolsError(error=error_msg, reason="Source and destination must both be specified.",
-                           mitigation="Specify both source and destination when using mapping.")
+        raise CSToolsError(error=error_msg, reason="Source and destination must both be specified.", mitigation="Specify both source and destination when using mapping.")
 
     path_mitigation = "The path must exist and be a valid TML file system."
     if not path.exists():
