@@ -41,7 +41,8 @@ def get_database() -> sa.engine.Engine:
 
     with db.begin() as transaction:
         try:
-            r = transaction.execute(sa.text("""SELECT MAX(cs_tools_version) FROM runtime_environment"""))
+            q = "SELECT cs_tools_version FROM runtime_environment ORDER BY capture_dt DESC LIMIT 1"
+            r = transaction.execute(sa.text(q))
             latest_recorded_version = str(r.scalar()) or "0.0.0"
 
         except sa.exc.OperationalError:
