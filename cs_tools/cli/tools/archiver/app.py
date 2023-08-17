@@ -172,7 +172,7 @@ def identify(
                             "author_guid": metadata_object["author"],
                             "author": metadata_object.get("authorDisplayName", "{null}"),
                             "name": metadata_object["name"],
-                        }
+                        },
                     )
 
         if not to_archive:
@@ -235,7 +235,15 @@ def identify(
                 to_tag_types.append(content["type"])
                 to_tag_names.append(tag_guid["id"])
 
-            ts.api.metadata_assign_tag(metadata_guids=to_tag_guids, metadata_types=to_tag_types, tag_guids=to_tag_names)
+            for start_index in range(0, len(to_tag_guids), 10):
+                stop_index = start_index + 25
+
+                ts.api.metadata_assign_tag(
+                    metadata_guids=to_tag_guids[start_index: stop_index],
+                    metadata_types=to_tag_types[start_index: stop_index],
+                    tag_guids=to_tag_names[start_index: stop_index],
+                )
+
 
 
 @app.command(dependencies=[thoughtspot])
@@ -357,11 +365,14 @@ def revert(
                 to_revert_types.append(content["type"])
                 to_revert_names.append(tag_guid["id"])
 
-            ts.api.metadata_unassign_tag(
-                metadata_guids=to_revert_guids,
-                metadata_types=to_revert_types,
-                tag_guids=to_revert_names,
-            )
+            for start_index in range(0, len(to_revert_guids), 10):
+                stop_index = start_index + 25
+
+                ts.api.metadata_unassign_tag(
+                    metadata_guids=to_revert_guids[start_index: stop_index],
+                    metadata_types=to_revert_types[start_index: stop_index],
+                    tag_guids=to_revert_names[start_index: stop_index],
+                )
 
         with tasks["deleting_tag"] as this_task:
             if delete_tag:
