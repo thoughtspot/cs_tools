@@ -41,8 +41,8 @@ app = CSToolsApp(
     """,
     options_metavar="[--version, --help]",
 )
-app.add_typer(tmlfsApp, name="tmlfs", help="TML file system tools")
-app.add_typer(mappingApp, name="mapping", help="TML GUID mapping tools")
+app.add_typer(tmlfsApp, name="tmlfs", help="Commands for working with the TML file system")
+app.add_typer(mappingApp, name="mapping", help="Commands for working with TML GUID mappings")
 
 
 @dataclass
@@ -270,9 +270,9 @@ def scriptability_import(
     ),
     import_policy: TMLImportPolicy = typer.Option(TMLImportPolicy.validate, help="The import policy type"),
     force_create: bool = typer.Option(False, "--force-create", help="will force a new object to be created"),
-    source: str = typer.Option(None, help="the source environment the TML came from",
+    source: str = typer.Option(..., help="the source environment the TML came from",
                                rich_help_panel="GUID Mapping Options"),
-    dest: str = typer.Option(None, help="the destination environment the TML is importing into",
+    dest: str = typer.Option(..., help="the destination environment the TML is importing into",
                              rich_help_panel="GUID Mapping Options"),
     tags: List[str] = typer.Option([], help="one or more tags to add to the imported content"),
     share_with: List[str] = typer.Option([], help="one or more groups to share the uploaded content with"),

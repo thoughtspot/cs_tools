@@ -88,6 +88,7 @@ def show_mapping_details(
     except IOError as ioe:
         log.error(f"Error writing to details file: {ioe}")
 
+
 def _show_results_as_table(mapping_details: Dict[str, Dict], source: str, dest: str) -> None:
     NAME_COL_WIDTH = 20
     GUID_COL_WIDTH = 36
