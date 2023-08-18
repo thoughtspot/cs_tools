@@ -217,12 +217,12 @@ def scriptability_export(
         author: str = typer.Option(None, help="objects authored by this username to export"),
         pattern: str = typer.Option(None,
                                     help=r"object names which meet a pattern, follows SQL LIKE operator (% as a wildcard)"),
-        include_types: Optional[List[str]] = typer.Option(
+        include_types: str = typer.Option(
             None,
             custom_type=MultipleChoiceType(),
             help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
         ),
-        exclude_types: Optional[List[str]] = typer.Option(
+        exclude_types: str = typer.Option(
             None,
             custom_type=MultipleChoiceType(),
             help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",
@@ -230,7 +230,7 @@ def scriptability_export(
         export_associated: bool = typer.Option(
             False,
             "--export-associated",
-            help="if specified, also export related content"
+            help="if specified, also export related content (does not export connections)"
         ),
         org: str = typer.Option(None, help="name or ID of the org to export from"),
 ):
