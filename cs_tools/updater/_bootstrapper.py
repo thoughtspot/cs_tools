@@ -337,11 +337,10 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
 
     def __init__(self, directory, prefix, **passthru):
         # types: (pathlib.Path, str) -> None
-        super().__init__(filename="NULL.log", delay=True, **passthru)
+        random_name = tempfile.NamedTemporaryFile().name
+        super().__init__(filename=f"{directory}/{prefix}{random_name}.log", delay=True, **passthru)
         self._buffer = []
         self._found_error = False
-        self._directory = directory
-        self._prefix = prefix
 
     def emit(self, record):
         # types: (logging.LogRecord) -> None
@@ -355,9 +354,7 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
 
         self._found_error = True
 
-        # "baseFilename" is how the FileHandler calls it, os we need to keep it.
-        _, self.baseFilename = tempfile.mkstemp(suffix=".log", prefix=self._prefix, dir=self._directory, text=True)
-
+        # feed the buffer into the file
         for prior_record in self._buffer:
             super().emit(prior_record)
 
