@@ -119,6 +119,7 @@ class GroupPrivilege(StrEnum):
     has_spotiq_privilege = "A3ANALYSIS"
     can_administer_and_bypass_rls = "BYPASSRLS"
     cannot_create_or_delete_pinboards = "DISABLE_PINBOARD_CREATION"
+    can_verify_liveboard = "LIVEBOARD_VERIFIER"
 
 
 class SharingVisibility(StrEnum):
