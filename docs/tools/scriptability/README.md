@@ -46,7 +46,8 @@ This version of `cs_tools scriptability` supports the following:
 
 !!! warning "Limitations"
 
-    * All of the general [TML limitation](https://docs.thoughtspot.com/software/latest/tml#_limitations_of_working_with_tml_files) apply when using the scriptability tool.
+    * All of the general [TML limitation](https://docs.thoughtspot.com/cloud/latest/tml#_limitations_of_working_with_tml_files) apply when using the scriptability tool.
+    * Users without RLS or Admin privileges won't download RLS rules when exporting.  It is recommended to use highly privileged users when exporting TML. 
     * The author of new content is the user in the config file, not the original author.
 
     The following are some known issues when using the tool:
