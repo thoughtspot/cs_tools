@@ -58,7 +58,7 @@ This version of `cs_tools scriptability` supports the following:
 
 !!! info "Helpful Links"
 
-    :gear: &nbsp; __[Scriptability documentation](https://docs.thoughtspot.com/cloud/latest/scriptability){ target='secondary' .external-link }__
+    :gear: &nbsp; __[ThoughtSpot scriptability documentation](https://docs.thoughtspot.com/cloud/latest/scriptability){ target='secondary' .external-link }__
 
 ## CLI preview
 

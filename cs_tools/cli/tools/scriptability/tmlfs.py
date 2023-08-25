@@ -234,7 +234,8 @@ def scriptability_init_fs(
         )
 ) -> None:
     """
-    Creates a new TML file system in the specified directory.
+    Creates a new TML file system in the specified directory.  New files systems are also create the first time
+    an export is run if the file system doesn't exist.
     """
     BaseTMLFileSystem.create_tml_file_system(directory)
 
@@ -247,7 +248,7 @@ def scriptability_init_fs(
         nbr_days: int = typer.Option(30, help="number of days to keep logs")
 ) -> None:
     """
-    Creates a new TML file system in the specified directory.
+    Performs cleanup of the TML file system.  It removes log files older than the number of days specified.
     """
     if not directory.exists():
         raise CSToolsError(error=f"{directory} does not exist.",
