@@ -216,7 +216,10 @@ class CommandExecution(SQLModel, table=True):
     @validator("config_cluster_url", pre=True)
     def _extract_config_cluster_url(cls, value: Any) -> Optional[str]:
         if isinstance(value, utils.State) and hasattr(value, "thoughtspot"):
-            return value.thoughtspot.platform.url
+            try:
+                return value.thoughtspot.platform.url
+            except RuntimeError:
+                return None
 
         if isinstance(value, str):
             return value

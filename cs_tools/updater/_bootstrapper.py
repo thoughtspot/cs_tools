@@ -208,6 +208,7 @@ _RESET = _create_color_code("reset")
 
 
 def _setup_logging(verbose=True):
+    import tempfile
     import pathlib
 
     root = logging.getLogger()
@@ -223,7 +224,9 @@ def _setup_logging(verbose=True):
     root.addHandler(handler)
 
     # FILE LOGGER IS VERBOSE
-    handler = InMemoryUntilErrorHandler(directory=pathlib.Path.cwd(), prefix="cs_tools-bootstrap-error-")
+    random_dir  = tempfile.NamedTemporaryFile().name
+    random_path = pathlib.Path.cwd() / f"cs_tools-bootstrap-error-{pathlib.Path(random_dir).name}.log"
+    handler = InMemoryUntilErrorHandler(random_path)
     handler.name = "disk"
 
     format_ = logging.Formatter(fmt="%(levelname)-8s | %(asctime)s | %(filename)s:%(lineno)d | %(message)s")
@@ -335,12 +338,17 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
       keywords to send to logging.FileHandler
     """
 
-    def __init__(self, directory, prefix, **passthru):
+    def __init__(self, filename, **passthru):
         # types: (pathlib.Path, str) -> None
-        random_name = tempfile.NamedTemporaryFile().name
-        super().__init__(filename=f"{directory}/{prefix}{random_name}.log", delay=True, **passthru)
+        super().__init__(filename, delay=True, **passthru)
         self._buffer = []
         self._found_error = False
+
+    def drain_buffer(self):
+        self._found_error = True
+
+        for prior_record in self._buffer:
+            super().emit(prior_record)
 
     def emit(self, record):
         # types: (logging.LogRecord) -> None
@@ -352,12 +360,8 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
             self._buffer.append(record)
             return
 
-        self._found_error = True
-
         # feed the buffer into the file
-        for prior_record in self._buffer:
-            super().emit(prior_record)
-
+        self.drain_buffer()
         super().emit(record)
 
 
@@ -406,7 +410,7 @@ def get_cs_tools_venv(find_links):
             "{b}https://github.com/thoughtspot/cs_tools/releases/latest{x}"
             .format(b=_BLUE, x=_RESET)
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from None
 
     if find_links is not None:
         cs_tools_venv.with_offline_mode(find_links=find_links)
@@ -500,8 +504,11 @@ def main():
     if sys.version_info >= (3, 7):
         try:
             return_code = cli()
-        except Exception:
+
+        except Exception as e:
             disk_handler = next(h for h in log.root.handlers if h.name == "disk")
+            disk_handler.drain_buffer()
+            log.debug("Error found: {err}".format(err=e), exc_info=True)
             log.warning(
                 "Unexpected error in bootstrapper, see {b}{logfile}{x} for details.."
                 .format(b=_BLUE, logfile=disk_handler.baseFilename, x=_RESET)
