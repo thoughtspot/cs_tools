@@ -283,11 +283,13 @@ def scriptability_import(
         org: str = typer.Option(None, help="name of org to import to"),
         include_types: Optional[List[str]] = typer.Option(
             None,
+            hidden=True,
             custom_type=MultipleChoiceType(),
             help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
         ),
         exclude_types: Optional[List[str]] = typer.Option(
             None,
+            hidden=True,
             custom_type=MultipleChoiceType(),
             help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",
         ),
