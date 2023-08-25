@@ -236,7 +236,7 @@ def identify(
                 to_tag_names.append(tag_guid["id"])
 
             for start_index in range(0, len(to_tag_guids), 10):
-                stop_index = start_index + 25
+                stop_index = start_index + 10
 
                 ts.api.metadata_assign_tag(
                     metadata_guids=to_tag_guids[start_index: stop_index],
@@ -366,7 +366,7 @@ def revert(
                 to_revert_names.append(tag_guid["id"])
 
             for start_index in range(0, len(to_revert_guids), 10):
-                stop_index = start_index + 25
+                stop_index = start_index + 10
 
                 ts.api.metadata_unassign_tag(
                     metadata_guids=to_revert_guids[start_index: stop_index],
