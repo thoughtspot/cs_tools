@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+import logging
 import pathlib
 import json
 
@@ -6,24 +7,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi import Request, FastAPI, Body
+import httpx
 
+from cs_tools import utils
+
+log = logging.getLogger(__name__)
 HERE = pathlib.Path(__file__).parent
 _scoped = {}
-
 
 web_app = FastAPI()
 web_app.mount("/static", StaticFiles(directory=f"{HERE}/static"), name="static")
 templates = Jinja2Templates(directory=f"{HERE}/static")
-
-
-#
-# EVENT LISTENERS
-#
-
-
-# @web_app.on_event('startup')
-# async def _():
-#     typer.launch('http://cs_tools.localho.st:5000/')
 
 
 #
@@ -70,8 +64,23 @@ async def _(type: str = Body(...), guids: List[str] = Body(...)):
     """
     TSGetTablePermissionsRequest
     """
-    r = _scoped["ts"].api.security_metadata_permissions(metadata_type=type, guids=guids)
-    return r.json()
+    defined_permissions = {column_guid: {"permissions": {}} for column_guid in guids}
+
+    for chunk in utils.chunks(guids, n=15):
+        r = _scoped["ts"].api.security_metadata_permissions(metadata_type=type, guids=list(chunk))
+
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError:
+            log.error(f"Could not fetch permissions for type={type}, guids={','.join(chunk)}")
+            continue
+
+        # COMBINE THE CHUNKS TOGETHER
+        for column_guid, permissions in r.json().items():
+            for principal_guid, permission_data in permissions["permissions"].items():
+                defined_permissions[column_guid]["permissions"][principal_guid] = permission_data
+
+    return defined_permissions
 
 
 @web_app.get("/api/list_columns/{guid}")

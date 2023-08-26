@@ -12,6 +12,7 @@ import pendulum
 import pydantic
 
 from cs_tools._compat import StrEnum, TypedDict
+from cs_tools.errors import CSToolsError
 
 log = logging.getLogger(__name__)
 GUID = typing.cast(uuid.UUID, str)
@@ -118,6 +119,7 @@ class GroupPrivilege(StrEnum):
     has_spotiq_privilege = "A3ANALYSIS"
     can_administer_and_bypass_rls = "BYPASSRLS"
     cannot_create_or_delete_pinboards = "DISABLE_PINBOARD_CREATION"
+    can_verify_liveboard = "LIVEBOARD_VERIFIER"
 
 
 class SharingVisibility(StrEnum):
@@ -165,6 +167,31 @@ class TMLSupportedContent(StrEnum):
     def from_friendly_type(cls, friendly_type: str) -> TMLSupportedContent:
         return cls[friendly_type]
 
+    @staticmethod
+    def type_subtype_to_tml_type(type: str, subtype: str = "") -> TMLSupportedContent:
+        """
+        Convert a type and subtype to a TMLSupportedContent enum value.  Both type and subtype must be correct.
+        :param type: The type of object to convert, e.g. LOGICAL_TABLE
+        :param subtype: The subtype to convert, e.g. WORKSHEET
+        :return: The associated type, e.g. TMLSupportedContent.worksheet
+        """
+        mappings = {
+            ("DATA_SOURCE", ""): TMLSupportedContent.connection,
+            ("LOGICAL_TABLE", "ONE_TO_ONE_LOGICAL"): TMLSupportedContent.table,
+            ("LOGICAL_TABLE", "AGGR_WORKSHEET"): TMLSupportedContent.view,
+            ("LOGICAL_TABLE", "SQL_VIEW"): TMLSupportedContent.sqlview,
+            ("LOGICAL_TABLE", "WORKSHEET"): TMLSupportedContent.worksheet,
+            ("PINBOARD_ANSWER_BOOK", ""): TMLSupportedContent.liveboard,
+            ("QUESTION_ANSWER_BOOK", ""): TMLSupportedContent.answer,
+        }
+
+        tml_type = mappings.get((type, subtype))
+        if not tml_type:
+            raise CSToolsError(f"Unknown type/subtype combination: {type}/{subtype}",
+                               mitigation="Check that the type and subtype are correct.")
+
+        return mappings[(type, subtype)]
+
 
 class TMLSupportedContentSubtype(StrEnum):
     connection = ""
@@ -180,6 +207,7 @@ class TMLSupportedContentSubtype(StrEnum):
     @classmethod
     def from_friendly_type(cls, friendly_type: str) -> TMLSupportedContentSubtype:
         return cls[friendly_type]
+
 
 
 # ======================================================================================================================

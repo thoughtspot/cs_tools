@@ -65,7 +65,8 @@ class DSyncer(Dependency):
 
         if hasattr(self._syncer, "__is_database__") and self.models is not None:
             log.debug(f"creating tables {self.models} in {self._syncer}")
-            [t.__table__.to_metadata(self.metadata) for t in self.models if t.metadata is not self.metadata]
+            # schema=None here means we'll inherit the metadata of t.__table__
+            [t.__table__.to_metadata(self.metadata, schema=None) for t in self.models if t.metadata is not self.metadata]
             self.metadata.create_all(self._syncer.cnxn, tables=[t.__table__ for t in self.models])
 
     def __exit__(self, *e):
