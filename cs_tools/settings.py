@@ -91,7 +91,7 @@ class MetaConfig(BaseModel):
     def check_remote_version(self) -> None:
         """Check GitHub for the latest cs_tools version."""
         venv_version = AwesomeVersion(__version__)
-        remote_delta = dt.timedelta(hours=5) if venv_version.beta else dt.timedelta(days=5)
+        remote_delta = dt.timedelta(hours=5) if venv_version.beta else dt.timedelta(days=1)
         current_time = dt.datetime.now()
 
         # don't check too often
@@ -99,7 +99,7 @@ class MetaConfig(BaseModel):
             return
 
         try:
-            data = get_latest_cs_tools_release(allow_beta=venv_version.beta, timeout=0.15)
+            data = get_latest_cs_tools_release(allow_beta=venv_version.beta, timeout=0.33)
             self.last_remote_check = current_time
             self.remote_version = data["name"]
             self.remote_date = dt.datetime.strptime(data["published_at"], "%Y-%m-%dT%H:%M:%SZ").date()
@@ -117,7 +117,9 @@ class MetaConfig(BaseModel):
             return ""
 
         url = f"https://github.com/thoughtspot/cs_tools/releases/tag/{self.remote_version}"
-        return f"[green]Newer version available![/] [cyan][link={url}]{self.remote_version}[/][/]"
+        msg = f"[green]Newer version available![/] [cyan][link={url}]{self.remote_version}[/][/]"
+        log.info(msg)
+        return msg
 
 
 # GLOBAL SCOPE

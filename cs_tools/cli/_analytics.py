@@ -41,7 +41,8 @@ def get_database() -> sa.engine.Engine:
 
     with db.begin() as transaction:
         try:
-            r = transaction.execute(sa.text("""SELECT MAX(cs_tools_version) FROM runtime_environment"""))
+            q = "SELECT cs_tools_version FROM runtime_environment ORDER BY capture_dt DESC LIMIT 1"
+            r = transaction.execute(sa.text(q))
             latest_recorded_version = str(r.scalar()) or "0.0.0"
 
         except sa.exc.OperationalError:
@@ -215,7 +216,10 @@ class CommandExecution(SQLModel, table=True):
     @validator("config_cluster_url", pre=True)
     def _extract_config_cluster_url(cls, value: Any) -> Optional[str]:
         if isinstance(value, utils.State) and hasattr(value, "thoughtspot"):
-            return value.thoughtspot.platform.url
+            try:
+                return value.thoughtspot.platform.url
+            except RuntimeError:
+                return None
 
         if isinstance(value, str):
             return value

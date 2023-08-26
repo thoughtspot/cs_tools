@@ -56,8 +56,8 @@ class RESTAPIv1:
         self.session.headers.update(
             {
                 "x-requested-by": "CS Tools",
-                "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)"
-            }
+                "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)",
+            },
         )
 
     # PASSTHRU
@@ -179,7 +179,6 @@ class RESTAPIv1:
         self,
         *,
         username: str,
-        email: str,
         display_name: str,
         password: str,
         sharing_visibility: SharingVisibility = "DEFAULT",
@@ -190,13 +189,12 @@ class RESTAPIv1:
     ) -> httpx.Response:
         d = {
             "name": username,
-            "email": email,
-            "displayname": display_name,
             "password": password,
-            "visibility": sharing_visibility,
-            "usertype": user_type,
+            "displayname": display_name,
             "properties": user_properties,
             "groups": dumps(group_guids),
+            "usertype": user_type,
+            "visibility": sharing_visibility,
             "triggeredbyadmin": True,
         }
         r = self.post("callosum/v1/tspublic/v1/user", data=d)
@@ -631,13 +629,13 @@ class RESTAPIv1:
         return r
 
     def dataservice_dataload_session(self, *, username: str, password: str) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path="/ts_dataservice/v1/public/session")
+        fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/session")
         d = {"username": username, "password": password}
         r = self.post(fullpath, data=d)
         return r
 
     def dataservice_dataload_initialize(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path="/ts_dataservice/v1/public/loads")
+        fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/loads")
         r = self.post(fullpath, timeout=timeout, json=data)
         return r
 
@@ -647,21 +645,21 @@ class RESTAPIv1:
         # This endpoint returns immediately once the file uploads to the remote host.
         # Processing of the dataload happens concurrently, and this function may be
         # called multiple times to paralellize the full data load across multiple files.
-        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
+        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
         r = self.post(fullpath, timeout=timeout, files={"upload-file": fd})
         return r
 
     def dataservice_dataload_commit(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/commit")
+        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/commit")
         r = self.post(fullpath)
         return r
 
     def dataservice_dataload_status(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
+        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
         r = self.get(fullpath)
         return r
 
     def dataservice_dataload_bad_records(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")
+        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")
         r = self.get(fullpath)
         return r
