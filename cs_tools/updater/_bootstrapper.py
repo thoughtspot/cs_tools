@@ -465,8 +465,16 @@ def http_request(url, to_json=True, timeout=None):
     import json
     import ssl
 
-    # Disable SSL verfication checks.
     ctx = ssl.create_default_context()
+
+    # OP_LEGACY_SERVER_CONNECT is missing until py3.12
+    #
+    # Further Reading:
+    #   https://bugs.python.org/issue44888
+    ssl.OP_LEGACY_SERVER_CONNECT = 0x4
+    ctx.options |= ssl.OP_LEGACY_SERVER_CONNECT
+
+    # Disable SSL verfication checks.
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
