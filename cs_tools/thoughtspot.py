@@ -108,6 +108,8 @@ class ThoughtSpot:
 
         try:
 
+            raise httpx.ConnectError("CERTIFICATE_VERIFY_FAILED", request=None)
+
             if os.environ.get("THOUGHTSPOT_SECRET_KEY") is not None:
                 r = self.api._trusted_auth(
                     username=self.config.auth["frontend"].username,
@@ -121,6 +123,15 @@ class ThoughtSpot:
                     # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
                 )
 
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            if "CERTIFICATE_VERIFY_FAILED" in str(e):
+                rzn = "Local SSL certificate verification has failed (you're likely using a self-signed cert)!"
+                fwd = f"Run [b blue]cs_tools config modify --config {self.config.name} --disable_ssl[/] and try again."
+            else:
+                rzn = "Cannot connect to ThoughtSpot ( [b blue]{host}[/] ) from your computer"
+                fwd = "Is your [white]ThoughtSpot[/] accessible outside of the VPN? \n\n[white]>>>[/] {exc}"
+            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host, exc=e) from None
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
                 raise AuthenticationError(
@@ -130,11 +141,6 @@ class ThoughtSpot:
                     incident_id=e.response.json().get("incident_id_guid", "<missing>"),
                 )
             raise e
-
-        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-            rzn = "Cannot connect to ThoughtSpot ( [b blue]{host}[/] ) from your computer"
-            fwd = "Is your [white]ThoughtSpot[/] accessible outside of the VPN? \n\n[white]>>>[/] {exc}"
-            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host, exc=e) from None
 
         # .session_login() returns 200 OK , but the instance is unavailable for the API
         if "Site Maintenance".casefold() in r.text.casefold():
