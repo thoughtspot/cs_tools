@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Optional
 from io import BufferedIOBase
 import datetime as dt
 import tempfile
 import pathlib
 import logging
 import json
-import time
 
 import httpx
 
@@ -165,7 +164,7 @@ class RESTAPIv1:
         return r
 
     def org_search(
-        self, *, org_id: int = UNDEFINED, org_name: str = UNDEFINED, show_inactive: bool = False
+        self, *, org_id: int = UNDEFINED, org_name: str = UNDEFINED, show_inactive: bool = False,
     ) -> httpx.Response:
         d = {"id": org_id, "name": org_name, "showinactive": show_inactive, "orgScope": "ALL"}
         r = self.post("callosum/v1/tspublic/v1/org/search", data=d)
@@ -215,7 +214,7 @@ class RESTAPIv1:
         return r
 
     def user_transfer_ownership(
-        self, *, from_username: str, to_username: str, object_guids: List[GUID] = UNDEFINED
+        self, *, from_username: str, to_username: str, object_guids: List[GUID] = UNDEFINED,
     ) -> httpx.Response:
         p = {"fromUserName": from_username, "toUserName": to_username, "objectsID": dumps(object_guids)}
         r = self.post("callosum/v1/tspublic/v1/user/transfer/ownership", params=p)
@@ -246,7 +245,7 @@ class RESTAPIv1:
         *,
         group_name: str,
         display_name: str,
-        description: str = None,
+        description: Optional[str] = None,
         privileges: List[GroupPrivilege],
         sharing_visibility: SharingVisibility = "DEFAULT",
         group_type: str = "LOCAL_GROUP",
@@ -438,7 +437,7 @@ class RESTAPIv1:
         guid: GUID,
         include_columns: bool = False,
         config: ConnectionMetadata = UNDEFINED,
-        authentication_type: str = "SERVICE_ACCOUNT"
+        authentication_type: str = "SERVICE_ACCOUNT",
     ) -> httpx.Response:
         d = {
             "id": guid,
@@ -456,13 +455,13 @@ class RESTAPIv1:
         guid: GUID,
         tables: List[Dict[str, Any]] = UNDEFINED,
         config: ConnectionMetadata = UNDEFINED,
-        authentication_type: str = "SERVICE_ACCOUNT"
+        authentication_type: str = "SERVICE_ACCOUNT",
     ) -> httpx.Response:
         d = {
             "connection_id": guid,
             "tables": dumps(tables),
             "config": config,
-            "authentication_type": authentication_type
+            "authentication_type": authentication_type,
         }
         r = self.post("callosum/v1/connection/fetchLiveColumns", data=d)
         return r
@@ -640,7 +639,7 @@ class RESTAPIv1:
         return r
 
     def dataservice_dataload_start(
-        self, *, cycle_id: GUID, fd: BufferedIOBase | Any, timeout: float = UNDEFINED
+        self, *, cycle_id: GUID, fd: BufferedIOBase | Any, timeout: float = UNDEFINED,
     ) -> httpx.Response:
         # This endpoint returns immediately once the file uploads to the remote host.
         # Processing of the dataload happens concurrently, and this function may be
