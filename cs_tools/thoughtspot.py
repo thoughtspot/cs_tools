@@ -4,12 +4,14 @@ import platform
 import datetime as dt
 import logging
 import json
+import ssl
 import sys
 import os
 
 import httpx
 
 from cs_tools.api._rest_api_v1 import RESTAPIv1
+from cs_tools.api._rest_api_v2 import RESTAPIv2
 from cs_tools.api.middlewares import (
     LogicalTableMiddleware,
     PinboardMiddleware,
@@ -41,6 +43,7 @@ class ThoughtSpot:
 
         info = {"ts_url": config.thoughtspot.fullpath, "verify": not config.thoughtspot.disable_ssl}
         self._rest_api_v1 = RESTAPIv1(client_version="V1", **info)
+        self._rest_api_v2 = RESTAPIv2(client_version="V2", **info)
 
         # assigned at self.login()
         self._logged_in_user: LoggedInUser = None
@@ -70,6 +73,13 @@ class ThoughtSpot:
         Access the REST API.
         """
         return self._rest_api_v1
+
+    @property
+    def api_v2(self) -> RESTAPIv2:
+        """
+        Access the REST API v2.
+        """
+        return self._rest_api_v2
 
     @property
     def me(self) -> LoggedInUser:
