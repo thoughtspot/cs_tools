@@ -38,8 +38,9 @@ class ThoughtSpot:
 
     def __init__(self, config: CSToolsConfig):
         self.config = config
-        self._rest_api_v1 = RESTAPIv1(config.thoughtspot.fullpath, verify=not config.thoughtspot.disable_ssl)
-        # self._rest_api_v2 = RESTAPIv2()
+
+        info = {"ts_url": config.thoughtspot.fullpath, "verify": not config.thoughtspot.disable_ssl}
+        self._rest_api_v1 = RESTAPIv1(client_version="V1", **info)
 
         # assigned at self.login()
         self._logged_in_user: LoggedInUser = None
