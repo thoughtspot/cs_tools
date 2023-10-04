@@ -5,6 +5,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+cs_tools.egg-info/
 develop-eggs/
 downloads/
 eggs/
@@ -13,6 +14,7 @@ lib/
 lib64/
 parts/
 sdist/
+site/
 var/
 wheels/
 pip-wheel-metadata/
@@ -21,6 +23,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+poetry-installer-error-hpmnf456.log
 
 # Environments
 .env
