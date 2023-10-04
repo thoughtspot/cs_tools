@@ -148,6 +148,18 @@ class SecurityPrincipal(TypedDict):
 
 
 # ======================================================================================================================
+# REST API V2 input parameter types
+# ======================================================================================================================
+
+class DeployType(StrEnum):
+    delta = "DELTA"
+    full = "FULL"
+
+class DeployPolicy(StrEnum):
+    all_or_none = "ALL_OR_NONE"
+    partial = "PARTIAL"
+
+# ======================================================================================================================
 # CS Tools Middleware types
 # ======================================================================================================================
 
@@ -236,7 +248,7 @@ class TMLAPIResponse(pydantic.BaseModel):
     tml_type_name: str
     name: str
     status_code: str
-    error_messages: List[str] = None
+    error_messages: List[str] = Optional[List[str]]
     _full_response: Any = None
 
     @pydantic.validator("status_code", pre=True)
@@ -270,7 +282,7 @@ class MetadataParent(pydantic.BaseModel):
     parent_name: str
     connection: GUID
     visualization_guid: GUID = None  # viz_guid
-    visualization_index: str = None  # Viz_N
+    visualization_index: str = Optional[str]  # Viz_N
 
     def __eq__(self, other):
         return (self.parent_guid, self.visualization_guid) == (other.parent_guid, other.visualization_guid)

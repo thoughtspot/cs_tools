@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Optional
 from io import BufferedIOBase
 import datetime as dt
 import tempfile
 import pathlib
 import logging
 import json
-import time
 
 import httpx
 
-from cs_tools.api._utils import scrub_undefined, scrub_sensitive, dumps, UNDEFINED
-from cs_tools._version import __version__
+from cs_tools.api._client import RESTAPIClient
+from cs_tools.api._utils import dumps, UNDEFINED
 from cs_tools.types import (
     MetadataObjectSubtype,
     ShareModeAccessLevel,
@@ -37,86 +36,10 @@ from cs_tools.types import (
 log = logging.getLogger(__name__)
 
 
-class RESTAPIv1:
+class RESTAPIv1(RESTAPIClient):
     """
     Implementation of the REST API v1.
     """
-
-    def __init__(self, ts_url: str, **client_opts):
-        client_opts["base_url"] = ts_url
-        self.session = httpx.Client(**client_opts)
-
-        # DEV NOTE: @boonhapus 2023/01/08
-        #    these are enforced client settings regardless of API call
-        #
-        #    TIMEOUT = 15 minutes
-        #    HEADERS = metadata about requests sent to the ThoughtSpot server
-        #
-        self.session.timeout = 15 * 60
-        self.session.headers.update(
-            {
-                "x-requested-by": "CS Tools",
-                "user-agent": f"cs_tools/{__version__} (+github: thoughtspot/cs_tools)",
-            },
-        )
-
-    # PASSTHRU
-
-    def post(self, endpoint: str, **passthru):
-        return self.request("POST", endpoint, **passthru)
-
-    def get(self, endpoint: str, **passthru):
-        return self.request("GET", endpoint, **passthru)
-
-    def put(self, endpoint: str, **passthru):
-        return self.request("PUT", endpoint, **passthru)
-
-    def delete(self, endpoint: str, **passthru):
-        return self.request("DELETE", endpoint, **passthru)
-
-    # CLIENT
-
-    def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
-        """Make an HTTP request."""
-        request_kw = scrub_undefined(request_kw)
-        secure = scrub_sensitive(request_kw)
-
-        log.debug(f">> {method.upper()} to {endpoint} with keywords {secure}")
-
-        try:
-            r = self.session.request(method, endpoint, **request_kw)
-
-        except httpx.RequestError as e:
-            log.debug("Something went wrong calling the ThoughtSpot API", exc_info=True)
-            log.warning(f"Could not connect to your ThoughtSpot cluster: {e}")
-            raise e from None
-
-        except httpx.HTTPStatusError as e:
-            attempts = 0
-
-            # exponential backoff to 3 attempts (4s, 16s, 64s)
-            while r.status_code in (httpx.codes.GATEWAY_TIMEOUT, httpx.codes.BAD_GATEWAY):
-                attempts += 1
-
-                if attempts > 3:
-                    break
-
-                backoff = 4 ** attempts
-                log.warning(f"Your ThoughtSpot cluster didn't respond to '{method} {endpoint}', backing off for {backoff}s")
-                time.sleep(backoff)
-                r = self.session.request(method, endpoint, **request_kw)
-
-        log.debug(f"<< HTTP: {r.status_code}")
-        TRACE = 5
-
-        if r.text:
-            log.log(TRACE, "<< CONTENT:\n\n%s", r.text)
-
-        if r.is_error:
-            log.log(TRACE, ">> HEADERS:\n\n%s", r.request.headers)
-            r.raise_for_status()
-
-        return r
 
     # ==================================================================================================================
     # SESSION     ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_session_management
@@ -165,7 +88,7 @@ class RESTAPIv1:
         return r
 
     def org_search(
-        self, *, org_id: int = UNDEFINED, org_name: str = UNDEFINED, show_inactive: bool = False
+        self, *, org_id: int = UNDEFINED, org_name: str = UNDEFINED, show_inactive: bool = False,
     ) -> httpx.Response:
         d = {"id": org_id, "name": org_name, "showinactive": show_inactive, "orgScope": "ALL"}
         r = self.post("callosum/v1/tspublic/v1/org/search", data=d)
@@ -215,7 +138,7 @@ class RESTAPIv1:
         return r
 
     def user_transfer_ownership(
-        self, *, from_username: str, to_username: str, object_guids: List[GUID] = UNDEFINED
+        self, *, from_username: str, to_username: str, object_guids: List[GUID] = UNDEFINED,
     ) -> httpx.Response:
         p = {"fromUserName": from_username, "toUserName": to_username, "objectsID": dumps(object_guids)}
         r = self.post("callosum/v1/tspublic/v1/user/transfer/ownership", params=p)
@@ -246,7 +169,7 @@ class RESTAPIv1:
         *,
         group_name: str,
         display_name: str,
-        description: str = None,
+        description: Optional[str] = None,
         privileges: List[GroupPrivilege],
         sharing_visibility: SharingVisibility = "DEFAULT",
         group_type: str = "LOCAL_GROUP",
@@ -438,7 +361,7 @@ class RESTAPIv1:
         guid: GUID,
         include_columns: bool = False,
         config: ConnectionMetadata = UNDEFINED,
-        authentication_type: str = "SERVICE_ACCOUNT"
+        authentication_type: str = "SERVICE_ACCOUNT",
     ) -> httpx.Response:
         d = {
             "id": guid,
@@ -456,13 +379,13 @@ class RESTAPIv1:
         guid: GUID,
         tables: List[Dict[str, Any]] = UNDEFINED,
         config: ConnectionMetadata = UNDEFINED,
-        authentication_type: str = "SERVICE_ACCOUNT"
+        authentication_type: str = "SERVICE_ACCOUNT",
     ) -> httpx.Response:
         d = {
             "connection_id": guid,
             "tables": dumps(tables),
             "config": config,
-            "authentication_type": authentication_type
+            "authentication_type": authentication_type,
         }
         r = self.post("callosum/v1/connection/fetchLiveColumns", data=d)
         return r
@@ -640,7 +563,7 @@ class RESTAPIv1:
         return r
 
     def dataservice_dataload_start(
-        self, *, cycle_id: GUID, fd: BufferedIOBase | Any, timeout: float = UNDEFINED
+        self, *, cycle_id: GUID, fd: BufferedIOBase | Any, timeout: float = UNDEFINED,
     ) -> httpx.Response:
         # This endpoint returns immediately once the file uploads to the remote host.
         # Processing of the dataload happens concurrently, and this function may be
