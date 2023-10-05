@@ -4,9 +4,9 @@ import platform
 import datetime as dt
 import logging
 import json
-import ssl
 import sys
 import os
+from typing import Optional
 
 import httpx
 
@@ -46,8 +46,8 @@ class ThoughtSpot:
         self._rest_api_v2 = RESTAPIv2(client_version="V2", **info)
 
         # assigned at self.login()
-        self._logged_in_user: LoggedInUser = None
-        self._platform: ThoughtSpotPlatform = None
+        self._logged_in_user: Optional[LoggedInUser] = None
+        self._platform: Optional[ThoughtSpotPlatform] = None
 
         # ==============================================================================================================
         # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
@@ -87,7 +87,7 @@ class ThoughtSpot:
         Return information about the logged in user.
         """
         if not hasattr(self, "_logged_in_user"):
-            raise RuntimeError("attempted to access user details before logging into the " "ThoughtSpot platform")
+            raise RuntimeError("attempted to access user details before logging into the ThoughtSpot platform")
 
         return self._logged_in_user
 
@@ -97,7 +97,7 @@ class ThoughtSpot:
         Return information about the ThoughtSpot platform.
         """
         if not hasattr(self, "_this_platform"):
-            raise RuntimeError("attempted to access platform details before logging into the " "ThoughtSpot platform")
+            raise RuntimeError("attempted to access platform details before logging into the ThoughtSpot platform")
 
         return self._this_platform
 
@@ -107,8 +107,6 @@ class ThoughtSpot:
         """
 
         try:
-
-            raise httpx.ConnectError("CERTIFICATE_VERIFY_FAILED", request=None)
 
             if os.environ.get("THOUGHTSPOT_SECRET_KEY") is not None:
                 r = self.api._trusted_auth(
