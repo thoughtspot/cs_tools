@@ -245,7 +245,6 @@ def identify(
                 )
 
 
-
 @app.command(dependencies=[thoughtspot])
 def revert(
     ctx: typer.Context,

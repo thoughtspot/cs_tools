@@ -1,7 +1,6 @@
 import datetime as dt
 import logging
 import pathlib
-import shutil
 
 import typer
 
@@ -43,7 +42,7 @@ def deploy(
         help=(
             "if Falcon, use [b blue]falcon_default_schema[/], otherwise use the name of the schema which holds "
             "Searchable data"
-        )
+        ),
     ),
     export: pathlib.Path = typer.Option(None, help="download the TML files of the SpotApp", file_okay=False),
 ):
@@ -72,14 +71,13 @@ def deploy(
             if is_falcon:
                 this_task.skip()
             else:
-                r = ts.api.metadata_list(metadata_type="DATA_SOURCE", fetch_guids=[connection_guid])
-                d = r.json()
+                r = ts.api.metadata_details(metadata_type="DATA_SOURCE", guids=[connection_guid])
 
-                if not ["headers"]:
+                if "storables" not in r.text:
                     log.error(f"Could not find a connection with guid {connection_guid}")
                     raise typer.Exit(1)
-
-                data = d["headers"][0]
+   
+                data = r.json()["storables"][0]["header"]
                 connection_guid = data["id"]
                 connection_name = data["name"]
 
@@ -121,29 +119,27 @@ def deploy(
 
                 if export is not None:
                     tml.dump(export.joinpath(file.name))
+                    return
 
         with tasks["deploy_spotapp"] as this_task:
             if export is not None:
                 this_task.skip()
                 raise typer.Exit(0)
 
-            imported = set()
+            responses = ts.tml.to_import(tmls, policy=TMLImportPolicy.partial)
 
-            while len(imported) < len(tmls):
-                to_import = [tml for tml in tmls if tml.guid not in imported]
-                responses = ts.tml.to_import(to_import, policy=TMLImportPolicy.partial)
-                imported.update(response.guid for response in responses if response.is_success)
+            centered_table = layout.build_table()
 
-                status_emojis = {"OK": ":white_heavy_check_mark:", "WARNING": ":pinching_hand:", "ERROR": ":cross_mark:"}
-                centered_table = layout.build_table()
+            for row in responses:
+                centered_table.renderable.add_row(
+                    ":cross_mark:" if row.is_error else ":white_heavy_check_mark:",
+                    row.tml_type_name,
+                    row.guid or "{null}",
+                    row.name,
+                    "; ".join(row.error_messages) or "{null}",
+                )
 
-                for response in responses:
-                    status = status_emojis.get(response.status_code, ":cross_mark:")
-                    guid = response.guid or "[gray]{null}"
-                    errors = '; '.join(response.error_messages) or "[gray]{null}"
-                    centered_table.renderable.add_row(status, response.tml_type_name, guid, response.name, errors)
-
-                rich_console.print(centered_table)
+            rich_console.print(centered_table)
 
 
 @app.command(dependencies=[thoughtspot])

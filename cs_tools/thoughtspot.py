@@ -4,12 +4,14 @@ import platform
 import datetime as dt
 import logging
 import json
+import ssl
 import sys
 import os
 
 import httpx
 
 from cs_tools.api._rest_api_v1 import RESTAPIv1
+from cs_tools.api._rest_api_v2 import RESTAPIv2
 from cs_tools.api.middlewares import (
     LogicalTableMiddleware,
     PinboardMiddleware,
@@ -38,8 +40,10 @@ class ThoughtSpot:
 
     def __init__(self, config: CSToolsConfig):
         self.config = config
-        self._rest_api_v1 = RESTAPIv1(config.thoughtspot.fullpath, verify=not config.thoughtspot.disable_ssl)
-        # self._rest_api_v2 = RESTAPIv2()
+
+        info = {"ts_url": config.thoughtspot.fullpath, "verify": not config.thoughtspot.disable_ssl}
+        self._rest_api_v1 = RESTAPIv1(client_version="V1", **info)
+        self._rest_api_v2 = RESTAPIv2(client_version="V2", **info)
 
         # assigned at self.login()
         self._logged_in_user: LoggedInUser = None
@@ -69,6 +73,13 @@ class ThoughtSpot:
         Access the REST API.
         """
         return self._rest_api_v1
+
+    @property
+    def api_v2(self) -> RESTAPIv2:
+        """
+        Access the REST API v2.
+        """
+        return self._rest_api_v2
 
     @property
     def me(self) -> LoggedInUser:
@@ -110,6 +121,15 @@ class ThoughtSpot:
                     # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
                 )
 
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            if "CERTIFICATE_VERIFY_FAILED" in str(e):
+                rzn = "Local SSL certificate verification has failed (you're likely using a self-signed cert)!"
+                fwd = f"Run [b blue]cs_tools config modify --config {self.config.name} --disable_ssl[/] and try again."
+            else:
+                rzn = "Cannot connect to ThoughtSpot ( [b blue]{host}[/] ) from your computer"
+                fwd = "Is your [white]ThoughtSpot[/] accessible outside of the VPN? \n\n[white]>>>[/] {exc}"
+            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host, exc=e) from None
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.UNAUTHORIZED:
                 raise AuthenticationError(
@@ -119,11 +139,6 @@ class ThoughtSpot:
                     incident_id=e.response.json().get("incident_id_guid", "<missing>"),
                 )
             raise e
-
-        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-            rzn = "Cannot connect to ThoughtSpot ( [b blue]{host}[/] ) from your computer"
-            fwd = "Is your [white]ThoughtSpot[/] accessible outside of the VPN? \n\n[white]>>>[/] {exc}"
-            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host, exc=e) from None
 
         # .session_login() returns 200 OK , but the instance is unavailable for the API
         if "Site Maintenance".casefold() in r.text.casefold():

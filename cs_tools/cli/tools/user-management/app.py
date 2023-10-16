@@ -191,7 +191,7 @@ def rename(
             # back up the state of users
             filename = f"user-rename-{dt.datetime.now()::%Y%m%dT%H%M%S}"
             with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
-                json.dump(responses, f, indent=4)
+                json.dump([r.text for r in responses], f, indent=4)
 
         with tasks["update_users"]:
             for from_username, r in responses.items():

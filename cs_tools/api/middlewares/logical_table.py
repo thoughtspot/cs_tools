@@ -55,6 +55,9 @@ class LogicalTableMiddleware:
         if isinstance(tags, str):
             tags = [tags]
 
+        if tags is None:
+            tags = []
+
         tables = []
 
         while True:
