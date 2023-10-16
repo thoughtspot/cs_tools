@@ -251,6 +251,10 @@ class TMLAPIResponse(pydantic.BaseModel):
     error_messages: List[str] = Optional[List[str]]
     _full_response: Any = None
 
+    # pydantic model configuration
+    class Config:
+        underscore_attrs_are_private = True
+
     @pydantic.validator("status_code", pre=True)
     def _one_of(cls, status: str) -> str:
         ALLOWED = ("OK", "WARNING", "ERROR")

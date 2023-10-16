@@ -45,17 +45,16 @@ class TMLMiddleware:
         responses = []
 
         for tml, content in zip(tmls, r.json()["object"]):
-            responses.append(
-                TMLAPIResponse(
-                    guid=content["response"].get("header", {}).get("id_guid", None),
-                    metadata_object_type=TMLSupportedContent.from_friendly_type(tml.tml_type_name).value,
-                    tml_type_name=tml.tml_type_name,
-                    name=content["response"].get("header", {}).get("name", tml.name),
-                    status_code=content["response"]["status"]["status_code"],
-                    error_messages=content["response"]["status"].get("error_message", None),
-                    _full_response=content,
-                )
+            response = TMLAPIResponse(
+                guid=content["response"].get("header", {}).get("id_guid", None),
+                metadata_object_type=TMLSupportedContent.from_friendly_type(tml.tml_type_name).value,
+                tml_type_name=tml.tml_type_name,
+                name=content["response"].get("header", {}).get("name", tml.name),
+                status_code=content["response"]["status"]["status_code"],
+                error_messages=content["response"]["status"].get("error_message", None),
             )
+            response._full_response = content
+            responses.append(response)
 
         return responses
 
