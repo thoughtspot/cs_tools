@@ -219,6 +219,7 @@ class MetadataMiddleware:
                         break
                 except JSONDecodeError as e:  # log and then continue.  Will return an empty list.
                     log.error(f"failed to decode JSON response: {r.text} with error {e}")
+                    return []
 
         return content
 
