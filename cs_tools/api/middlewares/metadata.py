@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from json import JSONDecodeError
 from typing import TYPE_CHECKING, Dict, List, Union
 import functools as ft
 import logging
@@ -196,25 +197,28 @@ class MetadataMiddleware:
 
             while True:
                 r = self.ts.api.metadata_list(metadata_type=metadata_type, batchsize=500, **metadata_list_kw)
-                data = r.json()
-                metadata_list_kw["offset"] += len(data["headers"])
+                try:
+                    data = r.json()
+                    metadata_list_kw["offset"] += len(data["headers"])
 
-                for header in data["headers"]:
-                    subtype = header.get("type", None)
+                    for header in data["headers"]:
+                        subtype = header.get("type", None)
 
-                    # All subtypes will be retrieved, so need to filter the subtype appropriately.
-                    # Mainly applies to LOGICAL_TABLE.
-                    if include_subtypes and subtype and (subtype not in include_subtypes):
-                        continue
-                    elif exclude_subtypes and subtype and (subtype in exclude_subtypes):
-                        continue
+                        # All subtypes will be retrieved, so need to filter the subtype appropriately.
+                        # Mainly applies to LOGICAL_TABLE.
+                        if include_subtypes and subtype and (subtype not in include_subtypes):
+                            continue
+                        elif exclude_subtypes and subtype and (subtype in exclude_subtypes):
+                            continue
 
-                    header["metadata_type"] = metadata_type
-                    header["type"] = subtype
-                    content.append(header)
+                        header["metadata_type"] = metadata_type
+                        header["type"] = subtype
+                        content.append(header)
 
-                if data["isLastBatch"]:
-                    break
+                    if data["isLastBatch"]:
+                        break
+                except JSONDecodeError as e:  # log and then continue.  Will return an empty list.
+                    log.error(f"failed to decode JSON response: {r.text} with error {e}")
 
         return content
 
