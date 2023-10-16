@@ -511,6 +511,9 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
               ) -> List[TMLImportResponse]:
     responses: List[TMLImportResponse] = []
 
+    if not tml_list:
+        return responses
+
     old_guids = []
 
     for tml in tml_list:
