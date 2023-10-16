@@ -108,8 +108,6 @@ class ThoughtSpot:
 
         try:
 
-            raise httpx.ConnectError("CERTIFICATE_VERIFY_FAILED", request=None)
-
             if os.environ.get("THOUGHTSPOT_SECRET_KEY") is not None:
                 r = self.api._trusted_auth(
                     username=self.config.auth["frontend"].username,
