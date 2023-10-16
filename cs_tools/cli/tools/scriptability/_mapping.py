@@ -30,9 +30,9 @@ def mapping_details(
         path: pathlib.Path = typer.Argument(
             ..., help="Root folder to TML file system", file_okay=False, resolve_path=True
         ),
-        source: str = typer.Argument(..., help="the source environment the TML came from",
+        source: str = typer.Option(..., help="the source environment the TML came from",
                                    rich_help_panel="GUID Mapping Options"),
-        dest: str = typer.Argument(..., help="the destination environment the TML was importing into",
+        dest: str = typer.Option(..., help="the destination environment the TML is importing into",
                                  rich_help_panel="GUID Mapping Options"),
         org: str = typer.Option(None,
                                 help="the destination org for metadata names or the user's default if not specified"),
