@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from json import JSONDecodeError
 from typing import TYPE_CHECKING, Dict, List, Union
 import functools as ft
 import logging
@@ -196,6 +197,12 @@ class MetadataMiddleware:
 
             while True:
                 r = self.ts.api.metadata_list(metadata_type=metadata_type, batchsize=500, **metadata_list_kw)
+
+                if r.is_error:
+                    metadata_list_kw["metadata_type"] = metadata_type
+                    log.error(f"The following metadata/list parameters caused an error\n{metadata_list_kw}")
+                    break
+
                 data = r.json()
                 metadata_list_kw["offset"] += len(data["headers"])
 
