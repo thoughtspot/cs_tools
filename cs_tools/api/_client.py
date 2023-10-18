@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Literal
+import functools as ft
 import logging
 import time
 
@@ -39,7 +40,7 @@ class RESTAPIClient:
         # Expose httpx.session CRUD on our client.
         for verb in ("POST", "GET", "PUT", "DELETE"):
             method_name = verb.lower()
-            method = getattr(self.session, method_name)
+            method = ft.partial(self.request, method_name)
             setattr(self, method_name, method)
 
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:

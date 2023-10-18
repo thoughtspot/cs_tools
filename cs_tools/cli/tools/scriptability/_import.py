@@ -577,12 +577,14 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
     # Have to make sure it's not an error.  is_success is False on warnings, but content is created.
     is_error_free = all(not r.is_error for r in responses)
 
-    if is_error_free or import_policy != TMLImportPolicy.all_or_none:
-        for old_guid, new_guid in guids_to_map.items():
-            mapping_file.set_mapped_guid(old_guid, new_guid)
-            mapping_file.save()
+    if import_policy != TMLImportPolicy.validate:  # no need to update or wait if only validating.
 
-        _wait_for_metadata(ts=ts, guids=[imported_object.guid for imported_object in responses])
+        if is_error_free or import_policy != TMLImportPolicy.all_or_none:
+            for old_guid, new_guid in guids_to_map.items():
+                mapping_file.set_mapped_guid(old_guid, new_guid)
+                mapping_file.save()
+
+            _wait_for_metadata(ts=ts, guids=[imported_object.guid for imported_object in responses])
 
     return responses
 
