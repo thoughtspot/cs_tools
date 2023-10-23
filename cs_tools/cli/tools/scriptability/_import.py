@@ -77,6 +77,7 @@ def to_import(
         org: str,  # Org to import into.
         include_types: Optional[List[str]],  # Types of TML to import.
         exclude_types: Optional[List[str]],  # Types of TML to exclude from import.
+        show_mapping: bool,  # Show the mapping file details.
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -135,7 +136,8 @@ def to_import(
                 log.error(f"Unable to share: {e.response.text}")
 
     # display the mapping file details.
-    show_mapping_details(ts=ts, path=tmlfs.path, source=source, dest=dest, org=org)
+    if show_mapping:
+        show_mapping_details(ts=ts, path=tmlfs.path, source=source, dest=dest, org=org)
 
     print('done')
 
@@ -438,7 +440,7 @@ def _update_connections(ts: ThoughtSpot,
                     )
 
             except HTTPStatusError as e:
-                rich_console.log(f"Error updating connection {tml.name}: {e}")
+                rich_console.log(f"Error updating connection {tml.name}: {e} {e.response.content.decode('utf-8')}")
                 # needed to get a GUID to map for mapping.
                 responses.append(
                     TMLImportResponse(
@@ -484,28 +486,35 @@ def _remove_new_tables_from_connection(new_connection: Connection, existing_conn
     remove any new tables from the new connection.
     :param new_connection: The new connection that might have new tables.  The tables will be removed.
     :param existing_connection: The existing connection to use for comparison.
-    """
 
-    # This could be made more efficient, but there will likely be a small number of tables, so it's not worth it.
+    Note: This could be made more efficient, but there will likely be a small number of tables, so it's not worth it.
+    """
 
     # The tables are list of tables inside the connection.  They can be different sizes.  Remove from the
     # new connection any tables that aren't in the existing connection.
-    for cnt in range(max(len(new_connection.connection.table), len(existing_connection.connection.table))):
-        if cnt >= len(new_connection.connection.table):
+    tables_to_remove = []
+    nbr_new_tables = len(new_connection.connection.table) if new_connection.connection.table else 0
+    nbr_existing_tables = len(existing_connection.connection.table) if existing_connection.connection.table else 0
+    for cnt in range(max(nbr_new_tables, nbr_existing_tables)):
+        if cnt >= nbr_new_tables:
             break
         table = new_connection.connection.table[cnt]
 
         found = False
-        for (idx, existing_table) in enumerate(existing_connection.connection.table):
-            if table.external_table.db_name == existing_table.external_table.db_name \
-                    and table.external_table.schema_name == existing_table.external_table.schema_name \
-                    and table.external_table.table_name == existing_table.external_table.table_name:
-                found = True
-                break
+        if nbr_existing_tables:  # only do if there are tables.
+            for (idx, existing_table) in enumerate(existing_connection.connection.table):
+                if table.external_table.db_name == existing_table.external_table.db_name \
+                        and table.external_table.schema_name == existing_table.external_table.schema_name \
+                        and table.external_table.table_name == existing_table.external_table.table_name:
+                    found = True
+                    break
 
         if not found:  # this is a new table.
             log.info(f"Removing new table {table.name} from connection {new_connection.name}")
-            new_connection.connection.table.remove(table)
+            tables_to_remove.append(table)
+
+    for table in tables_to_remove:
+        new_connection.connection.table.remove(table)
 
 
 def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportPolicy, force_create: bool, mapping_file

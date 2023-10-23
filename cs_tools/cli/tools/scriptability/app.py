@@ -293,6 +293,7 @@ def scriptability_import(
             custom_type=MultipleChoiceType(),
             help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",
         ),
+        show_mapping: Optional[bool] = typer.Option(default=False, help="show the mapping file"),
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -317,6 +318,7 @@ def scriptability_import(
         org=org,
         include_types=include_types,
         exclude_types=exclude_types,
+        show_mapping=show_mapping,
     )
 
 
