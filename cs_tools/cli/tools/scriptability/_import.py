@@ -153,7 +153,8 @@ def _check_parameters(
     """
     if (source or dest) and not (source and dest):
         error_msg = "source specified, but not destination" if source else "destination specified, but not source"
-        raise CSToolsError(error=error_msg, reason="Source and destination must both be specified.", mitigation="Specify both source and destination when using mapping.")
+        raise CSToolsError(error=error_msg, reason="Source and destination must both be specified.",
+                           mitigation="Specify both source and destination when using mapping.")
 
     path_mitigation = "The path must exist and be a valid TML file system."
     if not path.exists():
@@ -162,7 +163,7 @@ def _check_parameters(
     if not (path / ".tmlfs"):
         raise CSToolsError(error=f"Path {path} does not appear to be a TML file system.", mitigation=path_mitigation)
 
-    if guid and include_types or exclude_types:
+    if guid and (include_types or exclude_types):
         raise CSToolsError(error="A guid and include/exclude specified.",
                            reason="Cannot specify both a file and include/exclude types.",
                            mitigation="Specify either a file or include/exclude types, but not both.")
