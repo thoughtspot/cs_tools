@@ -1,6 +1,7 @@
 from typing import Union
 
 import typer
+from httpx import HTTPStatusError
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import MultipleChoiceType
@@ -18,66 +19,81 @@ app = CSToolsApp(
 )
 
 
+def _get_token(ctx: typer.Context) -> str:
+    """
+    Get a token and put it in the header.
+    """
+    pass
+
+
 @app.command(dependencies=[thoughtspot], name="create")
 def config_create(
         ctx: typer.Context,
-        repository: str = typer.Option(None, help="the git repository to use"),
-        username: str = typer.Option(None, help="the username to use for the git repository"),
-        access_token: str = typer.Option(None, help="the access token to use for the git repository"),
+        repository_url: str = typer.Option(..., help="the git repository to use"),
+        username: str = typer.Option(..., help="the username to use for the git repository"),
+        access_token: str = typer.Option(..., help="the access token to use for the git repository"),
         org: str = typer.Option(None, help="the org to use if any"),
         branch_names: str = typer.Option(None,
                                          custom_type=MultipleChoiceType(),
                                          help="the branch names to use for the git repository"),
-        default_branch_name: str = typer.Option(None, help="the default branch name to use for the git repository"),
+        commit_branch_name: str = typer.Option(None, help="the default branch name to use for the git repository"),
         enable_guid_mapping: bool = typer.Option(False, help="the enable guid mapping to use for the git repository"),
-        guid_mapping_branch_name: str = typer.Option(None,
-                                                     help="the guid mapping branch name to use for the git repository"),
+        configuration_branch_name: str = typer.Option(None,
+                                                      help="the branch name to use for configuration and GUID mappings."),
 ):
     """
     Creates a configuration for a cluster or org.  An org can only have a single configuration.
     """
     ts = ctx.obj.thoughtspot
 
+    r = ts.api_v2.auth_session_user()
+    rich_console.print(r.content)
+
     # check for required parameters
-    if repository is None or username is None or access_token is None:
+    if repository_url is None or username is None or access_token is None:
         rich_console.print("[bold red]Must minimally provide the repository, username, and access_token.[/]")
         return
 
     if org is not None:
         ts.org.switch(org)
 
-    r = ts.api_v2.vcs_git_config_create(
-        repository_url=repository,
-        username=username,
-        access_token=access_token,
-        org_identifier=org,
-        branch_names=branch_names,
-        default_branch_name=default_branch_name,
-        enable_guid_mapping=enable_guid_mapping,
-        guid_mapping_branch_name=guid_mapping_branch_name
-    )
+    try:
+        r = ts.api_v2.vcs_git_config_create(
+            repository_url=repository_url,
+            username=username,
+            access_token=access_token,
+            org_identifier=org,
+            branch_names=branch_names,
+            commit_branch_name=commit_branch_name,
+            enable_guid_mapping=enable_guid_mapping,
+            configuration_branch_name=configuration_branch_name
+        )
 
-    if not r.is_success:
-        rich_console.print(f"[bold red]Error creating the configuration: {r}.[/]")
-        rich_console.print(f"[bold red]{r.content}.[/]")
-    else:
-        rich_console.print(r.json())
+        if not r.is_success:
+            rich_console.print(f"[bold red]Error creating the configuration: {r}.[/]")
+            rich_console.print(f"[bold red]{r.content}.[/]")
+        else:
+            rich_console.print(r.json())
+
+    except HTTPStatusError as e:
+        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
+        rich_console.print(f"[bold red]{e.response.content}.[/]")
 
 
 @app.command(dependencies=[thoughtspot], name="update")
 def config_update(
         ctx: typer.Context,
-        repository: str = typer.Argument(..., help="the git repository to use"),
-        username: str = typer.Argument(..., help="the username to use for the git repository"),
-        access_token: str = typer.Argument(..., help="the access token to use for the git repository"),
+        repository: str = typer.Option(None, help="the git repository to use"),
+        username: str = typer.Option(None, help="the username to use for the git repository"),
+        access_token: str = typer.Option(None, help="the access token to use for the git repository"),
         org: str = typer.Option(None, help="the org to update the configuration for"),
         branch_names: str = typer.Option(None,
                                          custom_type=MultipleChoiceType(),
                                          help="the branch names to use for the git repository"),
-        default_branch_name: str = typer.Option(None, help="the default branch name to use for the git repository"),
+        commit_branch_name: str = typer.Option(None, help="the default branch name to use for commits"),
         enable_guid_mapping: bool = typer.Option(False, help="the enable guid mapping to use for the git repository"),
-        guid_mapping_branch_name: str = typer.Option(None,
-                                                     help="the guid mapping branch name to use for the git repository"),
+        configuration_branch_name: str = typer.Option(None,
+                                                     help="the branch name to use for configuration and GUID mappings."),
 ):
     """
     Updates a configuration for a cluster or org.
@@ -87,24 +103,30 @@ def config_update(
     if org is not None:
         ts.org.switch(org)
 
-    r = ts.api_v2.vcs_git_config_update(
-        repository_url=repository,
-        username=username,
-        access_token=access_token,
-        org_identifier=org,
-        branch_names=branch_names,
-        default_branch_name=default_branch_name,
-        enable_guid_mapping=enable_guid_mapping,
-        guid_mapping_branch_name=guid_mapping_branch_name
-    )
+    try:
+        r = ts.api_v2.vcs_git_config_update(
+            username=username,
+            access_token=access_token,
+            org_identifier=org,
+            branch_names=branch_names,
+            commit_branch_name=commit_branch_name,
+            enable_guid_mapping=enable_guid_mapping,
+            configuration_branch_name=configuration_branch_name
+        )
 
-    rich_console.print(r.json())
+        rich_console.print(r.json())
+
+    except HTTPStatusError as e:
+        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
+        rich_console.print(f"[bold red]{e.response.content}.[/]")
+
 
 
 @app.command(dependencies=[thoughtspot], name="search")
 def config_search(
         ctx: typer.Context,
-        org_ids: str = typer.Argument(..., custom_type=MultipleChoiceType(),
+        org: str = typer.Option(None, help="the org run in"),
+        org_ids: str = typer.Option(None, custom_type=MultipleChoiceType(),
                                       help="The org IDs to get the configuration for")
 ):
     """
@@ -112,11 +134,19 @@ def config_search(
     """
     ts = ctx.obj.thoughtspot
 
-    r = ts.api_v2.vcs_git_config_search(
-        org_ids=org_ids
-    )
+    if org is not None:
+        ts.org.switch(org)
 
-    rich_console.print(r.json())
+    try:
+        r = ts.api_v2.vcs_git_config_search(
+            org_ids=org_ids
+        )
+
+        rich_console.print(r.json())
+
+    except HTTPStatusError as e:
+        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
+        rich_console.print(f"[bold red]{e.response.content}.[/]")
 
 
 @app.command(dependencies=[thoughtspot], name="delete")
@@ -138,12 +168,18 @@ def config_delete(
         # non-org enabled clusters.
         rich_console.print("[bold yellow]No org specified, the config in the current org will be deleted.[/]")
 
-    r = ts.api_v2.vcs_git_config_delete(
-        cluster_level=cluster_level
-    )
+    try:
+        r = ts.api_v2.vcs_git_config_delete(
+            cluster_level=cluster_level
+        )
 
-    if not r.is_success:
-        rich_console.print(f"[bold red]Error deleting the configuration: {r}.[/]")
-        rich_console.print(f"[bold red]{r.content}.[/]")
-    else:
-        rich_console.print(r.json())
+        if not r.is_success:
+            rich_console.print(f"[bold red]Error deleting the configuration: {r}.[/]")
+            rich_console.print(f"[bold red]{r.content}.[/]")
+        else:
+            rich_console.print(f"[green]Deleted the configuration: {r}.[/]")
+
+    except HTTPStatusError as e:
+        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
+        rich_console.print(f"[bold red]{e.response.content}.[/]")
+

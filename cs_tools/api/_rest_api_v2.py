@@ -22,6 +22,24 @@ class RESTAPIv2(RESTAPIClient):
     """
 
     # ==================================================================================================================
+    # AUTHENTICATION ::  https://developers.thoughtspot.com/docs/rest-api-getstarted#_authentication
+    # ==================================================================================================================
+
+    def auth_session_login(self, username: str, password: str, org_identifier: str = UNDEFINED, remember_me: bool = False) -> httpx.Response:
+        body = {
+            "username": username,
+            "password": password,
+            "org_identifier": org_identifier,
+            "remember_me": remember_me
+        }
+        r = self.post("api/rest/2.0/auth/session/login", json=body)
+        return r
+
+    def auth_session_user(self) -> httpx.Response:
+        r = self.get("api/rest/2.0/auth/session/user")
+        return r
+
+    # ==================================================================================================================
     # VERSION CONTROL     ::  https://developers.thoughtspot.com/docs/rest-apiv2-reference#_version_control_beta
     # ==================================================================================================================
 
@@ -32,9 +50,9 @@ class RESTAPIv2(RESTAPIClient):
                               access_token: str,
                               org_identifier: Identifier,
                               branch_names: List[str] = UNDEFINED,
-                              default_branch_name: str = UNDEFINED,
+                              commit_branch_name: str = UNDEFINED,
                               enable_guid_mapping: bool = False,
-                              guid_mapping_branch_name: str
+                              configuration_branch_name: str
                               ) -> httpx.Response:
         body= {
             "repository_url": repository_url,
@@ -42,9 +60,9 @@ class RESTAPIv2(RESTAPIClient):
             "access_token": access_token,
             "org_identifier": org_identifier,
             "branch_names": branch_names,
-            "default_branch_name": default_branch_name,
+            "commit_branch_name": commit_branch_name,
             "enable_guid_mapping": enable_guid_mapping,
-            "guid_mapping_branch_name": guid_mapping_branch_name
+            "configuration_branch_name": configuration_branch_name
         }
 
         r = self.post("api/rest/2.0/vcs/git/config/create", json=body)
@@ -52,24 +70,22 @@ class RESTAPIv2(RESTAPIClient):
 
     def vcs_git_config_update(self,
                               *,
-                              repository_url: str,
                               username: str,
                               access_token: str,
                               org_identifier: Identifier = UNDEFINED,
                               branch_names: List[str] = UNDEFINED,
-                              default_branch_name: str = UNDEFINED,
+                              commit_branch_name: str = UNDEFINED,
                               enable_guid_mapping: bool = False,
-                              guid_mapping_branch_name: str = UNDEFINED
+                              configuration_branch_name: str = UNDEFINED
                               ) -> httpx.Response:
         body= {
-            "repository_url": repository_url,
             "username": username,
             "access_token": access_token,
             "org_identifier": org_identifier,
             "branch_names": branch_names,
-            "default_branch_name": default_branch_name,
+            "commit_branch_name": commit_branch_name,
             "enable_guid_mapping": enable_guid_mapping,
-            "guid_mapping_branch_name": guid_mapping_branch_name
+            "configuration_branch_name": configuration_branch_name
         }
         r = self.post("api/rest/2.0/vcs/git/config/update", json=body)
         return r
