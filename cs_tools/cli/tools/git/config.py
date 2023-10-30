@@ -46,9 +46,6 @@ def config_create(
     """
     ts = ctx.obj.thoughtspot
 
-    r = ts.api_v2.auth_session_user()
-    rich_console.print(r.content)
-
     # check for required parameters
     if repository_url is None or username is None or access_token is None:
         rich_console.print("[bold red]Must minimally provide the repository, username, and access_token.[/]")
