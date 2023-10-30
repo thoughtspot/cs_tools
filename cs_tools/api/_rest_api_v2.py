@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import httpx
 
 from cs_tools.api._client import RESTAPIClient
-from cs_tools.api._utils import UNDEFINED
+from cs_tools.api._utils import scrub_undefined, UNDEFINED
 from cs_tools.types import DeployType, DeployPolicy, GUID, MetadataObjectType
 
 if TYPE_CHECKING:
@@ -20,6 +20,10 @@ class RESTAPIv2(RESTAPIClient):
     """
     Implementation of the REST API v2.
     """
+
+    def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
+        request_kw = scrub_undefined(request_kw, null=None)
+        return super().request(method, endpoint, **request_kw)
 
     # ==================================================================================================================
     # AUTHENTICATION ::  https://developers.thoughtspot.com/docs/rest-api-getstarted#_authentication
