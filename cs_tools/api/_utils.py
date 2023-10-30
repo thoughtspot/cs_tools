@@ -39,10 +39,10 @@ def scrub_undefined(inp: Any, *, null: Union[UNDEFINED, None]) -> Any:
     a marker for a default value.
     """
     if isinstance(inp, dict):
-        return {k: scrub_undefined(v) for k, v in inp.items() if v is not null}
+        return {k: scrub_undefined(v, null=null) for k, v in inp.items() if v is not null}
 
     if isinstance(inp, list):
-        return [scrub_undefined(v) for v in inp if v is not null]
+        return [scrub_undefined(v, null=null) for v in inp if v is not null]
 
     return inp
 

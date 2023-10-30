@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import httpx
 
 from cs_tools.api._client import RESTAPIClient
-from cs_tools.api._utils import scrub_undefined, UNDEFINED
+from cs_tools.api._utils import scrub_undefined
 from cs_tools.types import DeployType, DeployPolicy, GUID, MetadataObjectType
 
 if TYPE_CHECKING:
@@ -29,7 +29,7 @@ class RESTAPIv2(RESTAPIClient):
     # AUTHENTICATION ::  https://developers.thoughtspot.com/docs/rest-api-getstarted#_authentication
     # ==================================================================================================================
 
-    def auth_session_login(self, username: str, password: str, org_identifier: str = UNDEFINED, remember_me: bool = False) -> httpx.Response:
+    def auth_session_login(self, username: str, password: str, org_identifier: str = None, remember_me: bool = False) -> httpx.Response:
         body = {
             "username": username,
             "password": password,
@@ -53,8 +53,8 @@ class RESTAPIv2(RESTAPIClient):
                               username: str,
                               access_token: str,
                               org_identifier: Identifier,
-                              branch_names: List[str] = UNDEFINED,
-                              commit_branch_name: str = UNDEFINED,
+                              branch_names: List[str] = None,
+                              commit_branch_name: str = None,
                               enable_guid_mapping: bool = False,
                               configuration_branch_name: str
                               ) -> httpx.Response:
@@ -76,11 +76,11 @@ class RESTAPIv2(RESTAPIClient):
                               *,
                               username: str,
                               access_token: str,
-                              org_identifier: Identifier = UNDEFINED,
-                              branch_names: List[str] = UNDEFINED,
-                              commit_branch_name: str = UNDEFINED,
+                              org_identifier: Identifier = None,
+                              branch_names: List[str] = None,
+                              commit_branch_name: str = None,
                               enable_guid_mapping: bool = False,
-                              configuration_branch_name: str = UNDEFINED
+                              configuration_branch_name: str = None
                               ) -> httpx.Response:
         body= {
             "username": username,
@@ -94,7 +94,7 @@ class RESTAPIv2(RESTAPIClient):
         r = self.post("api/rest/2.0/vcs/git/config/update", json=body)
         return r
 
-    def vcs_git_config_search(self, *, org_ids: List[Identifier] = UNDEFINED) -> httpx.Response:
+    def vcs_git_config_search(self, *, org_ids: List[Identifier] = None) -> httpx.Response:
         body= {"org_identifiers": org_ids}
         r = self.post("api/rest/2.0/vcs/git/config/search", json=body)
         return r
@@ -109,7 +109,7 @@ class RESTAPIv2(RESTAPIClient):
     def vcs_git_branches_commit(self,
                                 *,
                                 metadata: List[Identifier],
-                                branch_name: str = UNDEFINED,
+                                branch_name: str = None,
                                 delete_aware: bool = False,
                                 comment: str
                                 ) -> httpx.Response:
@@ -119,15 +119,15 @@ class RESTAPIv2(RESTAPIClient):
             "comment": comment,
             "delete_aware": delete_aware
         }
-        r = self.post("api/rest/2.0/vcs/git/branches/commit", data=body)
+        r = self.post("api/rest/2.0/vcs/git/branches/commit", json=body)
         return r
 
     def vcs_git_commits_search(
             self,
             *,
-            metadata_identifier: Identifier = UNDEFINED,
-            metadata_type: MetadataObjectType = UNDEFINED,
-            branch: str = UNDEFINED,
+            metadata_identifier: Identifier = None,
+            metadata_type: MetadataObjectType = None,
+            branch: str = None,
             offset: int = 0,
             batchsize: int = -1,
     ) -> httpx.Response:
