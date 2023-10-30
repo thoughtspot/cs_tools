@@ -39,7 +39,18 @@ def scrub_undefined(inp: Any) -> Any:
     a marker for a default value.
     """
     if isinstance(inp, dict):
-        return {k: scrub_undefined(v) for k, v in inp.items() if v is not UNDEFINED}
+        scrubbed = {}
+        for k, v in inp.items():
+            if k == 'branch_name':
+                breakpoint()
+
+            if v is UNDEFINED:
+                continue
+
+            scrubbed[k] = scrub_undefined(v)
+
+        # return {k: scrub_undefined(v) for k, v in inp.items() if v is not UNDEFINED}
+        return scrubbed
 
     if isinstance(inp, list):
         return [scrub_undefined(v) for v in inp if v is not UNDEFINED]

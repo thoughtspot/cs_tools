@@ -90,7 +90,7 @@ def config_update(
         commit_branch_name: str = typer.Option(None, help="the default branch name to use for commits"),
         enable_guid_mapping: bool = typer.Option(False, help="the enable guid mapping to use for the git repository"),
         configuration_branch_name: str = typer.Option(None,
-                                                     help="the branch name to use for configuration and GUID mappings."),
+                                                      help="the branch name to use for configuration and GUID mappings."),
 ):
     """
     Updates a configuration for a cluster or org.
@@ -118,13 +118,12 @@ def config_update(
         rich_console.print(f"[bold red]{e.response.content}.[/]")
 
 
-
 @app.command(dependencies=[thoughtspot], name="search")
 def config_search(
         ctx: typer.Context,
         org: str = typer.Option(None, help="the org run in"),
         org_ids: str = typer.Option(None, custom_type=MultipleChoiceType(),
-                                      help="The org IDs to get the configuration for")
+                                    help="The org IDs to get the configuration for")
 ):
     """
     Searches for configurations.
@@ -179,4 +178,3 @@ def config_delete(
     except HTTPStatusError as e:
         rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
         rich_console.print(f"[bold red]{e.response.content}.[/]")
-

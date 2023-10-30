@@ -106,14 +106,16 @@ class RESTAPIv2(RESTAPIClient):
                                 *,
                                 metadata: List[Identifier],
                                 branch_name: str = UNDEFINED,
+                                delete_aware: bool = False,
                                 comment: str
                                 ) -> httpx.Response:
         body = {
-            metadata: metadata,
+            "metadata": metadata,
             "branch_name": branch_name,
-            "comment": comment
+            "comment": comment,
+            "delete_aware": delete_aware
         }
-        r = self.post("api/rest/2.0/vcs/git/branches/commit", json=body)
+        r = self.post("api/rest/2.0/vcs/git/branches/commit", data=body)
         return r
 
     def vcs_git_commits_search(
