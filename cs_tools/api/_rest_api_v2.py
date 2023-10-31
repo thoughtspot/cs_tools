@@ -122,25 +122,6 @@ class RESTAPIv2(RESTAPIClient):
         r = self.post("api/rest/2.0/vcs/git/branches/commit", json=body)
         return r
 
-    def vcs_git_commits_search(
-            self,
-            *,
-            metadata_identifier: Identifier = None,
-            metadata_type: MetadataObjectType = None,
-            branch: str = None,
-            offset: int = 0,
-            batchsize: int = -1,
-    ) -> httpx.Response:
-        body = {
-            "metadata_identifier": metadata_identifier,
-            "metadata_type": metadata_type,
-            "branch_name": branch,
-            "record_offset": offset,
-            "record_size": batchsize
-        }
-        r = self.post("api/rest/2.0/vcs/git/commits/search", json=body)
-        return r
-
     def vcs_git_commits_id_revert(self,
                                   *,
                                   commit_id: str,
@@ -149,12 +130,11 @@ class RESTAPIv2(RESTAPIClient):
                                   revert_policy: DeployPolicy = DeployPolicy.all_or_none
                                   ) -> httpx.Response:
         body = {
-            "commit_id": commit_id,
             "metadata": metadata,
             "branch_name": branch_name,
             "revert_policy": revert_policy
         }
-        r = self.post(f"api/rest/2.0/vcs/git/commits/{id}/revert", json=body)
+        r = self.post(f"api/rest/2.0/vcs/git/commits/{commit_id}/revert", json=body)
         return r
 
     def vcs_git_branches_validate(self,
@@ -178,8 +158,8 @@ class RESTAPIv2(RESTAPIClient):
         body = {
             "commit_id": commit_id,
             "branch_name": branch_name,
-            "deploy_type": deploy_type,
-            "deploy_policy": deploy_policy
+            "deploy_type": str(deploy_type),
+            "deploy_policy": str(deploy_policy)
         }
         r = self.post("api/rest/2.0/vcs/git/commits/deploy", json=body)
         return r
