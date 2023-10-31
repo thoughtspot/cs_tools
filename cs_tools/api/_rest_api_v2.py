@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Union
+from typing import Dict, List, Union
 from typing import TYPE_CHECKING
 
 import httpx
@@ -108,7 +108,7 @@ class RESTAPIv2(RESTAPIClient):
 
     def vcs_git_branches_commit(self,
                                 *,
-                                metadata: List[Identifier],
+                                metadata: List[Dict],
                                 branch_name: str = None,
                                 delete_aware: bool = False,
                                 comment: str
@@ -122,10 +122,28 @@ class RESTAPIv2(RESTAPIClient):
         r = self.post("api/rest/2.0/vcs/git/branches/commit", json=body)
         return r
 
+    def vcs_git_commits_search(self,
+                               *,
+                               metadata_identifier: Identifier,
+                               metadata_type: MetadataObjectType,
+                               branch_name: str = None,
+                               record_offset: int = 0,
+                               record_size: int = -1,  # -1 means all.
+                               ) -> httpx.Response:
+        body = {
+            "metadata_identifier": metadata_identifier,
+            "metadata_type": metadata_type,
+            "branch_name": branch_name,
+            "record_offset": record_offset,
+            "record_size": record_size
+        }
+        r = self.post(f"api/rest/2.0/vcs/git/commits/search", json=body)
+        return r
+
     def vcs_git_commits_id_revert(self,
                                   *,
                                   commit_id: str,
-                                  metadata: List[Identifier],
+                                  metadata: List[Dict],
                                   branch_name: str,
                                   revert_policy: DeployPolicy = DeployPolicy.all_or_none
                                   ) -> httpx.Response:

@@ -68,6 +68,42 @@ def branches_commit(
         rich_console.print(f"[bold red]{e.response.content}.[/]")
 
 
+@app.command(dependencies=[thoughtspot], name="search-commits")
+def commits_search(
+        ctx: typer.Context,
+        metadata_id: str = typer.Argument(..., help="the metadata GUID or name to search for"),
+        metadata_type: str = typer.Argument(...,
+                                          help=f"the metadata type to search for: {', '.join(VALID_METADATA_COMMIT_TYPES)}"),
+        org: str = typer.Option(None, help="the org ID or name to use if any"),
+        branch_name: str = typer.Option(None,
+                                        help="the branch name to use for the git repository or use the default"),
+        record_offset: int = typer.Option(0, help="the record offset to use"),
+        record_size: int = typer.Option(-1, help="the record size to use"),
+):
+    """
+    Searches for the commits for the given metadata ID.
+    """
+    ts = ctx.obj.thoughtspot
+
+    if org is not None:
+        ts.org.switch(org)
+
+    try:
+        r = ts.api_v2.vcs_git_commits_search(
+            metadata_identifier=metadata_id,
+            metadata_type=metadata_type,
+            branch_name=branch_name,
+            record_offset=record_offset,
+            record_size=record_size
+        )
+
+        rich_console.print(r.json())
+
+    except HTTPStatusError as e:
+        rich_console.print(f"[bold red]Error finding commits for  {metadata_id}: {e}.[/]")
+        rich_console.print(f"[bold red]{e.response.content}.[/]")
+
+
 @app.command(dependencies=[thoughtspot], name="revert-commit")
 def commit_revert(
         ctx: typer.Context,
@@ -138,7 +174,7 @@ def branches_validate(
         rich_console.print("[bold green]Validation successful.  Ok to deploy.[/]")
 
     except HTTPStatusError as e:
-        rich_console.print(f"[bold red]Error validating {source_branch} to {target_branch}: {r}.[/]")
+        rich_console.print(f"[bold red]Error validating {source_branch} to {target_branch}: {e}.[/]")
         rich_console.print(f"[bold red]{e.response.content}.[/]")
 
 
