@@ -2,6 +2,8 @@ from typing import Union
 
 import typer
 from httpx import HTTPStatusError
+from rich.align import Align
+from rich.table import Table
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import MultipleChoiceType
@@ -66,11 +68,7 @@ def config_create(
             configuration_branch_name=configuration_branch_name
         )
 
-        if not r.is_success:
-            rich_console.print(f"[bold red]Error creating the configuration: {r}.[/]")
-            rich_console.print(f"[bold red]{r.content}.[/]")
-        else:
-            rich_console.print(r.json())
+        _show_configs_as_table([r.json()])
 
     except HTTPStatusError as e:
         rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
@@ -111,7 +109,7 @@ def config_update(
             configuration_branch_name=configuration_branch_name
         )
 
-        rich_console.print(r.json())
+        _show_configs_as_table([r.json()])
 
     except HTTPStatusError as e:
         rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
@@ -138,7 +136,8 @@ def config_search(
             org_ids=org_ids
         )
 
-        rich_console.print(r.json())
+        configs = r.json()
+        _show_configs_as_table(configs)
 
     except HTTPStatusError as e:
         rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
@@ -169,12 +168,27 @@ def config_delete(
             cluster_level=cluster_level
         )
 
-        if not r.is_success:
-            rich_console.print(f"[bold red]Error deleting the configuration: {r}.[/]")
-            rich_console.print(f"[bold red]{r.content}.[/]")
-        else:
-            rich_console.print(f"[green]Deleted the configuration: {r}.[/]")
+        rich_console.print(f"[green]Deleted the configuration: {r}.[/]")
 
     except HTTPStatusError as e:
         rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
         rich_console.print(f"[bold red]{e.response.content}.[/]")
+
+
+def _show_configs_as_table(configs: list[dict]):
+    """
+    Show the configurations as a table.
+    """
+    cnt: int = 0
+    for _ in configs:
+        cnt += 1
+
+        table = Table(title=f"Configuration Details {cnt}", width=100)
+
+        table.add_column("Property", width=25)
+        table.add_column("Value", width=75)
+
+        for k,v in _.items():
+            table.add_row(k, str(v))
+
+        rich_console.print(Align.center(table))
