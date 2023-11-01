@@ -9,9 +9,8 @@ The `git` tool provides a command-line interface for using the git specific API 
 
 ??? warning "v2.0 API calls"
 
-    The `git` tool uses the v2.0 API calls.  These calls were introduced in v9.2.cl.  Git calls were introduced 
-    in version 9.7.cl and are currently beta. If you are using an older version of ThoughtSpot, you will need 
-    to use the `scriptability` tool instead.
+    The `git` tool uses the v2.0 API calls.  Git calls were introduced in version 9.6.cl as beta and are fully released
+    in 9.7.cl.  
 
 These API endpoints allow you to create and manage configurations with GitHub and to 
 commit and deploy changes to and from GitHub. These APIs are commonly used in environments where you want to develop content in one environment and
