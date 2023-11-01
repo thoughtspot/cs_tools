@@ -68,7 +68,7 @@ def config_create(
             configuration_branch_name=configuration_branch_name
         )
 
-        _show_configs_as_table([r.json()])
+        _show_configs_as_table([r.json()], title="New Configuration Details")
 
     except HTTPStatusError as e:
         rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
@@ -109,7 +109,7 @@ def config_update(
             configuration_branch_name=configuration_branch_name
         )
 
-        _show_configs_as_table([r.json()])
+        _show_configs_as_table([r.json()], title="Updated Configuration Details")
 
     except HTTPStatusError as e:
         rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
@@ -175,20 +175,24 @@ def config_delete(
         rich_console.print(f"[bold red]{e.response.content}.[/]")
 
 
-def _show_configs_as_table(configs: list[dict]):
+def _show_configs_as_table(configs: list[dict], title: str = "Configuration Details"):
     """
     Show the configurations as a table.
     """
+    use_cnt = len(configs) > 1
+
     cnt: int = 0
     for _ in configs:
         cnt += 1
+
+        title = f"{title} {cnt}" if use_cnt else title
 
         table = Table(title=f"Configuration Details {cnt}", width=100)
 
         table.add_column("Property", width=25)
         table.add_column("Value", width=75)
 
-        for k,v in _.items():
+        for k, v in _.items():
             table.add_row(k, str(v))
 
         rich_console.print(Align.center(table))
