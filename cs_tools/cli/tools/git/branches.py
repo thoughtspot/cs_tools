@@ -184,7 +184,7 @@ def branches_deploy(
         org: str = typer.Option(None, help="the org ID or name to use if any"),
         commit_id: str = typer.Option(None, help="the commit ID to deploy or none for latest"),
         branch_name: str = typer.Option(None, help="the branch name to use, or default"),
-        deploy_type: str = typer.Option("PARTIAL", help="the deploy type to use, either PARTIAL or FULL"),
+        deploy_type: str = typer.Option("DELTA", help="the deploy type to use, either DELTA or FULL"),
         deploy_policy: str = typer.Option("ALL_OR_NONE", help="the deploy policy to use, either PARTIAL or ALL_OR_NONE"),
 ):
     """
