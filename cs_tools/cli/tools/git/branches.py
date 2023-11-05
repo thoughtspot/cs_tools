@@ -58,7 +58,8 @@ def branches_commit(
         r = ts.api_v2.vcs_git_branches_commit(
             metadata=metadata_identifiers,
             branch_name=branch_name,
-            comment=comment
+            comment=comment,
+            delete_aware=delete_aware
         )
 
         rich_console.print(r.json())
@@ -166,7 +167,7 @@ def branches_validate(
         ts.org.switch(org)
 
     try:
-        r = ts.api_v2.vcs_git_branches_validate(
+        ts.api_v2.vcs_git_branches_validate(
             source_branch_name=source_branch,
             target_branch_name=target_branch
         )

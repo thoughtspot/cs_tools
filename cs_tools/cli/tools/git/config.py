@@ -21,13 +21,6 @@ app = CSToolsApp(
 )
 
 
-def _get_token(ctx: typer.Context) -> str:
-    """
-    Get a token and put it in the header.
-    """
-    pass
-
-
 @app.command(dependencies=[thoughtspot], name="create")
 def config_create(
         ctx: typer.Context,
@@ -78,7 +71,6 @@ def config_create(
 @app.command(dependencies=[thoughtspot], name="update")
 def config_update(
         ctx: typer.Context,
-        repository: str = typer.Option(None, help="the git repository to use"),
         username: str = typer.Option(None, help="the username to use for the git repository"),
         access_token: str = typer.Option(None, help="the access token to use for the git repository"),
         org: str = typer.Option(None, help="the org to update the configuration for"),
@@ -181,18 +173,16 @@ def _show_configs_as_table(configs: list[dict], title: str = "Configuration Deta
     """
     use_cnt = len(configs) > 1
 
-    cnt: int = 0
-    for _ in configs:
-        cnt += 1
+    for count, config in configs:
 
-        title = f"{title} {cnt}" if use_cnt else title
+        title = f"{title} {count}" if use_cnt else title
 
-        table = Table(title=f"Configuration Details {cnt}", width=100)
+        table = Table(title=f"Configuration Details {count}", width=100)
 
         table.add_column("Property", width=25)
         table.add_column("Value", width=75)
 
-        for k, v in _.items():
+        for k, v in config.items():
             table.add_row(k, str(v))
 
         rich_console.print(Align.center(table))
