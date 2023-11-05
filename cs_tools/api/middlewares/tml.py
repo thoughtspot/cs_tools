@@ -8,6 +8,7 @@ from thoughtspot_tml.types import TMLObject
 from thoughtspot_tml.utils import determine_tml_type
 from thoughtspot_tml._tml import TML
 from pydantic import validate_arguments
+import httpx
 
 from cs_tools.types import GUID, TMLImportPolicy, TMLSupportedContent, TMLAPIResponse
 
@@ -77,22 +78,28 @@ class TMLMiddleware:
         tmls: List[TML] = []
 
         for guid in guids:
-            r = self.ts.api.metadata_tml_export(export_guids=[guid])
+            try:
+                r = self.ts.api.metadata_tml_export(export_guids=[guid])
 
-            for content in r.json()["object"]:
-                info = content["info"]
-                
-                if info["status"]["status_code"] == "ERROR":
-                    log.warning(f"{info['type']} ({info['id']}) could not be exported, see log for details..")
-                    log.debug(content)
-                    continue
+                for content in r.json().get("object", []):
+                    info = content["info"]
+                    
+                    if info["status"]["status_code"] == "ERROR":
+                        r.status_code = 417
+                        m = f"417: hijacked by CS Tools, response from API: {info['status'].get('error_message', None)}"
+                        raise httpx.HTTPStatusError(m, request=r.request, response=r)
 
-                tml_cls = determine_tml_type(info=content["info"])
-                tml = tml_cls.loads(content["edoc"])
+                    tml_cls = determine_tml_type(info=content["info"])
+                    tml = tml_cls.loads(content["edoc"])
 
-                if iterator:
-                    yield tml
+                    if iterator:
+                        yield tml
 
-                tmls.append(tml)
+                    tmls.append(tml)
+
+            except httpx.HTTPStatusError as e:
+                log.warning(f"{guid} could not be exported, see log for details..")
+                log.debug(e, exc_info=True)
+                continue
 
         return tmls
