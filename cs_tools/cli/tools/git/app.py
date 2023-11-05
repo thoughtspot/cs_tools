@@ -6,13 +6,8 @@
 from __future__ import annotations
 
 import logging
-import pathlib
-from typing import Dict, Iterable, List, Optional
 
-import typer
-
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.ux import rich_console, CSToolsApp
+from cs_tools.cli.ux import CSToolsApp
 
 from .config import app as configApp
 from .branches import app as branchesApp
@@ -28,5 +23,3 @@ app = CSToolsApp(
 )
 app.add_typer(configApp, name="config", help="Commands managing the git configurations.")
 app.add_typer(branchesApp, name="branches", help="Commands for working with branches and commits.")
-
-

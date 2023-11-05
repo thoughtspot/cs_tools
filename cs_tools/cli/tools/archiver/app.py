@@ -534,7 +534,7 @@ def remove(
                         _extended_rest_api_v1.metadata_delete(
                             ts.api,
                             metadata_type=unique_type,
-                            guids=list(chunk)
+                            guids=list(chunk),
                         )
 
         with tasks["deleting_tag"] as this_task:
