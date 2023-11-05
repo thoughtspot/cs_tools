@@ -11,7 +11,7 @@ import json
 import httpx
 
 from cs_tools.api._client import RESTAPIClient
-from cs_tools.api._utils import dumps, UNDEFINED
+from cs_tools.api._utils import dumps, scrub_undefined, UNDEFINED
 from cs_tools.types import (
     MetadataObjectSubtype,
     ShareModeAccessLevel,
@@ -40,6 +40,10 @@ class RESTAPIv1(RESTAPIClient):
     """
     Implementation of the REST API v1.
     """
+
+    def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
+        request_kw = scrub_undefined(request_kw, null=UNDEFINED)
+        return super().request(method, endpoint, **request_kw)
 
     # ==================================================================================================================
     # SESSION     ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_session_management

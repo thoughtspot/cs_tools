@@ -4,9 +4,9 @@ import platform
 import datetime as dt
 import logging
 import json
-import ssl
 import sys
 import os
+from typing import Optional
 
 import httpx
 
@@ -45,9 +45,12 @@ class ThoughtSpot:
         self._rest_api_v1 = RESTAPIv1(client_version="V1", **info)
         self._rest_api_v2 = RESTAPIv2(client_version="V2", **info)
 
+        # BDB temporary hack.  V1 and V2 are creating separate sessions, so we need to share the session.
+        self._rest_api_v2.session = self._rest_api_v1.session
+
         # assigned at self.login()
-        self._logged_in_user: LoggedInUser = None
-        self._platform: ThoughtSpotPlatform = None
+        self._logged_in_user: Optional[LoggedInUser] = None
+        self._platform: Optional[ThoughtSpotPlatform] = None
 
         # ==============================================================================================================
         # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
@@ -87,7 +90,7 @@ class ThoughtSpot:
         Return information about the logged in user.
         """
         if not hasattr(self, "_logged_in_user"):
-            raise RuntimeError("attempted to access user details before logging into the " "ThoughtSpot platform")
+            raise RuntimeError("attempted to access user details before logging into the ThoughtSpot platform")
 
         return self._logged_in_user
 
@@ -97,7 +100,7 @@ class ThoughtSpot:
         Return information about the ThoughtSpot platform.
         """
         if not hasattr(self, "_this_platform"):
-            raise RuntimeError("attempted to access platform details before logging into the " "ThoughtSpot platform")
+            raise RuntimeError("attempted to access platform details before logging into the ThoughtSpot platform")
 
         return self._this_platform
 
@@ -120,6 +123,14 @@ class ThoughtSpot:
                     password=utils.reveal(self.config.auth["frontend"].password).decode(),
                     # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
                 )
+
+# This would log in the v2 API, but it would then be in a different session.
+#                r = self.api_v2.auth_session_login(
+#                    username=self.config.auth["frontend"].username,
+#                    password=utils.reveal(self.config.auth["frontend"].password).decode(),
+#                    org_identifier=self.config.thoughtspot.org,
+#                    remember_me=True,
+#                )
 
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
             if "CERTIFICATE_VERIFY_FAILED" in str(e):
