@@ -132,8 +132,16 @@ def identify(
             ts_bi_data = {row["Answer Book GUID"] for row in ts_bi_rows}
 
         with tasks["gather_supporting_filter_criteria"]:
-            only_user_guids = [ts.group.users_in(group, is_directly_assigned=True) for group in (only_groups or [])]
-            ignore_user_guids = [ts.group.users_in(group, is_directly_assigned=True) for group in (ignore_groups or [])]
+            only_user_guids = [
+                user["id"]
+                for group in (only_groups or [])
+                for user in ts.group.users_in(group, is_directly_assigned=True)
+            ]
+            ignore_user_guids = [
+                user["id"]
+                for group in (ignore_groups or [])
+                for user in ts.group.users_in(group, is_directly_assigned=True)
+            ]
 
         with tasks["gather_metadata"]:
             to_archive = []
