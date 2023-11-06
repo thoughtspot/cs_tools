@@ -47,7 +47,7 @@ def branches_commit(
     if tag:
         metadata_list = ts.metadata.find(tags=[tag], include_types=VALID_METADATA_COMMIT_TYPES)
         for m in metadata_list:
-            rich_console.print(f"{m["id"]}: {m["name"]} ({m["metadata_type"]})")
+            rich_console.print(f"{m['id']}: {m['name']} ({m['metadata_type']})")
             metadata_ids.append(m["id"])
 
     metadata_identifiers = []   # format for the call.
@@ -73,7 +73,7 @@ def commits_search(
         ctx: typer.Context,
         metadata_id: str = typer.Argument(..., help="the metadata GUID or name to search for"),
         metadata_type: str = typer.Argument(...,
-                                          help=f"the metadata type to search for: {", ".join(VALID_METADATA_COMMIT_TYPES)}"),
+                                          help=f"the metadata type to search for: {', '.join(VALID_METADATA_COMMIT_TYPES)}"),
         org: str = typer.Option(None, help="the org ID or name to use if any"),
         branch_name: str = typer.Option(None,
                                         help="the branch name to use for the git repository or use the default"),
@@ -121,7 +121,7 @@ def commit_revert(
 
     valid_policies = ["PARTIAL", "ALL_OR_NONE"]
     if revert_policy not in valid_policies:
-        rich_console.log(f"[b red]Invalid revert policy: {revert_policy}.  Must be one of {", ".join(valid_policies)}")
+        rich_console.log(f"[b red]Invalid revert policy: {revert_policy}.  Must be one of {', '.join(valid_policies)}")
         raise typer.Exit(1)
 
     if org is not None:
