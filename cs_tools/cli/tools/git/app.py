@@ -16,7 +16,8 @@ log = logging.getLogger(__name__)
 
 app = CSToolsApp(
     help="""
-    Allows you to use the vsc/git API endpoints in a developer friendly way.  
+    Allows you to use the vsc/git API endpoints in a developer friendly way.
+
     See https://developers.thoughtspot.com/docs/git-integration for more details.
     """,
     options_metavar="[--version, --help]",
