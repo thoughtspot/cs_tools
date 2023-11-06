@@ -31,7 +31,7 @@ def is_valid_guid(to_test: str) -> bool:
     return str(guid) == to_test
 
 
-def scrub_undefined(inp: Any) -> Any:
+def scrub_undefined(inp: Any, *, null: Union[UNDEFINED, None]) -> Any:
     """
     Remove sentinel values from input parameters.
 
@@ -39,10 +39,10 @@ def scrub_undefined(inp: Any) -> Any:
     a marker for a default value.
     """
     if isinstance(inp, dict):
-        return {k: scrub_undefined(v) for k, v in inp.items() if v is not UNDEFINED}
+        return {k: scrub_undefined(v, null=null) for k, v in inp.items() if v is not null}
 
     if isinstance(inp, list):
-        return [scrub_undefined(v) for v in inp if v is not UNDEFINED]
+        return [scrub_undefined(v, null=null) for v in inp if v is not null]
 
     return inp
 

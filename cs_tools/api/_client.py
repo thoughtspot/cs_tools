@@ -45,7 +45,6 @@ class RESTAPIClient:
 
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Make an HTTP request."""
-        request_kw = scrub_undefined(request_kw)
         secure = scrub_sensitive(request_kw)
 
         log.debug(f">> {method.upper()} to {self.client_version}: {endpoint} with keywords {secure}")

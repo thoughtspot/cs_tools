@@ -281,18 +281,19 @@ def scriptability_import(
         tags: List[str] = typer.Option([], help="one or more tags to add to the imported content"),
         share_with: List[str] = typer.Option([], help="one or more groups to share the uploaded content with"),
         org: str = typer.Option(None, help="name of org to import to"),
-        include_types: Optional[List[str]] = typer.Option(
+        include_types: Optional[str] = typer.Option(
             None,
-            hidden=True,
+            hidden=False,
             custom_type=MultipleChoiceType(),
             help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
         ),
-        exclude_types: Optional[List[str]] = typer.Option(
+        exclude_types: Optional[str] = typer.Option(
             None,
-            hidden=True,
+            hidden=False,
             custom_type=MultipleChoiceType(),
             help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",
         ),
+        show_mapping: Optional[bool] = typer.Option(default=False, help="show the mapping file"),
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -317,6 +318,7 @@ def scriptability_import(
         org=org,
         include_types=include_types,
         exclude_types=exclude_types,
+        show_mapping=show_mapping,
     )
 
 

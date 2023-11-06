@@ -116,6 +116,7 @@ nav:
     - Falcon Sharding: tools/falcon-sharding/README.md
     - Remote TQL: tools/rtql/README.md
     - Remote tsload: tools/rtsload/README.md
+    - Git: tools/git/README.md
     - Scriptability: tools/scriptability/README.md
     - Searchable: tools/searchable/README.md
     - User Management: tools/user-management/README.md
