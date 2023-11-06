@@ -272,7 +272,7 @@ def show(
     PREFIX = "cluster-cfg_"
     cfg_list = []
 
-    for file in configs:
+    for file in sorted(configs):
         cfg_name = file.stem[len(PREFIX) :]
 
         if meta.default_config_name == cfg_name:
