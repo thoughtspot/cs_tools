@@ -78,7 +78,8 @@ def config_update(
                                          custom_type=MultipleChoiceType(),
                                          help="the branch names to use for the git repository"),
         commit_branch_name: str = typer.Option(None, help="the default branch name to use for commits"),
-        enable_guid_mapping: bool = typer.Option(False, help="the enable guid mapping to use for the git repository"),
+        enable_guid_mapping: bool = typer.Option(True,
+                                                 help="the enable guid mapping to use for the git repository"),
         configuration_branch_name: str = typer.Option(None,
                                                       help="the branch name to use for configuration and GUID mappings."),
 ):
