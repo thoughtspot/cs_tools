@@ -64,8 +64,13 @@ def config_create(
         _show_configs_as_table([r.json()], title="New Configuration Details")
 
     except HTTPStatusError as e:
-        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
-        rich_console.print(f"[bold red]{e.response.content}.[/]")
+        if e.response.status_code == 400 and 'Repository already configured' in str(e.response.content):
+            rich_console.print(
+                f'[bold yellow]Warning: There is already an configuration for "{org}".  '
+                f'Either update or delete the existing config and create.[/]')
+        else:
+            rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
+            rich_console.print(f"[bold red]{e.response.content}.[/]")
 
 
 @app.command(dependencies=[thoughtspot], name="update")
