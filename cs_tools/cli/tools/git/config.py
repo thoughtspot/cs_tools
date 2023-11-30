@@ -37,7 +37,7 @@ def config_create(
                                                       help="the branch name to use for configuration and GUID mappings."),
 ):
     """
-    Creates a configuration for a cluster or org. An org can only have a single configuration.
+    Creates a configuration for a cluster or org.  An org can only have a single configuration.
     """
     ts = ctx.obj.thoughtspot
 
