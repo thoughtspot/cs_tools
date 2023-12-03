@@ -20,7 +20,6 @@ app = CSToolsApp(
     help="Tools for working with TML GUID mappings.",
     add_completion=False,
     invoke_without_command=True,
-    no_args_is_help=True,
 )
 
 

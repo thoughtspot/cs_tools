@@ -223,7 +223,6 @@ app = typer.Typer(
     help="TML Scriptability File System",
     add_completion=False,
     invoke_without_command=True,
-    no_args_is_help=True,
 )
 
 

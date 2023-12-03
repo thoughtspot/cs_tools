@@ -16,7 +16,6 @@ app = typer.Typer(
     """,
     subcommand_metavar="<tool>",
     invoke_without_command=True,
-    no_args_is_help=True,
     epilog=(
         f":books: [cyan][link={DOCS_BASE_URL}/cs-tools/overview/]Documentation[/] "
         f"🛟 [link={GH_ISSUES}]Get Help[/] "

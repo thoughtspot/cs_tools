@@ -215,7 +215,7 @@ def check(config: str = typer.Option(..., help="config file identifier", metavar
     rich_console.log("[secondary]Success[/]!")
 
 
-@app.command(no_args_is_help=0)  # this is abuse, pay it no mind
+@app.command(no_args_is_help=False)
 def show(
     config: str = typer.Option(None, help="optionally, display the contents of a particular config", metavar="NAME"),
     anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),

@@ -21,27 +21,27 @@ WARNING_PRIVATE = (
 
 
 class CSToolsCommand(typer.core.TyperCommand):
+    """CSTools Commands can have dependencies."""
+
     def __init__(self, **passthru):
+        # We need these to forward options to the dependencies
         ctx_settings = passthru.pop("context_settings") or {}
-        # we need these to forward options to the dependencies
         ctx_settings["allow_extra_args"] = True
         ctx_settings["ignore_unknown_options"] = True
         super().__init__(**passthru, context_settings=ctx_settings)
+        self.dependencies: Callable[[click.Context], Any] = getattr(self.callback, "__cs_tools_dependencies__", [])
 
     def invoke(self, ctx: typer.Context) -> Any:
+        """Hi-jack command execution to fire off dependencies."""
         with contextlib.ExitStack() as stack:
-            if hasattr(self.callback, "dependencies"):
-                for dependency in self.callback.dependencies:
-                    # log.debug(f"loading dependency: {dependency}")
-                    stack.enter_context(dependency(ctx))
+            for dependency in self.dependencies:
+                stack.enter_context(dependency(ctx))
 
             r = ctx.invoke(self.callback, **ctx.params)
 
         return r
 
-    #
-
-    def augment_help_text(self, ctx: typer.Context, *, seen_params: List[click.Parameter]) -> List[click.Parameter]:
+    def _augment_help_text(self, ctx: typer.Context, *, seen_params: List[click.Parameter]) -> List[click.Parameter]:
         """
         Inject Dependency parameters and help text.
 
@@ -52,7 +52,7 @@ class CSToolsCommand(typer.core.TyperCommand):
             return seen_params
 
         # inject dependency's Parameters
-        for dependency in getattr(self.callback, "dependencies", []):
+        for dependency in self.dependencies:
             seen_params.extend([p for p in dependency.parameters if p not in seen_params])
 
         # add syncer documentation page help text
@@ -68,16 +68,25 @@ class CSToolsCommand(typer.core.TyperCommand):
         return seen_params
 
     def get_params(self, ctx: typer.Context) -> List[click.Parameter]:
-        """
-        Override for augmentations.
-        """
+        """Hi-jack for dependency help-text augmentations."""
         rv = super().get_params(ctx)
-        rv = self.augment_help_text(ctx, seen_params=rv)
+        rv = self._augment_help_text(ctx, seen_params=rv)
         return rv
+
+
+class CSToolsGroup(typer.core.TyperGroup):
+    """CSTools Groups should always recurse, and use CSToolsCommand."""
+    command_class = CSToolsCommand
+    group_class = type
+
+    def list_commands(self, ctx: typer.Context) -> List[str]:  # noqa: ARG002
+        """Override so we don't sort alphabetically."""
+        return list(self.commands)
 
 
 class CSToolsApp(typer.Typer):
     def __init__(self, **passthru):
+        # We need to enforce these options for all Apps
         passthru["cls"] = CSToolsGroup
         passthru["rich_markup_mode"] = "rich"
         passthru["no_args_is_help"] = True
@@ -88,35 +97,21 @@ class CSToolsApp(typer.Typer):
         name: Optional[str] = None,
         *,
         dependencies: Optional[List[Callable]] = None,
-        # typer kwargs
+        # better typer defaults
         cls: Optional[CSToolsCommand] = CSToolsCommand,
         no_args_is_help: bool = True,
         **passthru,
     ):
-        """
-        Override to inject dependencies.
-        """
-        if dependencies is None:
-            dependencies = []
-
+        """Hi-jack to store dependencies."""
         def decorator(f: Callable):
-            if not hasattr(f, "dependencies"):
-                f.dependencies = []
+            if not hasattr(f, "__cs_tools_dependencies__"):
+                f.__cs_tools_dependencies__ = []
 
-            f.dependencies.extend(dependencies)
+            if dependencies is not None:
+                f.__cs_tools_dependencies__.extend(dependencies)
+
             info = typer.models.CommandInfo(name=name, cls=cls, callback=f, no_args_is_help=no_args_is_help, **passthru)
             self.registered_commands.append(info)
             return f
 
         return decorator
-
-
-class CSToolsGroup(typer.core.TyperGroup):
-    command_class = CSToolsCommand
-    group_class = type
-
-    def list_commands(self, ctx: typer.Context) -> List[str]:
-        """
-        Override so we don't sort alphabetically
-        """
-        return list(self.commands)
