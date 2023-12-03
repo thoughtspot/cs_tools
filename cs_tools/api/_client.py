@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Literal
 import functools as ft
 import logging
 import time
@@ -8,6 +7,7 @@ import time
 import httpx
 
 from cs_tools.api._utils import scrub_undefined, scrub_sensitive
+from cs_tools._compat import Literal
 from cs_tools._version import __version__
 
 log = logging.getLogger(__name__)

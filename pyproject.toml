@@ -8,7 +8,7 @@ name = "cs_tools"
 dynamic = ["version"]
 description = "Scale your ThoughtSpot adoption with tools created by the ThoughtSpot Solutions Consulting organization."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">= 3.7 , < 3.12"
 license = {file = "LICENSE"}
 authors = [
 	{name = "boonhapus", email="nicholas.cooper@thoughtspot.com"},
@@ -31,21 +31,20 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
 ]
 
 dependencies = [
     # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
     "pip >= 23.1",
 
-    "thoughtspot_tml >= 2.0.6",
-    "awesomeversion >= 22.9.0",
-    "httpx >= 0.24.0",
-    "pydantic >= 1.10.0 , < 2.0",
-    "pendulum >= 2.1.2",
-    "rich >= 13.0.0",
-    "sqlmodel >= 0.0.8",
-    "toml >= 0.10.2",
+    "thoughtspot_tml",
+    "awesomeversion",
+    "httpx",
+    "pendulum",
+    "pydantic >= 1.10.13 , < 2.0.0",  # until sqlmode,typer supports this
+    "rich",
+    "sqlmodel",
+    "toml",
 
     # version specific
     "strenum >= 0.4.9; python_version < '3.11.0'",
@@ -69,7 +68,7 @@ cli = [
     #
 
     # platform-specific
-    "pyreadline3 == 3.4.1 ; sys_platform == 'win32'",
+    "pyreadline3 >= 3.4.1 ; sys_platform == 'win32'",
 
     # "horde @ https://github.com/boonhapus/horde/archive/dev.zip",
     "typer[all] >= 0.9.0",

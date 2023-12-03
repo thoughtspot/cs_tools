@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Dict, List, Union
 
 import typer
 from httpx import HTTPStatusError
@@ -173,7 +173,7 @@ def config_delete(
         rich_console.print(f"[bold red]{e.response.content}.[/]")
 
 
-def _show_configs_as_table(configs: list[dict], title: str = "Configuration Details"):
+def _show_configs_as_table(configs: List[Dict], title: str = "Configuration Details"):
     """
     Show the configurations as a table.
     """
