@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42"]
+requires = ["setuptools>=42", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 
@@ -8,7 +8,7 @@ name = "cs_tools"
 dynamic = ["version"]
 description = "Scale your ThoughtSpot adoption with tools created by the ThoughtSpot Solutions Consulting organization."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">= 3.9"
 license = {file = "LICENSE"}
 authors = [
 	{name = "boonhapus", email="nicholas.cooper@thoughtspot.com"},
@@ -26,8 +26,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -38,24 +36,23 @@ dependencies = [
     # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
     "pip >= 23.1",
 
-    "thoughtspot_tml >= 2.0.6",
-    "awesomeversion >= 22.9.0",
-    "httpx >= 0.24.0",
-    "pydantic >= 2.5.2",
-    "pendulum >= 2.1.2",
-    "rich >= 13.0.0",
-    "sqlmodel >= 0.0.8",
-    "toml >= 0.10.2",
+    "thoughtspot_tml",
+    "awesomeversion",
+    "httpx",
+    "pydantic",
+    "pendulum",
+    "rich",
+    "sqlmodel",
+    "toml",
 
     # version specific
     "strenum >= 0.4.9; python_version < '3.11.0'",
-    "typing_extensions >= 4.4.0; python_version < '3.8.0'",
 ]
-
 
 [project.urls]
 homepage = "https://thoughtspot.github.io/cs_tools/"
 repository = "https://github.com/thoughtspot/cs_tools"
+bug_tracker = "https://github.com/thoughtspot/cs_tools/issues"
 documentation = "https://thoughtspot.github.io/cs_tools/"
 
 [project.optional-dependencies]
@@ -69,23 +66,28 @@ cli = [
     #
 
     # platform-specific
-    "pyreadline3 == 3.4.1 ; sys_platform == 'win32'",
+    "pyreadline3 >= 3.4.1 ; sys_platform == 'win32'",
 
-    # "horde @ https://github.com/boonhapus/horde/archive/dev.zip",
+    # CLI
     "typer[all] >= 0.9.0",
 
-    # TODO: switch with LiteStar...
-    "uvicorn >= 0.20.0",
-    "fastapi >= 0.89.1",
-    # Jinja2 = "^3.1.2"
-    # starlette = "0.20.4"
+    # WEB
+    "litestar",
 ]
 dev = [
+    # CS Tools CLI
     "cs_tools[cli]",
-    "coverage[toml]",
+
+    # Code Quality
+    "pre-commit",
     "ruff",
+    "black",
+    "mypy",
+
+    # Testing
     "nox",
-    "ward == 0.67.2b0",
+    "ward",
+    "coverage[toml]",
 ]
 docs = [
     "cs_tools[cli]",
@@ -95,10 +97,10 @@ docs = [
     "mkdocs-open-in-new-tab",
 ]
 
-
 [project.scripts]
 cs_tools = "cs_tools.cli.main:run"
 cstools = "cs_tools.cli.main:run"
+
 
 [tool.setuptools.dynamic]
 version = {attr = "cs_tools._version.__version__"}
@@ -110,6 +112,23 @@ version = {attr = "cs_tools._version.__version__"}
 # length_sort = true
 # reverse_sort = true
 
+[tool.black]
+line-length = 120
+exclude = '''
+(
+      __pycache__   # ignore compiled bytecode
+    | \.venv*       # ignore virtual environments
+    | \.nox         # ignore virtual environments
+)
+'''
+
+# [tool.mypy]
+# exclude = '''
+# (?x)(
+#     ^_scriptability.py$  # ignore auto-generated files
+# )
+# '''
+
 [tool.ruff]
 line-length = 120
 select = [
@@ -119,10 +138,14 @@ select = [
     "C4",    # flake8-comprehensions: https://pypi.org/project/flake8-comprehensions/
     "C90",   # mccabe: https://pypi.org/project/mccabe/
     "COM",   # flake8-commas: https://pypi.org/project/flake8-commas/
+    "DTZ",   # flake8-datetimez: https://pypi.org/project/flake8-datetimez/
     "E",     # pycodestyle: https://pypi.org/project/pycodestyle/
     "F",     # pyflakes: https://pypi.org/project/pyflakes/
+    "FA",    # flake8-future-annotations: https://pypi.org/project/flake8-future-annotations/
+    "I",     # isort: https://pypi.org/project/isort/
     "Q",     # flake8-quotes: https://pypi.org/project/flake8-quotes/
     "RUF",   # ruff-specific: https://beta.ruff.rs/docs/rules/#ruff-specific-rules-ruf
+    "T20",   # flake8-print: https://pypi.org/project/flake8-print/
     "TCH",   # flake8-type-checking: https://pypi.org/project/flake8-type-checking/
 ]
 ignore = ["B008"]
@@ -135,6 +158,18 @@ exclude = [
     # project specific ignores
     "*compat.py",    # ignore compatibles
 ]
+ignore-init-module-imports = true
+
+[tool.ruff.lint.flake8-import-conventions.aliases]
+# Declare the default aliases.
+datetime = "dt"
+sqlalchemy = "sa"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-wrap-aliases = true
+from-first = true
+required-imports = ["from __future__ import annotations"]
 
 [tool.ward]
 path = "tests/"
@@ -145,12 +180,12 @@ path = "tests/"
 #     "cs_tools/**.py",
 # ]
 
-[tool.coverage.report]
-exclude_lines = [
-    "# pragma: no cover",
-    "# pragma: peephole optimzer",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "if typing.TYPE_CHECKING:",
-]
+# [tool.coverage.report]
+# exclude_lines = [
+#     "# pragma: no cover",
+#     "# pragma: peephole optimzer",
+#     "raise NotImplementedError",
+#     "if __name__ == .__main__.:",
+#     "if TYPE_CHECKING:",
+#     "if typing.TYPE_CHECKING:",
+# ]
