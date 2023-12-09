@@ -80,6 +80,7 @@ dev = [
 
     # Code Quality
     "pre-commit",
+    "taskipy",
     "ruff",
     "black",
     "mypy",
@@ -104,23 +105,6 @@ cstools = "cs_tools.cli.main:run"
 
 [tool.setuptools.dynamic]
 version = {attr = "cs_tools._version.__version__"}
-
-# [tool.isort]
-# profile = "black"
-# line_length = 120
-# from_first = true
-# length_sort = true
-# reverse_sort = true
-
-[tool.black]
-line-length = 120
-exclude = '''
-(
-      __pycache__   # ignore compiled bytecode
-    | \.venv*       # ignore virtual environments
-    | \.nox         # ignore virtual environments
-)
-'''
 
 # [tool.mypy]
 # exclude = '''
@@ -148,8 +132,11 @@ select = [
     "T20",   # flake8-print: https://pypi.org/project/flake8-print/
     "TCH",   # flake8-type-checking: https://pypi.org/project/flake8-type-checking/
 ]
-ignore = ["B008"]
-src = ["cs_tools"]
+ignore = [
+    "B008",    # Checks for function calls in default function arguments.
+    "COM812",  # Checks for the absence of trailing commas.
+]
+src = ["cs_tools", "tests"]
 exclude = [
     "__pycache__",   # ignore compiled bytecode
     ".venv*",        # ignore virtual environments
@@ -170,6 +157,11 @@ combine-as-imports = true
 force-wrap-aliases = true
 from-first = true
 required-imports = ["from __future__ import annotations"]
+
+[tool.taskipy.tasks]
+lint = "task lint_check && lint_format"
+lint_check = "ruff check --config pyproject.toml"
+lint_format = "ruff format --config pyproject.toml"
 
 [tool.ward]
 path = "tests/"
