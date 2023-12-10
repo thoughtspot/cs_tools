@@ -1,8 +1,10 @@
-from typing import List, Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import json
 
 
-def clean_for_excel(data: List[Dict[str, Any]]) -> List[List[str]]:
+def clean_for_excel(data: list[dict[str, Any]]) -> list[list[str]]:
     """
     Round-trip from JSON to sanitize.
 

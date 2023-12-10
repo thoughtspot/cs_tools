@@ -1,4 +1,6 @@
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import datetime as dt
 import re
 
@@ -7,7 +9,7 @@ import sqlalchemy as sa
 RE_LETTERS_ONLY = re.compile(r"[^A-Za-z]")
 
 
-def infer_schema_from_results(data: Dict[str, Any], tablename: str, metadata: sa.Table) -> sa.Table:
+def infer_schema_from_results(data: dict[str, Any], tablename: str, metadata: sa.Table) -> sa.Table:
     """ """
     PY_TO_SQL_MAPPING_TYPES = {
         str: sa.String,

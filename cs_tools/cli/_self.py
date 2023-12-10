@@ -1,26 +1,25 @@
-import sysconfig
+from __future__ import annotations
+
 import datetime as dt
-import platform
 import logging
+import os
 import pathlib
+import platform
 import shutil
 import sys
-import os
+import sysconfig
 
 from awesomeversion import AwesomeVersion
-import typer
 import rich
+import typer
 
-from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
+from cs_tools import utils
 from cs_tools._version import __version__
+from cs_tools.cli import _analytics
+from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
 from cs_tools.settings import _meta_config as meta
 from cs_tools.updater import cs_tools_venv
-from cs_tools.updater import FishPath, WindowsPath, UnixPath
-from cs_tools.cli.ux import CSToolsCommand
-from cs_tools.cli.ux import CSToolsGroup
-from cs_tools.cli.ux import rich_console
-from cs_tools.cli import _analytics
-from cs_tools import utils
+from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 
 log = logging.getLogger(__name__)
 app = typer.Typer(
@@ -82,7 +81,6 @@ def update(
         pass
 
 
-
 @app.command(cls=CSToolsCommand)
 def info(
     directory: pathlib.Path = typer.Option(None, "--directory", help="export an image to share with the CS Tools team"),
@@ -97,7 +95,7 @@ def info(
         source = f"source \"{pathlib.Path(sys.executable).parent.joinpath('activate')}\""
 
     text = (
-        f"\n       [b blue]Info snapshot[/] taken on [b green]{dt.datetime.now().date()}[/]"
+        f"\n       [b blue]Info snapshot[/] taken on [b green]{dt.datetime.now(tz=dt.timezone.utc).date()}[/]"
         f"\n"
         f"\n           CS Tools: [b yellow]{__version__}[/]"
         f"\n     Python Version: [b yellow]Python {sys.version}[/]"
@@ -117,7 +115,7 @@ def info(
     if directory is not None:
         utils.svg_screenshot(
             renderable,
-            path=directory / f"cs-tools-info-{dt.datetime.now():%Y-%m-%d}.svg",
+            path=directory / f"cs-tools-info-{dt.datetime.now(tz=dt.timezone.utc):%Y-%m-%d}.svg",
             console=rich_console,
             centered=True,
             width="fit",
@@ -169,6 +167,7 @@ def download(
     # add packaging stuff since we'll use --no-deps
     frozen.update(("setuptools", "wheel", "pip >= 23.1", "poetry-core >= 1.0.0a9"))
 
+    # fmt: off
     # add in version specific constraints (in case they don't get exported from the current environment)
     if python_version < "3.11.0":
         frozen.add("strenum >= 0.4.9")            # from cs_tools
@@ -194,9 +193,9 @@ def download(
         "--python-version", f"{python_version.major}{python_version.minor}",
         "--platform", platform.replace("-", "_"),
     )
+    # fmt: on
 
     # rename .zip files we author to their actual package names
-    # directory.joinpath("dev.zip").rename(directory / "horde-1.0.0.zip")
     requirements.joinpath(f"{release_tag}.zip").rename(requirements / f"cs_tools-{release_tag[1:]}.zip")
 
     from cs_tools.updater import _bootstrapper, _updater
@@ -207,11 +206,13 @@ def download(
     shutil.rmtree(requirements)
 
 
-@app.command(cls=CSToolsCommand, hidden=True)
-def uninstall(
-    delete_configs: bool = typer.Option(False, "--delete-configs", help="delete all the configurations in CS Tools directory")
-):
-    """
-    Remove CS Tools.
-    """
-    raise NotImplementedError("Not yet.")
+# @app.command(cls=CSToolsCommand, hidden=True)
+# def uninstall(
+#     delete_configs: bool = typer.Option(
+#         False, "--delete-configs", help="delete all the configurations in CS Tools directory"
+#     ),
+# ):
+#     """
+#     Remove CS Tools.
+#     """
+#     raise NotImplementedError("Not yet.")

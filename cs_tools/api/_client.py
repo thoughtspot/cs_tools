@@ -19,7 +19,7 @@ class RESTAPIClient:
     Implementation of the REST API v1.
     """
 
-    def __init__(self, ts_url: str, timeout: float = _CALLOSUM_DEFAULT_TIMEOUT_SECONDS, **client_opts):
+    def __init__(self, ts_url: str, *, timeout: float = _CALLOSUM_DEFAULT_TIMEOUT_SECONDS, **client_opts):
         if "base_url" in client_opts:
             client_opts.pop("base_url")
             log.warning(f"base_url was provided to ThoughtSpot REST API client, overriding with {ts_url}")
@@ -46,10 +46,10 @@ class RESTAPIClient:
 
     def _setup_session_class_proxying(self) -> None:
         """Proxy httpx.Session CRUD operations on our client."""
-        self.post = ft.partial(self.request, "POST")
-        self.get = ft.partial(self.request, "GET")
-        self.put = ft.partial(self.request, "PUT")
-        self.delete = ft.partial(self.request, "DELETE")
+        self.post = ft.partial(self._session.request, "POST")
+        self.get = ft.partial(self._session.request, "GET")
+        self.put = ft.partial(self._session.request, "PUT")
+        self.delete = ft.partial(self._session.request, "DELETE")
 
     def __before_request__(self, request: httpx.Request) -> None:
         """
@@ -60,7 +60,7 @@ class RESTAPIClient:
         Further reading:
             https://www.python-httpx.org/advanced/#event-hooks
         """
-        now = dt.datetime.now(tz=dt.datetime.utc)
+        now = dt.datetime.now(tz=dt.timezone.utc)
         request.headers["cs-tools-request-start-utc-timestamp"] = now.isoformat()
 
         log.debug(
@@ -81,7 +81,7 @@ class RESTAPIClient:
         Further reading:
             https://www.python-httpx.org/advanced/#event-hooks
         """
-        now = dt.datetime.now(tz=dt.datetime.utc)
+        now = dt.datetime.now(tz=dt.timezone.utc)
         response.headers["cs-tools-response-receive-utc-timestamp"] = now.isoformat()
 
         if utc_requested_at := response.request.headers.get("cs-tools-request-start-utc-timestamp", None):
@@ -89,25 +89,20 @@ class RESTAPIClient:
         else:
             elapsed = ""
 
-        log.debug(
-            f"<<< [{now:%H:%M:%S}] HTTP {response.status_code} <- {response.request.url.path} {elapsed}"
-            f"\n{response.text}"
-            f"\n",
-        )
+        log_msg = f"<<< [{now:%H:%M:%S}] HTTP {response.status_code} <- {response.request.url.path} {elapsed}"
 
+        if response.status_code >= 400:
+            response.read()
+            log_msg += f"\n{response.text}\n"
+
+        log.debug(log_msg)
+
+    @property
     def v1(self) -> RESTAPIv1:
         """ThoughtSpot REST API V1 Handling."""
         return self._v1_endpoints
 
+    @property
     def v2(self) -> RESTAPIv2:
         """ThoughtSpot REST API V2 Handling."""
         return self._v2_endpoints
-
-    def request(self, method: str, endpoint: str, raise_for_status: bool = True, **request_kw) -> httpx.Response:
-        """Hi-jack the request to add automatic error raising."""
-        r = self._session.request(method, endpoint, **request_kw)
-
-        if r.is_error and raise_for_status:
-            r.raise_for_status()
-
-        return r

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, Optional, Union
 import logging
 
 from pydantic import validate_arguments
 
+from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import MetadataCategory, RecordsFormat
-from cs_tools.api import _utils
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
@@ -22,10 +22,10 @@ class PinboardMiddleware:
         self.ts = ts
 
     @validate_arguments
-    def all(
+    def all(  # noqa: A003
         self,
         *,
-        tags: Union[str, List[str]] = None,
+        tags: Optional[Union[str, list[str]]] = None,
         category: MetadataCategory = MetadataCategory.all,
         exclude_system_content: bool = True,
         chunksize: int = 500,
@@ -58,19 +58,21 @@ class PinboardMiddleware:
         pinboards = []
 
         while True:
-            r = self.ts.api.metadata_list(
+            r = self.ts.api.v1.metadata_list(
                 metadata_type="PINBOARD_ANSWER_BOOK",
                 category=category,
                 tag_names=tags or _utils.UNDEFINED,
                 batchsize=chunksize,
-                offset=len(pinboards)
+                offset=len(pinboards),
             )
 
             data = r.json()
             to_extend = data["headers"]
 
             if exclude_system_content:
-                to_extend = [pinboard for pinboard in to_extend if pinboard.get("authorName") not in _utils.SYSTEM_USERS]
+                to_extend = [
+                    pinboard for pinboard in to_extend if pinboard.get("authorName") not in _utils.SYSTEM_USERS
+                ]
 
             pinboards.extend([{"metadata_type": "PINBOARD_ANSWER_BOOK", **pinboard} for pinboard in to_extend])
 

@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import unittest
 
-from cs_tools.cli.util import _TSDependentObject, TSDependencyTree
+from cs_tools.cli.util import TSDependencyTree, _TSDependentObject
 
 
 class TestTSDependencyTree(unittest.TestCase):
@@ -58,5 +60,3 @@ class TestTSDependencyTree(unittest.TestCase):
         self.assertEqual(1, dt._get_object_level("obj6"))
         self.assertEqual(0, dt._get_object_level("obj7"))
         self.assertEqual(0, dt._get_object_level("obj8"))
-
-        print(dt)

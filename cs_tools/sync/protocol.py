@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import Any
 
 # also available
 from pydantic.dataclasses import dataclass
 
-DB_ROW = Dict[str, Any]
-RECORDS_FORMAT = List[DB_ROW]
+DB_ROW = dict[str, Any]
+RECORDS_FORMAT = list[DB_ROW]
 
 
 @dataclass

@@ -1,12 +1,21 @@
-import datetime as dt
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 import logging
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field
+import pydantic
+
+from cs_tools import validators
+from cs_tools.datastructures import ValidatedSQLModel
+
+if TYPE_CHECKING:
+    import datetime as dt
 
 log = logging.getLogger(__name__)
 
 
-class FalconTableInfo(SQLModel, table=True):
+class FalconTableInfo(ValidatedSQLModel, table=True):
     __tablename__ = "ts_falcon_table_info"
     table_guid: str = Field(primary_key=True)
     ip: str = Field(primary_key=True)
@@ -30,7 +39,7 @@ class FalconTableInfo(SQLModel, table=True):
     replicated: bool
 
     @classmethod
-    def from_api_v1(cls, data) -> "FalconTableInfo":
+    def from_api_v1(cls, data) -> FalconTableInfo:
         data = {
             "table_guid": data["guid"],
             "ip": "all" if data.get("ip") == -1 else data.get("ip", None),
@@ -44,7 +53,7 @@ class FalconTableInfo(SQLModel, table=True):
             "build_duration_s": data.get("buildDuration"),
             "is_known": data.get("isKnown"),
             "database_status": data.get("databaseStatus"),
-            "last_uploaded_at": dt.datetime.fromtimestamp(data.get("lastUploadedAt", 0) / 10000),
+            "last_uploaded_at": data.get("lastUploadedAt", 0) / 10000,
             "num_of_rows": data.get("numOfRows"),
             "approx_bytes_size": data.get("approxByteSize"),
             "uncompressed_bytes_size": data.get("uncompressedByteSize"),
@@ -54,3 +63,8 @@ class FalconTableInfo(SQLModel, table=True):
             "replicated": data.get("replicated"),
         }
         return cls(**data)
+
+    @pydantic.field_validator("last_uploaded_at", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        return validators.ensure_datetime_is_utc.func(value)

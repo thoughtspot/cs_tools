@@ -1,19 +1,23 @@
 from __future__ import annotations
-import tempfile
-import logging
+
+from typing import TYPE_CHECKING
 import csv
-
-from pydantic.dataclasses import dataclass
-from pydantic import Field
-import sqlalchemy as sa
-import httpx
-import click
 import io
+import logging
+import tempfile
 
-from cs_tools.errors import TSLoadServiceUnreachable, SyncerError
-from cs_tools.types import RecordsFormat
+from pydantic import Field
+from pydantic.dataclasses import dataclass
+import click
+import httpx
+import sqlalchemy as sa
 
-from . import sanitize, compiler
+from cs_tools.errors import SyncerError, TSLoadServiceUnreachable
+
+from . import sanitize
+
+if TYPE_CHECKING:
+    from cs_tools.types import RecordsFormat
 
 log = logging.getLogger(__name__)
 
@@ -49,13 +53,12 @@ class Falcon:
     def ts(self):
         return self._thoughtspot
 
-    def intercept_create_table(self, sql, *multiparams, **params):
+    def intercept_create_table(self, sql, *multiparams, **params):  # noqa: ARG002
         q = sql.compile(dialect=self.engine.dialect)
         q = str(q).strip()
         self.ts.tql.command(command=f"{q};", database=self.database, http_timeout=self.timeout)
 
-    def ensure_setup(self, metadata, cnxn, **kw):
-
+    def ensure_setup(self, metadata, cnxn, **kw):  # noqa: ARG002
         if self._is_setup:
             return
 
@@ -67,7 +70,7 @@ class Falcon:
         self.ts.tql.command(command=f"CREATE SCHEMA {self.database}.{self.schema_};", http_timeout=self.timeout)
         self._is_setup = True
 
-    def capture_metadata(self, metadata, cnxn, **kw):
+    def capture_metadata(self, metadata, cnxn, **kw):  # noqa: ARG002
         self.metadata = metadata
 
     def __repr__(self):
@@ -113,10 +116,10 @@ class Falcon:
                         http_timeout=self.timeout,
                     )
                 except (httpx.ConnectError, httpx.ConnectTimeout):
-                    r = f"could not connect at [b blue]{self.ts.api.dataservice_url}[/]"
+                    r = f"could not connect at [b blue]{self.ts.api.v1.dataservice_url}[/]"
                     m = ""
 
-                    if self.ts.api.dataservice_url.host != self.ts.config.thoughtspot.host:
+                    if self.ts.api.v1.dataservice_url.host != self.ts.config.thoughtspot.host:
                         m = (
                             "Is your VPN connected?"
                             "\n\n"
@@ -130,4 +133,4 @@ class Falcon:
                             "in your Falcon syncer definition as well."
                         )
 
-                    raise TSLoadServiceUnreachable(reason=r, mitigation=m)
+                    raise TSLoadServiceUnreachable(reason=r, mitigation=m) from None

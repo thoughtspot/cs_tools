@@ -1,11 +1,13 @@
-import cs_tools
+from __future__ import annotations
 
+import cs_tools
 
 if __name__ == "__main__":
     import cProfile
-    import snakeviz
     import pathlib
     import sys
+
+    import snakeviz
 
     o = pathlib.Path("cs_tools.profile")
     p = cProfile.Profile()

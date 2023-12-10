@@ -1,4 +1,6 @@
-from typing import List, Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import datetime as dt
 import json
 
@@ -17,7 +19,7 @@ class MaybeDateTimeEncoder(json.JSONEncoder):
         return super().default(self, o)
 
 
-def clean_for_gsheets(data: List[Dict[str, Any]]) -> List[List[str]]:
+def clean_for_gsheets(data: list[dict[str, Any]]) -> list[list[str]]:
     """
     Round-trip from JSON to sanitize.
 

@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Optional, Callable, Any
+from typing import TYPE_CHECKING, Any, Callable, Optional
 import logging
 
-import typer
-import click
+if TYPE_CHECKING:
+    import click
+    import typer
 
 log = logging.getLogger(__name__)
 

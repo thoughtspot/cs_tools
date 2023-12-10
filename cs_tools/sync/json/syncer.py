@@ -1,11 +1,15 @@
-from typing import List, Dict, Any
-import pathlib
-import logging
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 import json
+import logging
 
 from pydantic.dataclasses import dataclass
 
 from . import util
+
+if TYPE_CHECKING:
+    import pathlib
 
 log = logging.getLogger(__name__)
 
@@ -46,12 +50,12 @@ class JSON:
     def name(self) -> str:
         return "json"
 
-    def load(self, directive: str) -> List[Dict[str, Any]]:
+    def load(self, directive: str) -> list[dict[str, Any]]:
         path = self.resolve_path(directive)
         data = util.read_from_possibly_empty(path)
         return data[directive]
 
-    def dump(self, directive: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, directive: str, *, data: list[dict[str, Any]]) -> None:
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return

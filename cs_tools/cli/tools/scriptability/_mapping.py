@@ -1,17 +1,22 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import csv
 import logging
-import pathlib
-from typing import Dict
 
-import typer
 from rich.align import Align
 from rich.table import Table
+import typer
 
-from cs_tools.cli.ux import rich_console
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.ux import CSToolsApp
-from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools.cli.ux import CSToolsApp, rich_console
+
 from .tmlfs import ImportTMLFS
+
+if TYPE_CHECKING:
+    import pathlib
+
+    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
 
@@ -25,31 +30,30 @@ app = CSToolsApp(
 
 @app.command(dependencies=[thoughtspot], name="details")
 def mapping_details(
-        ctx: typer.Context,
-        path: pathlib.Path = typer.Argument(
-            ..., help="Root folder to TML file system", file_okay=False, resolve_path=True
-        ),
-        source: str = typer.Option(..., help="the source environment the TML came from",
-                                   rich_help_panel="GUID Mapping Options"),
-        dest: str = typer.Option(..., help="the destination environment the TML is importing into",
-                                 rich_help_panel="GUID Mapping Options"),
-        org: str = typer.Option(None,
-                                help="the destination org for metadata names or the user's default if not specified"),
+    ctx: typer.Context,
+    path: pathlib.Path = typer.Argument(..., help="Root folder to TML file system", file_okay=False, resolve_path=True),
+    source: str = typer.Option(
+        ..., help="the source environment the TML came from", rich_help_panel="GUID Mapping Options"
+    ),
+    dest: str = typer.Option(
+        ..., help="the destination environment the TML is importing into", rich_help_panel="GUID Mapping Options"
+    ),
+    org: str = typer.Option(None, help="the destination org for metadata names or the user's default if not specified"),
 ):
     ts = ctx.obj.thoughtspot
     show_mapping_details(ts, path, source, dest, org)
 
 
 def show_mapping_details(
-        ts: ThoughtSpot,
-        path: pathlib.Path = typer.Argument(
-            ..., help="Root folder to TML file system", file_okay=False, resolve_path=True
-        ),
-        source: str = typer.Argument(..., help="the source environment the TML came from",
-                                   rich_help_panel="GUID Mapping Options"),
-        dest: str = typer.Argument(..., help="the destination environment the TML was importing into",
-                                 rich_help_panel="GUID Mapping Options"),
-        org: str = typer.Option(None, help="the destination org for metadata names"),
+    ts: ThoughtSpot,
+    path: pathlib.Path = typer.Argument(..., help="Root folder to TML file system", file_okay=False, resolve_path=True),
+    source: str = typer.Argument(
+        ..., help="the source environment the TML came from", rich_help_panel="GUID Mapping Options"
+    ),
+    dest: str = typer.Argument(
+        ..., help="the destination environment the TML was importing into", rich_help_panel="GUID Mapping Options"
+    ),
+    org: str = typer.Option(None, help="the destination org for metadata names"),
 ):
     """Function that can be called from other modules to show the mapping details."""
 
@@ -70,25 +74,24 @@ def show_mapping_details(
 
     # get the type and name for each metadata object.
     for guid in mappings.values():
-
         try:
             obj = ts.metadata.get([guid])[0]  # Get one at a time in case some no longer exist.
             mapping_details[obj["id"]]["name"] = obj["name"]
             mapping_details[obj["id"]]["type"] = obj["metadata_type"]
         except Exception as e:
             log.error(f"Error getting {guid} from TS: {e}")
-            mapping_details[guid]["name"] = 'NOT FOUND'
-            mapping_details[guid]["type"] = 'UNKNOWN'
+            mapping_details[guid]["name"] = "NOT FOUND"
+            mapping_details[guid]["type"] = "UNKNOWN"
 
     _show_results_as_table(mapping_details, source, dest)
 
     try:
         write_to_file(tmlfs, mapping_details, source, dest)
-    except IOError as ioe:
+    except OSError as ioe:
         log.error(f"Error writing to details file: {ioe}")
 
 
-def _show_results_as_table(mapping_details: Dict[str, Dict], source: str, dest: str) -> None:
+def _show_results_as_table(mapping_details: dict[str, dict], source: str, dest: str) -> None:
     NAME_COL_WIDTH = 20
     GUID_COL_WIDTH = 36
     TYPE_COL_WIDTH = 15
@@ -112,7 +115,7 @@ def _show_results_as_table(mapping_details: Dict[str, Dict], source: str, dest: 
     rich_console.print(Align.left(table))
 
 
-def write_to_file(tmlfs: ImportTMLFS, mapping_details: Dict[str, Dict], source: str, dest: str) -> None:
+def write_to_file(tmlfs: ImportTMLFS, mapping_details: dict[str, dict], source: str, dest: str) -> None:
     """Write the mapping details to a file in the guid-mappings folder."""
 
     csvfile = tmlfs.path / "guid-mappings" / f"{source}_{dest}_mapping_details.csv"

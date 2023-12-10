@@ -1,8 +1,9 @@
-from typing import List
+from __future__ import annotations
+
 import re
 
 
-def clean_args(command: str) -> List[str]:
+def clean_args(command: str) -> list[str]:
     """
     Remove cs_tools variations.
 

@@ -4,9 +4,11 @@
 # change the tool and syncer implementations such that they can be inherited from and
 # properly registered. It's a v1.5.0 task though.
 #
+from __future__ import annotations
+
 from cs_tools.cli.loader import CSTool
-from cs_tools.errors import CSToolsError
 from cs_tools.const import TOOLS_DIR
+from cs_tools.errors import CSToolsError
 
 
 def get_cs_tool(name: str) -> CSTool:
@@ -16,6 +18,6 @@ def get_cs_tool(name: str) -> CSTool:
     tool_dir = TOOLS_DIR / name
 
     if not tool_dir.exists():
-        raise CSToolsError(f"no tool registered tool found by name '{name}'")
+        raise CSToolsError(title=f"no tool registered tool found by name '{name}'")
 
     return CSTool(tool_dir)

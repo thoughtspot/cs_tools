@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 import logging
 
 from pydantic import validate_arguments
 import httpx
 
-from cs_tools.errors import ContentDoesNotExist
-from cs_tools.types import GUID, RecordsFormat, UserProfile
 from cs_tools.api import _utils
+from cs_tools.errors import ContentDoesNotExist
 
 log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
+    from cs_tools.types import GUID, RecordsFormat, UserProfile
 
 
 class GroupMiddleware:
@@ -25,7 +25,7 @@ class GroupMiddleware:
         self.ts = ts
 
     @validate_arguments
-    def all(self, batchsize: int = 50) -> RecordsFormat:
+    def all(self, batchsize: int = 50) -> RecordsFormat:  # noqa: A003
         """
         Get all groups in ThoughtSpot.
         """
@@ -33,7 +33,7 @@ class GroupMiddleware:
 
         while True:
             # user/list doesn't offer batching..
-            r = self.ts.api.metadata_list(metadata_type="USER_GROUP", batchsize=batchsize, offset=len(groups))
+            r = self.ts.api.v1.metadata_list(metadata_type="USER_GROUP", batchsize=batchsize, offset=len(groups))
             data = r.json()
             groups.extend(data["headers"])
 
@@ -51,12 +51,12 @@ class GroupMiddleware:
             return group_name
 
         try:
-            r = self.ts.api.group_read(group_name=group_name)
+            r = self.ts.api.v1.group_read(group_name=group_name)
         except httpx.HTTPStatusError as e:
             if e.response.is_client_error:
                 info = {
                     "reason": f"Group '{group_name}' not found.  Group names are case sensitive. You can find a "
-                              f"group's 'Group Name' in the Admin panel.",
+                    f"group's 'Group Name' in the Admin panel.",
                     "mitigation": "Verify the name and try again.",
                     "type": "Group",
                 }
@@ -67,7 +67,7 @@ class GroupMiddleware:
         return r.json()["header"]["id"]
 
     @validate_arguments
-    def users_in(self, group_name: str, *, is_directly_assigned: bool=True) -> List[RecordsFormat]:
+    def users_in(self, group_name: str, *, is_directly_assigned: bool = True) -> list[RecordsFormat]:
         """
         Return the User headers for a given Group.
         """
@@ -76,8 +76,8 @@ class GroupMiddleware:
         else:
             group_guid = self.guid_for(group_name)
 
-        r = self.ts.api.group_list_users(group_guid=group_guid)
-        users_profiles: List[UserProfile] = r.json()
+        r = self.ts.api.v1.group_list_users(group_guid=group_guid)
+        users_profiles: list[UserProfile] = r.json()
         users = []
 
         if not users_profiles:

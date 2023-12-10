@@ -1,17 +1,24 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Tuple, List, Dict, Any
-import logging
+from typing import TYPE_CHECKING, Any
 import inspect
+import logging
 
 from typer.core import TyperOption
 import click
 import httpx
-import typer
 
 from cs_tools.cli.dependencies.base import Dependency
+from cs_tools.settings import (
+    CSToolsConfig,
+    _meta_config as meta,
+)
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.settings import _meta_config as meta, CSToolsConfig
 from cs_tools.updater import cs_tools_venv
+
+if TYPE_CHECKING:
+    import typer
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +59,7 @@ VERBOSE_OPT = TyperOption(
 )
 
 
-def split_args_from_opts(extra_args: List[str]) -> Tuple[List[str], Dict[str, Any], List[str]]:
+def split_args_from_opts(extra_args: list[str]) -> tuple[list[str], dict[str, Any], list[str]]:
     """ """
     args = []
     flag = []
@@ -129,16 +136,14 @@ class DThoughtSpot(Dependency):
             log.warning(f"[b yellow]Ignoring extra arguments ({' '.join(args)})")
 
         cfg = CSToolsConfig.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml", **options)
-        ctx.obj.thoughtspot = ThoughtSpot(cfg)
 
         if cfg.verbose:
             root_logger = logging.getLogger()
-            to_file_handler = next((h for h in root_logger.handlers if h.name == "to_file"))
+            to_file_handler = next(h for h in root_logger.handlers if h.name == "to_file")
             to_file_handler.setLevel(5)
             root_logger.setLevel(5)
 
-        if self.login:
-            ctx.obj.thoughtspot.login()
+        ctx.obj.thoughtspot = ThoughtSpot(cfg, auto_login=self.login)
 
     def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
         ctx = click.get_current_context()

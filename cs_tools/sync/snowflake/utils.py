@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import sqlalchemy as sa
+
 
 def parse_field(column: sa.Column) -> str:
     """Return the Snowflake expression to select the given column from a staged Parquet document."""

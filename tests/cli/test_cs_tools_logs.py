@@ -1,9 +1,9 @@
-from ward import test
+from __future__ import annotations
 
-from tests.fixtures import runner, entrypoint
-from tests.util import clean_args, escape_ansi
+from tests.fixtures import entrypoint, runner
 from tests.tags import CLI
-
+from tests.util import clean_args, escape_ansi
+from ward import test
 
 # PARAMETERIZE
 for info in [

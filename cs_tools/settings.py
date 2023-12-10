@@ -1,37 +1,44 @@
-from ipaddress import IPv4Address
-from typing import Union, Dict, Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional, Union
 import datetime as dt
-import pathlib
+import json
 import logging
 import urllib
-import json
 import uuid
-import re
 
-from pydantic.types import DirectoryPath, FilePath
 from awesomeversion import AwesomeVersion
-from pydantic import validator, AnyHttpUrl, BaseModel, Field
+from pydantic import AnyHttpUrl, Field
+import pydantic
 import toml
 
-from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
+from cs_tools import types, utils
 from cs_tools._version import __version__
+from cs_tools.datastructures import _GlobalModel, _GlobalSettings
 from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.updater import cs_tools_venv
-from cs_tools import utils
+from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
+
+if TYPE_CHECKING:
+    from ipaddress import IPv4Address
+    import pathlib
+
+    from pydantic.types import DirectoryPath, FilePath
 
 log = logging.getLogger(__name__)
 
 
-class MetaConfig(BaseModel):
+class MetaConfig(_GlobalModel):
     """
     Store information about this environment.
     """
+
     install_uuid: uuid.UUID = Field(default_factory=uuid.uuid4)
     default_config_name: str = None
-    last_remote_check: dt.datetime = dt.datetime(year=2012, month=6, day=1)
+    last_remote_check: dt.datetime = dt.datetime(year=2012, month=6, day=1, tzinfo=dt.timezone.utc)
     remote_version: str = None
     remote_date: dt.date = None
-    last_analytics_checkpoint: dt.datetime = dt.datetime(year=2012, month=6, day=1)
+    last_analytics_checkpoint: dt.datetime = dt.datetime(year=2012, month=6, day=1, tzinfo=dt.timezone.utc)
     analytics_opt_in: Optional[bool] = None
     # company_name: Optional[str] = None  # DEPRECATED AS OF 1.4.6
     record_thoughtspot_url: Optional[bool] = None
@@ -64,7 +71,7 @@ class MetaConfig(BaseModel):
 
             # REMOVE OLD DATA
             app_dir.joinpath(".meta-config.toml").unlink()
-        
+
         # NEW FORMAT
         elif app_dir.joinpath(".meta-config.json").exists():
             file = app_dir.joinpath(".meta-config.json")
@@ -92,7 +99,7 @@ class MetaConfig(BaseModel):
         """Check GitHub for the latest cs_tools version."""
         venv_version = AwesomeVersion(__version__)
         remote_delta = dt.timedelta(hours=5) if venv_version.beta else dt.timedelta(days=1)
-        current_time = dt.datetime.now()
+        current_time = dt.datetime.now(tz=dt.timezone.utc)
 
         # don't check too often
         if (current_time - self.last_remote_check) <= remote_delta:
@@ -102,7 +109,9 @@ class MetaConfig(BaseModel):
             data = get_latest_cs_tools_release(allow_beta=venv_version.beta, timeout=0.33)
             self.last_remote_check = current_time
             self.remote_version = data["name"]
-            self.remote_date = dt.datetime.strptime(data["published_at"], "%Y-%m-%dT%H:%M:%SZ").date()
+            self.remote_date = (
+                dt.datetime.strptime(data["published_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc).date()
+            )
             self.save()
 
         except urllib.error.URLError:
@@ -126,102 +135,54 @@ class MetaConfig(BaseModel):
 _meta_config = MetaConfig.load()
 
 
-class Settings(BaseModel):
-    """
-    Base class for settings management and validation.
-    """
-
-    class Config:
-        json_encoders = {
-            FilePath: lambda v: v.resolve().as_posix(),
-            DirectoryPath: lambda v: v.resolve().as_posix(),
-        }
-
-
-class TSCloudURL(str):
-    """
-    Validator to match against a ThoughtSpot cloud URL.
-    """
-    REGEX = re.compile(r"(?:https:\/\/)?(.*\.thoughtspot\.cloud)(?:\/.*)?")
-
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        if not isinstance(v, str):
-            raise TypeError("string required")
-
-        m = cls.REGEX.fullmatch(v)
-
-        if not m:
-            raise ValueError("invalid thoughtspot cloud url")
-
-        return cls(f"{m.group(1)}")
-
-
-class HostConfig(Settings):
-    host: Union[AnyHttpUrl, IPv4Address, TSCloudURL]
-    port: int = None
+class ThoughtSpotConfiguration(_GlobalSettings):
+    url: Union[AnyHttpUrl, IPv4Address]
+    username: str
+    password: Optional[str] = pydantic.Field(default=None)
+    secret_key: Optional[types.GUID] = pydantic.Field(default=None)
+    org_id: Optional[int] = None
     disable_ssl: bool = False
-    disable_sso: bool = False
 
     @property
-    def fullpath(self):
-        host = self.host
-        port = self.port
+    def decoded_password(self) -> str:
+        return utils.reveal(self.password).decode()
 
-        if not host.startswith("http"):
-            host = f"https://{host}"
-
-        if port:
-            port = f":{port}"
-        else:
-            port = ""
-
-        return f"{host}{port}"
-
-    @validator("host")
-    def cast_as_str(v: Any) -> str:
-        """
-        Converts arguments to a string.
-        """
-        if hasattr(v, "host"):
-            return f"{v.scheme}://{v.host}"
-
-        return str(v)
+    @property
+    def is_orgs_enabled(self) -> bool:
+        return self.org_id is not None
 
 
-class AuthConfig(Settings):
-    username: str
-    password: str = None
-
-
-class CSToolsConfig(Settings):
+class CSToolsConfig(_GlobalModel):
     name: str
-    thoughtspot: HostConfig
-    auth: Dict[str, AuthConfig]
-    syncer: Dict[str, FilePath] = None
+    thoughtspot: ThoughtSpotConfiguration
+    syncer: dict[str, FilePath] = None
     verbose: bool = False
     temp_dir: DirectoryPath = cs_tools_venv.app_dir
 
-    @validator("syncer")
-    def resolve_path(v: Any) -> str:
-        if v is None or isinstance(v, dict):
-            return v
-        return {k: pathlib.Path(f).resolve() for k, f in v.items()}
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def _check_backwards_compatability(cls, data: Any) -> Any:
+        # from V1.4.x
+        if "auth" in data:
+            data = {
+                "name": data["name"],
+                "thoughtspot": {
+                    "url": data["thoughtspot"]["host"],
+                    "username": data["auth"]["frontend"]["username"],
+                    "password": data["auth"]["frontend"]["password"],
+                    "disable_ssl": data["thoughtspot"]["disable_ssl"],
+                },
+                "syncer": data.get("syncer", {}),
+                "verbose": data["verbose"],
+                "temp_dir": data["temp_dir"],
+            }
 
-    def dict(self) -> Any:
-        """
-        Wrapper around model.dict to handle path types.
-        """
-        data = super().json()
-        data = json.loads(data)
         return data
 
     @classmethod
-    def from_toml(cls, fp: pathlib.Path, *, verbose: bool = None, temp_dir: pathlib.Path = None) -> "CSToolsConfig":
+    def from_toml(
+        cls, fp: pathlib.Path, *, verbose: Optional[bool] = None, temp_dir: Optional[pathlib.Path] = None
+    ) -> CSToolsConfig:
         """
         Read in a ts-config.toml file.
 
@@ -236,7 +197,7 @@ class CSToolsConfig(Settings):
         try:
             data = toml.load(fp)
         except FileNotFoundError:
-            raise ConfigDoesNotExist(name=fp.stem.replace("cluster-cfg_", ""))
+            raise ConfigDoesNotExist(name=fp.stem.replace("cluster-cfg_", "")) from None
 
         if data.get("name") is None:
             data["name"] = fp.stem.replace("cluster-cfg_", "")
@@ -248,10 +209,10 @@ class CSToolsConfig(Settings):
         if temp_dir is not None:
             data["temp_dir"] = temp_dir
 
-        return cls.parse_obj(data)
+        return cls(**data)
 
     @classmethod
-    def from_command(cls, config: str = None, **passthru) -> "CSToolsConfig":
+    def from_command(cls, config: Optional[str] = None, **passthru) -> CSToolsConfig:
         """
         Read in a ts-config.toml file by its name.
 
@@ -272,7 +233,7 @@ class CSToolsConfig(Settings):
         return cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml", **passthru)
 
     @classmethod
-    def from_parse_args(cls, name: str, *, validate: bool = True, **passthru) -> "CSToolsConfig":
+    def from_parse_args(cls, name: str, *, validate: bool = True, **passthru) -> CSToolsConfig:
         """
         Validate initial input from config.create or config.modify.
         """
@@ -295,7 +256,7 @@ class CSToolsConfig(Settings):
                     "password": utils.obscure(_pw).decode() if _pw is not None else _pw,
                 }
             },
-            "syncer": {proto: definition_fp for (proto, definition_fp) in _syncers},
+            "syncer": dict(_syncers),
         }
 
-        return cls.parse_obj(data) if validate else cls.construct(**data)
+        return cls.model_validate(data) if validate else cls.construct(**data)

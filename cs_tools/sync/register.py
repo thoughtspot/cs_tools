@@ -1,18 +1,23 @@
-from typing import List
-from types import ModuleType
-import itertools as it
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import importlib
-import pathlib
-import logging
+import itertools as it
 import json
+import logging
 import sys
 
 import pkg_resources
 
-from cs_tools.updater._updater import cs_tools_venv
-from cs_tools.sync.protocol import SyncerProtocol
-from cs_tools.sync._compat import version
 from cs_tools.errors import SyncerProtocolError
+from cs_tools.sync._compat import version
+from cs_tools.updater._updater import cs_tools_venv
+
+if TYPE_CHECKING:
+    from types import ModuleType
+    import pathlib
+
+    from cs_tools.sync.protocol import SyncerProtocol
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +44,7 @@ def is_installed(package: str) -> bool:
         return False
 
 
-def ensure_dependencies(requirements: List[str], pip_args: List[str]) -> None:
+def ensure_dependencies(requirements: list[str], pip_args: list[str]) -> None:
     for requirement, args in it.zip_longest(requirements, pip_args, fillvalue=[]):
         log.debug(f"processing requirement: {requirement}")
         req = pkg_resources.Requirement.parse(requirement)

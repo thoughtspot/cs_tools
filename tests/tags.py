@@ -1,4 +1,6 @@
 # testing metadata
+from __future__ import annotations
+
 UNIT = "unit"
 INTEGRATION = "integration"
 

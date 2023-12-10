@@ -1,13 +1,15 @@
-from typing import List, Dict, Any
-import logging
-import enum
+from __future__ import annotations
+
+from typing import Any
 import csv
+import enum
 import io
+import logging
 
 from pydantic.dataclasses import dataclass
 from sqlalchemy_redshift import dialect
-import sqlalchemy as sa
 import s3fs
+import sqlalchemy as sa
 
 log = logging.getLogger(__name__)
 
@@ -91,7 +93,7 @@ class Redshift:
     def name(self) -> str:
         return "redshift"
 
-    def load(self, table: str) -> List[Dict[str, Any]]:
+    def load(self, table: str) -> list[dict[str, Any]]:
         t = self.metadata.tables[table]
 
         with self.cnxn.begin():
@@ -99,7 +101,7 @@ class Redshift:
 
         return [dict(_) for _ in r]
 
-    def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, table: str, *, data: list[dict[str, Any]]) -> None:
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return

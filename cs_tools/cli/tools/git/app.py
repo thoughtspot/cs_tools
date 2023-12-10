@@ -9,8 +9,8 @@ import logging
 
 from cs_tools.cli.ux import CSToolsApp
 
-from .config import app as configApp
 from .branches import app as branchesApp
+from .config import app as configApp
 
 log = logging.getLogger(__name__)
 

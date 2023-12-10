@@ -29,7 +29,8 @@ class RESTAPIv2:
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Pre-process the request to remove undefined parameters."""
         request_kw = scrub_undefined(request_kw, null=None)
-        return self._api_client.request(method, endpoint, **request_kw)
+        method = getattr(self._api_client, method.lower())
+        return method(endpoint, **request_kw)
 
     # ==================================================================================================================
     # AUTHENTICATION ::  https://developers.thoughtspot.com/docs/rest-api-getstarted#_authentication
@@ -44,11 +45,11 @@ class RESTAPIv2:
             "org_identifier": org_identifier,
             "remember_me": remember_me,
         }
-        r = self._api_client.post("api/rest/2.0/auth/session/login", json=body)
+        r = self.request("POST", "api/rest/2.0/auth/session/login", json=body)
         return r
 
     def auth_session_user(self) -> httpx.Response:
-        r = self._api_client.get("api/rest/2.0/auth/session/user")
+        r = self.request("GET", "api/rest/2.0/auth/session/user")
         return r
 
     # ==================================================================================================================
@@ -78,7 +79,7 @@ class RESTAPIv2:
             "configuration_branch_name": configuration_branch_name,
         }
 
-        r = self._api_client.post("api/rest/2.0/vcs/git/config/create", json=body)
+        r = self.request("POST", "api/rest/2.0/vcs/git/config/create", json=body)
         return r
 
     def vcs_git_config_update(
@@ -101,19 +102,19 @@ class RESTAPIv2:
             "enable_guid_mapping": enable_guid_mapping,
             "configuration_branch_name": configuration_branch_name,
         }
-        r = self._api_client.post("api/rest/2.0/vcs/git/config/update", json=body)
+        r = self.request("POST", "api/rest/2.0/vcs/git/config/update", json=body)
         return r
 
     def vcs_git_config_search(self, *, org_ids: Optional[list[Identifier]] = None) -> httpx.Response:
         body = {"org_identifiers": org_ids}
-        r = self._api_client.post("api/rest/2.0/vcs/git/config/search", json=body)
+        r = self.request("POST", "api/rest/2.0/vcs/git/config/search", json=body)
         return r
 
     def vcs_git_config_delete(self, *, cluster_level: bool = False) -> httpx.Response:
         body = {
             "cluster_level": cluster_level,
         }
-        r = self._api_client.post("api/rest/2.0/vcs/git/config/delete", json=body)
+        r = self.request("POST", "api/rest/2.0/vcs/git/config/delete", json=body)
         return r
 
     def vcs_git_branches_commit(
@@ -130,7 +131,7 @@ class RESTAPIv2:
             "comment": comment,
             "delete_aware": delete_aware,
         }
-        r = self._api_client.post("api/rest/2.0/vcs/git/branches/commit", json=body)
+        r = self.request("POST", "api/rest/2.0/vcs/git/branches/commit", json=body)
         return r
 
     def vcs_git_commits_search(
@@ -149,7 +150,7 @@ class RESTAPIv2:
             "record_offset": record_offset,
             "record_size": record_size,
         }
-        r = self._api_client.post("api/rest/2.0/vcs/git/commits/search", json=body)
+        r = self.request("POST", "api/rest/2.0/vcs/git/commits/search", json=body)
         return r
 
     def vcs_git_commits_id_revert(
@@ -165,7 +166,7 @@ class RESTAPIv2:
             "branch_name": branch_name,
             "revert_policy": revert_policy,
         }
-        r = self._api_client.post(f"api/rest/2.0/vcs/git/commits/{commit_id}/revert", json=body)
+        r = self.request("POST", f"api/rest/2.0/vcs/git/commits/{commit_id}/revert", json=body)
         return r
 
     def vcs_git_branches_validate(
@@ -178,7 +179,7 @@ class RESTAPIv2:
             "source_branch_name": source_branch_name,
             "target_branch_name": target_branch_name,
         }
-        r = self._api_client.post("api/rest/2.0/vcs/git/branches/validate", json=body)
+        r = self.request("POST", "api/rest/2.0/vcs/git/branches/validate", json=body)
         return r
 
     def vcs_git_commits_deploy(
@@ -195,5 +196,5 @@ class RESTAPIv2:
             "deploy_type": str(deploy_type),
             "deploy_policy": str(deploy_policy),
         }
-        r = self._api_client.post("api/rest/2.0/vcs/git/commits/deploy", json=body)
+        r = self.request("POST", "api/rest/2.0/vcs/git/commits/deploy", json=body)
         return r

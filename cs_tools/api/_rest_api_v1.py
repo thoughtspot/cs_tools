@@ -52,7 +52,8 @@ class RESTAPIv1:
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Pre-process the request to remove undefined parameters."""
         request_kw = scrub_undefined(request_kw, null=UNDEFINED)
-        return self._api_client.request(method, endpoint, **request_kw)
+        method = getattr(self._api_client, method.lower())
+        return method(endpoint, **request_kw)
 
     # ==================================================================================================================
     # SESSION     ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_session_management
@@ -61,36 +62,36 @@ class RESTAPIv1:
     def _trusted_auth(self, *, username: str, secret: GUID, org_id: int = UNDEFINED) -> httpx.Response:
         # get the login token for a given user
         d = {"secret_key": secret, "username": username, "access_level": "FULL", "orgid": org_id}
-        r = self._api_client.post("callosum/v1/tspublic/v1/session/auth/token", data=d, raise_for_status=False)
+        r = self.request("POST", "callosum/v1/tspublic/v1/session/auth/token", data=d)
 
         # establish a session as that user, using the token
         if r.is_success:
-            d = {"auth_token": r.text, "username": username}
-            r = self._api_client.post("callosum/v1/tspublic/v1/session/login/token", data=d, raise_for_status=False)
+            d = {"auth_token": r.text, "username": username, "no_url_redirection": True}
+            r = self.request("POST", "callosum/v1/tspublic/v1/session/login/token", data=d)
 
         return r
 
     def session_login(self, *, username: str, password: str) -> httpx.Response:
         d = {"username": username, "password": password, "rememberme": True}
-        r = self._api_client.post("callosum/v1/tspublic/v1/session/login", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/session/login", data=d)
         return r
 
     def session_logout(self) -> httpx.Response:
-        r = self._api_client.post("callosum/v1/tspublic/v1/session/logout")
+        r = self.request("POST", "callosum/v1/tspublic/v1/session/logout")
         return r
 
     def session_orgs_read(self) -> httpx.Response:
         p = {"batchsize": -1, "offset": -1}
-        r = self._api_client.get("callosum/v1/tspublic/v1/session/orgs", params=p)
+        r = self.request("GET", "callosum/v1/tspublic/v1/session/orgs", params=p)
         return r
 
     def session_orgs_update(self, *, org_id: int) -> httpx.Response:
         d = {"orgid": org_id}
-        r = self._api_client.put("callosum/v1/tspublic/v1/session/orgs", data=d)
+        r = self.request("PUT", "callosum/v1/tspublic/v1/session/orgs", data=d)
         return r
 
     def session_info(self) -> httpx.Response:
-        r = self._api_client.get("callosum/v1/tspublic/v1/session/info")
+        r = self.request("GET", "callosum/v1/tspublic/v1/session/info")
         return r
 
     # ==================================================================================================================
@@ -99,7 +100,7 @@ class RESTAPIv1:
 
     def org_read(self, *, org_id: int = UNDEFINED, org_name: str = UNDEFINED) -> httpx.Response:
         p = {"id": org_id, "name": org_name, "orgScope": "ALL"}
-        r = self._api_client.get("callosum/v1/tspublic/v1/org", params=p)
+        r = self.request("GET", "callosum/v1/tspublic/v1/org", params=p)
         return r
 
     def org_search(
@@ -110,7 +111,7 @@ class RESTAPIv1:
         show_inactive: bool = False,
     ) -> httpx.Response:
         d = {"id": org_id, "name": org_name, "showinactive": show_inactive, "orgScope": "ALL"}
-        r = self._api_client.post("callosum/v1/tspublic/v1/org/search", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/org/search", data=d)
         return r
 
     # ==================================================================================================================
@@ -139,21 +140,21 @@ class RESTAPIv1:
             "visibility": sharing_visibility,
             "triggeredbyadmin": True,
         }
-        r = self._api_client.post("callosum/v1/tspublic/v1/user", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/user", data=d)
         return r
 
     def user_read(self, *, user_guid: GUID = UNDEFINED, username: str = UNDEFINED) -> httpx.Response:
         p = {"userid": user_guid, "name": username}
-        r = self._api_client.get("callosum/v1/tspublic/v1/user", params=p)
+        r = self.request("GET", "callosum/v1/tspublic/v1/user", params=p)
         return r
 
     def user_update(self, *, user_guid: GUID, content: UserProfile, password: str = UNDEFINED) -> httpx.Response:
         d = {"userid": user_guid, "content": json.dumps(content), "password": password, "triggeredbyadmin": True}
-        r = self._api_client.put(f"callosum/v1/tspublic/v1/user/{user_guid}", data=d)
+        r = self.request("PUT", f"callosum/v1/tspublic/v1/user/{user_guid}", data=d)
         return r
 
     def user_list(self) -> httpx.Response:
-        r = self._api_client.get("callosum/v1/tspublic/v1/user/list")
+        r = self.request("GET", "callosum/v1/tspublic/v1/user/list")
         return r
 
     def user_transfer_ownership(
@@ -164,7 +165,7 @@ class RESTAPIv1:
         object_guids: list[GUID] = UNDEFINED,
     ) -> httpx.Response:
         p = {"fromUserName": from_username, "toUserName": to_username, "objectsID": dumps(object_guids)}
-        r = self._api_client.post("callosum/v1/tspublic/v1/user/transfer/ownership", params=p)
+        r = self.request("POST", "callosum/v1/tspublic/v1/user/transfer/ownership", params=p)
         return r
 
     def user_sync(
@@ -180,7 +181,7 @@ class RESTAPIv1:
 
         f = {"principals": ("principals.json", fp.open("rb"), "application/json")}
         d = {"applyChanges": apply_changes, "removeDeleted": remove_deleted, "password": password}
-        r = self._api_client.post("callosum/v1/tspublic/v1/user/sync", files=f, data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/user/sync", files=f, data=d)
         return r
 
     # ==================================================================================================================
@@ -205,26 +206,26 @@ class RESTAPIv1:
             "visibility": sharing_visibility,
             "grouptype": group_type,
         }
-        r = self._api_client.post("callosum/v1/tspublic/v1/group", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/group", data=d)
         return r
 
     def group_read(self, *, group_guid: GUID = UNDEFINED, group_name: str = UNDEFINED) -> httpx.Response:
         p = {"groupid": group_guid, "name": group_name}
-        r = self._api_client.get("callosum/v1/tspublic/v1/group", params=p)
+        r = self.request("GET", "callosum/v1/tspublic/v1/group", params=p)
         return r
 
     def group_update(self, *, group_guid: GUID, content: GroupInfo) -> httpx.Response:
         d = {"groupid": group_guid, "content": json.dumps(content), "triggeredbyadmin": True}
-        r = self._api_client.put(f"callosum/v1/tspublic/v1/group/{group_guid}", data=d)
+        r = self.request("PUT", f"callosum/v1/tspublic/v1/group/{group_guid}", data=d)
         return r
 
     def group_list_users(self, *, group_guid: GUID) -> httpx.Response:
-        r = self._api_client.get(f"callosum/v1/tspublic/v1/group/{group_guid}/users")
+        r = self.request("GET", f"callosum/v1/tspublic/v1/group/{group_guid}/users")
         return r
 
     def group_add_user(self, *, group_guid: GUID, user_guid: GUID) -> httpx.Response:
         d = {"groupid": group_guid, "userid": user_guid}
-        r = self._api_client.post(f"callosum/v1/tspublic/v1/group/{group_guid}/user/{user_guid}", data=d)
+        r = self.request("POST", f"callosum/v1/tspublic/v1/group/{group_guid}/user/{user_guid}", data=d)
         return r
 
     # ==================================================================================================================
@@ -249,7 +250,7 @@ class RESTAPIv1:
             "offset": offset,
             "formattpe": format_type,
         }
-        r = self._api_client.post("callosum/v1/tspublic/v1/searchdata", params=p)
+        r = self.request("POST", "callosum/v1/tspublic/v1/searchdata", params=p)
         return r
 
     # ==================================================================================================================
@@ -270,7 +271,7 @@ class RESTAPIv1:
             "tagid": dumps(tag_guids),
             "tagname": dumps(tag_names),
         }
-        r = self._api_client.post("callosum/v1/tspublic/v1/metadata/assigntag", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/metadata/assigntag", data=d)
         return r
 
     def metadata_unassign_tag(
@@ -287,7 +288,7 @@ class RESTAPIv1:
             "tagid": dumps(tag_guids),
             "tagname": dumps(tag_names),
         }
-        r = self._api_client.post("callosum/v1/tspublic/v1/metadata/unassigntag", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/metadata/unassigntag", data=d)
         return r
 
     def metadata_list(
@@ -326,7 +327,7 @@ class RESTAPIv1:
             "auto_created": auto_created,
             "authorguid": author_guid,
         }
-        r = self._api_client.get("callosum/v1/tspublic/v1/metadata/list", params=p)
+        r = self.request("GET", "callosum/v1/tspublic/v1/metadata/list", params=p)
         return r
 
     def metadata_details(
@@ -343,7 +344,7 @@ class RESTAPIv1:
             "dropquestiondetails": False,
             "version": -1,
         }
-        r = self._api_client.get("callosum/v1/tspublic/v1/metadata/details", params=p)
+        r = self.request("GET", "callosum/v1/tspublic/v1/metadata/details", params=p)
         return r
 
     def metadata_tml_export(
@@ -360,7 +361,7 @@ class RESTAPIv1:
             "export_associated": export_associated,
             "export_fqn": export_fqn,
         }
-        r = self._api_client.post("callosum/v1/tspublic/v1/metadata/tml/export", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/metadata/tml/export", data=d)
         return r
 
     def metadata_tml_import(
@@ -371,7 +372,7 @@ class RESTAPIv1:
         force_create: bool = False,
     ) -> httpx.Response:
         d = {"import_objects": dumps(import_objects), "import_policy": import_policy, "force_create": force_create}
-        r = self._api_client.post("callosum/v1/tspublic/v1/metadata/tml/import", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/metadata/tml/import", data=d)
         return r
 
     # ==================================================================================================================
@@ -393,7 +394,7 @@ class RESTAPIv1:
             "authentication_type": authentication_type,
         }
 
-        r = self._api_client.post("callosum/v1/tspublic/v1/connection/fetchConnection", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/connection/fetchConnection", data=d)
         return r
 
     def connection_fetch_live_columns(
@@ -410,7 +411,7 @@ class RESTAPIv1:
             "config": config,
             "authentication_type": authentication_type,
         }
-        r = self._api_client.post("callosum/v1/connection/fetchLiveColumns", data=d)
+        r = self.request("POST", "callosum/v1/connection/fetchLiveColumns", data=d)
         return r
 
     def connection_create(
@@ -430,7 +431,7 @@ class RESTAPIv1:
             "metadata": metadata,
             # state  # inaccesible to the Developer
         }
-        r = self._api_client.post("callosum/v1/tspublic/v1/connection/create", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/connection/create", data=d)
         return r
 
     def connection_update(
@@ -452,12 +453,12 @@ class RESTAPIv1:
             "metadata": metadata,
             # state  # inaccesible to the Developer
         }
-        r = self._api_client.post("callosum/v1/tspublic/v1/connection/update", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/connection/update", data=d)
         return r
 
     def connection_export(self, *, guid: GUID) -> httpx.Response:
         p = {"id": guid}
-        r = self._api_client.get("callosum/v1/tspublic/v1/connection/export", params=p)
+        r = self.request("GET", "callosum/v1/tspublic/v1/connection/export", params=p)
         return r
 
     # ==================================================================================================================
@@ -473,7 +474,7 @@ class RESTAPIv1:
         offset: int = -1,
     ) -> httpx.Response:
         d = {"type": metadata_type, "id": dumps(guids), "batchsize": batchsize, "offset": offset}
-        r = self._api_client.post("callosum/v1/tspublic/v1/dependency/listdependents", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/dependency/listdependents", data=d)
         return r
 
     # ==================================================================================================================
@@ -519,7 +520,7 @@ class RESTAPIv1:
             "notify": UNDEFINED,
             "message": UNDEFINED,
         }
-        r = self._api_client.post("callosum/v1/tspublic/v1/security/share", data=d)
+        r = self.request("POST", "callosum/v1/tspublic/v1/security/share", data=d)
         return r
 
     def security_metadata_permissions(
@@ -536,7 +537,7 @@ class RESTAPIv1:
             "dependentshare": dependent_share,
             "permissiontype": permission_type,
         }
-        r = self._api_client.get("callosum/v1/tspublic/v1/security/metadata/permissions", params=p)
+        r = self.request("GET", "callosum/v1/tspublic/v1/security/metadata/permissions", params=p)
         return r
 
     # ==================================================================================================================
@@ -553,36 +554,36 @@ class RESTAPIv1:
         return url
 
     def dataservice_tokens_static(self) -> httpx.Response:
-        r = self._api_client.get("ts_dataservice/v1/public/tql/tokens/static")
+        r = self.request("GET", "ts_dataservice/v1/public/tql/tokens/static")
         return r
 
     def dataservice_tokens_dynamic(self) -> httpx.Response:
-        r = self._api_client.get("ts_dataservice/v1/public/tql/tokens/dynamic")
+        r = self.request("GET", "ts_dataservice/v1/public/tql/tokens/dynamic")
         return r
 
     def dataservice_query(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
         # Further reading on what can be passed to `data`
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body
-        r = self._api_client.post("ts_dataservice/v1/public/tql/query", timeout=timeout, json=data)
+        r = self.request("POST", "ts_dataservice/v1/public/tql/query", timeout=timeout, json=data)
         return r
 
     def dataservice_script(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
         # Further reading on what can be passed to `data`
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body_2
-        r = self._api_client.post("ts_dataservice/v1/public/tql/script", timeout=timeout, json=data)
+        r = self.request("POST", "ts_dataservice/v1/public/tql/script", timeout=timeout, json=data)
         return r
 
     def dataservice_dataload_session(self, *, username: str, password: str) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/session")
         d = {"username": username, "password": password}
-        r = self._api_client.post(fullpath, data=d)
+        r = self.request("POST", fullpath, data=d)
         return r
 
     def dataservice_dataload_initialize(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/loads")
-        r = self._api_client.post(fullpath, timeout=timeout, json=data)
+        r = self.request("POST", fullpath, timeout=timeout, json=data)
         return r
 
     def dataservice_dataload_start(
@@ -596,20 +597,20 @@ class RESTAPIv1:
         # Processing of the dataload happens concurrently, and this function may be
         # called multiple times to paralellize the full data load across multiple files.
         fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
-        r = self._api_client.post(fullpath, timeout=timeout, files={"upload-file": fd})
+        r = self.request("POST", fullpath, timeout=timeout, files={"upload-file": fd})
         return r
 
     def dataservice_dataload_commit(self, *, cycle_id: GUID) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/commit")
-        r = self._api_client.post(fullpath)
+        r = self.request("POST", fullpath)
         return r
 
     def dataservice_dataload_status(self, *, cycle_id: GUID) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
-        r = self._api_client.get(fullpath)
+        r = self.request("GET", fullpath)
         return r
 
     def dataservice_dataload_bad_records(self, *, cycle_id: GUID) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")
-        r = self._api_client.get(fullpath)
+        r = self.request("GET", fullpath)
         return r

@@ -1,27 +1,29 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import functools as ft
-import pathlib
 import logging
 import random
 
 import pendulum
 import typer
 
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.layout import LiveTasks
-from cs_tools.cli.input import ConfirmationPrompt
-from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
+from cs_tools import utils
 from cs_tools._compat import StrEnum
-from cs_tools.cli.ux import rich_console
-
-from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.input import ConfirmationPrompt
+from cs_tools.cli.layout import LiveTasks
+from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
+from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import MetadataObjectType
-from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools import utils
 
-from . import _extended_rest_api_v1
-from . import layout
-from . import models
+from . import _extended_rest_api_v1, layout, models
+
+if TYPE_CHECKING:
+    import pathlib
+
+    from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
 ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE = 3650
@@ -54,17 +56,17 @@ def identify(
     content: ContentType = typer.Option(
         ContentType.all_user_content,
         help="type of content to mark for archival",
-        rich_help_panel="Content Identification Criteria"
+        rich_help_panel="Content Identification Criteria",
     ),
     recent_activity: int = typer.Option(
         ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE,
         help=(
             "content without recent views will be [b green]selected[/] (exceeds days threshold) "
             # fake the default value in the CLI output
-            "[dim]\[default: all TS: BI history][/]"
+            r"[dim]\[default: all TS: BI history][/]"
         ),
         show_default=False,
-        rich_help_panel="Content Identification Criteria"
+        rich_help_panel="Content Identification Criteria",
     ),
     recent_modified: int = typer.Option(
         100,
@@ -101,7 +103,7 @@ def identify(
     Identify content which can be archived.
 
     :police_car_light: [yellow]Content owned by system level accounts ([b blue]tsadmin[/], [b blue]system[/], [b blue]etc[/].) will be ignored.[/] :police_car_light:
-    """
+    """  # noqa: E501
     # fmt: on
     if None not in (only_groups, ignore_groups):
         rich_console.log("[b red]Select either [b blue]--only-groups[/] or [b blue]--include-groups[/], but not both!")
@@ -120,7 +122,6 @@ def identify(
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
-
         with tasks["gather_ts_bi"]:
             ts_bi_rows = ts.search(
                 f"[user action] != [user action].answer_unsaved [user action].{{null}} "
@@ -145,14 +146,23 @@ def identify(
             ]
 
         with tasks["gather_metadata"]:
+            all_object = []
             to_archive = []
             n_content_in_ts = 0
 
-            for metadata_object in [*ts.answer.all(), *ts.liveboard.all()]:
+            if content in (ContentType.all_user_content, ContentType.answer):
+                all_object.extend(ts.answer.all())
+
+            if content in (ContentType.all_user_content, ContentType.liveboard):
+                all_object.extend(ts.liveboard.all())
+
+            for metadata_object in all_object:
                 n_content_in_ts += 1
                 checks = []
 
-                metadata_modified = pendulum.from_timestamp(metadata_object["modified"] / 1000, tz=ts.platform.timezone)
+                metadata_modified = pendulum.from_timestamp(
+                    metadata_object["modified"] / 1000, tz=ts.session_context.thoughtspot.timezone
+                )
 
                 # CHECK: NO TS: BI ACTIVITY WITHIN X DAYS
                 checks.append(metadata_object["id"] not in ts_bi_data)
@@ -174,14 +184,15 @@ def identify(
 
                 if all(checks):
                     to_archive.append(
-                        {
-                            "type": metadata_object["metadata_type"],
-                            "guid": metadata_object["id"],
-                            "modified": metadata_modified,
-                            "author_guid": metadata_object["author"],
-                            "author": metadata_object.get("authorDisplayName", "{null}"),
-                            "name": metadata_object["name"],
-                        },
+                        models.ArchiverReport.validated_init(
+                            type=metadata_object["metadata_type"],
+                            guid=metadata_object["id"],
+                            modified=metadata_modified,
+                            author_guid=metadata_object["author"],
+                            author=metadata_object.get("authorDisplayName", None),
+                            name=metadata_object["name"],
+                            operation="identify",
+                        )
                     )
 
         if not to_archive:
@@ -190,29 +201,28 @@ def identify(
 
         with tasks["results_preview"] as this_task:
             table = layout.build_table(
-                        title=f"Content to tag with [b blue]{tag_name}",
-                        caption=(
-                            f"25 latest items ({len(to_archive)} [b blue]{tag_name}[/] [dim]|[/] {n_content_in_ts} in "
-                            f"ThoughtSpot)"
-                        ),
-                    )
+                title=f"Content to tag with [b blue]{tag_name}",
+                caption=(
+                    f"25 latest items ({len(to_archive)} [b blue]{tag_name}[/] [dim]|[/] {n_content_in_ts} in "
+                    f"ThoughtSpot)"
+                ),
+            )
 
             # for row in random.sample(to_archive, k=min(25, len(to_archive))):
-            for row in sorted(to_archive, key=lambda e: e["modified"], reverse=True)[:25]:
+            for row in sorted(to_archive, key=lambda model: model.modified, reverse=True)[:25]:
                 table.add_row(
-                    MetadataObjectType(row["type"]).name.title().replace("_", " "),
-                    row["guid"],
-                    row["modified"].strftime("%Y-%m-%d"),
-                    row["author"],
-                    row["name"],
+                    MetadataObjectType(row.type).name.title().replace("_", " "),
+                    row.guid,
+                    row.modified.strftime("%Y-%m-%d"),
+                    row.author,
+                    row.name,
                 )
 
             tasks.layout = layout.combined_layout(original_layout=tasks.layout, new_layout=table)
 
         with tasks["syncer_report"] as this_task:
             if syncer is not None:
-                to_archive = [{**_, "operation": "identify"} for _ in to_archive]
-                syncer.dump("archiver_report", data=to_archive)
+                syncer.dump("archiver_report", data=[m.dict() for m in to_archive])
             else:
                 this_task.skip()
 
@@ -223,9 +233,9 @@ def identify(
             if no_prompt:
                 this_task.skip()
             else:
-                this_task.description = prompt = (
-                    f":point_right: Continue with tagging {len(to_archive):,} objects? [b magenta](y/N)"
-                )
+                this_task.description = (
+                    prompt
+                ) = f":point_right: Continue with tagging {len(to_archive):,} objects? [b magenta](y/N)"
 
                 if not ConfirmationPrompt.ask(prompt, console=rich_console, with_prompt=False):
                     this_task.description = "Confirmation [b red]Denied[/] (no tagging performed)"
@@ -239,18 +249,18 @@ def identify(
             to_tag_types = []
             to_tag_names = []
 
-            for content in to_archive:
-                to_tag_guids.append(content["guid"])
-                to_tag_types.append(content["type"])
+            for model in to_archive:
+                to_tag_guids.append(model.guid)
+                to_tag_types.append(model.type)
                 to_tag_names.append(tag_guid["id"])
 
             for start_index in range(0, len(to_tag_guids), 10):
                 stop_index = start_index + 10
 
-                ts.api.metadata_assign_tag(
-                    metadata_guids=to_tag_guids[start_index: stop_index],
-                    metadata_types=to_tag_types[start_index: stop_index],
-                    tag_guids=to_tag_names[start_index: stop_index],
+                ts.api.v1.metadata_assign_tag(
+                    metadata_guids=to_tag_guids[start_index:stop_index],
+                    metadata_types=to_tag_types[start_index:stop_index],
+                    tag_guids=to_tag_names[start_index:stop_index],
                 )
 
 
@@ -260,7 +270,9 @@ def revert(
     tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
     dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    delete_tag: bool = typer.Option(False, "--delete-tag", help="after untagging identified content, remove the tag itself"),
+    delete_tag: bool = typer.Option(
+        False, "--delete-tag", help="after untagging identified content, remove the tag itself"
+    ),
     syncer: DSyncer = typer.Option(
         None,
         custom_type=SyncerProtocolType(models=[models.ArchiverReport]),
@@ -283,20 +295,20 @@ def revert(
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
-
         with tasks["gather_metadata"]:
             to_revert = []
 
             try:
                 to_revert.extend(
-                    {
-                        "type": answer["metadata_type"],
-                        "guid": answer["id"],
-                        "modified": answer["modified"],
-                        "author_guid": answer["author"],
-                        "author": answer.get("authorDisplayName", "{null}"),
-                        "name": answer["name"],
-                    }
+                    models.ArchiverReport.validated_init(
+                        type=answer["metadata_type"],
+                        guid=answer["id"],
+                        modified=answer["modified"] / 1000,
+                        author_guid=answer["author"],
+                        author=answer.get("authorDisplayName", None),
+                        name=answer["name"],
+                        operation="revert",
+                    )
                     for answer in ts.answer.all(tags=[tag_name])
                 )
             except ContentDoesNotExist:
@@ -304,14 +316,15 @@ def revert(
 
             try:
                 to_revert.extend(
-                    {
-                        "type": liveboard["metadata_type"],
-                        "guid": liveboard["id"],
-                        "modified": liveboard["modified"],
-                        "author_guid": liveboard["author"],
-                        "author": liveboard.get("authorDisplayName", "{null}"),
-                        "name": liveboard["name"],
-                    }
+                    models.ArchiverReport.validated_init(
+                        type=liveboard["metadata_type"],
+                        guid=liveboard["id"],
+                        modified=liveboard["modified"] / 1000,
+                        author_guid=liveboard["author"],
+                        author=liveboard.get("authorDisplayName", None),
+                        name=liveboard["name"],
+                        operation="revert",
+                    )
                     for liveboard in ts.liveboard.all(tags=[tag_name])
                 )
             except ContentDoesNotExist:
@@ -323,25 +336,24 @@ def revert(
 
         with tasks["results_preview"] as this_task:
             table = layout.build_table(
-                        title=f"Content to untag [b blue]{tag_name}",
-                        caption=f"25 random items ({len(to_revert)} [b blue]{tag_name}[/] in ThoughtSpot)",
-                    )
+                title=f"Content to untag [b blue]{tag_name}",
+                caption=f"25 random items ({len(to_revert)} [b blue]{tag_name}[/] in ThoughtSpot)",
+            )
 
             for row in random.sample(to_revert, k=min(25, len(to_revert))):
                 table.add_row(
-                    MetadataObjectType(row["type"]).name.title().replace("_", " "),
-                    row["guid"],
-                    pendulum.from_timestamp(row["modified"] / 1000, tz=ts.platform.timezone).strftime("%Y-%m-%d"),
-                    row["author"],
-                    row["name"],
+                    MetadataObjectType(row.type).name.title().replace("_", " "),
+                    row.guid,
+                    row.modified.strftime("%Y-%m-%d"),
+                    row.author,
+                    row.name,
                 )
 
             tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
 
         with tasks["syncer_report"] as this_task:
             if syncer is not None:
-                to_revert = [{**_, "operation": "revert"} for _ in to_revert]
-                syncer.dump("archiver_report", data=to_revert)
+                syncer.dump("archiver_report", data=[m.dict() for m in to_revert])
             else:
                 this_task.skip()
 
@@ -352,9 +364,9 @@ def revert(
             if no_prompt:
                 this_task.skip()
             else:
-                this_task.description = prompt = (
-                    f":point_right: Continue with untagging {len(to_revert):,} objects? [b magenta](y/N)"
-                )
+                this_task.description = (
+                    prompt
+                ) = f":point_right: Continue with untagging {len(to_revert):,} objects? [b magenta](y/N)"
 
                 if not ConfirmationPrompt.ask(prompt, console=rich_console, with_prompt=False):
                     this_task.description = "Confirmation [b red]Denied[/] (no tagging performed)"
@@ -368,18 +380,18 @@ def revert(
             to_revert_types = []
             to_revert_names = []
 
-            for content in to_revert:
-                to_revert_guids.append(content["guid"])
-                to_revert_types.append(content["type"])
+            for model in to_revert:
+                to_revert_guids.append(model.guid)
+                to_revert_types.append(model.type)
                 to_revert_names.append(tag_guid["id"])
 
             for start_index in range(0, len(to_revert_guids), 10):
                 stop_index = start_index + 10
 
-                ts.api.metadata_unassign_tag(
-                    metadata_guids=to_revert_guids[start_index: stop_index],
-                    metadata_types=to_revert_types[start_index: stop_index],
-                    tag_guids=to_revert_names[start_index: stop_index],
+                ts.api.v1.metadata_unassign_tag(
+                    metadata_guids=to_revert_guids[start_index:stop_index],
+                    metadata_types=to_revert_types[start_index:stop_index],
+                    tag_guids=to_revert_names[start_index:stop_index],
                 )
 
         with tasks["deleting_tag"] as this_task:
@@ -395,7 +407,9 @@ def remove(
     tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
     dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    delete_tag: bool = typer.Option(False, "--delete-tag", help="after deleting identified content, remove the tag itself"),
+    delete_tag: bool = typer.Option(
+        False, "--delete-tag", help="after deleting identified content, remove the tag itself"
+    ),
     syncer: DSyncer = typer.Option(
         None,
         custom_type=SyncerProtocolType(models=[models.ArchiverReport]),
@@ -435,20 +449,20 @@ def remove(
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
-
         with tasks["gather_metadata"]:
             to_delete = []
 
             try:
                 to_delete.extend(
-                    {
-                        "type": answer["metadata_type"],
-                        "guid": answer["id"],
-                        "modified": answer["modified"],
-                        "author_guid": answer["author"],
-                        "author": answer.get("authorDisplayName", "{null}"),
-                        "name": answer["name"],
-                    }
+                    models.ArchiverReport.validated_init(
+                        type=answer["metadata_type"],
+                        guid=answer["id"],
+                        modified=answer["modified"] / 1000,
+                        author_guid=answer["author"],
+                        author=answer.get("authorDisplayName", "{null}"),
+                        name=answer["name"],
+                        operation="remove",
+                    )
                     for answer in ts.answer.all(tags=[tag_name])
                 )
             except ContentDoesNotExist:
@@ -456,14 +470,15 @@ def remove(
 
             try:
                 to_delete.extend(
-                    {
-                        "type": liveboard["metadata_type"],
-                        "guid": liveboard["id"],
-                        "modified": liveboard["modified"],
-                        "author_guid": liveboard["author"],
-                        "author": liveboard.get("authorDisplayName", "{null}"),
-                        "name": liveboard["name"],
-                    }
+                    models.ArchiverReport.validated_init(
+                        type=liveboard["metadata_type"],
+                        guid=liveboard["id"],
+                        modified=liveboard["modified"] / 1000,
+                        author_guid=liveboard["author"],
+                        author=liveboard.get("authorDisplayName", "{null}"),
+                        name=liveboard["name"],
+                        operation="remove",
+                    )
                     for liveboard in ts.liveboard.all(tags=[tag_name])
                 )
             except ContentDoesNotExist:
@@ -475,25 +490,24 @@ def remove(
 
         with tasks["results_preview"] as this_task:
             table = layout.build_table(
-                        title=f"Content to remove [b blue]{tag_name}[/]",
-                        caption=f"25 random items ({len(to_delete)} [b blue]{tag_name}[/] in ThoughtSpot)",
-                    )
+                title=f"Content to remove [b blue]{tag_name}[/]",
+                caption=f"25 random items ({len(to_delete)} [b blue]{tag_name}[/] in ThoughtSpot)",
+            )
 
             for row in random.sample(to_delete, k=min(25, len(to_delete))):
                 table.add_row(
-                    MetadataObjectType(row["type"]).name.title().replace("_", " "),
-                    row["guid"],
-                    pendulum.from_timestamp(row["modified"] / 1000, tz=ts.platform.timezone).strftime("%Y-%m-%d"),
-                    row["author"],
-                    row["name"],
+                    MetadataObjectType(row.type).name.title().replace("_", " "),
+                    row.guid,
+                    row.modified.strftime("%Y-%m-%d"),
+                    row.author,
+                    row.name,
                 )
 
             tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
 
         with tasks["syncer_report"] as this_task:
             if syncer is not None:
-                to_delete = [{**_, "operation": "revert"} for _ in to_delete]
-                syncer.dump("archiver_report", data=to_delete)
+                syncer.dump("archiver_report", data=[m.dict() for m in to_delete])
             else:
                 this_task.skip()
 
@@ -505,9 +519,9 @@ def remove(
                 this_task.skip()
             else:
                 operation = "exporting" if export_only else "removing"
-                this_task.description = prompt = (
-                    f":point_right: Continue with {operation} {len(to_delete):,} objects? [b magenta](y/N)"
-                )
+                this_task.description = (
+                    prompt
+                ) = f":point_right: Continue with {operation} {len(to_delete):,} objects? [b magenta](y/N)"
 
                 if not ConfirmationPrompt.ask(prompt, console=rich_console, with_prompt=False):
                     this_task.description = "Confirmation [b red]Denied[/] (no removal performed)"
@@ -519,21 +533,21 @@ def remove(
             if directory is None:
                 this_task.skip()
             else:
-                for tml in ts.tml.to_export(guids=[content["guid"] for content in to_delete], iterator=True):
+                for tml in ts.tml.to_export(guids=[model.guid for model in to_delete], iterator=True):
                     tml.dump(directory / f"{tml.guid}.{tml.tml_type_name}.tml")
 
         with tasks["delete_content"] as this_task:
             if export_only:
                 this_task.skip()
             else:
-                for unique_type in [c["type"] for c in to_delete]:
-                    content = [content["guid"] for content in to_delete if content["type"] == unique_type]
+                for unique_type in [model.type for model in to_delete]:
+                    content = [model.guid for model in to_delete if model.type == unique_type]
 
                     for chunk in utils.chunks(content, n=50):
                         chunk = list(chunk)
                         log.info(f"Attempting to delete {len(chunk)} {unique_type}s")
                         _extended_rest_api_v1.metadata_delete(
-                            ts.api,
+                            ts.api.v1,
                             metadata_type=unique_type,
                             guids=list(chunk),
                         )

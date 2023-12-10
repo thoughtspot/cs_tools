@@ -1,14 +1,19 @@
-from typing import Optional, Callable, List, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, Optional
 import contextlib
 import logging
 import sys
 
 from rich.console import Console
 import typer
-import click
 
+from cs_tools import utils
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.const import GH_SYNCER
+
+if TYPE_CHECKING:
+    import click
 
 log = logging.getLogger(__name__)
 rich_console = Console()
@@ -41,7 +46,7 @@ class CSToolsCommand(typer.core.TyperCommand):
 
         return r
 
-    def _augment_help_text(self, ctx: typer.Context, *, seen_params: List[click.Parameter]) -> List[click.Parameter]:
+    def _augment_help_text(self, ctx: typer.Context, *, seen_params: list[click.Parameter]) -> list[click.Parameter]:
         """
         Inject Dependency parameters and help text.
 
@@ -67,7 +72,7 @@ class CSToolsCommand(typer.core.TyperCommand):
 
         return seen_params
 
-    def get_params(self, ctx: typer.Context) -> List[click.Parameter]:
+    def get_params(self, ctx: typer.Context) -> list[click.Parameter]:
         """Hi-jack for dependency help-text augmentations."""
         rv = super().get_params(ctx)
         rv = self._augment_help_text(ctx, seen_params=rv)
@@ -76,10 +81,11 @@ class CSToolsCommand(typer.core.TyperCommand):
 
 class CSToolsGroup(typer.core.TyperGroup):
     """CSTools Groups should always recurse, and use CSToolsCommand."""
+
     command_class = CSToolsCommand
     group_class = type
 
-    def list_commands(self, ctx: typer.Context) -> List[str]:  # noqa: ARG002
+    def list_commands(self, ctx: typer.Context) -> list[str]:  # noqa: ARG002
         """Override so we don't sort alphabetically."""
         return list(self.commands)
 
@@ -90,19 +96,26 @@ class CSToolsApp(typer.Typer):
         passthru["cls"] = CSToolsGroup
         passthru["rich_markup_mode"] = "rich"
         passthru["no_args_is_help"] = True
-        super().__init__(**passthru)
+
+        ctx_settings = passthru.pop("context_settings", None) or {}
+        ctx_settings["help_option_names"] = ["--help", "-h"]
+        ctx_settings["obj"] = utils.State
+        ctx_settings["max_content_width"] = rich_console.width
+        ctx_settings["token_normalize_func"] = lambda x: x.casefold()
+        super().__init__(**passthru, context_settings=ctx_settings)
 
     def command(
         self,
         name: Optional[str] = None,
         *,
-        dependencies: Optional[List[Callable]] = None,
+        dependencies: Optional[list[Callable]] = None,
         # better typer defaults
         cls: Optional[CSToolsCommand] = CSToolsCommand,
         no_args_is_help: bool = True,
         **passthru,
     ):
         """Hi-jack to store dependencies."""
+
         def decorator(f: Callable):
             if not hasattr(f, "__cs_tools_dependencies__"):
                 f.__cs_tools_dependencies__ = []

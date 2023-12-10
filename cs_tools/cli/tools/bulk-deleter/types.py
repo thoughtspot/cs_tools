@@ -1,5 +1,7 @@
-from typing import Tuple
+from __future__ import annotations
+
 from dataclasses import dataclass
+
 from cs_tools.types import GUID, StrEnum
 
 
@@ -24,6 +26,7 @@ class AcceptedObjectType(StrEnum):
 @dataclass
 class DeleteRecord:
     """Represents an object to DELETE"""
+
     object_type: AcceptedObjectType
     object_guid: GUID
     object_name: str = None
@@ -33,5 +36,5 @@ class DeleteRecord:
         self.object_type = AcceptedObjectType[self.object_type].system_type
 
     @property
-    def values(self) -> Tuple[str]:
+    def values(self) -> tuple[str]:
         return self.status, AcceptedObjectType(self.object_type).name, self.object_guid, self.object_name

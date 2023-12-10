@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import typer
 
-from cs_tools.settings import _meta_config as meta
-from cs_tools.cli.ux import rich_console, CSToolsGroup
+from cs_tools.cli.ux import CSToolsGroup
 from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, GH_ISSUES
+from cs_tools.settings import _meta_config as meta
 
 app = typer.Typer(
     cls=CSToolsGroup,

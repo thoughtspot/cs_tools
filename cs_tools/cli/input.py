@@ -1,17 +1,19 @@
-from typing import TextIO
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional, TextIO
 import functools as ft
-import threading
 import platform
+import threading
 import time
 
-from rich.console import Console, RenderableType
 from rich.prompt import Confirm, InvalidResponse
-from rich.text import Text
+
+if TYPE_CHECKING:
+    from rich.console import Console, RenderableType
+    from rich.text import Text
 
 
 class ConfirmationPrompt(Confirm):
-
     def __init__(
         self,
         prompt: str = "",
@@ -34,7 +36,7 @@ class ConfirmationPrompt(Confirm):
         with_prompt: bool,
         timeout: float = 60.0,
         default: Any = ...,
-        stream: TextIO = None,
+        stream: Optional[TextIO] = None,
         **passthru,
     ):
         """Semantic convenience method around class creation."""
@@ -72,6 +74,7 @@ class ConfirmationPrompt(Confirm):
         """
         if platform.system() == "Windows":
             import msvcrt
+
             started_at = time.perf_counter()
 
             while (time.perf_counter() - started_at) < self.timeout:
@@ -87,12 +90,12 @@ class ConfirmationPrompt(Confirm):
 
         else:
             import selectors
-            import termios
             import sys
+            import termios
             import tty
 
             SEND_IMMEDIATELY = termios.TCSANOW
-            SEND_AFTER_READ  = termios.TCSADRAIN
+            SEND_AFTER_READ = termios.TCSADRAIN
             old_stdin_parameters = termios.tcgetattr(sys.stdin)
 
             try:

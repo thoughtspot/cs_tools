@@ -1,14 +1,15 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List
 import contextlib
-import subprocess as sp
 import logging
+import os
 import pathlib
 import shutil
 import site
-import venv
+import subprocess as sp
 import sys
-import os
+import venv
 
 log = logging.getLogger(__name__)
 logging.getLogger("venv").setLevel(logging.ERROR)
@@ -45,7 +46,7 @@ class CSToolsVirtualEnvironment:
         return self.venv_path / directory / exec_name
 
     @staticmethod
-    def run(*args, raise_on_failure: bool = True, **kwargs) -> List[str]:
+    def run(*args, raise_on_failure: bool = True, **kwargs) -> list[str]:
         """Run a SHELL command."""
         levels = {"ERROR": log.error, "WARNING": log.warning}
         output = []
@@ -124,11 +125,16 @@ class CSToolsVirtualEnvironment:
             # don't ping for new versions of pip -- it doesn't matter and is noisy
             "--disable-pip-version-check",
             # trust installs from the official python package index and the thoughtspot github repos
-            "--trusted-host", "files.pythonhost.org",
-            "--trusted-host", "pypi.org",
-            "--trusted-host", "pypi.python.org",
-            "--trusted-host", "github.com",
-            "--trusted-host", "codeload.github.com",
+            "--trusted-host",
+            "files.pythonhost.org",
+            "--trusted-host",
+            "pypi.org",
+            "--trusted-host",
+            "pypi.python.org",
+            "--trusted-host",
+            "github.com",
+            "--trusted-host",
+            "codeload.github.com",
         )
 
         if command == "install" and self.find_links is not None:
@@ -336,11 +342,11 @@ class UnixPath:
         )
         return addition
 
-    def get_shell_profiles(self) -> List[pathlib.Path]:
+    def get_shell_profiles(self) -> list[pathlib.Path]:
         profiles = []
 
         # .profile is the base shell profile
-        #  - if it doesn't exist, we'll create it 
+        #  - if it doesn't exist, we'll create it
         base_profile = self.home.joinpath(".profile")
         base_profile.touch(exist_ok=True)
         profiles.append(base_profile)

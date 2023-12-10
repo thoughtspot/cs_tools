@@ -1,22 +1,25 @@
-from typing import List
+from __future__ import annotations
+
 import pathlib
 
-from rich.prompt import Confirm, Prompt
 from rich.markup import escape
+from rich.prompt import Confirm, Prompt
 import pydantic
-import typer
 import rich
 import toml
+import typer
 
-from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.settings import _meta_config as meta, CSToolsConfig
-from cs_tools.updater import cs_tools_venv
-from cs_tools.errors import CSToolsError
-from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsApp
-from cs_tools.cli import _analytics
 from cs_tools import utils
+from cs_tools.cli import _analytics
+from cs_tools.cli.types import SyncerProtocolType
+from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.errors import CSToolsError
+from cs_tools.settings import (
+    CSToolsConfig,
+    _meta_config as meta,
+)
+from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools.updater import cs_tools_venv
 
 app = CSToolsApp(
     name="config",
@@ -51,8 +54,10 @@ def create(
         show_default=False,
     ),
     disable_ssl: bool = typer.Option(False, "--disable_ssl", help="disable SSL verification", show_default=False),
-    disable_sso: bool = typer.Option(False, "--disable_sso", help="disable automatic SAML redirect", show_default=False),
-    syncers: List[str] = typer.Option(
+    disable_sso: bool = typer.Option(
+        False, "--disable_sso", help="disable automatic SAML redirect", show_default=False
+    ),
+    syncers: list[str] = typer.Option(
         None,
         "--syncer",
         metavar="protocol://DEFINITION.toml",
@@ -83,8 +88,12 @@ def create(
     cfg = CSToolsConfig.from_parse_args(config, **args)
     file = cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml"
 
-    if file.exists() and not overwrite and not Confirm.ask(
-        f'\n[yellow]cluster configuration file "{config}" already exists, would ' f"you like to overwrite it?"
+    if (
+        file.exists()
+        and not overwrite
+        and not Confirm.ask(
+            f'\n[yellow]cluster configuration file "{config}" already exists, would ' f"you like to overwrite it?"
+        )
     ):
         raise typer.Exit()
 
@@ -126,14 +135,16 @@ def modify(
     disable_sso: bool = typer.Option(
         None, "--disable_sso/--no-disable_sso", help="disable automatic SAML redirect", show_default=False
     ),
-    syncers: List[str] = typer.Option(
+    syncers: list[str] = typer.Option(
         None,
         "--syncer",
         metavar="protocol://DEFINITION.toml",
         help="default definition for the syncer protocol, may be provided multiple times",
         callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx) for _ in to],
     ),
-    verbose: bool = typer.Option(None, "--verbose/--normal", help="enable verbose logging by default", show_default=False),
+    verbose: bool = typer.Option(
+        None, "--verbose/--normal", help="enable verbose logging by default", show_default=False
+    ),
     is_default: bool = typer.Option(False, "--default", help="set as the default configuration", show_default=False),
 ):
     """
@@ -200,16 +211,21 @@ def delete(config: str = typer.Option(..., help="config file identifier", metava
 
 
 @app.command()
-def check(config: str = typer.Option(..., help="config file identifier", metavar="NAME")):
+def check(ctx: typer.Context, config: str = typer.Option(..., help="config file identifier", metavar="NAME")):
     """
     Check your config file.
     """
     rich_console.log(f"Checking cluster configuration [b blue]{config}")
     cfg = CSToolsConfig.from_command(config)
 
-    rich_console.log(f'Logging into [b]ThoughtSpot[/] as [b blue]{cfg.auth["frontend"].username}')
+    rich_console.log(f"Logging into [b]ThoughtSpot[/] as [b blue]{cfg.thoughtspot.username}")
     ts = ThoughtSpot(cfg)
     ts.login()
+
+    while ctx.parent:
+        ctx.parent.obj.thoughtspot = ts
+        ctx = ctx.parent
+
     ts.logout()
 
     rich_console.log("[secondary]Success[/]!")
@@ -227,7 +243,7 @@ def show(
 
     if not configs:
         raise CSToolsError(
-            error=NotImplementedError("[yellow]no config files found just yet!"),
+            title=NotImplementedError("[yellow]no config files found just yet!"),
             mitigation="Run [blue]cs_tools config create --help[/] for more information",
         )
 
@@ -238,7 +254,7 @@ def show(
             contents = escape(fp.open().read())
         except FileNotFoundError:
             raise CSToolsError(
-                error=f"could not find [blue]{config}",
+                title=f"could not find [blue]{config}",
                 mitigation="Did you spell the cluster configuration name correctly?",
             ) from None
 
@@ -259,10 +275,7 @@ def show(
             contents = "\n".join(new_contents)
 
         text = (
-            f"\n:file_folder: [link={fp.parent}]{path}[/]"
-            f"\n:page_facing_up: {default}"
-            "\n"
-            f"\n[b blue]{contents}"
+            f"\n:file_folder: [link={fp.parent}]{path}[/]" f"\n:page_facing_up: {default}" "\n" f"\n[b blue]{contents}"
         )
 
         renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))

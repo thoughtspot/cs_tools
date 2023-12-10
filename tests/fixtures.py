@@ -1,7 +1,8 @@
-from ward import fixture
-import typer.testing
+from __future__ import annotations
 
+from ward import fixture
 import cs_tools.cli.main as main
+import typer.testing
 
 
 @fixture

@@ -1,9 +1,13 @@
-from typing import Dict, Any
-import pathlib
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 import json
 
+if TYPE_CHECKING:
+    import pathlib
 
-def read_from_possibly_empty(fp: pathlib.Path) -> Dict[str, Any]:
+
+def read_from_possibly_empty(fp: pathlib.Path) -> dict[str, Any]:
     """
     Read a file into memory, casting to dict if empty.
 

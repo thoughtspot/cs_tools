@@ -1,15 +1,19 @@
-from typing import List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import logging
 
-from cs_tools.types import RecordsFormat
 from cs_tools import utils
 
 from . import types
 
+if TYPE_CHECKING:
+    from cs_tools.types import RecordsFormat
+
 log = logging.getLogger(__name__)
 
 
-def _validate_objects_exist(ts, data: List[RecordsFormat]) -> List[types.DeleteRecord]:
+def _validate_objects_exist(ts, data: list[RecordsFormat]) -> list[types.DeleteRecord]:
     """
     /metadata/delete WILL NOT fail on ValueError.
 
@@ -33,14 +37,14 @@ def _validate_objects_exist(ts, data: List[RecordsFormat]) -> List[types.DeleteR
         (liveboards, "PINBOARD_ANSWER_BOOK"),
     )
 
-    for (objects, content_type) in content_to_filter:
+    for objects, content_type in content_to_filter:
         for chunk in utils.chunks(objects, n=25):
             batch = list(chunk)
-            r = ts.api.metadata_list(metadata_type=content_type, fetch_guids=[c.object_guid for c in batch])
+            r = ts.api.v1.metadata_list(metadata_type=content_type, fetch_guids=[c.object_guid for c in batch])
             headers = r.json()["headers"]
 
             for content in batch:
-                header = utils.find(lambda h: h["id"] == content.object_guid, headers)
+                header = utils.find(lambda h, c=content: h["id"] == c.object_guid, headers)
 
                 if header is not None:
                     content.object_name = header["name"]

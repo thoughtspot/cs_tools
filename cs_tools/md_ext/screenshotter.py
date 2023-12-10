@@ -1,26 +1,26 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 from xml.etree.ElementTree import Element, SubElement
-import functools as ft
 import datetime as dt
-import re
+import functools as ft
 import io
 
+from cs_tools.cli.main import _setup_tools, app
+from cs_tools.cli.ux import rich_console
 from markdown.blockprocessors import BlockProcessor
 from markdown.extensions import Extension
-from cs_tools.cli.main import app, _setup_tools
-from cs_tools.cli.ux import rich_console
 import cs_tools
 
 if TYPE_CHECKING:
     from markdown import Markdown
     import typer
 
+
 @ft.cache
 def _setup_cli() -> typer.Typer:
     """ """
-    from cs_tools.cli import _monkey
-    from cs_tools.cli import _config, _tools, _self, _log
+    from cs_tools.cli import _config, _log, _self, _tools
 
     _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
     app.add_typer(_tools.app)
@@ -32,6 +32,7 @@ def _setup_cli() -> typer.Typer:
 
 class CSToolsScreenshotProcesser(BlockProcessor):
     """CSToolsScreenshot block processors."""
+
     BASE_FILEPATH = cs_tools.const.PACKAGE_DIR.parent.resolve() / "docs" / "terminal-screenshots"
     BLOCK_IDENTITY = "~cs~tools"
     CLASS_NAME = "screenshotter"
@@ -46,9 +47,10 @@ class CSToolsScreenshotProcesser(BlockProcessor):
     def make_svg_screenshot(self, command: list[str]) -> None:
         """Save a screenshot for a given command."""
         file = self.BASE_FILEPATH.joinpath(f"{self._path_safe_command(command)}.svg")
-        now = dt.datetime.now()
+        now = dt.datetime.now(tz=dt.timezone.utc)
+        last_file_audit = dt.datetime.fromtimestamp(file.stat().st_mtime, tz=dt.timezone.utc)
 
-        if file.exists() and (now - dt.datetime.fromtimestamp(file.stat().st_mtime)) <= dt.timedelta(minutes=5):
+        if file.exists() and (now - last_file_audit) <= dt.timedelta(minutes=5):
             return
 
         cli = _setup_cli()
@@ -75,7 +77,6 @@ class CSToolsScreenshotProcesser(BlockProcessor):
     def run(self, parent: Element, blocks: list[str]) -> None:
         """Modify the blocks passed in this text blob."""
         for idx, block in enumerate(blocks[:]):
-
             # Process the block that matches our CS TOOLS tag
             if block.startswith(self.BLOCK_IDENTITY):
                 # Pull off the relative path
@@ -89,7 +90,10 @@ class CSToolsScreenshotProcesser(BlockProcessor):
 
                 # Add to the parent
                 pathsafe_command = self._path_safe_command(cs_tools_command)
-                svg = SubElement(parent, f"object class={self.CLASS_NAME} data='{relative_to_base}/terminal-screenshots/{pathsafe_command}.svg'")
+                svg = SubElement(
+                    parent,
+                    f"object class={self.CLASS_NAME} data='{relative_to_base}/terminal-screenshots/{pathsafe_command}.svg'",  # noqa: E501
+                )
 
                 # This is recursive, hence why it looks weird (assigning new parent as this child element)
                 self.parser.parseBlocks(parent=svg, blocks=[])

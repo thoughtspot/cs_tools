@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, Optional, Union
 import logging
 
 from pydantic import validate_arguments
 
+from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import MetadataCategory, RecordsFormat
-from cs_tools.api import _utils
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
@@ -22,10 +22,10 @@ class AnswerMiddleware:
         self.ts = ts
 
     @validate_arguments
-    def all(
+    def all(  # noqa: A003
         self,
         *,
-        tags: Union[str, List[str]] = None,
+        tags: Optional[Union[str, list[str]]] = None,
         category: MetadataCategory = MetadataCategory.all,
         hidden: bool = False,
         auto_created: bool = False,
@@ -60,7 +60,7 @@ class AnswerMiddleware:
         answers = []
 
         while True:
-            r = self.ts.api.metadata_list(
+            r = self.ts.api.v1.metadata_list(
                 metadata_type="QUESTION_ANSWER_BOOK",
                 category=category,
                 tag_names=tags or _utils.UNDEFINED,

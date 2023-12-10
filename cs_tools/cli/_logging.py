@@ -1,9 +1,11 @@
-import logging.config
+from __future__ import annotations
+
 import datetime as dt
 import logging
+import logging.config
 
-from cs_tools.updater import cs_tools_venv
 from cs_tools.cli.ux import rich_console
+from cs_tools.updater import cs_tools_venv
 
 
 def _rotate_logs(n_files_to_keep: int) -> None:
@@ -64,7 +66,7 @@ def _setup_logging() -> None:
 
     logs_dir = cs_tools_venv.app_dir.joinpath(".logs")
     logs_dir.mkdir(parents=True, exist_ok=True)
-    now = dt.datetime.now().strftime("%Y-%m-%dT%H_%M_%S")
+    now = dt.datetime.now(tz=dt.timezone.utc).strftime("%Y-%m-%dT%H_%M_%S")
 
     config["root"]["handlers"].append("to_file")
     config["handlers"]["to_file"] = {

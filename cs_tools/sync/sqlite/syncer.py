@@ -1,9 +1,13 @@
-from typing import List, Dict, Any
-import pathlib
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 import logging
 
 from pydantic.dataclasses import dataclass
 import sqlalchemy as sa
+
+if TYPE_CHECKING:
+    import pathlib
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +47,7 @@ class SQLite:
     def name(self) -> str:
         return "sqlite"
 
-    def load(self, table: str) -> List[Dict[str, Any]]:
+    def load(self, table: str) -> list[dict[str, Any]]:
         t = self.metadata.tables[table]
 
         with self.cnxn.begin_nested():
@@ -51,7 +55,7 @@ class SQLite:
 
         return [dict(_) for _ in r]
 
-    def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, table: str, *, data: list[dict[str, Any]]) -> None:
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return

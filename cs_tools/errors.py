@@ -1,7 +1,8 @@
-from typing import Any
+from __future__ import annotations
 
-from rich.panel import Panel
-from rich.text import Text
+from typing import Optional
+
+import rich
 
 
 class CSToolsError(Exception):
@@ -11,100 +12,108 @@ class CSToolsError(Exception):
     This can be caught to handle any exception raised from this library.
     """
 
-    cli_msg_template = "[b red]{error}[/]"
+    def __init_subclass__(cls):
+        super().__init_subclass__()
 
-    def __init__(self, error: str = None, reason: str = None, mitigation: str = None, **ctx: Any):
-        self.error = error or self.__class__.error
-        self.reason = reason or getattr(self.__class__, "reason", "")
-        self.mitigation = mitigation or getattr(self.__class__, "mitigation", "")
-        self.extra_context = ctx
+        if not hasattr(cls, "title"):
+            raise RuntimeError("{cls} must supply atleast a .title !")
 
-    def __rich__(self) -> str:
-        m = ""
+    def __init__(
+        self, title: Optional[str] = None, reason: Optional[str] = None, mitigation: Optional[str] = None, **error_info
+    ):
+        self.title = title if title is not None else self.__class__.title
+        self.reason = reason if reason is not None else getattr(self.__class__, "reason", None)
+        self.mitigation = mitigation if mitigation is not None else getattr(self.__class__, "mitigation", None)
+        self.error_info = error_info
 
-        if self.__dict__["reason"]:
-            m += f"\n[white]{self.__dict__['reason']}[/]"
+    def __str__(self) -> str:
+        message = "{self.__class__.__name__}: {self.title}"
 
-        if self.__dict__["mitigation"]:
-            m += (
-                f"\n"
-                f"\n[b green]Mitigation[/]"
-                f"\n[b yellow]{self.__dict__['mitigation']}[/]"
-            )
+        if self.reason is not None:
+            message += " - {self.reason}"
 
-        text = Panel(
-            Text.from_markup(m.format(**self.extra_context)),
+        if self.mitigation is not None:
+            message += " - {self.mitigation}"
+
+        return message.format(self=self, **self.error_info)
+
+    def __rich__(self) -> rich.console.RenderableType:
+        error_panel_content = ""
+
+        if self.reason is not None:
+            error_panel_content += "[b white]{self.reason}[/]"
+
+        if self.mitigation is not None:
+            error_panel_content += "\n" "\n[b green]Mitigation[/]" "\n[b yellow]{self.mitigation}[/]"
+
+        panel = rich.panel.Panel(
+            # Double string.format ... for some unknown reason.
+            error_panel_content.format(self=self, **self.error_info).format(self=self, **self.error_info),
             border_style="b red",
-            title=self.error.format(**self.extra_context),
+            title=self.title.format(**self.error_info),
             expand=False,
         )
 
-        return text
+        return panel
 
-    def __str__(self) -> str:
-        return self.error
+
+class ThoughtSpotUnreachable(CSToolsError):
+    """Raised when ThoughtSpot can't be seen from the local machine."""
+
+    title = "Can't connect to your ThoughtSpot cluster."
 
 
 class ThoughtSpotUnavailable(CSToolsError):
-    """
-    Raised when ThoughtSpot can't be reached.
-    """
+    """Raised when a ThoughtSpot session can't be established."""
 
-    error = "Your ThoughtSpot cluster is currently unavailable."
+    title = "Your ThoughtSpot cluster is currently unavailable."
+
+
+class AuthenticationError(CSToolsError):
+    """Raised when incorrect authorization details are supplied."""
+
+    title = "Authentication failed for [b blue]{config.thoughtspot.username}"
+    reason = "\nCS Tools config: [b blue]{config.name}[/]" "\n    Incident ID: [b blue]{incident_id}[/]"
+    mitigation = (
+        "\n1/ Check if your password is correct." "\n2/ Determine if your usename ends with a whitelisted email domain."
+    )
 
 
 class TSLoadServiceUnreachable(CSToolsError):
-    """
-    Raised when the etl_http_server service cannot be reached.
-    """
+    """Raised when the etl_http_server service cannot be reached."""
 
-    error = "The remote tsload service ([blue]etl_httpserver[/]) is unreachable."
+    title = "The tsload service is unreachable."
     reason = "HTTP Error: {http_error.response.status_code} {http_error.response.reason_phrase}"
     mitigation = (
-        "Ensure your cluster is set up for allow remove data loads"
+        "Ensure your cluster is set up for allow remote data loads"
         "\n  https://docs.thoughtspot.com/software/latest/tsload-connector#_setting_up_your_cluster"
         "\n\n"
-        "Heres the tsload command for the file you tried to load:"
+        "If you cannot enable it, here's the tsload command for the file you tried to load:"
         "\n\n"
         "{tsload_command}"
     )
 
 
 class ContentDoesNotExist(CSToolsError):
-    """
-    Raised when ThoughtSpot can't find content by this name or guid.
-    """
+    """Raised when ThoughtSpot can't find content by this name or guid."""
 
-    error = "No {type} found."
+    title = "No {type} found."
 
 
 class AmbiguousContentError(CSToolsError):
-    """
-    Raised when ThoughtSpot can't determine an exact content match.
-    """
+    """Raised when ThoughtSpot can't determine an exact content match."""
 
-    error = "Multiple {type}s found with the name [blue]{name}."
+    title = "Multiple {type}s found with the name [blue]{name}."
 
 
 class InsufficientPrivileges(CSToolsError):
-    """
-    Raised when the User cannot perform an action.
-    """
+    """Raised when the User cannot perform an action."""
 
-    error = "User [blue]{user.display_name}[/] does not have the correct privileges to " "access {service}."
+    title = "User [b blue]{user.display_name}[/] does not have enough privilege to access {service}."
     reason = (
-        "{user.display_name} requires the {required_privileges} privilege."
+        "{user.display_name} requires the {required_privileges} privilege(s)."
         "\nPlease consult with your ThoughtSpot Administrator."
     )
-
-
-class AuthenticationError(CSToolsError):
-    """
-    Raised when the ThoughtSpot platform is unreachable.
-    """
-
-    error = "Authentication failed for [blue]{config_username}"
-    reason = "{debug}" "\n" "\nCS Tools config: {config_name}" "\n    Incident ID: {incident_id}"
 
 
 #
@@ -113,19 +122,15 @@ class AuthenticationError(CSToolsError):
 
 
 class SyncerProtocolError(CSToolsError):
-    """
-    Raised when a Custom Syncer breaks the contract.
-    """
+    """Raised when a Custom Syncer breaks the contract."""
 
-    error = "Custom Syncer could not be created."
+    title = "Custom Syncer could not be created."
 
 
 class SyncerError(CSToolsError):
-    """
-    Raised when a Syncer isn't defined correctly.
-    """
+    """Raised when a Syncer isn't defined correctly."""
 
-    error = "Your {proto} syncer encountered an error."
+    title = "Your {proto} syncer encountered an error."
 
 
 #
@@ -134,4 +139,4 @@ class SyncerError(CSToolsError):
 
 
 class ConfigDoesNotExist(CSToolsError):
-    error = "Cluster configuration [blue]{name}[/] does not exist."
+    title = "Cluster configuration [b blue]{name}[/] does not exist."

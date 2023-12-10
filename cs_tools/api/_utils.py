@@ -6,10 +6,11 @@ using the cs_tools.api.middlewares or consuming the cs_tools.api._rest_api_v1
 directly.
 """
 from __future__ import annotations
-from typing import Any, Dict, List, Union
-import uuid
-import json
+
+from typing import Any, Union
 import copy
+import json
+import uuid
 
 UNDEFINED = object()
 SYSTEM_USERS = {"system": "System User", "su": "Administrator Super-User", "tsadmin": "Administrator"}
@@ -47,7 +48,7 @@ def scrub_undefined(inp: Any, *, null: Union[UNDEFINED, None]) -> Any:
     return inp
 
 
-def scrub_sensitive(request_keywords: Dict[str, Any]) -> Dict[str, Any]:
+def scrub_sensitive(request_keywords: dict[str, Any]) -> dict[str, Any]:
     """
     Remove sensitive data for logging. It's a poor man's logging.Filter.
 
@@ -72,7 +73,7 @@ def scrub_sensitive(request_keywords: Dict[str, Any]) -> Dict[str, Any]:
     return secure
 
 
-def dumps(inp: Union[List[Any], type[UNDEFINED]]) -> Union[str, type[UNDEFINED]]:
+def dumps(inp: Union[list[Any], type[UNDEFINED]]) -> Union[str, type[UNDEFINED]]:
     """
     json.dumps, but passthru our UNDEFINED sentinel.
     """

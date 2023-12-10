@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 from traceback import format_exception
-from typing import Any, Dict
-import datetime as dt
+from typing import Any
 import contextlib
+import datetime as dt
 import logging
 import random
 import sys
@@ -10,20 +11,20 @@ import sys
 from rich.align import Align
 from rich.panel import Panel
 from rich.text import Text
-import sqlalchemy as sa
 import click
-import typer
 import rich
+import sqlalchemy as sa
+import typer
 
-from cs_tools.programmatic import get_cs_tool
-from cs_tools.cli._logging import _setup_logging
-from cs_tools.settings import _meta_config as meta
-from cs_tools._version import __version__
-from cs_tools.updater import cs_tools_venv
-from cs_tools.cli.ux import rich_console, CSToolsApp
-from cs_tools.errors import CSToolsError
-from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, TOOLS_DIR, GH_ISSUES
 from cs_tools import utils
+from cs_tools._version import __version__
+from cs_tools.cli._logging import _setup_logging
+from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, GH_ISSUES, TOOLS_DIR
+from cs_tools.errors import CSToolsError
+from cs_tools.programmatic import get_cs_tool
+from cs_tools.settings import _meta_config as meta
+from cs_tools.updater import cs_tools_venv
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(
@@ -43,15 +44,6 @@ app = CSToolsApp(
     :floppy_disk: [red]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
     """,
     add_completion=False,
-    context_settings={
-        # global settings
-        "help_option_names": ["--help", "-h"],
-        "obj": utils.State(),
-        # allow responsive console design
-        "max_content_width": rich_console.width,
-        # allow case-insensitive commands
-        "token_normalize_func": lambda x: x.lower(),
-    },
     epilog=(
         f":bookmark: v{__version__} "
         f":books: [cyan][link={DOCS_BASE_URL}]Documentation[/] "
@@ -70,9 +62,7 @@ app = CSToolsApp(
 def main(version: bool = typer.Option(False, "--version", help="Show the version and exit.")):
     if version:
         rich_console.print(
-            "\n",
-            Panel.fit(Text(__version__, justify="center"), title="CS Tools", padding=(1, 0, 1, 0)),
-            "\n"
+            "\n", Panel.fit(Text(__version__, justify="center"), title="CS Tools", padding=(1, 0, 1, 0)), "\n"
         )
         raise typer.Exit(0)
 
@@ -84,7 +74,7 @@ def _ensure_directories() -> None:
     venv.app_dir.joinpath(".logs").mkdir(parents=True, exist_ok=True)
 
 
-def _setup_tools(tools_app: typer.Typer, ctx_settings: Dict[str, Any]) -> None:
+def _setup_tools(tools_app: typer.Typer, ctx_settings: dict[str, Any]) -> None:
     ctx_settings["obj"].tools = {}
 
     for path in TOOLS_DIR.iterdir():
@@ -113,13 +103,9 @@ def run() -> int:
     """
     Entrypoint into cs_tools.
     """
-    from cs_tools.cli import _analytics
-    
     # monkey-patch the typer implementation
-    from cs_tools.cli import _monkey
-
     # import all our tools
-    from cs_tools.cli import _config, _tools, _self, _log
+    from cs_tools.cli import _analytics, _config, _log, _self, _tools
 
     # first thing we do is request the database, this allows us to perform a migration if necessary
     db = _analytics.get_database()
@@ -127,7 +113,7 @@ def run() -> int:
     this_run_data = {
         "envt_uuid": meta.install_uuid,
         "cs_tools_version": __version__,
-        "start_dt": dt.datetime.utcnow(),
+        "start_dt": dt.datetime.now(tz=dt.timezone.utc),
         "os_args": " ".join(["cs_tools", *sys.argv[1:]]),
     }
 
@@ -180,8 +166,14 @@ def run() -> int:
         github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
         suprised_emoji = random.choice(
             (
-                ":cold_sweat:", ":astonished:", ":anguished:", ":person_shrugging:", ":sweat:", ":scream:",
-                ":sweat_smile:", ":nerd_face:",
+                ":cold_sweat:",
+                ":astonished:",
+                ":anguished:",
+                ":person_shrugging:",
+                ":sweat:",
+                ":scream:",
+                ":sweat_smile:",
+                ":nerd_face:",
             ),
         )
 
@@ -205,17 +197,18 @@ def run() -> int:
         )
 
     this_run_data["is_success"] = return_code in (0, None)
-    this_run_data["end_dt"] = dt.datetime.utcnow()
-    this_run_data["config_cluster_url"] = app.info.context_settings["obj"]
-    this_run = _analytics.CommandExecution(**this_run_data)
+    this_run_data["end_dt"] = dt.datetime.now(tz=dt.timezone.utc)
+    this_run_data["cli_context"] = app.info.context_settings["obj"]
+    this_run = _analytics.CommandExecution.validated_init(**this_run_data)
 
     # Add the analytics to the local database
-    try:
-        with db.begin() as transaction:
-            stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
-            transaction.execute(stmt)
+    if not utils.determine_editable_install():
+        try:
+            with db.begin() as transaction:
+                stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
+                transaction.execute(stmt)
 
-    except sa.exc.OperationalError:
-        log.debug("Error inserting into command execution", exc_info=True)
+        except sa.exc.OperationalError:
+            log.debug("Error inserting into command execution", exc_info=True)
 
     return return_code

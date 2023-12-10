@@ -1,13 +1,17 @@
-from typing import TextIO, List, Dict, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TextIO
 import contextlib
-import zipfile
-import pathlib
-import logging
 import csv
+import logging
+import zipfile
 
 from pydantic.dataclasses import dataclass
 
 from . import util
+
+if TYPE_CHECKING:
+    import pathlib
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +40,7 @@ class CSV:
             else:
                 self.directory.mkdir(parents=True, exist_ok=True)
 
-    def dialect_params(self) -> Dict[str, Any]:
+    def dialect_params(self) -> dict[str, Any]:
         extra = {
             "delimiter": self.delimiter,
             "escapechar": self.escape_character,
@@ -74,14 +78,14 @@ class CSV:
     def name(self) -> str:
         return "csv"
 
-    def load(self, directive: str) -> List[Dict[str, Any]]:
+    def load(self, directive: str) -> list[dict[str, Any]]:
         with self.file_reference(f"{directive}.csv", mode="r") as f:
             reader = csv.DictReader(f, **self.dialect_params())
             data = list(reader)
 
         return data
 
-    def dump(self, directive: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, directive: str, *, data: list[dict[str, Any]]) -> None:
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return

@@ -1,13 +1,16 @@
-import pathlib
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import sys
 
-import typer
 import rich
+import typer
 
-from cs_tools.cli.dependencies.thoughtspot import thoughtspot_nologin, thoughtspot
-from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.dependencies.thoughtspot import thoughtspot, thoughtspot_nologin
+from cs_tools.cli.ux import CSToolsApp, rich_console
 
+if TYPE_CHECKING:
+    import pathlib
 
 app = CSToolsApp(
     help="""

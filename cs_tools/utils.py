@@ -1,24 +1,25 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
-from typing import Optional, Callable, Any, Dict
-from base64 import urlsafe_b64encode as b64e
-from base64 import urlsafe_b64decode as b64d
+
+from base64 import (
+    urlsafe_b64decode as b64d,
+    urlsafe_b64encode as b64e,
+)
+from typing import Any, Callable, Optional, Union
 import collections.abc
-import threading
-import itertools as it
 import datetime as dt
 import getpass
-import logging
-import zlib
-import json
 import io
+import itertools as it
+import json
+import logging
+import pathlib
+import site
+import threading
+import zlib
 
 import rich
 
-from cs_tools._compat import Literal
-
-if TYPE_CHECKING:
-    import pathlib
+import cs_tools
 
 log = logging.getLogger(__name__)
 
@@ -128,9 +129,9 @@ class State:
     An object that can be used to store arbitrary state.
     """
 
-    _state: Dict[str, Any]
+    _state: dict[str, Any]
 
-    def __init__(self, state: Optional[Dict[str, Any]] = None):
+    def __init__(self, state: Optional[dict[str, Any]] = None):
         if state is None:
             state = {}
 
@@ -144,7 +145,7 @@ class State:
             return self._state[key]
         except KeyError:
             cls_name = self.__class__.__name__
-            raise AttributeError(f"'{cls_name}' object has no attribute '{key}'")
+            raise AttributeError(f"'{cls_name}' object has no attribute '{key}'") from None
 
     def __delattr__(self, key: Any) -> None:
         del self._state[key]
@@ -154,7 +155,7 @@ def svg_screenshot(
     *renderables: tuple[rich.console.RenderableType],
     path: pathlib.Path,
     console: rich.console.Console = None,
-    width: int | Literal["fit"] | None = None,
+    width: Optional[Union[int, str]] = None,
     centered: bool = False,
     **svg_kwargs,
 ) -> None:
@@ -210,6 +211,7 @@ def svg_screenshot(
 
 class DateTimeEncoder(json.JSONEncoder):
     """ """
+
     def default(self, object_: Any) -> Any:
         if isinstance(object_, (dt.date, dt.datetime)):
             return object_.isoformat()
@@ -226,3 +228,15 @@ class ExceptedThread(threading.Thread):
 
         except Exception:
             log.debug(f"Something went wrong in {self}", exc_info=True)
+
+
+def determine_editable_install() -> bool:
+    """Determine if the current CS Tools context is an editable install."""
+    for site_directory in site.getsitepackages():
+        for path in pathlib.Path(site_directory).iterdir():
+            if not path.is_file():
+                continue
+
+            if cs_tools.__package__ in path.as_posix() and "__editable__" in path.as_posix():
+                return True
+    return False

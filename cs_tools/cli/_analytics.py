@@ -4,29 +4,30 @@ Built-in Analytics to CS Tools.
 This file localizes all the analytics activities that CS Tools performs.
 """
 from __future__ import annotations
-from typing import Any, Dict, Optional, Union
-import sysconfig
+
+from typing import Any, Optional
 import datetime as dt
-import platform
-import logging
-import shutil
-import uuid
 import json
+import logging
 import os
+import platform
+import shutil
+import sysconfig
 
 from awesomeversion import AwesomeVersion
-from rich.prompt import Prompt
 from rich.panel import Panel
-from sqlmodel import SQLModel, Field
-from pydantic import validator
-import sqlalchemy as sa
+from rich.prompt import Prompt
+from sqlmodel import Field, SQLModel
 import httpx
+import pydantic
+import sqlalchemy as sa
 
-from cs_tools.updater import cs_tools_venv
+from cs_tools import utils, validators
 from cs_tools._version import __version__
-from cs_tools.settings import _meta_config as meta
 from cs_tools.cli.ux import rich_console
-from cs_tools import utils
+from cs_tools.datastructures import ValidatedSQLModel
+from cs_tools.settings import _meta_config as meta
+from cs_tools.updater import cs_tools_venv
 
 log = logging.getLogger(__name__)
 
@@ -134,43 +135,54 @@ def maybe_send_analytics_data() -> None:
     if analytics_checkpoints == []:
         log.debug("No analytics checkpoint data to send.")
     elif all(analytics_checkpoints):
-        meta.last_analytics_checkpoint = dt.datetime.utcnow()
+        meta.last_analytics_checkpoint = dt.datetime.now(tz=dt.timezone.utc)
         meta.save()
         log.debug("Sent analytics to CS Tools!")
     else:
         log.debug("Failed to send analytics.")
 
 
-class RuntimeEnvironment(SQLModel, table=True):
+class RuntimeEnvironment(ValidatedSQLModel, table=True):
     """
     Represent the environment that CS Tools lives in.
 
     This is an default-anonymous database record of the environment under which CS Tools
     executes commands in.
     """
+
     __tablename__ = "runtime_environment"
 
     envt_uuid: str = Field(max_length=32, primary_key=True)
     cs_tools_version: str = Field(primary_key=True)
-    capture_dt: dt.datetime = Field(default_factory=dt.datetime.utcnow)
+    capture_dt: dt.datetime = dt.datetime.now(tz=dt.timezone.utc)
     operating_system: str = Field(default_factory=platform.system)
     is_thoughtspot_cluster: bool = Field(default_factory=lambda: bool(shutil.which("tscli")))
     python_platform_tag: str = Field(default_factory=sysconfig.get_platform)
     python_version: str = Field(default_factory=platform.python_version)
 
-    @validator("envt_uuid", pre=True)
-    def _uuid_to_hex_string(cls, value: Union[uuid.UUID, str]) -> str:
-        if isinstance(value, uuid.UUID):
-            return value.hex
-        return value
+    @pydantic.field_validator("envt_uuid", mode="before")
+    @classmethod
+    def check_value_uuid4(cls, value: Any) -> str:
+        return validators.stringified_uuid4(value)
+
+    @pydantic.field_validator("cs_tools_version", "python_version", mode="before")
+    @classmethod
+    def check_valid_version(cls, value: Any) -> str:
+        return validators.stringified_version(value)
+
+    @pydantic.field_validator("capture_dt", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        return validators.ensure_datetime_is_utc(value)
 
 
-class CommandExecution(SQLModel, table=True):
+class CommandExecution(ValidatedSQLModel, table=True):
     """
     Record the execution context.
 
     This is an default-anonymous database record of the CS Tools command executed.
     """
+
     __tablename__ = "command_execution"
 
     envt_uuid: str = Field(max_length=32, primary_key=True)
@@ -185,43 +197,38 @@ class CommandExecution(SQLModel, table=True):
     is_known_error: Optional[bool] = None
     traceback: Optional[str] = None
 
-    @validator("envt_uuid", pre=True)
-    def _uuid_to_hex_string(cls, value: Union[uuid.UUID, str]) -> str:
-        if isinstance(value, uuid.UUID):
-            return value.hex
-        return value
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def check_input_data_structure(cls, data: Any) -> dict[str, Any]:
+        if "cli_context" in data:
+            _, _, tool_name_and_args = data["os_args"].partition(" tools ")
 
-    @validator("tool_name", always=True)
-    def _extract_tool_name(cls, value: Any, values: Dict[str, Any]) -> Optional[str]:
-        """Here, `value` will always be None."""
-        _, _, tools = values["os_args"].partition(" tools ")
+            if tool_name_and_args:
+                data["tool_name"], *rest = tool_name_and_args.split(" ")
 
-        if tools:
-            tool_name, *_ = tools.split(" ")
-            return tool_name
+                if rest:
+                    data["command_name"] = rest[1]
 
-        return None
+            if meta.record_thoughtspot_url and (ts := getattr(data["cli_context"], "thoughtspot", None)):
+                data["config_cluster_url"] = ts.session_context.thoughtspot.url
 
-    @validator("command_name", always=True)
-    def _extract_command_name(cls, value: Any, values: Dict[str, Any]) -> Optional[str]:
-        """Here, `value` will always be None."""
-        _, _, tools = values["os_args"].partition(" tools ")
+        return data
 
-        if len(tools.split(" ")) > 1:
-            _, command_name, *_ = tools.split(" ")
-            return command_name
+    @pydantic.field_validator("envt_uuid", mode="plain")
+    @classmethod
+    def check_value_uuid4(cls, value: Any) -> str:
+        return validators.stringified_uuid4.func(value)
 
-        return None
+    @pydantic.field_validator("cs_tools_version", mode="before")
+    @classmethod
+    def check_valid_version(cls, value: Any) -> str:
+        return validators.stringified_version.func(value)
 
-    @validator("config_cluster_url", pre=True)
-    def _extract_config_cluster_url(cls, value: Any) -> Optional[str]:
-        if isinstance(value, utils.State) and hasattr(value, "thoughtspot"):
-            try:
-                return value.thoughtspot.platform.url
-            except RuntimeError:
-                return None
+    @pydantic.field_validator("start_dt", "end_dt", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        return validators.ensure_datetime_is_utc.func(value)
 
-        if isinstance(value, str):
-            return value
-
-        return None
+    @pydantic.field_validator("config_cluster_url", mode="before")
+    def check_valid_url_format(cls, value: Any) -> str:
+        return validators.stringified_url_format.func(value)

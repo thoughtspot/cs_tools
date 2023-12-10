@@ -1,14 +1,19 @@
-from typing import List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 import importlib
-import pathlib
-import types
 
 from pydantic.dataclasses import dataclass
 from typer.testing import CliRunner, Result
-import typer
 
-from cs_tools.cli.ux import WARNING_PRIVATE, WARNING_BETA
-from cs_tools.const import PACKAGE_DIR, GH_ISSUES
+from cs_tools.cli.ux import WARNING_BETA, WARNING_PRIVATE
+from cs_tools.const import GH_ISSUES, PACKAGE_DIR
+
+if TYPE_CHECKING:
+    import pathlib
+    import types
+
+    import typer
 
 
 @dataclass
@@ -130,7 +135,7 @@ class CSTool:
         """
         return self.lib.__version__
 
-    def invoke(self, command: str, args: List[str] = None) -> Result:
+    def invoke(self, command: str, args: Optional[list[str]] = None) -> Result:
         """
         Run a command in this tool's app.
         """

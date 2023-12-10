@@ -1,13 +1,17 @@
-from typing import List, Dict, Any
-import pathlib
-import logging
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 import enum
+import logging
 
 from pydantic.dataclasses import dataclass
 import gspread
 
-from .const import GOOGLE_SHEET_DEFAULT_SIZE
 from . import sanitize
+from .const import GOOGLE_SHEET_DEFAULT_SIZE
+
+if TYPE_CHECKING:
+    import pathlib
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +66,7 @@ class GoogleSheets:
     def name(self) -> str:
         return "gsheets"
 
-    def load(self, tab_name: str) -> List[Dict[str, Any]]:
+    def load(self, tab_name: str) -> list[dict[str, Any]]:
         t = self._get_or_create_tab(tab_name)
         data = t.get_all_records()
 
@@ -71,7 +75,7 @@ class GoogleSheets:
 
         return data
 
-    def dump(self, tab_name: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, tab_name: str, *, data: list[dict[str, Any]]) -> None:
         t = self._get_or_create_tab(tab_name)
 
         if not data:

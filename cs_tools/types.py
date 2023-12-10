@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, List, Dict, Optional
+from typing import Any, Optional
 import logging
+import re
 import typing
 import uuid
-import re
 
-from thoughtspot_tml.types import ConnectionMetadata, TMLObject
 from awesomeversion import AwesomeVersion
+from pydantic import ConfigDict
 import pendulum
 import pydantic
 
@@ -55,7 +55,7 @@ class MetadataObjectSubtype(StrEnum):
 
 
 class MetadataCategory(StrEnum):
-    all = "ALL"
+    all = "ALL"  # noqa: A003
     my = "MY"
     favorite = "FAVORITE"
     requested = "REQUESTED"
@@ -151,13 +151,16 @@ class SecurityPrincipal(TypedDict):
 # REST API V2 input parameter types
 # ======================================================================================================================
 
+
 class DeployType(StrEnum):
     delta = "DELTA"
     full = "FULL"
 
+
 class DeployPolicy(StrEnum):
     all_or_none = "ALL_OR_NONE"
     partial = "PARTIAL"
+
 
 # ======================================================================================================================
 # CS Tools Middleware types
@@ -180,7 +183,7 @@ class TMLSupportedContent(StrEnum):
         return cls[friendly_type]
 
     @staticmethod
-    def type_subtype_to_tml_type(type: str, subtype: str = "") -> TMLSupportedContent:
+    def type_subtype_to_tml_type(metadata_type: str, subtype: str = "") -> TMLSupportedContent:
         """
         Convert a type and subtype to a TMLSupportedContent enum value.  Both type and subtype must be correct.
         :param type: The type of object to convert, e.g. LOGICAL_TABLE
@@ -197,12 +200,14 @@ class TMLSupportedContent(StrEnum):
             ("QUESTION_ANSWER_BOOK", ""): TMLSupportedContent.answer,
         }
 
-        tml_type = mappings.get((type, subtype))
+        tml_type = mappings.get((metadata_type, subtype))
         if not tml_type:
-            raise CSToolsError(f"Unknown type/subtype combination: {type}/{subtype}",
-                               mitigation="Check that the type and subtype are correct.")
+            raise CSToolsError(
+                title=f"Unknown type/subtype combination: {metadata_type}/{subtype}",
+                mitigation="Check that the type and subtype are correct.",
+            )
 
-        return mappings[(type, subtype)]
+        return mappings[(metadata_type, subtype)]
 
 
 class TMLSupportedContentSubtype(StrEnum):
@@ -221,13 +226,12 @@ class TMLSupportedContentSubtype(StrEnum):
         return cls[friendly_type]
 
 
-
 # ======================================================================================================================
 # CS Tools Middleware output types
 # ======================================================================================================================
 
 
-RecordsFormat = List[Dict[str, Any]]
+RecordsFormat = list[dict[str, Any]]
 # records are typically a metadata header fragment, but not always.
 #
 # [
@@ -243,17 +247,13 @@ RecordsFormat = List[Dict[str, Any]]
 
 
 class TMLAPIResponse(pydantic.BaseModel):
-    guid: Optional[GUID]
+    guid: Optional[GUID] = None
     metadata_object_type: MetadataObjectType
     tml_type_name: str
     name: str
     status_code: str
-    error_messages: List[str] = Optional[List[str]]
+    error_messages: list[str] = Optional[list[str]]
     _full_response: Any = None
-
-    # pydantic model configuration
-    class Config:
-        underscore_attrs_are_private = True
 
     @pydantic.validator("status_code", pre=True)
     def _one_of(cls, status: str) -> str:
@@ -266,7 +266,7 @@ class TMLAPIResponse(pydantic.BaseModel):
         return status.upper()
 
     @pydantic.validator("error_messages", pre=True)
-    def _parse_errors(cls, error_string: str) -> List[str]:
+    def _parse_errors(cls, error_string: str) -> list[str]:
         if error_string is None:
             return []
 
@@ -326,7 +326,7 @@ class ThoughtSpotPlatform(pydantic.BaseModel):
         return timezone
 
     @classmethod
-    def from_api_v1_session_info(cls, info: Dict[str, Any]) -> ThoughtSpotPlatform:
+    def from_api_v1_session_info(cls, info: dict[str, Any]) -> ThoughtSpotPlatform:
         config_info = info.get("configInfo")
 
         data = {
@@ -349,28 +349,8 @@ class ThoughtSpotPlatform(pydantic.BaseModel):
 
         return cls(**data)
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class LoggedInUser(pydantic.BaseModel):
-    guid: GUID
-    username: str
-    display_name: str
-    email: str
-    privileges: List[GroupPrivilege]
-
-    @classmethod
-    def from_api_v1_session_info(cls, info: Dict[str, Any]) -> LoggedInUser:
-        data = {
-            "guid": info["userGUID"],
-            "username": info["userName"],
-            "display_name": info["userDisplayName"],
-            "email": info["userEmail"],
-            "privileges": info["privileges"],
-        }
-
-        return cls(**data)
-
-    class Config:
-        arbitrary_types_allowed = True
+    a: int = 0

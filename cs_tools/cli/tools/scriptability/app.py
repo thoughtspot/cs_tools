@@ -7,26 +7,30 @@
 #
 from __future__ import annotations
 
-import logging
-import pathlib
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Optional
+import logging
 
-import typer
 from thoughtspot_tml import Connection
+import typer
 
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
-from cs_tools.cli.ux import CSToolsApp
-from cs_tools.cli.ux import rich_console
+from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.types import GUID, TMLImportPolicy
+
 from . import layout
 from ._compare import compare
 from ._export import export
 from ._import import to_import
 from ._mapping import app as mappingApp
 from .tmlfs import app as tmlfsApp
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    import pathlib
+
+    from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(
@@ -75,7 +79,7 @@ class MetadataColumn:
         )
         return row
 
-    def dict(self) -> Dict[str, str]:
+    def dict(self) -> dict[str, str]:  # noqa: A003
         row = {
             "database": self.database,
             "schema": self.schema,
@@ -90,15 +94,15 @@ class MetadataColumn:
 
 @app.command(dependencies=[thoughtspot])
 def connection_check(
-        ctx: typer.Context,
-        org: str = typer.Option(None, help="organization to use"),
-        connection_guid: GUID = typer.Option(..., help="connection GUID"),
-        syncer: DSyncer = typer.Option(
-            None,
-            custom_type=SyncerProtocolType(),
-            help="protocol and path for options to pass to the syncer",
-            rich_help_panel="Syncer Options",
-        )
+    ctx: typer.Context,
+    org: str = typer.Option(None, help="organization to use"),
+    connection_guid: GUID = typer.Option(..., help="connection GUID"),
+    syncer: DSyncer = typer.Option(
+        None,
+        custom_type=SyncerProtocolType(),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
 ):
     """
     Check a Connection's metadata against the external data platform.
@@ -108,7 +112,7 @@ def connection_check(
     if org is not None:
         ts.org.switch(org)
 
-    r = ts.api.connection_export(guid=connection_guid)
+    r = ts.api.v1.connection_export(guid=connection_guid)
     tml = Connection.loads(r.text)
     tml.guid = connection_guid
 
@@ -116,20 +120,17 @@ def connection_check(
         {
             "databaseName": table.external_table.db_name,
             "schemaName": table.external_table.schema_name,
-            "tableName": table.external_table.table_name
+            "tableName": table.external_table.table_name,
         }
         for table in tml.connection.table
     ]
 
-    r = ts.api.metadata_details(metadata_type="DATA_SOURCE", guids=[tml.guid])
+    r = ts.api.v1.metadata_details(metadata_type="DATA_SOURCE", guids=[tml.guid])
     d = r.json()["storables"][0]
     i = tml.to_rest_api_v1_metadata()
 
-    r = ts.api.connection_fetch_live_columns(
-        guid=tml.guid,
-        tables=external_tables,
-        config=i["configuration"],
-        authentication_type=d["authenticationType"]
+    r = ts.api.v1.connection_fetch_live_columns(
+        guid=tml.guid, tables=external_tables, config=i["configuration"], authentication_type=d["authenticationType"]
     )
 
     if r.is_error:
@@ -145,7 +146,7 @@ def connection_check(
             [
                 internal_table.external_table.db_name,
                 internal_table.external_table.schema_name,
-                internal_table.external_table.table_name
+                internal_table.external_table.table_name,
             ]
         )
 
@@ -155,7 +156,7 @@ def connection_check(
 
         out_of_sync = 0
 
-        for idx, column in enumerate(internal_table.column, start=1):
+        for column in internal_table.column:
             external_column = next(c for c in live_external_data[fqn_name] if c["name"] == column.external_column)
             column_info = {
                 "database": internal_table.external_table.db_name,
@@ -173,7 +174,7 @@ def connection_check(
                 out_of_sync += 1
                 column_sync.append(metadata)
 
-        if out_of_sync == idx:
+        if out_of_sync == len(internal_table.column):
             log.info(f"whole table is out of sync: {internal_table.name} ({internal_table.id})")
             tables_sync.append(metadata.fully_qualified_name)
 
@@ -190,8 +191,11 @@ def connection_check(
 
     if syncer is None:
         table = layout.build_table()
-        [table.renderable.add_row(*column.values) for column in column_sync if
-         column.fully_qualified_name not in tables_sync]
+        [
+            table.renderable.add_row(*column.values)
+            for column in column_sync
+            if column.fully_qualified_name not in tables_sync
+        ]
         rich_console.print(table)
 
     else:
@@ -200,39 +204,41 @@ def connection_check(
 
 @app.command(dependencies=[thoughtspot], name="export")
 def scriptability_export(
-        ctx: typer.Context,
-        directory: pathlib.Path = typer.Argument(
-            ..., help="directory to save TML to", file_okay=False, resolve_path=True, exists=True
+    ctx: typer.Context,
+    directory: pathlib.Path = typer.Argument(
+        ..., help="directory to save TML to", file_okay=False, resolve_path=True, exists=True
+    ),
+    tags: str = typer.Option(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="objects marked with tags to export, comma separated",
+    ),
+    guids: str = typer.Option(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="specific objects to export, comma separated",
+    ),
+    author: str = typer.Option(None, help="objects authored by this username to export"),
+    pattern: str = typer.Option(
+        None, help=r"object names which meet a pattern, follows SQL LIKE operator (% as a wildcard)"
+    ),
+    include_types: str = typer.Option(
+        None,
+        custom_type=MultipleChoiceType(),
+        help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
+    ),
+    exclude_types: str = typer.Option(
+        None,
+        custom_type=MultipleChoiceType(),
+        help=(
+            "list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, "
+            "worksheet"
         ),
-        tags: str = typer.Option(
-            None,
-            custom_type=MultipleChoiceType(),
-            help="objects marked with tags to export, comma separated",
-        ),
-        guids: str = typer.Option(
-            None,
-            custom_type=MultipleChoiceType(),
-            help="specific objects to export, comma separated",
-        ),
-        author: str = typer.Option(None, help="objects authored by this username to export"),
-        pattern: str = typer.Option(None,
-                                    help=r"object names which meet a pattern, follows SQL LIKE operator (% as a wildcard)"),
-        include_types: str = typer.Option(
-            None,
-            custom_type=MultipleChoiceType(),
-            help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
-        ),
-        exclude_types: str = typer.Option(
-            None,
-            custom_type=MultipleChoiceType(),
-            help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",
-        ),
-        export_associated: bool = typer.Option(
-            False,
-            "--export-associated",
-            help="if specified, also export related content (does not export connections)"
-        ),
-        org: str = typer.Option(None, help="name or ID of the org to export from"),
+    ),
+    export_associated: bool = typer.Option(
+        False, "--export-associated", help="if specified, also export related content (does not export connections)"
+    ),
+    org: str = typer.Option(None, help="name or ID of the org to export from"),
 ):
     """
     Exports TML from ThoughtSpot.
@@ -265,35 +271,38 @@ def scriptability_export(
 
 @app.command(dependencies=[thoughtspot], name="import")
 def scriptability_import(
-        ctx: typer.Context,
-        path: pathlib.Path = typer.Argument(
-            ..., help="Root folder to load TML from", file_okay=False, resolve_path=True
+    ctx: typer.Context,
+    path: pathlib.Path = typer.Argument(..., help="Root folder to load TML from", file_okay=False, resolve_path=True),
+    guid: str = typer.Option(
+        None, help="Loads a specific file.  Assumes all dependencies are met.", file_okay=True, resolve_path=True
+    ),
+    import_policy: TMLImportPolicy = typer.Option(TMLImportPolicy.validate, help="The import policy type"),
+    force_create: bool = typer.Option(False, "--force-create", help="will force a new object to be created"),
+    source: str = typer.Option(
+        ..., help="the source environment the TML came from", rich_help_panel="GUID Mapping Options"
+    ),
+    dest: str = typer.Option(
+        ..., help="the destination environment the TML is importing into", rich_help_panel="GUID Mapping Options"
+    ),
+    tags: list[str] = typer.Option([], help="one or more tags to add to the imported content"),
+    share_with: list[str] = typer.Option([], help="one or more groups to share the uploaded content with"),
+    org: str = typer.Option(None, help="name of org to import to"),
+    include_types: Optional[str] = typer.Option(
+        None,
+        hidden=False,
+        custom_type=MultipleChoiceType(),
+        help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
+    ),
+    exclude_types: Optional[str] = typer.Option(
+        None,
+        hidden=False,
+        custom_type=MultipleChoiceType(),
+        help=(
+            "list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, "
+            "worksheet"
         ),
-        guid: str = typer.Option(
-            None, help="Loads a specific file.  Assumes all dependencies are met.", file_okay=True, resolve_path=True
-        ),
-        import_policy: TMLImportPolicy = typer.Option(TMLImportPolicy.validate, help="The import policy type"),
-        force_create: bool = typer.Option(False, "--force-create", help="will force a new object to be created"),
-        source: str = typer.Option(..., help="the source environment the TML came from",
-                                   rich_help_panel="GUID Mapping Options"),
-        dest: str = typer.Option(..., help="the destination environment the TML is importing into",
-                                 rich_help_panel="GUID Mapping Options"),
-        tags: List[str] = typer.Option([], help="one or more tags to add to the imported content"),
-        share_with: List[str] = typer.Option([], help="one or more groups to share the uploaded content with"),
-        org: str = typer.Option(None, help="name of org to import to"),
-        include_types: Optional[str] = typer.Option(
-            None,
-            hidden=False,
-            custom_type=MultipleChoiceType(),
-            help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
-        ),
-        exclude_types: Optional[str] = typer.Option(
-            None,
-            hidden=False,
-            custom_type=MultipleChoiceType(),
-            help="list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, worksheet",
-        ),
-        show_mapping: Optional[bool] = typer.Option(default=False, help="show the mapping file"),
+    ),
+    show_mapping: Optional[bool] = typer.Option(default=False, help="show the mapping file"),
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -324,12 +333,12 @@ def scriptability_import(
 
 @app.command(name="compare")
 def scriptability_compare(
-        file1: pathlib.Path = typer.Argument(
-            ..., help="full path to the first TML file to compare", dir_okay=False, resolve_path=True
-        ),
-        file2: pathlib.Path = typer.Argument(
-            ..., help="full path to the second TML file to compare", dir_okay=False, resolve_path=True
-        ),
+    file1: pathlib.Path = typer.Argument(
+        ..., help="full path to the first TML file to compare", dir_okay=False, resolve_path=True
+    ),
+    file2: pathlib.Path = typer.Argument(
+        ..., help="full path to the second TML file to compare", dir_okay=False, resolve_path=True
+    ),
 ):
     """
     Compares two TML files for differences.

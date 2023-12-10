@@ -1,18 +1,21 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Any, Dict, List
-import pathlib
+from typing import TYPE_CHECKING, Any
 import logging
 
-import sqlmodel
-import pydantic
 import click
+import pydantic
+import sqlmodel
 import toml
 
 from cs_tools.cli.dependencies.base import Dependency
-from cs_tools.errors import SyncerError
 from cs_tools.const import PACKAGE_DIR
+from cs_tools.errors import SyncerError
 from cs_tools.sync import register
+
+if TYPE_CHECKING:
+    import pathlib
 
 log = logging.getLogger(__name__)
 
@@ -21,8 +24,8 @@ log = logging.getLogger(__name__)
 class DSyncer(Dependency):
     protocol: str
     definition_fp: pathlib.Path = None
-    definition_kw: Dict[str, Any] = None
-    models: List[sqlmodel.SQLModel] = None
+    definition_kw: dict[str, Any] = None
+    models: list[sqlmodel.SQLModel] = None
 
     @property
     def metadata(self) -> sqlmodel.MetaData:
@@ -66,11 +69,14 @@ class DSyncer(Dependency):
         if hasattr(self._syncer, "__is_database__") and self.models is not None:
             log.debug(f"creating tables {self.models} in {self._syncer}")
             # schema=None here means we'll inherit the metadata of t.__table__
-            [t.__table__.to_metadata(self.metadata, schema=None) for t in self.models if t.metadata is not self.metadata]
+            [
+                t.__table__.to_metadata(self.metadata, schema=None)
+                for t in self.models
+                if t.metadata is not self.metadata
+            ]
             self.metadata.create_all(self._syncer.cnxn, tables=[t.__table__ for t in self.models])
 
     def __exit__(self, *e):
-
         # https://stackoverflow.com/a/58984188
         if hasattr(self._syncer, "__is_database__") and hasattr(self._syncer, "cnxn"):
             if hasattr(self._syncer.cnxn, "close"):
@@ -102,7 +108,7 @@ class DSyncer(Dependency):
     #
     #
 
-    def _read_config_from_definition(self, ts, proto, definition) -> Dict[str, Any]:
+    def _read_config_from_definition(self, ts, proto, definition) -> dict[str, Any]:
         if definition in ("default", ""):
             try:
                 definition = ts.config.syncer[proto]
@@ -116,7 +122,7 @@ class DSyncer(Dependency):
                         "with [primary]cs_tools config modify --config {cfg} --syncer "
                         "{proto}://[blue]path/to/my/default.toml"
                     ),
-                )
+                ) from None
 
         if definition.as_posix().endswith("toml"):
             try:
@@ -136,7 +142,7 @@ class DSyncer(Dependency):
                         f"\n  :white_heavy_check_mark: [green]{back}[/]"
                         f"\n  :white_heavy_check_mark: [green]{fwds}[/]"
                     ),
-                )
+                ) from None
             except toml.TomlDecodeError:
                 raise SyncerError(
                     proto=proto,
@@ -147,7 +153,7 @@ class DSyncer(Dependency):
                         "Visit the link below to see a full example."
                         "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto_url}/#full-definition-example"
                     ),
-                )
+                ) from None
 
         return cfg
 
@@ -155,7 +161,7 @@ class DSyncer(Dependency):
         try:
             # sanitize input by accepting aliases
             if hasattr(Syncer, "__pydantic_model__"):
-                syncer_config = Syncer.__pydantic_model__.parse_obj(syncer_config).dict()
+                syncer_config = Syncer.__pydantic_model__.model_validate(syncer_config).dict()
 
             self._syncer = Syncer(**syncer_config)
         except KeyError:
@@ -164,7 +170,7 @@ class DSyncer(Dependency):
                 definition=self.definition_fp,
                 reason="[blue]{definition}[/] is missing a top level marker.",
                 mitigation=(r"The first line of your definition file should be..\n\n[white]\[configuration]"),
-            )
+            ) from None
         except pydantic.ValidationError as e:
             raise SyncerError(
                 proto=self.protocol,
@@ -176,4 +182,4 @@ class DSyncer(Dependency):
                     "Visit the link below to see a full example."
                     "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto_url}/#full-definition-example"
                 ),
-            )
+            ) from None

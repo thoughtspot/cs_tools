@@ -1,17 +1,19 @@
-from typing import Callable, List
-import logging
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, Optional
 import json
+import logging
 
 from rich.console import Console
-import typer
 import httpx
 import rich
-
-from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.types import GroupPrivilege
+import typer
 
 from .completer import TQLCompleter
 from .const import TQL_HELP
+
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +68,7 @@ class InteractiveTQL:
         schema: dict = "falcon_default_schema",
         autocomplete: bool = True,
         http_timeout: int = 60,
-        console: Callable = None,
+        console: Optional[Callable] = None,
     ):
         self.ts = ts
         self.ctx = {"schema": schema, "server_schema_version": -1}
@@ -77,10 +79,10 @@ class InteractiveTQL:
         self.http_timeout = http_timeout
 
     @property
-    def print(self):
+    def print(self):  # noqa: A003
         return self.console.print
 
-    def _query(self, questions: List[dict] = None):
+    def _query(self, questions: Optional[list[dict]] = None):
         """
         Send a query to the remote TQL instance.
 
@@ -99,14 +101,14 @@ class InteractiveTQL:
 
         with self.console.status("[bold green]running query[/]"):
             try:
-                r = self.ts.api.dataservice_query(data=data, timeout=timeout)
+                r = self.ts.api.v1.dataservice_query(data=data, timeout=timeout)
                 r.raise_for_status()
             except httpx.HTTPStatusError as e:
                 log.error("TQL query request failed.", exc_info=True)
-                raise RuntimeError(f"TQL query request failed ({e.response.status_code}) for {e.request.url}")
+                raise RuntimeError(f"TQL query request failed ({e.response.status_code}) for {e.request.url}") from None
             except Exception:
                 log.error("TQL query request failed.", exc_info=True)
-                raise ValueError("TQL query request failed.")
+                raise ValueError("TQL query request failed.") from None
 
         return r.iter_lines()
 
@@ -147,7 +149,7 @@ class InteractiveTQL:
 
         return {"question_id": id_, "answer": answer}
 
-    def _handle_query(self, lines: List[str]) -> None:
+    def _handle_query(self, lines: list[str]) -> None:
         """ """
         color_map = {"INFO": "[white]", "WARNING": "[yellow]", "ERROR": "[red]"}
         new_ctx = {}
@@ -206,11 +208,11 @@ class InteractiveTQL:
             return
 
         if token_type == "dynamic":
-            call_ = self.ts.api.dataservice_tokens_dynamic
+            call_ = self.ts.api.v1.dataservice_tokens_dynamic
             key = "schema"
 
         if token_type == "static":
-            call_ = self.ts.api.dataservice_tokens_static
+            call_ = self.ts.api.v1.dataservice_tokens_static
             key = "language"
 
         try:
@@ -221,7 +223,7 @@ class InteractiveTQL:
             self.print(f"[red]Autocomplete tokens could not be fetched. " f"{r.status_code}: {r.text}[/]")
             raise typer.Exit() from None
         else:
-            tokens = sorted(list(r.json()["tokens"]))
+            tokens = sorted(r.json()["tokens"])
             self.completer.update({key: tokens})
 
     def simulate_tql_prompt(self) -> str:
@@ -253,7 +255,7 @@ class InteractiveTQL:
 
         return query.strip()
 
-    def reset_context(self, new_ctx: dict = None) -> None:
+    def reset_context(self, new_ctx: Optional[dict] = None) -> None:
         """
         Reset the database context in this session.
 

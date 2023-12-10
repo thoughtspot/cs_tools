@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 from operator import attrgetter
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any
 import datetime as dt
 import zipfile
-import io
+
+if TYPE_CHECKING:
+    import io
 
 
-def clean_datetime(row: Dict[str, Any], *, date_time_format: str) -> Dict[str, Any]:
+def clean_datetime(row: dict[str, Any], *, date_time_format: str) -> dict[str, Any]:
     """
     Enforce a specific format for datetime values.
     """

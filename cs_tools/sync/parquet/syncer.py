@@ -1,12 +1,16 @@
-from typing import List, Dict, Any
-import pathlib
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 import logging
 
 from pydantic.dataclasses import dataclass
-import pyarrow.parquet as pq
 import pyarrow as pa
+import pyarrow.parquet as pq
 
 from cs_tools._compat import StrEnum
+
+if TYPE_CHECKING:
+    import pathlib
 
 log = logging.getLogger(__name__)
 
@@ -43,12 +47,12 @@ class Parquet:
     def name(self) -> str:
         return "parquet"
 
-    def load(self, directive: str) -> List[Dict[str, Any]]:
+    def load(self, directive: str) -> list[dict[str, Any]]:
         fp = self.resolve_path(directive)
         table = pq.read_table(fp)
         return table.to_pylist()
 
-    def dump(self, directive: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, directive: str, *, data: list[dict[str, Any]]) -> None:
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return

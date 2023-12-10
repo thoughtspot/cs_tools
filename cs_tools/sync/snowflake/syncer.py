@@ -1,16 +1,18 @@
-from typing import List, Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import datetime as dt
-import tempfile
+import enum
 import logging
 import pathlib
-import enum
+import tempfile
 import uuid
 
+from pydantic import BaseModel, Field, model_validator
 from snowflake.sqlalchemy import URL
-from pydantic import root_validator, Field, BaseModel
+import pyarrow as pa
 import pyarrow.parquet as pq
 import sqlalchemy as sa
-import pyarrow as pa
 
 from cs_tools import __version__
 
@@ -43,8 +45,9 @@ class Snowflake(BaseModel, extra="allow"):
     # DATABASE ATTRIBUTES
     __is_database__ = True
 
-    @root_validator(pre=True)
-    def prepare_aliases(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def prepare_aliases(cls, values: dict[str, Any]) -> dict[str, Any]:
         """ """
         if (values.get("password"), values.get("private_key")) == (None, None):
             raise ValueError("You must include either [b blue]password[/] or [b blue]private_key[/].")
@@ -87,9 +90,10 @@ class Snowflake(BaseModel, extra="allow"):
 
     def _fetch_secret(self, private_key_fp: pathlib.Path) -> bytes:
         """Ripped from Snowflake documentation."""
-        from cryptography.hazmat.primitives import serialization
-        from cryptography.hazmat.backends import default_backend
         import os
+
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives import serialization
 
         pem_data = private_key_fp.read_bytes()
         password = os.environ.get("PRIVATE_KEY_PASSPHRASE", None)
@@ -112,7 +116,7 @@ class Snowflake(BaseModel, extra="allow"):
     def name(self) -> str:
         return "snowflake"
 
-    def load(self, table: str) -> List[Dict[str, Any]]:
+    def load(self, table: str) -> list[dict[str, Any]]:
         t = self.metadata.tables[f"{self.schema_}.{table}"]
 
         with self.cnxn.begin():
@@ -120,7 +124,7 @@ class Snowflake(BaseModel, extra="allow"):
 
         return [dict(_) for _ in r]
 
-    def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, table: str, *, data: list[dict[str, Any]]) -> None:
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return
@@ -136,8 +140,7 @@ class Snowflake(BaseModel, extra="allow"):
         # ==============================================================================================================
         stage_name = f"{self.database}.{self.schema_}.TMP_STAGE_{uuid.uuid4().hex}"
 
-        SQL_TEMP_STAGE = (
-            f"""
+        SQL_TEMP_STAGE = f"""
                 CREATE TEMPORARY STAGE "{stage_name}"
                 COMMENT = 'a temporary landing spot for CS Tools (+github: thoughtspot/cs_tools) syncer data dumps'
                 FILE_FORMAT = (
@@ -146,7 +149,6 @@ class Snowflake(BaseModel, extra="allow"):
                     NULL_IF = ( '\\N', 'None', 'none', 'null' )
                 )
             """
-        )
         r = self.cnxn.execute(SQL_TEMP_STAGE, _is_internal=True)
         log.debug("Snowflake response\n%s", dict(r.first()))
 
@@ -154,17 +156,15 @@ class Snowflake(BaseModel, extra="allow"):
         # SAVE & UPLOAD PARQUET
         # ==============================================================================================================
         COMPRESSION = "gzip"
-        fp = pathlib.Path(tempfile.gettempdir()) / f"output-{dt.datetime.now():%Y%m%dT%H%M%S}.parquet"
+        fp = pathlib.Path(tempfile.gettempdir()) / f"output-{dt.datetime.now(tz=dt.timezone.utc):%Y%m%dT%H%M%S}.parquet"
         pq.write_table(pa.Table.from_pylist(data), fp, compression=COMPRESSION)
 
-        SQL_PUT = (
-            f"""
+        SQL_PUT = f"""
                 PUT 'file://{fp.as_posix()}' @"{stage_name}"
                 PARALLEL = 4
                 AUTO_COMPRESS = FALSE
                 SOURCE_COMPRESSION = {COMPRESSION.upper()}
             """
-        )
         r = self.cnxn.execute(SQL_PUT, _is_internal=True)
         log.debug("Snowflake response\n%s", dict(r.first()))
 
@@ -173,13 +173,11 @@ class Snowflake(BaseModel, extra="allow"):
         # ==============================================================================================================
         table_name = f"{self.database}.{self.schema_}.{table.upper()}"
 
-        SQL_COPY_INTO = (
-            f"""
+        SQL_COPY_INTO = f"""
                 COPY INTO {table_name} ({','.join([c.key for c in t.columns])})
                 FROM (SELECT {','.join(map(utils.parse_field, t.columns))} FROM @"{stage_name}")
                 ON_ERROR = ABORT_STATEMENT
                 PURGE = TRUE
             """
-        )
         r = self.cnxn.execute(SQL_COPY_INTO, _is_internal=True)
         log.debug("Snowflake response\n%s", dict(r.first()))

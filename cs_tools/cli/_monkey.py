@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
-from typing import Any
 
-import cs_tools.cli.ux
-import cs_tools
+from typing import TYPE_CHECKING, Any
+
 import typer
+
+import cs_tools
+import cs_tools.cli.ux
 
 if TYPE_CHECKING:
     import click
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
 class _ArgumentInfo(typer.models.ArgumentInfo):
     """Allow custom type."""
+
     def __init__(self, *a, custom_type: Any = None, **kw):
         self.custom_type = custom_type
         super().__init__(*a, **kw)
@@ -20,6 +22,7 @@ class _ArgumentInfo(typer.models.ArgumentInfo):
 
 class _OptionInfo(typer.models.OptionInfo):
     """Allow custom type."""
+
     def __init__(self, *a, custom_type: Any = None, **kw):
         self.custom_type = custom_type
         super().__init__(*a, **kw)
@@ -44,8 +47,7 @@ class _MonkeyPatchedTyper:
         self._patch()
 
     def supersede_get_click_type(self, *, annotation: Any, parameter_info: typer.main.ParameterInfo) -> click.ParamType:
-        """
-        """
+        """ """
         if hasattr(parameter_info, "custom_type") and parameter_info.custom_type is not None:
             return parameter_info.custom_type
         else:
@@ -59,7 +61,6 @@ class _MonkeyPatchedTyper:
         """
         passthru["show_default"] = passthru.get("show_default", default not in (..., None))
         return _ArgumentInfo(default=default, **passthru)
-
 
     def option_with_custom_type(self, default, *param_decls, **passthru) -> _OptionInfo:
         """

@@ -1,24 +1,24 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import datetime as dt
 import logging
 import pathlib
 
+from thoughtspot_tml import Table
+from thoughtspot_tml.utils import determine_tml_type
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.types import TZAwareDateTimeType, SyncerProtocolType
-from cs_tools.cli.ux import rich_console
-
-from cs_tools.cli.ux import CSToolsApp
-from cs_tools.types import GUID
-from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
-from cs_tools.types import TMLImportPolicy
-from thoughtspot_tml.utils import determine_tml_type
-from thoughtspot_tml import Table
+from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
+from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.types import GUID, TMLImportPolicy
 
-from . import transform
-from . import layout
-from . import models
+from . import layout, models, transform
+
+if TYPE_CHECKING:
+    from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ def deploy(
             "team or your Solutions Consultant to get on the waitlist.",
         )
         raise typer.Abort()
-    
+
     tasks = [
         ("connection_details", f"Getting details for connection {'' if is_falcon else connection_guid}"),
         ("customize_spotapp", "Customizing [b blue]Searchable Worksheets[/] to your environment"),
@@ -66,17 +66,16 @@ def deploy(
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
-
         with tasks["connection_details"] as this_task:
             if is_falcon:
                 this_task.skip()
             else:
-                r = ts.api.metadata_details(metadata_type="DATA_SOURCE", guids=[connection_guid])
+                r = ts.api.v1.metadata_details(metadata_type="DATA_SOURCE", guids=[connection_guid])
 
                 if "storables" not in r.text:
                     log.error(f"Could not find a connection with guid {connection_guid}")
                     raise typer.Exit(1)
-   
+
                 data = r.json()["storables"][0]["header"]
                 connection_guid = data["id"]
                 connection_name = data["name"]
@@ -199,10 +198,9 @@ def bi_server(
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
-
         with tasks["gather_search"]:
             data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
-            seed = dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            seed = dt.datetime.now(tz=dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
             # CLUSTER BY --> TIMESTAMP , ANSWER_BOOK_GUID , USER_GUID
             data.sort(key=lambda r: tuple(map(str, (r["Timestamp"], r["Answer Book GUID"], r["User Id"]))))
@@ -282,9 +280,8 @@ def gather(
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
-
         with tasks["gather_groups"]:
-            r = ts.api.group_read()
+            r = ts.api.v1.group_read()
 
         with tasks["syncer_dump_groups"]:
             xref = transform.to_principal_association(r.json())
@@ -296,7 +293,7 @@ def gather(
             syncer.dump("ts_group_privilege", data=data)
 
         with tasks["gather_users"]:
-            r = ts.api.user_read()
+            r = ts.api.v1.user_read()
 
         with tasks["syncer_dump_users"]:
             data = transform.to_user(r.json())

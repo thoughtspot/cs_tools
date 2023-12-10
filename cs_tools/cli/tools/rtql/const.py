@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 TQL_HELP = """
 Commands can optionally be multi-line.
 Few common commands

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import logging
 
 from rich.live import Live
@@ -6,15 +9,12 @@ import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import rich_console
+from cs_tools.cli.ux import CSToolsApp, rich_console
 
-from cs_tools.cli.ux import CSToolsApp
-from cs_tools.cli.dependencies.syncer import DSyncer
+from . import _extended_rest_api_v1, layout, types, work
 
-from . import _extended_rest_api_v1
-from . import layout
-from . import types
-from . import work
+if TYPE_CHECKING:
+    from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
 
@@ -39,11 +39,10 @@ def single(
         raise typer.Exit(1)
 
     with Live(layout.build_table(data), console=rich_console) as display:
-
         try:
             type_ = data[0].object_type
             guid = data[0].object_guid
-            _extended_rest_api_v1.metadata_delete(ts.api, metadata_type=type_, guids=[guid])
+            _extended_rest_api_v1.metadata_delete(ts.api.v1, metadata_type=type_, guids=[guid])
         except httpx.HTTPStatusError:
             log.warning(f"could not delete {data[0].object_type} ({data[0].object_guid})")
             log.debug(f"could not delete {data[0].object_type} ({data[0].object_guid})", exc_info=True)
@@ -96,10 +95,9 @@ def from_tabular(
         raise typer.Exit(1)
 
     with Live(layout.build_table(data), console=rich_console) as display:
-
         for row in data:
             try:
-                _extended_rest_api_v1.metadata_delete(ts.api, metadata_type=row.object_type, guids=[row.object_guid])
+                _extended_rest_api_v1.metadata_delete(ts.api.v1, metadata_type=row.object_type, guids=[row.object_guid])
             except httpx.HTTPStatusError:
                 log.debug(f"could not delete {row.object_type} ({row.object_guid})", exc_info=True)
                 continue

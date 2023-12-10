@@ -1,13 +1,13 @@
+from __future__ import annotations
+
 import pathlib
 import shutil
 
 import typer
 
-from cs_tools.updater import cs_tools_venv
-from cs_tools.cli.ux import CSToolsCommand
-from cs_tools.cli.ux import CSToolsGroup
-from cs_tools.cli.ux import rich_console
 from cs_tools.cli import _analytics
+from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
+from cs_tools.updater import cs_tools_venv
 
 app = typer.Typer(cls=CSToolsGroup, name="logs", hidden=True)
 
@@ -15,7 +15,11 @@ app = typer.Typer(cls=CSToolsGroup, name="logs", hidden=True)
 @app.command(cls=CSToolsCommand)
 def report(
     save_path: pathlib.Path = typer.Argument(
-        None, help="location on disk to save logs to", metavar="DIRECTORY", file_okay=False, resolve_path=True,
+        None,
+        help="location on disk to save logs to",
+        metavar="DIRECTORY",
+        file_okay=False,
+        resolve_path=True,
     ),
     latest: int = typer.Option(1, help="number of most recent logfiles to export", min=1),
 ):

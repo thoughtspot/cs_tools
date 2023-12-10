@@ -28,14 +28,14 @@ class OrgMiddleware:
         Normally this would be .guid_for, but Orgs don't have GUIDs, they have simple
         numeric IDs.
         """
-        r = self.ts.api.session_orgs_read()
+        r = self.ts.api.v1.session_orgs_read()
 
         for org in r.json().get("orgs", []):
             if org["orgName"] == org_name:
                 return org.get("orgId")
 
         raise CSToolsError(
-            error=f"Invalid Org passed '{org_name}'",
+            title=f"Invalid Org passed '{org_name}'",
             reason="Org is unknown or the User doesn't have access to it.",
             mitigation="Verify the Org exists and that the User has access.",
         )
@@ -58,7 +58,7 @@ class OrgMiddleware:
         org_id = org if str(org).lstrip("-").isdigit() else self.get(org)
 
         try:
-            self.ts.api.session_orgs_update(org_id=org_id)
+            self.ts.api.v1.session_orgs_update(org_id=org_id)
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == httpx.codes.FORBIDDEN:
@@ -67,7 +67,9 @@ class OrgMiddleware:
                 rzn = f"Invalid org specified, got '{org}'"
 
             raise CSToolsError(
-                error=f"Error setting org context for org {org}.", reason=rzn, mitigation="Verify the org name or ID and try again."
-            )
+                title=f"Error setting org context for org {org}.",
+                reason=rzn,
+                mitigation="Verify the org name or ID and try again.",
+            ) from None
 
         return org_id

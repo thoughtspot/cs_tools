@@ -2,15 +2,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, NewType
-import pathlib
+from typing import TYPE_CHECKING, NewType
 
-from thoughtspot_tml.utils import disambiguate as _disambiguate
-from thoughtspot_tml.utils import EnvironmentGUIDMapper as Mapper
-from thoughtspot_tml.types import TMLObject
 from thoughtspot_tml import Connection
+from thoughtspot_tml.utils import (
+    EnvironmentGUIDMapper as Mapper,
+    disambiguate as _disambiguate,
+)
 
-from cs_tools.types import GUID
+if TYPE_CHECKING:
+    import pathlib
+
+    from thoughtspot_tml.types import TMLObject
+
+    from cs_tools.types import GUID
 
 EnvName = NewType("EnvName", str)
 
@@ -58,14 +63,14 @@ class GUIDMapping:
         self.guid_mapper[from_guid] = (self.source, from_guid)
         self.guid_mapper[from_guid] = (self.dest, to_guid)
 
-    def set_mapped_guids(self, from_guids: List[GUID], to_guids: List[GUID]) -> None:
+    def set_mapped_guids(self, from_guids: list[GUID], to_guids: list[GUID]) -> None:
         """
         Sets a set of mapped GUIDs.
         """
         for _ in range(len(from_guids)):
             self.set_mapped_guid(from_guids[_], to_guids[_])
 
-    def generate_mapping(self, from_environment: str, to_environment: str) -> Dict[GUID, GUID]:
+    def generate_mapping(self, from_environment: str, to_environment: str) -> dict[GUID, GUID]:
         return self.guid_mapper.generate_mapping(from_environment, to_environment)
 
     def disambiguate(self, tml: TMLObject, delete_unmapped_guids: bool = False) -> None:
@@ -103,7 +108,6 @@ class TMLFile:
         return isinstance(self.tml, Connection)
 
 
-def strip_blanks(inp: List[str]) -> List[str]:
+def strip_blanks(inp: list[str]) -> list[str]:
     """Strips blank out of a list."""
     return [e for e in inp if e]
-

@@ -1,11 +1,15 @@
-import pathlib
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsApp
-from cs_tools.const import FMT_TSLOAD_TRUE_FALSE, FMT_TSLOAD_DATETIME, FMT_TSLOAD_TIME, FMT_TSLOAD_DATE
+from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.const import FMT_TSLOAD_DATE, FMT_TSLOAD_DATETIME, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
+
+if TYPE_CHECKING:
+    import pathlib
 
 app = CSToolsApp(
     help="""
@@ -47,7 +51,7 @@ def status(
         )
 
     # if int(data['ignored_row_count']) > 0:
-    #     now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
+    #     now = dt.datetime.now(tz=dt.timezone.utc).strftime('%Y-%m-%dT%H_%M_%S')
     #     fp = f'BAD_RECORDS_{now}_{cycle_id}'
     #     console.print(
     #         f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
@@ -82,7 +86,10 @@ def file(
     max_ignored_rows: int = typer.Option(
         0,
         "--max_ignored_rows",
-        help="maximum number of rows that can be ignored for successful load. If number of ignored rows exceeds this limit, the load is aborted",
+        help=(
+            "maximum number of rows that can be ignored for successful load. If number of ignored rows exceeds this "
+            "limit, the load is aborted"
+        ),
     ),
     date_format: str = typer.Option(
         FMT_TSLOAD_DATE,
@@ -103,7 +110,10 @@ def file(
         False,
         "--skip_second_fraction",
         show_default=False,
-        help="when true, skip fractional part of seconds: milliseconds, microseconds, or nanoseconds from either datetime or time values if that level of granularity is present in the source data",
+        help=(
+            "when true, skip fractional part of seconds: milliseconds, microseconds, or nanoseconds from either "
+            "datetime or time values if that level of granularity is present in the source data"
+        ),
     ),
     field_separator: str = typer.Option("|", "--field_separator", help="field delimiter used in the input file"),
     null_value: str = typer.Option("", "--null_value", help="escape character in source data"),
@@ -116,7 +126,9 @@ def file(
     escape_character: str = typer.Option(
         '"', "--escape_character", help="specifies the escape character used in the input file"
     ),
-    enclosing_character: str = typer.Option('"', "--enclosing_character", help="enclosing character in csv source format"),
+    enclosing_character: str = typer.Option(
+        '"', "--enclosing_character", help="enclosing character in csv source format"
+    ),
     # bad_records: str = typer.Option(
     #     None,
     #     '--bad_records_file',
@@ -179,7 +191,7 @@ def file(
     #     data = ts.tsload.status(cycle_id, wait_for_complete=True)
 
     # if data['ignored_row_count'] > 0:
-    #     now = dt.datetime.now().strftime('%Y-%m-%dT%H_%M_%S')
+    #     now = dt.datetime.now(tz=dt.timezone.utc).strftime('%Y-%m-%dT%H_%M_%S')
     #     fp = f'BAD_RECORDS_{now}_{cycle_id}'
     #     console.print(
     #         f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
