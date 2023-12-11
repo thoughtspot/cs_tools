@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Union
 import datetime as dt
 import json
 import logging
@@ -12,7 +12,7 @@ from pydantic import AnyHttpUrl, Field
 import pydantic
 import toml
 
-from cs_tools import types, utils
+from cs_tools import types, utils, validators
 from cs_tools._version import __version__
 from cs_tools.datastructures import _GlobalModel, _GlobalSettings
 from cs_tools.errors import ConfigDoesNotExist
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from pydantic.types import DirectoryPath, FilePath
 
 log = logging.getLogger(__name__)
+_FOUNDING_DAY = dt.datetime(year=2012, month=6, day=1, tzinfo=dt.timezone.utc)
 
 
 class MetaConfig(_GlobalModel):
@@ -35,10 +36,10 @@ class MetaConfig(_GlobalModel):
 
     install_uuid: uuid.UUID = Field(default_factory=uuid.uuid4)
     default_config_name: str = None
-    last_remote_check: dt.datetime = dt.datetime(year=2012, month=6, day=1, tzinfo=dt.timezone.utc)
+    last_remote_check: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = _FOUNDING_DAY
     remote_version: str = None
     remote_date: dt.date = None
-    last_analytics_checkpoint: dt.datetime = dt.datetime(year=2012, month=6, day=1, tzinfo=dt.timezone.utc)
+    last_analytics_checkpoint: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = _FOUNDING_DAY
     analytics_opt_in: Optional[bool] = None
     # company_name: Optional[str] = None  # DEPRECATED AS OF 1.4.6
     record_thoughtspot_url: Optional[bool] = None
