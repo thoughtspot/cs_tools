@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import logging
 
-from pydantic import validate_arguments
 import httpx
 
 from cs_tools.api import _utils

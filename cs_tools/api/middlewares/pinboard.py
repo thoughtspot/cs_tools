@@ -3,8 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 import logging
 
-from pydantic import validate_arguments
-
 from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import MetadataCategory, RecordsFormat

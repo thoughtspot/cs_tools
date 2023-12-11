@@ -3,8 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 import logging
 
-from pydantic import validate_arguments
-
 from cs_tools import utils
 from cs_tools.api._utils import dumps
 from cs_tools.errors import ContentDoesNotExist

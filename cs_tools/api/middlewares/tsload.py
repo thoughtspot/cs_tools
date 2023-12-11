@@ -7,7 +7,6 @@ import json
 import logging
 import time
 
-from pydantic import validate_arguments
 import httpx
 
 from cs_tools import utils

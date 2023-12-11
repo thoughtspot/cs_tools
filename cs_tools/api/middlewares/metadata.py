@@ -4,8 +4,6 @@ from typing import TYPE_CHECKING, Optional, Union
 import functools as ft
 import logging
 
-from pydantic import validate_arguments
-
 from cs_tools import utils
 from cs_tools.errors import CSToolsError
 from cs_tools.types import (

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 import json
 import logging
 
-from pydantic import Field, validate_arguments
+from pydantic import Field
 
 from cs_tools.errors import InsufficientPrivileges
 from cs_tools.types import GroupPrivilege, RecordsFormat

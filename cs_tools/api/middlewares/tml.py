@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Union
 import logging
 
-from pydantic import validate_arguments
 from thoughtspot_tml.utils import determine_tml_type
 import httpx
 

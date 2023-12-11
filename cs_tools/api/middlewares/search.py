@@ -4,8 +4,6 @@ from typing import TYPE_CHECKING, Optional
 import datetime as dt
 import logging
 
-from pydantic import validate_arguments
-
 from cs_tools.api import _utils
 from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist
 
