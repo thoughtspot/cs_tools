@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import logging
 
 from thoughtspot_tml import _yaml
@@ -9,12 +8,10 @@ import uvicorn
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.types import GUID, ShareModeAccessLevel
 
 from . import work
 from .web_app import _scoped
-
-if TYPE_CHECKING:
-    from cs_tools.types import GUID, ShareModeAccessLevel
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(

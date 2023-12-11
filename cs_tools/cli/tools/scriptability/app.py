@@ -7,14 +7,17 @@
 #
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 import logging
+import pathlib
 
 from thoughtspot_tml import Connection
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.types import GUID, TMLImportPolicy
@@ -25,12 +28,6 @@ from ._export import export
 from ._import import to_import
 from ._mapping import app as mappingApp
 from .tmlfs import app as tmlfsApp
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable
-    import pathlib
-
-    from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(

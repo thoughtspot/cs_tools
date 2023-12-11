@@ -4,8 +4,9 @@ This file contains the methods to execute the 'scriptability import' command.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 import logging
+import pathlib
 import re
 import time
 
@@ -14,11 +15,14 @@ from httpx import HTTPStatusError
 from rich.align import Align
 from rich.table import Table
 from thoughtspot_tml import Connection
+from thoughtspot_tml._tml import TML
 from thoughtspot_tml.exceptions import TMLDecodeError
 from thoughtspot_tml.utils import _recursive_scan
 
+from cs_tools.cli.tools.scriptability.util import GUIDMapping
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
+from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.types import (
     GUID,
     MetadataObjectType,
@@ -30,14 +34,6 @@ from cs_tools.utils import chunks
 
 from ._mapping import show_mapping_details
 from .tmlfs import ImportTMLFS, TMLType
-
-if TYPE_CHECKING:
-    import pathlib
-
-    from thoughtspot_tml._tml import TML
-
-    from cs_tools.cli.tools.scriptability.util import GUIDMapping
-    from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
 

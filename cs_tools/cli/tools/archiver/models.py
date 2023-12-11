@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
+import datetime as dt
 import logging
 
 from sqlmodel import Field
@@ -9,9 +10,6 @@ import pydantic
 from cs_tools import validators
 from cs_tools._compat import StrEnum
 from cs_tools.datastructures import ValidatedSQLModel
-
-if TYPE_CHECKING:
-    import datetime as dt
 
 log = logging.getLogger(__name__)
 

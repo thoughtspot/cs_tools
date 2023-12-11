@@ -20,4 +20,4 @@ def get_cs_tool(name: str) -> CSTool:
     if not tool_dir.exists():
         raise CSToolsError(title=f"no tool registered tool found by name '{name}'")
 
-    return CSTool(tool_dir)
+    return CSTool(directory=tool_dir)

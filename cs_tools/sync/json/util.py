@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 import json
-
-if TYPE_CHECKING:
-    import pathlib
+import pathlib
 
 
 def read_from_possibly_empty(fp: pathlib.Path) -> dict[str, Any]:

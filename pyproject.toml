@@ -139,6 +139,9 @@ select = [
 ignore = [
     "B008",    # Checks for function calls in default function arguments.
     "COM812",  # Checks for the absence of trailing commas.
+    "TCH001",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TCH002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TCH003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
 ]
 src = ["cs_tools", "tests"]
 exclude = [
@@ -160,6 +163,22 @@ ignore-init-module-imports = true
 # Declare the default aliases.
 datetime = "dt"
 sqlalchemy = "sa"
+
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = [
+    "cs_tools.datastructures._GlobalModel",
+    "cs_tools.datastructures._GlobalSettings",
+    "cs_tools.datastructures.ValidatedSQLModel",
+    "typer.params.Option",
+    "typer.params.Argument",
+    "pydantic.BaseModel",
+    "pydantic_settings.BaseSettings",
+    "sqlalchemy.orm.DeclarativeBase",
+    "sqlmodel.SQLModel",
+]
+
+[flake8]
+type-checking-pydantic-enabled = true
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import datetime as dt
 import itertools as it
 import json
@@ -12,6 +11,7 @@ import typer
 
 from cs_tools.api._utils import SYSTEM_USERS
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import MetadataType, MultipleChoiceType, SyncerProtocolType
 from cs_tools.cli.ux import CSToolsApp, rich_console
@@ -19,9 +19,6 @@ from cs_tools.errors import CSToolsError
 from cs_tools.updater import cs_tools_venv
 
 from . import _extended_rest_api_v1, layout, work
-
-if TYPE_CHECKING:
-    from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(help="""Manage Users and Groups in bulk.""")

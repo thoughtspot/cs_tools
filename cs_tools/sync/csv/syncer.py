@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TextIO
+from typing import Any, TextIO
 import contextlib
 import csv
 import logging
+import pathlib
 import zipfile
 
 from pydantic.dataclasses import dataclass
 
 from . import util
-
-if TYPE_CHECKING:
-    import pathlib
 
 log = logging.getLogger(__name__)
 

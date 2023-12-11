@@ -4,12 +4,13 @@ related files.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import datetime as dt
 import logging
 import os
+import pathlib
 import shutil
 
+from thoughtspot_tml._tml import TML
 from thoughtspot_tml.utils import determine_tml_type
 import typer
 
@@ -18,13 +19,7 @@ from cs_tools.api import _utils
 from cs_tools.cli.tools.scriptability.util import EnvName, GUIDMapping
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
-
-if TYPE_CHECKING:
-    import pathlib
-
-    from thoughtspot_tml._tml import TML
-
-    from cs_tools.types import GUID
+from cs_tools.types import GUID
 
 TMLFS_FILENAME = ".tmlfs"
 

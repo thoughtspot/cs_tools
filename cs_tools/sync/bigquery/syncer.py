@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 import logging
+import pathlib
 
 from google.cloud import bigquery
 from pydantic.dataclasses import dataclass
 import sqlalchemy as sa
 
 from . import sanitize
-
-if TYPE_CHECKING:
-    import pathlib
 
 log = logging.getLogger(__name__)
 

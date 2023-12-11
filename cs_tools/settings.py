@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Union
+from ipaddress import IPv4Address
+from typing import Annotated, Any, Optional, Union
 import datetime as dt
 import json
 import logging
+import pathlib
 import urllib
 import uuid
 
 from awesomeversion import AwesomeVersion
 from pydantic import AnyHttpUrl, Field
+from pydantic.types import DirectoryPath, FilePath
 import pydantic
 import toml
 
@@ -18,12 +21,6 @@ from cs_tools.datastructures import _GlobalModel, _GlobalSettings
 from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.updater import cs_tools_venv
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
-
-if TYPE_CHECKING:
-    from ipaddress import IPv4Address
-    import pathlib
-
-    from pydantic.types import DirectoryPath, FilePath
 
 log = logging.getLogger(__name__)
 _FOUNDING_DAY = dt.datetime(year=2012, month=6, day=1, tzinfo=dt.timezone.utc)

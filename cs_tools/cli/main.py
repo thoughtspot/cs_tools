@@ -104,6 +104,7 @@ def run() -> int:
     Entrypoint into cs_tools.
     """
     # monkey-patch the typer implementation
+
     # import all our tools
     from cs_tools.cli import _analytics, _config, _log, _self, _tools
 

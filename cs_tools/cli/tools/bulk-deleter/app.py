@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import logging
 
 from rich.live import Live
@@ -8,13 +7,11 @@ import httpx
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import CSToolsApp, rich_console
 
 from . import _extended_rest_api_v1, layout, types, work
-
-if TYPE_CHECKING:
-    from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
 

@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 import enum
 import logging
+import pathlib
 
 from pydantic.dataclasses import dataclass
 import gspread
 
 from . import sanitize
 from .const import GOOGLE_SHEET_DEFAULT_SIZE
-
-if TYPE_CHECKING:
-    import pathlib
 
 log = logging.getLogger(__name__)
 

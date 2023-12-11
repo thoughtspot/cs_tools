@@ -3,18 +3,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, NewType
+import pathlib
 
 from thoughtspot_tml import Connection
+from thoughtspot_tml.types import TMLObject
 from thoughtspot_tml.utils import (
     EnvironmentGUIDMapper as Mapper,
     disambiguate as _disambiguate,
 )
 
 if TYPE_CHECKING:
-    import pathlib
-
-    from thoughtspot_tml.types import TMLObject
-
     from cs_tools.types import GUID
 
 EnvName = NewType("EnvName", str)
@@ -22,21 +20,21 @@ EnvName = NewType("EnvName", str)
 
 class GUIDMapping:
     """
-    Wrapper for guid mapping to make it easier to use.
+        Wrapper for guid mapping to make it easier to use.
 
-    Attributes
-    ----------
+        Attributes
+        ----------
     from_env : str
-      the source environment
+          the source environment
 
-    to_env : str
-      the target environment
+        to_env : str
+          the target environment
 
-    filepath : pathlib.Path
-      path to the mapping object
+        filepath : pathlib.Path
+          path to the mapping object
 
-    remap_object_guid : bool, default = True
-      whether to remap the top-level tml.guid
+        remap_object_guid : bool, default = True
+          whether to remap the top-level tml.guid
     """
 
     def __init__(self, source: EnvName, dest: EnvName, path: pathlib.Path, remap_object_guid: bool = True):

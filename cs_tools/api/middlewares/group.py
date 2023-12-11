@@ -8,11 +8,11 @@ import httpx
 from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
 
-log = logging.getLogger(__name__)
-
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
     from cs_tools.types import GUID, RecordsFormat, UserProfile
+
+log = logging.getLogger(__name__)
 
 
 class GroupMiddleware:

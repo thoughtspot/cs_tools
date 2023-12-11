@@ -3,8 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, Union
 import datetime as dt
+import ipaddress as ip
 import json
 import logging
+import pathlib
 import time
 
 import httpx
@@ -23,8 +25,6 @@ from cs_tools.updater import cs_tools_venv
 if TYPE_CHECKING:
     from io import BufferedIOBase, TextIOWrapper
     from tempfile import _TemporaryFileWrapper
-    import ipaddress as ip
-    import pathlib
 
     from cs_tools.thoughtspot import ThoughtSpot
 

@@ -111,6 +111,22 @@ class CSToolsVirtualEnvironment:
 
         return cs_tools_venv_dir
 
+    def is_package_installed(self, package: str) -> bool:
+        """ """
+        # Import here, as _updater.py is used in _bootstrapper.py , but not this method.
+        from awesomeversion import AwesomeVersion
+
+        rc = self.pip("list", "--format", "json")
+        print(rc)
+        print(type(rc))
+        raise SystemExit
+
+        for installed in rc:
+            if installed["name"] == package.name and AwesomeVersion(installed["version"]) >= package.version:
+                return True
+
+        return False
+
     def python(self, *args, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment."""
         return self.run(self.exe.as_posix(), *args, **kwargs)

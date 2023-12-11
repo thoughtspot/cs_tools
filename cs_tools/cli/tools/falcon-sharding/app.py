@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import logging
 import pathlib
 
@@ -9,15 +8,13 @@ from thoughtspot_tml.utils import determine_tml_type
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.types import TMLImportPolicy
 
 from . import _extended_rest_api_v1, layout, models
-
-if TYPE_CHECKING:
-    from cs_tools.cli.dependencies.syncer import DSyncer
 
 HERE = pathlib.Path(__file__).parent
 log = logging.getLogger(__name__)

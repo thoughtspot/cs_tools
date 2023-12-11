@@ -2,22 +2,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 import importlib
+import pathlib
+import sys
 
-from pydantic.dataclasses import dataclass
 from typer.testing import CliRunner, Result
 
 from cs_tools.cli.ux import WARNING_BETA, WARNING_PRIVATE
 from cs_tools.const import GH_ISSUES, PACKAGE_DIR
+from cs_tools.datastructures import _GlobalModel
 
 if TYPE_CHECKING:
-    import pathlib
     import types
 
     import typer
 
 
-@dataclass
-class CSTool:
+class CSTool(_GlobalModel):
     """
     Represent a tool which a user can interact with.
 
@@ -45,7 +45,9 @@ class CSTool:
     directory: pathlib.Path
     docs_base_path: pathlib.Path = PACKAGE_DIR / "docs" / "cs-tools"
 
-    def __post_init_post_parse__(self):
+    def __init__(self, **data):
+        super().__init__(**data)
+
         if self.privacy == "unknown":
             return
 
@@ -110,7 +112,7 @@ class CSTool:
         """
         if not hasattr(self, "_lib"):
             import_path = f"cs_tools.cli.tools.{self.directory.name}"
-            self._lib = importlib.import_module(import_path)
+            self._lib = sys.modules[import_path] = importlib.import_module(import_path)
 
         return self._lib
 

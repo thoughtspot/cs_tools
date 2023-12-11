@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import datetime as dt
 import logging
 import pathlib
@@ -10,15 +9,13 @@ from thoughtspot_tml.utils import determine_tml_type
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.types import GUID, TMLImportPolicy
 
 from . import layout, models, transform
-
-if TYPE_CHECKING:
-    from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
 

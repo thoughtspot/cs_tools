@@ -54,7 +54,7 @@ def scrub_sensitive(request_keywords: dict[str, Any]) -> dict[str, Any]:
 
     This is purely here to pop off the password.
     """
-    SAFEWORDS = ("password",)
+    SAFEWORDS = ("password", "access_token")
 
     # don't modify the actual keywords we want to build into the request
     secure = copy.deepcopy({k: v for k, v in request_keywords.items() if k not in ("file", "files")})

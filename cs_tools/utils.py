@@ -19,8 +19,6 @@ import zlib
 
 import rich
 
-import cs_tools
-
 log = logging.getLogger(__name__)
 
 
@@ -232,6 +230,8 @@ class ExceptedThread(threading.Thread):
 
 def determine_editable_install() -> bool:
     """Determine if the current CS Tools context is an editable install."""
+    import cs_tools
+
     for site_directory in site.getsitepackages():
         for path in pathlib.Path(site_directory).iterdir():
             if not path.is_file():

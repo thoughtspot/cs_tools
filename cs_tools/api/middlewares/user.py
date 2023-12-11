@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
     from cs_tools.types import GUID, RecordsFormat
 
-
 log = logging.getLogger(__name__)
 
 

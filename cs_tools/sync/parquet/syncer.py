@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 import logging
+import pathlib
 
 from pydantic.dataclasses import dataclass
 import pyarrow as pa
 import pyarrow.parquet as pq
 
 from cs_tools._compat import StrEnum
-
-if TYPE_CHECKING:
-    import pathlib
 
 log = logging.getLogger(__name__)
 

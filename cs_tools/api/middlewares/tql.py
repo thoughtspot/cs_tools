@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 import json
 import logging
 
-from pydantic import Field
+import pydantic
 
 from cs_tools.errors import InsufficientPrivileges
 from cs_tools.types import GroupPrivilege, RecordsFormat
@@ -48,7 +48,7 @@ class TQLMiddleware:
         *,
         sample: int = 50,
         database: Optional[str] = None,
-        schema_: Annotated[str, Field(alias="schema")] = "falcon_default_schema",
+        schema_: Annotated[str, pydantic.Field(alias="schema")] = "falcon_default_schema",
         http_timeout: int = 60.0,
     ) -> RecordsFormat:
         """

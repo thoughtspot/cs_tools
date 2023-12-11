@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import csv
 import logging
+import pathlib
 
 from rich.align import Align
 from rich.table import Table
@@ -14,8 +15,6 @@ from cs_tools.cli.ux import CSToolsApp, rich_console
 from .tmlfs import ImportTMLFS
 
 if TYPE_CHECKING:
-    import pathlib
-
     from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)

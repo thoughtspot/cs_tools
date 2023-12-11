@@ -1,69 +1,58 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 import logging
+import pathlib
 
-from pydantic.dataclasses import dataclass
 import sqlalchemy as sa
 
+from cs_tools.sync.base import DatabaseSyncer
+
 if TYPE_CHECKING:
-    import pathlib
+    from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class SQLite:
+class SQLite(DatabaseSyncer):
     """
     Interact with a SQLite database.
     """
 
+    __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
+    __syncer_name__ = "sqlite"
+
     database_path: pathlib.Path
-    truncate_on_load: bool = True
 
-    # DATABASE ATTRIBUTES
-    __is_database__ = True
-
-    def __post_init_post_parse__(self):
-        self.database_path = path = self.database_path.resolve()
-        self.engine = sa.create_engine(f"sqlite:///{path}", future=True)
-        self.cnxn = self.engine.connect()
-
-        # self.metadata = sa.MetaData(bind=self.cnxn)
-        # self.metadata.reflect()
-
-        # decorators must be declared here, SQLAlchemy doesn't care about instances
-        sa.event.listen(sa.schema.MetaData, "after_create", self.capture_metadata)
-
-    def capture_metadata(self, metadata, cnxn, **kw):
-        self.metadata = metadata
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._engine = sa.create_engine(f"sqlite:///{self.database_path}", future=True)
+        self._connection = self._engine.connect()
 
     def __repr__(self):
-        return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
+        return f"<DatabaseSyncer ({self.name}) sync: conn_string='{self.engine.url}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 
-    @property
-    def name(self) -> str:
-        return "sqlite"
-
-    def load(self, table: str) -> list[dict[str, Any]]:
+    def load(self, table: str) -> TableRows:
+        """INSERT rows into SQLite."""
         t = self.metadata.tables[table]
 
-        with self.cnxn.begin_nested():
-            r = self.cnxn.execute(t.select())
+        with self.connection.begin_nested():
+            r = self.connection.execute(t.select())
 
         return [dict(_) for _ in r]
 
-    def dump(self, table: str, *, data: list[dict[str, Any]]) -> None:
+    def dump(self, table: str, *, data: TableRows) -> None:
+        """SELECT rows from SQLite."""
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return
 
         t = self.metadata.tables[table]
 
-        with self.cnxn.begin_nested():
+        with self.connection.begin_nested():
             if self.truncate_on_load:
-                self.cnxn.execute(t.delete())
+                self.connection.execute(t.delete())
 
-            self.cnxn.execute(t.insert(), data)
+            self.connection.execute(t.insert(), data)

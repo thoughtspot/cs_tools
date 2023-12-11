@@ -12,7 +12,6 @@ from rich.table import Table
 if TYPE_CHECKING:
     from rich.console import Console, RenderableType
 
-
 _TaskName = NewType("_TaskName", str)
 _TaskDescription = NewType("_TaskDescription", str)
 

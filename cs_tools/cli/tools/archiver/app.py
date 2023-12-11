@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import functools as ft
 import logging
+import pathlib
 import random
 
 import pendulum
@@ -11,6 +11,7 @@ import typer
 from cs_tools import utils
 from cs_tools._compat import StrEnum
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.input import ConfirmationPrompt
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
@@ -19,11 +20,6 @@ from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import MetadataObjectType
 
 from . import _extended_rest_api_v1, layout, models
-
-if TYPE_CHECKING:
-    import pathlib
-
-    from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
 ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE = 3650
