@@ -21,7 +21,6 @@ class AnswerMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
     def all(  # noqa: A003
         self,
         *,

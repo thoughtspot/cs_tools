@@ -23,7 +23,6 @@ class LogicalTableMiddleware:
         self.ts = ts
         self.cache = {"calendar_type": {}, "currency_type": {}}
 
-    @validate_arguments
     def all(  # noqa: A003
         self,
         *,
@@ -98,7 +97,6 @@ class LogicalTableMiddleware:
 
         return tables
 
-    @validate_arguments
     def columns(self, guids: list[GUID], *, include_hidden: bool = False, chunksize: int = 10) -> RecordsFormat:
         """ """
         columns = []

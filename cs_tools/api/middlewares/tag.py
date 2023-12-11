@@ -22,7 +22,6 @@ class TagMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
     def create(self, tag_name: str) -> dict[str, Any]:
         """
         Create a new tag in ThoughtSpot.
@@ -35,7 +34,6 @@ class TagMiddleware:
         r = self.ts.api.v1.request("POST", "callosum/v1/metadata/create", data={"type": "TAG", "name": tag_name})
         return r.json()["header"]
 
-    @validate_arguments
     def delete(self, tag_name: str) -> None:
         """
         Remove a tag from ThoughtSpot.
@@ -54,7 +52,6 @@ class TagMiddleware:
 
         self.ts.api.v1.request("POST", "callosum/v1/metadata/delete", data={"type": "TAG", "id": dumps([tag["id"]])})
 
-    @validate_arguments
     def all(self) -> RecordsFormat:  # noqa: A003
         """
         Get all tags in ThoughtSpot.
@@ -71,7 +68,6 @@ class TagMiddleware:
 
         return tags
 
-    @validate_arguments
     def get(self, tag_name: str, *, create_if_not_exists: bool = False) -> dict[str, Any]:
         """
         Find a tag in ThoughtSpot.

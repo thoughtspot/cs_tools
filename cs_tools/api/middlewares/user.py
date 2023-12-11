@@ -23,7 +23,6 @@ class UserMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
     def all(self, batchsize: int = 50) -> RecordsFormat:  # noqa: A003
         """
         Get all users in ThoughtSpot.
@@ -41,7 +40,6 @@ class UserMiddleware:
 
         return users
 
-    @validate_arguments
     def guid_for(self, username: str) -> GUID:
         """
         Return the GUID for a given User.

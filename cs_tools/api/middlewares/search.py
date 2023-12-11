@@ -104,7 +104,6 @@ class SearchMiddleware:
     #   ... right now we use __call__ so the UX is nicer.
     #
 
-    @validate_arguments
     def __call__(
         self,
         query: str,

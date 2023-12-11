@@ -54,7 +54,6 @@ class TMLMiddleware:
 
         return responses
 
-    @validate_arguments
     def to_export(
         self,
         guids: list[GUID],

@@ -24,7 +24,6 @@ class GroupMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
     def all(self, batchsize: int = 50) -> RecordsFormat:  # noqa: A003
         """
         Get all groups in ThoughtSpot.
@@ -42,7 +41,6 @@ class GroupMiddleware:
 
         return groups
 
-    @validate_arguments
     def guid_for(self, group_name: str) -> GUID:
         """
         Return the GUID for a given Group.
@@ -66,7 +64,6 @@ class GroupMiddleware:
 
         return r.json()["header"]["id"]
 
-    @validate_arguments
     def users_in(self, group_name: str, *, is_directly_assigned: bool = True) -> list[RecordsFormat]:
         """
         Return the User headers for a given Group.

@@ -20,7 +20,6 @@ class OrgMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
     def get(self, org_name: str) -> int:
         """
         Looks up the org id for the given name.
@@ -40,7 +39,6 @@ class OrgMiddleware:
             mitigation="Verify the Org exists and that the User has access.",
         )
 
-    @validate_arguments
     def switch(self, org: Union[str, int]) -> int:
         """
         Switch to the target org.

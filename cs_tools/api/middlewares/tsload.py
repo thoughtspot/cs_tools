@@ -175,7 +175,6 @@ class TSLoadMiddleware:
         if not set(self.ts.me.privileges).intersection(REQUIRED):
             raise InsufficientPrivileges(user=self.ts.me, service="remote TQL", required_privileges=", ".join(REQUIRED))
 
-    @validate_arguments(config={"arbitrary_types_allowed": True})
     def upload(
         self,
         fd: Union[BufferedIOBase, TextIOWrapper, _TemporaryFileWrapper],
@@ -306,7 +305,6 @@ class TSLoadMiddleware:
         self.ts.api.v1.dataservice_dataload_commit(cycle_id=data["cycle_id"])
         return data["cycle_id"]
 
-    @validate_arguments
     def status(
         self, cycle_id: CycleID, *, ignore_node_redirect: bool = False, wait_for_complete: bool = False
     ) -> dict[str, Any]:

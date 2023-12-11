@@ -30,7 +30,6 @@ class MetadataMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
     def permissions(
         self,
         guids: list[GUID],
@@ -80,7 +79,6 @@ class MetadataMiddleware:
 
         return sharing_access
 
-    @validate_arguments
     def dependents(
         self, guids: list[GUID], *, for_columns: bool = False, include_columns: bool = False, chunksize: int = 50
     ) -> RecordsFormat:
@@ -127,7 +125,6 @@ class MetadataMiddleware:
 
         return dependents
 
-    @validate_arguments
     def get(self, guids: list[GUID]) -> RecordsFormat:
         """
         Find all objects based on the supplied guids.
@@ -158,7 +155,6 @@ class MetadataMiddleware:
 
         return content
 
-    @validate_arguments
     def find(
         self,
         *,
@@ -229,7 +225,6 @@ class MetadataMiddleware:
 
         return content
 
-    @validate_arguments
     def objects_exist(self, metadata_type: MetadataObjectType, guids: list[GUID]) -> dict[GUID, bool]:
         """
         Check if the input GUIDs exist.
@@ -241,7 +236,6 @@ class MetadataMiddleware:
         return {guid: guid in existence for guid in guids}
 
     @ft.lru_cache(maxsize=1000)  # noqa: B019
-    @validate_arguments
     def find_data_source_of_logical_table(self, guid: GUID) -> GUID:
         """
         METADATA DETAILS is expensive. Here's our shortcut.
@@ -250,7 +244,6 @@ class MetadataMiddleware:
         storable = r.json()["storables"][0]
         return storable["dataSourceId"]
 
-    @validate_arguments
     def table_references(self, guid: GUID, *, tml_type: str, hidden: bool = False) -> list[MetadataParent]:
         """
         Returns a mapping of parent LOGICAL_TABLEs

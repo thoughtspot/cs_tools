@@ -42,7 +42,6 @@ class TQLMiddleware:
         if not set(self.ts.me.privileges).intersection(REQUIRED):
             raise InsufficientPrivileges(user=self.ts.me, service="remote TQL", required_privileges=", ".join(REQUIRED))
 
-    @validate_arguments
     def query(
         self,
         statement: str,
@@ -89,7 +88,6 @@ class TQLMiddleware:
 
         return out
 
-    @validate_arguments
     def command(
         self,
         command: str,
@@ -124,7 +122,6 @@ class TQLMiddleware:
 
         return out
 
-    @validate_arguments
     def script(
         self,
         fp: pathlib.Path,
