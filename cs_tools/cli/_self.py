@@ -140,7 +140,7 @@ def download(
         ...,
         metavar="X.Y",
         help="major and minor version of your python install",
-        custom_type=AwesomeVersion,
+        parser=AwesomeVersion,
     ),
     beta: bool = typer.Option(False, "--beta", help="if included, download the latest pre-release binary"),
 ):
