@@ -35,6 +35,10 @@ def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
         except (OverflowError, OSError) as e:
             raise ValueError(f"value is too large to be a POSIX timestamp, got {value}") from e
 
+    # ISO-FORMATTED DATETIME
+    elif isinstance(value, str):
+        value = ensure_datetime_is_utc.func(dt.datetime.fromisoformat(value))
+
     else:
         raise ValueError(f"value should be a valid datetime representation, got {value}")
 
