@@ -27,7 +27,7 @@ class _GlobalSettings(pydantic_settings.BaseSettings):
 
 
 class ValidatedSQLModel(sqlmodel.SQLModel):
-    """ """
+    """Global SQLModel configuration."""
 
     @classmethod
     def validated_init(cls, **data):
@@ -68,7 +68,7 @@ class ThoughtSpotInfo(_GlobalModel):
 
             data = {
                 "cluster_id": config_info["selfClusterId"],
-                "url": config_info.get("emailConfig", {}).get("welcomeEmailConfig", {}).get("getStartedLink"),
+                "url": data["__url__"],
                 "version": data["releaseVersion"],
                 "timezone": data["timezone"],
                 "is_cloud": config_info.get("isSaas", False),
@@ -87,7 +87,7 @@ class LocalSystemInfo(_GlobalModel):
     """Information about the machine running CS Tools."""
 
     system: str = f"{platform.system()} (detail: {platform.platform()})"
-    python: AwesomeVersion = platform.python_version()
+    python: Annotated[str, validators.stringified_version] = platform.python_version()
     ran_at: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = dt.datetime.now(tz=dt.timezone.utc)
 
 
@@ -117,18 +117,18 @@ class UserInfo(_GlobalModel):
     @property
     def is_admin(self) -> bool:
         allowed = {types.GroupPrivilege.can_administer_thoughtspot}
-        return allowed.insection(self.privileges)
+        return bool(allowed.intersection(self.privileges))
 
     @property
     def is_data_manager(self) -> bool:
         allowed = {types.GroupPrivilege.can_administer_thoughtspot, types.GroupPrivilege.can_manage_data}
-        return allowed.insection(self.privileges)
+        return bool(allowed.intersection(self.privileges))
 
 
 class SessionContext(_GlobalModel):
     """Information about the current CS Tools session."""
 
-    cs_tools_version: AwesomeVersion = __version__
+    cs_tools_version: Annotated[str, validators.stringified_version] = __version__
     environment: Optional[ExecutionEnvironment]
     thoughtspot: ThoughtSpotInfo
     system: Optional[LocalSystemInfo]

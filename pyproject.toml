@@ -46,6 +46,7 @@ dependencies = [
     "rich",
     "sqlmodel",
     "toml",
+    "packaging",
 
     # version specific
     "strenum >= 0.4.9; python_version < '3.11.0'",
@@ -111,7 +112,13 @@ cstools = "cs_tools.cli.main:run"
 [tool.setuptools.dynamic]
 version = {attr = "cs_tools._version.__version__"}
 
-# [tool.mypy]
+[tool.mypy]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+strict_equality = true
+strict_concatenate = true
 # exclude = '''
 # (?x)(
 #     ^_scriptability.py$  # ignore auto-generated files

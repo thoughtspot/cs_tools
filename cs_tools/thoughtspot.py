@@ -87,7 +87,7 @@ class ThoughtSpot:
             r.raise_for_status()
 
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-            if "SSL: CERTIFICATE_VERIFY_FAILED" in (e):
+            if "SSL: CERTIFICATE_VERIFY_FAILED" in str(e):
                 exc_info = {
                     "reason": "Outdated Python default certificate detected.",
                     "mitigation": (
@@ -144,7 +144,7 @@ class ThoughtSpot:
         # GOOD TO GO , INTERACT WITH THE APIs
         # ==============================================================================================================
         r = self.api.v1.session_info()
-        d = {"__is_session_info__": True, **r.json()}
+        d = {"__is_session_info__": True, **r.json(), "__url__": self.config.thoughtspot.url}
         self._session_context = SessionContext(environment={}, thoughtspot=d, system={}, user=d)
         log.debug(self._session_context.dict())
 
