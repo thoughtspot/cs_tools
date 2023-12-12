@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ipaddress import IPv4Address
 from typing import Annotated, Any, Optional, Union
+import binascii
 import datetime as dt
 import json
 import logging
@@ -11,7 +12,7 @@ import uuid
 
 from awesomeversion import AwesomeVersion
 from pydantic import AnyHttpUrl, Field
-from pydantic.types import DirectoryPath, FilePath
+from pydantic.types import DirectoryPath
 import pydantic
 import toml
 
@@ -138,60 +139,97 @@ class ThoughtSpotConfiguration(_GlobalSettings):
     username: str
     password: Optional[str] = pydantic.Field(default=None)
     secret_key: Optional[types.GUID] = pydantic.Field(default=None)
-    org_id: Optional[int] = None
+    default_org: Optional[str] = None
     disable_ssl: bool = False
 
+    @pydantic.field_validator("password", mode="before")
+    @classmethod
+    def encode_password(cls, data: Any) -> Optional[str]:
+        if data is None:
+            return None
+
+        try:
+            utils.reveal(data.encode()).decode()
+        except binascii.Error:
+            pass
+        else:
+            return data
+
+        return utils.obscure(data).decode()
+
+    @pydantic.field_validator("url", mode="after")
+    @classmethod
+    def ensure_only_netloc(cls, data) -> str:
+        netloc = data.host
+
+        if data.scheme == "http" and data.port != 80:
+            netloc += str(data.port)
+
+        if data.scheme == "https" and data.port != 443:
+            netloc += str(data.port)
+
+        return f"{data.scheme}://{netloc}"
+
     @property
-    def decoded_password(self) -> str:
-        return utils.reveal(self.password).decode()
+    def decoded_password(self) -> Optional[str]:
+        if self.password is None:
+            return None
+        return utils.reveal(self.password.encode()).decode()
 
     @property
     def is_orgs_enabled(self) -> bool:
-        return self.org_id is not None
+        return self.default_org is not None
 
 
 class CSToolsConfig(_GlobalModel):
     name: str
     thoughtspot: ThoughtSpotConfiguration
-    syncer: dict[str, FilePath] = None
     verbose: bool = False
     temp_dir: DirectoryPath = cs_tools_venv.app_dir
 
     @pydantic.model_validator(mode="before")
     @classmethod
-    def _check_backwards_compatability(cls, data: Any) -> Any:
+    def _enforce_compatability(cls, data: Any) -> Any:
         # from V1.4.x
         if "auth" in data:
-            data = {
-                "name": data["name"],
-                "thoughtspot": {
-                    "url": data["thoughtspot"]["host"],
-                    "username": data["auth"]["frontend"]["username"],
-                    "password": data["auth"]["frontend"]["password"],
-                    "disable_ssl": data["thoughtspot"]["disable_ssl"],
-                },
-                "syncer": data.get("syncer", {}),
-                "verbose": data["verbose"],
-                "temp_dir": data["temp_dir"],
-            }
+            data = cls._backwards_compat_pre_v150(data)
 
         return data
+
+    @pydantic.field_serializer("temp_dir")
+    def ensure_only_netloc(self, temp_dir) -> str:
+        return temp_dir.as_posix()
+
+    @classmethod
+    def _backwards_compat_pre_v150(cls, data: Any) -> Any:
+        """ """
+        data = {
+            "name": data["name"],
+            "thoughtspot": {
+                "url": data["thoughtspot"]["host"],
+                "username": data["auth"]["frontend"]["username"],
+                "password": data["auth"]["frontend"]["password"],
+                "disable_ssl": data["thoughtspot"]["disable_ssl"],
+            },
+            "verbose": data["verbose"],
+            "temp_dir": data["temp_dir"],
+        }
+
+        return data
+
+    @classmethod
+    def from_name(cls, name: str) -> CSToolsConfig:
+        """Read in a config by its name."""
+        if name is None:
+            raise ConfigDoesNotExist(name=f"[b green]{name}")
+
+        return cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{name}.toml")
 
     @classmethod
     def from_toml(
         cls, fp: pathlib.Path, *, verbose: Optional[bool] = None, temp_dir: Optional[pathlib.Path] = None
     ) -> CSToolsConfig:
-        """
-        Read in a ts-config.toml file.
-
-        Parameters
-        ----------
-        fp : pathlib.Path
-          location of the config toml on disk
-
-        verbose, temp_dir
-          overrides the settings found in the config file
-        """
+        """Read in a ts-config.toml file."""
         try:
             data = toml.load(fp)
         except FileNotFoundError:
@@ -207,54 +245,4 @@ class CSToolsConfig(_GlobalModel):
         if temp_dir is not None:
             data["temp_dir"] = temp_dir
 
-        return cls(**data)
-
-    @classmethod
-    def from_command(cls, config: Optional[str] = None, **passthru) -> CSToolsConfig:
-        """
-        Read in a ts-config.toml file by its name.
-
-        If no file is provided, we attempt to check for the default
-        configuration.
-
-        Parameters
-        ----------
-        config: str
-          name of the configuration file
-        """
-        if config is None and _meta_config.default_config_name is not None:
-            config = _meta_config.default_config_name
-
-        if config is None:
-            raise ConfigDoesNotExist(name=f"[b green]{config}")
-
-        return cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml", **passthru)
-
-    @classmethod
-    def from_parse_args(cls, name: str, *, validate: bool = True, **passthru) -> CSToolsConfig:
-        """
-        Validate initial input from config.create or config.modify.
-        """
-        _pw = passthru.get("password")
-        _syncers = [syncer.split("://") for syncer in passthru.get("syncer", [])]
-
-        data = {
-            "name": name,
-            "verbose": passthru.get("verbose"),
-            "temp_dir": passthru.get("temp_dir"),
-            "thoughtspot": {
-                "host": passthru["host"],
-                "port": passthru.get("port"),
-                "disable_ssl": passthru.get("disable_ssl"),
-                "disable_sso": passthru.get("disable_sso"),
-            },
-            "auth": {
-                "frontend": {
-                    "username": passthru["username"],
-                    "password": utils.obscure(_pw).decode() if _pw is not None else _pw,
-                }
-            },
-            "syncer": dict(_syncers),
-        }
-
-        return cls.model_validate(data) if validate else cls.construct(**data)
+        return cls.model_validate(data, context={"trusted": True})
