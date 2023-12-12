@@ -27,32 +27,35 @@ class SQLite(DatabaseSyncer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._engine = sa.create_engine(f"sqlite:///{self.database_path}", future=True)
-        self._connection = self._engine.connect()
 
     def __repr__(self):
-        return f"<DatabaseSyncer ({self.name}) sync: conn_string='{self.engine.url}'>"
+        return f"<SQLiteSyncer conn_string='{self.engine.url}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, table: str) -> TableRows:
-        """INSERT rows into SQLite."""
-        t = self.metadata.tables[table]
-
-        with self.connection.begin_nested():
-            r = self.connection.execute(t.select())
-
-        return [dict(_) for _ in r]
-
-    def dump(self, table: str, *, data: TableRows) -> None:
+    def load(self, tablename: str) -> TableRows:
         """SELECT rows from SQLite."""
+        table = self.metadata.tables[tablename]
+
+        with self.engine.connect() as connection:
+            rows = connection.execute(table.select())
+
+        return [row.model_dump() for row in rows]
+
+    def dump(self, tablename: str, *, data: TableRows) -> None:
+        """INSERT rows into SQLite."""
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return
 
-        t = self.metadata.tables[table]
+        t = self.metadata.tables[tablename]
 
-        with self.connection.begin_nested():
-            if self.truncate_on_load:
-                self.connection.execute(t.delete())
+        with self.engine.connect() as connection:
+            if self.load_strategy == "APPEND":
+                connection.execute(t.insert(), data)
 
-            self.connection.execute(t.insert(), data)
+            if self.load_strategy == "TRUNCATE":
+                connection.execute(t.delete())
+
+            if self.load_strategy == "UPSERT":
+                raise NotImplementedError("coming soon..")

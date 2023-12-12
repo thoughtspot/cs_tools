@@ -1,69 +1,51 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Literal, Optional
 import json
 import logging
 import pathlib
 
-from pydantic.dataclasses import dataclass
+import pydantic
 
-from . import util
+from cs_tools.sync.base import Syncer
+
+if TYPE_CHECKING:
+    from cs_tools.sync.types import TableRows
+
+log = logging.getLogger(__name__)
 
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class JSON:
-    """
-    Interact with JSON.
-    """
+class JSON(Syncer):
+    """Interact with a JSON file."""
 
-    path: pathlib.Path
+    __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
+    __syncer_name__ = "sqlite"
 
-    def __post_init_post_parse__(self):
-        self.path = self.path.resolve()
-
-        if not self.path.exists():
-            log.info(f"{self.path} does not exist, creating..")
-
-            if self.path.suffix:
-                self.path.parent.mkdir(parents=True, exist_ok=True)
-                self.path.touch()
-            else:
-                self.path.mkdir(parents=True, exist_ok=True)
-
-    @property
-    def is_file(self) -> bool:
-        return self.path.is_file()
-
-    def resolve_path(self, directive: str) -> pathlib.Path:
-        return self.path if self.file else self.path / directive / ".json"
+    directory: pydantic.DirectoryPath
+    encoding: Optional[Literal["UTF-8"]] = None
 
     def __repr__(self):
-        return f"<JSON sync: path='{self.path}', file={self.is_file()}'>"
+        return f"<JSONSyncer directory={self.directory.as_posix()}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 
-    @property
-    def name(self) -> str:
-        return "json"
+    def load(self, directive: str) -> TableRows:
+        """Fetch rows from a JSON file."""
+        text = (self.directory / directive).read_text(encoding=self.encoding)
 
-    def load(self, directive: str) -> list[dict[str, Any]]:
-        path = self.resolve_path(directive)
-        data = util.read_from_possibly_empty(path)
+        if not text:
+            return []
+
+        data = json.loads(text)
         return data[directive]
 
-    def dump(self, directive: str, *, data: list[dict[str, Any]]) -> None:
+    def dump(self, directive: str, *, data: TableRows) -> None:
+        """Write rows to a JSON file."""
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return
 
-        path = self.resolve_path(directive)
-
-        if self.is_file:
-            existing_data = util.read_from_possibly_empty(path)
-            existing_data[directive] = data
-            data = existing_data.copy()
-
-        with path.open("w") as j:
-            json.dump(data, j, indent=4)
+        text = json.dumps(data)
+        (self.directory / directive).write_text(text, encoding=self.encoding)
