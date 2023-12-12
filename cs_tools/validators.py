@@ -18,7 +18,7 @@ def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
 
     # WRONG TIMEZONE
     elif isinstance(value, dt.datetime) and value.tzinfo == dt.timezone.utc:
-        value = value.astimezone(tzinfo=dt.timezone.utc)
+        value = value.astimezone(tz=dt.timezone.utc)
 
     # NAIVE DATETIME
     elif isinstance(value, dt.datetime):

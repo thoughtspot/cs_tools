@@ -163,17 +163,17 @@ class RuntimeEnvironment(ValidatedSQLModel, table=True):
     @pydantic.field_validator("envt_uuid", mode="before")
     @classmethod
     def check_value_uuid4(cls, value: Any) -> str:
-        return validators.stringified_uuid4(value)
+        return validators.stringified_uuid4.func(value)
 
     @pydantic.field_validator("cs_tools_version", "python_version", mode="before")
     @classmethod
     def check_valid_version(cls, value: Any) -> str:
-        return validators.stringified_version(value)
+        return validators.stringified_version.func(value)
 
     @pydantic.field_validator("capture_dt", mode="before")
     @classmethod
     def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
-        return validators.ensure_datetime_is_utc(value)
+        return validators.ensure_datetime_is_utc.func(value)
 
 
 class CommandExecution(ValidatedSQLModel, table=True):
