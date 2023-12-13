@@ -166,7 +166,10 @@ def cli():
                 "\n".format(b=_BLUE, g=_GREEN, y=_YELLOW, x=_RESET)
             )
 
-    finally:
+    except Exception:
+        pass
+
+    else:
         _cleanup()
 
     return 0
