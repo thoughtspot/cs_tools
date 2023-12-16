@@ -154,7 +154,7 @@ class DatabaseSyncer(Syncer, is_base_class=True):
             #    https://docs.sqlalchemy.org/en/20/core/metadata.html#sqlalchemy.schema.Table.to_metadata.params.schema
             model.__table__.to_metadata(self.metadata, schema=None)
 
-        log.info(f"Creating tables {self.models} in {self}")
+        log.debug(f"Creating tables {self.models} in {self}")
         self.metadata.create_all(self.engine, tables=[model.__table__ for model in self.models])
 
     def __repr__(self) -> str:

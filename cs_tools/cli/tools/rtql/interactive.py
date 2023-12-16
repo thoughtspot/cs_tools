@@ -284,7 +284,6 @@ class InteractiveTQL:
         """
         with self.console.status("[bold green]starting remote TQL client..[/]"):
             self.ts.login()
-            self.ts.tql._check_privileges()
             self.update_tokens("static")
             self.update_tokens("dynamic")
 
@@ -293,15 +292,15 @@ class InteractiveTQL:
 
         self.print(
             "\nWelcome to the ThoughtSpot SQL command line interface, "
-            f"{self.ts.me.display_name}!"
+            f"{self.ts.session_context.user.display_name}!"
             "\n\n[green]Controls:"
             "\n  Press Control-C to clear current command."  # cmd-c ?
             '\n  Press Control-D or type "exit" or "quit" to exit.'  # doesn't work on Windows
             '\n  Type "help" for available commands.[/]'
             "\n\n  [yellow]Remember to add a semicolon after each command![/]"
             "\n\nConnected to remote TQL service."
-            f"\nCluster address: {self.ts.platform.url}"
-            f"\nCluster version: {self.ts.platform.version}"
+            f"\nCluster address: {self.ts.session_context.thoughtspot.url}"
+            f"\nCluster version: {self.ts.session_context.thoughtspot.version}"
         )
 
         while True:
