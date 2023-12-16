@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from typing import Optional
+import collections
 
+import pydantic
 import rich
 
 
@@ -39,18 +41,25 @@ class CSToolsError(Exception):
 
     def __rich__(self) -> rich.console.RenderableType:
         error_panel_content = ""
+        extra_info = {"self": self, **self.error_info}
 
         if self.reason is not None:
-            error_panel_content += "[b white]{self.reason}[/]"
+            error_panel_content += "[b white]{self.reason}[/]".format(**extra_info)
 
         if self.mitigation is not None:
-            error_panel_content += "\n" "\n[b green]Mitigation[/]" "\n[b yellow]{self.mitigation}[/]"
+            # fmt: off
+            error_panel_content += (
+                "\n"
+                "\n[b green]Mitigation[/]"
+                "\n[b yellow]{self.mitigation}[/]"
+            )
+            # fmt: on
 
         panel = rich.panel.Panel(
-            # Double string.format ... for some unknown reason.
-            error_panel_content.format(self=self, **self.error_info).format(self=self, **self.error_info),
+            # Double .format() because f-string replacement is not recursive until 3.12
+            error_panel_content.format(**extra_info).format(**extra_info),
             border_style="b red",
-            title=self.title.format(**self.error_info),
+            title=self.title.format(**extra_info),
             expand=False,
         )
 
@@ -73,9 +82,20 @@ class AuthenticationError(CSToolsError):
     """Raised when incorrect authorization details are supplied."""
 
     title = "Authentication failed for [b blue]{config.thoughtspot.username}"
-    reason = "\nCS Tools config: [b blue]{config.name}[/]" "\n    Incident ID: [b blue]{incident_id}[/]"
+    # fmt: off
+    reason = (
+        "\nCS Tools config: [b blue]{config.name}[/]"
+        "\n    Incident ID: [b blue]{incident_id}[/]"
+    )
+    # fmt: on
     mitigation = (
-        "\n1/ Check if your password is correct." "\n2/ Determine if your usename ends with a whitelisted email domain."
+        "\n1/ Check if your username and password is correct from the ThoughtSpot website."
+        "\n2/ Determine if your usename ends with a whitelisted email domain."
+        "\n3/ If your password contains a [b green]$[/] or [b green]![/], run [b green]cs_tools config modify "
+        "--config {config.thoughtspot.username} --password prompt[/] and type your password in the hidden prompt."
+        "\n"
+        "\n[b green]**[/]you may need to use [b green]{config.thoughtspot.url}?disableAutoSAMLRedirect=true[/] to see "
+        "the login page."
     )
 
 
@@ -121,16 +141,52 @@ class InsufficientPrivileges(CSToolsError):
 #
 
 
-class SyncerProtocolError(CSToolsError):
-    """Raised when a Custom Syncer breaks the contract."""
-
-    title = "Custom Syncer could not be created."
-
-
-class SyncerError(CSToolsError):
+class SyncerInitError(CSToolsError):
     """Raised when a Syncer isn't defined correctly."""
 
-    title = "Your {proto} syncer encountered an error."
+    title = "Your {proto} Syncer encountered an error."
+    mitigation = (
+        # fmt: off
+        "Check the Syncer's documentation page for more information."
+        "\n[b blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/"
+        # fmt: on
+    )
+
+    def __init__(self, pydantic_error: pydantic.ValidationError, *, proto: str):
+        self.pydantic_error = pydantic_error
+        self.error_info = {"proto": proto or pydantic_error.title}
+
+    @property
+    def reason(self) -> str:
+        argument_block = collections.defaultdict(list)
+
+        for error_info in self.pydantic_error.errors():
+            key = f"{error_info['loc'][0]}\n[b blue]{error_info['input']}[/]"
+            argument_block[key].append(f"[b red]x {error_info['msg']}[/]")
+
+        if self.pydantic_error.error_count() > 1:
+            s = "s"
+            v = "ve"
+        else:
+            s = ""
+            v = "s"
+
+        error_messages = ""
+
+        for argument, errors in argument_block.items():
+            error_messages += f"\n{argument}"
+
+            for error in errors:
+                error_messages += f"\n[b red]{error}[/]"
+
+        # fmt: off
+        phrase = (
+            f"\n{self.pydantic_error.error_count()} argument{s} ha{v} errors."
+            f"\n{error_messages}"
+        )
+        # fmt: on
+
+        return phrase
 
 
 #

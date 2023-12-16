@@ -12,7 +12,8 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools.datastructures import _GlobalModel
+from cs_tools import errors
+from cs_tools.datastructures import ValidatedSQLModel, _GlobalModel, _GlobalSettings
 from cs_tools.updater._updater import cs_tools_venv
 
 if TYPE_CHECKING:
@@ -40,7 +41,7 @@ class SyncerManifest(_GlobalModel):
     syncer_class: str
     requirements: Optional[list[PipRequirement]] = pydantic.Field(default_factory=list)
 
-    def import_syncer_class(self, fp: pathlib.Path) -> Syncer:
+    def import_syncer_class(self, fp: pathlib.Path) -> type[Syncer]:
         __name__ = f"cs_tools_{fp.parent.stem}_syncer"  # noqa: A001
         __file__ = fp
         __path__ = [fp.parent.as_posix()]
@@ -55,7 +56,7 @@ class SyncerManifest(_GlobalModel):
         return getattr(module, self.syncer_class)
 
 
-class Syncer(_GlobalModel):
+class Syncer(_GlobalSettings):
     """A connection to a Data store."""
 
     __manifest_path__: pathlib.Path = None
@@ -76,7 +77,13 @@ class Syncer(_GlobalModel):
 
     def __lifecycle_init__(self, *a, __original_init__, **kw):
         """Hook into __init__ so we can call our own post-init function."""
-        __original_init__(self, *a, **kw)
+
+        try:
+            __original_init__(self, *a, **kw)
+
+        except pydantic.ValidationError as e:
+            raise errors.SyncerInitError(pydantic_error=e, proto=e.title) from None
+
         self.__finalize__()
 
     @classmethod
@@ -119,7 +126,7 @@ class DatabaseSyncer(Syncer, is_base_class=True):
     """A connection to an Database."""
 
     metadata: sqlmodel.MetaData = sqlmodel.MetaData()
-    models: list[pydantic.InstanceOf[sqlmodel.SQLModel]] = pydantic.Field(default_factory=list)
+    models: list[type[ValidatedSQLModel]] = pydantic.Field(default_factory=list)
     load_strategy: Literal["APPEND", "TRUNCATE", "UPSERT"] = "UPSERT"
 
     # To be defined during __init__() by subclasses of the DatabaseSyncer
@@ -139,7 +146,9 @@ class DatabaseSyncer(Syncer, is_base_class=True):
             return
 
         for model in self.models:
-            # If set to None, the schema will be set to that of the schema set on the target MetaData.
+            # If set to None, the schema will be set to that of the schema set on
+            # self.metadata. This allows subclasses and instances to override the
+            # default behavior.
             #
             # Further reading:
             #    https://docs.sqlalchemy.org/en/20/core/metadata.html#sqlalchemy.schema.Table.to_metadata.params.schema
