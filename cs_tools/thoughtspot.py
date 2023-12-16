@@ -36,6 +36,7 @@ class ThoughtSpot:
     def __init__(self, config: CSToolsConfig, auto_login: bool = False):
         self.config = config
         self.api = RESTAPIClient(ts_url=str(config.thoughtspot.url), verify=config.thoughtspot.disable_ssl)
+        self._session_context = None
 
         # ==============================================================================================================
         # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
@@ -59,9 +60,9 @@ class ThoughtSpot:
             self.login()
 
     @property
-    def session_context(self):  # -> SessionContext:
+    def session_context(self) -> SessionContext:
         """Returns information about the ThoughtSpot session."""
-        if not hasattr(self, "_session_context"):
+        if self._session_context is None:
             raise errors.NoSessionEstablished()
 
         return self._session_context

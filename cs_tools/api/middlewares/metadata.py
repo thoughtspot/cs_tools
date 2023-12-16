@@ -56,7 +56,7 @@ class MetadataMiddleware:
         group_guids = [group["id"] for group in self.ts.group.all()]
 
         for chunk in utils.chunks(guids, n=chunksize):
-            r = self.ts.api.v1.security_metadata_permissions(metadata_type=type_to_supertype[type.value], guids=chunk)
+            r = self.ts.api.v1.security_metadata_permissions(metadata_type=type_to_supertype[type], guids=chunk)
 
             for data in r.json().values():
                 for shared_to_principal_guid, permission in data["permissions"].items():
@@ -64,7 +64,7 @@ class MetadataMiddleware:
                         "object_guid": permission["topLevelObjectId"],
                         # 'shared_to_user_guid':
                         # 'shared_to_group_guid':
-                        "permission_type": permission_type.value,
+                        "permission_type": permission_type,
                         "share_mode": permission["shareMode"],
                     }
 

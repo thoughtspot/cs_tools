@@ -136,7 +136,7 @@ _meta_config = MetaConfig.load()
 
 class ThoughtSpotConfiguration(_GlobalSettings):
     url: Union[AnyHttpUrl, IPv4Address]
-    username: str
+    username: str = pydantic.Field()
     password: Optional[str] = pydantic.Field(default=None)
     secret_key: Optional[types.GUID] = pydantic.Field(default=None)
     default_org: Optional[str] = None

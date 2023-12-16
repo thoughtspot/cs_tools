@@ -39,7 +39,7 @@ class DSyncer(Dependency):
         manifest_path = syncer_dir / "MANIFEST.json"
         manifest = base.SyncerManifest.parse_file(manifest_path)
 
-        Syncer = manifest.import_syncer_class(fp=manifest_path.parent / "syncer.py")
+        SyncerClass = manifest.import_syncer_class(fp=manifest_path.parent / "syncer.py")
 
         ctx = click.get_current_context()
 
@@ -48,11 +48,11 @@ class DSyncer(Dependency):
         else:
             conf = {"configuration": self.definition_kw}
 
-        if issubclass(Syncer, base.DatabaseSyncer) and self.models is not None:
+        if issubclass(SyncerClass, base.DatabaseSyncer) and self.models is not None:
             conf["configuration"]["models"] = self.models
 
-        log.debug(f"Initializing syncer: {Syncer}")
-        self._syncer = Syncer(**conf["configuration"])
+        log.debug(f"Initializing syncer: {SyncerClass}")
+        self._syncer = SyncerClass(**conf["configuration"])
 
     def __exit__(self, *e):
         # https://stackoverflow.com/a/58984188
