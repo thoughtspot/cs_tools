@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 import logging
 import pathlib
 
+import pydantic
 import sqlalchemy as sa
 
 from cs_tools.sync.base import DatabaseSyncer
@@ -15,14 +16,18 @@ log = logging.getLogger(__name__)
 
 
 class SQLite(DatabaseSyncer):
-    """
-    Interact with a SQLite database.
-    """
+    """Interact with a SQLite database."""
 
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
     __syncer_name__ = "sqlite"
 
-    database_path: pathlib.Path
+    database_path: Union[pydantic.FilePath, pydantic.NewPath]
+
+    @pydantic.field_validator("database_path", mode="after")
+    def ensure_endswith_db(cls, path: pathlib.Path) -> pathlib.Path:
+        if path.suffix != ".db":
+            raise ValueError("path must be a valid .db file")
+        return path
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -48,14 +53,14 @@ class SQLite(DatabaseSyncer):
             log.warning(f"no data to write to syncer {self}")
             return
 
-        t = self.metadata.tables[tablename]
+        table = self.metadata.tables[tablename]
 
         with self.engine.connect() as connection:
             if self.load_strategy == "APPEND":
-                connection.execute(t.insert(), data)
+                connection.execute(table.insert(), data)
 
             if self.load_strategy == "TRUNCATE":
-                connection.execute(t.delete())
+                connection.execute(table.delete())
 
             if self.load_strategy == "UPSERT":
                 raise NotImplementedError("coming soon..")
