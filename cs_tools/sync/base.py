@@ -12,10 +12,9 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import errors
+from cs_tools import errors, utils
 from cs_tools.datastructures import ValidatedSQLModel, _GlobalModel, _GlobalSettings
 from cs_tools.updater._updater import cs_tools_venv
-from cs_tools import utils
 
 if TYPE_CHECKING:
     from cs_tools.sync.types import TableRows
@@ -174,6 +173,25 @@ class DatabaseSyncer(Syncer, is_base_class=True):
         self._session = sa.orm.Session(self._engine)
         self._session.begin()
 
+    def batched_insert(
+        self, insert: sa.sql.expression.Insert, *, data: TableRows, max_statement_parameters: int = 999
+    ) -> None:
+        """ """
+        batchsize = min(5000, max_statement_parameters // len(insert.table.columns))
+        rows = []
+
+        for row_number, row in enumerate(data, start=1):
+            rows.append(row)
+
+            # Commit every so often.
+            if row_number % batchsize == 0:
+                self.session.execute(insert.values(rows))
+                self.session.commit()
+                rows = []
+
+        # Final commit, grab the rest of the data rows.
+        self.session.execute(insert.values(rows))
+        self.session.commit()
 
     def __repr__(self) -> str:
         return f"<DatabaseSyncer to '{self.name}'>"

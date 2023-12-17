@@ -9,6 +9,8 @@ import sqlalchemy as sa
 
 from cs_tools.sync.base import DatabaseSyncer
 
+from . import const
+
 if TYPE_CHECKING:
     from cs_tools.sync.types import TableRows
 
@@ -41,10 +43,7 @@ class SQLite(DatabaseSyncer):
     def load(self, tablename: str) -> TableRows:
         """SELECT rows from SQLite."""
         table = self.metadata.tables[tablename]
-
-        with self.engine.connect() as connection:
-            rows = connection.execute(table.select())
-
+        rows = self.session.execute(table.select())
         return [row.model_dump() for row in rows]
 
     def dump(self, tablename: str, *, data: TableRows) -> None:
@@ -55,12 +54,14 @@ class SQLite(DatabaseSyncer):
 
         table = self.metadata.tables[tablename]
 
-        with self.engine.connect() as connection:
-            if self.load_strategy == "APPEND":
-                connection.execute(table.insert(), data)
+        if self.load_strategy == "APPEND":
+            self.batched_insert(table.insert(), data=data, max_statement_parameters=const.SQLITE_MAX_VARIABLES)
 
-            if self.load_strategy == "TRUNCATE":
-                connection.execute(table.delete())
+        if self.load_strategy == "TRUNCATE":
+            self.session.execute(table.delete())
+            self.batched_insert(table.insert(), data=data, max_statement_parameters=const.SQLITE_MAX_VARIABLES)
 
-            if self.load_strategy == "UPSERT":
-                raise NotImplementedError("coming soon..")
+        if self.load_strategy == "UPSERT":
+            raise NotImplementedError("coming soon..")
+
+        self.session.commit()
