@@ -39,7 +39,7 @@ class DSyncer(Dependency):
         manifest_path = syncer_dir / "MANIFEST.json"
         manifest = base.SyncerManifest.parse_file(manifest_path)
 
-        SyncerClass = manifest.import_syncer_class(fp=manifest_path.parent / "syncer.py")
+        SyncerClass = manifest.import_syncer_class(fp=syncer_dir / "syncer.py")
 
         ctx = click.get_current_context()
 
@@ -54,11 +54,14 @@ class DSyncer(Dependency):
         log.debug(f"Initializing syncer: {SyncerClass}")
         self._syncer = SyncerClass(**conf["configuration"])
 
-    def __exit__(self, *e):
-        # https://stackoverflow.com/a/58984188
-        if isinstance(self._syncer, base.DatabaseSyncer) and hasattr(self._syncer, "_cnxn"):
-            if hasattr(self._syncer._cnxn, "close"):
-                self._syncer._cnxn.close()
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+
+        if isinstance(self._syncer, base.DatabaseSyncer):
+            if exc_type is not None:
+                self._syncer.session.rollback()
+            else:
+                self._syncer.session.commit()
+                self._syncer.session.close()
 
         return
 

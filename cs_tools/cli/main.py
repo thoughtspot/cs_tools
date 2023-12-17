@@ -103,7 +103,7 @@ def run() -> int:
     """
     Entrypoint into cs_tools.
     """
-    # monkey-patch the typer implementation
+    IS_DEV_ENVIRONMENT = utils.determine_editable_install()
 
     # import all our tools
     from cs_tools.cli import _analytics, _config, _log, _self, _tools
@@ -161,7 +161,7 @@ def run() -> int:
             word_wrap=False,
             show_locals=False,
             suppress=[typer, click, contextlib],
-            max_frames=10,
+            max_frames=25 if IS_DEV_ENVIRONMENT else 10,
         )
 
         github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
@@ -203,7 +203,7 @@ def run() -> int:
     this_run = _analytics.CommandExecution.validated_init(**this_run_data)
 
     # Add the analytics to the local database
-    if not utils.determine_editable_install():
+    if not IS_DEV_ENVIRONMENT:
         try:
             with db.begin() as transaction:
                 stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])

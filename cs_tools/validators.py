@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 import datetime as dt
 import uuid
 
@@ -64,3 +64,11 @@ def stringified_version(value: Any) -> str:
 def stringified_url_format(value: Any) -> str:
     """Ensures the input value is a valid HTTP/s string."""
     return str(pydantic.networks.AnyUrl(value))
+
+#
+# ready-to-use validated type hints, cast as core python data types
+#
+
+DateTimeInUTC = Annotated[dt.datetime, ensure_datetime_is_utc]
+ValidVersionStr = Annotated[str, stringified_version]
+ValidUUID4Str = Annotated[str, stringified_uuid4]

@@ -5,7 +5,7 @@ This file localizes all the analytics activities that CS Tools performs.
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Annotated, Any, Optional
 import datetime as dt
 import json
 import logging
@@ -17,10 +17,10 @@ import sysconfig
 from awesomeversion import AwesomeVersion
 from rich.panel import Panel
 from rich.prompt import Prompt
-from sqlmodel import Field, SQLModel
 import httpx
 import pydantic
 import sqlalchemy as sa
+import sqlmodel
 
 from cs_tools import utils, validators
 from cs_tools._version import __version__
@@ -52,10 +52,10 @@ def get_database() -> sa.engine.Engine:
 
     # PERFROM AN ELEGANT DATABASE MIGRATION :~)
     if __version__ == "1.4.9" and AwesomeVersion(latest_recorded_version) != AwesomeVersion("1.4.9"):
-        SQLModel.metadata.drop_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
+        ValidatedSQLModel.metadata.drop_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
 
     # SET UP THE DATABASE
-    SQLModel.metadata.create_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
+    ValidatedSQLModel.metadata.create_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
 
     # INSERT OUR CURRENT ENVIRONMENT
     if AwesomeVersion(latest_recorded_version) < AwesomeVersion(__version__):
@@ -152,28 +152,13 @@ class RuntimeEnvironment(ValidatedSQLModel, table=True):
 
     __tablename__ = "runtime_environment"
 
-    envt_uuid: str = Field(max_length=32, primary_key=True)
-    cs_tools_version: str = Field(primary_key=True)
-    capture_dt: dt.datetime = dt.datetime.now(tz=dt.timezone.utc)
-    operating_system: str = Field(default_factory=platform.system)
-    is_thoughtspot_cluster: bool = Field(default_factory=lambda: bool(shutil.which("tscli")))
-    python_platform_tag: str = Field(default_factory=sysconfig.get_platform)
-    python_version: str = Field(default_factory=platform.python_version)
-
-    @pydantic.field_validator("envt_uuid", mode="before")
-    @classmethod
-    def check_value_uuid4(cls, value: Any) -> str:
-        return validators.stringified_uuid4.func(value)
-
-    @pydantic.field_validator("cs_tools_version", "python_version", mode="before")
-    @classmethod
-    def check_valid_version(cls, value: Any) -> str:
-        return validators.stringified_version.func(value)
-
-    @pydantic.field_validator("capture_dt", mode="before")
-    @classmethod
-    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
-        return validators.ensure_datetime_is_utc.func(value)
+    envt_uuid: validators.ValidUUID4Str = sqlmodel.Field(max_length=32, primary_key=True)
+    cs_tools_version: validators.ValidVersionStr = sqlmodel.Field(primary_key=True)
+    capture_dt: validators.DateTimeInUTC = dt.datetime.now(tz=dt.timezone.utc)
+    operating_system: str = sqlmodel.Field(default_factory=platform.system)
+    is_thoughtspot_cluster: bool = sqlmodel.Field(default_factory=lambda: bool(shutil.which("tscli")))
+    python_platform_tag: str = sqlmodel.Field(default_factory=sysconfig.get_platform)
+    python_version: validators.ValidVersionStr = sqlmodel.Field(default_factory=platform.python_version)
 
 
 class CommandExecution(ValidatedSQLModel, table=True):
@@ -185,15 +170,15 @@ class CommandExecution(ValidatedSQLModel, table=True):
 
     __tablename__ = "command_execution"
 
-    envt_uuid: str = Field(max_length=32, primary_key=True)
-    cs_tools_version: str = Field(primary_key=True)
-    start_dt: dt.datetime = Field(primary_key=True)
-    end_dt: dt.datetime
+    envt_uuid: validators.ValidUUID4Str = sqlmodel.Field(max_length=32, primary_key=True)
+    cs_tools_version: validators.ValidVersionStr = sqlmodel.Field(primary_key=True)
+    start_dt: validators.DateTimeInUTC = sqlmodel.Field(primary_key=True)
+    end_dt: validators.DateTimeInUTC
     is_success: bool
     os_args: str
     tool_name: Optional[str] = None
     command_name: Optional[str] = None
-    config_cluster_url: Optional[str] = None
+    config_cluster_url: Annotated[Optional[str], validators.stringified_url_format] = None
     is_known_error: Optional[bool] = None
     traceback: Optional[str] = None
 
@@ -213,22 +198,3 @@ class CommandExecution(ValidatedSQLModel, table=True):
                 data["config_cluster_url"] = ts.session_context.thoughtspot.url
 
         return data
-
-    @pydantic.field_validator("envt_uuid", mode="plain")
-    @classmethod
-    def check_value_uuid4(cls, value: Any) -> str:
-        return validators.stringified_uuid4.func(value)
-
-    @pydantic.field_validator("cs_tools_version", mode="before")
-    @classmethod
-    def check_valid_version(cls, value: Any) -> str:
-        return validators.stringified_version.func(value)
-
-    @pydantic.field_validator("start_dt", "end_dt", mode="before")
-    @classmethod
-    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
-        return validators.ensure_datetime_is_utc.func(value)
-
-    @pydantic.field_validator("config_cluster_url", mode="before")
-    def check_valid_url_format(cls, value: Any) -> str:
-        return validators.stringified_url_format.func(value)

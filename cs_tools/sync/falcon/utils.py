@@ -60,7 +60,7 @@ def make_tempfile_for_upload(directory: pathlib.Path, *, data: TableRows, includ
     """Temporarily create a file for HTTP multipart file uploads."""
     with tempfile.NamedTemporaryFile(mode="wb+", dir=directory) as fd:
         with io.TextIOWrapper(fd, encoding="UTF-8", newline="") as txt:
-            writer = csv.DictWriter(txt, data[0].keys(), delimiter="|")
+            writer = csv.DictWriter(txt, fieldnames=data[0].keys(), delimiter="|")
 
             if include_header:
                 writer.writeheader()

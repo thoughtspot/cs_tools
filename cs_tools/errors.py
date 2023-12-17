@@ -161,8 +161,8 @@ class SyncerInitError(CSToolsError):
         argument_block = collections.defaultdict(list)
 
         for error_info in self.pydantic_error.errors():
-            key = f"{error_info['loc'][0]}\n[b blue]{error_info['input']}[/]"
-            argument_block[key].append(f"[b red]x {error_info['msg']}[/]")
+            key = f"{error_info['loc'][0]}\n[b blue]{error_info['input']}[/]" if error_info["loc"] else "__root__"
+            argument_block[key].append(f"x {error_info['msg']}")
 
         if self.pydantic_error.error_count() > 1:
             s = "s"

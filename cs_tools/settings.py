@@ -34,10 +34,10 @@ class MetaConfig(_GlobalModel):
 
     install_uuid: uuid.UUID = Field(default_factory=uuid.uuid4)
     default_config_name: str = None
-    last_remote_check: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = _FOUNDING_DAY
+    last_remote_check: validators.DateTimeInUTC = _FOUNDING_DAY
     remote_version: str = None
     remote_date: dt.date = None
-    last_analytics_checkpoint: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = _FOUNDING_DAY
+    last_analytics_checkpoint: validators.DateTimeInUTC = _FOUNDING_DAY
     analytics_opt_in: Optional[bool] = None
     # company_name: Optional[str] = None  # DEPRECATED AS OF 1.4.6
     record_thoughtspot_url: Optional[bool] = None
@@ -141,6 +141,18 @@ class ThoughtSpotConfiguration(_GlobalSettings):
     secret_key: Optional[types.GUID] = pydantic.Field(default=None)
     default_org: Optional[str] = None
     disable_ssl: bool = False
+
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def ensure_only_one_type_of_secret(cls, values: Any) -> Any:
+        """Must provide one of Password or Secret, but not both."""
+        if "password" in values and "secret_key" in values:
+            raise ValueError("must provide one of 'password' or 'secret_key', but not both")
+
+        if "password" not in values and "secret_key" not in values:
+            raise ValueError("missing one of the following keyword arguments, 'password' or 'secret_key'")
+
+        return values
 
     @pydantic.field_validator("password", mode="before")
     @classmethod

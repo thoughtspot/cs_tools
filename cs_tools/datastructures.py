@@ -13,24 +13,40 @@ import sqlmodel
 from cs_tools import types, utils, validators
 from cs_tools._version import __version__
 
+_COMMON_MODEL_CONFIG = {
+    "arbitrary_types_allowed": True,
+    "populate_by_name": True,
+}
 
 class _GlobalModel(pydantic.BaseModel):
     """Global configuration."""
 
-    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
+    model_config = pydantic.ConfigDict(**_COMMON_MODEL_CONFIG)
 
 
 class _GlobalSettings(pydantic_settings.BaseSettings):
-    """Global configuration"""
+    """
+    Global configuration.
 
-    model_config = pydantic_settings.SettingsConfigDict(env_prefix="CS_TOOLS_", populate_by_name=True)
+    Can inherit model attributes from environment variables.
+    """
+
+    model_config = pydantic_settings.SettingsConfigDict(env_prefix="CS_TOOLS_", **_COMMON_MODEL_CONFIG)
 
 
 class ValidatedSQLModel(sqlmodel.SQLModel):
-    """Global SQLModel configuration."""
+    """
+    Global SQLModel configuration.
+
+    Can inherit model attributes from environment variables.
+    """
+
+    model_config = sqlmodel._compat.SQLModelConfig(env_prefix="CS_TOOLS_SYNCER_", **_COMMON_MODEL_CONFIG)
 
     @classmethod
     def validated_init(cls, **data):
+        # defaults  = cls.read_from_environment()
+        # sanitized = cls.model_validate({**defaults, **data})
         sanitized = cls.model_validate(data)
         return cls(**sanitized.dict())
 

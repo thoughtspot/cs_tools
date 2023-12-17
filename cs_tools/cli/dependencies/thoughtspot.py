@@ -16,6 +16,7 @@ from cs_tools.settings import (
 )
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.updater import cs_tools_venv
+from cs_tools import utils
 
 if TYPE_CHECKING:
     import typer
@@ -91,7 +92,7 @@ class DThoughtSpot(Dependency):
     def _send_analytics_in_background(self) -> None:
         DO_NOT_SEND_ANALYTICS = meta.analytics_opt_in in (None, False)
 
-        if DO_NOT_SEND_ANALYTICS:
+        if DO_NOT_SEND_ANALYTICS or utils.determine_editable_install():
             return
 
         from cs_tools.cli import _analytics

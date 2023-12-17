@@ -15,6 +15,7 @@ import sqlmodel
 from cs_tools import errors
 from cs_tools.datastructures import ValidatedSQLModel, _GlobalModel, _GlobalSettings
 from cs_tools.updater._updater import cs_tools_venv
+from cs_tools import utils
 
 if TYPE_CHECKING:
     from cs_tools.sync.types import TableRows
@@ -30,10 +31,10 @@ class PipRequirement(_GlobalModel):
     @classmethod
     def json_tuple_to_dict(cls, data: Any) -> Any:
         if isinstance(data, str):
-            return {"requirement": data}
+            return {"requirement": Requirement(data)}
 
         requirement, *args = data
-        return {"requirement": requirement, "pip_args": args}
+        return {"requirement": Requirement(requirement), "pip_args": args}
 
 
 class SyncerManifest(_GlobalModel):
@@ -82,6 +83,7 @@ class Syncer(_GlobalSettings):
             __original_init__(self, *a, **kw)
 
         except pydantic.ValidationError as e:
+            log.error(e, exc_info=True)
             raise errors.SyncerInitError(pydantic_error=e, proto=e.title) from None
 
         self.__finalize__()
@@ -89,6 +91,9 @@ class Syncer(_GlobalSettings):
     @classmethod
     def __ensure_pip_requirements__(cls) -> None:
         """Parse the SyncerManifest and install requirements."""
+        if utils.determine_editable_install():
+            return
+
         manifest = SyncerManifest.parse_file(cls.__manifest_path__)
 
         for requirement in manifest.requirements:
@@ -131,11 +136,21 @@ class DatabaseSyncer(Syncer, is_base_class=True):
 
     # To be defined during __init__() by subclasses of the DatabaseSyncer
     _engine: sa.engine.Engine = None
+    _session: sa.orm.Session = None
+
+    @pydantic.field_validator("load_strategy", mode="before")
+    def case_insensitive(cls, value: str) -> str:
+        return value.upper()
 
     @property
     def engine(self) -> sa.engine.Engine:
         """The SQLALchemy engine which connects us to our Database."""
         return self._engine
+
+    @property
+    def session(self) -> sa.orm.Session:
+        """ """
+        return self._session
 
     def __finalize__(self) -> None:
         # Metaclass-ish wizardry to determine if the DatabaseSyncer subclass defines the necessary properties.
@@ -154,8 +169,11 @@ class DatabaseSyncer(Syncer, is_base_class=True):
             #    https://docs.sqlalchemy.org/en/20/core/metadata.html#sqlalchemy.schema.Table.to_metadata.params.schema
             model.__table__.to_metadata(self.metadata, schema=None)
 
-        log.debug(f"Creating tables {self.models} in {self}")
-        self.metadata.create_all(self.engine, tables=[model.__table__ for model in self.models])
+        log.debug(f"Creating tables {[t.name for t in self.metadata.sorted_tables]} in {self!r}")
+        self.metadata.create_all(self._engine, tables=list(self.metadata.sorted_tables))
+        self._session = sa.orm.Session(self._engine)
+        self._session.begin()
+
 
     def __repr__(self) -> str:
         return f"<DatabaseSyncer to '{self.name}'>"

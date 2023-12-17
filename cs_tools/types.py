@@ -6,9 +6,6 @@ import re
 import typing
 import uuid
 
-from awesomeversion import AwesomeVersion
-from pydantic import ConfigDict
-import pendulum
 import pydantic
 
 from cs_tools._compat import StrEnum, TypedDict
@@ -290,67 +287,3 @@ class MetadataParent(pydantic.BaseModel):
 
     def __eq__(self, other):
         return (self.parent_guid, self.visualization_guid) == (other.parent_guid, other.visualization_guid)
-
-
-# ======================================================================================================================
-# CS Tools Internal types
-# ======================================================================================================================
-
-
-class ThoughtSpotPlatform(pydantic.BaseModel):
-    version: AwesomeVersion
-    deployment: str
-    url: str
-    timezone: pendulum._Timezone
-    cluster_name: str
-    cluster_id: str
-
-    @pydantic.validator("version", pre=True)
-    def _strip_patches(cls, version: str) -> str:
-        major, minor, patch, *extra = version.split(".")
-        return AwesomeVersion(f"{major}.{minor}.{patch}")
-
-    @pydantic.validator("deployment", pre=True)
-    def _one_of(cls, deployment: str) -> str:
-        if deployment.lower() not in ("software", "cloud"):
-            raise ValueError(f"'deployment' must be one of 'software' or 'cloud', got '{deployment}'")
-        return deployment.lower()
-
-    @pydantic.validator("timezone", pre=True)
-    def _get_tz(cls, tz_name: str) -> pendulum._Timezone:
-        timezone = pendulum.timezone(tz_name)
-
-        if timezone is None:
-            log.warning(f"could not retrieve timezone for '{tz_name}'")
-
-        return timezone
-
-    @classmethod
-    def from_api_v1_session_info(cls, info: dict[str, Any]) -> ThoughtSpotPlatform:
-        config_info = info.get("configInfo")
-
-        data = {
-            "version": info["releaseVersion"],
-            "deployment": "cloud" if config_info["isSaas"] else "software",
-            "url": config_info.get("emailConfig", {}).get("welcomeEmailConfig", {}).get("getStartedLink", "NOT SET"),
-            "timezone": info["timezone"],
-            "cluster_name": config_info["selfClusterName"],
-            "cluster_id": config_info["selfClusterId"],
-        }
-
-        version = data["version"]
-        version_parts = version.split(".")
-        if len(version_parts) == 1:
-            version += ".0.0"
-        elif len(version_parts) == 2:
-            version += ".0"
-
-        data["version"] = version
-
-        return cls(**data)
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-
-class LoggedInUser(pydantic.BaseModel):
-    a: int = 0
