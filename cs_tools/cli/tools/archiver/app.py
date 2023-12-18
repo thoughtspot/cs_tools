@@ -21,6 +21,7 @@ from cs_tools import utils
 
 from . import _extended_rest_api_v1
 from . import layout
+from . import models
 
 log = logging.getLogger(__name__)
 ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE = 3650
@@ -90,7 +91,7 @@ def identify(
     ),
     syncer: DSyncer = typer.Option(
         None,
-        custom_type=SyncerProtocolType(),
+        custom_type=SyncerProtocolType(models=[models.ArchiverReport]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -262,7 +263,7 @@ def revert(
     delete_tag: bool = typer.Option(False, "--delete-tag", help="after untagging identified content, remove the tag itself"),
     syncer: DSyncer = typer.Option(
         None,
-        custom_type=SyncerProtocolType(),
+        custom_type=SyncerProtocolType(models=[models.ArchiverReport]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -397,7 +398,7 @@ def remove(
     delete_tag: bool = typer.Option(False, "--delete-tag", help="after deleting identified content, remove the tag itself"),
     syncer: DSyncer = typer.Option(
         None,
-        custom_type=SyncerProtocolType(),
+        custom_type=SyncerProtocolType(models=[models.ArchiverReport]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),

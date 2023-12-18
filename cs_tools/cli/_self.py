@@ -77,7 +77,7 @@ def update(
     log.info("Upgrading CS Tools and its dependencies.")
 
     try:
-        rc = cs_tools_venv.pip("install", requires, "--upgrade")
+        rc = cs_tools_venv.pip("install", requires, "--upgrade", "--upgrade-strategy", "eager")
         log.debug(rc)
     except RuntimeError:  # OSError when pip on Windows can't upgrade itself~
         pass

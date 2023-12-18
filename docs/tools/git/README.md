@@ -24,6 +24,7 @@ For more information see the
 === "git --help"
     ~cs~tools ../.. cs_tools tools git --help
 
+## CLI Config Commands
 === "git config --help"
     ~cs~tools ../.. cs_tools tools git config --help
 
@@ -39,6 +40,7 @@ For more information see the
 === "git config delete --help"
     ~cs~tools ../.. cs_tools tools git config delete --help
 
+## CLI Branches Commands
 === "git branches --help"
     ~cs~tools ../.. cs_tools tools git branches --help
 
