@@ -25,6 +25,8 @@ class Redshift:
     Interact with an AWS Redshift database.
     """
 
+    pass
+
     username: str
     password: str
     database: str
