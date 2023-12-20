@@ -1,3 +1,13 @@
+"""
+Datastructures describe objects which describe systems at runtime for a given session.
+
+This is the receiving side of the configuration for a session. (settings.py)
+
+This includes things that will change based on submitted user configuration.
+- ThoughtSpot
+- Local Machine
+- User
+"""
 from __future__ import annotations
 
 from typing import Annotated, Any, Optional
@@ -15,8 +25,10 @@ from cs_tools._version import __version__
 
 _COMMON_MODEL_CONFIG = {
     "arbitrary_types_allowed": True,
+    "extra": "allow",
     "populate_by_name": True,
 }
+
 
 class _GlobalModel(pydantic.BaseModel):
     """Global configuration."""
@@ -44,11 +56,11 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
     model_config = sqlmodel._compat.SQLModelConfig(env_prefix="CS_TOOLS_SYNCER_", **_COMMON_MODEL_CONFIG)
 
     @classmethod
-    def validated_init(cls, **data):
+    def validated_init(cls, context: Any = None, **data):
         # defaults  = cls.read_from_environment()
         # sanitized = cls.model_validate({**defaults, **data})
-        sanitized = cls.model_validate(data)
-        return cls(**sanitized.dict())
+        sanitized = cls.model_validate(data, context=context)
+        return cls(**sanitized.model_dump())
 
 
 class ExecutionEnvironment(_GlobalSettings):
@@ -69,7 +81,7 @@ class ThoughtSpotInfo(_GlobalModel):
 
     cluster_id: str
     url: pydantic.networks.AnyUrl
-    version: AwesomeVersion
+    version: validators.CoerceVersion
     timezone: str
     is_cloud: bool
     is_api_v2_enabled: bool = False
@@ -103,7 +115,7 @@ class LocalSystemInfo(_GlobalModel):
     """Information about the machine running CS Tools."""
 
     system: str = f"{platform.system()} (detail: {platform.platform()})"
-    python: Annotated[str, validators.stringified_version] = platform.python_version()
+    python: validators.CoerceVersion = AwesomeVersion(platform.python_version())
     ran_at: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = dt.datetime.now(tz=dt.timezone.utc)
 
 
@@ -144,7 +156,7 @@ class UserInfo(_GlobalModel):
 class SessionContext(_GlobalModel):
     """Information about the current CS Tools session."""
 
-    cs_tools_version: Annotated[str, validators.stringified_version] = __version__
+    cs_tools_version: validators.CoerceVersion = AwesomeVersion(__version__)
     environment: Optional[ExecutionEnvironment]
     thoughtspot: ThoughtSpotInfo
     system: Optional[LocalSystemInfo]

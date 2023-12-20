@@ -1,3 +1,8 @@
+"""
+Settings describe configurations that are submitted to system like ThoughtSpot.
+
+This is the supply-side of information which determines the runtime environment.
+"""
 from __future__ import annotations
 
 from ipaddress import IPv4Address
@@ -35,7 +40,7 @@ class MetaConfig(_GlobalModel):
     install_uuid: uuid.UUID = Field(default_factory=uuid.uuid4)
     default_config_name: str = None
     last_remote_check: validators.DateTimeInUTC = _FOUNDING_DAY
-    remote_version: str = None
+    remote_version: Annotated[AwesomeVersion, validators.ensure_valid_version] = None
     remote_date: dt.date = None
     last_analytics_checkpoint: validators.DateTimeInUTC = _FOUNDING_DAY
     analytics_opt_in: Optional[bool] = None
@@ -139,6 +144,7 @@ class ThoughtSpotConfiguration(_GlobalSettings):
     username: str = pydantic.Field()
     password: Optional[str] = pydantic.Field(default=None)
     secret_key: Optional[types.GUID] = pydantic.Field(default=None)
+    bearer_token: Optional[types.GUID] = pydantic.Field(default=None)
     default_org: Optional[str] = None
     disable_ssl: bool = False
 
@@ -146,11 +152,10 @@ class ThoughtSpotConfiguration(_GlobalSettings):
     @classmethod
     def ensure_only_one_type_of_secret(cls, values: Any) -> Any:
         """Must provide one of Password or Secret, but not both."""
-        if "password" in values and "secret_key" in values:
-            raise ValueError("must provide one of 'password' or 'secret_key', but not both")
-
-        if "password" not in values and "secret_key" not in values:
-            raise ValueError("missing one of the following keyword arguments, 'password' or 'secret_key'")
+        if "password" not in values and "secret_key" not in values and "bearer_token" not in values:
+            raise ValueError(
+                "missing one or more of the following keyword arguments: 'password', 'secret_key', 'bearer_token'"
+            )
 
         return values
 
@@ -183,9 +188,9 @@ class ThoughtSpotConfiguration(_GlobalSettings):
         return f"{data.scheme}://{netloc}"
 
     @property
-    def decoded_password(self) -> Optional[str]:
+    def decoded_password(self) -> str:
         if self.password is None:
-            return None
+            raise ValueError(f"{self.username} has no stored password")
         return utils.reveal(self.password.encode()).decode()
 
     @property
@@ -194,67 +199,78 @@ class ThoughtSpotConfiguration(_GlobalSettings):
 
 
 class CSToolsConfig(_GlobalModel):
+    """Represents a configuration for CS Tools."""
+
     name: str
     thoughtspot: ThoughtSpotConfiguration
     verbose: bool = False
     temp_dir: DirectoryPath = cs_tools_venv.app_dir
+    created_in_cs_tools_version: validators.CoerceVersion
 
     @pydantic.model_validator(mode="before")
     @classmethod
     def _enforce_compatability(cls, data: Any) -> Any:
-        # from V1.4.x
+        # DEV NOTE: @boonhapus - upconvert the < 1.5.0 config
         if "auth" in data:
-            data = cls._backwards_compat_pre_v150(data)
+            data = {
+                "name": data["name"],
+                "thoughtspot": {
+                    "url": data["thoughtspot"]["host"],
+                    "username": data["auth"]["frontend"]["username"],
+                    "password": data["auth"]["frontend"]["password"],
+                    "disable_ssl": data["thoughtspot"]["disable_ssl"],
+                },
+                "verbose": data["verbose"],
+                "temp_dir": data["temp_dir"],
+                "created_in_cs_tools_version": __version__,
+                "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
+            }
 
         return data
 
     @pydantic.field_serializer("temp_dir")
-    def ensure_only_netloc(self, temp_dir) -> str:
+    @classmethod
+    def _serialize_as_string(self, temp_dir: pathlib.Path) -> str:
         return temp_dir.as_posix()
 
-    @classmethod
-    def _backwards_compat_pre_v150(cls, data: Any) -> Any:
-        """ """
-        data = {
-            "name": data["name"],
-            "thoughtspot": {
-                "url": data["thoughtspot"]["host"],
-                "username": data["auth"]["frontend"]["username"],
-                "password": data["auth"]["frontend"]["password"],
-                "disable_ssl": data["thoughtspot"]["disable_ssl"],
-            },
-            "verbose": data["verbose"],
-            "temp_dir": data["temp_dir"],
-        }
-
-        return data
+    # ====================
+    # NORMAL CLASS MEMBERS
+    # ====================
 
     @classmethod
     def from_name(cls, name: str) -> CSToolsConfig:
         """Read in a config by its name."""
-        if name is None:
-            raise ConfigDoesNotExist(name=f"[b green]{name}")
-
         return cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{name}.toml")
 
     @classmethod
-    def from_toml(
-        cls, fp: pathlib.Path, *, verbose: Optional[bool] = None, temp_dir: Optional[pathlib.Path] = None
-    ) -> CSToolsConfig:
-        """Read in a ts-config.toml file."""
+    def from_toml(cls, path: pathlib.Path) -> CSToolsConfig:
+        """Read in a cluster-config.toml file."""
         try:
-            data = toml.load(fp)
+            data = toml.load(path)
         except FileNotFoundError:
-            raise ConfigDoesNotExist(name=fp.stem.replace("cluster-cfg_", "")) from None
+            raise ConfigDoesNotExist(name=path.stem.replace("cluster-cfg_", "")) from None
 
-        if data.get("name") is None:
-            data["name"] = fp.stem.replace("cluster-cfg_", "")
+        instance = cls.model_validate(data)
 
-        # overrides
-        if verbose is not None:
-            data["verbose"] = verbose
+        # Can't get the type hints to work here, so will just ignore them for now~
+        if "__cs_tools_context__" in instance.__pydantic_extra__:  # type: ignore[operator]
+            context = instance.__pydantic_extra__["__cs_tools_context__"]  # type: ignore[index]
 
-        if temp_dir is not None:
-            data["temp_dir"] = temp_dir
+            if "config_migration" in context:
+                log.info(
+                    f"Migrating CS Tools configuration file '{instance.name}' from "
+                    f"{context['config_migration']['from']} to {context['config_migration']['to']}"
+                )
+                instance.save()
 
-        return cls.model_validate(data, context={"trusted": True})
+        return instance
+
+    def save(self, directory: pathlib.Path = cs_tools_venv.app_dir) -> None:
+        """Save a cluster-config.toml file."""
+        full_path = directory / f"cluster-cfg_{self.name}.toml"
+
+        # Remove the extras, we don't need to save that bit.
+        self.__pydantic_extra__ = {}
+
+        with full_path.open(mode="w") as t:
+            toml.dump(self.model_dump(), t)

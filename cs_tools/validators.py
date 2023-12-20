@@ -7,6 +7,12 @@ import uuid
 import awesomeversion
 import pydantic
 
+#
+# REUSEABLE VALIDATION LOGIC, VALIDATORS MUST
+# - be decorated with PlainValidator or WrapValidator
+# - prefix with `ensure_`
+#
+
 
 @pydantic.PlainValidator
 def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
@@ -46,7 +52,7 @@ def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
 
 
 @pydantic.PlainValidator
-def stringified_uuid4(value: Any) -> str:
+def ensure_valid_uuid4(value: Any) -> str:
     """Ensures the input value is a valid UUID4, in hex-string format."""
     if not isinstance(value, uuid.UUID):
         value = uuid.UUID(value, version=4)
@@ -55,9 +61,9 @@ def stringified_uuid4(value: Any) -> str:
 
 
 @pydantic.PlainValidator
-def stringified_version(value: Any) -> str:
-    """Ensures the input value is a valid version string."""
-    return str(awesomeversion.AwesomeVersion(value))
+def ensure_valid_version(value: Any) -> awesomeversion.AwesomeVersion:
+    """Ensures the input value is a valid version."""
+    return awesomeversion.AwesomeVersion(value)
 
 
 @pydantic.PlainValidator
@@ -65,10 +71,11 @@ def stringified_url_format(value: Any) -> str:
     """Ensures the input value is a valid HTTP/s string."""
     return str(pydantic.networks.AnyUrl(value))
 
+
 #
 # ready-to-use validated type hints, cast as core python data types
 #
 
 DateTimeInUTC = Annotated[dt.datetime, ensure_datetime_is_utc]
-ValidVersionStr = Annotated[str, stringified_version]
-ValidUUID4Str = Annotated[str, stringified_uuid4]
+CoerceVersion = Annotated[awesomeversion.AwesomeVersion, ensure_valid_version]
+CoerceHexUUID = Annotated[str, ensure_valid_uuid4]

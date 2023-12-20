@@ -152,13 +152,13 @@ class RuntimeEnvironment(ValidatedSQLModel, table=True):
 
     __tablename__ = "runtime_environment"
 
-    envt_uuid: validators.ValidUUID4Str = sqlmodel.Field(max_length=32, primary_key=True)
-    cs_tools_version: validators.ValidVersionStr = sqlmodel.Field(primary_key=True)
+    envt_uuid: validators.CoerceHexUUID = sqlmodel.Field(max_length=32, primary_key=True)
+    cs_tools_version: validators.CoerceVersion = sqlmodel.Field(primary_key=True)
     capture_dt: validators.DateTimeInUTC = dt.datetime.now(tz=dt.timezone.utc)
     operating_system: str = sqlmodel.Field(default_factory=platform.system)
     is_thoughtspot_cluster: bool = sqlmodel.Field(default_factory=lambda: bool(shutil.which("tscli")))
     python_platform_tag: str = sqlmodel.Field(default_factory=sysconfig.get_platform)
-    python_version: validators.ValidVersionStr = sqlmodel.Field(default_factory=platform.python_version)
+    python_version: validators.CoerceVersion = sqlmodel.Field(default_factory=platform.python_version)
 
 
 class CommandExecution(ValidatedSQLModel, table=True):
@@ -170,8 +170,8 @@ class CommandExecution(ValidatedSQLModel, table=True):
 
     __tablename__ = "command_execution"
 
-    envt_uuid: validators.ValidUUID4Str = sqlmodel.Field(max_length=32, primary_key=True)
-    cs_tools_version: validators.ValidVersionStr = sqlmodel.Field(primary_key=True)
+    envt_uuid: validators.CoerceHexUUID = sqlmodel.Field(max_length=32, primary_key=True)
+    cs_tools_version: validators.CoerceVersion = sqlmodel.Field(primary_key=True)
     start_dt: validators.DateTimeInUTC = sqlmodel.Field(primary_key=True)
     end_dt: validators.DateTimeInUTC
     is_success: bool
@@ -184,8 +184,8 @@ class CommandExecution(ValidatedSQLModel, table=True):
 
     @pydantic.model_validator(mode="before")
     @classmethod
-    def check_input_data_structure(cls, data: Any) -> dict[str, Any]:
-        if "cli_context" in data:
+    def check_input_data_structure(cls, data: Any, info: pydantic.ValidationInfo) -> dict[str, Any]:
+        if info.context is utils.State:
             _, _, tool_name_and_args = data["os_args"].partition(" tools ")
 
             if tool_name_and_args:
@@ -194,7 +194,7 @@ class CommandExecution(ValidatedSQLModel, table=True):
                 if rest:
                     data["command_name"] = rest[1]
 
-            if meta.record_thoughtspot_url and (ts := getattr(data["cli_context"], "thoughtspot", None)):
+            if meta.record_thoughtspot_url and (ts := getattr(info.context, "thoughtspot", None)):
                 data["config_cluster_url"] = ts.session_context.thoughtspot.url
 
         return data

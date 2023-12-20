@@ -63,6 +63,10 @@ class Syncer(_GlobalSettings):
     __syncer_name__: str = None
 
     def __init_subclass__(cls, is_base_class: bool = False):
+        # DEV NOTE: @boonhapus, 2023/12/18
+        # Should we swap this out with __pydantic_init_subclass__ to gain access to model-defined fields?
+        #
+        # https://github.com/pydantic/pydantic/blob/3d2ebef8f76625d6f82e6bf417682fd08ac66296/pydantic/main.py#L607
         super().__init_subclass__()
 
         if is_base_class:

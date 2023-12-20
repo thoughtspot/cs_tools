@@ -199,8 +199,7 @@ def run() -> int:
 
     this_run_data["is_success"] = return_code in (0, None)
     this_run_data["end_dt"] = dt.datetime.now(tz=dt.timezone.utc)
-    this_run_data["cli_context"] = app.info.context_settings["obj"]
-    this_run = _analytics.CommandExecution.validated_init(**this_run_data)
+    this_run = _analytics.CommandExecution.validated_init(**this_run_data, context=app.info.context_settings["obj"])
 
     # Add the analytics to the local database
     if not IS_DEV_ENVIRONMENT:
@@ -210,6 +209,6 @@ def run() -> int:
                 transaction.execute(stmt)
 
         except sa.exc.OperationalError:
-            log.debug("Error inserting into command execution", exc_info=True)
+            log.debug("Error inserting data into the local analytics database", exc_info=True)
 
     return return_code

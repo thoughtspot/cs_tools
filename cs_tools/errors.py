@@ -14,6 +14,25 @@ class CSToolsError(Exception):
     This can be caught to handle any exception raised from this library.
     """
 
+
+class NoSessionEstablished(CSToolsError):
+    """
+    Raised when attempting to access ThoughtSpot runtime information
+    without a valid session.
+    """
+
+
+class CSToolsCLIError(CSToolsError):
+    """When raised, will present a pretty error to the CLI."""
+
+    # DEV NOTE: @boonhapus, 2023/12/18
+    #
+    # This can be refactored so that subclasses require only to
+    # implement the __rich__ protocol. It will allow us to have CLI
+    # errors and Library errors. CLI errors must implement __rich__ and
+    # have their return type be a rich.panel.Panel
+    #
+
     def __init_subclass__(cls):
         super().__init_subclass__()
 
@@ -39,7 +58,7 @@ class CSToolsError(Exception):
 
         return message.format(self=self, **self.error_info)
 
-    def __rich__(self) -> rich.console.RenderableType:
+    def __rich__(self) -> rich.panel.Panel:
         error_panel_content = ""
         extra_info = {"self": self, **self.error_info}
 
@@ -66,28 +85,23 @@ class CSToolsError(Exception):
         return panel
 
 
-class ThoughtSpotUnreachable(CSToolsError):
+class ThoughtSpotUnreachable(CSToolsCLIError):
     """Raised when ThoughtSpot can't be seen from the local machine."""
 
     title = "Can't connect to your ThoughtSpot cluster."
 
 
-class ThoughtSpotUnavailable(CSToolsError):
+class ThoughtSpotUnavailable(CSToolsCLIError):
     """Raised when a ThoughtSpot session can't be established."""
 
     title = "Your ThoughtSpot cluster is currently unavailable."
 
 
-class AuthenticationError(CSToolsError):
+class AuthenticationError(CSToolsCLIError):
     """Raised when incorrect authorization details are supplied."""
 
     title = "Authentication failed for [b blue]{config.thoughtspot.username}"
-    # fmt: off
-    reason = (
-        "\nCS Tools config: [b blue]{config.name}[/]"
-        "\n    Incident ID: [b blue]{incident_id}[/]"
-    )
-    # fmt: on
+    reason = "\nCS Tools config: [b blue]{config.name}[/]"
     mitigation = (
         "\n1/ Check if your username and password is correct from the ThoughtSpot website."
         "\n2/ Determine if your usename ends with a whitelisted email domain."
@@ -99,7 +113,7 @@ class AuthenticationError(CSToolsError):
     )
 
 
-class TSLoadServiceUnreachable(CSToolsError):
+class TSLoadServiceUnreachable(CSToolsCLIError):
     """Raised when the etl_http_server service cannot be reached."""
 
     title = "The tsload service is unreachable."
@@ -114,19 +128,19 @@ class TSLoadServiceUnreachable(CSToolsError):
     )
 
 
-class ContentDoesNotExist(CSToolsError):
+class ContentDoesNotExist(CSToolsCLIError):
     """Raised when ThoughtSpot can't find content by this name or guid."""
 
     title = "No {type} found."
 
 
-class AmbiguousContentError(CSToolsError):
+class AmbiguousContentError(CSToolsCLIError):
     """Raised when ThoughtSpot can't determine an exact content match."""
 
     title = "Multiple {type}s found with the name [blue]{name}."
 
 
-class InsufficientPrivileges(CSToolsError):
+class InsufficientPrivileges(CSToolsCLIError):
     """Raised when the User cannot perform an action."""
 
     title = "User [b blue]{user.display_name}[/] does not have enough privilege to access {service}."
@@ -141,7 +155,7 @@ class InsufficientPrivileges(CSToolsError):
 #
 
 
-class SyncerInitError(CSToolsError):
+class SyncerInitError(CSToolsCLIError):
     """Raised when a Syncer isn't defined correctly."""
 
     title = "Your {proto} Syncer encountered an error."
@@ -194,5 +208,5 @@ class SyncerInitError(CSToolsError):
 #
 
 
-class ConfigDoesNotExist(CSToolsError):
+class ConfigDoesNotExist(CSToolsCLIError):
     title = "Cluster configuration [b blue]{name}[/] does not exist."
