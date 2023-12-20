@@ -32,7 +32,11 @@ log = logging.getLogger(__name__)
 
 
 class ThoughtSpot:
-    """ """
+    """
+    The top-level ThoughtSpot object.
+
+    Represents a connection to your ThoughtSpot cluster.
+    """
 
     def __init__(self, config: CSToolsConfig, auto_login: bool = False):
         self.config = config
@@ -159,10 +163,10 @@ class ThoughtSpot:
         #
         # PRIORITY LIST OF AUTHENTICATION MECHANISMS TO ATTEMPT
         #
-        attempted_auth_method = {}
+        attempted_auth_method: dict[str, httpx.Response] = {}
 
         if self.config.thoughtspot.bearer_token is not None and self._session_context is None:
-            log.info("Attempting Bearer Token authentication.")
+            log.info("Attempting Bearer Token authentication")
             self.api._session.headers["Authorization"] = f"Bearer {self.config.thoughtspot.bearer_token}"
             r = self._attempt_do_authenticate(self.api.v2.auth_session_user)
             attempted_auth_method["BEARER_TOKEN_AUTHENTICATION"] = r
@@ -172,7 +176,7 @@ class ThoughtSpot:
                 self.api._session.headers.pop("authorization")
 
         if self.config.thoughtspot.secret_key is not None and self._session_context is None:
-            log.info("Attempting Trusted authentication.")
+            log.info("Attempting Trusted authentication")
             login_info["secret"] = self.config.thoughtspot.secret_key
             r = self._attempt_do_authenticate(self.api.v1._trusted_auth, **login_info)
             attempted_auth_method["TRUSTED_AUTHENTICATION"] = r
@@ -182,7 +186,7 @@ class ThoughtSpot:
                 login_info.pop("secret")
 
         if self.config.thoughtspot.password is not None and self._session_context is None:
-            log.info("Attempting Basic authentication.")
+            log.info("Attempting Basic authentication")
             login_info["password"] = self.config.thoughtspot.decoded_password
             r = self._attempt_do_authenticate(self.api.v1.session_login, **login_info)
             attempted_auth_method["BASIC_AUTHENTICATION"] = r
