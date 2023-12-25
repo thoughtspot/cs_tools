@@ -3,7 +3,6 @@ from __future__ import annotations
 import pathlib
 
 from rich.prompt import Confirm, Prompt
-import toml
 import typer
 
 from cs_tools.cli import _analytics
@@ -85,8 +84,7 @@ def create(
     ):
         raise typer.Exit()
 
-    with file.open("w") as t:
-        toml.dump(conf.model_dump(), t)
+    conf.save()
 
     message = f'saved cluster configuration file "{conf.name}"'
 
@@ -220,72 +218,72 @@ def check(ctx: typer.Context, config: str = typer.Option(..., help="config file 
     rich_console.log("[secondary]Success[/]!")
 
 
-# @app.command(no_args_is_help=False)
-# def show(
-#     config: str = typer.Option(None, help="optionally, display the contents of a particular config", metavar="NAME"),
-#     anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
-# ):
-#     """
-#     Display the currently saved config files.
-#     """
-#     configs = [f for f in cs_tools_venv.app_dir.iterdir() if f.name.startswith("cluster-cfg_")]
+@app.command(no_args_is_help=False)
+def show(
+    config: str = typer.Option(None, help="optionally, display the contents of a particular config", metavar="NAME"),
+    anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
+):
+    """
+    Display the currently saved config files.
+    """
+    configs = [f for f in cs_tools_venv.app_dir.iterdir() if f.name.startswith("cluster-cfg_")]
 
-#     if not configs:
-#         raise CSToolsError(
-#             title="[yellow]no config files found just yet!",
-#             mitigation="Run [blue]cs_tools config create --help[/] for more information",
-#         )
+    if not configs:
+        raise CSToolsError(
+            title="[yellow]no config files found just yet!",
+            mitigation="Run [blue]cs_tools config create --help[/] for more information",
+        )
 
-#     if config is not None:
-#         fp = cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml"
+    if config is not None:
+        fp = cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml"
 
-#         try:
-#             contents = escape(fp.open().read())
-#         except FileNotFoundError:
-#             raise CSToolsError(
-#                 title=f"could not find [blue]{config}",
-#                 mitigation="Did you spell the cluster configuration name correctly?",
-#             ) from None
+        try:
+            contents = escape(fp.open().read())
+        except FileNotFoundError:
+            raise CSToolsError(
+                title=f"could not find [blue]{config}",
+                mitigation="Did you spell the cluster configuration name correctly?",
+            ) from None
 
-#         not_ = " not" if config == meta.default_config_name else ""
-#         default = f"[b blue]{config}[/] is{not_} the [green]default[/] configuration"
-#         path = fp.parent.as_posix()
+        not_ = " not" if config == meta.default_config_name else ""
+        default = f"[b blue]{config}[/] is{not_} the [green]default[/] configuration"
+        path = fp.parent.as_posix()
 
-#         if anonymous:
-#             path = utils.anonymize(path)
-#             new_contents = []
+        if anonymous:
+            path = utils.anonymize(path)
+            new_contents = []
 
-#             for line in contents.split("\n"):
-#                 if line.startswith("password"):
-#                     continue
+            for line in contents.split("\n"):
+                if line.startswith("password"):
+                    continue
 
-#                 new_contents.append(utils.anonymize(line))
+                new_contents.append(utils.anonymize(line))
 
-#             contents = "\n".join(new_contents)
+            contents = "\n".join(new_contents)
 
-#         text = (
-#             f"\n:file_folder: [link={fp.parent}]{path}[/]" f"\n:page_facing_up: {default}" "\n" f"\n[b blue]{contents}"  # noqa: E501
-#         )
+        text = (
+            f"\n:file_folder: [link={fp.parent}]{path}[/]" f"\n:page_facing_up: {default}" "\n" f"\n[b blue]{contents}"
+        )
 
-#         renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
-#         rich_console.print(renderable)
-#         raise typer.Exit()
+        renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
+        rich_console.print(renderable)
+        raise typer.Exit()
 
-#     PREFIX = "cluster-cfg_"
-#     cfg_list = []
+    PREFIX = "cluster-cfg_"
+    cfg_list = []
 
-#     for file in sorted(configs):
-#         cfg_name = file.stem[len(PREFIX) :]
+    for file in sorted(configs):
+        cfg_name = file.stem[len(PREFIX) :]
 
-#         if meta.default_config_name == cfg_name:
-#             cfg_name += "\t[green]<-- default[/]"
+        if meta.default_config_name == cfg_name:
+            cfg_name += "\t[green]<-- default[/]"
 
-#         cfg_list.append(f"  - {cfg_name}")
+        cfg_list.append(f"  - {cfg_name}")
 
-#     rich_console.print(
-#         f"\n[b]ThoughtSpot[/] cluster configurations are located at"
-#         f"\n  [b blue][link={cs_tools_venv.app_dir}]{cs_tools_venv.app_dir}[/][/]"
-#         f"\n"
-#         f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
-#         f"\n" + "\n".join(cfg_list) + "\n",
-#     )
+    rich_console.print(
+        f"\n[b]ThoughtSpot[/] cluster configurations are located at"
+        f"\n  [b blue][link={cs_tools_venv.app_dir}]{cs_tools_venv.app_dir}[/][/]"
+        f"\n"
+        f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
+        f"\n" + "\n".join(cfg_list) + "\n",
+    )

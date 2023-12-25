@@ -191,7 +191,7 @@ class CommandExecution(ValidatedSQLModel, table=True):
             if tool_name_and_args:
                 data["tool_name"], *rest = tool_name_and_args.split(" ")
 
-                if rest:
+                if rest and not rest[0].startswith("--"):
                     data["command_name"] = rest[1]
 
             if meta.record_thoughtspot_url and (ts := getattr(info.context, "thoughtspot", None)):

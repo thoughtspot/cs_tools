@@ -80,7 +80,7 @@ class ThoughtSpotInfo(_GlobalModel):
     """Information about the ThoughtSpot cluster we've established a session with."""
 
     cluster_id: str
-    url: pydantic.networks.AnyUrl
+    url: pydantic.AnyUrl
     version: validators.CoerceVersion
     timezone: str
     is_cloud: bool
