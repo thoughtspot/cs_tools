@@ -549,7 +549,7 @@ def remove(
                         )
 
         with tasks["deleting_tag"] as this_task:
-            if delete_tag:
-                ts.tag.delete(tag_name=tag_name)
-            else:
+            if export_only or not delete_tag:
                 this_task.skip()
+            else:
+                ts.tag.delete(tag_name=tag_name)
