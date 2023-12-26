@@ -88,8 +88,8 @@ dev = [
     "pre-commit",
     "taskipy",
     "ruff",
-    "black",
     "mypy",
+    "vulture",
 
     # Testing
     "nox",
@@ -194,12 +194,15 @@ from-first = true
 required-imports = ["from __future__ import annotations"]
 
 [tool.taskipy.tasks]
-lint = "task lint_check && lint_format"
+develop = "python -m pip install -e .[dev]"
+
+lint = "task lint_dead && lint_check && task lint_format"
+lint_dead = "vulture --min-confidence 100"
 lint_check = "ruff check --config pyproject.toml"
 lint_format = "ruff format --config pyproject.toml"
 
-[tool.ward]
-path = "tests/"
+[tool.vulture]
+paths = ["cs_tools"]
 
 # [tool.coverage.run]
 # branch = true
