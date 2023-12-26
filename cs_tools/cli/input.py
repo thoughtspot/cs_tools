@@ -287,8 +287,31 @@ class KeyboardListener:
         """Tell the background thread to stop."""
         self.should_stop = True
 
+    def _windows_queue_get(self) -> Key:
+        """
+        On Windows, CTRL+C doesn't necessarily generate a true signal.
+
+        Queue.get() is implemented with a threading.Condition, and the lock acquisition
+        isn't interrupted to handle the CTRL+C "signal".
+
+        Further reading:
+          https://learn.microsoft.com/en-us/windows/console/ctrl-c-and-ctrl-break-signals?redirectedfrom=MSDN
+        """
+        key = None
+
+        while key is None:
+            try:
+                key = self.queue.get(timeout=0.01)
+            except queue.Empty:
+                pass
+
+        return key
+
     def get(self) -> Key:
         """Fetch the next Key."""
+        if IS_WINDOWS:
+            return self._windows_queue_get()
+
         return self.queue.get()
 
     def simulate(self, key: Key) -> None:
