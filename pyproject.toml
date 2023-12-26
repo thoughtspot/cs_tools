@@ -93,7 +93,7 @@ dev = [
 
     # Testing
     "nox",
-    "ward",
+    "pytest",
     "coverage[toml]",
 ]
 docs = [

@@ -1,0 +1,14 @@
+name = "dogfood"
+verbose = false
+temp_dir = "C:/Users/boonhapus/AppData/Roaming/cs_tools"
+
+[thoughtspot]
+host = "https://dogfood.thoughtspot.cloud"
+disable_ssl = false
+disable_sso = false
+
+[syncer]
+
+[auth.frontend]
+username = "really-fake-service-account"
+password = "eNorSk3MyanULS4tSC3SLU5NLkot0S0uKcrPS9ctSCwuLs8vSgEA-k4OAw=="
