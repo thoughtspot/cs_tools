@@ -145,7 +145,7 @@ class BasePrompt(_GlobalModel):
 
         # return True
 
-    def process_interation(self, live: Live) -> None:
+    def process_interaction(self, live: Live) -> None:
         """Allow a Prompt to get feedback from the User."""
         # raise NotImplementedError
         # with timer(mode="wait"):
@@ -183,25 +183,52 @@ class UserTextInput(BasePrompt):
     validator: Optional[Callable[[str], Any]] = None
     is_secret: bool = False
 
+    _buffer: list[str] = pydantic.PrivateAttr(default_factory=list)
     _validated_input: Optional[str] = None
     _is_interactive: bool = True
 
-    # def process_interation(self, console):
-    #     """ """
-    #     prompt = ""
+    @property
+    def screen_friendly_buffer(self) -> str:
+        buffer = self._buffer if self._validated_input is None else self._validated_input
+        return "".join(["?" if self.is_secret else c for c in buffer])
 
-    #     while True:
-    #         value = console.input(prompt=prompt, password=self.is_secret)
+    def _input_to_screen(self, live: Live):
+        """ """
+        with KeyboardListener(console=live.console) as kb:
+            while kb.is_running:
+                key = kb.get()
 
-    #         if self.validator is not None and self.validator(value):
-    #             self._validated_input = value
-    #             return
+                if key == Keys.BACKSPACE:
+                    self._buffer.pop()
 
-    #         prompt = f"Invalid input, please try again.\n{self.prompt}"
+                if key.is_printable:
+                    self._buffer.append(key.character)
+
+                live.refresh()
+
+                if key == Keys.ENTER:
+                    kb.stop()
+                    break
+
+    def process_interaction(self, live: Live):
+        """ """
+        while self._validated_input is None:
+            self._input_to_screen(live=live)
+
+            if self.validator is not None and not self.validator(self._buffer):
+                if "Invalid input" not in self.prompt:
+                    self.prompt = f"{self.prompt} [dim white]>>[/] [b red]Invalid input, please try again.[/]"
+    
+                self._buffer.clear()
+                live.refresh()
+                continue
+
+            self._validated_input = "".join(self._buffer)
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         """How Rich should display the Prompt."""
         yield self.prompt
+        yield self.screen_friendly_buffer
 
 
 class Confirm(Select):
@@ -233,10 +260,10 @@ class Confirm(Select):
     def draw_selected(self) -> Text:
         return Text(text=f"{PromptMarker.UI_RADIO_ACTIVE} {self._answer}", style="bold dim white")
 
-    def process_interation(self, live: Live) -> None:
+    def process_interaction(self, live: Live) -> None:
         """ """
         with KeyboardListener(console=live.console) as kb:
-            while not kb.should_stop:
+            while kb.is_running:
                 key = kb.get()
 
                 if key == Keys.char("Q"):
@@ -251,11 +278,11 @@ class Confirm(Select):
 
                 live.refresh()
 
-                # if key == Key(key=b"\r"):
-                #     break
+                if key == Keys.ENTER:
+                    break
 
-                # if key == KEY_ESC:
-                #     self.status = "CANCEL"
+                if key == Keys.ESCAPE:
+                    self.status = "CANCEL"
 
 
 class Note(BasePrompt):
@@ -336,11 +363,8 @@ class PromptMenu(_GlobalModel):
                 with prompt:
                     live.update(self, refresh=True)
 
-                    with timer(mode="wait"):
-                        pass
-
                     if prompt.is_interactive:
-                        prompt.process_interation(live=live)
+                        prompt.process_interaction(live=live)
 
                 if prompt.status == "ERROR":
                     break
@@ -354,9 +378,12 @@ if __name__ == "__main__":
         prompts=[
             Note(prompt="Let's set up a configuration file."),
             Confirm(prompt="Directory not empty. Continue?", default="No"),
-            UserTextInput(prompt="What's your favorite flower?"),
+            UserTextInput(prompt="What's your favorite flower?", validator=lambda b: len(b) > 0),
         ],
         epilog="Complete!",
     )
 
-    nav.begin(console=Console())
+    try:
+        nav.begin(console=Console())
+    except KeyboardInterrupt:
+        pass
