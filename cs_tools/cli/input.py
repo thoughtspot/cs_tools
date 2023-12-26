@@ -149,6 +149,7 @@ class Key(_GlobalModel):
         known_ansi_sequences = {
             b" ": "Space",
             b"\r": "Enter",
+            b"\x08": "Backspace",
             b"\x1b": "Escape",
             b"\xe0H": "Up",
             b"\xe0P": "Down",
@@ -181,8 +182,9 @@ class Key(_GlobalModel):
 
 class Keys:
     SPACE = Key(key=b" ")
-    ENTER = Key(key=b"\r")
-    ESCAPE = Key(key=b"\x1b")
+    ENTER = RETURN = Key(key=b"\r")
+    BACKSPACE = Key(key=b"\x08")
+    ESC = ESCAPE = Key(key=b"\x1b")
     UP = Key(key=b"\xe0H")
     DOWN = Key(key=b"\xe0P")
     LEFT = Key(key=b"\xe0K")
@@ -306,6 +308,27 @@ if __name__ == "__main__":
 
     console = Console()
 
-    with KeyboardListener([], console=console) as kb:
+    # fmt: off
+    console.print(
+        "\n"
+        "[b blue]Press any key..[/]"
+        "\n[dim]CTRL + C to exit"
+        "\n"
+    )
+    # fmt: on
+
+    with KeyboardListener(console=console) as kb:
         while kb.is_running:
-            console.print(kb.get())
+
+            try:
+                key = kb.get()
+            except KeyboardInterrupt:
+                kb.stop()
+                continue
+
+            if key == Key(key=b"\x11"):
+                kb.stop()
+
+            console.print(key)
+
+    console.print()
