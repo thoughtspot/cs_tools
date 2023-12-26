@@ -22,6 +22,7 @@ import pydantic
 import toml
 
 from cs_tools import types, utils, validators
+from cs_tools._compat import Self
 from cs_tools._version import __version__
 from cs_tools.datastructures import _GlobalModel, _GlobalSettings
 from cs_tools.errors import ConfigDoesNotExist
@@ -38,66 +39,80 @@ class MetaConfig(_GlobalModel):
     """
 
     install_uuid: uuid.UUID = Field(default_factory=uuid.uuid4)
-    default_config_name: str = None
+    default_config_name: Optional[str] = None
     last_remote_check: validators.DateTimeInUTC = _FOUNDING_DAY
-    remote_version: Annotated[AwesomeVersion, validators.ensure_valid_version] = None
-    remote_date: dt.date = None
+    remote_version: Optional[validators.CoerceVersion] = None
+    remote_date: Optional[dt.date] = None
     last_analytics_checkpoint: validators.DateTimeInUTC = _FOUNDING_DAY
     analytics_opt_in: Optional[bool] = None
-    # company_name: Optional[str] = None  # DEPRECATED AS OF 1.4.6
     record_thoughtspot_url: Optional[bool] = None
+    created_in_cs_tools_version: validators.CoerceVersion = __version__
+
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def _enforce_compatability(cls, data: Any) -> Any:
+        # DEV NOTE: @boonhapus - upconvert the < 1.5.0 metaconfig
+        if data and "created_in_cs_tools_version" not in data:
+            data = {
+                "record_thoughtspot_url": bool(data.get("company_name", None)),
+                "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
+            }
+
+        # DEV NOTE: @boonhapus - upconvert the < 1.4.0 metaconfig
+        if data.pop("__is_old_format__", False):
+            data = {
+                "default_config_name": data.get("default", {}).get("config", None),
+                "latest_release_version": data.get("latest_release", {}).get("version", None),
+                "latest_release_date": data.get("latest_release", {}).get("published_at", None),
+                "__cs_tools_context__": {"config_migration": {"from": "<1.4.0", "to": __version__}},
+            }
+
+        return data
 
     @classmethod
-    def load_and_convert_toml(cls):
-        """Migrate from the old format."""
-        data = toml.load(cs_tools_venv.app_dir.joinpath(".meta-config.toml"))
-
-        self = cls(
-            # install_uuid=...,
-            default_config_name=data.get("default", {}).get("config", None),
-            # last_remote_check= ... ,
-            latest_release_version=data.get("latest_release", {}).get("version", None),
-            latest_release_date=data.get("latest_release", {}).get("published_at", None),
-            # last_analytics_checkpoint= ...,
-        )
-
-        return self
-
-    @classmethod
-    def load(cls):
+    def load(cls) -> Self:
         """Read the meta-config."""
         app_dir = cs_tools_venv.app_dir
 
-        # OLD FORMAT
-        if app_dir.joinpath(".meta-config.toml").exists():
-            self = cls.load_and_convert_toml()
-            self.save()
+        OLD_FORMAT = app_dir / ".meta-config.toml"
+        NEW_FORMAT = app_dir / ".meta-config.json"
 
-            # REMOVE OLD DATA
-            app_dir.joinpath(".meta-config.toml").unlink()
+        if OLD_FORMAT.exists():
+            data = toml.load(OLD_FORMAT)
+            instance = cls(**data, __is_old_format__=True)
+            instance = cls(**data)
+            OLD_FORMAT.unlink()
 
-        # NEW FORMAT
-        elif app_dir.joinpath(".meta-config.json").exists():
-            file = app_dir.joinpath(".meta-config.json")
-            data = json.loads(file.read_text())
+        elif NEW_FORMAT.exists():
+            data = json.loads(NEW_FORMAT.read_text())
+            instance = cls(**data)
 
-            if data.get("company_name", None) is not None:
-                data["record_thoughtspot_url"] = True
-
-            self = cls(**data)
-
-        # NEVER SEEN BEFORE
         else:
-            self = cls()
+            instance = cls()
 
-        self.check_remote_version()
-        return self
+        # Can't get the type hints to work here, so will just ignore them for now~
+        if "__cs_tools_context__" in instance.__pydantic_extra__:  # type: ignore[operator]
+            context = instance.__pydantic_extra__["__cs_tools_context__"]  # type: ignore[index]
+
+            if "config_migration" in context:
+                log.info(
+                    f"Migrating the meta Configuration file from '{context['config_migration']['from']}' to "
+                    f"{context['config_migration']['to']}"
+                )
+                instance.save()
+
+        instance.check_remote_version()
+        return instance
 
     def save(self) -> None:
         """Store the meta-config."""
-        file = cs_tools_venv.app_dir.joinpath(".meta-config.json")
-        data = self.json(indent=4)
-        file.write_text(data)
+        full_path = cs_tools_venv.app_dir / ".meta-config.json"
+
+        # Remove the extras, we don't need to save that bit.
+        self.__pydantic_extra__ = {}
+
+        data = self.model_dump_json(indent=4)
+        full_path.write_text(data)
 
     def check_remote_version(self) -> None:
         """Check GitHub for the latest cs_tools version."""
@@ -238,12 +253,12 @@ class CSToolsConfig(_GlobalModel):
     # ====================
 
     @classmethod
-    def from_name(cls, name: str) -> CSToolsConfig:
+    def from_name(cls, name: str, automigrate: bool = False) -> CSToolsConfig:
         """Read in a config by its name."""
-        return cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{name}.toml")
+        return cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{name}.toml", automigrate=automigrate)
 
     @classmethod
-    def from_toml(cls, path: pathlib.Path) -> CSToolsConfig:
+    def from_toml(cls, path: pathlib.Path, automigrate: bool = False) -> CSToolsConfig:
         """Read in a cluster-config.toml file."""
         try:
             data = toml.load(path)
@@ -256,7 +271,7 @@ class CSToolsConfig(_GlobalModel):
         if "__cs_tools_context__" in instance.__pydantic_extra__:  # type: ignore[operator]
             context = instance.__pydantic_extra__["__cs_tools_context__"]  # type: ignore[index]
 
-            if "config_migration" in context:
+            if "config_migration" in context and automigrate:
                 log.info(
                     f"Migrating CS Tools configuration file '{instance.name}' from "
                     f"{context['config_migration']['from']} to {context['config_migration']['to']}"

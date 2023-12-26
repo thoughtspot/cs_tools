@@ -252,7 +252,8 @@ class TMLAPIResponse(pydantic.BaseModel):
     error_messages: list[str] = Optional[list[str]]
     _full_response: Any = None
 
-    @pydantic.validator("status_code", pre=True)
+    @pydantic.field_validator("status_code", mode="before")
+    @classmethod
     def _one_of(cls, status: str) -> str:
         ALLOWED = ("OK", "WARNING", "ERROR")
 
@@ -262,7 +263,8 @@ class TMLAPIResponse(pydantic.BaseModel):
 
         return status.upper()
 
-    @pydantic.validator("error_messages", pre=True)
+    @pydantic.field_validator("error_messages", mode="before")
+    @classmethod
     def _parse_errors(cls, error_string: str) -> list[str]:
         if error_string is None:
             return []

@@ -145,7 +145,7 @@ def create(
 #         password = Prompt.ask("[yellow](your input is hidden)[/]\nPassword", console=rich_console, password=True)
 
 #     file = cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml"
-#     old = CSToolsConfig.from_toml(file).dict()
+#     old = CSToolsConfig.from_toml(file, automigrate=True).dict()
 #     kw = {
 #         "host": host,
 #         "port": port,
@@ -203,7 +203,7 @@ def check(ctx: typer.Context, config: str = typer.Option(..., help="config file 
     """
     rich_console.log(f"Checking cluster configuration [b blue]{config}")
 
-    conf = CSToolsConfig.from_name(name=config)
+    conf = CSToolsConfig.from_name(name=config, automigrate=True)
 
     rich_console.log(f"Logging into [b]ThoughtSpot[/] as [b blue]{conf.thoughtspot.username}")
     ts = ThoughtSpot(conf)

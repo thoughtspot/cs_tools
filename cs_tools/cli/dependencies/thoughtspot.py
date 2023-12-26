@@ -136,7 +136,7 @@ class DThoughtSpot(Dependency):
         if args:
             log.warning(f"[b yellow]Ignoring extra arguments ({' '.join(args)})")
 
-        cfg = CSToolsConfig.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml", **options)
+        cfg = CSToolsConfig.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml", **options, automigrate=True)
 
         if cfg.verbose:
             root_logger = logging.getLogger()
