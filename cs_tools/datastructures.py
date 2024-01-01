@@ -67,13 +67,13 @@ class ExecutionEnvironment(_GlobalSettings):
     """Information about the runtime environment."""
 
     os_args: str = pydantic.Field(default=" ".join(sys.argv))
-    is_ci: bool = pydantic.Field(False, validation_alias="CI")
+    is_ci: bool = pydantic.Field(default="DEFINITELY_NOT_CI", validation_alias="CI")
     is_dev: bool = pydantic.Field(default_factory=utils.determine_editable_install)
 
     @pydantic.field_validator("is_ci", mode="plain")
     @classmethod
     def is_ci_pipeline(cls, data: Any) -> bool:
-        return data is not False
+        return data != "DEFINITELY_NOT_CI"
 
 
 class ThoughtSpotInfo(_GlobalModel):

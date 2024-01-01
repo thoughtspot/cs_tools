@@ -40,10 +40,10 @@ class MetaConfig(_GlobalModel):
 
     install_uuid: uuid.UUID = Field(default_factory=uuid.uuid4)
     default_config_name: Optional[str] = None
-    last_remote_check: validators.DateTimeInUTC = _FOUNDING_DAY
+    last_remote_check: Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat] = _FOUNDING_DAY
     remote_version: Optional[validators.CoerceVersion] = None
     remote_date: Optional[dt.date] = None
-    last_analytics_checkpoint: validators.DateTimeInUTC = _FOUNDING_DAY
+    last_analytics_checkpoint: Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat] = _FOUNDING_DAY
     analytics_opt_in: Optional[bool] = None
     record_thoughtspot_url: Optional[bool] = None
     created_in_cs_tools_version: validators.CoerceVersion = __version__
@@ -251,6 +251,11 @@ class CSToolsConfig(_GlobalModel):
     # ====================
     # NORMAL CLASS MEMBERS
     # ====================
+
+    @classmethod
+    def exists(cls, name: str) -> bool:
+        """Check if a config exists by this name already."""
+        return cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{name}.toml").exists()
 
     @classmethod
     def from_name(cls, name: str, automigrate: bool = False) -> CSToolsConfig:

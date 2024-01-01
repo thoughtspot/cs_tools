@@ -16,7 +16,7 @@ import rich
 import sqlalchemy as sa
 import typer
 
-from cs_tools import utils
+from cs_tools import datastructures, utils
 from cs_tools._version import __version__
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.cli.ux import CSToolsApp, rich_console
@@ -103,7 +103,7 @@ def run() -> int:
     """
     Entrypoint into cs_tools.
     """
-    IS_DEV_ENVIRONMENT = utils.determine_editable_install()
+    CURRENT_RUNTIME = datastructures.ExecutionEnvironment()
 
     # import all our tools
     from cs_tools.cli import _analytics, _config, _log, _self, _tools
@@ -161,7 +161,7 @@ def run() -> int:
             word_wrap=False,
             show_locals=False,
             suppress=[typer, click, contextlib],
-            max_frames=25 if IS_DEV_ENVIRONMENT else 10,
+            max_frames=25 if CURRENT_RUNTIME.is_ci or CURRENT_RUNTIME.is_dev else 10,
         )
 
         github_issue = "https://github.com/thoughtspot/cs_tools/issues/new/choose"
@@ -202,10 +202,10 @@ def run() -> int:
     this_run = _analytics.CommandExecution.validated_init(**this_run_data, context=app.info.context_settings["obj"])
 
     # Add the analytics to the local database
-    if not IS_DEV_ENVIRONMENT:
+    if not (CURRENT_RUNTIME.is_ci or CURRENT_RUNTIME.is_dev):
         try:
             with db.begin() as transaction:
-                stmt = sa.insert(_analytics.CommandExecution).values([this_run.dict()])
+                stmt = sa.insert(_analytics.CommandExecution).values([this_run.model_dump()])
                 transaction.execute(stmt)
 
         except sa.exc.OperationalError:

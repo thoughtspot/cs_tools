@@ -9,7 +9,6 @@ from typing import Annotated, Any, Optional
 import datetime as dt
 import json
 import logging
-import os
 import platform
 import shutil
 import sysconfig
@@ -22,7 +21,7 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import utils, validators
+from cs_tools import datastructures, utils, validators
 from cs_tools._version import __version__
 from cs_tools.cli.ux import rich_console
 from cs_tools.datastructures import ValidatedSQLModel
@@ -34,7 +33,7 @@ log = logging.getLogger(__name__)
 
 def get_database() -> sa.engine.Engine:
     """Get the local SQLite Analytics database."""
-    if os.getenv("CI"):
+    if datastructures.ExecutionEnvironment().is_ci:
         db = sa.create_engine("sqlite://", future=True)
     else:
         db_path = cs_tools_venv.app_dir.resolve().joinpath("analytics.db")
@@ -60,8 +59,8 @@ def get_database() -> sa.engine.Engine:
     # INSERT OUR CURRENT ENVIRONMENT
     if AwesomeVersion(latest_recorded_version) < AwesomeVersion(__version__):
         with db.begin() as transaction:
-            data = {"envt_uuid": meta.install_uuid, "cs_tools_version": __version__}
-            stmt = sa.insert(RuntimeEnvironment).values([RuntimeEnvironment(**data).dict()])
+            envt = RuntimeEnvironment.validated_init(envt_uuid=meta.install_uuid, cs_tools_version=__version__)
+            stmt = sa.insert(RuntimeEnvironment).values([envt.model_dump()])
             transaction.execute(stmt)
 
     return db
@@ -178,7 +177,7 @@ class CommandExecution(ValidatedSQLModel, table=True):
     os_args: str
     tool_name: Optional[str] = None
     command_name: Optional[str] = None
-    config_cluster_url: Annotated[Optional[str], validators.stringified_url_format] = None
+    config_cluster_url: Annotated[Optional[str], validators.ensure_stringified_url_format] = None
     is_known_error: Optional[bool] = None
     traceback: Optional[str] = None
 

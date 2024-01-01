@@ -8,9 +8,15 @@ import awesomeversion
 import pydantic
 
 #
-# REUSEABLE VALIDATION LOGIC, VALIDATORS MUST
+# REUSEABLE VALIDATION LOGIC
+#
+# VALIDATORS MUST
 # - be decorated with PlainValidator or WrapValidator
-# - prefix with `ensure_`
+# - be prefixed with `ensure_`
+#
+# SERIALIZERS MUST
+# - be decorated with PlainSerializer or WrapSerializer
+# - be prefixed with `as_
 #
 
 
@@ -67,9 +73,15 @@ def ensure_valid_version(value: Any) -> awesomeversion.AwesomeVersion:
 
 
 @pydantic.PlainValidator
-def stringified_url_format(value: Any) -> str:
+def ensure_stringified_url_format(value: Any) -> str:
     """Ensures the input value is a valid HTTP/s string."""
     return str(pydantic.networks.AnyUrl(value))
+
+
+@pydantic.PlainSerializer
+def as_datetime_isoformat(dattim: dt.datetime) -> str:
+    """Tranform a datetime to a regular ISO format."""
+    return dattim.isoformat(timespec="seconds")
 
 
 #
