@@ -181,6 +181,8 @@ class Key(_GlobalModel):
 
 
 class Keys:
+    NULL = Key(key=b"\xe00")
+
     SPACE = Key(key=b" ")
     ENTER = RETURN = Key(key=b"\r")
     BACKSPACE = Key(key=b"\x08")
@@ -202,8 +204,7 @@ class Keys:
 class KeyboardListener:
     """ """
 
-    def __init__(self, *, console: Console, whitelist: Optional[list[Key]] = None):
-        self.console = console
+    def __init__(self, *, whitelist: Optional[list[Key]] = None):
         self.whitelist = whitelist
         self.should_stop = False
         self._bg_thread = threading.Thread(target=self._windows_listener if IS_WINDOWS else self._termios_listener)
@@ -223,7 +224,7 @@ class KeyboardListener:
         KEY_PRESS_WAITING = msvcrt.kbhit
         GET_KEY_VALUE = msvcrt.getch
 
-        while not self.should_stop:
+        while self.is_running:
             if not KEY_PRESS_WAITING():
                 time.sleep(0.01)
                 continue
@@ -264,7 +265,7 @@ class KeyboardListener:
         s.register(fileobj=sys.stdin, events=selectors.EVENT_READ)
 
         try:
-            while not self.should_stop:
+            while self.is_running:
                 if selector_events := s.select(timeout=0.01):
                     selector_key, event = selector_events[0]
                     key_press = selector_key.fileobj.read(1)
@@ -287,8 +288,13 @@ class KeyboardListener:
         """Tell the background thread to stop."""
         self.should_stop = True
 
-    def _windows_queue_get(self) -> Key:
+    def get(self) -> Key:
         """
+        Fetch the next Key.
+
+        Implemented as a polling method so we can check if handling of the next key to
+        arrive should even occur.
+
         On Windows, CTRL+C doesn't necessarily generate a true signal.
 
         Queue.get() is implemented with a threading.Condition, and the lock acquisition
@@ -297,22 +303,16 @@ class KeyboardListener:
         Further reading:
           https://learn.microsoft.com/en-us/windows/console/ctrl-c-and-ctrl-break-signals?redirectedfrom=MSDN
         """
-        key = None
+        key = Keys.NULL
 
-        while key is None:
+        while self.is_running and key is Keys.NULL:
             try:
                 key = self.queue.get(timeout=0.01)
+
             except queue.Empty:
                 pass
 
         return key
-
-    def get(self) -> Key:
-        """Fetch the next Key."""
-        if IS_WINDOWS:
-            return self._windows_queue_get()
-
-        return self.queue.get()
 
     def simulate(self, key: Key) -> None:
         """Simulate a key press."""
@@ -323,7 +323,7 @@ class KeyboardListener:
         return self
 
     def __exit__(self, class_, exception, traceback) -> bool:
-        self.should_stop = True
+        self.stop()
 
 
 if __name__ == "__main__":
@@ -342,7 +342,6 @@ if __name__ == "__main__":
 
     with KeyboardListener(console=console) as kb:
         while kb.is_running:
-
             try:
                 key = kb.get()
             except KeyboardInterrupt:

@@ -1,72 +1,34 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any, Callable, Literal, Optional, TypeVar
-import contextlib
-import functools as ft
+from types import TracebackType
+from typing import Annotated, Any, Callable, Literal, Optional, Union
+import logging
 import time
 
-from rich.columns import Columns
-from rich.console import Console, ConsoleOptions, Measurement, RenderableType, RenderResult
+from rich._loop import loop_first_last
+from rich.console import Console, ConsoleOptions, Group, Measurement, RenderableType, RenderResult
 from rich.live import Live
+from rich.segment import Segment
 from rich.style import Style
 from rich.styled import Styled
 from rich.text import Text
 import pydantic
 
-from cs_tools._compat import Self
+from cs_tools._compat import Self, StrEnum
 from cs_tools.cli.input import KeyboardListener, Keys
 from cs_tools.datastructures import _GlobalModel
 
-T = TypeVar("T")
+log = logging.getLogger(__name__)
 
 
-@contextlib.contextmanager
-def timer(seconds: float = 1.25, mode: Literal["timeout", "wait"] = "timeout") -> Iterable:
-    """Wait for or Timeout after a certain amount of time."""
-    start = time.perf_counter()
-    yield
-
-    while mode == "wait" and (time.perf_counter() - start) <= seconds:
-        time.sleep(0.025)
+def _noop_always_valid(prompt: BasePrompt, answer: Any) -> bool:  # noqa: ARG001
+    """An input validator that always returns True."""
+    return True
 
 
-def loop_first_last(values: Iterable[T]) -> Iterable[tuple[bool, bool, T]]:
-    """Iterate and generate a tuple with a flag for first and last value."""
-    iter_values = iter(values)
-    try:
-        previous_value = next(iter_values)
-    except StopIteration:
-        return
-    first = True
-    for value in iter_values:
-        yield first, False, previous_value
-        first = False
-        previous_value = value
-    yield first, True, previous_value
-
-
-def loop_first(values: Iterable[T]) -> Iterable[tuple[bool, T]]:
-    """Iterate and generate a tuple with a flag for first value."""
-    iter_values = iter(values)
-    try:
-        value = next(iter_values)
-    except StopIteration:
-        return
-    yield True, value
-    for value in iter_values:
-        yield False, value
-
-
-class PromptMarker:
+class PromptMarker(StrEnum):
     """Constants used in Prompting."""
-
-    # PROMPT ACTIVITY
-    STEP_INACTIVE = "-"
-    STEP_ACTIVE = "◆"
-    STEP_CANCEL = "◈"
-    STEP_ERROR = "✦"
-    STEP_SUBMIT = "◇"
 
     # LEFT HAND RAIL
     RAIL_BEG = "┌"
@@ -80,45 +42,127 @@ class PromptMarker:
     UI_CHECK_INACTIVE = "◻"
 
 
+class PromptOption(_GlobalModel):
+    """Represent a choice a User can make."""
+
+    text: str
+    description: Optional[str] = None
+    is_selected: bool = False
+    is_highlighted: bool = False
+
+    def toggle(self) -> None:
+        """Flip the value of .is_selected."""
+        self.is_selected = False if self.is_selected else True
+
+
+class PromptStatus(_GlobalModel):
+    """Represent a themed status for a Prompt."""
+
+    status: Annotated[str, pydantic.StringConstraints(to_upper=True)]
+    marker: Annotated[str, pydantic.StringConstraints(max_length=1)]
+    style: Style
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, PromptStatus):
+            return self.status == other.status
+
+        if isinstance(other, str):
+            return self.status == other
+
+        return NotImplemented
+
+    def __rich__(self) -> Text:
+        styled_status = Text(self.status, style=self.style)
+        return Text(f"<PromptStatus {self.marker} ") + styled_status + Text(">")
+
+    def __str__(self) -> str:
+        return self.__rich__().plain
+
+    @classmethod
+    def hidden(cls) -> Self:
+        """State the Prompt is in before starting."""
+        return cls(status="HIDDEN", marker="-", style=Style(color="white", bold=True, dim=True))
+
+    @classmethod
+    def active(cls) -> Self:
+        """State the Prompt is in when it's the live modal."""
+        return cls(status="ACTIVE", marker="◆", style=Style(color="blue", bold=True))
+
+    @classmethod
+    def success(cls) -> Self:
+        """State the Prompt is in when interactivity finished successfully."""
+        return cls(status="SUCCESS", marker="◇", style=Style(color="green", bold=True))
+
+    @classmethod
+    def cancel(cls) -> Self:
+        """State the Prompt is in when interactivity was terminated by the user."""
+        return cls(status="CANCEL", marker="◈", style=Style(color="red", bold=True, dim=True))
+
+    @classmethod
+    def error(cls) -> Self:
+        """State the Prompt is in when interactivity finished unsuccessfully."""
+        return cls(status="ERROR", marker="✦", style=Style(color="red", bold=True))
+
+
 class BasePrompt(_GlobalModel):
     """A base class for Prompts."""
 
     prompt: RenderableType
-    status: Literal["INACTIVE", "ACTIVE", "SUCCESS", "CANCEL", "ERROR"] = "INACTIVE"
+    detail: Optional[RenderableType] = None
+    transient: bool = False
+    prompt_status_class: type[PromptStatus] = PromptStatus
 
-    _is_interactive: bool = False
-    _marker_map = {
-        "INACTIVE": PromptMarker.STEP_INACTIVE,
-        "ACTIVE": PromptMarker.STEP_ACTIVE,
-        "SUCCESS": PromptMarker.STEP_SUBMIT,
-        "CANCEL": PromptMarker.STEP_CANCEL,
-        "ERROR": PromptMarker.STEP_ERROR,
-    }
-    _style_map = {
-        "INACTIVE": Style(color="white", bold=True, dim=True),
-        "ACTIVE": Style(color="white", bold=True),
-        "SUCCESS": Style(color="green", bold=True),
-        "CANCEL": Style(color="red", bold=True),
-        "ERROR": Style(color="red", bold=True),
-    }
+    # id: str = pydantic.Field(default_factory=lambda: uuid.uuid4().hex)
+
+    _warning: Optional[str] = None
+    _exception: Optional[BaseException] = None
+    _status: PromptStatus = PromptStatus.hidden()
 
     @property
-    def is_interactive(self) -> bool:
-        """Determine if the a Prompt is interactive."""
-        return self._is_interactive
+    def status(self) -> PromptStatus:
+        """Retrieve the prompt's status."""
+        return self._status
+
+    @status.setter
+    def status(self, value: Union[str, PromptStatus]) -> None:
+        """Set the prompt's status."""
+        if isinstance(value, self.prompt_status_class):
+            self._status = value
+            return
+
+        assert isinstance(value, str)
+
+        try:
+            cls_status_method = getattr(self.prompt_status_class, value)
+        except AttributeError:
+            raise ValueError(f"{self.prompt_status_class.__name__} does not define status '{value}'") from None
+
+        self._status = cls_status_method()
 
     @property
     def is_active(self) -> bool:
-        """Determine if the a Prompt is active."""
-        return self.status == "ACTIVE"
+        """Determine if the Prompt is active."""
+        return self.status == PromptStatus.active()
+
+    @property
+    def warning(self) -> Optional[str]:
+        """Retrieve the warning message, if one is set."""
+        return self._warning
+
+    @property
+    def exception(self) -> Optional[BaseException]:
+        """Retrieve the exception, if one occurred."""
+        return self._exception
 
     @property
     def marker(self) -> str:
-        return self._marker_map[self.status]
+        """Retrieve the appropriate prompt marker."""
+        return self.status.marker
 
     @property
     def style(self) -> Style:
-        return self._style_map[self.status]
+        """Retrieve the appropriate prompt style."""
+        return self.status.style
 
     def __rich_measure__(self, console: Console, options: ConsoleOptions) -> Measurement:
         """Describes the the min/max number of characters required to render."""
@@ -129,261 +173,563 @@ class BasePrompt(_GlobalModel):
         """How Rich should display the Prompt."""
         yield self.prompt
 
+        if self.is_active and self.warning is not None:
+            yield Text.from_markup(f"[bold yellow]X [dim white]>>[/] {self.warning}")
+
+        if self.is_active and self.detail is not None and self.warning is None:
+            yield Styled(self.detail, style="dim white")
+
     def __enter__(self) -> Self:
-        self.status = "ACTIVE"
+        self.status = PromptStatus.active()
         return self
 
-    def __exit__(self, class_, exception, traceback) -> bool:
-        if exception is None:
-            self.status = "SUCCESS"
-        elif isinstance(exception, KeyboardInterrupt):
-            self.status = "CANCEL"
-        else:
-            # We'll ignore the error, but store it on the Prompt itself.
-            self.status = "ERROR"
-            self.exception = exception
-
-        # return True
-
-    def process_interaction(self, live: Live) -> None:
+    def interactivity(self, live: Live) -> None:
         """Allow a Prompt to get feedback from the User."""
-        # raise NotImplementedError
-        # with timer(mode="wait"):
-        #     pass
-        time.sleep(0.5)
+        # Override in a subclass to implement functionality.
+        pass
 
+    def __exit__(self, class_: type[BaseException], exception: BaseException, traceback: TracebackType) -> bool:
+        if exception is None and self.is_active:
+            self.status = PromptStatus.success() if not self.transient else PromptStatus.hidden()
 
-class Select(BasePrompt):
-    """Ask the User to choose from a list of options."""
+        # If we're not active while exiting, then the status was set intentionally.
+        elif exception is None and self.status == PromptStatus.cancel():
+            pass
 
-    choices: list[str]
-    mode: Literal["single", "multi", "custom"]
-    choice_validator: Optional[Callable[[str], Any]] = None
+        elif isinstance(exception, KeyboardInterrupt):
+            self.status = PromptStatus.cancel()
 
-    _answer: Any = None
-    _is_interactive: bool = True
-
-    def select(self, choices: list[str]) -> None:
-        """Make a selection."""
-        self._answer = choices
-
-    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
-        """How Rich should display the Prompt."""
-        yield self.prompt
-
-        if self.is_active:
-            yield self.draw_selector()
+        # We'll ignore the error, but store it on the Prompt itself.
         else:
-            yield self.draw_selected()
+            self.status = PromptStatus.error()
+            self._exception = exception
+            log.error(
+                f"{class_.__name__} occurred in {self.__class__.__name__} prompt, check .exception or see DEBUG log "
+                f"for details..",
+                exc_info=True,
+            )
+            log.debug("Full error..", exc_info=True)
+
+        return True
 
 
 class UserTextInput(BasePrompt):
     """Ask the User to type a response"""
 
-    validator: Optional[Callable[[str], Any]] = None
     is_secret: bool = False
+    input_validator: Callable[[BasePrompt, str], bool] = pydantic.Field(default=_noop_always_valid)
+    """Validates the input, sets a warning if the selection is in an invalid state."""
 
     _buffer: list[str] = pydantic.PrivateAttr(default_factory=list)
-    _validated_input: Optional[str] = None
-    _is_interactive: bool = True
+    _is_validated: bool = False
 
-    @property
-    def screen_friendly_buffer(self) -> str:
-        buffer = self._buffer if self._validated_input is None else self._validated_input
-        return "".join(["?" if self.is_secret else c for c in buffer])
+    def buffer_as_string(self, *, on_screen: bool = False) -> str:
+        """Render the buffer."""
+        buffer = self._buffer
 
-    def _input_to_screen(self, live: Live):
-        """ """
-        with KeyboardListener(console=live.console) as kb:
+        if on_screen and self.is_secret:
+            buffer = ["?" for character in self._buffer]
+
+        return "".join(buffer)
+
+    def _simulate_py_input(self, live: Live) -> None:
+        """
+        Pretend to be a python-native input() function.
+
+        Uses a keyboard listener to trigger Live.refresh() on every key.
+        """
+        with KeyboardListener() as kb:
             while kb.is_running:
                 key = kb.get()
 
-                if key == Keys.BACKSPACE:
+                if key in (Keys.BACKSPACE, Keys.LEFT) and self._buffer:
                     self._buffer.pop()
 
                 if key.is_printable:
+                    assert key.character is not None
                     self._buffer.append(key.character)
 
                 live.refresh()
 
                 if key == Keys.ENTER:
                     kb.stop()
-                    break
 
-    def process_interaction(self, live: Live):
-        """ """
-        while self._validated_input is None:
-            self._input_to_screen(live=live)
+                if key == Keys.ESCAPE:
+                    self.status = PromptStatus.cancel()
+                    kb.stop()
 
-            if self.validator is not None and not self.validator(self._buffer):
-                if "Invalid input" not in self.prompt:
-                    self.prompt = f"{self.prompt} [dim white]>>[/] [b red]Invalid input, please try again.[/]"
-    
+    def set_buffer(self, user_input: str) -> None:
+        """Directly set the underlying buffer."""
+        self._buffer = list(user_input)
+
+    def interactivity(self, live: Live) -> None:
+        """Handle taking input from the User."""
+        original_prompt = str(self.prompt)
+
+        while not self._is_validated:
+            self._simulate_py_input(live=live)
+
+            if self.status == PromptStatus.cancel():
+                break
+
+            if not self.input_validator(self, self.buffer_as_string()):
                 self._buffer.clear()
                 live.refresh()
                 continue
 
-            self._validated_input = "".join(self._buffer)
+            self.prompt = original_prompt
+            self._is_validated = True
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         """How Rich should display the Prompt."""
-        yield self.prompt
-        yield self.screen_friendly_buffer
+        yield from super().__rich_console__(console=console, options=options)
+
+        buffered_text = self.buffer_as_string(on_screen=True)
+
+        if self.is_active:
+            yield Text(buffered_text, style="bold white on blue")
+        else:
+            yield buffered_text
+
+
+class Select(BasePrompt):
+    """Ask the User to choose from a list of options."""
+
+    choices: list[PromptOption]
+    mode: Literal["SINGLE", "MULTI"]
+    selection_validator: Callable[[BasePrompt, list[PromptOption]], bool] = pydantic.Field(default=_noop_always_valid)
+    """Validates the answer, sets a warning if the selection is in an invalid state."""
+
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def _convert_string_to_choice(cls, data: Any) -> Any:
+        """Ensure all choice options are PromptOptions."""
+        any_are_highlighted = False
+
+        for idx, choice in enumerate(data["choices"]):
+            if isinstance(choice, str):
+                data["choices"][idx] = choice = PromptOption(text=choice, is_highlighted=not idx)
+
+            any_are_highlighted = any((any_are_highlighted, choice.is_highlighted))
+
+        if not any_are_highlighted:
+            data["choices"][0].is_highlighted = True
+
+        return data
+
+    @property
+    def answer(self) -> list[PromptOption]:
+        """Retrieve the valid answers."""
+        return [option for option in self.choices if option.is_selected]
+
+    def _get_highlighted_info(self) -> tuple[int, PromptOption]:
+        """Implement a naive cursor fetcher. This could be better."""
+        for idx, choice in enumerate(self.choices):
+            if choice.is_highlighted:
+                return (idx, choice)
+        raise ValueError("No option is active.")
+
+    def select(self, choice: str) -> None:
+        """Make a selection."""
+        for option in self.choices:
+            if option.text == choice:
+                option.toggle()
+
+            elif self.mode == "SINGLE":
+                option.is_selected = False
+
+    def highlight(self, choice: str) -> None:
+        """Highlight an option."""
+        for option in self.choices:
+            if option.text == choice:
+                option.is_highlighted = True
+            else:
+                option.is_highlighted = False
+
+    def interactivity(self, live: Live) -> None:
+        """Handle selecting one of the choices from the User."""
+        with KeyboardListener() as kb:
+            while kb.is_running:
+                key = kb.get()
+
+                if key in (Keys.ESCAPE, Keys.char("Q")):
+                    self.status = PromptStatus.cancel()
+                    kb.stop()
+                    continue
+
+                if key == Keys.ENTER and self.selection_validator(self, self.answer):
+                    kb.stop()
+                    continue
+
+                idx, highlighted = self._get_highlighted_info()
+                more_than_one_option = len(self.choices) > 1
+
+                if key in (Keys.RIGHT, Keys.DOWN):
+                    next_idx = (idx + 1) % len(self.choices)
+                    to_highlight = self.choices[next_idx]
+                    self.highlight(to_highlight.text)
+
+                    if self.mode == "SINGLE" and more_than_one_option:
+                        self.select(to_highlight.text)
+
+                if key in (Keys.LEFT, Keys.UP):
+                    last_idx = (idx - 1) % len(self.choices)
+                    to_highlight = self.choices[last_idx]
+                    self.highlight(to_highlight.text)
+
+                    if self.mode == "SINGLE" and more_than_one_option:
+                        self.select(to_highlight.text)
+
+                if key == Keys.SPACE and more_than_one_option:
+                    self.select(highlighted.text)
+
+                live.refresh()
+
+    def draw_selector(self) -> Text:
+        """Render the choices to select from."""
+        # fmt: off
+        active   = PromptMarker.UI_RADIO_ACTIVE   if self.mode == "SINGLE" else PromptMarker.UI_CHECK_ACTIVE
+        hidden = PromptMarker.UI_RADIO_INACTIVE if self.mode == "SINGLE" else PromptMarker.UI_CHECK_INACTIVE
+        choices  = []
+        # fmt: on
+
+        for option in self.choices:
+            # fmt: off
+            marker = active if option.is_selected else hidden
+            focus  = option.is_highlighted and self.is_active
+            color  = "green" if (focus or option.is_selected and not self.is_active) else "white"
+            choice = Text(text=f"{marker} {option.text}", style=Style(color=color, bold=True, dim=not focus))
+
+            if self.is_active or (not self.is_active and option.is_selected):
+                choices.append(choice)
+            # fmt: on
+
+        return Text(text=" / ").join(choices)
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        """How Rich should display the Prompt."""
+        yield from super().__rich_console__(console=console, options=options)
+        yield self.draw_selector()
+
+        if self.is_active:
+            highlighted = next(option for option in self.choices if option.is_highlighted)
+
+            if highlighted.description is not None:
+                yield Text(text=highlighted.description, style=Style(color="green", bold=True, italic=True, dim=True))
 
 
 class Confirm(Select):
     """Ask the User a Yes/No question."""
 
     default: Literal["Yes", "No"]
-    _is_interactive: bool = True
+    choice_means_stop: Optional[Literal["Yes", "No"]] = None
 
     def __init__(self, **options):
-        super().__init__(choices=["Yes", "No"], mode="single", **options)
-        self._answer = self.default
+        default = options.get("default")
+        choices = [
+            PromptOption(text="Yes", is_selected="Yes" == default, is_highlighted="Yes" == default),
+            PromptOption(text="No", is_selected="No" == default, is_highlighted="No" == default),
+        ]
+        super().__init__(choices=choices, mode="SINGLE", selection_validator=Confirm.cancel_if_stop_choice, **options)
 
-    def select(self, choice: str) -> None:  # type: ignore[override]
-        """Make a selection."""
-        self._answer = choice
+    @classmethod
+    def cancel_if_stop_choice(cls, prompt: BasePrompt, answer: list[PromptOption]) -> bool:
+        """Set internal state if the answer means cancelled."""
+        assert isinstance(prompt, Confirm)
 
-    def draw_selector(self) -> Text:
-        """Show the choices on screen."""
-        choices = []
+        # In single-select mode, there is always only ever 1 answer.
+        if answer[0].text == prompt.choice_means_stop:
+            prompt.status = PromptStatus.cancel()
 
-        for value in ("Yes", "No"):
-            selected = self._answer == value
-            marker = PromptMarker.UI_RADIO_ACTIVE if selected else PromptMarker.UI_RADIO_INACTIVE
-            choice = Text(text=f"{marker} {value}", style=Style(color="white", bold=True, dim=not selected))
-            choices.append(choice)
-
-        return Text(text=" / ").join(choices)
-
-    def draw_selected(self) -> Text:
-        return Text(text=f"{PromptMarker.UI_RADIO_ACTIVE} {self._answer}", style="bold dim white")
-
-    def process_interaction(self, live: Live) -> None:
-        """ """
-        with KeyboardListener(console=live.console) as kb:
-            while kb.is_running:
-                key = kb.get()
-
-                if key == Keys.char("Q"):
-                    kb.stop()
-                    break
-
-                if key in (Keys.char("Y"), Keys.char("N")):
-                    self.select(choice="Yes" if key == Keys.char("Y") else "No")
-
-                if key in (Keys.LEFT, Keys.RIGHT):
-                    self.select(choice="No" if self._answer == "Yes" else "Yes")
-
-                live.refresh()
-
-                if key == Keys.ENTER:
-                    break
-
-                if key == Keys.ESCAPE:
-                    self.status = "CANCEL"
+        return True
 
 
 class Note(BasePrompt):
     """Print an informative message."""
 
-    _is_interactive: bool = False
+    on_screen_time: float = 0
+
+    def interactivity(self, live: Live) -> None:  # noqa: ARG002
+        """Optionally give the User some time to read."""
+        time.sleep(self.on_screen_time)
 
 
-class PromptMenu(_GlobalModel):
-    """Draw an interactive menu."""
+class PromptInMenu:
+    """
+    Prompts in the menu have a left hand rail.
 
-    introduction: str
-    prompts: list[pydantic.InstanceOf[BasePrompt]]
-    epilog: Optional[str] = None
+      a. The first prompt in the menu will have a null-styled opening marker.
+      b. All Prompts will have a .style'd status indicator shown at all times.
+      c. All multi-prompts will have their non-marked lines shown as a .style'd rail.
+      d. The active prompt will have the first line .style'd, with all other lines in
+         the NULL_STYLE.
+      e. The last line in the last prompt will have a closing marker.
 
-    @pydantic.model_validator(mode="after")
-    def _convert_to_note_prompts(self) -> PromptMenu:
-        self.prompts.insert(0, Note(prompt=self.introduction))
+    A --> ┌ cs_tools config create
+          │
+    B --> ◇ Please name your configuration.
+    C --> │ 710
+          │
+          ◇ Config 710 exists, do you want to overwrite it?
+          │ ● Yes / ○ No
+          │
+          ...
+          │
+    D --> ◆ Which authentication method do you want to use?
+      --> │ ◻ Password / ◼ Trusted Authentication / ◻ Bearer Token
+      --> │ this is the password used on the ThoughtSpot login screen
+          │
+          ...
+          │
+    E --> └ Complete!
+    """
 
-        if self.epilog is not None:
-            self.prompts.append(Note(prompt=self.epilog))
+    def __init__(self, prompt: BasePrompt, position_in_menu: Literal["FIRST", "MIDDLE", "LAST"] = "MIDDLE"):
+        self.prompt = prompt
+        self.padding_width = 2
+        self.position_in_menu = position_in_menu
 
-        return self
-
-    @property
-    def number_of_prompts(self) -> int:
-        return len(self.prompts)
-
-    def draw_columns(self, prompt: BasePrompt, *, marker, console: Console, options: ConsoleOptions) -> list[Columns]:
+    def determine_rail_marker(self, is_first_line: bool) -> str:
         """ """
-        ACTIVE_STYLE = Style(color="blue", bold=True)
+        marker = {"FIRST": PromptMarker.RAIL_BEG, "MIDDLE": self.prompt.status.marker, "LAST": PromptMarker.RAIL_END}
+        return marker[self.position_in_menu] if is_first_line else PromptMarker.RAIL_BAR
+
+    def measure_height(self, console: Console) -> int:
+        """
+        Retrieve the height of the prompt.
+
+        Height is a function of screen width and the presence of new lines.
+        """
+        render_options = console.options.update(max_width=console.options.max_width - self.padding_width)
+        lines = console.render_lines(self.prompt, render_options, pad=False)
+        return len(lines)
+
+    def determine_rail_style(self, is_first_line):
+        """ """
+        style = Style.null()
+
+        if is_first_line and self.position_in_menu != "FIRST":
+            style = self.prompt.style
+
+        elif self.prompt.is_active:
+            style = self.prompt.style
+
+        elif self.prompt.status != PromptStatus.success() and not is_first_line:
+            style = self.prompt.style
+
+        return style
+
+    def determine_line_style(self, is_first_line):
+        """ """
+        style = self.prompt.style
+
+        if self.prompt.is_active and not is_first_line:
+            style = Style.null()
+
+        elif not self.prompt.is_active and is_first_line and self.prompt.status == PromptStatus.success():
+            style = Style.null()
+
+        elif not self.prompt.is_active and not is_first_line:
+            style = Style(color="white", dim=True)
+
+        return style
+
+    def __rich_console__(self, console, options):
         NULL_STYLE = Style.null()
-        DIM_STYLE = Style(color="white", bold=True, dim=True)
-        STRIKE_STYLE = Style(color="white", bold=True, dim=True, strike=True)
 
-        columns = []
-        segments = prompt.__rich_console__(console=console, options=options)
+        render_options = options.update(max_width=options.max_width - self.padding_width)
+        lines = console.render_lines(self.prompt, render_options, pad=False)
 
-        for is_first_segment, segment in loop_first(segments):
-            if not is_first_segment:
-                marker = PromptMarker.RAIL_BAR
-                style = DIM_STYLE if prompt.status == "SUCCESS" else STRIKE_STYLE
-            else:
-                marker = Styled(marker, style=prompt.style)
-                style = NULL_STYLE if prompt.status == "SUCCESS" else prompt.style
+        for is_first_line, is_last_line, line in loop_first_last(lines):
+            marker = self.determine_rail_marker(is_first_line)
+            marker_style = self.determine_rail_style(is_first_line)
+            line_style = self.determine_line_style(is_first_line)
 
-            styled_segment = Styled(segment, style=ACTIVE_STYLE if prompt.is_active else style)
-            columns.append(Columns([marker, styled_segment]))
+            assert len(marker) == 1
+            yield Segment(text=f"{marker} ", style=marker_style)
+            yield from Segment.apply_style(line, style=NULL_STYLE, post_style=line_style)
+            yield Segment("\n")
 
-        return columns
+            if self.prompt.is_active and is_last_line:
+                yield Segment(PromptMarker.RAIL_END, style=self.prompt.style)
+                yield Segment("\n")
 
-    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
-        segments = ft.partial(self.draw_columns, console=console, options=options)
+
+def measure_height(*renderables: RenderableType, console: Console, options: ConsoleOptions) -> int:
+    """ """
+    group = Group(*renderables)
+    lines = console.render_lines(group, options, pad=False)
+    return len(lines)
+
+
+def shape(*renderables, console) -> tuple[int, int]:
+    """ """
+    group = Group(*renderables)
+    lines = console.render_lines(group, console.options, pad=False)
+    return Segment.get_shape(lines)
+
+
+class PromptMenu:
+    """
+    Draw an interactive menu of prompts.
+
+    Prompts start off in a hidden state, and only come into view as we progress
+    through the menu. Transient prompts will be hidden once they've been
+    interacted with.
+    """
+
+    def __init__(
+        self,
+        *prompts: BasePrompt,
+        console: Console,
+        intro: str,
+        outro: Optional[str] = None,
+        transient: bool = False,
+    ):
+        self.prompts = self.ensure_prompts(intro, *prompts, outro)
+        self.console = console
+        self.live = Live(
+            console=console,
+            auto_refresh=False,
+            transient=transient,
+            get_renderable=self.get_renderable,
+            vertical_overflow="visible",
+        )
+        self.has_outro = outro is not None
+
+    def ensure_prompts(self, *prompts: Union[str, BasePrompt, None]) -> list[BasePrompt]:
+        """Convert all menus into Prompts."""
+        ensured = []
+
+        for prompt in prompts:
+            if prompt is None:
+                continue
+
+            if isinstance(prompt, str):
+                prompt = Note(prompt=prompt)
+
+            ensured.append(prompt)
+
+        return ensured
+
+    def __rich__(self) -> RenderableType:
+        """Makes the Prompt Menu class itself renderable."""
+        return self.get_renderable()
+
+    def count_lines(self, renderables) -> int:
+        return sum(r.measure_height(self.console) if isinstance(r, PromptInMenu) else 1 for r in renderables)
+
+    def fake_scroll(self, *, content_lines: list[RenderableType], console_height: int) -> list[RenderableType]:
+        """ """
+        overage = self.height - console_height
+        trimmed = []
+
+        for content_line in content_lines:
+            overage = overage - self.count_lines([content_line])
+
+            if overage >= -1:
+                continue
+
+            trimmed.append(content_line)
+
+        return trimmed
+
+    def get_renderable(self) -> RenderableType:
+        """Get a renderable for the prompt menu."""
+        renderable_lines = self.get_renderables()
+        console_width, console_height = self.console.size
+
+        if self.height > console_height and self.live.is_started:
+            # width, height = shape(renderable_lines, console=self.console)
+            # print(width, height)
+            # raise SystemExit
+
+            renderable_lines = self.fake_scroll(content_lines=renderable_lines, console_height=console_height)
+
+        return Group(*renderable_lines)
+
+    def get_renderables(self) -> Iterable[RenderableType]:
+        """Get a number of renderables for the prompt menu."""
+        renderables: list[RenderableType] = []
+        self.height = 0
 
         for is_first_prompt, is_last_prompt, prompt in loop_first_last(self.prompts):
-            if prompt.status == "INACTIVE":
+            if prompt.status == PromptStatus.hidden():
                 continue
+
+            # if is_first_prompt:
+            #     marker = PromptMarker.RAIL_BEG if not prompt.is_active else prompt.status.marker
+            #     renderables.append(Columns([marker, prompt]))
+            #     self.height += 1
+            #     continue
+
+            if not is_first_prompt:
+                renderables.append(PromptMarker.RAIL_BAR)
+                self.height += 1
+
+            # if is_last_prompt:
+            #     marker = PromptMarker.RAIL_END
+            #     renderables.append(Columns([marker, prompt]))
+            #     self.height += 1
+            #     continue
+            position = "MIDDLE"
 
             if is_first_prompt:
-                yield Columns([PromptMarker.RAIL_BEG if not prompt.is_active else prompt.marker, prompt])
-                continue
-
-            yield Columns([PromptMarker.RAIL_BAR])
+                position = "FIRST"
 
             if is_last_prompt:
-                yield Columns([PromptMarker.RAIL_END, prompt])
-                continue
+                position = "LAST"
 
-            yield from segments(prompt, marker=prompt.marker)
+            multiline_prompt = PromptInMenu(prompt, position_in_menu=position)
+            renderables.append(multiline_prompt)
+            self.height += multiline_prompt.measure_height(self.console)
 
-            if prompt.is_active:
-                yield Columns([PromptMarker.RAIL_END])
+        return renderables
 
-    def begin(self, console: Console) -> None:
+    def start(self) -> None:
+        """
+        Start the pomrpt menu.
+
+        You should prefer to use .begin().
+        """
+        self.live.start()
+
+    def stop(self, refresh: bool = True) -> None:
+        """
+        Stop the prmopt menu.
+
+        You should prefer to use .begin().
+        Any remaining prompts will remain hidden.
+        """
+        if refresh:
+            self.live.refresh()
+
+        self.live.stop()
+
+    def handle_prompt(self, prompt: BasePrompt) -> None:
+        """
+        Progress through a prmopt in the menu.
+
+        You should prefer to use .begin().
+        """
+        with prompt:
+            self.live.refresh()
+
+            prompt.interactivity(live=self.live)
+
+    def add(self, prompt: BasePrompt, *, after: Optional[BasePrompt] = None) -> None:
+        """Add a prompt to the menu."""
+        idx = len(self.prompts) if after is None else self.prompts.index(after) + 1
+        self.prompts.insert(idx, prompt)
+
+    def begin(self) -> None:
         """Progress through all prompts."""
-        with Live(self, console=console, auto_refresh=False) as live:
-            for prompt in self.prompts:
-                with prompt:
-                    live.update(self, refresh=True)
+        self.start()
 
-                    if prompt.is_interactive:
-                        prompt.process_interaction(live=live)
+        for prompt in self.prompts:
+            self.handle_prompt(prompt)
 
-                if prompt.status == "ERROR":
-                    break
+            if prompt.status in (PromptStatus.cancel(), PromptStatus.error()):
+                break
 
-            live.update(self, refresh=True)
-
-
-if __name__ == "__main__":
-    nav = PromptMenu(
-        introduction="Welcome to CS Tools!",
-        prompts=[
-            Note(prompt="Let's set up a configuration file."),
-            Confirm(prompt="Directory not empty. Continue?", default="No"),
-            UserTextInput(prompt="What's your favorite flower?", validator=lambda b: len(b) > 0),
-        ],
-        epilog="Complete!",
-    )
-
-    try:
-        nav.begin(console=Console())
-    except KeyboardInterrupt:
-        pass
+        self.stop()
