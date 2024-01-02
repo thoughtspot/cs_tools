@@ -10,7 +10,7 @@ from cs_tools.errors import ContentDoesNotExist
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
-    from cs_tools.types import GUID, RecordsFormat, UserProfile
+    from cs_tools.types import GUID, TableRowsFormat, UserProfile
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class GroupMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    def all(self, batchsize: int = 50) -> RecordsFormat:  # noqa: A003
+    def all(self, batchsize: int = 50) -> TableRowsFormat:  # noqa: A003
         """
         Get all groups in ThoughtSpot.
         """
@@ -63,7 +63,7 @@ class GroupMiddleware:
 
         return r.json()["header"]["id"]
 
-    def users_in(self, group_name: str, *, is_directly_assigned: bool = True) -> list[RecordsFormat]:
+    def users_in(self, group_name: str, *, is_directly_assigned: bool = True) -> list[TableRowsFormat]:
         """
         Return the User headers for a given Group.
         """

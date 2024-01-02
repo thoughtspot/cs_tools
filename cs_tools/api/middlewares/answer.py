@@ -5,7 +5,7 @@ import logging
 
 from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
-from cs_tools.types import MetadataCategory, RecordsFormat
+from cs_tools.types import MetadataCategory, TableRowsFormat
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
@@ -28,7 +28,7 @@ class AnswerMiddleware:
         auto_created: bool = False,
         exclude_system_content: bool = True,
         chunksize: int = 500,
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """
         Get all answers in ThoughtSpot.
 

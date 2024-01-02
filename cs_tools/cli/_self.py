@@ -13,8 +13,7 @@ from awesomeversion import AwesomeVersion
 import rich
 import typer
 
-from cs_tools import utils
-from cs_tools._version import __version__
+from cs_tools import __version__, utils
 from cs_tools.cli import _analytics
 from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
 from cs_tools.settings import _meta_config as meta

@@ -7,7 +7,7 @@ import logging
 import pydantic
 
 from cs_tools.errors import InsufficientPrivileges
-from cs_tools.types import RecordsFormat
+from cs_tools.types import TableRowsFormat
 
 if TYPE_CHECKING:
     import pathlib
@@ -40,7 +40,7 @@ class TQLMiddleware:
         sample: int = 50,
         database: Optional[str] = None,
         schema_: Annotated[str, pydantic.Field(alias="schema")] = "falcon_default_schema",
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """
 
         Parameters
@@ -88,7 +88,7 @@ class TQLMiddleware:
         database: Optional[str] = None,
         schema_: str = "falcon_default_schema",
         # raise_errors: bool = False,
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """ """
         if not self.ts.session_context.user.is_data_manager:
             raise InsufficientPrivileges(
@@ -117,7 +117,7 @@ class TQLMiddleware:
 
         return out
 
-    def script(self, fp: pathlib.Path) -> RecordsFormat:
+    def script(self, fp: pathlib.Path) -> TableRowsFormat:
         """ """
         if not self.ts.session_context.user.is_data_manager:
             raise InsufficientPrivileges(

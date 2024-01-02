@@ -16,8 +16,7 @@ import rich
 import sqlalchemy as sa
 import typer
 
-from cs_tools import datastructures, utils
-from cs_tools._version import __version__
+from cs_tools import __version__, datastructures, utils
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, GH_ISSUES, TOOLS_DIR

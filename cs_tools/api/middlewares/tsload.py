@@ -18,7 +18,7 @@ from cs_tools.errors import InsufficientPrivileges, TSLoadServiceUnreachable
 from cs_tools.types import (
     GUID as CycleID,
     GroupPrivilege,
-    RecordsFormat,
+    TableRowsFormat,
 )
 from cs_tools.updater import cs_tools_venv
 
@@ -197,7 +197,7 @@ class TSLoadMiddleware:
         # not related to Remote TSLOAD API
         ignore_node_redirect: bool = False,
         http_timeout: int = 60.0,
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """
         Load a file via tsload on a remote server.
 
@@ -345,7 +345,7 @@ class TSLoadMiddleware:
         return data
 
     # @validate_arguments
-    # def bad_records(self, cycle_id: str) -> RecordsFormat:
+    # def bad_records(self, cycle_id: str) -> TableRowsFormat:
     #     """
     #     """
     #     r = self.ts.api.v1.ts_dataservice.load_params(cycle_id)

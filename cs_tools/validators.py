@@ -84,10 +84,16 @@ def as_datetime_isoformat(dattim: dt.datetime) -> str:
     return dattim.isoformat(timespec="seconds")
 
 
+@pydantic.PlainSerializer
+def as_version_string(version: awesomeversion.AwesomeVersion) -> str:
+    """Tranform an awesomeversion to a regular format."""
+    return str(version)
+
+
 #
 # ready-to-use validated type hints, cast as core python data types
 #
 
 DateTimeInUTC = Annotated[dt.datetime, ensure_datetime_is_utc]
-CoerceVersion = Annotated[awesomeversion.AwesomeVersion, ensure_valid_version]
+CoerceVersion = Annotated[awesomeversion.AwesomeVersion, ensure_valid_version, as_version_string]
 CoerceHexUUID = Annotated[str, ensure_valid_uuid4]

@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Annotated, Any, Optional
 import logging
 import re
-import typing
 import uuid
 
 import pydantic
 
+from cs_tools import errors
 from cs_tools._compat import StrEnum, TypedDict
-from cs_tools.errors import CSToolsError
 
 log = logging.getLogger(__name__)
-GUID = typing.cast(uuid.UUID, str)
+GUID = Annotated[str, uuid.UUID]
 
 
 # ======================================================================================================================
@@ -199,7 +198,7 @@ class TMLSupportedContent(StrEnum):
 
         tml_type = mappings.get((metadata_type, subtype))
         if not tml_type:
-            raise CSToolsError(
+            raise errors.CSToolsCLIError(
                 title=f"Unknown type/subtype combination: {metadata_type}/{subtype}",
                 mitigation="Check that the type and subtype are correct.",
             )
@@ -228,7 +227,7 @@ class TMLSupportedContentSubtype(StrEnum):
 # ======================================================================================================================
 
 
-RecordsFormat = list[dict[str, Any]]
+TableRowsFormat = list[dict[str, Any]]
 # records are typically a metadata header fragment, but not always.
 #
 # [
@@ -249,7 +248,7 @@ class TMLAPIResponse(pydantic.BaseModel):
     tml_type_name: str
     name: str
     status_code: str
-    error_messages: list[str] = Optional[list[str]]
+    error_messages: Optional[list[str]] = pydantic.Field(default_factory=list)
     _full_response: Any = None
 
     @pydantic.field_validator("status_code", mode="before")
@@ -284,8 +283,8 @@ class MetadataParent(pydantic.BaseModel):
     parent_guid: GUID
     parent_name: str
     connection: GUID
-    visualization_guid: GUID = None  # viz_guid
-    visualization_index: str = Optional[str]  # Viz_N
+    visualization_guid: Optional[GUID] = None  # viz_guid
+    visualization_index: Optional[str] = None  # Viz_N
 
     def __eq__(self, other):
         return (self.parent_guid, self.visualization_guid) == (other.parent_guid, other.visualization_guid)

@@ -10,8 +10,9 @@ This includes things that will change based on submitted user configuration.
 """
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Optional, Union
 import datetime as dt
+import logging
 import platform
 import sys
 
@@ -20,9 +21,9 @@ import pydantic
 import pydantic_settings
 import sqlmodel
 
-from cs_tools import types, utils, validators
-from cs_tools._version import __version__
+from cs_tools import __project__, __version__, types, utils, validators
 
+log = logging.getLogger(__name__)
 _COMMON_MODEL_CONFIG = {
     "arbitrary_types_allowed": True,
     "extra": "allow",
@@ -125,7 +126,7 @@ class UserInfo(_GlobalModel):
     guid: pydantic.UUID4
     username: str
     display_name: str
-    privileges: set[types.GroupPrivilege]
+    privileges: set[Union[types.GroupPrivilege, str]]
     email: Optional[pydantic.EmailStr] = None
 
     @pydantic.model_validator(mode="before")
@@ -139,6 +140,20 @@ class UserInfo(_GlobalModel):
                 "privileges": data["privileges"],
                 "email": data.get("userEmail", None),
             }
+
+        return data
+
+    @pydantic.field_validator("privileges", mode="before")
+    @classmethod
+    def check_for_new_or_extra_privileges(cls, data):
+        for privilege in data:
+            try:
+                types.GroupPrivilege(privilege)
+            except ValueError:
+                log.warning(
+                    f"Missing privilege '{privilege}' from CS Tools, please contact us to update it"
+                    f"\n{__project__.__help__}"
+                )
 
         return data
 

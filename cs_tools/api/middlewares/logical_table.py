@@ -5,7 +5,7 @@ import logging
 
 from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
-from cs_tools.types import GUID, MetadataCategory, RecordsFormat
+from cs_tools.types import GUID, MetadataCategory, TableRowsFormat
 from cs_tools.utils import chunks
 
 if TYPE_CHECKING:
@@ -29,7 +29,7 @@ class LogicalTableMiddleware:
         hidden: bool = False,
         exclude_system_content: bool = True,
         chunksize: int = 500,
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """
         Get all tables in ThoughtSpot.
 
@@ -95,7 +95,7 @@ class LogicalTableMiddleware:
 
         return tables
 
-    def columns(self, guids: list[GUID], *, include_hidden: bool = False, chunksize: int = 10) -> RecordsFormat:
+    def columns(self, guids: list[GUID], *, include_hidden: bool = False, chunksize: int = 10) -> TableRowsFormat:
         """ """
         columns = []
 

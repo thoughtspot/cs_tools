@@ -21,8 +21,7 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import datastructures, utils, validators
-from cs_tools._version import __version__
+from cs_tools import __version__, datastructures, utils, validators
 from cs_tools.cli.ux import rich_console
 from cs_tools.datastructures import ValidatedSQLModel
 from cs_tools.settings import _meta_config as meta

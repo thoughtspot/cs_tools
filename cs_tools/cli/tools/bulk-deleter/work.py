@@ -8,12 +8,12 @@ from cs_tools import utils
 from . import types
 
 if TYPE_CHECKING:
-    from cs_tools.types import RecordsFormat
+    from cs_tools.types import TableRowsFormat
 
 log = logging.getLogger(__name__)
 
 
-def _validate_objects_exist(ts, data: list[RecordsFormat]) -> list[types.DeleteRecord]:
+def _validate_objects_exist(ts, data: list[TableRowsFormat]) -> list[types.DeleteRecord]:
     """
     /metadata/delete WILL NOT fail on ValueError.
 

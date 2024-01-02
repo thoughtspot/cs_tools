@@ -10,7 +10,7 @@ from cs_tools.errors import ContentDoesNotExist
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
-    from cs_tools.types import GUID, RecordsFormat
+    from cs_tools.types import GUID, TableRowsFormat
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class UserMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    def all(self, batchsize: int = 50) -> RecordsFormat:  # noqa: A003
+    def all(self, batchsize: int = 50) -> TableRowsFormat:  # noqa: A003
         """
         Get all users in ThoughtSpot.
         """

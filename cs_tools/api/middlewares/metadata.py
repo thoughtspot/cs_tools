@@ -12,7 +12,7 @@ from cs_tools.types import (
     MetadataObjectType,
     MetadataParent,
     PermissionType,
-    RecordsFormat,
+    TableRowsFormat,
     TMLSupportedContent,
 )
 
@@ -35,7 +35,7 @@ class MetadataMiddleware:
         type: Union[MetadataObjectType, MetadataObjectSubtype],  # noqa: A002
         permission_type: PermissionType = PermissionType.explicit,
         chunksize: int = 25,
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """ """
         type_to_supertype = {
             "FORMULA": "LOGICAL_COLUMN",
@@ -79,7 +79,7 @@ class MetadataMiddleware:
 
     def dependents(
         self, guids: list[GUID], *, for_columns: bool = False, include_columns: bool = False, chunksize: int = 50
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """
         Get all dependencies of content in ThoughtSpot.
 
@@ -99,7 +99,7 @@ class MetadataMiddleware:
 
         Returns
         -------
-        dependencies : RecordsFormat
+        dependencies : TableRowsFormat
           all dependencies' headers
         """
         if include_columns:
@@ -123,11 +123,11 @@ class MetadataMiddleware:
 
         return dependents
 
-    def get(self, guids: list[GUID]) -> RecordsFormat:
+    def get(self, guids: list[GUID]) -> TableRowsFormat:
         """
         Find all objects based on the supplied guids.
         """
-        content: list[RecordsFormat] = []
+        content: list[TableRowsFormat] = []
         guids = set(guids)
 
         for metadata_type in MetadataObjectType:
@@ -163,7 +163,7 @@ class MetadataMiddleware:
         include_subtypes: Optional[list[str]] = None,
         exclude_types: Optional[list[str]] = None,
         exclude_subtypes: Optional[list[str]] = None,
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """
         Find all object which meet the predicates in the keyword args.
         """

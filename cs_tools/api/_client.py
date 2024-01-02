@@ -6,7 +6,7 @@ import logging
 
 import httpx
 
-from cs_tools._version import __version__
+from cs_tools import __version__
 from cs_tools.api._rest_api_v1 import RESTAPIv1
 from cs_tools.api._rest_api_v2 import RESTAPIv2
 

@@ -110,7 +110,7 @@ cstools = "cs_tools.cli.main:run"
 
 
 [tool.setuptools.dynamic]
-version = {attr = "cs_tools._version.__version__"}
+version = {attr = "cs_tools.__project__.__version__"}
 
 [tool.mypy]
 warn_unused_configs = true
@@ -157,10 +157,10 @@ exclude = [
     ".nox",          # ignore virtual environments
 
     # project specific ignores
-    "__init__.py",  # ignore __init__.py
-    "_version.py",  # ignore _version.py
-    "_compat.py",   # ignore compatibles
-    "const.py",     # ignore constants
+    "__init__.py",     # ignore __init__.py
+    "__project__.py",  # ignore project metadata
+    "_compat.py",      # ignore compatibles
+    "const.py",        # ignore constants
     "noxfile.py",
     "setup.py",
 ]

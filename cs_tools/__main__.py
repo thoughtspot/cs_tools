@@ -6,7 +6,7 @@ try:
     from cs_tools.cli.main import run
 
 except ImportError:
-    from cs_tools._version import __version__
+    from cs_tools import __version__
 
     logging.warning(
         f"You are attempting to run cs_tools as a script (invoking cli mode), but have installed CS Tools as a package!"

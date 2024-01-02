@@ -21,9 +21,8 @@ from pydantic.types import DirectoryPath
 import pydantic
 import toml
 
-from cs_tools import types, utils, validators
+from cs_tools import __version__, types, utils, validators
 from cs_tools._compat import Self
-from cs_tools._version import __version__
 from cs_tools.datastructures import _GlobalModel, _GlobalSettings
 from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.updater import cs_tools_venv

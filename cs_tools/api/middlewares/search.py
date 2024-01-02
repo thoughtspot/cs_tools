@@ -9,12 +9,12 @@ from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
-    from cs_tools.types import RecordsFormat
+    from cs_tools.types import TableRowsFormat
 
 log = logging.getLogger(__name__)
 
 
-def _fix_for_scal_101507(row: RecordsFormat) -> RecordsFormat:
+def _fix_for_scal_101507(row: TableRowsFormat) -> TableRowsFormat:
     # BUG: SCAL-101507
     #
     # DATE_TIME formatted columns return data in the format below. This fixes that.
@@ -31,11 +31,11 @@ def _fix_for_scal_101507(row: RecordsFormat) -> RecordsFormat:
     return row
 
 
-def _to_records(columns: list[str], rows: list[RecordsFormat]) -> list[RecordsFormat]:
+def _to_records(columns: list[str], rows: list[TableRowsFormat]) -> list[TableRowsFormat]:
     return [dict(zip(columns, _fix_for_scal_101507(row))) for row in rows]
 
 
-def _cast(data: list[RecordsFormat], headers_to_types: dict[str, str]) -> list[RecordsFormat]:
+def _cast(data: list[TableRowsFormat], headers_to_types: dict[str, str]) -> list[TableRowsFormat]:
     """
     Cast data coming back from Search API to their intended column types.
     """
@@ -110,7 +110,7 @@ class SearchMiddleware:
         table: Optional[str] = None,
         view: Optional[str] = None,
         sample: bool = -1,
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """
         Search a data source.
 
@@ -135,7 +135,7 @@ class SearchMiddleware:
 
         Returns
         -------
-        data : RecordsFormat
+        data : TableRowsFormat
           search result in data records format
 
         Raises

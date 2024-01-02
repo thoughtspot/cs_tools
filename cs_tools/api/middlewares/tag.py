@@ -9,7 +9,7 @@ from cs_tools.errors import ContentDoesNotExist
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
-    from cs_tools.types import RecordsFormat
+    from cs_tools.types import TableRowsFormat
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class TagMiddleware:
 
         self.ts.api.v1.request("POST", "callosum/v1/metadata/delete", data={"type": "TAG", "id": dumps([tag["id"]])})
 
-    def all(self) -> RecordsFormat:  # noqa: A003
+    def all(self) -> TableRowsFormat:  # noqa: A003
         """
         Get all tags in ThoughtSpot.
         """
