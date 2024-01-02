@@ -139,6 +139,7 @@ class Key(_GlobalModel):
     @pydantic.computed_field  # type: ignore[misc]
     @property
     def character(self) -> Optional[str]:
+        """Determine the character a key represents."""
         return self.key.decode() if len(self.key) == 1 else None
 
     @pydantic.computed_field  # type: ignore[misc]
@@ -181,6 +182,8 @@ class Key(_GlobalModel):
 
 
 class Keys:
+    """Represent known keys."""
+
     NULL = Key(key=b"\xe00")
 
     SPACE = Key(key=b" ")
@@ -202,7 +205,7 @@ class Keys:
 
 
 class KeyboardListener:
-    """ """
+    """Listen to input from the keyboard in the background."""
 
     def __init__(self, *, whitelist: Optional[list[Key]] = None):
         self.whitelist = whitelist
@@ -327,6 +330,11 @@ class KeyboardListener:
 
 
 if __name__ == "__main__":
+    """
+    Listen to the keyboard, printing out keys as we go.
+
+    This can be used to determine keys that to be added to the known keys list above.
+    """
     from rich.console import Console
 
     console = Console()

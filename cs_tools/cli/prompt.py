@@ -94,14 +94,19 @@ class PromptStatus(_GlobalModel):
         return cls(status="SUCCESS", marker="◇", style=Style(color="green", bold=True))
 
     @classmethod
-    def cancel(cls) -> Self:
+    def warning(cls) -> Self:
         """State the Prompt is in when interactivity was terminated by the user."""
-        return cls(status="CANCEL", marker="◈", style=Style(color="red", bold=True, dim=True))
+        return cls(status="WARNING", marker="◈", style=Style(color="yellow", bold=True))
 
     @classmethod
     def error(cls) -> Self:
         """State the Prompt is in when interactivity finished unsuccessfully."""
         return cls(status="ERROR", marker="✦", style=Style(color="red", bold=True))
+
+    @classmethod
+    def cancel(cls) -> Self:
+        """State the Prompt is in when interactivity was terminated by the user."""
+        return cls(status="CANCEL", marker="◈", style=Style(color="red", bold=True, dim=True))
 
 
 class BasePrompt(_GlobalModel):
@@ -142,17 +147,27 @@ class BasePrompt(_GlobalModel):
     @property
     def is_active(self) -> bool:
         """Determine if the Prompt is active."""
-        return self.status == PromptStatus.active()
+        return self.status in (PromptStatus.active(), PromptStatus.warning())
 
     @property
     def warning(self) -> Optional[str]:
         """Retrieve the warning message, if one is set."""
         return self._warning
 
+    @warning.setter
+    def warning(self, message: str) -> None:
+        self._warning = message
+        self._status = PromptStatus.warning()
+
     @property
     def exception(self) -> Optional[BaseException]:
         """Retrieve the exception, if one occurred."""
         return self._exception
+
+    @exception.setter
+    def exception(self, exception: Exception) -> None:
+        self._exception = exception
+        self._status = PromptStatus.error()
 
     @property
     def marker(self) -> str:
@@ -174,7 +189,7 @@ class BasePrompt(_GlobalModel):
         yield self.prompt
 
         if self.is_active and self.warning is not None:
-            yield Text.from_markup(f"[bold yellow]X [dim white]>>[/] {self.warning}")
+            yield Text.from_markup(f"X [dim white]>>[/] {self.warning}", style=self.style)
 
         if self.is_active and self.detail is not None and self.warning is None:
             yield Styled(self.detail, style="dim white")
@@ -202,7 +217,7 @@ class BasePrompt(_GlobalModel):
         # We'll ignore the error, but store it on the Prompt itself.
         else:
             self.status = PromptStatus.error()
-            self._exception = exception
+            self.exception = exception
             log.error(
                 f"{class_.__name__} occurred in {self.__class__.__name__} prompt, check .exception or see DEBUG log "
                 f"for details..",
@@ -286,7 +301,10 @@ class UserTextInput(BasePrompt):
 
         buffered_text = self.buffer_as_string(on_screen=True)
 
-        if self.is_active:
+        if self.is_active and self.is_secret:
+            self.detail = f"..currently {len(buffered_text)} characters"
+            yield Text(buffered_text, style=Style(color="white", bgcolor="blue", bold=True))
+        elif self.is_active:
             yield Text(buffered_text, style="bold white on blue")
         else:
             yield buffered_text
@@ -494,21 +512,14 @@ class PromptInMenu:
         marker = {"FIRST": PromptMarker.RAIL_BEG, "MIDDLE": self.prompt.status.marker, "LAST": PromptMarker.RAIL_END}
         return marker[self.position_in_menu] if is_first_line else PromptMarker.RAIL_BAR
 
-    def measure_height(self, console: Console) -> int:
-        """
-        Retrieve the height of the prompt.
-
-        Height is a function of screen width and the presence of new lines.
-        """
-        render_options = console.options.update(max_width=console.options.max_width - self.padding_width)
-        lines = console.render_lines(self.prompt, render_options, pad=False)
-        return len(lines)
-
-    def determine_rail_style(self, is_first_line):
+    def determine_rail_style(self, is_first_line: bool) -> Style:
         """ """
         style = Style.null()
 
-        if is_first_line and self.position_in_menu != "FIRST":
+        if is_first_line and self.position_in_menu == "MIDDLE":
+            style = self.prompt.style
+
+        elif self.prompt.is_active and self.prompt.warning is not None:
             style = self.prompt.style
 
         elif self.prompt.is_active:
@@ -519,7 +530,7 @@ class PromptInMenu:
 
         return style
 
-    def determine_line_style(self, is_first_line):
+    def determine_line_style(self, is_first_line: bool) -> Style:
         """ """
         style = self.prompt.style
 
@@ -555,18 +566,20 @@ class PromptInMenu:
                 yield Segment("\n")
 
 
-def measure_height(*renderables: RenderableType, console: Console, options: ConsoleOptions) -> int:
-    """ """
+def reshape_and_measure(
+    *renderables: RenderableType, console: Console, max_width: Optional[int] = None
+) -> tuple[int, int]:
+    """Gather and reshape renderables to meet the max width of the console."""
+    options = console.options
+
+    if max_width is not None:
+        options = options.update(max_width=max_width)
+
     group = Group(*renderables)
     lines = console.render_lines(group, options, pad=False)
-    return len(lines)
+    shape = Segment.get_shape(lines)
 
-
-def shape(*renderables, console) -> tuple[int, int]:
-    """ """
-    group = Group(*renderables)
-    lines = console.render_lines(group, console.options, pad=False)
-    return Segment.get_shape(lines)
+    return shape
 
 
 class PromptMenu:
@@ -616,21 +629,18 @@ class PromptMenu:
         """Makes the Prompt Menu class itself renderable."""
         return self.get_renderable()
 
-    def count_lines(self, renderables) -> int:
-        return sum(r.measure_height(self.console) if isinstance(r, PromptInMenu) else 1 for r in renderables)
-
-    def fake_scroll(self, *, content_lines: list[RenderableType], console_height: int) -> list[RenderableType]:
-        """ """
-        overage = self.height - console_height
+    def fake_scroll(self, *, renderables: list[RenderableType], overage: int) -> list[RenderableType]:
+        """Simulate scrolling of the PromptMenu."""
         trimmed = []
 
-        for content_line in content_lines:
-            overage = overage - self.count_lines([content_line])
+        for lines in renderables:
+            width, height = reshape_and_measure(lines, console=self.console)
+            overage = overage - height
 
             if overage >= -1:
                 continue
 
-            trimmed.append(content_line)
+            trimmed.append(lines)
 
         return trimmed
 
@@ -638,40 +648,24 @@ class PromptMenu:
         """Get a renderable for the prompt menu."""
         renderable_lines = self.get_renderables()
         console_width, console_height = self.console.size
+        renders_width, renders_height = reshape_and_measure(*renderable_lines, console=self.console)
 
-        if self.height > console_height and self.live.is_started:
-            # width, height = shape(renderable_lines, console=self.console)
-            # print(width, height)
-            # raise SystemExit
-
-            renderable_lines = self.fake_scroll(content_lines=renderable_lines, console_height=console_height)
+        if renders_height > console_height and self.live.is_started:
+            renderable_lines = self.fake_scroll(renderables=renderable_lines, overage=renders_height - console_height)
 
         return Group(*renderable_lines)
 
     def get_renderables(self) -> Iterable[RenderableType]:
         """Get a number of renderables for the prompt menu."""
         renderables: list[RenderableType] = []
-        self.height = 0
 
         for is_first_prompt, is_last_prompt, prompt in loop_first_last(self.prompts):
             if prompt.status == PromptStatus.hidden():
                 continue
 
-            # if is_first_prompt:
-            #     marker = PromptMarker.RAIL_BEG if not prompt.is_active else prompt.status.marker
-            #     renderables.append(Columns([marker, prompt]))
-            #     self.height += 1
-            #     continue
-
             if not is_first_prompt:
                 renderables.append(PromptMarker.RAIL_BAR)
-                self.height += 1
 
-            # if is_last_prompt:
-            #     marker = PromptMarker.RAIL_END
-            #     renderables.append(Columns([marker, prompt]))
-            #     self.height += 1
-            #     continue
             position = "MIDDLE"
 
             if is_first_prompt:
@@ -682,13 +676,12 @@ class PromptMenu:
 
             multiline_prompt = PromptInMenu(prompt, position_in_menu=position)
             renderables.append(multiline_prompt)
-            self.height += multiline_prompt.measure_height(self.console)
 
         return renderables
 
     def start(self) -> None:
         """
-        Start the pomrpt menu.
+        Start the prompt menu.
 
         You should prefer to use .begin().
         """
