@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Dict, Optional, Union
 import logging
 import typing
 import uuid
@@ -358,7 +358,7 @@ class LoggedInUser(pydantic.BaseModel):
     username: str
     display_name: str
     email: str
-    privileges: List[GroupPrivilege]
+    privileges: List[Union[GroupPrivilege, str]]
 
     @classmethod
     def from_api_v1_session_info(cls, info: Dict[str, Any]) -> LoggedInUser:
