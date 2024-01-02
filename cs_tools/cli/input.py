@@ -222,6 +222,9 @@ class KeyboardListener:
         """Listen for keys on Windows."""
         # TODO: REPLACE IMPL WITH TEXTUALIZE'S LISTENER ?
         # https://github.com/Textualize/textual/blob/244e42c6fcfd4989de08c57ffc10db1e5fc87add/src/textual/drivers/win32.py#L246-L273
+
+        # TODO: REPLACE IMPL WITH PROMPT_TOOLKIT'S LISTENER ?
+        # https://python-prompt-toolkit.readthedocs.io/en/master/pages/asking_for_input.html#adding-custom-key-bindings
         import msvcrt
 
         KEY_PRESS_WAITING = msvcrt.kbhit
@@ -248,6 +251,9 @@ class KeyboardListener:
         """Listen for keys on Mac, Linux."""
         # TODO: REPLACE IMPL WITH TEXTUALIZE'S LISTENER ?
         # https://github.com/Textualize/textual/blob/244e42c6fcfd4989de08c57ffc10db1e5fc87add/src/textual/drivers/linux_driver.py#L251-L283
+
+        # TODO: REPLACE IMPL WITH PROMPT_TOOLKIT'S LISTENER ?
+        # https://python-prompt-toolkit.readthedocs.io/en/master/pages/asking_for_input.html#adding-custom-key-bindings
         import selectors
         import sys
         import termios

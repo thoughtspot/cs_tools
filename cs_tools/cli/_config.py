@@ -3,7 +3,7 @@ from __future__ import annotations
 import pydantic
 import typer
 
-from cs_tools import validators
+from cs_tools import utils, validators
 from cs_tools.cli.prompt import Confirm, PromptMenu, PromptOption, PromptStatus, Select, UserTextInput
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.settings import (
@@ -52,14 +52,14 @@ def create(
     def buffer_is_not_empty(prompt: BasePrompt, buffer: str) -> bool:
         """Ensure some value is given."""
         if len(buffer) == 0:
-            prompt._warning = "Name must be at least one character."
+            prompt.warning = "Name must be at least one character."
             return False
         return True
 
     def select_at_least_one(prompt: BasePrompt, answer: list[PromptOption]) -> bool:
         """Ensure some option is selected."""
         if len(answer) == 0:
-            prompt._warning = "You must select at least one option."
+            prompt.warning = "You must select at least one option."
             return False
         return True
 
@@ -68,7 +68,7 @@ def create(
         try:
             validators.ensure_stringified_url_format.func(potential_url)
         except pydantic.ValidationError:
-            prompt._warning = f"[bold green]{potential_url or '{empty}'}[/] is not a valid URL."
+            prompt.warning = f"[bold green]{potential_url or '{empty}'}[/] is not a valid URL."
             return False
         return True
 
@@ -149,13 +149,20 @@ def create(
             for secret in reversed(prompt.answer):
                 secret_type = secret_kind[secret.text]
                 nav.add(
-                    UserTextInput(prompt=f"Please enter your {secret_type}..", is_secret=secret.text == "Password"),
+                    UserTextInput(
+                        prompt=f"Please enter your {secret_type}..",
+                        is_secret=secret.text == "Password",
+                        input_validator=buffer_is_not_empty,
+                    ),
                     after=prompt,
                 )
 
         if prompt == ORG_CONFIRM and prompt.answer[0].text == "Yes":
             nav.add(
-                UserTextInput(prompt="Please enter the name of the org you would like to sign in to by default.."),
+                UserTextInput(
+                    prompt="Please enter the org name you to sign in to by default..",
+                    input_validator=buffer_is_not_empty,
+                ),
                 after=prompt,
             )
 
@@ -311,9 +318,40 @@ def show(
     config: str = typer.Option(None, help="optionally, display the contents of a particular config", metavar="NAME"),
     anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
 ):
-    """
-    Display the currently saved config files.
-    """
+    """Display the currently saved config files."""
+    from rich.text import Text
+
+    # SHOW A TABLE OF ALL CONFIGURATIONS
+    if config is None:
+        configs = []
+
+        for file in cs_tools_venv.app_dir.iterdir():
+            if file.name.startswith("cluster-cfg_"):
+                config_name = file.stem.removeprefix("cluster-cfg_")
+                is_default = meta.default_config_name == config_name
+
+                if is_default:
+                    config_name += " [b green]<--- default[/]"
+
+                text = Text.from_markup(f"- {config_name}")
+                configs.append(text)
+
+        listed = Text("\n").join(configs)
+
+        rich_console.print(
+            f"\n[b]ThoughtSpot[/] cluster configurations are located at"
+            f"\n  [b blue][link={cs_tools_venv.app_dir}]{cs_tools_venv.app_dir}[/][/]"
+            f"\n"
+            f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
+            f"\n{listed}"
+        )
+        return 0
+
+    else:
+        conf = CSToolsConfig.from_name(name=config, automigrate=True)
+
+    return
+
     configs = [f for f in cs_tools_venv.app_dir.iterdir() if f.name.startswith("cluster-cfg_")]
 
     if not configs:

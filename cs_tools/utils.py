@@ -4,7 +4,8 @@ from base64 import (
     urlsafe_b64decode as b64d,
     urlsafe_b64encode as b64e,
 )
-from typing import Any, Callable, Optional, Union
+from collections.abc import Generator, Iterable
+from typing import Any, Callable, Optional, TypeVar, Union
 import collections.abc
 import datetime as dt
 import getpass
@@ -19,25 +20,25 @@ import zlib
 
 import rich
 
+T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 
-def chunks(iter_, *, n: int) -> iter:
+def chunks(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, None]:
     """
     Yield successive n-sized chunks from list.
     """
+    # batched('ABCDEFG', 3) --> ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
 
-    iterable = iter(iter_)
+    iterable = iter(iterable)
 
-    while True:
-        batch = tuple(it.islice(iterable, n))
-
-        if not batch:
-            break
-
+    while batch := tuple(it.islice(iterable, n)):
         yield batch
+
+
+batched = chunks
 
 
 def deep_update(old: dict, new: dict, *, ignore: Any = None) -> dict:
