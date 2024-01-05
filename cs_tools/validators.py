@@ -49,6 +49,9 @@ def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
 
     # ISO-FORMATTED DATETIME
     elif isinstance(value, str):
+        if value.endswith("Z"):
+            value = value.removesuffix("Z")
+
         value = ensure_datetime_is_utc.func(dt.datetime.fromisoformat(value))
 
     else:
