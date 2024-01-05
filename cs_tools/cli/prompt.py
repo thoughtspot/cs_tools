@@ -5,6 +5,7 @@ from types import TracebackType
 from typing import Annotated, Any, Callable, Literal, Optional, Union
 import logging
 import time
+import uuid
 
 from rich._loop import loop_first_last
 from rich.console import Console, ConsoleOptions, Group, Measurement, RenderableType, RenderResult
@@ -112,12 +113,11 @@ class PromptStatus(_GlobalModel):
 class BasePrompt(_GlobalModel):
     """A base class for Prompts."""
 
+    id: str = pydantic.Field(default_factory=lambda: uuid.uuid4().hex)
     prompt: RenderableType
     detail: Optional[RenderableType] = None
     transient: bool = False
     prompt_status_class: type[PromptStatus] = PromptStatus
-
-    # id: str = pydantic.Field(default_factory=lambda: uuid.uuid4().hex)
 
     _warning: Optional[str] = None
     _exception: Optional[BaseException] = None
@@ -610,6 +610,11 @@ class PromptMenu:
         )
         self.has_outro = outro is not None
 
+    @property
+    def stopped(self) -> bool:
+        """Determine whether or not any of the prompts were cancelled or errored."""
+        return any(prompt.status == (PromptStatus.error(), PromptStatus.cancel()) for prompt in self.prompts)
+
     def ensure_prompts(self, *prompts: Union[str, BasePrompt, None]) -> list[BasePrompt]:
         """Convert all menus into Prompts."""
         ensured = []
@@ -624,6 +629,12 @@ class PromptMenu:
             ensured.append(prompt)
 
         return ensured
+
+    def __getitem__(self, prompt_id: str) -> BasePrompt:
+        try:
+            return next(prompt for prompt in self.prompts if prompt.id == prompt_id)
+        except StopIteration:
+            raise KeyError(f"No such prompt exists with .id '{prompt_id}'")
 
     def __rich__(self) -> RenderableType:
         """Makes the Prompt Menu class itself renderable."""
