@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pathlib
+
 import pydantic
 import typer
 
@@ -33,17 +35,6 @@ def create(
     url: str = typer.Option(None, help="your thoughtspot server"),
     username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
     default_org: str = typer.Option(None, help="org"),
-    # temp_dir: pathlib.Path = typer.Option(
-    #     cs_tools_venv.app_dir,
-    #     "--temp_dir",
-    #     help="location on disk to save temporary files",
-    #     file_okay=False,
-    #     resolve_path=True,
-    #     show_default=False,
-    # ),
-    # disable_ssl: bool = typer.Option(False, "--disable_ssl", help="disable SSL verification", show_default=False),
-    # verbose: bool = typer.Option(False, "--verbose", help="enable verbose logging by default", show_default=False),
-    # is_default: bool = typer.Option(False, "--default", help="set as the default configuration", show_default=False),
 ):
     """
     Create a new config file.
@@ -70,6 +61,22 @@ def create(
         except pydantic.ValidationError:
             prompt.warning = f"[bold green]{potential_url or '{empty}'}[/] is not a valid URL."
             return False
+        return True
+
+    def is_valid_file_path(prompt: BasePrompt, pathlike: str) -> bool:
+        """Ensure the file provided exists."""
+        try:
+            assert pathlike, "Directory must be supplied."
+            path = pathlib.Path(pathlike)
+            assert path.is_dir(), "Path must be a valid directory."
+            assert path.exists(), "Path must exist."
+        except ValueError:
+            prompt.warning = f"[bold green]{pathlike}[/] does not look like a valid directory"
+            return False
+        except AssertionError as e:
+            prompt.warning = f"{e}"
+            return False
+
         return True
 
     CONTROLS = Select(
@@ -103,6 +110,16 @@ def create(
         selection_validator=select_at_least_one,
     )
     ORG_CONFIRM = Confirm(prompt="Is Orgs enabled on your cluster?", default="No")
+    EXTRA_OPTIONS = Select(
+        id="extras",
+        prompt="Select any extra options for this configuration..",
+        choices=[
+            PromptOption(text="Change Temporary Directory", description="write temporary files to a specific directory"),
+            PromptOption(text="Disable SSL verification", description="don't perform the local SSL certification check"),
+            PromptOption(text="Verbose logging", description="take finer grained logs by default"),
+        ],
+        mode="MULTI",
+    )
     IS_DEFAULT = Confirm(prompt="Do you want to make this the default config?", default="No")
 
     nav = PromptMenu(
@@ -112,6 +129,7 @@ def create(
         USERNAME,
         AUTH_METHOD,
         ORG_CONFIRM,
+        EXTRA_OPTIONS,
         IS_DEFAULT,
         console=rich_console,
         intro="[white on blue]cs_tools config create",
@@ -166,27 +184,40 @@ def create(
                 after=prompt,
             )
 
+        if prompt == EXTRA_OPTIONS and any(True for ans in EXTRA_OPTIONS.answer if "directory" in ans.text.lower()):
+            nav.add(
+                UserTextInput(
+                    id="temporary_directory",
+                    prompt="Where should temporary files be saved?",
+                    input_validator=is_valid_file_path,
+                ),
+                after=prompt,
+            )
+
         if prompt.status in (PromptStatus.cancel(), PromptStatus.error()):
             break
 
     nav.stop()
 
-    # data = {
-    #     "name": nav["config"].buffer_as_string(),
-    #     "thoughtspot": {
-    #         "url": nav["url"].buffer_as_string(),
-    #         "username": nav["username"].buffer_as_string(),
-    #         "password": nav["password"].buffer_as_string(),
-    #         "secret_key": nav["secret_key"].buffer_as_string(),
-    #         "bearer_token": nav["bearer_token"].buffer_as_string(),
-    #         "default_org": nav["default_org"].buffer_as_string(),
-    #         "disable_ssl": next((True for option in nav["extras"].answer if option.text == "disable ssl"), False),
-    #     },
-    #     "verbose": next((True for ans in nav["extras"].answer if ans.text == "verbose"), False),
-    #     "temp_dir": nav["temporary_directory"].buffer_as_string(),
-    # }
+    if nav.stopped:
+        return
 
-    # conf = CSToolsConfig.model_validate(data)
+    data = {
+        "name": nav["config"].buffer_as_string(),
+        "thoughtspot": {
+            "url": nav["url"].buffer_as_string(),
+            "username": nav["username"].buffer_as_string(),
+            "password": nav["password"].buffer_as_string(),
+            "secret_key": nav["secret_key"].buffer_as_string(),
+            "bearer_token": nav["bearer_token"].buffer_as_string(),
+            "default_org": nav["default_org"].buffer_as_string(),
+            "disable_ssl": next((True for option in nav["extras"].answer if option.text == "disable ssl"), False),
+        },
+        "verbose": next((True for ans in nav["extras"].answer if ans.text == "verbose"), False),
+        "temp_dir": nav["temporary_directory"].buffer_as_string(),
+    }
+
+    conf = CSToolsConfig.model_validate(data)
     # conf.save()
 
     # _analytics.prompt_for_opt_in()
