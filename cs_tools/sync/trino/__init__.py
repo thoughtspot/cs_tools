@@ -1,1 +1,1 @@
-from .syncer import Trino, Starburst
+from .syncer import Trino

@@ -11,6 +11,8 @@ import sqlalchemy as sa
 from cs_tools import __version__
 from cs_tools.sync.base import DatabaseSyncer
 
+from . import compiler  # noqa: F401
+
 if TYPE_CHECKING:
     from cs_tools.sync.types import TableRows
 
@@ -23,7 +25,7 @@ class Trino(DatabaseSyncer):
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
     __syncer_name__ = "trino"
 
-    host: int
+    host: pydantic.IPvAnyAddress
     port: int = 8080
     catalog: str
     schema_: Optional[str] = pydantic.Field(default="public", alias="schema")
@@ -35,14 +37,19 @@ class Trino(DatabaseSyncer):
     @classmethod
     def ensure_secrets_given(cls, values: Any) -> Any:
         """Secrets must be provided when using any authentication except for SSO."""
+        must_provide = ""
+
         if values["authentication"] == "basic" and values["username"] is None:
-            must_provide = "a user to 'username'"
+            must_provide += "a user to 'username'"
 
             if values["password"] is None:
                 must_provide += ", and optionally a password to 'secret'"
 
         if values["authentication"] == "jwt":
-            must_provide = "a json web token to 'secret'"
+            must_provide += "a json web token to 'secret'"
+
+        if not must_provide:
+            return values
 
         raise ValueError(f"when using {values['authentication']} authentication, you must provide {must_provide}")
 
@@ -53,7 +60,7 @@ class Trino(DatabaseSyncer):
     def make_url(self) -> URL:
         """Format a connection string for the Trino JDBC driver."""
         url_kwargs: dict[str, Any] = {
-            "host": self.host,
+            "host": str(self.host),
             "port": self.port,
             "catalog": self.catalog,
             "schema": self.schema_,
@@ -63,7 +70,7 @@ class Trino(DatabaseSyncer):
         # TRINO DOCS:
         # https://github.com/trinodb/trino-python-client/tree/master#basic-authentication
         if self.authentication == "basic":
-            url_kwargs["username"] = self.username
+            url_kwargs["user"] = self.username
             url_kwargs["password"] = self.secret
 
         # TRINO DOCS:
@@ -104,13 +111,3 @@ class Trino(DatabaseSyncer):
             raise NotImplementedError("coming soon..")
 
         self.session.commit()
-
-
-class Starburst(Trino):
-    """Interact with a Starburst database."""
-
-    __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
-    __syncer_name__ = "starburst"
-
-    def __repr__(self):
-        return f"<StarburstSyncer conn_string='{self.engine.url}'>"

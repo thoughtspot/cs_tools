@@ -1,0 +1,5 @@
+{
+    "name": "starburst",
+    "syncer_class": "Starburst",
+    "requirements": ["trino[sqlalchemy] == 0.327.0"]
+}
