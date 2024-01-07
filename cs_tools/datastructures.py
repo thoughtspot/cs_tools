@@ -56,6 +56,10 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
 
     model_config = sqlmodel._compat.SQLModelConfig(env_prefix="CS_TOOLS_SYNCER_", **_COMMON_MODEL_CONFIG)
 
+    @pydantic.model_serializer(mode="wrap")
+    def _ignore_extras(self, handler) -> dict[str, Any]:
+        return {k: v for k, v in handler(self).items() if k in self.model_fields}
+
     @classmethod
     def validated_init(cls, context: Any = None, **data):
         # defaults  = cls.read_from_environment()
