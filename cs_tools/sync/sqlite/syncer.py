@@ -7,6 +7,7 @@ import pathlib
 import pydantic
 import sqlalchemy as sa
 
+from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 
 from . import const
@@ -55,11 +56,15 @@ class SQLite(DatabaseSyncer):
         table = self.metadata.tables[tablename]
 
         if self.load_strategy == "APPEND":
-            self.batched_insert(table.insert(), data=data, max_statement_parameters=const.SQLITE_MAX_VARIABLES)
+            sync_utils.batched(
+                table.insert().values, session=self.session, data=data, max_parameters=const.SQLITE_MAX_VARIABLES
+            )
 
         if self.load_strategy == "TRUNCATE":
             self.session.execute(table.delete())
-            self.batched_insert(table.insert(), data=data, max_statement_parameters=const.SQLITE_MAX_VARIABLES)
+            sync_utils.batched(
+                table.insert().values, session=self.session, data=data, max_parameters=const.SQLITE_MAX_VARIABLES
+            )
 
         if self.load_strategy == "UPSERT":
             raise NotImplementedError("coming soon..")

@@ -15,7 +15,6 @@ import sqlmodel
 
 from cs_tools import errors, utils
 from cs_tools.datastructures import ValidatedSQLModel, _GlobalModel, _GlobalSettings
-from cs_tools.sync import utils as sync_utils
 from cs_tools.updater._updater import cs_tools_venv
 
 if TYPE_CHECKING:
@@ -189,26 +188,6 @@ class DatabaseSyncer(Syncer, is_base_class=True):
         self.metadata.create_all(self._engine, tables=list(self.metadata.sorted_tables))
         self._session = sa.orm.Session(self._engine)
         self._session.begin()
-
-    def batched_insert(
-        self, insert: sa.sql.expression.Insert, *, data: TableRows, max_statement_parameters: int = 999
-    ) -> None:
-        """ """
-        batchsize = min(5000, max_statement_parameters // len(insert.table.columns))
-        rows = []
-
-        for row_number, row in enumerate(data, start=1):
-            rows.append(row)
-
-            # Commit every so often.
-            if row_number % batchsize == 0:
-                self.session.execute(insert.values(rows))
-                self.session.commit()
-                rows = []
-
-        # Final commit, grab the rest of the data rows.
-        self.session.execute(insert.values(rows))
-        self.session.commit()
 
     def __repr__(self) -> str:
         return f"<DatabaseSyncer to '{self.name}'>"
