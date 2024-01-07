@@ -4,11 +4,14 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 import logging
 import pathlib
 
+from pydantic_core import PydanticCustomError
 from trino.sqlalchemy import URL
 import pydantic
 import sqlalchemy as sa
+import sqlmodel
 
 from cs_tools import __version__
+from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 
 from . import compiler  # noqa: F401
@@ -33,29 +36,22 @@ class Trino(DatabaseSyncer):
     username: Optional[str] = None
     secret: Optional[str] = None
 
-    @pydantic.model_validator(mode="before")
-    @classmethod
-    def ensure_secrets_given(cls, values: Any) -> Any:
-        """Secrets must be provided when using any authentication except for SSO."""
-        must_provide = ""
+    @pydantic.field_validator("username", mode="before")
+    def ensure_basic_auth_username_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
+        if info.data.get("authentication") == "basic" and value is None:
+            raise PydanticCustomError("missing", "Field required", {"username": value})
+        return value
 
-        if values["authentication"] == "basic" and values["username"] is None:
-            must_provide += "a user to 'username'"
-
-            if values["password"] is None:
-                must_provide += ", and optionally a password to 'secret'"
-
-        if values["authentication"] == "jwt":
-            must_provide += "a json web token to 'secret'"
-
-        if not must_provide:
-            return values
-
-        raise ValueError(f"when using {values['authentication']} authentication, you must provide {must_provide}")
+    @pydantic.field_validator("secret", mode="before")
+    def ensure_jwt_auth_secret_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
+        if info.data.get("authentication") == "jwt" and value is None:
+            raise PydanticCustomError("missing", "Field required, you must provide a json web token", {"secret": value})
+        return value
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._engine = sa.create_engine(self.make_url(), future=True)
+        self.metadata = sqlmodel.MetaData(schema=self.schema_)
 
     def make_url(self) -> URL:
         """Format a connection string for the Trino JDBC driver."""
@@ -82,13 +78,13 @@ class Trino(DatabaseSyncer):
         return URL(**url_kwargs)
 
     def __repr__(self):
-        return f"<TrinoSyncer conn_string='{self.engine.url}'>"
+        return f"<TrinoSyncer to {self.host}/{self.catalog}>"
 
     # MANDATORY PROTOCOL MEMBERS
 
     def load(self, tablename: str) -> TableRows:
         """SELECT rows from Trino."""
-        table = self.metadata.tables[tablename]
+        table = self.metadata.tables[f"{self.schema_}.{tablename}"]
         rows = self.session.execute(table.select())
         return [row.model_dump() for row in rows]
 
@@ -98,14 +94,14 @@ class Trino(DatabaseSyncer):
             log.warning(f"no data to write to syncer {self}")
             return
 
-        table = self.metadata.tables[tablename]
+        table = self.metadata.tables[f"{self.schema_}.{tablename}"]
 
         if self.load_strategy == "APPEND":
-            self.batched_insert(table.insert(), data=data)
+            sync_utils.batched(table.insert().values, session=self.session, data=data)
 
         if self.load_strategy == "TRUNCATE":
             self.session.execute(table.delete())
-            self.batched_insert(table.insert(), data=data)
+            sync_utils.batched(table.insert().values, session=self.session, data=data)
 
         if self.load_strategy == "UPSERT":
             raise NotImplementedError("coming soon..")
