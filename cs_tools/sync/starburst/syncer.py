@@ -10,5 +10,7 @@ class Starburst(Trino):
     Starburst is basically Presto (Trino), with a web services layer.
     """
 
+    __syncer_name__ = "starburst"
+
     def __repr__(self):
-        return f"<StarburstSyncer conn_string='{self.engine.url}'>"
+        return f"<StarburstSyncer to {self.host}/{self.catalog}>"
