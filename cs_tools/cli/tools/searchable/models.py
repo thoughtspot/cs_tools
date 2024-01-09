@@ -182,14 +182,13 @@ class MetadataColumn(ValidatedSQLModel, table=True):
         return cls.validated_init(**data)
 
 
-class ColumnSynonym(ValidatedSQLModel, table=True):
+class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
+    """Representation of a Table's column's synonym."""
+
     __tablename__ = "ts_column_synonym"
     column_guid: str = Field(primary_key=True)
     synonym: str = Field(primary_key=True)
-
-    @classmethod
-    def from_api_v1(cls, data) -> ColumnSynonym:
-        return [cls.validated_init(column_guid=data["column_guid"], synonym=s) for s in data.get("synonyms", [])]
+    # is_sage_generated: bool
 
 
 class TaggedObject(ValidatedSQLModel, table=True):
