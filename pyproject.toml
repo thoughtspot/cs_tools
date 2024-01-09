@@ -40,10 +40,11 @@ dependencies = [
 
     "thoughtspot_tml >= 2.0.6",
     "awesomeversion >= 22.9.0",
-    "httpx >= 0.24.0",
+    "httpx >= 0.24.0 , < 0.26.0",
     "pydantic >= 1.10.0 , < 2.0",
     "pendulum >= 2.1.2 , < 3.0.0",
     "rich >= 13.0.0",
+    "sqlalchemy < 2.0.0",
     "sqlmodel >= 0.0.8",
     "toml >= 0.10.2",
 
