@@ -67,6 +67,7 @@ class SQLite(DatabaseSyncer):
             )
 
         if self.load_strategy == "UPSERT":
-            raise NotImplementedError("coming soon..")
+            sync_utils.external_upsert(table, session=self.session, data=data)
+            raise
 
         self.session.commit()

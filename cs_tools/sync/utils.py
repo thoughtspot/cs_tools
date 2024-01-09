@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+import collections
 import contextlib
 import csv
 import pathlib
@@ -92,3 +94,34 @@ def merge_into(target: sa.Table, data: TableRows) -> sa.TextClause:
     )
 
     return sa.text(stmt)
+
+
+def external_upsert(
+    target: sa.Table,
+    *,
+    session: sa.orm.Session,
+    data: TableRows,
+    unique_key: Optional[list[sa.Column]] = None,
+) -> None:
+    """ """
+    if unique_key is None and not target.primary_key:
+        raise ValueError()
+
+    compare = collections.defaultdict(set)
+
+    for row in data:
+        for column in target.primary_key:
+            compare[column.name].add(row[column.name])
+
+    pk_exp = [column.in_(compare[column.name]) for column in target.primary_key]
+    select = sa.select(target.primary_key.columns).where(*pk_exp)
+    result = session.execute(select).all()
+
+    print(result)
+    raise
+
+    # INSERT INTO TABLE WHERE NOT EXISTS (SELECT * FROM TABLE) VALUES ( ... )
+    insert = target.insert().from_select(target.primary_key, ~select.exists())
+
+    # UPDATE      TABLE WHERE     EXISTS (SELECT * FROM TABLE) VALUES ( ... )
+    update = target.update().where(select.exists()).values()
