@@ -4,8 +4,8 @@
     "requirements": [
         "setuptools",
         "wheel",
-        "pyarrow == 10.0.1",
-        "cryptography == 40.0.2",
+        "pyarrow >= 10.0.1",
+        "cryptography >= 40.0.2",
         "snowflake-sqlalchemy == 1.4.6"
     ],
     "pip_args": [
