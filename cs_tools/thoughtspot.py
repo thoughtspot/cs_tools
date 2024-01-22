@@ -204,6 +204,13 @@ class ThoughtSpot:
 
             raise AuthenticationError(config=self.config) from None
 
+        if (noti := self.session_context.thoughtspot.notification_banner) is not None:
+            logger = getattr(log, noti.log_level)
+
+            # Time to be really noisy.
+            for line in [_ for _ in noti.message.split(".") if _]:
+                logger(line.strip() + ".")
+
     def logout(self) -> None:
         """
         Log out of ThoughtSpot.

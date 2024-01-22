@@ -92,6 +92,7 @@ class ThoughtSpotInfo(_GlobalModel):
     is_api_v2_enabled: bool = False
     is_roles_enabled: bool = False
     is_orgs_enabled: bool = False
+    notification_banner: Optional[types.ThoughtSpotNotificationBanner] = None
 
     @pydantic.model_validator(mode="before")
     @classmethod
@@ -105,6 +106,7 @@ class ThoughtSpotInfo(_GlobalModel):
                 "version": data["releaseVersion"],
                 "timezone": data["timezone"],
                 "is_cloud": config_info.get("isSaas", False),
+                "notification_banner": data.get("notificationBanner", None),
             }
 
         return data
