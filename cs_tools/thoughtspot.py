@@ -159,6 +159,9 @@ class ThoughtSpot:
 
         if self.config.thoughtspot.is_orgs_enabled:
             login_info["org_id"] = self.config.thoughtspot.default_org
+            in_org = f"in org id {self.config.thoughtspot.default_org}"
+        else:
+            in_org = ""
 
         #
         # PRIORITY LIST OF AUTHENTICATION MECHANISMS TO ATTEMPT
@@ -166,7 +169,7 @@ class ThoughtSpot:
         attempted_auth_method: dict[str, httpx.Response] = {}
 
         if self.config.thoughtspot.bearer_token is not None and self._session_context is None:
-            log.info("Attempting Bearer Token authentication")
+            log.info(f"Attempting Bearer Token authentication {in_org}")
             self.api._session.headers["Authorization"] = f"Bearer {self.config.thoughtspot.bearer_token}"
             r = self._attempt_do_authenticate(self.api.v2.auth_session_user)
             attempted_auth_method["BEARER_TOKEN_AUTHENTICATION"] = r
@@ -176,7 +179,7 @@ class ThoughtSpot:
                 self.api._session.headers.pop("authorization")
 
         if self.config.thoughtspot.secret_key is not None and self._session_context is None:
-            log.info("Attempting Trusted authentication")
+            log.info(f"Attempting Trusted authentication {in_org}")
             login_info["secret"] = self.config.thoughtspot.secret_key
             r = self._attempt_do_authenticate(self.api.v1._trusted_auth, **login_info)
             attempted_auth_method["TRUSTED_AUTHENTICATION"] = r
@@ -186,7 +189,7 @@ class ThoughtSpot:
                 login_info.pop("secret")
 
         if self.config.thoughtspot.password is not None and self._session_context is None:
-            log.info("Attempting Basic authentication")
+            log.info(f"Attempting Basic authentication {in_org}")
             login_info["password"] = self.config.thoughtspot.decoded_password
             r = self._attempt_do_authenticate(self.api.v1.session_login, **login_info)
             attempted_auth_method["BASIC_AUTHENTICATION"] = r
