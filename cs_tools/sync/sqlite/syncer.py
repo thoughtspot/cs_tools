@@ -68,6 +68,5 @@ class SQLite(DatabaseSyncer):
 
         if self.load_strategy == "UPSERT":
             sync_utils.external_upsert(table, session=self.session, data=data)
-            raise
 
         self.session.commit()

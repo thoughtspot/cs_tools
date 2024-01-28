@@ -265,8 +265,8 @@ class BIServer(ValidatedSQLModel, table=True):
     sk_dummy: str = Field(primary_key=True)
     incident_id: str
     timestamp: Optional[dt.datetime]
-    url: str
-    http_response_code: Optional[str]
+    url: Optional[str]
+    http_response_code: Optional[int]
     browser_type: Optional[str]
     browser_version: Optional[str]
     client_type: Optional[str]
@@ -284,6 +284,18 @@ class BIServer(ValidatedSQLModel, table=True):
     @classmethod
     def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
         return validators.ensure_datetime_is_utc.func(value)
+
+    @pydantic.field_serializer("query_text")
+    def escape_characters(self, query_text: Optional[str]) -> Optional[str]:
+        """Ensure reserved characters are properly escaped."""
+        if query_text is None:
+            return query_text
+        reserved_characters = ("\\",)
+
+        for character in reserved_characters:
+            query_text = query_text.replace(character, f"\\{character}")
+
+        return query_text
 
 
 METADATA_MODELS = [

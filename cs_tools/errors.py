@@ -107,7 +107,7 @@ class AuthenticationError(CSToolsCLIError):
         "\n1/ Check if your username and password is correct from the ThoughtSpot website."
         "\n2/ Determine if your usename ends with a whitelisted email domain."
         "\n3/ If your password contains a [b green]$[/] or [b green]![/], run [b green]cs_tools config modify "
-        "--config {config.thoughtspot.username} --password prompt[/] and type your password in the hidden prompt."
+        "--config {config.name} --password prompt[/] and type your password in the hidden prompt."
         "\n"
         "\n[b green]**[/]you may need to use [b green]{config.thoughtspot.url}?disableAutoSAMLRedirect=true[/] to see "
         "the login page."
