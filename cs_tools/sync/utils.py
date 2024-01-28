@@ -6,6 +6,7 @@ import contextlib
 import csv
 import pathlib
 import tempfile
+import textwrap
 
 import sqlalchemy as sa
 
@@ -60,7 +61,7 @@ def merge_into(target: sa.Table, data: TableRows) -> sa.TextClause:
     https://modern-sql.com/caniuse/merge
     """
     # fmt: off
-    MERG_INTO_TEMPLATE = (
+    MERGE_INTO_TEMPLATE = textwrap.dedent(
         """
         MERGE INTO {target} AS target
         USING ({values})    AS source
@@ -83,7 +84,7 @@ def merge_into(target: sa.Table, data: TableRows) -> sa.TextClause:
         sa.values(*target.columns, name="t", literal_binds=True).data([tuple(row.values()) for row in data])
     )
 
-    stmt = MERG_INTO_TEMPLATE.format(
+    stmt = MERGE_INTO_TEMPLATE.format(
         target=target.name,
         values=select_from_values.compile(),
         column_names=", ".join(column.name for column in target.columns),
@@ -122,6 +123,8 @@ def external_upsert(
 
     # INSERT INTO TABLE WHERE NOT EXISTS (SELECT * FROM TABLE) VALUES ( ... )
     insert = target.insert().from_select(target.primary_key, ~select.exists())
+    batched(insert.values, session=session, data=data)
 
     # UPDATE      TABLE WHERE     EXISTS (SELECT * FROM TABLE) VALUES ( ... )
-    update = target.update().where(select.exists()).values()
+    update = target.update().where(select.exists())
+    batched(update.values, session=session, data=data)
