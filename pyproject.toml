@@ -72,6 +72,7 @@ cli = [
     "pyreadline3 >= 3.4.1 ; sys_platform == 'win32'",
 
     # CLI
+    "promptique @ https://github.com/boonhapus/promptique/archive/v0.2.0.zip",
     "typer[all] >= 0.9.0",
 
     # WEB
