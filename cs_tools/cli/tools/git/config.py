@@ -178,12 +178,13 @@ def _show_configs_as_table(configs: list[dict], title: str = "Configuration Deta
     Show the configurations as a table.
     """
     use_cnt = len(configs) > 1
+    count = 0
 
-    for count, config in configs:
+    for config in configs:
 
         title = f"{title} {count}" if use_cnt else title
 
-        table = Table(title=f"Configuration Details {count}", width=100)
+        table = Table(title=title, width=100)
 
         table.add_column("Property", width=25)
         table.add_column("Value", width=75)
@@ -192,3 +193,5 @@ def _show_configs_as_table(configs: list[dict], title: str = "Configuration Deta
             table.add_row(k, str(v))
 
         rich_console.print(Align.center(table))
+
+        count += 1
