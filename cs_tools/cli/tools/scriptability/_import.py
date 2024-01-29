@@ -202,27 +202,35 @@ def _load_from_dir(
         include_types: Optional[List[str]],
         exclude_types: Optional[List[str]],
 ) -> List[TMLImportResponse]:
-    all_responses: List[TMLImportResponse] = []
+    def _load_from_dir(
+            ts: ThoughtSpot,
+            tmlfs: ImportTMLFS,
+            import_policy: TMLImportPolicy,
+            force_create: bool,
+            mapping_file: GUIDMapping,
+            include_types: Optional[List[str]] = None,
+            exclude_types: Optional[List[str]] = None,
+    ) -> List[TMLImportResponse]:
 
-    # Determine the types of TML to import.
-    types_to_import = include_types or [_ for _ in TMLType]
-    if exclude_types:
-        types_to_import = [TMLType(_) for _ in types_to_import if _ not in exclude_types]
+        all_responses = []
 
-    # First load the connections.  Those need to be done first and use different APIs.
-    if types_to_import and TMLType.connection in types_to_import:
-        connection_tml = tmlfs.load_tml([TMLType.connection])
-        responses = _load_connections(ts, tmlfs, connection_tml, import_policy, force_create, mapping_file)
-        all_responses.extend(responses)
+        # Determine the types of TML to import.
+        types_to_import = set(include_types or TMLType) - set(exclude_types or [])
 
-    # Now load all types remaining that were requested.
-    other_types = [_ for _ in TMLType if _ != TMLType.connection and _ in types_to_import]
-    if other_types:
-        other_tml = tmlfs.load_tml(other_types)
-        responses = _load_tml(ts, tmlfs, other_tml, import_policy, force_create, mapping_file)
-        all_responses.extend(responses)
+        # If connections need to be imported, do it first.
+        if TMLType.connection in types_to_import:
+            types_to_import.remove(TMLType.connection)
+            connection_tml = tmlfs.load_tml([TMLType.connection])
+            responses = _load_connections(ts, tmlfs, connection_tml, import_policy, force_create, mapping_file)
+            all_responses.extend(responses)
 
-    return all_responses
+        # Load other requested types.
+        if types_to_import:
+            other_tml = tmlfs.load_tml(list(types_to_import))
+            responses = _load_tml(ts, tmlfs, other_tml, import_policy, force_create, mapping_file)
+            all_responses.extend(responses)
+
+        return all_responses
 
 
 def _load_connections(
@@ -535,7 +543,8 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
 
         # if we are forcing the creation of new content, we want to delete guids that aren't mapped
         mapping_file.disambiguate(tml=tml, delete_unmapped_guids=force_create)
-        tml = _remove_viz_guid(tml)
+        # BDB - in 9.8 this is causing the validation to fail.
+        # tml = _remove_viz_guid(tml)
         tmlfs.log_tml(tml, old_guid)  # write the updated TML to the logs
 
     r = ts.api.metadata_tml_import(
