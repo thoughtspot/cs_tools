@@ -1,87 +1,93 @@
 from __future__ import annotations
 
-from typing import Any
-import enum
+from typing import TYPE_CHECKING, Literal, Union
 import logging
 import pathlib
 
-from pydantic.dataclasses import dataclass
 import openpyxl
+import pydantic
 
-from . import sanitize
+from cs_tools.sync import utils as sync_utils
+from cs_tools.sync.base import Syncer
+
+if TYPE_CHECKING:
+    from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
 
 
-class InsertMode(enum.Enum):
-    append = "APPEND"
-    overwrite = "OVERWRITE"
+class Excel(Syncer):
+    """Interact with an Excel workbook."""
 
+    __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
+    __syncer_name__ = "excel"
 
-@dataclass
-class Excel:
-    """
-    Interact with Excel.
-    """
+    filepath: Union[pydantic.FilePath, pydantic.NewPath]
+    date_time_format: str = sync_utils.DATETIME_FORMAT_ISO_8601
+    save_strategy: Literal["APPEND", "OVERWRITE"] = "OVERWRITE"
 
-    filepath: pathlib.Path
-    mode: InsertMode = InsertMode.overwrite
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.workbook = self._load_workbook()
 
-    def __post_init_post_parse__(self):
+    def _load_workbook(self) -> openpyxl.Workbook:
         try:
-            self.wb = openpyxl.load_workbook(self.filepath)
+            wb = openpyxl.load_workbook(self.filepath)
         except FileNotFoundError:
-            self.wb = openpyxl.Workbook()
-            self.wb.remove(self.wb.active)
+            wb = openpyxl.Workbook()
+            wb.remove(wb.active)
 
-    def _get_or_create_tab(self, tab_name: str) -> openpyxl.worksheet.worksheet.Worksheet:
+        return wb
+
+    def tab(self, tab_name: str) -> openpyxl.worksheet.worksheet.Worksheet:
+        """Fetch the tab. If it does not yet exist, create it."""
         try:
-            t = self.wb[tab_name]
+            tab = self.workbook[tab_name]
         except KeyError:
-            t = self.wb.create_sheet(tab_name)
+            tab = self.workbook.create_sheet(tab_name)
 
-        return t
+        return tab
 
     def __repr__(self):
-        return f"<ExcelWorkbook sync: workbook='{self.filepath}'>"
+        return f"<ExcelSyncer path='{self.filepath}' in '{self.save_strategy}' mode>"
 
     # MANDATORY PROTOCOL MEMBERS
 
-    @property
-    def name(self) -> str:
-        return "excel"
+    def load(self, tab_name: str) -> TableRows:
+        """Read rows from a tab in the Workbook."""
+        tab = self.tab(tab_name)
 
-    def load(self, tab_name: str) -> list[dict[str, Any]]:
-        t = self._get_or_create_tab(tab_name)
-
-        if t.cell(1, 1).value is None:
-            log.warning(f"no data found in tab '{tab_name}'!")
+        if tab.calculate_dimension() == "A1:A1":
+            log.warning(f"No data found in tab '{tab_name}'")
             return []
 
-        head = [cell.value for cell in t[1]]
-        data = [{h: c.value for h, c in zip(head, row)} for row in t[1:]]
+        header = tab.iter_rows(min_row=1, max_row=1, values_only=True)
+        data = [dict(zip(header, row)) for row in tab.iter_rows(min_row=2, values_only=True)]
 
         if not data:
-            log.warning(f"no data found in tab '{tab_name}'!")
-            return []
+            log.warning(f"No data found in tab '{tab_name}'")
 
         return data
 
-    def dump(self, tab_name: str, *, data: list[dict[str, Any]]) -> None:
-        t = self._get_or_create_tab(tab_name)
-
+    def dump(self, tab_name: str, *, data: TableRows) -> None:
+        """Write rows to a tab in the Workbook."""
         if not data:
-            log.warning(f"no data to write to syncer {self}")
+            log.warning(f"No data to write to syncer {self}")
             return
 
-        if self.mode == InsertMode.overwrite:
-            t.delete_rows(0, t.max_row + 1)
+        tab = self.tab(tab_name)
 
-        # write the header if it does not exist
-        if t.cell(1, 1).value is None:
-            for idx, name in enumerate(data[0].keys(), start=1):
-                t.cell(1, idx, name)
+        if self.save_strategy == "OVERWRITE":
+            # idx = 1 means we should delete the header as well, mostly so we can ensure
+            # nothing weird happens here with data/table quality.
+            tab.delete_rows(idx=1, amount=tab.max_row + 1)
 
-        d = sanitize.clean_for_excel(data)
-        [t.append(_) for _ in d]
-        self.wb.save(self.filepath)
+            # HEADER
+            tab.append(list(data[0].keys()))
+
+        # DATA
+        for row in data:
+            row = sync_utils.format_datetime_values(row, dt_format=self.date_time_format)
+            tab.append(list(row.values()))
+
+        self.workbook.save(self.filepath)
