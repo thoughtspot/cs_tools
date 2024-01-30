@@ -147,8 +147,8 @@ def generic_upsert(
     log.debug(f" UPDATE: {len(to_update): >7,} rows")
 
     # INSERT INTO TABLE WHERE NOT EXISTS (SELECT * FROM TABLE) VALUES ( ... )
-    for rows in utils.batched(to_insert, n=999):
-        session.execute(target.insert(), rows)
+    for rows in utils.batched(to_insert, n=999 // len(data[0])):
+        session.execute(target.insert().values(rows))
         session.commit()
         rows = []
 
@@ -156,7 +156,7 @@ def generic_upsert(
     update = target.update().where(*[c.name == sa.bindparam(f"alias_{c.name}") for c in target.primary_key])
     to_update = []
 
-    for rows in utils.batched(to_update, n=999):
+    for rows in utils.batched(to_update, n=999 // len(data[0])):
         session.execute(update, rows)
         session.commit()
         rows = []
