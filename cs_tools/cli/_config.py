@@ -1,12 +1,18 @@
 from __future__ import annotations
 
-import pathlib
+import logging
 
+from promptique.menu import Menu
+from promptique.prompts import Confirm, FileInput, Select, UserInput
+from promptique.prompts.select import PromptOption
+from promptique.validation import ResponseContext, response_is
+from rich.align import Align
+from rich.table import Table
 import pydantic
 import typer
 
-from cs_tools import utils, validators
-from cs_tools.cli.prompt import Confirm, PromptMenu, PromptOption, PromptStatus, Select, UserTextInput
+from cs_tools import __version__, errors, utils, validators
+from cs_tools.cli import _analytics
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.settings import (
     CSToolsConfig,
@@ -15,6 +21,7 @@ from cs_tools.settings import (
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.updater import cs_tools_venv
 
+log = logging.getLogger(__name__)
 app = CSToolsApp(
     name="config",
     help="""
@@ -34,314 +41,320 @@ def create(
     config: str = typer.Option(None, help="config file identifier", metavar="NAME"),
     url: str = typer.Option(None, help="your thoughtspot server"),
     username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
-    default_org: str = typer.Option(None, help="org"),
+    default_org: int = typer.Option(None, help="org ID to sign into by default"),
 ):
     """
     Create a new config file.
     """
 
-    def buffer_is_not_empty(prompt: BasePrompt, buffer: str) -> bool:
+    def buffer_is_not_empty(ctx: ResponseContext) -> bool:
         """Ensure some value is given."""
-        if len(buffer) == 0:
-            prompt.warning = "Name must be at least one character."
-            return False
+        assert len(ctx.response) != 0, "Name must be at least one character."
         return True
 
-    def select_at_least_one(prompt: BasePrompt, answer: list[PromptOption]) -> bool:
+    def select_at_least_one(ctx: ResponseContext) -> bool:
         """Ensure some option is selected."""
-        if len(answer) == 0:
-            prompt.warning = "You must select at least one option."
-            return False
+        assert len(ctx.response) != 0, "You must select at least one option."
         return True
 
-    def is_valid_url(prompt: BasePrompt, potential_url: str) -> bool:
+    def is_valid_url(ctx: ResponseContext) -> bool:
         """Ensure the URL given is valid."""
         try:
-            validators.ensure_stringified_url_format.func(potential_url)
+            validators.ensure_stringified_url_format.func(ctx.response)
         except pydantic.ValidationError:
-            prompt.warning = f"[bold green]{potential_url or '{empty}'}[/] is not a valid URL."
-            return False
+            raise AssertionError("[bold green]{ctx.response or '{empty}'}[/] is not a valid URL.") from None
         return True
 
-    def is_valid_file_path(prompt: BasePrompt, pathlike: str) -> bool:
-        """Ensure the file provided exists."""
-        try:
-            assert pathlike, "Directory must be supplied."
-            path = pathlib.Path(pathlike)
-            assert path.is_dir(), "Path must be a valid directory."
-            assert path.exists(), "Path must exist."
-        except ValueError:
-            prompt.warning = f"[bold green]{pathlike}[/] does not look like a valid directory"
-            return False
-        except AssertionError as e:
-            prompt.warning = f"{e}"
-            return False
-
-        return True
-
-    CONTROLS = Select(
-        prompt="This menu will help you configure CS Tools.",
-        detail="Use the Arrow keys to navigate, Spacebar to select, and Enter key to submit, and Escape or Q to quit.",
-        mode="SINGLE",
-        choices=[PromptOption(text="Continue", is_highlighted=True, is_selected=True)],
-        transient=True,
-    )
-    CONFIG = UserTextInput(
-        prompt="Please name your configuration.",
-        detail="This can be anything you want.",
-        input_validator=buffer_is_not_empty,
-    )
-    URL = UserTextInput(
-        prompt="What is the URL of your ThoughtSpot server?",
-        detail="Make sure to include http/s.",
-        input_validator=is_valid_url,
-    )
-    USERNAME = UserTextInput(
-        prompt="Who do you want to login as?", detail="Usernames only!", input_validator=buffer_is_not_empty
-    )
-    AUTH_METHOD = Select(
-        prompt="Which authentication method do you want to use?",
-        choices=[
-            PromptOption(text="Password", description="this is the password used on the ThoughtSpot login screen"),
-            PromptOption(text="Trusted Authentication", description="generate a secret key from the Develop tab"),
-            PromptOption(text="Bearer Token", description="generate your token from the REST API V2 playground"),
-        ],
-        mode="MULTI",
-        selection_validator=select_at_least_one,
-    )
-    ORG_CONFIRM = Confirm(prompt="Is Orgs enabled on your cluster?", default="No")
-    EXTRA_OPTIONS = Select(
-        id="extras",
-        prompt="Select any extra options for this configuration..",
-        choices=[
-            PromptOption(text="Change Temporary Directory", description="write temporary files to a specific directory"),
-            PromptOption(text="Disable SSL verification", description="don't perform the local SSL certification check"),
-            PromptOption(text="Verbose logging", description="take finer grained logs by default"),
-        ],
-        mode="MULTI",
-    )
-    IS_DEFAULT = Confirm(prompt="Do you want to make this the default config?", default="No")
-
-    nav = PromptMenu(
-        CONTROLS,
-        CONFIG,
-        URL,
-        USERNAME,
-        AUTH_METHOD,
-        ORG_CONFIRM,
-        EXTRA_OPTIONS,
-        IS_DEFAULT,
-        console=rich_console,
-        intro="[white on blue]cs_tools config create",
-        outro="Complete!",
+    prompts = (
+        Select(
+            id="controls",
+            prompt="This menu will help you configure CS Tools.",
+            detail="Use the Arrow keys to navigate, Spacebar to select, and Enter to submit, and Escape or Q to quit.",
+            mode="SINGLE",
+            choices=[PromptOption(text="Continue", is_selected=True)],
+            transient=True,
+        ),
+        UserInput(
+            id="config",
+            prompt="Please name your configuration.",
+            detail="This can be anything you want.",
+            prefill=config,
+            input_validator=buffer_is_not_empty,
+        ),
+        UserInput(
+            id="url",
+            prompt="What is the URL of your ThoughtSpot server?",
+            detail="Make sure to include http/s.",
+            prefill=url,
+            input_validator=is_valid_url,
+        ),
+        UserInput(
+            id="username",
+            prompt="Who do you want to login as?",
+            detail="Usernames only!",
+            prefill=username,
+            input_validator=buffer_is_not_empty,
+        ),
+        Select(
+            id="auth_method",
+            prompt="Which authentication method do you want to use?",
+            choices=[
+                PromptOption(text="Password", description="this is the password used on the ThoughtSpot login screen"),
+                PromptOption(text="Trusted Authentication", description="generate a secret key from the Develop tab"),
+                PromptOption(text="Bearer Token", description="generate your token from the REST API V2 playground"),
+            ],
+            mode="MULTI",
+            selection_validator=select_at_least_one,
+        ),
+        Confirm(id="org_confirm", prompt="Is Orgs enabled on your cluster?", default="No"),
+        Select(
+            id="extras",
+            prompt="Set any additional options for this configuration",
+            choices=[
+                PromptOption(text="Disable SSL", description="Turn off checking the SSL certificate."),
+                PromptOption(text="Temporary Directory", description="Route temporary file writing to this directory."),
+                PromptOption(text="Verbose Logging", description="Capture more descriptive log files."),
+            ],
+            mode="MULTI",
+        ),
+        Confirm(id="is_default", prompt="Do you want to make this the default config?", default="No"),
     )
 
-    if config is not None:
-        CONFIG.set_buffer(config)
+    menu = Menu(*prompts, console=rich_console, intro="[white on blue]cs_tools config create", outro="Complete!")
 
-    if url is not None:
-        URL.set_buffer(url)
+    #
+    # Set up secondary actions
+    #
 
-    if username is not None:
-        USERNAME.set_buffer(username)
+    menu["config"].link(
+        Confirm(
+            id="config_confirm",
+            prompt="A config by this name already exists, do you want to overwrite it?",
+            default="No",
+            choice_means_stop="No",
+        ),
+        validator=lambda ctx: CSToolsConfig.exists(ctx.response),
+    )
 
-    nav.start()
+    auth_info = (
+        ("Password", "password", "This is the password you type when using the ThoughtSpot login screen."),
+        (
+            "Trusted Authentication",
+            "secret key",
+            "[link=https://developers.thoughtspot.com/docs/api-authv2#trusted-auth-v2]Get Secret Key[/link]",
+        ),
+        (
+            "Bearer Token",
+            "token",
+            "[link=https://developers.thoughtspot.com/docs/restV2-playground?apiResourceId=http/api-endpoints/authentication/get-full-access-token]Get V2 Full Access token[/link]",
+        ),
+    )
 
-    for prompt in nav.prompts:
-        nav.handle_prompt(prompt)
+    for name, secret, detail in auth_info:
+        menu["auth_method"].link(
+            UserInput(
+                id=f"auth_{secret.replace(' ', '_')}",
+                prompt=f"Please enter your {secret}..",
+                detail=detail,
+                is_secret=secret == "password",
+                input_validator=buffer_is_not_empty,
+            ),
+            validator=response_is(name, any_of=True),
+        )
 
-        # Add a check for overwriting the config.
-        if prompt == CONFIG and CSToolsConfig.exists(prompt.buffer_as_string()):
-            nav.add(
-                Confirm(
-                    prompt=f"Config [b green]{prompt.buffer_as_string()}[/] exists, do you want to overwrite it?",
-                    default="No",
-                    choice_means_stop="No",
-                ),
-                after=prompt,
-            )
+    menu["org_confirm"].link(
+        UserInput(
+            id="org_name",
+            prompt="Type the org's id to sign in to by default..",
+            prefill=default_org,
+            input_validator=buffer_is_not_empty,
+        ),
+        validator=response_is("Yes", any_of=True),
+    )
 
-        if prompt == AUTH_METHOD:
-            secret_kind = {"Password": "password", "Trusted Authentication": "secret key", "Bearer Token": "token"}
+    menu["extras"].link(
+        FileInput(
+            id="temporary_directory",
+            prompt="Where should we write temporary files to?",
+            detail="This should be a permanent, valid directory.",
+            path_type="DIRECTORY",
+        ),
+        validator=response_is("Temporary Directory", any_of=True),
+    )
 
-            for secret in reversed(prompt.answer):
-                secret_type = secret_kind[secret.text]
-                nav.add(
-                    UserTextInput(
-                        prompt=f"Please enter your {secret_type}..",
-                        is_secret=secret.text == "Password",
-                        input_validator=buffer_is_not_empty,
-                    ),
-                    after=prompt,
-                )
+    menu.run()
 
-        if prompt == ORG_CONFIRM and prompt.answer[0].text == "Yes":
-            nav.add(
-                UserTextInput(
-                    prompt="Please enter the org name you to sign in to by default..",
-                    input_validator=buffer_is_not_empty,
-                ),
-                after=prompt,
-            )
-
-        if prompt == EXTRA_OPTIONS and any(True for ans in EXTRA_OPTIONS.answer if "directory" in ans.text.lower()):
-            nav.add(
-                UserTextInput(
-                    id="temporary_directory",
-                    prompt="Where should temporary files be saved?",
-                    input_validator=is_valid_file_path,
-                ),
-                after=prompt,
-            )
-
-        if prompt.status in (PromptStatus.cancel(), PromptStatus.error()):
-            break
-
-    nav.stop()
-
-    if nav.stopped:
+    if menu["outro"].status == "HIDDEN":
         return
 
     data = {
-        "name": nav["config"].buffer_as_string(),
+        "name": menu["config"].buffer_as_string(),
         "thoughtspot": {
-            "url": nav["url"].buffer_as_string(),
-            "username": nav["username"].buffer_as_string(),
-            "password": nav["password"].buffer_as_string(),
-            "secret_key": nav["secret_key"].buffer_as_string(),
-            "bearer_token": nav["bearer_token"].buffer_as_string(),
-            "default_org": nav["default_org"].buffer_as_string(),
-            "disable_ssl": next((True for option in nav["extras"].answer if option.text == "disable ssl"), False),
+            "url": menu["url"].buffer_as_string(),
+            "username": menu["username"].buffer_as_string(),
+            "password": menu["auth_password"].buffer_as_string() if "auth_password" in menu else None,
+            "secret_key": menu["auth_secret_key"].buffer_as_string() if "auth_secret_key" in menu else None,
+            "bearer_token": menu["auth_token"].buffer_as_string() if "auth_token" in menu else None,
+            "default_org": menu["org_name"].buffer_as_string() if "org_name" in menu else None,
+            "disable_ssl": any(option.text == "Disable SSL" for option in menu["extras"]._response),
         },
-        "verbose": next((True for ans in nav["extras"].answer if ans.text == "verbose"), False),
-        "temp_dir": nav["temporary_directory"].buffer_as_string(),
+        "verbose": any(option.text == "Verbose Logging" for option in menu["extras"]._response),
+        "temp_dir": menu["temporary_directory"].buffer_as_string() if "temporary_directory" in menu else None,
     }
 
+    data["created_in_cs_tools_version"] = __version__
     conf = CSToolsConfig.model_validate(data)
-    # conf.save()
+    ts = ThoughtSpot(conf)
 
-    # _analytics.prompt_for_opt_in()
+    try:
+        log.info("Checking supplied configuration..")
+        ts.login()
 
+    except errors.AuthenticationError as e:
+        log.debug(e, exc_info=True)
+        rich_console.print(Align.center(e))
 
-# @app.command()
-# def modify(
-#     config: str = typer.Option(..., help="config file identifier", prompt=True, metavar="NAME"),
-#     host: str = typer.Option(None, help="thoughtspot server"),
-#     port: int = typer.Option(None, help="optional, port of the thoughtspot server"),
-#     username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
-#     password: str = typer.Option(
-#         None,
-#         help='password when logging into ThoughtSpot, if "prompt" then hide input',
-#     ),
-#     temp_dir: pathlib.Path = typer.Option(
-#         None,
-#         "--temp_dir",
-#         help="location on disk to save temporary files",
-#         file_okay=False,
-#         resolve_path=True,
-#         show_default=False,
-#     ),
-#     disable_ssl: bool = typer.Option(
-#         None, "--disable_ssl/--no-disable_ssl", help="disable SSL verification", show_default=False
-#     ),
-#     disable_sso: bool = typer.Option(
-#         None, "--disable_sso/--no-disable_sso", help="disable automatic SAML redirect", show_default=False
-#     ),
-#     syncers: list[str] = typer.Option(
-#         None,
-#         "--syncer",
-#         metavar="protocol://DEFINITION.toml",
-#         help="default definition for the syncer protocol, may be provided multiple times",
-#         callback=lambda ctx, to: [SyncerProtocolType().convert(_, ctx=ctx) for _ in to],
-#     ),
-#     verbose: bool = typer.Option(
-#         None, "--verbose/--normal", help="enable verbose logging by default", show_default=False
-#     ),
-#     is_default: bool = typer.Option(False, "--default", help="set as the default configuration", show_default=False),
-# ):
-#     """
-#     Modify an existing config file.
+    else:
+        ts.logout()
+        conf.save()
+        log.info(f"Saving as {conf.name}!")
 
-#     \f
-#     To modify the default syncers configured, you must supply all target syncers at
-#     once. eg. if you had 3 defaults set up initially, and want to remove 1, supply the
-#     two which are to remain.
-#     """
-#     if password == "prompt":
-#         password = Prompt.ask("[yellow](your input is hidden)[/]\nPassword", console=rich_console, password=True)
+        if menu["is_default"].response == "Yes":
+            meta.default_config_name = config
+            meta.save()
 
-#     file = cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml"
-#     old = CSToolsConfig.from_toml(file, automigrate=True).dict()
-#     kw = {
-#         "host": host,
-#         "port": port,
-#         "username": username,
-#         "password": password,
-#         "temp_dir": temp_dir,
-#         "disable_ssl": disable_ssl,
-#         "disable_sso": disable_sso,
-#         "verbose": verbose,
-#         "syncer": syncers,
-#     }
-#     data = CSToolsConfig.from_parse_args(config, **kw, validate=False).dict()
-#     new = utils.deep_update(old, data, ignore=None)
-
-#     try:
-#         cfg = CSToolsConfig(**new)
-#     except pydantic.ValidationError as e:
-#         rich_console.print(f"[error]{e}")
-#         raise typer.Exit(1) from None
-
-#     with file.open("w") as t:
-#         toml.dump(cfg.dict(), t)
-
-#     message = f'saved cluster configuration file "{config}"'
-
-#     if is_default:
-#         message += " as the default"
-#         meta.default_config_name = config
-#         meta.save()
-
-#     rich_console.print(message)
-#     _analytics.prompt_for_opt_in()
-
-
-# @app.command()
-# def delete(config: str = typer.Option(..., help="config file identifier", metavar="NAME")):
-#     """
-#     Delete a config file.
-#     """
-#     file = pathlib.Path(typer.get_app_dir("cs_tools")) / f"cluster-cfg_{config}.toml"
-
-#     try:
-#         file.unlink()
-#     except FileNotFoundError:
-#         rich_console.print(f'[yellow]cluster configuration file "{config}" does not exist')
-#         raise typer.Exit(1) from None
-
-#     rich_console.print(f'removed cluster configuration file "{config}"')
+        _analytics.prompt_for_opt_in()
 
 
 @app.command()
-def check(ctx: typer.Context, config: str = typer.Option(..., help="config file identifier", metavar="NAME")):
+def modify(
+    ctx: typer.Context,
+    config: str = typer.Option(None, help="config file identifier", metavar="NAME"),
+    url: str = typer.Option(None, help="your thoughtspot server"),
+    username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
+    password: str = typer.Option(None, help="the password you type when using the ThoughtSpot login screen"),
+    secret: str = typer.Option(None, help="the trusted authentication secret key"),
+    token: str = typer.Option(None, help="the V2 API bearer token"),
+    disable_ssl: bool = typer.Option(
+        None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
+    ),
+    default_org: int = typer.Option(None, help="org ID to sign into by default"),
+    default: bool = typer.Option(None, help="whether or not to make this the default configuration"),
+):
     """
-    Check your config file.
+    Modify an existing config file.
     """
-    rich_console.log(f"Checking cluster configuration [b blue]{config}")
+    data = CSToolsConfig.from_name(config, automigrate=True).dict()
 
-    conf = CSToolsConfig.from_name(name=config, automigrate=True)
+    if url is not None:
+        data["thoughtspot"]["url"] = url
 
-    rich_console.log(f"Logging into [b]ThoughtSpot[/] as [b blue]{conf.thoughtspot.username}")
+    if username is not None:
+        data["thoughtspot"]["username"] = username
+
+    if default_org is not None:
+        data["thoughtspot"]["default_org"] = default_org
+
+    if password == "prompt":
+        password = rich_console.input("[b yellow]Type your password (your input is hidden)\n", password=True)
+
+    if password is not None:
+        data["thoughtspot"]["password"] = password
+
+    if secret is not None:
+        data["thoughtspot"]["secret_key"] = secret
+
+    if token is not None:
+        data["thoughtspot"]["bearer_token"] = token
+
+    if disable_ssl is not None:
+        data["thoughtspot"]["disable_ssl"] = disable_ssl
+
+    if default is not None:
+        meta.default_config_name = config
+        meta.save()
+
+    conf = CSToolsConfig.model_validate(data)
     ts = ThoughtSpot(conf)
-    ts.login()
 
+    # Set the context all the way up the stack, for proper error reporting.
     while ctx.parent:
         ctx.parent.obj.thoughtspot = ts
         ctx = ctx.parent
 
-    ts.logout()
+    try:
+        log.info("Checking supplied configuration..")
+        ts.login()
 
-    rich_console.log("[secondary]Success[/]!")
+    except errors.AuthenticationError as e:
+        log.debug(e, exc_info=True)
+        rich_console.print(Align.center(e))
+
+    else:
+        ts.logout()
+        conf.save()
+        log.info(f"Saving as {conf.name}!")
+
+
+@app.command()
+def delete(config: str = typer.Option(..., help="config file identifier", metavar="NAME")):
+    """
+    Delete a config file.
+    """
+    if not CSToolsConfig.exists(name=config):
+        rich_console.print(f'[b yellow]Configuration file "{config}" does not exist')
+        return
+
+    cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{config}.toml").unlink()
+    rich_console.print(f'removed cluster configuration file "{config}"')
+
+
+@app.command()
+def check(
+    ctx: typer.Context,
+    config: str = typer.Option(..., help="config file identifier", metavar="NAME"),
+    orgs: bool = typer.Option(False, "--orgs", help="if specified, show a table of all the org IDs"),
+):
+    """
+    Check your config file.
+    """
+    conf = CSToolsConfig.from_name(name=config, automigrate=True)
+    ts = ThoughtSpot(conf)
+
+    # Set the context all the way up the stack, for proper error reporting.
+    while ctx.parent:
+        ctx.parent.obj.thoughtspot = ts
+        ctx = ctx.parent
+
+    try:
+        log.info("Checking supplied configuration..")
+        ts.login()
+
+    except errors.AuthenticationError as e:
+        log.debug(e, exc_info=True)
+        rich_console.print(Align.center(e))
+        return
+
+    if orgs:
+        r = ts.api.v1.session_orgs_read()
+        d = r.json()
+
+        table = Table(
+            title=f"Orgs in [b green]{conf.thoughtspot.url}[/]",
+            title_style="bold white",
+            caption=f"Current org id {d['currentOrgId']}",
+        )
+        table.add_column("ID", justify="right")
+        table.add_column("NAME")
+        table.add_column("DESCRIPTION", max_width=75, no_wrap=True)
+
+        for row in sorted(d.get("orgs", []), key=lambda r: r["orgName"]):
+            table.add_row(str(row["orgId"]), row["orgName"], row["description"])
+
+        rich_console.print("\n", Align.center(table), "\n")
+
+    ts.logout()
+    log.info("[b green]Success[/]!")
 
 
 @app.command(no_args_is_help=False)

@@ -182,14 +182,13 @@ class MetadataColumn(ValidatedSQLModel, table=True):
         return cls.validated_init(**data)
 
 
-class ColumnSynonym(ValidatedSQLModel, table=True):
+class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
+    """Representation of a Table's column's synonym."""
+
     __tablename__ = "ts_column_synonym"
     column_guid: str = Field(primary_key=True)
     synonym: str = Field(primary_key=True)
-
-    @classmethod
-    def from_api_v1(cls, data) -> ColumnSynonym:
-        return [cls.validated_init(column_guid=data["column_guid"], synonym=s) for s in data.get("synonyms", [])]
+    # is_sage_generated: bool
 
 
 class TaggedObject(ValidatedSQLModel, table=True):
@@ -266,8 +265,8 @@ class BIServer(ValidatedSQLModel, table=True):
     sk_dummy: str = Field(primary_key=True)
     incident_id: str
     timestamp: Optional[dt.datetime]
-    url: str
-    http_response_code: Optional[str]
+    url: Optional[str]
+    http_response_code: Optional[int]
     browser_type: Optional[str]
     browser_version: Optional[str]
     client_type: Optional[str]
@@ -285,6 +284,18 @@ class BIServer(ValidatedSQLModel, table=True):
     @classmethod
     def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
         return validators.ensure_datetime_is_utc.func(value)
+
+    @pydantic.field_serializer("query_text")
+    def escape_characters(self, query_text: Optional[str]) -> Optional[str]:
+        """Ensure reserved characters are properly escaped."""
+        if query_text is None:
+            return query_text
+        reserved_characters = ("\\",)
+
+        for character in reserved_characters:
+            query_text = query_text.replace(character, f"\\{character}")
+
+        return query_text
 
 
 METADATA_MODELS = [

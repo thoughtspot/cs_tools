@@ -3,21 +3,24 @@ from __future__ import annotations  # noqa: I001
 from . import _monkey  # noqa: F401
 
 from typing import TYPE_CHECKING, Any, Literal, Optional
+import functools as ft
 import logging
 import pathlib
 import uuid
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from pydantic_core import PydanticCustomError
 from snowflake.sqlalchemy import URL
 import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
 from cs_tools import __version__
-from cs_tools.sync import utils
+from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 
+from . import const
 
 if TYPE_CHECKING:
     from cs_tools.sync.types import TableRows
@@ -44,23 +47,22 @@ class Snowflake(DatabaseSyncer):
     private_key_path: Optional[pydantic.FilePath] = None
     log_level: Literal["debug", "info", "warning"] = "warning"
 
-    @pydantic.model_validator(mode="before")
-    @classmethod
-    def ensure_secrets_given(cls, values: Any) -> Any:
-        """Secrets must be provided when using any authentication except for SSO."""
-        if values["authentication"] == "basic":
-            must_provide = "a password to 'secret'"
+    @pydantic.field_validator("secret", mode="before")
+    def ensure_auth_secret_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
+        if info.data.get("authentication") == "sso" or value is not None:
+            return value
 
-        if values["authentication"] == "key-pair" and values["private_key_path"] is None:
-            must_provide = "your 'private_key_path', with an optional passphrase to 'secret'"
+        if info.data.get("authentication") == "basic":
+            raise PydanticCustomError("missing", "Field required, you must provide a password", {"secret": value})
 
-        if values["authentication"] == "sso" or "secret" in values:
-            return values
+        if info.data.get("authentication") == "oauth":
+            raise PydanticCustomError("missing", "Field required, you must provide an oauth token", {"secret": value})
 
-        if values["authentication"] == "oauth":
-            must_provide = "an oauth token to 'secret'"
-
-        raise ValueError(f"when using {values['authentication']} authentication, you must provide {must_provide}")
+    @pydantic.field_validator("private_key_path", mode="before")
+    def ensure_pk_path_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
+        if info.data.get("authentication") != "key-pair" or value is not None:
+            return value
+        raise PydanticCustomError("missing", "Field required", {"private_key_path": value})
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -84,10 +86,7 @@ class Snowflake(DatabaseSyncer):
         """
         assert self.private_key_path is not None
         pem_data = self.private_key_path.read_bytes()
-
-        if self.secret is not None:
-            passphrase = self.secret.encode()
-
+        passphrase = self.secret.encode() if self.secret is not None else self.secret
         private_key = serialization.load_pem_private_key(data=pem_data, password=passphrase, backend=default_backend())
         pk_as_bytes = private_key.private_bytes(
             encoding=serialization.Encoding.DER,
@@ -163,7 +162,7 @@ class Snowflake(DatabaseSyncer):
         # ==============================================================================================================
         # SAVE & UPLOAD CSV
         # ==============================================================================================================
-        with utils.make_tempfile_for_upload(directory=pathlib.Path("."), filename=tablename, data=data) as fd:
+        with sync_utils.make_tempfile_for_upload(directory=pathlib.Path("."), filename=tablename, data=data) as fd:
             fp = pathlib.Path(fd.name)
 
             # fmt: off
@@ -201,7 +200,7 @@ class Snowflake(DatabaseSyncer):
 
     def load(self, tablename: str) -> TableRows:
         """SELECT rows from Snowflake."""
-        table = self.metadata.tables[tablename]
+        table = self.metadata.tables[f"{self.schema_}.{tablename}"]
         rows = self.session.execute(table.select())
         return [row.model_dump() for row in rows]
 
@@ -222,5 +221,5 @@ class Snowflake(DatabaseSyncer):
             self.copy_into(from_=f"@{stage}", into=tablename)
 
         if self.load_strategy == "UPSERT":
-            # self.merge_into()
-            raise NotImplementedError("coming soon..")
+            prepared = ft.partial(sync_utils.merge_into, table)
+            sync_utils.batched(prepared, session=self.session, data=data, max_parameters=const.SNOWFLAKE_MAX_VARIABLES)

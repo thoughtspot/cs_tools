@@ -56,6 +56,10 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
 
     model_config = sqlmodel._compat.SQLModelConfig(env_prefix="CS_TOOLS_SYNCER_", **_COMMON_MODEL_CONFIG)
 
+    @pydantic.model_serializer(mode="wrap")
+    def _ignore_extras(self, handler) -> dict[str, Any]:
+        return {k: v for k, v in handler(self).items() if k in self.model_fields}
+
     @classmethod
     def validated_init(cls, context: Any = None, **data):
         # defaults  = cls.read_from_environment()
@@ -88,6 +92,7 @@ class ThoughtSpotInfo(_GlobalModel):
     is_api_v2_enabled: bool = False
     is_roles_enabled: bool = False
     is_orgs_enabled: bool = False
+    notification_banner: Optional[types.ThoughtSpotNotificationBanner] = None
 
     @pydantic.model_validator(mode="before")
     @classmethod
@@ -101,6 +106,7 @@ class ThoughtSpotInfo(_GlobalModel):
                 "version": data["releaseVersion"],
                 "timezone": data["timezone"],
                 "is_cloud": config_info.get("isSaas", False),
+                "notification_banner": data.get("notificationBanner", None),
             }
 
         return data

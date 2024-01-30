@@ -288,3 +288,11 @@ class MetadataParent(pydantic.BaseModel):
 
     def __eq__(self, other):
         return (self.parent_guid, self.visualization_guid) == (other.parent_guid, other.visualization_guid)
+
+
+class ThoughtSpotNotificationBanner(pydantic.BaseModel):
+    """Represents the notification banner shown across ThoughtSpot."""
+
+    message: str
+    log_level: Annotated[str, pydantic.StringConstraints(to_lower=True)] = pydantic.Field(alias="type")
+    enabled: bool

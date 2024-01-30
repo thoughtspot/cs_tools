@@ -14,6 +14,7 @@ import shutil
 import sysconfig
 
 from awesomeversion import AwesomeVersion
+from rich.align import Align
 from rich.panel import Panel
 from rich.prompt import Prompt
 import httpx
@@ -84,7 +85,7 @@ def prompt_for_opt_in() -> None:
         title="[b blue]Would you like to send analytics to the CS Tools team?",
         border_style="bold blue",
     )
-    rich_console.print(prompt)
+    rich_console.print(Align.center(prompt))
     choices = {"yes": True, "no": False, "prompt": None}
     response = Prompt.ask("\n  Response", choices=choices.keys(), console=rich_console)
 

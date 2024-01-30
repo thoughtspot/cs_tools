@@ -71,8 +71,8 @@ class RESTAPIv1:
 
         return r
 
-    def session_login(self, *, username: str, password: str) -> httpx.Response:
-        d = {"username": username, "password": password, "rememberme": True}
+    def session_login(self, *, username: str, password: str, org_id: int = UNDEFINED) -> httpx.Response:
+        d = {"username": username, "password": password, "rememberme": True, "orgid": org_id}
         r = self.request("POST", "callosum/v1/tspublic/v1/session/login", data=d)
         return r
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional
 import collections
 
+from rich._loop import loop_last
 import pydantic
 import rich
 
@@ -106,7 +107,7 @@ class AuthenticationError(CSToolsCLIError):
         "\n1/ Check if your username and password is correct from the ThoughtSpot website."
         "\n2/ Determine if your usename ends with a whitelisted email domain."
         "\n3/ If your password contains a [b green]$[/] or [b green]![/], run [b green]cs_tools config modify "
-        "--config {config.thoughtspot.username} --password prompt[/] and type your password in the hidden prompt."
+        "--config {config.name} --password prompt[/] and type your password in the hidden prompt."
         "\n"
         "\n[b green]**[/]you may need to use [b green]{config.thoughtspot.url}?disableAutoSAMLRedirect=true[/] to see "
         "the login page."
@@ -158,6 +159,23 @@ class InsufficientPrivileges(CSToolsCLIError):
 class SyncerInitError(CSToolsCLIError):
     """Raised when a Syncer isn't defined correctly."""
 
+    """
+     ╭──────── Your Starburst Syncer encountered an error. ────────╮
+     │                                                             │
+     │ 2 arguments have errors.                                    │
+     │                                                             │
+     │ catalog                                                     │
+     │ x Field required                                            │
+     │                                                             │
+     │ secret                                                      │
+     │ x Field required, you must provide a json web token         │
+     │                                                             │
+     │ Mitigation                                                  │
+     │ Check the Syncer's documentation page for more information. │
+     │ https://thoughtspot.github.io/cs_tools/syncer/Starburst/    │
+     ╰─────────────────────────────────────────────────────────────╯
+    """
+
     title = "Your {proto} Syncer encountered an error."
     mitigation = (
         # fmt: off
@@ -171,32 +189,49 @@ class SyncerInitError(CSToolsCLIError):
         self.error_info = {"proto": proto or pydantic_error.title}
 
     @property
-    def reason(self) -> str:
-        argument_block = collections.defaultdict(list)
+    def reason(self) -> str:  # type: ignore[override]
+        """
+        Responsible for showing arguments and their errors.
 
-        for error_info in self.pydantic_error.errors():
-            key = f"{error_info['loc'][0]}\n[b blue]{error_info['input']}[/]" if error_info["loc"] else "__root__"
-            argument_block[key].append(f"x {error_info['msg']}")
+        │ 2 arguments have errors.                                    │
+        │                                                             │
+        │ catalog                                                     │
+        │ x Field required                                            │
+        │                                                             │
+        │ secret                                                      │
+        │ x Field required, you must provide a json web token         │
+        """
+        errors: dict[str, list[str]] = collections.defaultdict(list)
 
-        if self.pydantic_error.error_count() > 1:
-            s = "s"
-            v = "ve"
-        else:
-            s = ""
-            v = "s"
+        for error in self.pydantic_error.errors():
+            argument_name, *_ = error["loc"]
+            assert isinstance(argument_name, str)
 
-        error_messages = ""
+            # Clean error message of technical jargon.
+            message = error["msg"].replace("Assertion failed, ", "")
 
-        for argument, errors in argument_block.items():
-            error_messages += f"\n{argument}"
+            # Add the user's input, if given.
+            if error["type"] != "missing":
+                message += f" [b yellow](given: [b green]{error['input']}[/])[/]"
 
-            for error in errors:
-                error_messages += f"\n[b red]{error}[/]"
+            errors[argument_name].append(message)
+
+        summary = "1 argument has" if len(errors) == 1 else f"{len(errors)} arguments have"
+        details = ""
+
+        for is_last_error, (argument, lines) in loop_last(errors.items()):
+            details += f"[b blue]{argument}[/]"
+
+            for line in lines:
+                details += f"\n[b red]x[/] {line}"
+
+            if not is_last_error:
+                details += "\n\n"
 
         # fmt: off
         phrase = (
-            f"\n{self.pydantic_error.error_count()} argument{s} ha{v} errors."
-            f"\n{error_messages}"
+            f"\n{summary} errors."
+            f"\n\n{details}"
         )
         # fmt: on
 

@@ -155,11 +155,11 @@ _meta_config = MetaConfig.load()
 
 class ThoughtSpotConfiguration(_GlobalSettings):
     url: Union[AnyHttpUrl, IPv4Address]
-    username: str = pydantic.Field()
+    username: str
     password: Optional[str] = pydantic.Field(default=None)
     secret_key: Optional[types.GUID] = pydantic.Field(default=None)
     bearer_token: Optional[types.GUID] = pydantic.Field(default=None)
-    default_org: Optional[str] = None
+    default_org: Optional[int] = None
     disable_ssl: bool = False
 
     @pydantic.model_validator(mode="before")
@@ -218,7 +218,7 @@ class CSToolsConfig(_GlobalModel):
     name: str
     thoughtspot: ThoughtSpotConfiguration
     verbose: bool = False
-    temp_dir: DirectoryPath = cs_tools_venv.app_dir
+    temp_dir: Optional[DirectoryPath] = None
     created_in_cs_tools_version: validators.CoerceVersion
 
     @pydantic.model_validator(mode="before")
@@ -245,6 +245,9 @@ class CSToolsConfig(_GlobalModel):
     @pydantic.field_serializer("temp_dir")
     @classmethod
     def _serialize_as_string(self, temp_dir: pathlib.Path) -> str:
+        if temp_dir is None:
+            temp_dir = cs_tools_venv.app_dir
+
         return temp_dir.as_posix()
 
     # ====================
