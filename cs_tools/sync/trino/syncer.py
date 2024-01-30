@@ -104,6 +104,6 @@ class Trino(DatabaseSyncer):
             sync_utils.batched(table.insert().values, session=self.session, data=data)
 
         if self.load_strategy == "UPSERT":
-            raise NotImplementedError("coming soon..")
+            sync_utils.generic_upsert(table, session=self.session, data=data)
 
         self.session.commit()
