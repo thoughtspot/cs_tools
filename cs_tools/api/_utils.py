@@ -12,6 +12,8 @@ import copy
 import json
 import uuid
 
+import httpx
+
 UNDEFINED = object()
 SYSTEM_USERS = {"system": "System User", "su": "Administrator Super-User", "tsadmin": "Administrator"}
 
@@ -32,7 +34,7 @@ def is_valid_guid(to_test: str) -> bool:
     return str(guid) == to_test
 
 
-def scrub_undefined(inp: Any, *, null: Union[UNDEFINED, None]) -> Any:
+def scrub_undefined_sentinel(inp: Any, *, null: Union[UNDEFINED, None]) -> Any:
     """
     Remove sentinel values from input parameters.
 
@@ -40,35 +42,39 @@ def scrub_undefined(inp: Any, *, null: Union[UNDEFINED, None]) -> Any:
     a marker for a default value.
     """
     if isinstance(inp, dict):
-        return {k: scrub_undefined(v, null=null) for k, v in inp.items() if v is not null}
+        return {k: scrub_undefined_sentinel(v, null=null) for k, v in inp.items() if v is not null}
 
     if isinstance(inp, list):
-        return [scrub_undefined(v, null=null) for v in inp if v is not null]
+        return [scrub_undefined_sentinel(v, null=null) for v in inp if v is not null]
 
     return inp
 
 
-def scrub_sensitive(request_keywords: dict[str, Any]) -> dict[str, Any]:
+def obfuscate_sensitive_data(request_query: httpx.QueryParams) -> dict[str, Any]:
     """
     Remove sensitive data for logging. It's a poor man's logging.Filter.
 
-    This is purely here to pop off the password.
+    This is purely here to pop off the secrets.
+
+    httpx.QueryParams.items() returns only the first specified parameter. If the user
+    specifies the parameter multiple times, we'd have to switch to .multi_items().
     """
     SAFEWORDS = ("password", "access_token")
 
     # don't modify the actual keywords we want to build into the request
-    secure = copy.deepcopy({k: v for k, v in request_keywords.items() if k not in ("file", "files")})
+    secure = copy.deepcopy({k: v for k, v in request_query.items() if k not in ("file", "files")})
 
     for keyword in ("params", "data", "json"):
         # .params on GET, POST, PUT
         # .data, .json on POST, PUT
-        data = secure.get(keyword, None)
-
-        if data is None:
+        if secure.get(keyword, None) is None:
             continue
 
         for safe_word in SAFEWORDS:
-            secure[keyword].pop(safe_word, None)
+            try:
+                secure[keyword][safe_word] = "[secure]"
+            except KeyError:
+                pass
 
     return secure
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 import logging
 
-from cs_tools.api._utils import scrub_undefined
+from cs_tools.api import _utils
 from cs_tools.types import GUID, DeployPolicy, DeployType, MetadataObjectType
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ class RESTAPIv2:
 
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Pre-process the request to remove undefined parameters."""
-        request_kw = scrub_undefined(request_kw, null=None)
+        request_kw = _utils.scrub_undefined_sentinel(request_kw, null=None)
         method = getattr(self._api_client, method.lower())
         return method(endpoint, **request_kw)
 

@@ -7,6 +7,7 @@ import logging
 import httpx
 
 from cs_tools import __version__
+from cs_tools.api import _utils
 from cs_tools.api._rest_api_v1 import RESTAPIv1
 from cs_tools.api._rest_api_v2 import RESTAPIv2
 
@@ -16,7 +17,7 @@ _CALLOSUM_DEFAULT_TIMEOUT_SECONDS = 60 * 5
 
 class RESTAPIClient:
     """
-    Implementation of the REST API v1.
+    This a coordinator for the V1 and V2 implementations.
     """
 
     def __init__(self, ts_url: str, *, timeout: float = _CALLOSUM_DEFAULT_TIMEOUT_SECONDS, **client_opts):
@@ -65,8 +66,8 @@ class RESTAPIClient:
 
         log.debug(
             f">>> [{now:%H:%M:%S}] {request.method} -> {request.url.path}"
-            f"\n    === HEADERS ===\n{request.headers}"
-            f"\n    ===  DATA   ===\n{request.content}"
+            f"\n\t=== HEADERS ===\n{request.headers}"
+            f"\n\t===  DATA   ===\n{_utils.obfuscate_sensitive_data(request.url.params)}"
             f"\n",
         )
 
@@ -85,7 +86,7 @@ class RESTAPIClient:
         response.headers["cs-tools-response-receive-utc-timestamp"] = now.isoformat()
 
         if utc_requested_at := response.request.headers.get("cs-tools-request-start-utc-timestamp", None):
-            elapsed = f"({(dt.datetime.fromisoformat(utc_requested_at) - now).total_seconds()}s)"
+            elapsed = f"({(now - dt.datetime.fromisoformat(utc_requested_at)).total_seconds()}s)"
         else:
             elapsed = ""
 

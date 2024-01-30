@@ -7,7 +7,7 @@ import logging
 import pathlib
 import tempfile
 
-from cs_tools.api._utils import UNDEFINED, dumps, scrub_undefined
+from cs_tools.api import _utils
 
 if TYPE_CHECKING:
     from io import BufferedIOBase
@@ -51,7 +51,7 @@ class RESTAPIv1:
 
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Pre-process the request to remove undefined parameters."""
-        request_kw = scrub_undefined(request_kw, null=UNDEFINED)
+        request_kw = _utils.scrub_undefined_sentinel(request_kw, null=_utils.UNDEFINED)
         method = getattr(self._api_client, method.lower())
         return method(endpoint, **request_kw)
 
@@ -59,7 +59,7 @@ class RESTAPIv1:
     # SESSION     ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_session_management
     # ==================================================================================================================
 
-    def _trusted_auth(self, *, username: str, secret: GUID, org_id: int = UNDEFINED) -> httpx.Response:
+    def _trusted_auth(self, *, username: str, secret: GUID, org_id: int = _utils.UNDEFINED) -> httpx.Response:
         # get the login token for a given user
         d = {"secret_key": secret, "username": username, "access_level": "FULL", "orgid": org_id}
         r = self.request("POST", "callosum/v1/tspublic/v1/session/auth/token", data=d)
@@ -71,7 +71,7 @@ class RESTAPIv1:
 
         return r
 
-    def session_login(self, *, username: str, password: str, org_id: int = UNDEFINED) -> httpx.Response:
+    def session_login(self, *, username: str, password: str, org_id: int = _utils.UNDEFINED) -> httpx.Response:
         d = {"username": username, "password": password, "rememberme": True, "orgid": org_id}
         r = self.request("POST", "callosum/v1/tspublic/v1/session/login", data=d)
         return r
@@ -98,7 +98,7 @@ class RESTAPIv1:
     # ORG         ::  NOT YET SET
     # ==================================================================================================================
 
-    def org_read(self, *, org_id: int = UNDEFINED, org_name: str = UNDEFINED) -> httpx.Response:
+    def org_read(self, *, org_id: int = _utils.UNDEFINED, org_name: str = _utils.UNDEFINED) -> httpx.Response:
         p = {"id": org_id, "name": org_name, "orgScope": "ALL"}
         r = self.request("GET", "callosum/v1/tspublic/v1/org", params=p)
         return r
@@ -106,8 +106,8 @@ class RESTAPIv1:
     def org_search(
         self,
         *,
-        org_id: int = UNDEFINED,
-        org_name: str = UNDEFINED,
+        org_id: int = _utils.UNDEFINED,
+        org_name: str = _utils.UNDEFINED,
         show_inactive: bool = False,
     ) -> httpx.Response:
         d = {"id": org_id, "name": org_name, "showinactive": show_inactive, "orgScope": "ALL"}
@@ -126,16 +126,16 @@ class RESTAPIv1:
         password: str,
         sharing_visibility: SharingVisibility = "DEFAULT",
         user_type: str = "LOCAL_USER",
-        user_properties: dict[str, Any] = UNDEFINED,
-        group_guids: list[GUID] = UNDEFINED,
-        # org_id: int = UNDEFINED,
+        user_properties: dict[str, Any] = _utils.UNDEFINED,
+        group_guids: list[GUID] = _utils.UNDEFINED,
+        # org_id: int = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
             "name": username,
             "password": password,
             "displayname": display_name,
             "properties": user_properties,
-            "groups": dumps(group_guids),
+            "groups": _utils.dumps(group_guids),
             "usertype": user_type,
             "visibility": sharing_visibility,
             "triggeredbyadmin": True,
@@ -143,12 +143,12 @@ class RESTAPIv1:
         r = self.request("POST", "callosum/v1/tspublic/v1/user", data=d)
         return r
 
-    def user_read(self, *, user_guid: GUID = UNDEFINED, username: str = UNDEFINED) -> httpx.Response:
+    def user_read(self, *, user_guid: GUID = _utils.UNDEFINED, username: str = _utils.UNDEFINED) -> httpx.Response:
         p = {"userid": user_guid, "name": username}
         r = self.request("GET", "callosum/v1/tspublic/v1/user", params=p)
         return r
 
-    def user_update(self, *, user_guid: GUID, content: UserProfile, password: str = UNDEFINED) -> httpx.Response:
+    def user_update(self, *, user_guid: GUID, content: UserProfile, password: str = _utils.UNDEFINED) -> httpx.Response:
         d = {"userid": user_guid, "content": json.dumps(content), "password": password, "triggeredbyadmin": True}
         r = self.request("PUT", f"callosum/v1/tspublic/v1/user/{user_guid}", data=d)
         return r
@@ -162,9 +162,9 @@ class RESTAPIv1:
         *,
         from_username: str,
         to_username: str,
-        object_guids: list[GUID] = UNDEFINED,
+        object_guids: list[GUID] = _utils.UNDEFINED,
     ) -> httpx.Response:
-        p = {"fromUserName": from_username, "toUserName": to_username, "objectsID": dumps(object_guids)}
+        p = {"fromUserName": from_username, "toUserName": to_username, "objectsID": _utils.dumps(object_guids)}
         r = self.request("POST", "callosum/v1/tspublic/v1/user/transfer/ownership", params=p)
         return r
 
@@ -174,7 +174,7 @@ class RESTAPIv1:
         principals: list[SecurityPrincipal],
         apply_changes: bool = False,
         remove_deleted: bool = True,
-        password: str = UNDEFINED,
+        password: str = _utils.UNDEFINED,
     ) -> httpx.Response:
         fp = pathlib.Path(tempfile.gettempdir()) / f"user-sync-{dt.datetime.now(tz=dt.timezone.UTC).timestamp()}.json"
         fp.write_text(json.dumps(principals, indent=4))
@@ -202,14 +202,14 @@ class RESTAPIv1:
             "name": group_name,
             "display_name": display_name,
             "description": description,
-            "privileges": dumps(privileges),
+            "privileges": _utils.dumps(privileges),
             "visibility": sharing_visibility,
             "grouptype": group_type,
         }
         r = self.request("POST", "callosum/v1/tspublic/v1/group", data=d)
         return r
 
-    def group_read(self, *, group_guid: GUID = UNDEFINED, group_name: str = UNDEFINED) -> httpx.Response:
+    def group_read(self, *, group_guid: GUID = _utils.UNDEFINED, group_name: str = _utils.UNDEFINED) -> httpx.Response:
         p = {"groupid": group_guid, "name": group_name}
         r = self.request("GET", "callosum/v1/tspublic/v1/group", params=p)
         return r
@@ -262,14 +262,14 @@ class RESTAPIv1:
         *,
         metadata_guids: list[GUID],
         metadata_types: list[MetadataObjectType],
-        tag_guids: list[GUID] = UNDEFINED,
-        tag_names: list[str] = UNDEFINED,
+        tag_guids: list[GUID] = _utils.UNDEFINED,
+        tag_names: list[str] = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
-            "id": dumps(metadata_guids),
-            "type": dumps(metadata_types),
-            "tagid": dumps(tag_guids),
-            "tagname": dumps(tag_names),
+            "id": _utils.dumps(metadata_guids),
+            "type": _utils.dumps(metadata_types),
+            "tagid": _utils.dumps(tag_guids),
+            "tagname": _utils.dumps(tag_names),
         }
         r = self.request("POST", "callosum/v1/tspublic/v1/metadata/assigntag", data=d)
         return r
@@ -279,14 +279,14 @@ class RESTAPIv1:
         *,
         metadata_guids: list[GUID],
         metadata_types: list[MetadataObjectType],
-        tag_guids: list[GUID] = UNDEFINED,
-        tag_names: list[str] = UNDEFINED,
+        tag_guids: list[GUID] = _utils.UNDEFINED,
+        tag_names: list[str] = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
-            "id": dumps(metadata_guids),
-            "type": dumps(metadata_types),
-            "tagid": dumps(tag_guids),
-            "tagname": dumps(tag_names),
+            "id": _utils.dumps(metadata_guids),
+            "type": _utils.dumps(metadata_types),
+            "tagid": _utils.dumps(tag_guids),
+            "tagname": _utils.dumps(tag_names),
         }
         r = self.request("POST", "callosum/v1/tspublic/v1/metadata/unassigntag", data=d)
         return r
@@ -295,35 +295,35 @@ class RESTAPIv1:
         self,
         *,
         metadata_type: MetadataObjectType = "QUESTION_ANSWER_BOOK",
-        subtypes: list[MetadataObjectSubtype] = UNDEFINED,
-        owner_types: list[MetadataObjectType] = UNDEFINED,
+        subtypes: list[MetadataObjectSubtype] = _utils.UNDEFINED,
+        owner_types: list[MetadataObjectType] = _utils.UNDEFINED,
         category: MetadataCategory = "ALL",
         sort: SortOrder = "DEFAULT",
-        sort_ascending: bool = UNDEFINED,
+        sort_ascending: bool = _utils.UNDEFINED,
         offset: int = -1,
-        batchsize: int = UNDEFINED,
-        tag_names: list[str] = UNDEFINED,
-        pattern: str = UNDEFINED,
+        batchsize: int = _utils.UNDEFINED,
+        tag_names: list[str] = _utils.UNDEFINED,
+        pattern: str = _utils.UNDEFINED,
         show_hidden: bool = False,
-        skip_guids: list[GUID] = UNDEFINED,
-        fetch_guids: list[GUID] = UNDEFINED,
+        skip_guids: list[GUID] = _utils.UNDEFINED,
+        fetch_guids: list[GUID] = _utils.UNDEFINED,
         auto_created: bool = False,
-        author_guid: GUID = UNDEFINED,
+        author_guid: GUID = _utils.UNDEFINED,
     ) -> httpx.Response:
         p = {
             "type": metadata_type,
-            "subtypes": dumps(subtypes),
-            "ownertypes": dumps(owner_types),
+            "subtypes": _utils.dumps(subtypes),
+            "ownertypes": _utils.dumps(owner_types),
             "category": category,
             "sort": sort,
             "sortascending": sort_ascending,
             "offset": offset,
             "batchsize": batchsize,
-            "tagname": dumps(tag_names),
+            "tagname": _utils.dumps(tag_names),
             "pattern": pattern,
             "showhidden": show_hidden,
-            "skipids": dumps(skip_guids),
-            "fetchids": dumps(fetch_guids),
+            "skipids": _utils.dumps(skip_guids),
+            "fetchids": _utils.dumps(fetch_guids),
             "auto_created": auto_created,
             "authorguid": author_guid,
         }
@@ -339,7 +339,7 @@ class RESTAPIv1:
     ) -> httpx.Response:
         p = {
             "type": metadata_type,
-            "id": dumps(guids),
+            "id": _utils.dumps(guids),
             "showhidden": show_hidden,
             "dropquestiondetails": False,
             "version": -1,
@@ -356,7 +356,7 @@ class RESTAPIv1:
         export_fqn: bool = True,  # this is a happier default
     ) -> httpx.Response:
         d = {
-            "export_ids": dumps(export_guids),
+            "export_ids": _utils.dumps(export_guids),
             "formattype": format_type,
             "export_associated": export_associated,
             "export_fqn": export_fqn,
@@ -371,7 +371,11 @@ class RESTAPIv1:
         import_policy: TMLImportPolicy = "VALIDATE_ONLY",
         force_create: bool = False,
     ) -> httpx.Response:
-        d = {"import_objects": dumps(import_objects), "import_policy": import_policy, "force_create": force_create}
+        d = {
+            "import_objects": _utils.dumps(import_objects),
+            "import_policy": import_policy,
+            "force_create": force_create,
+        }
         r = self.request("POST", "callosum/v1/tspublic/v1/metadata/tml/import", data=d)
         return r
 
@@ -384,7 +388,7 @@ class RESTAPIv1:
         *,
         guid: GUID,
         include_columns: bool = False,
-        config: ConnectionMetadata = UNDEFINED,
+        config: ConnectionMetadata = _utils.UNDEFINED,
         authentication_type: str = "SERVICE_ACCOUNT",
     ) -> httpx.Response:
         d = {
@@ -401,13 +405,13 @@ class RESTAPIv1:
         self,
         *,
         guid: GUID,
-        tables: list[dict[str, Any]] = UNDEFINED,
-        config: ConnectionMetadata = UNDEFINED,
+        tables: list[dict[str, Any]] = _utils.UNDEFINED,
+        config: ConnectionMetadata = _utils.UNDEFINED,
         authentication_type: str = "SERVICE_ACCOUNT",
     ) -> httpx.Response:
         d = {
             "connection_id": guid,
-            "tables": dumps(tables),
+            "tables": _utils.dumps(tables),
             "config": config,
             "authentication_type": authentication_type,
         }
@@ -421,7 +425,7 @@ class RESTAPIv1:
         description: str,
         external_database_type: ConnectionType,
         create_empty: bool = False,
-        metadata: ConnectionMetadata = UNDEFINED,
+        metadata: ConnectionMetadata = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
             "name": name,
@@ -442,7 +446,7 @@ class RESTAPIv1:
         description: str,
         external_database_type: ConnectionType,
         create_empty: bool = False,
-        metadata: ConnectionMetadata = UNDEFINED,
+        metadata: ConnectionMetadata = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
             "name": name,
@@ -473,7 +477,7 @@ class RESTAPIv1:
         batchsize: int = -1,
         offset: int = -1,
     ) -> httpx.Response:
-        d = {"type": metadata_type, "id": dumps(guids), "batchsize": batchsize, "offset": offset}
+        d = {"type": metadata_type, "id": _utils.dumps(guids), "batchsize": batchsize, "offset": offset}
         r = self.request("POST", "callosum/v1/tspublic/v1/dependency/listdependents", data=d)
         return r
 
@@ -509,16 +513,16 @@ class RESTAPIv1:
     ) -> httpx.Response:
         d = {
             "type": str(metadata_type),
-            "id": dumps(guids),
+            "id": _utils.dumps(guids),
             "permission": {
                 "permissions": {
                     principal_guid: {"shareMode": str(access)} for principal_guid, access in permissions.items()
                 },
             },
             # we don't support these options
-            "emailshares": UNDEFINED,
-            "notify": UNDEFINED,
-            "message": UNDEFINED,
+            "emailshares": _utils.UNDEFINED,
+            "notify": _utils.UNDEFINED,
+            "message": _utils.UNDEFINED,
         }
         r = self.request("POST", "callosum/v1/tspublic/v1/security/share", data=d)
         return r
@@ -533,7 +537,7 @@ class RESTAPIv1:
     ) -> httpx.Response:
         p = {
             "type": metadata_type,
-            "id": dumps(guids),
+            "id": _utils.dumps(guids),
             "dependentshare": dependent_share,
             "permissiontype": permission_type,
         }
@@ -561,14 +565,14 @@ class RESTAPIv1:
         r = self.request("GET", "ts_dataservice/v1/public/tql/tokens/dynamic")
         return r
 
-    def dataservice_query(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
+    def dataservice_query(self, *, data: Any, timeout: float = _utils.UNDEFINED) -> httpx.Response:
         # Further reading on what can be passed to `data`
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body
         r = self.request("POST", "ts_dataservice/v1/public/tql/query", timeout=timeout, json=data)
         return r
 
-    def dataservice_script(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
+    def dataservice_script(self, *, data: Any, timeout: float = _utils.UNDEFINED) -> httpx.Response:
         # Further reading on what can be passed to `data`
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body_2
@@ -581,7 +585,7 @@ class RESTAPIv1:
         r = self.request("POST", fullpath, data=d)
         return r
 
-    def dataservice_dataload_initialize(self, *, data: Any, timeout: float = UNDEFINED) -> httpx.Response:
+    def dataservice_dataload_initialize(self, *, data: Any, timeout: float = _utils.UNDEFINED) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/loads")
         r = self.request("POST", fullpath, timeout=timeout, json=data)
         return r
@@ -591,7 +595,7 @@ class RESTAPIv1:
         *,
         cycle_id: GUID,
         fd: BufferedIOBase | Any,
-        timeout: float = UNDEFINED,
+        timeout: float = _utils.UNDEFINED,
     ) -> httpx.Response:
         # This endpoint returns immediately once the file uploads to the remote host.
         # Processing of the dataload happens concurrently, and this function may be
