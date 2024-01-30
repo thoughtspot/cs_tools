@@ -197,37 +197,48 @@ def bi_server(
     with LiveTasks(tasks, console=rich_console) as tasks:
         with tasks["gather_search"]:
             data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
-            seed = dt.datetime.now(tz=dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
             # CLUSTER BY --> TIMESTAMP , ANSWER_BOOK_GUID , USER_GUID
             data.sort(key=lambda r: tuple(map(str, (r["Timestamp"], r["Answer Book GUID"], r["User Id"]))))
 
-            renamed = [
-                models.BIServer.validated_init(
-                    **{
-                        "sk_dummy": f"{seed}-{idx}",
-                        "incident_id": r["Incident Id"],
-                        "timestamp": r["Timestamp"],
-                        "url": r["URL"],
-                        "http_response_code": r["HTTP Response Code"],
-                        "browser_type": r["Browser Type"],
-                        "browser_version": r["Browser Version"],
-                        "client_type": r["Client Type"],
-                        "client_id": r["Client Id"],
-                        "answer_book_guid": r["Answer Book GUID"],
-                        "viz_id": r["Viz Id"],
-                        "user_id": r["User Id"],
-                        "user_action": r["User Action"],
-                        "query_text": r["Query Text"],
-                        "response_size": r["Total Response Size"],
-                        "latency_us": r["Total Latency (us)"],
-                        "impressions": r["Total Impressions"],
-                    }
-                ).dict()
-                for idx, r in enumerate(data)
-                # care for data quality errors..
-                if None not in (r["URL"], r["Incident Id"])
-            ]
+            renamed = []
+            curr_date, sk_idx = None, 0
+
+            for row in data:
+                # care for data quality errors
+                if row["Incident Id"] is None or row["URL"] is None:
+                    continue
+
+                # reset the surrogate key every day
+                if curr_date != row["Timestamp"].date():
+                    curr_date = row["Timestamp"].date()
+                    sk_idx = 0
+
+                sk_idx += 1
+
+                renamed.append(
+                    models.BIServer.validated_init(
+                        **{
+                            "sk_dummy": f"{row['Timestamp']}-{sk_idx}",
+                            "incident_id": row["Incident Id"],
+                            "timestamp": row["Timestamp"],
+                            "url": row["URL"],
+                            "http_response_code": row["HTTP Response Code"],
+                            "browser_type": row["Browser Type"],
+                            "browser_version": row["Browser Version"],
+                            "client_type": row["Client Type"],
+                            "client_id": row["Client Id"],
+                            "answer_book_guid": row["Answer Book GUID"],
+                            "viz_id": row["Viz Id"],
+                            "user_id": row["User Id"],
+                            "user_action": row["User Action"],
+                            "query_text": row["Query Text"],
+                            "response_size": row["Total Response Size"],
+                            "latency_us": row["Total Latency (us)"],
+                            "impressions": row["Total Impressions"],
+                        }
+                    ).dict()
+                )
 
         with tasks["syncer_dump"]:
             syncer.dump("ts_bi_server", data=renamed)
