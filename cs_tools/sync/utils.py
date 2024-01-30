@@ -139,7 +139,7 @@ def generic_upsert(
             pk_hash_value = tuple(v for k, v in seen.items() if k in target.primary_key)
 
             if pk_hash_value in batch_row:
-                to_update.append({"b_sk_dummy": seen.pop("sk_dummy"), **seen})
+                to_update.append({(f"alias_{k}" if k in target.primary_key else k): v for k, v in seen.items()})
             else:
                 to_insert.append(seen)
 
@@ -153,7 +153,7 @@ def generic_upsert(
         rows = []
 
     # UPDATE      TABLE WHERE     EXISTS (SELECT * FROM TABLE) VALUES ( ... )
-    update = target.update().where(*[c.name == sa.bindparam(f"b_{c.name}") for c in target.primary_key])
+    update = target.update().where(*[c.name == sa.bindparam(f"alias_{c.name}") for c in target.primary_key])
     to_update = []
 
     for rows in utils.batched(to_update, n=999):
