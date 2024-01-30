@@ -19,7 +19,7 @@ class JSON(Syncer):
     """Interact with a JSON file."""
 
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
-    __syncer_name__ = "sqlite"
+    __syncer_name__ = "json"
 
     directory: pydantic.DirectoryPath
     encoding: Optional[Literal["UTF-8"]] = None
@@ -36,11 +36,7 @@ class JSON(Syncer):
     def load(self, filename: str) -> TableRows:
         """Fetch rows from a JSON file."""
         text = self.make_filename(filename).read_text(encoding=self.encoding)
-
-        if not text:
-            return []
-
-        data = json.loads(text)
+        data = json.loads(text) if text else []
         return data
 
     def dump(self, filename: str, *, data: TableRows) -> None:
