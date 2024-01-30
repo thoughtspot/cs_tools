@@ -4,13 +4,17 @@ from typing import Optional
 import collections
 import contextlib
 import csv
+import logging
 import pathlib
 import tempfile
 import textwrap
 
 import sqlalchemy as sa
 
+from cs_tools import utils
 from cs_tools.sync.types import TableRows
+
+log = logging.getLogger(__name__)
 
 
 @contextlib.contextmanager
@@ -97,34 +101,62 @@ def merge_into(target: sa.Table, data: TableRows) -> sa.TextClause:
     return sa.text(stmt)
 
 
-def external_upsert(
+def generic_upsert(
     target: sa.Table,
     *,
     session: sa.orm.Session,
     data: TableRows,
     unique_key: Optional[list[sa.Column]] = None,
 ) -> None:
-    """ """
+    """
+    Dialect-agnostic way to UPSERT.
+
+    Performs multiple queries to classify and then properly add records.
+    """
     if unique_key is None and not target.primary_key:
         raise ValueError()
 
-    compare = collections.defaultdict(set)
+    log.debug(f"DATA IN: {len(data): >7,} rows")
+    to_insert = []
+    to_update = []
 
-    for row in data:
+    # SELECT * FROM TABLE WHERE ... IN DATA
+    for rows in utils.batched(data, n=999 // len(target.primary_key)):
+        to_filter = collections.defaultdict(set)
+        seen_data = []
+
         for column in target.primary_key:
-            compare[column.name].add(row[column.name])
+            for row in rows:
+                to_filter[column.name].add(row[column.name])
+                seen_data.append(row)
 
-    pk_exp = [column.in_(compare[column.name]) for column in target.primary_key]
-    select = sa.select(target.primary_key.columns).where(*pk_exp)
-    result = session.execute(select).all()
+        pk_exp = [column.in_(to_filter[column.name]) for column in target.primary_key]
+        select = sa.select(target.primary_key.columns).where(*pk_exp)
+        result = session.execute(select)
+        batch_row = set(result.all())
 
-    print(result)
-    raise
+        for seen in seen_data:
+            pk_hash_value = tuple(v for k, v in seen.items() if k in target.primary_key)
+
+            if pk_hash_value in batch_row:
+                to_update.append({"b_sk_dummy": seen.pop("sk_dummy"), **seen})
+            else:
+                to_insert.append(seen)
+
+    log.debug(f" INSERT: {len(to_insert): >7,} rows")
+    log.debug(f" UPDATE: {len(to_update): >7,} rows")
 
     # INSERT INTO TABLE WHERE NOT EXISTS (SELECT * FROM TABLE) VALUES ( ... )
-    insert = target.insert().from_select(target.primary_key, ~select.exists())
-    batched(insert.values, session=session, data=data)
+    for rows in utils.batched(to_insert, n=999):
+        session.execute(target.insert(), rows)
+        session.commit()
+        rows = []
 
     # UPDATE      TABLE WHERE     EXISTS (SELECT * FROM TABLE) VALUES ( ... )
-    update = target.update().where(select.exists())
-    batched(update.values, session=session, data=data)
+    update = target.update().where(*[c.name == sa.bindparam(f"b_{c.name}") for c in target.primary_key])
+    to_update = []
+
+    for rows in utils.batched(to_update, n=999):
+        session.execute(update, rows)
+        session.commit()
+        rows = []
