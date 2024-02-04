@@ -219,7 +219,7 @@ def create(
         conf.save()
         log.info(f"Saving as {conf.name}!")
 
-        if menu["is_default"].response == "Yes":
+        if menu["is_default"]._response == "Yes":
             meta.default_config_name = config
             meta.save()
 
@@ -336,25 +336,31 @@ def check(
         return
 
     if orgs:
-        r = ts.api.v1.session_orgs_read()
-        d = r.json()
+        if not ts.session_context.thoughtspot.is_orgs_enabled:
+            log.warning(f"--orgs specified, but orgs has not yet been enabled on {ts.session_context.thoughtspot.url}")
 
-        table = Table(
-            title=f"Orgs in [b green]{conf.thoughtspot.url}[/]",
-            title_style="bold white",
-            caption=f"Current org id {d['currentOrgId']}",
-        )
-        table.add_column("ID", justify="right")
-        table.add_column("NAME")
-        table.add_column("DESCRIPTION", max_width=75, no_wrap=True)
+        else:
+            r = ts.api.v1.session_orgs_read()
+            d = r.json()
 
-        for row in sorted(d.get("orgs", []), key=lambda r: r["orgName"]):
-            table.add_row(str(row["orgId"]), row["orgName"], row["description"])
+            table = Table(
+                title=f"Orgs in [b green]{conf.thoughtspot.url}[/]",
+                title_style="bold white",
+                caption=f"Current org id {d['currentOrgId']}",
+            )
+            table.add_column("ID", justify="right")
+            table.add_column("NAME")
+            table.add_column("DESCRIPTION", max_width=75, no_wrap=True)
 
-        rich_console.print("\n", Align.center(table), "\n")
+            for row in sorted(d.get("orgs", []), key=lambda r: r["orgName"]):
+                table.add_row(str(row["orgId"]), row["orgName"], row["description"])
+
+            rich_console.print("\n", Align.center(table), "\n")
 
     ts.logout()
     log.info("[b green]Success[/]!")
+
+    rich_console.print(ts.session_context)
 
 
 @app.command(no_args_is_help=False)

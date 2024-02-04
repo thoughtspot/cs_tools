@@ -28,7 +28,7 @@ class DSyncer(Dependency):
         return self._syncer.metadata
 
     def __enter__(self):
-        log.info(f"Registering syncer: {self.protocol}")
+        log.debug(f"Registering syncer: {self.protocol.lower()}")
 
         if self.protocol == "custom":
             _, _, syncer_pathlike = self.protocol.rpartition("@")
@@ -55,7 +55,6 @@ class DSyncer(Dependency):
         self._syncer = SyncerClass(**conf["configuration"])
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-
         if isinstance(self._syncer, base.DatabaseSyncer):
             if exc_type is not None:
                 self._syncer.session.rollback()
@@ -84,83 +83,3 @@ class DSyncer(Dependency):
     def __repr__(self) -> str:
         # make the dependency look like the underlying Syncer
         return self._syncer.__repr__()
-
-    #
-    #
-    #
-
-    # def _read_config_from_definition(self, ts, proto, definition) -> Dict[str, Any]:
-    #     if definition in ("default", ""):
-    #         try:
-    #             definition = ts.config.syncer[proto]
-    #         except (TypeError, KeyError):
-    #             raise SyncerError(
-    #                 proto=proto,
-    #                 cfg=ts.config.name,
-    #                 reason="No default definition has been set for this cluster config.",
-    #                 mitigation=(
-    #                     "Pass the full path to [primary]{proto}://[/] or set a default "
-    #                     "with [primary]cs_tools config modify --config {cfg} --syncer "
-    #                     "{proto}://[blue]path/to/my/default.toml"
-    #                 ),
-    #             )
-
-    #     if definition.as_posix().endswith("toml"):
-    #         try:
-    #             cfg = toml.load(definition)
-    #         except UnicodeDecodeError:
-    #             back = r"C:\work\my\example\filepath".replace("\\", "\\\\")
-    #             fwds = r"C:\work\my\example\filepath".replace("\\", "/")
-    #             raise SyncerError(
-    #                 proto=proto,
-    #                 definition=definition,
-    #                 reason="Couldn't read the Syncer definition at [blue]{definition}[/]",
-    #                 mitigation=(
-    #                     f"If you're on Windows, you must escape the backslashes in your filepaths, or flip them the "
-    #                     f"other way around."
-    #                     f"\n"
-    #                     r"\n  :cross_mark: [red]C:\work\my\example\filepath[/]"
-    #                     f"\n  :white_heavy_check_mark: [green]{back}[/]"
-    #                     f"\n  :white_heavy_check_mark: [green]{fwds}[/]"
-    #                 ),
-    #             )
-    #         except toml.TomlDecodeError:
-    #             raise SyncerError(
-    #                 proto=proto,
-    #                 proto_url=proto.lower(),
-    #                 definition=definition,
-    #                 reason="Your definition file [blue]{definition}[/] is not correct.",
-    #                 mitigation=(
-    #                     "Visit the link below to see a full example."
-    #                     "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto_url}/#full-definition-example"
-    #                 ),
-    #             )
-
-    #     return cfg
-
-    # def __Syncer_init__(self, Syncer, **syncer_config):
-    #     try:
-    #         # sanitize input by accepting aliases
-    #         if hasattr(Syncer, "__pydantic_model__"):
-    #             syncer_config = Syncer.__pydantic_model__.parse_obj(syncer_config).dict()
-
-    #         self._syncer = Syncer(**syncer_config)
-    #     except KeyError:
-    #         raise SyncerError(
-    #             proto=self.protocol,
-    #             definition=self.definition_fp,
-    #             reason="[blue]{definition}[/] is missing a top level marker.",
-    #             mitigation=(r"The first line of your definition file should be..\n\n[white]\[configuration]"),
-    #         )
-    #     except pydantic.ValidationError as e:
-    #         raise SyncerError(
-    #             proto=self.protocol,
-    #             proto_url=self.protocol.lower(),
-    #             definition=self.definition_fp or "CLI Input",
-    #             errors="\n  ".join([f"[blue]{_['loc'][0]}[/]: {_['msg']}" for _ in e.errors()]),
-    #             reason="[blue]{definition}[/] has incorrect parameters.\n\n  {errors}",
-    #             mitigation=(
-    #                 "Visit the link below to see a full example."
-    #                 "\n[blue]https://thoughtspot.github.io/cs_tools/syncer/{proto_url}/#full-definition-example"
-    #             ),
-    #         )

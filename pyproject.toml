@@ -120,11 +120,6 @@ warn_unused_ignores = true
 check_untyped_defs = true
 strict_equality = true
 strict_concatenate = true
-# exclude = '''
-# (?x)(
-#     ^_scriptability.py$  # ignore auto-generated files
-# )
-# '''
 
 [tool.ruff]
 line-length = 120
