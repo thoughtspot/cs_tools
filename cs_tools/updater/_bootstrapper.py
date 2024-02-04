@@ -48,6 +48,12 @@ def cli():
         dest="beta",
         action="store_true",
     )
+    parser.add_argument(
+        "--dev",
+        help=argparse.SUPPRESS,  # "install a local pre-release version of CS Tools"
+        dest="dev",
+        action="store_true",
+    )
     operation = parser.add_mutually_exclusive_group(required=True)
     operation.add_argument(
         "-i",
@@ -138,7 +144,16 @@ def cli():
             requires = "cs_tools[cli]"
 
             if args.offline_mode:
-                log.info(f"Using the offline binary found at {_PURPLE}{venv.find_links}{_RESET}")
+                log.info("Using the offline binary found at {p}{v.find_links}{x}".format(p=_PURPLE, x=_RESET, v=venv))
+
+            elif args.dev:
+                log.info("Installing locally using the development environment.")
+                here = os.path.realpath(__file__)
+                dir_updater = os.path.dirname(here)
+                dir_library = os.path.dirname(dir_updater)
+                dir_package = os.path.dirname(dir_library)
+                requires = "{local}[cli]".format(local=dir_package)
+
             else:
                 log.info("Getting the latest CS Tools {beta}release.".format(beta="beta " if args.beta else ""))
                 release = get_latest_cs_tools_release(allow_beta=args.beta)
@@ -156,7 +171,7 @@ def cli():
             shutil.rmtree(venv.venv_path, ignore_errors=True)
             path.unset()
 
-        log.info(f"{_GREEN}Done!{_RESET} Thank you for trying CS Tools.")
+        log.info("{g}Done!{x} Thank you for trying CS Tools.".format(g=_GREEN, x=_RESET))
 
         if args.install or args.reinstall:
             log.info(

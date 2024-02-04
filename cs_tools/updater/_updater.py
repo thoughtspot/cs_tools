@@ -134,6 +134,7 @@ class CSToolsVirtualEnvironment:
 
     def pip(self, command: str, *args, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment's pip."""
+        # fmt: off
         required_general_args = (
             # ignore environment variables and user configuration
             "--isolated",
@@ -142,17 +143,13 @@ class CSToolsVirtualEnvironment:
             # don't ping for new versions of pip -- it doesn't matter and is noisy
             "--disable-pip-version-check",
             # trust installs from the official python package index and the thoughtspot github repos
-            "--trusted-host",
-            "files.pythonhost.org",
-            "--trusted-host",
-            "pypi.org",
-            "--trusted-host",
-            "pypi.python.org",
-            "--trusted-host",
-            "github.com",
-            "--trusted-host",
-            "codeload.github.com",
+            "--trusted-host", "files.pythonhost.org",
+            "--trusted-host", "pypi.org",
+            "--trusted-host", "pypi.python.org",
+            "--trusted-host", "github.com",
+            "--trusted-host", "codeload.github.com",
         )
+        # fmt: on
 
         if command == "install" and self.find_links is not None:
             args = (*args, "--no-index", "--find-links", self.find_links.as_posix())
@@ -182,9 +179,18 @@ class CSToolsVirtualEnvironment:
         if self.exists:
             return
 
+        sys_pydir = pathlib.Path(sys.base_prefix)
+        directory = "Scripts" if IS_WINDOWS else "bin"
+        exec_name = "python.exe" if IS_WINDOWS else "python"
+
+        if "pyenv" in sys_pydir.as_posix():
+            python = sys_pydir / exec_name
+        else:
+            python = sys_pydir / directory / exec_name
+
         # Run with global/system python , equivalent to..
         #   python -m venv $USER_DIR/cs_tools/.cs_tools
-        self.run(sys.executable, "-m", "venv", self.venv_path.as_posix())
+        self.run(python, "-m", "venv", self.venv_path.as_posix())
 
         # Ensure `pip` is at least V23.1 so that backjumping is available
         self.pip("install", "pip >= 23.1", "--upgrade")
@@ -241,7 +247,7 @@ class WindowsPath:
         return self.venv.exe.parent
 
     @property
-    def sys_py_dir(self) -> pathlib.Path:
+    def sys_pydir(self) -> pathlib.Path:
         return pathlib.Path(site.getuserbase()) / "Scripts"
 
     def unlink_path(self, path: pathlib.Path) -> None:
@@ -305,8 +311,8 @@ class WindowsPath:
             # Couldn't get PATH variable from registry, so we have to try to bruteforce
             # the path linking. First try to symlink, then just copy the damn thing.
             if PATH is None:
-                self.symlink_paths(self.sys_py_dir / "cs_tools.exe", self.bin_dir / "cs_tools.exe")
-                self.symlink_paths(self.sys_py_dir / "cstools.exe", self.bin_dir / "cstools.exe")
+                self.symlink_paths(self.sys_pydir / "cs_tools.exe", self.bin_dir / "cs_tools.exe")
+                self.symlink_paths(self.sys_pydir / "cstools.exe", self.bin_dir / "cstools.exe")
                 return
 
             # Append to the PATH variable
@@ -325,8 +331,8 @@ class WindowsPath:
 
             # Couldn't get the PATH variable from registry
             if PATH is None:
-                self.unlink_path(self.sys_py_dir / "cs_tools.exe")
-                self.unlink_path(self.sys_py_dir / "cstools.exe")
+                self.unlink_path(self.sys_pydir / "cs_tools.exe")
+                self.unlink_path(self.sys_pydir / "cstools.exe")
                 return
 
             log.info(f"Removing '{self.bin_dir}' from User %PATH%")
