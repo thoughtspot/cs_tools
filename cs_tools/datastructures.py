@@ -106,6 +106,12 @@ class ThoughtSpotInfo(_GlobalModel):
                 "version": data["releaseVersion"],
                 "timezone": data["timezone"],
                 "is_cloud": config_info.get("isSaas", False),
+                # DEV NOTE: @boonhapus, 2024/01/31
+                #   maybe we pick a ThoughtSpot version where V2 APIs are stable enough to switch to for the majority of
+                #   workflows instead?
+                "is_api_v2_enabled": config_info.get("tseRestApiV2PlaygroundEnabled", False),
+                "is_roles_enabled": config_info.get("rolesEnabled", False),
+                "is_orgs_enabled": not data.get("orgsHidden", True),
                 "notification_banner": data.get("notificationBanner", None),
             }
 
@@ -133,6 +139,7 @@ class UserInfo(_GlobalModel):
     username: str
     display_name: str
     privileges: set[Union[types.GroupPrivilege, str]]
+    org_context: Optional[int]
     email: Optional[pydantic.EmailStr] = None
 
     @pydantic.model_validator(mode="before")
@@ -144,6 +151,7 @@ class UserInfo(_GlobalModel):
                 "username": data["userName"],
                 "display_name": data["userDisplayName"],
                 "privileges": data["privileges"],
+                "org_context": data.get("currentOrgId", None),
                 "email": data.get("userEmail", None),
             }
 
@@ -156,7 +164,7 @@ class UserInfo(_GlobalModel):
             try:
                 types.GroupPrivilege(privilege)
             except ValueError:
-                log.warning(
+                log.debug(
                     f"Missing privilege '{privilege}' from CS Tools, please contact us to update it"
                     f"\n{__project__.__help__}"
                 )
@@ -165,11 +173,13 @@ class UserInfo(_GlobalModel):
 
     @property
     def is_admin(self) -> bool:
+        """Whether or not we're an Admin."""
         allowed = {types.GroupPrivilege.can_administer_thoughtspot}
         return bool(allowed.intersection(self.privileges))
 
     @property
     def is_data_manager(self) -> bool:
+        """Whether or not we're able to create objects under the Data tab."""
         allowed = {types.GroupPrivilege.can_administer_thoughtspot, types.GroupPrivilege.can_manage_data}
         return bool(allowed.intersection(self.privileges))
 
