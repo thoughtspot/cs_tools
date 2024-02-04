@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterator, Literal, Union
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any, Literal, Union
 import csv
 import logging
 import pathlib
@@ -79,6 +80,17 @@ class CSV(Syncer):
     def __repr__(self):
         return f"<CSVSyncer path='{self.directory}' in '{self.save_strategy}' mode>"
 
+    def read_stream(self, filename: str, *, batch: int = 100_000) -> Iterator[TableRows]:
+        """Read rows from a CSV file in the directory."""
+        path = self.directory.joinpath(f"{filename}.csv")
+
+        if not path.exists():
+            return iter([])
+
+        with path.open(mode="r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f, **self.dialect_and_format_parameters())
+
+            yield from utils.batched(reader, n=batch)
 
     # MANDATORY PROTOCOL MEMBERS
 
