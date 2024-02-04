@@ -1,60 +1,47 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Literal, Union
 import logging
 import pathlib
 
-from pydantic.dataclasses import dataclass
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pydantic
 
-from cs_tools._compat import StrEnum
+from cs_tools.sync.base import Syncer
+
+if TYPE_CHECKING:
+    from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
 
 
-class CompressionTypes(StrEnum):
-    gzip = "gzip"
-    snappy = "snappy"
+class Parquet(Syncer):
+    """Interact with a Parquet file."""
 
+    __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
+    __syncer_name__ = "parquet"
 
-@dataclass
-class Parquet:
-    """
-    Interact with Parquet.
-    """
-
-    directory: pathlib.Path
-    compression: CompressionTypes = CompressionTypes.gzip
-
-    def __post_init_post_parse__(self):
-        self.directory = self.directory.resolve()
-
-        if not self.directory.exists():
-            log.info(f"{self.directory} does not exist, creating..")
-
-    def resolve_path(self, directive: str) -> pathlib.Path:
-        return self.directory.joinpath(f"{directive}.parquet")
+    directory: Union[pydantic.DirectoryPath, pydantic.NewPath]
+    compression: Literal["GZIP", "SNAPPY"] = "GZIP"
 
     def __repr__(self):
-        return f"<Parquet sync: path='{self.directory}'>"
+        return f"<ParquetSyncer directory='{self.directory}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 
-    @property
-    def name(self) -> str:
-        return "parquet"
-
-    def load(self, directive: str) -> list[dict[str, Any]]:
-        fp = self.resolve_path(directive)
+    def load(self, filename: str) -> TableRows:
+        """Read rows from a parquet file."""
+        fp = self.directory.joinpath(f"{filename}.parquet")
         table = pq.read_table(fp)
         return table.to_pylist()
 
-    def dump(self, directive: str, *, data: list[dict[str, Any]]) -> None:
+    def dump(self, filename: str, *, data: TableRows) -> None:
+        """Write rows to a parquet file."""
         if not data:
-            log.warning(f"no data to write to syncer {self}")
+            log.warning(f"No data to write to syncer {self}")
             return
 
         data = pa.Table.from_pylist(data)
-        fp = self.resolve_path(directive)
-        pq.write_table(data, fp, compression=self.compression)
+        fp = self.directory.joinpath(f"{filename}.parquet")
+        pq.write_table(data, fp, compression=self.compression.lower())

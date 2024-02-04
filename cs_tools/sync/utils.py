@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 import collections
 import contextlib
 import csv
+import datetime as dt
 import logging
 import pathlib
 import tempfile
@@ -15,6 +16,8 @@ from cs_tools import utils
 from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
+DATETIME_FORMAT_ISO_8601 = "%Y-%m-%dT%H:%M:%S.%f"
+DATETIME_FORMAT_TSLOAD = "%Y-%m-%d %H:%M:%S"
 
 
 @contextlib.contextmanager
@@ -32,6 +35,19 @@ def make_tempfile_for_upload(directory: pathlib.Path, *, filename: str, data: Ta
         yield fd
 
     pathlib.Path(fd.name).unlink()
+
+
+def format_datetime_values(row: dict[str, Any], *, dt_format: str = DATETIME_FORMAT_ISO_8601) -> dict[str, Any]:
+    """Enforce a specific format for datetime values."""
+    out = {}
+
+    for key, value in row.items():
+        if isinstance(value, dt.datetime):
+            value = value.strftime(dt_format)
+
+        out[key] = value
+
+    return out
 
 
 def batched(prepared_statement, *, session: sa.orm.Session, data: TableRows, max_parameters: int = 999) -> None:
@@ -147,8 +163,8 @@ def generic_upsert(
     log.debug(f" UPDATE: {len(to_update): >7,} rows")
 
     # INSERT INTO TABLE WHERE NOT EXISTS (SELECT * FROM TABLE) VALUES ( ... )
-    for rows in utils.batched(to_insert, n=999):
-        session.execute(target.insert(), rows)
+    for rows in utils.batched(to_insert, n=999 // len(data[0])):
+        session.execute(target.insert().values(rows))
         session.commit()
         rows = []
 
@@ -156,7 +172,7 @@ def generic_upsert(
     update = target.update().where(*[c.name == sa.bindparam(f"alias_{c.name}") for c in target.primary_key])
     to_update = []
 
-    for rows in utils.batched(to_update, n=999):
+    for rows in utils.batched(to_update, n=999 // len(data[0])):
         session.execute(update, rows)
         session.commit()
         rows = []

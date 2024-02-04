@@ -110,7 +110,7 @@ class RESTAPIv1:
         org_name: str = _utils.UNDEFINED,
         show_inactive: bool = False,
     ) -> httpx.Response:
-        d = {"id": org_id, "name": org_name, "showinactive": show_inactive, "orgScope": "ALL"}
+        d = {"id": org_id, "name": org_name, "showinactive": show_inactive}
         r = self.request("POST", "callosum/v1/tspublic/v1/org/search", data=d)
         return r
 
