@@ -218,7 +218,7 @@ class CSToolsConfig(_GlobalModel):
     name: str
     thoughtspot: ThoughtSpotConfiguration
     verbose: bool = False
-    temp_dir: Optional[DirectoryPath] = None
+    temp_dir: Optional[DirectoryPath] = pydantic.Field(default=cs_tools_venv.tmp_dir)
     created_in_cs_tools_version: validators.CoerceVersion
 
     @pydantic.model_validator(mode="before")
@@ -235,7 +235,11 @@ class CSToolsConfig(_GlobalModel):
                     "disable_ssl": data["thoughtspot"]["disable_ssl"],
                 },
                 "verbose": data["verbose"],
-                "temp_dir": data["temp_dir"],
+                "temp_dir": (
+                    cs_tools_venv.tmp_dir
+                    if pathlib.Path(data["temp_dir"]) == cs_tools_venv.app_dir
+                    else data["temp_dir"]
+                ),
                 "created_in_cs_tools_version": __version__,
                 "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
             }
@@ -245,9 +249,6 @@ class CSToolsConfig(_GlobalModel):
     @pydantic.field_serializer("temp_dir")
     @classmethod
     def _serialize_as_string(self, temp_dir: pathlib.Path) -> str:
-        if temp_dir is None:
-            temp_dir = cs_tools_venv.app_dir
-
         return temp_dir.as_posix()
 
     # ====================

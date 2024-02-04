@@ -26,13 +26,13 @@ class CSToolsVirtualEnvironment:
         self.venv_path = self.get_venv_path()
         self.find_links = None
 
-    @property
-    def exists(self) -> bool:
-        return self.exe.exists()
+        # the parent application directory
+        self.app_dir = self.venv_path.parent
 
-    @property
-    def app_dir(self) -> pathlib.Path:
-        return self.venv_path.parent.resolve()
+        # useful subdirectories
+        self.cache_dir = self.venv_path.parent / ".cache"
+        self.log_dir = self.venv_path.parent / ".logs"
+        self.tmp_dir = self.venv_path.parent / "tmp"
 
     @property
     def config_directory_name(self) -> str:
@@ -45,36 +45,9 @@ class CSToolsVirtualEnvironment:
         exec_name = "python.exe" if IS_WINDOWS else "python"
         return self.venv_path / directory / exec_name
 
-    @staticmethod
-    def run(*args, raise_on_failure: bool = True, **kwargs) -> list[str]:
-        """Run a SHELL command."""
-        levels = {"ERROR": log.error, "WARNING": log.warning}
-        output = []
-
-        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, close_fds=False, **kwargs) as proc:
-            for line_bytes in proc.stdout:
-                line = line_bytes.decode().strip()
-
-                if line.startswith(tuple(levels)):
-                    log_level, _, line = line.partition(": ")
-                    logger = levels[log_level]
-
-                else:
-                    logger = log.info
-
-                cant_uninstall_cs_tools_exe = "OSError" in line and "tools.exe" in line
-
-                if not line or cant_uninstall_cs_tools_exe:
-                    continue
-
-                logger(line)
-                output.append(line)
-
-        if raise_on_failure and proc.returncode != 0:
-            cmd = " ".join(args)
-            raise RuntimeError(f"Failed with exit code: {proc.returncode}\n\nCOMMAND: {cmd}")
-
-        return output
+    @property
+    def exists(self) -> bool:
+        return self.exe.exists()
 
     def get_venv_path(self) -> pathlib.Path:
         """Resolve to a User configuration-supported virtual environment directory."""
@@ -107,9 +80,40 @@ class CSToolsVirtualEnvironment:
                     context.env_dir,
                 )
 
-            cs_tools_venv_dir = pathlib.Path(context.env_dir).resolve()
+            cs_tools_venv_dir = pathlib.Path(context.env_dir)
 
-        return cs_tools_venv_dir
+        return cs_tools_venv_dir.resolve()
+
+    @staticmethod
+    def run(*args, raise_on_failure: bool = True, **kwargs) -> list[str]:
+        """Run a SHELL command."""
+        levels = {"ERROR": log.error, "WARNING": log.warning}
+        output = []
+
+        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, close_fds=False, **kwargs) as proc:
+            for line_bytes in proc.stdout:
+                line = line_bytes.decode().strip()
+
+                if line.startswith(tuple(levels)):
+                    log_level, _, line = line.partition(": ")
+                    logger = levels[log_level]
+
+                else:
+                    logger = log.info
+
+                cant_uninstall_cs_tools_exe = "OSError" in line and "tools.exe" in line
+
+                if not line or cant_uninstall_cs_tools_exe:
+                    continue
+
+                logger(line)
+                output.append(line)
+
+        if raise_on_failure and proc.returncode != 0:
+            cmd = " ".join(args)
+            raise RuntimeError(f"Failed with exit code: {proc.returncode}\n\nCOMMAND: {cmd}")
+
+        return output
 
     def is_package_installed(self, package: str) -> bool:
         """ """
@@ -117,9 +121,6 @@ class CSToolsVirtualEnvironment:
         from awesomeversion import AwesomeVersion
 
         rc = self.pip("list", "--format", "json")
-        print(rc)
-        print(type(rc))
-        raise SystemExit
 
         for installed in rc:
             if installed["name"] == package.name and AwesomeVersion(installed["version"]) >= package.version:
@@ -162,13 +163,24 @@ class CSToolsVirtualEnvironment:
         """Set CS Tools into offline mode, fetching requirements from path."""
         self.find_links = find_links
 
+    def ensure_directories(self) -> None:
+        # ala venv.EnvBuilder.ensure_directories
+        self.venv_path.mkdir(parents=True, exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.tmp_dir.mkdir(parents=True, exist_ok=True)
+
+        # Clean the temporary directory.
+        for path in self.tmp_dir.iterdir():
+            try:
+                path.unlink(missing_ok=True) if path.is_file() else shutil.rmtree(path, ignore_errors=True)
+            except PermissionError:
+                log.warning(f"{path} appears to be in use and can't be cleaned up.. do you have it open somewhere?")
+
     def make(self) -> None:
         """Create the virtual environment."""
         if self.exists:
             return
-
-        # ala venv.EnvBuilder.ensure_directories
-        self.venv_path.mkdir(parents=True, exist_ok=True)
 
         # Run with global/system python , equivalent to..
         #   python -m venv $USER_DIR/cs_tools/.cs_tools

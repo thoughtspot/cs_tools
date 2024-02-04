@@ -66,13 +66,6 @@ def main(version: bool = typer.Option(False, "--version", help="Show the version
         raise typer.Exit(0)
 
 
-def _ensure_directories() -> None:
-    """ """
-    venv = cs_tools_venv
-    venv.app_dir.joinpath(".cache").mkdir(parents=True, exist_ok=True)
-    venv.app_dir.joinpath(".logs").mkdir(parents=True, exist_ok=True)
-
-
 def _setup_tools(tools_app: typer.Typer, ctx_settings: dict[str, Any]) -> None:
     ctx_settings["obj"].tools = {}
 
@@ -117,7 +110,9 @@ def run() -> int:
         "os_args": " ".join(["cs_tools", *sys.argv[1:]]),
     }
 
-    _ensure_directories()
+    # first thing we do is request the database, this allows us to perform a migration if necessary
+    cs_tools_venv.ensure_directories()
+
     _setup_logging()
     _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
 
