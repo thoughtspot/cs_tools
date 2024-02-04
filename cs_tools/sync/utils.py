@@ -132,6 +132,7 @@ def generic_upsert(
     if unique_key is None and not target.primary_key:
         raise ValueError()
 
+    log.debug(f"   TABLE: {target}")
     log.debug(f"DATA IN: {len(data): >7,} rows")
     to_insert = []
     to_update = []
@@ -141,10 +142,11 @@ def generic_upsert(
         to_filter = collections.defaultdict(set)
         seen_data = []
 
-        for column in target.primary_key:
-            for row in rows:
+        for row in rows:
+            seen_data.append(row)
+
+            for column in target.primary_key:
                 to_filter[column.name].add(row[column.name])
-                seen_data.append(row)
 
         pk_exp = [column.in_(to_filter[column.name]) for column in target.primary_key]
         select = sa.select(target.primary_key.columns).where(*pk_exp)
