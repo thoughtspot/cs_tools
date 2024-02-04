@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Iterator, Literal, Union
 import csv
 import logging
 import pathlib
 
 import pydantic
 
+from cs_tools import utils
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import Syncer
 
@@ -27,7 +28,11 @@ class CSV(Syncer):
     escape_character: str = "\\"
     quoting: Literal["ALL", "MINIMAL"] = "MINIMAL"
     date_time_format: str = sync_utils.DATETIME_FORMAT_TSLOAD
+    header: bool = True
     save_strategy: Literal["APPEND", "OVERWRITE"] = "OVERWRITE"
+
+    _written_header: dict[str, bool] = pydantic.PrivateAttr(default_factory=dict)
+    """Whether or not the header has been written for a given file already"""
 
     @pydantic.field_validator("delimiter", "escape_character", mode="after")
     @classmethod
@@ -74,26 +79,37 @@ class CSV(Syncer):
     def __repr__(self):
         return f"<CSVSyncer path='{self.directory}' in '{self.save_strategy}' mode>"
 
+
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, file_name: str) -> TableRows:
+    def load(self, filename: str) -> TableRows:
         """Read rows from a CSV file in the directory."""
-        with self.directory.joinpath(f"{file_name}.csv").open(mode="r", newline="") as f:
+        path = self.directory.joinpath(f"{filename}.csv")
+
+        if not path.exists():
+            return []
+
+        with path.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f, **self.dialect_and_format_parameters())
             data = list(reader)
 
         return data
 
-    def dump(self, file_name: str, *, data: TableRows) -> None:
+    def dump(self, filename: str, *, data: TableRows) -> None:
         """Write rows to a CSV file in the directory."""
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return
 
+        path = self.directory.joinpath(f"{filename}.csv")
         header = data[0].keys()
         mode = "a" if self.save_strategy == "APPEND" else "w"
 
-        with self.directory.joinpath(f"{file_name}.csv").open(mode=mode, newline="") as f:
+        with path.open(mode=mode, newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=header, **self.dialect_and_format_parameters())
-            writer.writeheader()
+
+            if self.header and not self._written_header.get(filename, False):
+                self._written_header[filename] = True
+                writer.writeheader()
+
             writer.writerows([sync_utils.format_datetime_values(r, dt_format=self.date_time_format) for r in data])
