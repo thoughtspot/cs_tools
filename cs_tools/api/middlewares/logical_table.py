@@ -29,6 +29,7 @@ class LogicalTableMiddleware:
         hidden: bool = False,
         exclude_system_content: bool = True,
         chunksize: int = 500,
+        raise_on_error: bool = True,
     ) -> TableRowsFormat:
         """
         Get all tables in ThoughtSpot.
@@ -75,7 +76,7 @@ class LogicalTableMiddleware:
 
             tables.extend([{"metadata_type": "LOGICAL_TABLE", **table} for table in to_extend])
 
-            if not tables:
+            if not tables and raise_on_error:
                 info = {
                     "incl": "exclude" if exclude_system_content else "include",
                     "category": category,

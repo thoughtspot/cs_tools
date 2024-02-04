@@ -26,6 +26,7 @@ class PinboardMiddleware:
         category: MetadataCategory = MetadataCategory.all,
         exclude_system_content: bool = True,
         chunksize: int = 500,
+        raise_on_error: bool = True,
     ) -> TableRowsFormat:
         """
         Get all pinboards in ThoughtSpot.
@@ -73,7 +74,7 @@ class PinboardMiddleware:
 
             pinboards.extend([{"metadata_type": "PINBOARD_ANSWER_BOOK", **pinboard} for pinboard in to_extend])
 
-            if not pinboards:
+            if not pinboards and raise_on_error:
                 info = {
                     "incl": "exclude" if exclude_system_content else "include",
                     "category": category,

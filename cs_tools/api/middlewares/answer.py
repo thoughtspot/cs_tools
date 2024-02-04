@@ -28,6 +28,7 @@ class AnswerMiddleware:
         auto_created: bool = False,
         exclude_system_content: bool = True,
         chunksize: int = 500,
+        raise_on_error: bool = True,
     ) -> TableRowsFormat:
         """
         Get all answers in ThoughtSpot.
@@ -75,7 +76,7 @@ class AnswerMiddleware:
 
             answers.extend([{"metadata_type": "QUESTION_ANSWER_BOOK", **answer} for answer in to_extend])
 
-            if not answers:
+            if not answers and raise_on_error:
                 info = {
                     "incl": "exclude" if exclude_system_content else "include",
                     "category": category,
