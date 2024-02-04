@@ -33,10 +33,39 @@ app = typer.Typer(
 )
 
 
+@app.command(cls=CSToolsCommand)
+def pip_install(
+    requirement: str = typer.Argument(..., help="name or requirement of the package to install"),
+    upgrade: bool = typer.Option(False, help="upgrade the requirement to the newest available version"),
+    update: bool = typer.Option(False, help="alias for upgrade", hidden=True),
+    pip_opts: str = typer.Option(None, help="https://pip.pypa.io/en/stable/cli/pip_install/#options", hidden=True),
+):
+    """
+    Interact with the CS Tools environment's pip.
+    """
+    args = []
+
+    if upgrade or update:
+        args.append("--upgrade")
+
+    if pip_opts is not None:
+        args.extend(pip_opts.split(" "))
+
+    cs_tools_venv.pip("install", requirement, *args)
+
+
 @app.command(cls=CSToolsCommand, name="update")
 @app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
 def update(
     beta: bool = typer.Option(False, "--beta", help="pin your install to a pre-release build"),
+    dev: pathlib.Path = typer.Option(
+        None,
+        "--dev",
+        help="pin your install to a local developement build, providing the directory",
+        file_okay=False,
+        resolve_path=True,
+        hidden=True,
+    ),
     offline: pathlib.Path = typer.Option(
         None,
         help="install cs_tools from a distributable directory instead of from github",
@@ -61,6 +90,11 @@ def update(
     if offline is not None:
         log.info(f"Using the offline binary found at [b magenta]{offline}")
         cs_tools_venv.with_offline_mode(find_links=offline)
+
+    elif dev is not None:
+        log.info("Installing locally using the development environment.")
+        requires = f"{dev.as_posix()}[cli]"
+
     else:
         log.info(f"Getting the latest CS Tools {'beta ' if beta else ''}release.")
         release = get_latest_cs_tools_release(allow_beta=beta)
@@ -72,12 +106,7 @@ def update(
             raise typer.Exit(0)
 
     log.info("Upgrading CS Tools and its dependencies.")
-
-    try:
-        rc = cs_tools_venv.pip("install", requires, "--upgrade", "--upgrade-strategy", "eager")
-        log.debug(rc)
-    except RuntimeError:  # OSError when pip on Windows can't upgrade itself~
-        pass
+    cs_tools_venv.pip("install", requires, "--upgrade", "--upgrade-strategy", "eager")
 
 
 @app.command(cls=CSToolsCommand)
