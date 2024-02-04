@@ -155,6 +155,9 @@ class ThoughtSpot:
         """
         Log in to ThoughtSpot.
         """
+        # RESET SESSION_CONTEXT IN CASE WE ATTEMPT TO CALL .login MULTIPLE TIMES
+        self._session_context = None
+
         login_info = {"username": self.config.thoughtspot.username}
 
         if self.config.thoughtspot.is_orgs_enabled:
@@ -203,7 +206,6 @@ class ThoughtSpot:
         except errors.NoSessionEstablished:
             for method, r in attempted_auth_method.items():
                 log.info(f"Attempted  {method.title().replace('_', ' ')}: HTTP {r.status_code}, see logs for details..")
-                log.debug(f"{r.text}")
 
             raise AuthenticationError(config=self.config) from None
 
