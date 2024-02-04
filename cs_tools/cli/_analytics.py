@@ -194,6 +194,6 @@ class CommandExecution(ValidatedSQLModel, table=True):
                     data["command_name"] = rest[1]
 
             if meta.record_thoughtspot_url and (ts := getattr(info.context, "thoughtspot", None)):
-                data["config_cluster_url"] = ts.session_context.thoughtspot.url
+                data["config_cluster_url"] = ts.config.thoughtspot.url
 
         return data

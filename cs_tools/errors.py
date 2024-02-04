@@ -103,15 +103,19 @@ class AuthenticationError(CSToolsCLIError):
 
     title = "Authentication failed for [b blue]{config.thoughtspot.username}"
     reason = "\nCS Tools config: [b blue]{config.name}[/]"
+    # fmt: off
     mitigation = (
-        "\n1/ Check if your username and password is correct from the ThoughtSpot website."
-        "\n2/ Determine if your usename ends with a whitelisted email domain."
-        "\n3/ If your password contains a [b green]$[/] or [b green]![/], run [b green]cs_tools config modify "
-        "--config {config.name} --password prompt[/] and type your password in the hidden prompt."
+        "\n[b white]1/[/] Check if your username and password is correct from the ThoughtSpot website."
+        "\n[b white]2/[/] Determine if your usename ends with a whitelisted email domain."
+        "\n[b white]3/[/] If your password contains a [b green]$[/] or [b green]![/], run this command and type your "
+        "password in the hidden prompt."
+        "\n   [b green]cs_tools config modify --config {config.name} --password prompt[/]"
+        "\n[b white]4/[/] If your cluster is orgs-enabled, ensure you can access the specified org id."
         "\n"
-        "\n[b green]**[/]you may need to use [b green]{config.thoughtspot.url}?disableAutoSAMLRedirect=true[/] to see "
-        "the login page."
+        "\n   [b green]**[/] you may need to use this url to see the login page"
+        "\n   [b green]{config.thoughtspot.url}?disableAutoSAMLRedirect=true[/]"
     )
+    # fmt: on
 
 
 class TSLoadServiceUnreachable(CSToolsCLIError):
