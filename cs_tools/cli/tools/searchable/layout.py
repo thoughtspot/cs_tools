@@ -2,25 +2,27 @@ from __future__ import annotations
 
 from rich import box
 from rich.align import Align
-from rich.table import Table
+from rich.table import Table as RichTable
 
 
-def build_table() -> Table:
-    """
-    Layout for the UI.
-    """
-    table = Table(
-        width=150,
-        box=box.SIMPLE_HEAD,
-        row_styles=("dim", ""),
-        title_style="white",
-        caption_style="white",
-        show_footer=True,
-    )
+class Table(RichTable):
+    def __init__(self, data, current_org=None):
+        self.data = data
+        self.current_org = current_org
+        self.live = None
 
-    table.add_column("Status", justify="center", width=10)  # 4 + length of "status"
-    table.add_column("Type", justify="center", width=13)  # 4 + length of "liveboard"
-    table.add_column("GUID", justify="center", width=40)  # 4 + length of a guid
-    table.add_column("Name", width=30, no_wrap=True)
-    table.add_column("Error", width=150 - 10 - 13 - 40 - 30, no_wrap=True)
-    return Align.center(table)
+    def __rich_console__(self, console, option):
+        table = RichTable(
+            title="Searchable Data Gatherer",
+            title_style="bold white",
+            box=box.SIMPLE_HEAD,
+            caption="" if self.current_org is None else f"fetching data in org {self.current_org}",
+        )
+
+        table.add_column(header="", width=12, justify="right")
+
+        for column in ("Org", "User", "Group", "Tag", "Object", "Column", "Dependent", "Security"):
+            table.add_column(header=column, width=9, justify="center")
+
+        [table.add_row(*row) for row in self.data]
+        yield Align.center(table)

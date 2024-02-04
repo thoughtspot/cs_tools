@@ -4,6 +4,8 @@ from typing import Any, Optional
 import datetime as dt
 import logging
 
+from sqlalchemy.schema import Column
+from sqlalchemy.types import BigInteger
 from sqlmodel import Field
 import pydantic
 
@@ -13,8 +15,24 @@ from cs_tools.datastructures import ValidatedSQLModel
 log = logging.getLogger(__name__)
 
 
+class Cluster(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_cluster"
+    cluster_guid: str = Field(primary_key=True)
+    url: str
+    timezone: str
+
+
+class Org(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_org"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(sa_column=Column(BigInteger, autoincrement=False, primary_key=True))
+    name: str
+    description: Optional[str]
+
+
 class User(ValidatedSQLModel, table=True):
     __tablename__ = "ts_user"
+    cluster_guid: str = Field(primary_key=True)
     user_guid: str = Field(primary_key=True)
     username: str
     email: Optional[str]
@@ -24,23 +42,6 @@ class User(ValidatedSQLModel, table=True):
     modified: dt.datetime
     user_type: str
 
-    @classmethod
-    def from_api_v1(cls, data) -> User:
-        """
-        Takes input from /tspublic/v1/user.
-        """
-        data = {
-            "user_guid": data["header"]["id"],
-            "username": data["header"]["name"],
-            "email": data["userContent"]["userProperties"].get("mail"),
-            "display_name": data["header"]["displayName"],
-            "sharing_visibility": data["visibility"],
-            "created": data["header"]["created"] / 1000,
-            "modified": data["header"]["modified"] / 1000,
-            "user_type": data["type"],
-        }
-        return cls.validated_init(**data)
-
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
     def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
@@ -49,6 +50,8 @@ class User(ValidatedSQLModel, table=True):
 
 class Group(ValidatedSQLModel, table=True):
     __tablename__ = "ts_group"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
     group_guid: str = Field(primary_key=True)
     group_name: str
     description: Optional[str]
@@ -58,20 +61,6 @@ class Group(ValidatedSQLModel, table=True):
     modified: dt.datetime
     group_type: str
 
-    @classmethod
-    def from_api_v1(cls, data) -> Group:
-        data = {
-            "group_guid": data["header"]["id"],
-            "group_name": data["header"]["name"],
-            "description": data["header"].get("description"),
-            "display_name": data["header"]["displayName"],
-            "sharing_visibility": data["visibility"],
-            "created": data["header"]["created"] / 1000,
-            "modified": data["header"]["modified"] / 1000,
-            "group_type": data["type"],
-        }
-        return cls.validated_init(**data)
-
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
     def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
@@ -80,43 +69,35 @@ class Group(ValidatedSQLModel, table=True):
 
 class GroupPrivilege(ValidatedSQLModel, table=True):
     __tablename__ = "ts_group_privilege"
+    cluster_guid: str = Field(primary_key=True)
     group_guid: str = Field(primary_key=True)
     privilege: str = Field(primary_key=True)
 
-    @classmethod
-    def from_api_v1(cls, data) -> list[GroupPrivilege]:
-        return [cls.validated_init(group_guid=data["header"]["id"], privilege=p) for p in data["privileges"]]
+
+class OrgMembership(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_xref_org"
+    cluster_guid: str = Field(primary_key=True)
+    user_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
 
 
-class XREFPrincipal(ValidatedSQLModel, table=True):
+class GroupMembership(ValidatedSQLModel, table=True):
     __tablename__ = "ts_xref_principal"
+    cluster_guid: str = Field(primary_key=True)
     principal_guid: str = Field(primary_key=True)
     group_guid: str = Field(primary_key=True)
-
-    @classmethod
-    def from_api_v1(cls, data) -> list[XREFPrincipal]:
-        return [cls.validated_init(principal_guid=data["header"]["id"], group_guid=g) for g in data["assignedGroups"]]
 
 
 class Tag(ValidatedSQLModel, table=True):
     __tablename__ = "ts_tag"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
     tag_guid: str = Field(primary_key=True)
     tag_name: str
     author_guid: str
     created: dt.datetime
     modified: dt.datetime
     color: Optional[str]
-
-    @classmethod
-    def from_api_v1(cls, data) -> list[Tag]:
-        return cls.validated_init(
-            tag_guid=data["id"],
-            tag_name=data["name"],
-            color=data.get("clientState", {}).get("color"),
-            author_guid=data["author"],
-            created=data["created"] / 1000,
-            modified=data["modified"] / 1000,
-        )
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -126,6 +107,8 @@ class Tag(ValidatedSQLModel, table=True):
 
 class MetadataObject(ValidatedSQLModel, table=True):
     __tablename__ = "ts_metadata_object"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
     object_guid: str = Field(primary_key=True)
     name: str
     description: Optional[str]
@@ -135,20 +118,6 @@ class MetadataObject(ValidatedSQLModel, table=True):
     object_type: str
     object_subtype: Optional[str]
 
-    @classmethod
-    def from_api_v1(cls, data) -> MetadataObject:
-        data = {
-            "object_guid": data["id"],
-            "name": data["name"],
-            "description": data.get("description"),
-            "author_guid": data["author"],
-            "created": data["created"] / 1000,
-            "modified": data["modified"] / 1000,
-            "object_type": data["metadata_type"],
-            "object_subtype": data.get("type", None),
-        }
-        return cls.validated_init(**data)
-
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
     def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
@@ -157,6 +126,7 @@ class MetadataObject(ValidatedSQLModel, table=True):
 
 class MetadataColumn(ValidatedSQLModel, table=True):
     __tablename__ = "ts_metadata_column"
+    cluster_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
     object_guid: str
     column_name: str
@@ -177,15 +147,12 @@ class MetadataColumn(ValidatedSQLModel, table=True):
     calendar_type: Optional[str]
     is_formula: bool
 
-    @classmethod
-    def from_api_v1(cls, data) -> MetadataColumn:
-        return cls.validated_init(**data)
-
 
 class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
     """Representation of a Table's column's synonym."""
 
     __tablename__ = "ts_column_synonym"
+    cluster_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
     synonym: str = Field(primary_key=True)
     # is_sage_generated: bool
@@ -193,16 +160,14 @@ class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
 
 class TaggedObject(ValidatedSQLModel, table=True):
     __tablename__ = "ts_tagged_object"
+    cluster_guid: str = Field(primary_key=True)
     object_guid: str = Field(primary_key=True)
     tag_guid: str = Field(primary_key=True)
-
-    @classmethod
-    def from_api_v1(cls, data) -> list[TaggedObject]:
-        return [cls.validated_init(object_guid=data["id"], tag_guid=t["id"]) for t in data["tags"]]
 
 
 class DependentObject(ValidatedSQLModel, table=True):
     __tablename__ = "ts_dependent_object"
+    cluster_guid: str = Field(primary_key=True)
     dependent_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
     name: str
@@ -212,20 +177,6 @@ class DependentObject(ValidatedSQLModel, table=True):
     modified: dt.datetime
     object_type: str
 
-    @classmethod
-    def from_api_v1(cls, data) -> DependentObject:
-        data = {
-            "dependent_guid": data["id"],
-            "column_guid": data["parent_guid"],
-            "name": data["name"],
-            "description": data.get("description"),
-            "author_guid": data["author"],
-            "created": data["created"] / 1000,
-            "modified": data["modified"] / 1000,
-            "object_type": data["type"],
-        }
-        return cls.validated_init(**data)
-
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
     def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
@@ -234,6 +185,7 @@ class DependentObject(ValidatedSQLModel, table=True):
 
 class SharingAccess(ValidatedSQLModel, table=True):
     __tablename__ = "ts_sharing_access"
+    cluster_guid: str = Field(primary_key=True)
     sk_dummy: str = Field(
         primary_key=True,
         sa_column_kwargs={"comment": "shared_to_* is a composite PK, but can be nullable, so we need a dummy"},
@@ -244,28 +196,15 @@ class SharingAccess(ValidatedSQLModel, table=True):
     permission_type: str
     share_mode: str
 
-    @classmethod
-    def from_api_v1(cls, data) -> SharingAccess:
-        PK = (data["object_guid"], data.get("shared_to_user_guid", "NULL"), data.get("shared_to_group_guid", "NULL"))
-
-        data = {
-            "sk_dummy": "-".join(PK),
-            "object_guid": data["object_guid"],
-            "shared_to_user_guid": data.get("shared_to_user_guid", None),
-            "shared_to_group_guid": data.get("shared_to_group_guid", None),
-            "permission_type": data["permission_type"],
-            "share_mode": data["share_mode"],
-        }
-
-        return cls.validated_init(**data)
-
 
 class BIServer(ValidatedSQLModel, table=True):
     __tablename__ = "ts_bi_server"
+    cluster_guid: str = Field(primary_key=True)
     sk_dummy: str = Field(primary_key=True)
     incident_id: str
-    timestamp: Optional[dt.datetime]
-    url: Optional[str]
+    timestamp: dt.datetime
+    url: str
+    org_id: Optional[str]
     http_response_code: Optional[int]
     browser_type: Optional[str]
     browser_version: Optional[str]
@@ -299,10 +238,13 @@ class BIServer(ValidatedSQLModel, table=True):
 
 
 METADATA_MODELS = [
+    Cluster,
+    Org,
     User,
+    OrgMembership,
     Group,
     GroupPrivilege,
-    XREFPrincipal,
+    GroupMembership,
     Tag,
     MetadataObject,
     MetadataColumn,

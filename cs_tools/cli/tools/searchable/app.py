@@ -4,6 +4,7 @@ import datetime as dt
 import logging
 import pathlib
 
+from rich.live import Live
 from thoughtspot_tml import Table
 from thoughtspot_tml.utils import determine_tml_type
 import typer
@@ -13,6 +14,7 @@ from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
 from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.sync.csv.syncer import CSV as CSVSyncer
 from cs_tools.types import GUID, TMLImportPolicy
 
 from . import layout, models, transform
@@ -177,7 +179,7 @@ def bi_server(
     """
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
-        "[incident id] [timestamp].'detailed' [url] [http response code] "
+        "[org id] [incident id] [timestamp].'detailed' [url] [http response code] "
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions]"
@@ -219,7 +221,9 @@ def bi_server(
                 renamed.append(
                     models.BIServer.validated_init(
                         **{
-                            "sk_dummy": f"{row['Timestamp']}-{sk_idx}",
+                            "sk_dummy": f"{ts.session_context.thoughtspot.cluster_id}-{row['Timestamp']}-{sk_idx}",
+                            "cluster_guid": ts.session_context.thoughtspot.cluster_id,
+                            "org_id": row.get("Org ID", None),
                             "incident_id": row["Incident Id"],
                             "timestamp": row["Timestamp"],
                             "url": row["URL"],
@@ -253,6 +257,7 @@ def gather(
         "--include-column-access",
         help="if specified, include security controls for Column Level Security as well",
     ),
+    in_org_id: int = typer.Option(None, help="the org id to gather metadata from"),
     syncer: DSyncer = typer.Option(
         ...,
         custom_type=SyncerProtocolType(models=models.METADATA_MODELS),
@@ -269,94 +274,138 @@ def gather(
     """
     ts = ctx.obj.thoughtspot
 
-    tasks = [
-        ("gather_groups", "Collecting [b blue]Groups [white]and[/] Privileges"),
-        ("syncer_dump_groups", f"Writing [b blue]Groups[/] to {syncer.name}"),
-        ("syncer_dump_group_privileges", f"Writing [b blue]Groups Privileges[/] to {syncer.name}"),
-        ("gather_users", "Collecting [b blue]Users"),
-        ("syncer_dump_users", f"Writing [b blue]Users[/] to {syncer.name}"),
-        ("syncer_dump_associations", f"Writing [b blue]User [white]and[/] Group Associations[/] to {syncer.name}"),
-        ("gather_tags", "Collecting [b blue]Tags"),
-        ("syncer_dump_tags", f"Writing [b blue]Tags[/] to {syncer.name}"),
-        ("gather_metadata", "Collecting [b blue]Metadata"),
-        ("syncer_dump_metadata", f"Writing [b blue]Metadata[/] to {syncer.name}"),
-        ("gather_metadata_columns", "Collecting [b blue]Metadata Columns"),
-        ("syncer_dump_metadata_columns", f"Writing [b blue]Metadata Columns[/] to {syncer.name}"),
-        ("syncer_dump_synonyms", f"Writing [b blue]Synonyms[/] to {syncer.name}"),
-        ("gather_dependents", "Collecting [b blue]Dependencies"),
-        ("syncer_dump_dependents", f"Writing [b blue]Metadata Dependents[/] to {syncer.name}"),
-        ("gather_access_controls", "Collecting [b blue]Sharing Access Controls"),
-        ("syncer_dump_access_controls", f"Writing [b blue]Sharing Access Controls[/] to {syncer.name}"),
-    ]
+    # SPECIFIED , NOT ORGS ENABLED
+    if in_org_id is not None and not ts.session_context.thoughtspot.is_orgs_enabled:
+        log.warning(f"Org ID {in_org_id} specified but this cluster is not enabled for orgs, ignoring..")
+        orgs = [-1]
 
-    with LiveTasks(tasks, console=rich_console) as tasks:
-        with tasks["gather_groups"]:
-            r = ts.api.v1.group_read()
+    # SPECIFIED , NOT AUTHORIZED
+    elif in_org_id is not None and not ts.org.check_authorization_for(org_id=in_org_id):
+        log.error(f"You do not have authorization for Org ID {in_org_id}")
+        return
 
-        with tasks["syncer_dump_groups"]:
-            xref = transform.to_principal_association(r.json())
-            data = transform.to_group(r.json())
-            syncer.dump("ts_group", data=data)
+    # SPECIFED , ENABLED , AUTHORIZED
+    elif in_org_id is not None:
+        orgs = [in_org_id]
 
-        with tasks["syncer_dump_group_privileges"]:
-            data = transform.to_group_privilege(r.json())
-            syncer.dump("ts_group_privilege", data=data)
+    # NOT SPECIFIED , ENABLED (gather all data we have access to)
+    elif ts.session_context.thoughtspot.is_orgs_enabled:
+        r = ts.api.v1.session_orgs_read()
+        orgs = [org["orgId"] for org in r.json()["orgs"]]
 
-        with tasks["gather_users"]:
+    # NOT SPECIFIED , NOT ENABLED (gather all)
+    else:
+        orgs = [-1]
+
+    if not ts.session_context.user.is_admin:
+        log.warning("Searchable is meant to be run from an Admin-level context, your results may vary..")
+
+    table = layout.Table(data=[[str(org)] + [":popcorn:"] * 8 for org in orgs])
+    temp_sync = CSVSyncer(directory=ts.config.temp_dir, save_strategy="APPEND")
+
+    # Orgs have the potential for having limited data, let's be less noisy.
+    logger = logging.getLogger("cs_tools.sync.csv.syncer")
+    logger.setLevel("ERROR")
+
+    with Live(table, console=rich_console, auto_refresh=1):
+        temp_sync.dump(models.Cluster.__tablename__, data=transform.to_cluster(ts.session_context))
+        cluster_uuid = ts.session_context.thoughtspot.cluster_id
+
+        for row, org_id in zip(table.data, orgs):
+            if ts.session_context.thoughtspot.is_orgs_enabled:
+                ts.config.thoughtspot.default_org = org_id
+                ts.login()
+                row[1] = ":fire:"
+
+                # org info
+                r = ts.api.v1.org_read(org_id=org_id)
+                temp_sync.dump(models.Org.__tablename__, data=transform.to_org(r.json(), cluster=cluster_uuid))
+
+                # org_membership
+                r = ts.api.v1.user_read()
+                members = {tuple(m.values()) for m in temp_sync.load(models.OrgMembership.__tablename__)}
+                transformed = transform.to_org_membership(r.json(), cluster=cluster_uuid, ever_seen=members)
+                temp_sync.dump(models.OrgMembership.__tablename__, data=transformed)
+                row[1] = ":file_folder:"
+            else:
+                row[1] = ""
+
+            row[2] = ":fire:"
+            # user
+            # group_membership
             r = ts.api.v1.user_read()
+            members = {m["user_guid"] for m in temp_sync.load(models.User.__tablename__)}
+            temp_sync.dump(
+                models.User.__tablename__, data=transform.to_user(r.json(), cluster=cluster_uuid, ever_seen=members)
+            )
+            temp_sync.dump(
+                models.GroupMembership.__tablename__, data=transform.to_group_membership(r.json(), cluster=cluster_uuid)
+            )
+            row[2] = ":file_folder:"
 
-        with tasks["syncer_dump_users"]:
-            data = transform.to_user(r.json())
-            syncer.dump("ts_user", data=data)
+            row[3] = ":fire:"
+            # group
+            # group_privilege
+            # group_membership
+            r = ts.api.v1.group_read()
+            temp_sync.dump(models.Group.__tablename__, data=transform.to_group(r.json(), cluster=cluster_uuid))
+            temp_sync.dump(
+                models.GroupPrivilege.__tablename__, data=transform.to_group_privilege(r.json(), cluster=cluster_uuid)
+            )
+            temp_sync.dump(
+                models.GroupMembership.__tablename__, data=transform.to_group_membership(r.json(), cluster=cluster_uuid)
+            )
+            row[3] = ":file_folder:"
 
-        with tasks["syncer_dump_associations"]:
-            data = [*xref, *transform.to_principal_association(r.json())]
-            syncer.dump("ts_xref_principal", data=data)
-            del xref
-
-        with tasks["gather_tags"]:
+            row[4] = ":fire:"
+            # tags
             r = ts.tag.all()
+            temp_sync.dump(models.Tag.__tablename__, data=transform.to_tag(r, cluster=cluster_uuid))
+            row[4] = ":file_folder:"
 
-        with tasks["syncer_dump_tags"]:
-            data = transform.to_tag(r)
-            syncer.dump("ts_tag", data=data)
-
-        with tasks["gather_metadata"]:
+            row[5] = ":fire:"
+            # metadata
             content = [
-                *ts.logical_table.all(exclude_system_content=False),
-                *ts.answer.all(exclude_system_content=False),
-                *ts.liveboard.all(exclude_system_content=False),
+                *ts.logical_table.all(exclude_system_content=False, raise_on_error=False),
+                *ts.answer.all(exclude_system_content=False, raise_on_error=False),
+                *ts.liveboard.all(exclude_system_content=False, raise_on_error=False),
             ]
+            members = {
+                (m["cluster_guid"], m["org_id"], m["object_guid"])
+                for m in temp_sync.load(models.MetadataObject.__tablename__)
+            }
+            temp_sync.dump(
+                models.MetadataObject.__tablename__,
+                data=transform.to_metadata_object(content, cluster=cluster_uuid, ever_seen=members),
+            )
+            temp_sync.dump(
+                models.TaggedObject.__tablename__, data=transform.to_tagged_object(content, cluster=cluster_uuid)
+            )
+            row[5] = ":file_folder:"
 
-        with tasks["syncer_dump_metadata"]:
-            data = transform.to_metadata_object(content)
-            syncer.dump("ts_metadata_object", data=data)
+            # columns
+            # synonyms
+            row[6] = ":fire:"
+            guids = [obj["id"] for obj in content if obj["metadata_type"] == "LOGICAL_TABLE"]
+            r = ts.logical_table.columns(guids, include_hidden=True)
+            temp_sync.dump(
+                models.MetadataColumn.__tablename__, data=transform.to_metadata_column(r, cluster=cluster_uuid)
+            )
+            temp_sync.dump(
+                models.ColumnSynonym.__tablename__, data=transform.to_column_synonym(r, cluster=cluster_uuid)
+            )
+            row[6] = ":file_folder:"
 
-            data = transform.to_tagged_object(content)
-            syncer.dump("ts_tagged_object", data=data)
+            # dependents
+            row[7] = ":fire:"
+            r = ts.metadata.dependents([column["column_guid"] for column in r], for_columns=True)
+            temp_sync.dump(
+                models.DependentObject.__tablename__, data=transform.to_dependent_object(r, cluster=cluster_uuid)
+            )
+            row[7] = ":file_folder:"
 
-        with tasks["gather_metadata_columns"]:
-            guids = [_["id"] for _ in content if not _["metadata_type"].endswith("BOOK")]
-            data = ts.logical_table.columns(guids, include_hidden=True)
-
-        with tasks["syncer_dump_metadata_columns"]:
-            col_ = transform.to_metadata_column(data)
-            syncer.dump("ts_metadata_column", data=col_)
-
-        with tasks["syncer_dump_synonyms"]:
-            syn_ = transform.to_column_synonym(data)
-            syncer.dump("ts_column_synonym", data=syn_)
-
-        with tasks["gather_dependents"]:
-            types = ("LOGICAL_COLUMN", "FORMULA", "CALENDAR_TABLE")
-            guids = [_["column_guid"] for _ in data]
-            r = ts.metadata.dependents(guids, for_columns=True)
-
-        with tasks["syncer_dump_dependents"]:
-            data = transform.to_dependent_object(r)
-            syncer.dump("ts_dependent_object", data=data)
-
-        with tasks["gather_access_controls"]:
+            # access_controls
+            row[8] = ":fire:"
             types = {
                 "QUESTION_ANSWER_BOOK": ("QUESTION_ANSWER_BOOK",),
                 "PINBOARD_ANSWER_BOOK": ("PINBOARD_ANSWER_BOOK",),
@@ -374,17 +423,26 @@ def gather(
             if include_column_access:
                 types["LOGICAL_COLUMN"] = ("FORMULA", "CALENDAR_TABLE", "LOGICAL_COLUMN")
 
-            data = []
-
             # NOTE:
             #    In the case the ThoughtSpot cluster has a high number of users, the
             #    column access block will take an incredibly long amount of time to
             #    complete. We can probably find a better algorithm.
             #
             for metadata_type, metadata_subtypes in types.items():
-                guids = [_["id"] for _ in content if _["metadata_type"] in metadata_subtypes]
+                guids = [obj["id"] for obj in content if obj["metadata_type"] in metadata_subtypes]
                 r = ts.metadata.permissions(guids, type=metadata_type)
-                data.extend(transform.to_sharing_access(r))
+                temp_sync.dump(
+                    models.SharingAccess.__tablename__, data=transform.to_sharing_access(r, cluster=cluster_uuid)
+                )
 
-        with tasks["syncer_dump_access_controls"]:
-            syncer.dump("ts_sharing_access", data=data)
+            row[8] = ":file_folder:"
+
+            # GO TO NEXT ORG BATCH -->
+
+        # RESTORE CSV logger.level
+        logger.setLevel("DEBUG")
+
+        # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
+        for model in models.METADATA_MODELS:
+            for rows in temp_sync.read_stream(filename=model.__tablename__, batch=1_000_000):
+                syncer.dump(model.__tablename__, data=[model.validated_init(**row).model_dump() for row in rows])

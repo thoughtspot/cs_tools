@@ -70,3 +70,13 @@ class OrgMiddleware:
             ) from None
 
         return org_id
+
+    def check_authorization_for(self, org_id: int) -> bool:
+        """Check if the User has access to a given org."""
+        try:
+            r = self.ts.api.v1.session_orgs_read()
+            r.raise_for_status()
+        except Exception:
+            return False
+
+        return any(org_id == org["orgId"] for org in r.json().get("orgs", []))
