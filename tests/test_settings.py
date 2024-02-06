@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from cs_tools.settings import CSToolsConfig
 import pytest
 import toml
-
-from cs_tools.settings import CSToolsConfig
 
 from . import const
 

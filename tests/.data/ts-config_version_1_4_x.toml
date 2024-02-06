@@ -1,6 +1,6 @@
 name = "dogfood"
 verbose = false
-temp_dir = "C:/Users/boonhapus/AppData/Roaming/cs_tools"
+temp_dir = "C:/Users/cs_tools/AppData/Roaming/cs_tools"
 
 [thoughtspot]
 host = "https://dogfood.thoughtspot.cloud"

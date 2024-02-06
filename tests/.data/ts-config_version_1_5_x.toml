@@ -1,0 +1,10 @@
+name = "dogfood"
+verbose = false
+temp_dir = "C:/Users/cs_tools/AppData/Roaming/cs_tools/tmp"
+created_in_cs_tools_version = "1.5.0"
+
+[thoughtspot]
+url = "https://dogfood.thoughtspot.cloud"
+username = "really-fake-service-account"
+password = "eNorSk3MyanULS4tSC3SLU5NLkot0S0uKcrPS9ctSCwuLs8vSgEA-k4OAw=="
+disable_ssl = false
