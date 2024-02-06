@@ -9,6 +9,7 @@ from typer.core import TyperOption
 import click
 import httpx
 
+from cs_tools import utils
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.settings import (
     CSToolsConfig,
@@ -16,7 +17,6 @@ from cs_tools.settings import (
 )
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.updater import cs_tools_venv
-from cs_tools import utils
 
 if TYPE_CHECKING:
     import typer
@@ -136,7 +136,7 @@ class DThoughtSpot(Dependency):
         if args:
             log.warning(f"[b yellow]Ignoring extra arguments ({' '.join(args)})")
 
-        cfg = CSToolsConfig.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml", **options, automigrate=True)
+        cfg = CSToolsConfig.from_name(config, **options, automigrate=True)
 
         if cfg.verbose:
             root_logger = logging.getLogger()
