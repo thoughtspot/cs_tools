@@ -66,7 +66,7 @@ def test_integration_cli_searchable():
     """
     env = const.CST_CONFIG_DOT_ENV.as_posix()
     jan = dt.date(year=2024, month=1, day=1).strftime("%Y-%m-%d")
-    out = const.TEST_DATA_DIRECTORY.as_posix()
+    out = const.TEST_DATA_DIRECTORY.joinpath("generated").as_posix()
 
     # fmt: off
     # cs_tools tools searchable bi-server --from-date %TODAY --to-date %TODAY --syncer csv://directory=%OUT

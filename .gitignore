@@ -48,6 +48,7 @@ docs/terminal-screenshots/*.svg
 
 # test data
 testtml/*
+tests/.data/generated/*
 
 # keep mandatory empty directories
 !.gitdontignore
