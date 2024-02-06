@@ -14,7 +14,7 @@ from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
 from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.sync.csv.syncer import CSV as CSVSyncer
+from cs_tools.sync.csv.syncer import CSV
 from cs_tools.types import GUID, TMLImportPolicy
 
 from . import layout, models, transform
@@ -301,7 +301,7 @@ def gather(
         log.warning("Searchable is meant to be run from an Admin-level context, your results may vary..")
 
     table = layout.Table(data=[[str(org)] + [":popcorn:"] * 8 for org in orgs])
-    temp_sync = CSVSyncer(directory=ts.config.temp_dir, save_strategy="APPEND")
+    temp_sync = CSV(directory=ts.config.temp_dir)
 
     # Orgs have the potential for having limited data, let's be less noisy.
     logger = logging.getLogger("cs_tools.sync.csv.syncer")

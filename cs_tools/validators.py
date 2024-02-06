@@ -1,3 +1,6 @@
+"""
+Reusable validation logic.
+"""
 from __future__ import annotations
 
 from typing import Annotated, Any
@@ -7,16 +10,9 @@ import uuid
 import awesomeversion
 import pydantic
 
-#
-# REUSEABLE VALIDATION LOGIC
-#
-# VALIDATORS MUST
+# =========================== VALIDATORS ======================================
 # - be decorated with PlainValidator or WrapValidator
 # - be prefixed with `ensure_`
-#
-# SERIALIZERS MUST
-# - be decorated with PlainSerializer or WrapSerializer
-# - be prefixed with `as_
 #
 
 
@@ -70,6 +66,12 @@ def ensure_valid_uuid4(value: Any) -> str:
 
 
 @pydantic.PlainValidator
+def ensure_url_string(value: Any) -> str:
+    """Ensures the input value is a valid HTTP URL."""
+    return str(pydantic.AnyHttpUrl(value))
+
+
+@pydantic.PlainValidator
 def ensure_valid_version(value: Any) -> awesomeversion.AwesomeVersion:
     """Ensures the input value is a valid version."""
     return awesomeversion.AwesomeVersion(value)
@@ -79,6 +81,12 @@ def ensure_valid_version(value: Any) -> awesomeversion.AwesomeVersion:
 def ensure_stringified_url_format(value: Any) -> str:
     """Ensures the input value is a valid HTTP/s string."""
     return str(pydantic.networks.AnyUrl(value))
+
+
+# =========================== SERIALIZERS =====================================
+# - be decorated with PlainSerializer or WrapSerializer
+# - be prefixed with `as_
+#
 
 
 @pydantic.PlainSerializer
@@ -93,10 +101,10 @@ def as_version_string(version: awesomeversion.AwesomeVersion) -> str:
     return str(version)
 
 
-#
-# ready-to-use validated type hints, cast as core python data types
-#
+# =========================== READY-TO-USE TYPE HINTS =========================
+# - always wrapped in an Annotated type-hint
 
 DateTimeInUTC = Annotated[dt.datetime, ensure_datetime_is_utc]
 CoerceVersion = Annotated[awesomeversion.AwesomeVersion, ensure_valid_version, as_version_string]
 CoerceHexUUID = Annotated[str, ensure_valid_uuid4]
+AnyHttpURLStr = Annotated[str, ensure_url_string]

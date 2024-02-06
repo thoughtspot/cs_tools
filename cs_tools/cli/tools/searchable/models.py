@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 class Cluster(ValidatedSQLModel, table=True):
     __tablename__ = "ts_cluster"
     cluster_guid: str = Field(primary_key=True)
-    url: str
+    url: validators.AnyHttpURLStr
     timezone: str
 
 
