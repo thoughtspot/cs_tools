@@ -6,7 +6,7 @@
 #
 from __future__ import annotations
 
-from cs_tools.cli.loader import CSTool
+from cs_tools.cli._base import CSTool
 from cs_tools.const import TOOLS_DIR
 from cs_tools.errors import CSToolsError
 

@@ -7,8 +7,7 @@ import sys
 
 from typer.testing import CliRunner, Result
 
-from cs_tools.cli.ux import WARNING_BETA, WARNING_PRIVATE
-from cs_tools.const import GH_ISSUES, PACKAGE_DIR
+from cs_tools.const import PACKAGE_DIR
 from cs_tools.datastructures import _GlobalModel
 
 if TYPE_CHECKING:
@@ -47,22 +46,28 @@ class CSTool(_GlobalModel):
 
     def __init__(self, **data):
         super().__init__(**data)
+        self._lib = self._import_module()
 
-        if self.privacy == "unknown":
-            return
+        # if self.privacy == "unknown":
+        #     return
 
-        self.app.rich_help_panel = "Available Tools"
+        # self.app.rich_help_panel = "Available Tools"
 
-        # Augment CLI Info
-        if self.privacy == "beta":
-            self.app.rich_help_panel = f"[BETA Tools] [green]give feedback :point_right: [cyan][link={GH_ISSUES}]GitHub"
-            self.app.info.help += WARNING_BETA
+        # # Augment CLI Info
+        # if self.privacy == "beta":
+        #     self.app.rich_help_panel = f"[BETA Tools] [green]give feedback :point_right: [cyan][link={GH_ISSUES}]GitHub"
+        #     self.app.info.help += WARNING_BETA
 
-        if self.privacy == "private":
-            self.app.rich_help_panel = "[PRIVATE Tools] :yellow_circle: [yellow]uses internal APIs, use with caution!"
-            self.app.info.help += WARNING_PRIVATE
+        # if self.privacy == "private":
+        #     self.app.rich_help_panel = "[PRIVATE Tools] :yellow_circle: [yellow]uses internal APIs, use with caution!"
+        #     self.app.info.help += WARNING_PRIVATE
 
-        self.app.info.epilog = f":bookmark: v{self.version} :scroll: [cyan][link={self.docs_url}]Documentation"
+        # self.app.info.epilog = f":bookmark: v{self.version} :scroll: [cyan][link={self.docs_url}]Documentation"
+
+    def _import_module(self) -> types.ModuleType:
+        import_path = f"cs_tools.cli.tools.{self.directory.name}"
+        sys.modules[import_path] = importlib.import_module(import_path)
+        return sys.modules[import_path]
 
     @property
     def privacy(self) -> str:
@@ -102,26 +107,11 @@ class CSTool(_GlobalModel):
         return self.directory.stem[n:]
 
     @property
-    def lib(self) -> types.ModuleType:
-        """
-        The python code which represents a tool.
-
-        Currently, all tools must reside within the library, under the path
-        cs_tools/cli/tools.. but we could expand this to customer created tools
-        in the future.
-        """
-        if not hasattr(self, "_lib"):
-            import_path = f"cs_tools.cli.tools.{self.directory.name}"
-            self._lib = sys.modules[import_path] = importlib.import_module(import_path)
-
-        return self._lib
-
-    @property
     def app(self) -> typer.Typer:
         """
         Access a tool's underlying typer app.
         """
-        return self.lib.app
+        return self._lib.app
 
     @property
     def docs_url(self) -> str:
