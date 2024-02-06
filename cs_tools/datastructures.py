@@ -44,7 +44,9 @@ class _GlobalSettings(pydantic_settings.BaseSettings):
     Can inherit model attributes from environment variables.
     """
 
-    model_config = pydantic_settings.SettingsConfigDict(env_prefix="CS_TOOLS_", **_COMMON_MODEL_CONFIG)
+    model_config = pydantic_settings.SettingsConfigDict(
+        env_prefix="CS_TOOLS_", env_nested_delimiter="__", **_COMMON_MODEL_CONFIG
+    )
 
 
 class ValidatedSQLModel(sqlmodel.SQLModel):

@@ -5,10 +5,10 @@ This is the supply-side of information which determines the runtime environment.
 """
 from __future__ import annotations
 
-from ipaddress import IPv4Address
 from typing import Annotated, Any, Optional, Union
 import binascii
 import datetime as dt
+import ipaddress
 import json
 import logging
 import pathlib
@@ -16,8 +16,6 @@ import urllib
 import uuid
 
 from awesomeversion import AwesomeVersion
-from pydantic import AnyHttpUrl, Field
-from pydantic.types import DirectoryPath
 import pydantic
 import toml
 
@@ -37,7 +35,7 @@ class MetaConfig(_GlobalModel):
     Store information about this environment.
     """
 
-    install_uuid: uuid.UUID = Field(default_factory=uuid.uuid4)
+    install_uuid: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
     default_config_name: Optional[str] = None
     last_remote_check: Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat] = _FOUNDING_DAY
     remote_version: Optional[validators.CoerceVersion] = None
@@ -154,7 +152,7 @@ _meta_config = MetaConfig.load()
 
 
 class ThoughtSpotConfiguration(_GlobalSettings):
-    url: Union[AnyHttpUrl, IPv4Address]
+    url: Union[pydantic.AnyHttpUrl, ipaddress.IPv4Address]
     username: str
     password: Optional[str] = pydantic.Field(default=None)
     secret_key: Optional[types.GUID] = pydantic.Field(default=None)
@@ -164,8 +162,8 @@ class ThoughtSpotConfiguration(_GlobalSettings):
 
     @pydantic.model_validator(mode="before")
     @classmethod
-    def ensure_only_one_type_of_secret(cls, values: Any) -> Any:
-        """Must provide one of Password or Secret, but not both."""
+    def ensure_at_least_one_secret(cls, values: Any) -> Any:
+        """Must provide one of Password, Secret Key, Bearer Token."""
         if "password" not in values and "secret_key" not in values and "bearer_token" not in values:
             raise ValueError(
                 "missing one or more of the following keyword arguments: 'password', 'secret_key', 'bearer_token'"
@@ -212,14 +210,14 @@ class ThoughtSpotConfiguration(_GlobalSettings):
         return self.default_org is not None
 
 
-class CSToolsConfig(_GlobalModel):
+class CSToolsConfig(_GlobalSettings):
     """Represents a configuration for CS Tools."""
 
     name: str
     thoughtspot: ThoughtSpotConfiguration
     verbose: bool = False
-    temp_dir: Optional[DirectoryPath] = pydantic.Field(default=cs_tools_venv.tmp_dir)
-    created_in_cs_tools_version: validators.CoerceVersion
+    temp_dir: Optional[pydantic.DirectoryPath] = pydantic.Field(default=cs_tools_venv.tmp_dir)
+    created_in_cs_tools_version: validators.CoerceVersion = __version__
 
     @pydantic.model_validator(mode="before")
     @classmethod
@@ -263,7 +261,20 @@ class CSToolsConfig(_GlobalModel):
     @classmethod
     def from_name(cls, name: str, automigrate: bool = False) -> CSToolsConfig:
         """Read in a config by its name."""
+        if name.upper().startswith("ENV:"):
+            name, _, dotfile = name.partition(":")
+            return cls.from_environment(name=name, dotfile=dotfile or None)
         return cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{name}.toml", automigrate=automigrate)
+
+    @classmethod
+    def from_environment(cls, name: str = "ENV", *, dotfile: Optional[pathlib.Path] = None) -> CSToolsConfig:
+        """Read in a config from environment variables."""
+        extra = {}
+
+        if dotfile is not None:
+            extra["_env_file"] = pathlib.Path(dotfile).as_posix()
+
+        return cls(name=name, **extra)
 
     @classmethod
     def from_toml(cls, path: pathlib.Path, automigrate: bool = False) -> CSToolsConfig:
