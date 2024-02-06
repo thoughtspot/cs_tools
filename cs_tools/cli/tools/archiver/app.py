@@ -12,8 +12,7 @@ from cs_tools import utils
 from cs_tools._compat import StrEnum
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.input import ConfirmationPrompt
-from cs_tools.cli.layout import LiveTasks
+from cs_tools.cli.layout import ConfirmationListener, LiveTasks
 from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.errors import ContentDoesNotExist
@@ -229,15 +228,16 @@ def identify(
             if no_prompt:
                 this_task.skip()
             else:
-                this_task.description = (
-                    prompt
-                ) = f":point_right: Continue with tagging {len(to_archive):,} objects? [b magenta](y/N)"
+                this_task.description = f":point_right: Continue tagging {len(to_archive):,} objects? [b magenta](y/N)"
 
-                if not ConfirmationPrompt.ask(prompt, console=rich_console, with_prompt=False):
+                kb = ConfirmationListener(timeout=60)
+                kb.run()
+
+                if not kb.response.upper() == "Y":
                     this_task.description = "Confirmation [b red]Denied[/] (no tagging performed)"
                     raise typer.Exit(0)
-
-                this_task.description = "Confirmation [b green]Approved[/]"
+                else:
+                    this_task.description = "Confirmation [b green]Approved[/]"
 
         with tasks["tagging_content"]:
             tag_guid = ts.tag.get(tag_name, create_if_not_exists=True)
@@ -360,15 +360,16 @@ def revert(
             if no_prompt:
                 this_task.skip()
             else:
-                this_task.description = (
-                    prompt
-                ) = f":point_right: Continue with untagging {len(to_revert):,} objects? [b magenta](y/N)"
+                this_task.description = f":point_right: Continue untagging {len(to_revert):,} objects? [b magenta](y/N)"
 
-                if not ConfirmationPrompt.ask(prompt, console=rich_console, with_prompt=False):
-                    this_task.description = "Confirmation [b red]Denied[/] (no tagging performed)"
+                kb = ConfirmationListener(timeout=60)
+                kb.run()
+
+                if not kb.response.upper() == "Y":
+                    this_task.description = "Confirmation [b red]Denied[/] (no untagging performed)"
                     raise typer.Exit(0)
-
-                this_task.description = "Confirmation [b green]Approved[/]"
+                else:
+                    this_task.description = "Confirmation [b green]Approved[/]"
 
         with tasks["untagging_content"]:
             tag_guid = ts.tag.get(tag_name, create_if_not_exists=True)
@@ -514,16 +515,17 @@ def remove(
             if no_prompt:
                 this_task.skip()
             else:
-                operation = "exporting" if export_only else "removing"
-                this_task.description = (
-                    prompt
-                ) = f":point_right: Continue with {operation} {len(to_delete):,} objects? [b magenta](y/N)"
+                op = "exporting" if export_only else "removing"
+                this_task.description = f":point_right: Continue {op} {len(to_delete):,} objects? [b magenta](y/N)"
 
-                if not ConfirmationPrompt.ask(prompt, console=rich_console, with_prompt=False):
-                    this_task.description = "Confirmation [b red]Denied[/] (no removal performed)"
+                kb = ConfirmationListener(timeout=60)
+                kb.run()
+
+                if not kb.response.upper() == "Y":
+                    this_task.description = f"Confirmation [b red]Denied[/] (no {op} performed)"
                     raise typer.Exit(0)
-
-                this_task.description = "Confirmation [b green]Approved[/]"
+                else:
+                    this_task.description = "Confirmation [b green]Approved[/]"
 
         with tasks["export_content"] as this_task:
             if directory is None:

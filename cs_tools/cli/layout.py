@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, NewType, Union
+import asyncio
 import datetime as dt
 
+from promptique import keys
+from promptique.keyboard import KeyboardListener, KeyPressContext
 from rich import box
 from rich.align import Align
 from rich.live import Live
@@ -164,3 +167,44 @@ class LiveTasks(Live):
         with self._lock:
             self._renderable = self.layout(self.work_items)
             super().refresh()
+
+
+class ConfirmationListener(KeyboardListener):
+    """A small utility which listeners to Y/N answers."""
+
+    def __init__(self, timeout: float):
+        super().__init__()
+        self.timeout = timeout
+        self._timer_task: asyncio.Task = None
+        self.response: str = None
+
+        for character in "YyNn":
+            self.bind(keys.Key.letter(character), fn=self.set_result)
+
+    async def set_result(self, ctx: KeyPressContext) -> None:
+        """Set the response and immediately terminate."""
+        self.response = ctx.key.data
+        await self.stop()
+
+    async def timer(self) -> None:
+        """Background timer."""
+        try:
+            await asyncio.sleep(self.timeout)
+
+        # If we get cancelled before reaching timeout, nothing needs to happen.
+        except asyncio.CancelledError:
+            pass
+
+        # If we hit the timeout, stop the background key loop.
+        else:
+            await self.stop()
+
+    async def start(self) -> None:
+        """Start a timer and kick off the background key loop."""
+        self._timer_task = asyncio.create_task(self.timer())
+        await super().start()
+
+    async def stop(self, **passthru) -> None:
+        """Ensure the timer gets cancelled."""
+        self._timer_task.cancel()
+        await super().stop(**passthru)
