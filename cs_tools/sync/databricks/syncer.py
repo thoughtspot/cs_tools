@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 
-class DataBricks(DatabaseSyncer):
+class Databricks(DatabaseSyncer):
     """
     Interact with a Databricks database.
 
@@ -27,7 +27,7 @@ class DataBricks(DatabaseSyncer):
     
     """
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
-    __syncer_name__ = "DataBricks"
+    __syncer_name__ = "Databricks"
 
     access_token: str
     server_hostname: str
@@ -60,7 +60,7 @@ class DataBricks(DatabaseSyncer):
         
 
     def load(self, tablename: str) -> TableRows:  
-        """SELECT rows from DataBricks"""
+        """SELECT rows from Databricks"""
         table = self.metadata.tables[f"{self.schema_}.{tablename}"]
         rows = self.session.execute(table.select())
         return [row.model_dump() for row in rows]
@@ -82,9 +82,8 @@ class DataBricks(DatabaseSyncer):
             self.session.execute(table.insert(), data)
 
         if self.load_strategy == "UPSERT":
-            raise NotImplementedError('Ni Kia...')
-            # commands = sa.insert(table).values(data)
-            # commands.
+            raise NotImplementedError('Not Done...')
+
 
 
 
