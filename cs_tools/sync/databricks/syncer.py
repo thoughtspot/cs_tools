@@ -1,13 +1,13 @@
 from __future__ import annotations
-from typing import Any, AnyStr, Dict, List, Optional
+
+from typing import Any, Optional
 import logging
 import pathlib
-import pydantic
 
+import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import __version__
 from cs_tools.sync.base import DatabaseSyncer
 from cs_tools.sync.types import TableRows
 
@@ -82,7 +82,7 @@ class Databricks(DatabaseSyncer):
             self.session.execute(table.insert(), data)
 
         if self.load_strategy == "UPSERT":
-            raise NotImplementedError('Not Done...')
+            raise NotImplementedError("Not Done...")
 
 
 
