@@ -165,7 +165,7 @@ def download(
     venv = cs_tools_venv
 
     # freeze our own environment, which has all the dependencies needed to build
-    frozen = {req for req in venv.pip("freeze", "--quiet") if "cs-tools" not in req}
+    frozen = {req for req in venv.pip("freeze", "--quiet") for name in ("cs-tools", "cs_tools") if name not in req}
 
     # add packaging stuff since we'll use --no-deps
     frozen.update(("setuptools", "wheel", "pip >= 23.1", "poetry-core >= 1.0.0a9"))
