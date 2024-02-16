@@ -27,6 +27,7 @@ class CSV(Syncer):
     directory: Union[pydantic.DirectoryPath, pydantic.NewPath]
     delimiter: str = "|"
     escape_character: str = "\\"
+    empty_as_null: bool = False
     quoting: Literal["ALL", "MINIMAL"] = "MINIMAL"
     date_time_format: str = sync_utils.DATETIME_FORMAT_TSLOAD
     header: bool = True
@@ -77,6 +78,9 @@ class CSV(Syncer):
         # fmt: on
         return parameters
 
+    def maybe_replace_empty_with_null(self, rows: TableRows) -> TableRows:
+        return [{k: None if v == "" else v for k, v in row.items()} for row in rows]
+
     def __repr__(self):
         return f"<CSVSyncer path='{self.directory}' in '{self.save_strategy}' mode>"
 
@@ -90,7 +94,8 @@ class CSV(Syncer):
         with path.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f, **self.dialect_and_format_parameters())
 
-            yield from utils.batched(reader, n=batch)
+            for rows in utils.batched(reader, n=batch):
+                yield self.maybe_replace_empty_with_null(rows)
 
     # MANDATORY PROTOCOL MEMBERS
 
@@ -103,7 +108,7 @@ class CSV(Syncer):
 
         with path.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f, **self.dialect_and_format_parameters())
-            data = list(reader)
+            data = self.maybe_replace_empty_with_null(reader)
 
         return data
 
@@ -120,7 +125,7 @@ class CSV(Syncer):
         with path.open(mode=mode, newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=header, **self.dialect_and_format_parameters())
 
-            if self.header and not self._written_header.get(filename, False):
+            if self.header and filename not in self._written_header:
                 self._written_header[filename] = True
                 writer.writeheader()
 
