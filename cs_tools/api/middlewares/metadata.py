@@ -119,7 +119,7 @@ class MetadataMiddleware:
             for parent_guid, all_dependencies in data.items():
                 for dependency_type, headers in all_dependencies.items():
                     for header in headers:
-                        dependents.append({"parent_guid": parent_guid, "type": dependency_type, **header})
+                        dependents.append({"parent_guid": parent_guid, "metadata_type": dependency_type, **header})
 
         return dependents
 
@@ -232,6 +232,14 @@ class MetadataMiddleware:
         # metadata/list only returns objects that exist
         existence = {header["id"] for header in r.json()["headers"]}
         return {guid: guid in existence for guid in guids}
+
+    @ft.lru_cache(maxsize=1000)  # noqa: B019
+    def fetch_data_source_info(self, guid: GUID) -> GUID:
+        """
+        METADATA DETAILS is expensive. Here's our shortcut.
+        """
+        r = self.ts.api.v1.metadata_details(metadata_type="DATA_SOURCE", guids=[guid], show_hidden=True)
+        return r.json()["storables"][0]
 
     @ft.lru_cache(maxsize=1000)  # noqa: B019
     def find_data_source_of_logical_table(self, guid: GUID) -> GUID:
