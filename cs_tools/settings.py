@@ -17,11 +17,12 @@ import uuid
 
 from awesomeversion import AwesomeVersion
 import pydantic
+import sqlalchemy as sa
 import toml
 
 from cs_tools import __version__, types, utils, validators
 from cs_tools._compat import Self
-from cs_tools.datastructures import _GlobalModel, _GlobalSettings
+from cs_tools.datastructures import ExecutionEnvironment, _GlobalModel, _GlobalSettings
 from cs_tools.errors import ConfigDoesNotExist
 from cs_tools.updater import cs_tools_venv
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
@@ -30,38 +31,69 @@ log = logging.getLogger(__name__)
 _FOUNDING_DAY = dt.datetime(year=2012, month=6, day=1, tzinfo=dt.timezone.utc)
 
 
+class AnalyticsOptIn(_GlobalModel):
+    """Information the User confirmed to us in order to check analytics."""
+
+    is_opted_in: Optional[bool] = None
+    last_checkpoint: Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat] = _FOUNDING_DAY
+    can_record_url: Optional[bool] = None
+
+    _active_database: Optional[sa.engine.Engine] = None
+
+    def set_database(self, db) -> None:
+        self._active_database = db
+
+    @property
+    def active_database(self):
+        return self._active_database
+
+
+class RemoteRepositoryInfo(_GlobalModel):
+    """Information about the most recent CS Tools release."""
+
+    last_checked: Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat] = _FOUNDING_DAY
+    version: Optional[validators.CoerceVersion] = None
+    published_at: Optional[Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat]] = None
+
+
 class MetaConfig(_GlobalModel):
-    """
-    Store information about this environment.
-    """
+    """Store information about this environment."""
 
     install_uuid: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
     default_config_name: Optional[str] = None
-    last_remote_check: Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat] = _FOUNDING_DAY
-    remote_version: Optional[validators.CoerceVersion] = None
-    remote_date: Optional[dt.date] = None
-    last_analytics_checkpoint: Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat] = _FOUNDING_DAY
-    analytics_opt_in: Optional[bool] = None
-    record_thoughtspot_url: Optional[bool] = None
+    remote: Optional[RemoteRepositoryInfo] = RemoteRepositoryInfo()
+    analytics: Optional[AnalyticsOptIn] = AnalyticsOptIn()
+    environment: Optional[ExecutionEnvironment] = ExecutionEnvironment()
     created_in_cs_tools_version: validators.CoerceVersion = __version__
 
     @pydantic.model_validator(mode="before")
     @classmethod
     def _enforce_compatability(cls, data: Any) -> Any:
-        # DEV NOTE: @boonhapus - upconvert the < 1.5.0 metaconfig
-        if data and "created_in_cs_tools_version" not in data:
-            data = {
-                "record_thoughtspot_url": bool(data.get("company_name", None)),
-                "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
-            }
-
         # DEV NOTE: @boonhapus - upconvert the < 1.4.0 metaconfig
         if data.pop("__is_old_format__", False):
             data = {
                 "default_config_name": data.get("default", {}).get("config", None),
-                "latest_release_version": data.get("latest_release", {}).get("version", None),
-                "latest_release_date": data.get("latest_release", {}).get("published_at", None),
+                "remote": {
+                    "version": data.get("latest_release", {}).get("version", None),
+                    "published_at": data.get("latest_release", {}).get("published_at", None),
+                },
                 "__cs_tools_context__": {"config_migration": {"from": "<1.4.0", "to": __version__}},
+            }
+
+        # DEV NOTE: @boonhapus - upconvert the < 1.5.0 metaconfig
+        if data and "created_in_cs_tools_version" not in data:
+            data = {
+                "remote": {
+                    "last_checked": data.get("last_remote_check"),
+                    "version": data.get("latest_version"),
+                    "published_at": data.get("latest_release_date"),
+                },
+                "analytics": {
+                    "is_opted_in": data.get("analytics_opt_in"),
+                    "last_checkpoint": data.get("last_analytics_checkpoint"),
+                    "can_record_url": bool(data.get("company_name")),
+                },
+                "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
             }
 
         return data
@@ -105,44 +137,47 @@ class MetaConfig(_GlobalModel):
         """Store the meta-config."""
         full_path = cs_tools_venv.app_dir / ".meta-config.json"
 
-        # Remove the extras, we don't need to save that bit.
+        # Don't save extra data.
         self.__pydantic_extra__ = {}
 
-        data = self.model_dump_json(indent=4)
+        # Don't save dynamic data.
+        data = self.model_dump_json(exclude=["environment"], indent=4)
+
         full_path.write_text(data)
 
     def check_remote_version(self) -> None:
         """Check GitHub for the latest cs_tools version."""
+        TIMEOUT_AFTER = 0.33
         venv_version = AwesomeVersion(__version__)
-        remote_delta = dt.timedelta(hours=5) if venv_version.beta else dt.timedelta(days=1)
-        current_time = dt.datetime.now(tz=dt.timezone.utc)
 
-        # don't check too often
-        if (current_time - self.last_remote_check) <= remote_delta:
+        # DONT CHECK REMOTE TOO OFTEN
+        # - every 5 hours for BETA
+        # - every 1 day   for GENERALLY AVAILABLE
+        current_time = dt.datetime.now(tz=dt.timezone.utc)
+        remote_delta = dt.timedelta(hours=5) if venv_version.beta else dt.timedelta(days=1)
+
+        if (current_time - self.remote.last_checked) <= remote_delta:
             return
 
         try:
-            data = get_latest_cs_tools_release(allow_beta=venv_version.beta, timeout=0.33)
-            self.last_remote_check = current_time
-            self.remote_version = data["name"]
-            self.remote_date = (
-                dt.datetime.strptime(data["published_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc).date()
-            )
+            data = get_latest_cs_tools_release(allow_beta=venv_version.beta, timeout=TIMEOUT_AFTER)
+            info = {"last_checked": current_time, "version": data["name"], "published_at": data["published_at"]}
+            self.remote = RemoteRepositoryInfo.model_validate(info)
             self.save()
 
         except urllib.error.URLError:
-            log.info("fetching latest CS Tools release version timed out")
+            log.warning(f"Fetching latest CS Tools release version timed out after {TIMEOUT_AFTER}s")
 
         except Exception as e:
-            log.info(f"could not fetch release url: {e}")
+            log.warning(f"Could not fetch release url: {e}")
 
     def newer_version_string(self) -> str:
         """Return the CLI new version media string."""
-        if AwesomeVersion(self.remote_version or "v0.0.0") <= AwesomeVersion(__version__):
+        if AwesomeVersion(self.remote.version or "v0.0.0") <= AwesomeVersion(__version__):
             return ""
 
-        url = f"https://github.com/thoughtspot/cs_tools/releases/tag/{self.remote_version}"
-        msg = f"[green]Newer version available![/] [cyan][link={url}]{self.remote_version}[/][/]"
+        url = f"https://github.com/thoughtspot/cs_tools/releases/tag/{self.remote.version}"
+        msg = f"[b green]Newer version available![/] [b cyan][link={url}]{self.remote.version}[/][/]"
         log.info(msg)
         return msg
 

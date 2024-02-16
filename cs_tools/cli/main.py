@@ -205,4 +205,8 @@ def run() -> int:
         except sa.exc.OperationalError:
             log.debug("Error inserting data into the local analytics database", exc_info=True)
 
+    # On CI platforms, we're running an in-process sqlite database, so we need to send at the end of every run.
+    if CURRENT_RUNTIME.is_ci:
+        _analytics.maybe_send_analytics_data()
+
     return return_code

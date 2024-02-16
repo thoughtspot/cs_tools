@@ -154,8 +154,10 @@ def info(
 @app.command(cls=CSToolsCommand, hidden=True)
 def analytics():
     """Re-prompt for analytics."""
-    meta.record_thoughtspot_url = None
-    meta.analytics_opt_in = None
+    # RESET THE ASKS
+    meta.analytics.is_opted_in = None
+    meta.analytics.can_record_url = None
+
     _analytics.prompt_for_opt_in()
     _analytics.maybe_send_analytics_data()
 
@@ -190,22 +192,16 @@ def download(
     venv = cs_tools_venv
 
     # freeze our own environment, which has all the dependencies needed to build
-    frozen = {req for req in venv.pip("freeze", "--quiet") if "cs-tools" not in req}
+    frozen = {req for req in venv.pip("freeze", "--quiet") if "cs_tools" not in req}
 
     # add packaging stuff since we'll use --no-deps
-    frozen.update(("setuptools", "wheel", "pip >= 23.1", "poetry-core >= 1.0.0a9"))
+    frozen.update(("pip >= 23.1", "setuptools >= 42", "setuptools_scm >= 6.2", "wheel"))
 
     # fmt: off
     # add in version specific constraints (in case they don't get exported from the current environment)
     if python_version < "3.11.0":
         frozen.add("strenum >= 0.4.9")            # from cs_tools
         frozen.add("tomli >= 1.1.0")              # from ...
-
-    if python_version < "3.10.0":
-        frozen.add("zipp >= 3.11.0")              # from horde
-
-    if python_version < "3.8.0":
-        frozen.add("typing_extensions >= 4.4.0")  # from cs_tools
 
     if "win" in platform:
         frozen.add("pyreadline3 == 3.4.1")        # from cs_tools

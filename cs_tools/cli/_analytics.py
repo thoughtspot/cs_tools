@@ -33,11 +33,16 @@ log = logging.getLogger(__name__)
 
 def get_database() -> sa.engine.Engine:
     """Get the local SQLite Analytics database."""
-    if datastructures.ExecutionEnvironment().is_ci:
+    if meta.analytics.active_database is not None:
+        return meta.analytics.active_database
+
+    elif datastructures.ExecutionEnvironment().is_ci:
         db = sa.create_engine("sqlite://", future=True)
     else:
         db_path = cs_tools_venv.app_dir.resolve().joinpath("analytics.db")
         db = sa.create_engine(f"sqlite:///{db_path}", future=True)
+
+    meta.analytics.set_database(db)
 
     with db.begin() as transaction:
         try:
@@ -67,8 +72,8 @@ def get_database() -> sa.engine.Engine:
 
 
 def prompt_for_opt_in() -> None:
-    """ """
-    if meta.analytics_opt_in is not None:
+    """Ask the User if they'd like to send information about their experience."""
+    if meta.analytics.is_opted_in is not None:
         return
 
     rich_console.print()
@@ -89,25 +94,22 @@ def prompt_for_opt_in() -> None:
     choices = {"yes": True, "no": False, "prompt": None}
     response = Prompt.ask("\n  Response", choices=choices.keys(), console=rich_console)
 
-    if choices[response] is not False and meta.record_thoughtspot_url is None:
+    if choices[response] is not False and meta.analytics.can_record_url is None:
         choices = {"yes": True, "no": False}
         response = Prompt.ask("\n  Can we record your ThoughtSpot URL?", choices=choices.keys(), console=rich_console)
-        meta.record_thoughtspot_url = bool(response)
+        meta.analytics.can_record_url = bool(response)
 
     rich_console.print()
-    meta.analytics_opt_in = choices[response]
+    meta.analytics.is_opted_in = choices[response]
     meta.save()
 
 
 def maybe_send_analytics_data() -> None:
-    """ """
-    db = get_database()
-
-    if meta.analytics_opt_in is None:
-        prompt_for_opt_in()
-
-    if meta.analytics_opt_in is False:
+    """If registered for analytics, regularly send information about the experience."""
+    if not meta.analytics.is_opted_in or meta.environment.is_dev:
         return
+
+    db = get_database()
 
     host = "https://cs-tools-analytics.vercel.app"
     # host = "http://127.0.0.1:8001"
@@ -115,7 +117,7 @@ def maybe_send_analytics_data() -> None:
     analytics_checkpoints = []
 
     with db.begin() as transaction:
-        stmt = sa.select(RuntimeEnvironment).where(RuntimeEnvironment.capture_dt >= meta.last_analytics_checkpoint)
+        stmt = sa.select(RuntimeEnvironment).where(RuntimeEnvironment.capture_dt >= meta.analytics.last_checkpoint)
         rows = json.dumps([dict(row) for row in transaction.execute(stmt).mappings()], cls=utils.DateTimeEncoder)
 
         if rows != "[]":
@@ -123,7 +125,7 @@ def maybe_send_analytics_data() -> None:
             log.debug(f"/analytics/runtimes :: {r_runtimes}")
             analytics_checkpoints.append(r_runtimes.is_success)
 
-        stmt = sa.select(CommandExecution).where(CommandExecution.start_dt >= meta.last_analytics_checkpoint)
+        stmt = sa.select(CommandExecution).where(CommandExecution.start_dt >= meta.analytics.last_checkpoint)
         rows = json.dumps([dict(row) for row in transaction.execute(stmt).mappings()], cls=utils.DateTimeEncoder)
 
         if rows != "[]":
@@ -134,7 +136,7 @@ def maybe_send_analytics_data() -> None:
     if analytics_checkpoints == []:
         log.debug("No analytics checkpoint data to send.")
     elif all(analytics_checkpoints):
-        meta.last_analytics_checkpoint = dt.datetime.now(tz=dt.timezone.utc)
+        meta.analytics.last_checkpoint = dt.datetime.now(tz=dt.timezone.utc)
         meta.save()
         log.debug("Sent analytics to CS Tools!")
     else:
@@ -193,7 +195,7 @@ class CommandExecution(ValidatedSQLModel, table=True):
                 if rest and not rest[0].startswith("--"):
                     data["command_name"] = rest[1]
 
-            if meta.record_thoughtspot_url and (ts := getattr(info.context, "thoughtspot", None)):
+            if meta.analytics.can_record_url and (ts := getattr(info.context, "thoughtspot", None)):
                 data["config_cluster_url"] = ts.config.thoughtspot.url
 
         return data
