@@ -294,12 +294,24 @@ class CSToolsConfig(_GlobalSettings):
         return cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{name}.toml").exists()
 
     @classmethod
-    def from_name(cls, name: str, automigrate: bool = False) -> CSToolsConfig:
-        """Read in a config by its name."""
+    def from_name(cls, name: str, automigrate: bool = False, **overrides) -> CSToolsConfig:
+        """Read in a config by its name, typically performed on the CLI."""
         if name.upper().startswith("ENV:"):
             name, _, dotfile = name.partition(":")
             return cls.from_environment(name=name, dotfile=dotfile or None)
-        return cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{name}.toml", automigrate=automigrate)
+
+        conf = cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{name}.toml", automigrate=automigrate)
+
+        if (verbose := overrides.pop("verbose", None)) is not None:
+            conf.verbose = verbose
+
+        if (temp_dir := overrides.pop("temp_dir", None)) is not None:
+            conf.temp_dir = temp_dir
+
+        if (disable_ssl := overrides.pop("disable_ssl", None)) is not None:
+            conf.thoughtspot.disable_ssl = disable_ssl
+
+        return conf
 
     @classmethod
     def from_environment(cls, name: str = "ENV", *, dotfile: Optional[pathlib.Path] = None) -> CSToolsConfig:
