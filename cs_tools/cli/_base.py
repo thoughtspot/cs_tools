@@ -7,13 +7,22 @@ import sys
 
 from typer.testing import CliRunner, Result
 
-from cs_tools.const import PACKAGE_DIR
+from cs_tools import __project__
 from cs_tools.datastructures import _GlobalModel
+import cs_tools
 
 if TYPE_CHECKING:
     import types
 
     import typer
+
+
+WARNING_BETA = "\n\n[bold yellow]USE AT YOUR OWN RISK![/] " "This tool is currently in beta."
+WARNING_PRIVATE = (
+    "\n\n[bold yellow]USE AT YOUR OWN RISK![/] "
+    "This tool utilized private / internal API calls. These API calls are not "
+    "[b]gauranteed[/] to be stable across ThoughtSpot version upgrades."
+)
 
 
 class CSTool(_GlobalModel):
@@ -42,27 +51,22 @@ class CSTool(_GlobalModel):
     """
 
     directory: pathlib.Path
-    docs_base_path: pathlib.Path = PACKAGE_DIR / "docs" / "cs-tools"
+    docs_base_path: pathlib.Path = pathlib.Path(cs_tools.__file__).parent.parent / "docs" / "cs-tools"
 
     def __init__(self, **data):
         super().__init__(**data)
         self._lib = self._import_module()
 
-        # if self.privacy == "unknown":
-        #     return
+        if self.privacy == "unknown":
+            return
 
-        # self.app.rich_help_panel = "Available Tools"
+        self.app.rich_help_panel = "Available Tools"
 
-        # # Augment CLI Info
-        # if self.privacy == "beta":
-        #     self.app.rich_help_panel = f"[BETA Tools] [green]give feedback :point_right: [cyan][link={GH_ISSUES}]GitHub"
-        #     self.app.info.help += WARNING_BETA
+        if self.privacy == "beta":
+            self.app.rich_help_panel = f"[BETA Tools] [green]feedback at [cyan][link={__project__.__help__}]GitHub"
+            self.app.info.help += WARNING_BETA
 
-        # if self.privacy == "private":
-        #     self.app.rich_help_panel = "[PRIVATE Tools] :yellow_circle: [yellow]uses internal APIs, use with caution!"
-        #     self.app.info.help += WARNING_PRIVATE
-
-        # self.app.info.epilog = f":bookmark: v{self.version} :scroll: [cyan][link={self.docs_url}]Documentation"
+        self.app.info.epilog = f":bookmark: v{self.version} :scroll: [cyan][link={self.docs_url}]Documentation"
 
     def _import_module(self) -> types.ModuleType:
         import_path = f"cs_tools.cli.tools.{self.directory.name}"
@@ -89,9 +93,6 @@ class CSTool(_GlobalModel):
         if self.directory.stem.startswith("__"):
             return "unknown"
 
-        if self.directory.stem.startswith("_"):
-            return "private"
-
         if not self.directory.stem.startswith("_"):
             return "public"
 
@@ -99,33 +100,25 @@ class CSTool(_GlobalModel):
 
     @property
     def name(self) -> str:
-        """
-        Clean up and expose the tool's name.
-        """
+        """Clean up and expose the tool's name."""
         to_trim = {"beta": len("__b_"), "private": len("_"), "public": len("")}
         n = to_trim.get(self.privacy, 0)
         return self.directory.stem[n:]
 
     @property
     def app(self) -> typer.Typer:
-        """
-        Access a tool's underlying typer app.
-        """
+        """Access a tool's underlying typer app."""
         return self._lib.app
 
     @property
     def docs_url(self) -> str:
-        """
-        References the documentation page.
-        """
+        """References the documentation page."""
         return f"https://thoughtspot.github.io/cs_tools/cs-tools/{self.name}/"
 
     @property
     def version(self) -> str:
-        """
-        Show an app's version.
-        """
-        return self.lib.__version__
+        """Show an app's version."""
+        return self._lib.__version__
 
     def invoke(self, command: str, args: Optional[list[str]] = None) -> Result:
         """
@@ -136,10 +129,10 @@ class CSTool(_GlobalModel):
 
         from cs_tools import utils
 
-        self.lib.app.info.context_settings = {"obj": utils.State()}
+        self._lib.app.info.context_settings = {"obj": utils.State()}
 
         runner = CliRunner()
-        result = runner.invoke(app=self.lib.app, args=[command, *args], catch_exceptions=False)
+        result = runner.invoke(app=self._lib.app, args=[command, *args], catch_exceptions=False)
         return result
 
     def __repr__(self) -> str:

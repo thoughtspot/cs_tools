@@ -16,13 +16,6 @@ if TYPE_CHECKING:
     import click
 
 log = logging.getLogger(__name__)
-WARNING_BETA = "\n\n[bold yellow]USE AT YOUR OWN RISK![/] " "This tool is currently in beta."
-WARNING_PRIVATE = (
-    "\n\n[bold yellow]USE AT YOUR OWN RISK![/] "
-    "This tool utilized private / internal API calls. These API calls are not "
-    "[b]gauranteed[/] to be stable across ThoughtSpot version upgrades."
-)
-
 rich_console = Console()
 
 
