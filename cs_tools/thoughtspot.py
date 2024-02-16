@@ -146,7 +146,12 @@ class ThoughtSpot:
 
             # GOOD TO GO , INTERACT WITH THE APIs
             i = self.api.v1.session_info()
-            d = {"__is_session_info__": True, **i.json(), "__url__": self.config.thoughtspot.url}
+            d = {
+                "__is_session_info__": True,
+                "__url__": self.config.thoughtspot.url,
+                "__is_orgs_enabled__": self.api.v1.session_orgs_read().is_success,
+                **i.json(),
+            }
             self._session_context = SessionContext(environment={}, thoughtspot=d, system={}, user=d)
 
         return r

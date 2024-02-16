@@ -113,7 +113,7 @@ class ThoughtSpotInfo(_GlobalModel):
                 #   workflows instead?
                 "is_api_v2_enabled": config_info.get("tseRestApiV2PlaygroundEnabled", False),
                 "is_roles_enabled": config_info.get("rolesEnabled", False),
-                "is_orgs_enabled": not data.get("orgsHidden", True),
+                "is_orgs_enabled": data["__is_orgs_enabled__"],
                 "notification_banner": data.get("notificationBanner", None),
             }
 
