@@ -19,6 +19,7 @@ import sys
 from awesomeversion import AwesomeVersion
 import pydantic
 import pydantic_settings
+import sqlalchemy as sa
 import sqlmodel
 
 from cs_tools import __project__, __version__, types, utils, validators
@@ -58,6 +59,8 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
 
     model_config = sqlmodel._compat.SQLModelConfig(env_prefix="CS_TOOLS_SYNCER_", **_COMMON_MODEL_CONFIG)
 
+    _clustered_on: Optional[list[sa.Column]] = pydantic.PrivateAttr(None)
+
     @pydantic.model_serializer(mode="wrap")
     def _ignore_extras(self, handler) -> dict[str, Any]:
         return {k: v for k, v in handler(self).items() if k in self.model_fields}
@@ -68,6 +71,11 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
         # sanitized = cls.model_validate({**defaults, **data})
         sanitized = cls.model_validate(data, context=context)
         return cls(**sanitized.model_dump())
+
+    @property
+    def clustered_on(self) -> list[sa.Column]:
+        """Define the sorting strategy for the given table."""
+        return self.primary_key if self._clustered_on is None else self._clustered_on
 
 
 class ExecutionEnvironment(_GlobalSettings):
