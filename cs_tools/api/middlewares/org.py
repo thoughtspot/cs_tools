@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
-import json
+import logging
 
-import httpx
-
-from cs_tools.errors import CSToolsError
+from cs_tools import errors
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
+
+log = logging.getLogger(__name__)
 
 
 class OrgMiddleware:
@@ -19,21 +19,20 @@ class OrgMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    def get(self, org_name: str) -> int:
+    def guid_for(self, org: Union[str, int]) -> int:
         """
         Looks up the org id for the given name.
 
-        Normally this would be .guid_for, but Orgs don't have GUIDs, they have simple
-        numeric IDs.
+        Orgs don't technically have GUIDs, but randomly assigned BIGINTs instead.
         """
         r = self.ts.api.v1.session_orgs_read()
 
-        for org in r.json().get("orgs", []):
-            if org["orgName"] == org_name:
-                return org.get("orgId")
+        for org_info in r.json().get("orgs", []):
+            if str(org) in map(str, [org_info["orgId"], org_info["orgName"]]):
+                return org_info.get("orgId")
 
-        raise CSToolsError(
-            title=f"Invalid Org passed '{org_name}'",
+        raise errors.CSToolsCLIError(
+            title=f"Invalid Org passed '{org}'",
             reason="Org is unknown or the User doesn't have access to it.",
             mitigation="Verify the Org exists and that the User has access.",
         )
@@ -49,34 +48,24 @@ class OrgMiddleware:
 
         Raises
         ------
-        CSToolsError
+        CSToolsCLIError
           raise when no matching org is found, or you're disallowed from switching
         """
-        org_id = org if str(org).lstrip("-").isdigit() else self.get(org)
+        if not self.ts.session_context.thoughtspot.is_orgs_enabled:
+            log.warning(f"Org {org} specified but this cluster is not enabled for orgs, ignoring..")
+            return -1
+
+        org_id = self.guid_for(org)
 
         try:
-            self.ts.api.v1.session_orgs_update(org_id=org_id)
+            self.ts.config.thoughtspot.default_org = org_id
+            self.ts.login()
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == httpx.codes.FORBIDDEN:
-                rzn = json.loads(e.response.text).get("debug", "Unknown reason")
-            else:
-                rzn = f"Invalid org specified, got '{org}'"
-
-            raise CSToolsError(
+        except errors.AuthenticationError:
+            raise errors.CSToolsCLIError(
                 title=f"Error setting org context for org {org}.",
-                reason=rzn,
+                reason=f"Invalid org specified, got '{org}'",
                 mitigation="Verify the org name or ID and try again.",
             ) from None
 
         return org_id
-
-    def check_authorization_for(self, org_id: int) -> bool:
-        """Check if the User has access to a given org."""
-        try:
-            r = self.ts.api.v1.session_orgs_read()
-            r.raise_for_status()
-        except Exception:
-            return False
-
-        return any(org_id == org["orgId"] for org in r.json().get("orgs", []))
