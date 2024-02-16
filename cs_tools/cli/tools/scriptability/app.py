@@ -96,7 +96,7 @@ def connection_check(
     connection_guid: GUID = typer.Option(..., help="connection GUID"),
     syncer: DSyncer = typer.Option(
         None,
-        custom_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -207,12 +207,12 @@ def scriptability_export(
     ),
     tags: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="objects marked with tags to export, comma separated",
     ),
     guids: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="specific objects to export, comma separated",
     ),
     author: str = typer.Option(None, help="objects authored by this username to export"),
@@ -221,12 +221,12 @@ def scriptability_export(
     ),
     include_types: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
     ),
     exclude_types: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help=(
             "list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, "
             "worksheet"
@@ -287,13 +287,13 @@ def scriptability_import(
     include_types: Optional[str] = typer.Option(
         None,
         hidden=False,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
     ),
     exclude_types: Optional[str] = typer.Option(
         None,
         hidden=False,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help=(
             "list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, "
             "worksheet"

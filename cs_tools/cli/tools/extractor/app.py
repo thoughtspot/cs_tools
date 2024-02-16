@@ -31,7 +31,7 @@ def search(
     data_type: SearchableDataSource = typer.Option("worksheet", help="type of object to search"),
     syncer: DSyncer = typer.Option(
         ...,
-        custom_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),

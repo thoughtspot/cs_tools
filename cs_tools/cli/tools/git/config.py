@@ -30,7 +30,7 @@ def config_create(
     access_token: str = typer.Option(..., help="the access token to use for the git repository"),
     org: str = typer.Option(None, help="the org to use if any"),
     branch_names: str = typer.Option(
-        None, custom_type=MultipleChoiceType(), help="the branch names to use for the git repository"
+        None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
     ),
     commit_branch_name: str = typer.Option(None, help="the default branch name to use for the git repository"),
     enable_guid_mapping: bool = typer.Option(False, help="the enable guid mapping to use for the git repository"),
@@ -83,7 +83,7 @@ def config_update(
     access_token: str = typer.Option(None, help="the access token to use for the git repository"),
     org: str = typer.Option(None, help="the org to update the configuration for"),
     branch_names: str = typer.Option(
-        None, custom_type=MultipleChoiceType(), help="the branch names to use for the git repository"
+        None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
     ),
     commit_branch_name: str = typer.Option(None, help="the default branch name to use for commits"),
     enable_guid_mapping: bool = typer.Option(True, help="the enable guid mapping to use for the git repository"),
@@ -121,9 +121,7 @@ def config_update(
 def config_search(
     ctx: typer.Context,
     org: str = typer.Option(None, help="the org run in"),
-    org_ids: str = typer.Option(
-        None, custom_type=MultipleChoiceType(), help="The org IDs to get the configuration for"
-    ),
+    org_ids: str = typer.Option(None, click_type=MultipleChoiceType(), help="The org IDs to get the configuration for"),
 ):
     """
     Searches for configurations.

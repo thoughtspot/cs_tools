@@ -115,7 +115,7 @@ def gather(
         ...,
         help="protocol and path for options to pass to the syncer",
         metavar="protocol://DEFINITION.toml",
-        custom_type=SyncerProtocolType(models=[models.FalconTableInfo]),
+        click_type=SyncerProtocolType(models=[models.FalconTableInfo]),
     ),
 ):
     """

@@ -31,17 +31,17 @@ def transfer(
     to_username: str = typer.Option(..., "--to", help="username to transfer content to"),
     tags: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="if specified, only move content marked with one or more of these tags",
     ),
     metadata_types: list[MetadataType] = typer.Option(
         None,
-        custom_type=MetadataType(to_system_types=True, include_subtype=True),
+        click_type=MetadataType(to_system_types=True, include_subtype=True),
         help="if specified, only move specific types of objects",
     ),
     guids: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="if specified, only move specific objects",
     ),
 ):
@@ -120,7 +120,7 @@ def rename(
     to_username: str = typer.Option(None, "--to", help="new username"),
     syncer: DSyncer = typer.Option(
         None,
-        custom_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -225,7 +225,7 @@ def sync(
     ),
     syncer: DSyncer = typer.Option(
         ...,
-        custom_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),

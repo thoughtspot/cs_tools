@@ -70,25 +70,25 @@ def identify(
     ),
     only_groups: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="content not authored by users in these groups will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria",
     ),
     ignore_groups: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="content authored by users in these groups will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria",
     ),
     ignore_tags: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="content with this tag (case sensitive) will be [b red]filtered[/], comma separated",
         rich_help_panel="Content Identification Criteria",
     ),
     syncer: DSyncer = typer.Option(
         None,
-        custom_type=SyncerProtocolType(models=[models.ArchiverReport]),
+        click_type=SyncerProtocolType(models=[models.ArchiverReport]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -271,7 +271,7 @@ def revert(
     ),
     syncer: DSyncer = typer.Option(
         None,
-        custom_type=SyncerProtocolType(models=[models.ArchiverReport]),
+        click_type=SyncerProtocolType(models=[models.ArchiverReport]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -409,7 +409,7 @@ def remove(
     ),
     syncer: DSyncer = typer.Option(
         None,
-        custom_type=SyncerProtocolType(models=[models.ArchiverReport]),
+        click_type=SyncerProtocolType(models=[models.ArchiverReport]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),

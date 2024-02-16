@@ -54,7 +54,7 @@ def from_tabular(
     ctx: typer.Context,
     syncer: DSyncer = typer.Option(
         ...,
-        custom_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
