@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Literal
 import datetime as dt
 import functools as ft
 import logging
@@ -21,9 +22,8 @@ class RESTAPIClient:
     """
 
     def __init__(self, ts_url: str, *, timeout: float = _CALLOSUM_DEFAULT_TIMEOUT_SECONDS, **client_opts):
-        if "base_url" in client_opts:
-            client_opts.pop("base_url")
-            log.warning(f"base_url was provided to ThoughtSpot REST API client, overriding with {ts_url}")
+        if base_url := client_opts.get("base_url", None):
+            log.warning(f"base_url '{base_url}' was provided to ThoughtSpot REST API client, overriding with {ts_url}")
 
         if "headers" not in client_opts:
             client_opts["headers"] = {}
@@ -47,10 +47,10 @@ class RESTAPIClient:
 
     def _setup_session_class_proxying(self) -> None:
         """Proxy httpx.Session CRUD operations on our client."""
-        self.post = ft.partial(self._session.request, "POST")
-        self.get = ft.partial(self._session.request, "GET")
-        self.put = ft.partial(self._session.request, "PUT")
-        self.delete = ft.partial(self._session.request, "DELETE")
+        self.post = ft.partial(self.request, "POST")
+        self.get = ft.partial(self.request, "GET")
+        self.put = ft.partial(self.request, "PUT")
+        self.delete = ft.partial(self.request, "DELETE")
 
     def __before_request__(self, request: httpx.Request) -> None:
         """
@@ -70,6 +70,10 @@ class RESTAPIClient:
             f"\n\t===  DATA   ===\n{_utils.obfuscate_sensitive_data(request.url.params)}"
             f"\n",
         )
+
+    def request(self, method: Literal["POST", "GET", "PUT", "DELETE"], url: str, **kwargs) -> httpx.Response:
+        """Proxy httpx.Session base method on our client."""
+        return self._session.request(method, url, **kwargs)
 
     def __after_response__(self, response: httpx.Response) -> None:
         """
