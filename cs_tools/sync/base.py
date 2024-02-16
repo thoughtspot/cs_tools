@@ -90,7 +90,6 @@ class Syncer(_GlobalSettings):
 
     def __lifecycle_init__(child_self, *a, __original_init__, **kw):
         """Hook into __init__ so we can call our own post-init function."""
-
         try:
             __original_init__(child_self, *a, **kw)
 
@@ -144,7 +143,7 @@ class DatabaseSyncer(Syncer, is_base_class=True):
 
     metadata: sqlmodel.MetaData = sqlmodel.MetaData()
     models: list[type[ValidatedSQLModel]] = pydantic.Field(default_factory=list)
-    load_strategy: Literal["APPEND", "TRUNCATE", "UPSERT"] = "UPSERT"
+    load_strategy: Literal["APPEND", "TRUNCATE", "UPSERT"] = "APPEND"
 
     # To be defined during __init__() by subclasses of the DatabaseSyncer
     _engine: sa.engine.Engine = None
