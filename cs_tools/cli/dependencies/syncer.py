@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 import logging
 import pathlib
 
 import click
+import pydantic
 import sqlmodel
 
 from cs_tools.cli.dependencies.base import Dependency
@@ -15,16 +15,16 @@ from cs_tools.sync import base
 log = logging.getLogger(__name__)
 
 
-@dataclass
 class DSyncer(Dependency):
     protocol: str
     definition_fp: pathlib.Path = None
     definition_kw: dict[str, Any] = None
-    models: list[sqlmodel.SQLModel] = None
+    models: list[type[sqlmodel.SQLModel]] = None
+
+    _syncer: base.Syncer = pydantic.PrivateAttr(default="NOT YET PARSED")
 
     @property
     def metadata(self) -> sqlmodel.MetaData:
-        """"""
         return self._syncer.metadata
 
     def __enter__(self):
@@ -52,7 +52,7 @@ class DSyncer(Dependency):
             conf["configuration"]["models"] = self.models
 
         log.debug(f"Initializing syncer: {SyncerClass}")
-        self._syncer = SyncerClass(**conf["configuration"])
+        self.__dict__["_syncer"] = SyncerClass(**conf["configuration"])
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if isinstance(self._syncer, base.DatabaseSyncer):
@@ -64,12 +64,8 @@ class DSyncer(Dependency):
 
         return
 
-    #
-    # MAKE THE DEPENDENCY BEHAVE LIKE A SYNCER
-    #
-
     def __getattr__(self, member_name: str) -> Any:
-        # proxy calls to the underlying syncer first
+        # proxy attribute calls to the underlying syncer first
         try:
             member = getattr(self._syncer, member_name)
         except AttributeError:

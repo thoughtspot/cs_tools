@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
-import inspect
+from types import TracebackType
+import collections
 import logging
 
 from typer.core import TyperOption
 import click
 import httpx
+import typer
 
 from cs_tools import utils
 from cs_tools.cli.dependencies.base import Dependency
@@ -17,9 +17,6 @@ from cs_tools.settings import (
 )
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.updater import cs_tools_venv
-
-if TYPE_CHECKING:
-    import typer
 
 log = logging.getLogger(__name__)
 
@@ -42,14 +39,6 @@ TEMP_DIR_OPT = TyperOption(
 )
 
 VERBOSE_OPT = TyperOption(
-    param_decls=["--verbose"],
-    help="enable verbose logging",
-    show_default=False,
-    is_flag=True,
-    rich_help_panel="[ThoughtSpot Config Overrides]",
-)
-
-VERBOSE_OPT = TyperOption(
     param_decls=["--verbose", "-v"],
     default=0,
     metavar="",
@@ -60,93 +49,92 @@ VERBOSE_OPT = TyperOption(
 )
 
 
-def split_args_from_opts(extra_args: list[str]) -> tuple[list[str], dict[str, Any], list[str]]:
-    """ """
-    args = []
-    flag = []
-    opts = {}
-    skip = False
-    last = len(extra_args) - 1
-
-    for i, arg in enumerate(extra_args[:]):
-        if skip:
-            skip = False
-        elif arg.startswith("--"):
-            name = arg[2:]
-
-            if i != last and not extra_args[i + 1].startswith("--"):
-                opts[name] = extra_args[i + 1]
-                skip = True
-            else:
-                flag.append(name)
-        else:
-            args.append(arg)
-
-    return args, opts, flag
-
-
-@dataclass
 class DThoughtSpot(Dependency):
+    """Inject ThoughtSpot in commands."""
+
     login: bool = True
 
-    def _send_analytics_in_background(self) -> None:
-        DO_NOT_SEND_ANALYTICS = meta.analytics_opt_in in (None, False)
-
-        if DO_NOT_SEND_ANALYTICS or utils.determine_editable_install():
-            return
-
-        from cs_tools.cli import _analytics
-        from cs_tools.utils import ExceptedThread
-
-        background = ExceptedThread(target=_analytics.maybe_send_analytics_data)
-        background.start()
-
     def __call__(self, ctx: typer.Context):
-        if hasattr(ctx.obj, "thoughtspot"):
-            return ctx.obj.thoughtspot
-        return self
+        return getattr(ctx.obj, "thoughtspot", self)
+
+    def _process_leftover_options(self) -> None:
+        """Extra args will never actually be arguments. They will always be options."""
+        ctx = click.get_current_context()
+
+        # First check the parameters to see if `--config` exists in them. If it does, we're missing an argument.
+        for name in (k for k, v in ctx.params.items() if v == "--config"):
+            ctx.fail(f"Missing argument '{name.upper()}'")
+
+        extra: list[str] = []
+        unrecognized = collections.deque(ctx.args)
+
+        while unrecognized:
+            argument = unrecognized.popleft()
+
+            # THIS IS TRULY SOME EXTRA INPUT.
+            if not argument.startswith("--"):
+                extra.append(argument)
+                continue
+
+            argument = argument.removeprefix("--")
+
+            try:
+                next_argument = unrecognized.popleft()
+
+            # THIS ARGUMENT IS A FLAG VALUE, AND IT'S SPECIFIED (aka True)
+            except IndexError:
+                ctx.params[argument] = True
+                continue
+
+            # THIS ARGUMENT IS A FLAG VALUE, AND IT'S SPECIFIED (aka True)
+            if next_argument.startswith("--"):
+                ctx.params[argument] = True
+                unrecognized.appendleft(next_argument)
+
+            # THIS ARGUMENT IS A FLAG VALUE
+            else:
+                ctx.params[argument] = next_argument
+
+        ctx.args = extra
 
     def __enter__(self):
         self._send_analytics_in_background()
+        self._process_leftover_options()
 
         ctx = click.get_current_context()
-        args, options, flags = split_args_from_opts(ctx.args)
 
-        config = options.pop("config", meta.default_config_name)
-
-        # click interpreted `--config NAME` as an Argument value because the argument itself
-        # was missing.
-        for name, value in ctx.params.items():
-            if value == "--config":
-                ctx.fail(f"Missing argument '{name.upper()}'")
-
-        if config is None:
+        if (config := ctx.params.pop("config", meta.default_config_name)) is None:
             ctx.fail("Missing [b blue]--config[/], and no [b green]default config[/] is set")
 
-        # add flags to options
-        options = {**options, **{k: True for k in flags}}
+        if ctx.args:
+            log.warning(f"[b yellow]Ignoring extra arguments ({' '.join(ctx.args)})")
 
-        sig = inspect.signature(CSToolsConfig.from_toml).parameters
-        extra = set(options).difference(sig)
+        command_option = [p.name for p in ctx.command.params if isinstance(p, click.Option)]
+        overrides = {k: ctx.params.pop(k) for k in ctx.params.copy() if k not in command_option}
 
-        if extra:
-            extra_args = " ".join(f"--{k} {v}" for k, v in options.items() if k in extra)
-            ctx.fail(f"Got unexpected extra arguments ({extra_args})")
+        log.debug(f"Command Overrides: {' '.join(overrides)}")
 
-        if args:
-            log.warning(f"[b yellow]Ignoring extra arguments ({' '.join(args)})")
-
-        cfg = CSToolsConfig.from_name(config, **options, automigrate=True)
+        cfg = CSToolsConfig.from_name(config, **overrides, automigrate=True)
 
         if cfg.verbose:
-            root_logger = logging.getLogger()
-            to_file_handler = next(h for h in root_logger.handlers if h.name == "to_file")
-            to_file_handler.setLevel(5)
-            root_logger.setLevel(5)
+            root = logging.getLogger()
+            term = next(h for h in root.handlers if getattr(h, "name", h.__class__.__name__) == "to_console")
+            term.setLevel(5)
 
         ctx.obj.thoughtspot = ThoughtSpot(cfg, auto_login=self.login)
 
-    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+    def _send_analytics_in_background(self) -> None:
+        """Send analyics in the background."""
+        if meta.analytics.is_opted_in is not True or meta.environment.is_dev:
+            return
+
+        # AVOID CIRCULAR IMPORTS WITH cli.ux
+        from cs_tools.cli import _analytics
+
+        background = utils.ExceptedThread(target=_analytics.maybe_send_analytics_data)
+        background.start()
+
+    def __exit__(self, exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType) -> None:
         ctx = click.get_current_context()
 
         try:
