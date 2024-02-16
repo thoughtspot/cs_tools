@@ -13,8 +13,6 @@ from cs_tools.errors import CSToolsError
 
 def get_cs_tool(name: str) -> CSTool:
     """Get a CS Tool."""
-    from cs_tools.cli import _monkey  # noqa: F401
-
     tool_dir = TOOLS_DIR / name
 
     if not tool_dir.exists():

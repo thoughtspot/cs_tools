@@ -73,6 +73,9 @@ class RESTAPIClient:
 
     def request(self, method: Literal["POST", "GET", "PUT", "DELETE"], url: str, **kwargs) -> httpx.Response:
         """Proxy httpx.Session base method on our client."""
+        # DEV NOTE: @boonhapus, 2024/02/15
+        # If we want to make the CS Tools HTTP client asyncio-friendly, all we need to do is swap the this/before/after
+        # request methods for async counterparts.
         return self._session.request(method, url, **kwargs)
 
     def __after_response__(self, response: httpx.Response) -> None:
