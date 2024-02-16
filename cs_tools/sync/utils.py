@@ -8,7 +8,6 @@ import datetime as dt
 import logging
 import pathlib
 import tempfile
-import textwrap
 
 import sqlalchemy as sa
 
@@ -21,9 +20,9 @@ DATETIME_FORMAT_TSLOAD = "%Y-%m-%d %H:%M:%S"
 
 
 @contextlib.contextmanager
-def make_tempfile_for_upload(directory: pathlib.Path, *, filename: str, data: TableRows, include_header: bool = False):
+def make_tempfile_for_upload(tmp: pathlib.Path, *, filename: str, data: TableRows, include_header: bool = False):
     """Temporarily create a file for HTTP multipart file uploads."""
-    with tempfile.NamedTemporaryFile(mode="w+", dir=directory, suffix=f"_{filename}.csv.gz", delete=False) as fd:
+    with tempfile.NamedTemporaryFile(mode="w+", dir=tmp, suffix=f"_{filename}.csv", delete=False, newline="") as fd:
         writer = csv.DictWriter(fd, fieldnames=data[0].keys(), delimiter="|")
 
         if include_header:
@@ -71,58 +70,13 @@ def batched(prepared_statement, *, session: sa.orm.Session, data: TableRows, max
     session.commit()
 
 
-def merge_into(target: sa.Table, data: TableRows) -> sa.TextClause:
-    """
-    Implements the MERGE INTO expression.
-
-    The USING clause is a SELECT FROM VALUEs.
-
-    Further reading:
-    https://modern-sql.com/caniuse/merge
-    """
-    # fmt: off
-    MERGE_INTO_TEMPLATE = textwrap.dedent(
-        """
-        MERGE INTO {target} AS target
-        USING ({values})    AS source
-           ON {search_expression}
-         WHEN NOT MATCHED THEN INSERT ({insert_column_list}) VALUES ({insert_column_data})
-         WHEN     MATCHED THEN UPDATE SET {update_mapped_data}
-        """
-    )
-    # fmt: on
-
-    primary = [column for column in target.columns if column.primary_key]
-    secondary = [column for column in target.columns if not column.primary_key]
-
-    # All columns are Primary Keys.
-    if not secondary:
-        secondary = primary
-
-    # Generate the SELECT FROM VALUES clause
-    select_from_values = sa.select(
-        sa.values(*target.columns, name="t", literal_binds=True).data([tuple(row.values()) for row in data])
-    )
-
-    stmt = MERGE_INTO_TEMPLATE.format(
-        target=target.name,
-        values=select_from_values.compile(),
-        column_names=", ".join(column.name for column in target.columns),
-        search_expression=" AND ".join(f"source.{column.name} = target.{column.name}" for column in primary),
-        insert_column_list=", ".join(column.name for column in target.columns),
-        insert_column_data=", ".join(f"source.{column.name}" for column in target.columns),
-        update_mapped_data=", ".join(f"{column.name} = source.{column.name}" for column in secondary),
-    )
-
-    return sa.text(stmt)
-
-
 def generic_upsert(
     target: sa.Table,
     *,
     session: sa.orm.Session,
     data: TableRows,
     unique_key: Optional[list[sa.Column]] = None,
+    max_params: int = 999,
 ) -> None:
     """
     Dialect-agnostic way to UPSERT.
@@ -138,7 +92,7 @@ def generic_upsert(
     to_update = []
 
     # SELECT * FROM TABLE WHERE ... IN DATA
-    for rows in utils.batched(data, n=999 // len(target.primary_key)):
+    for rows in utils.batched(data, n=max_params // len(target.primary_key)):
         to_filter = collections.defaultdict(set)
         seen_data = []
 
@@ -165,7 +119,7 @@ def generic_upsert(
     log.debug(f" UPDATE: {len(to_update): >7,} rows")
 
     # INSERT INTO TABLE WHERE NOT EXISTS (SELECT * FROM TABLE) VALUES ( ... )
-    for rows in utils.batched(to_insert, n=999 // len(data[0])):
+    for rows in utils.batched(to_insert, n=max_params // len(data[0])):
         session.execute(target.insert().values(rows))
         session.commit()
         rows = []
@@ -174,7 +128,7 @@ def generic_upsert(
     update = target.update().where(*[c.name == sa.bindparam(f"alias_{c.name}") for c in target.primary_key])
     to_update = []
 
-    for rows in utils.batched(to_update, n=999 // len(data[0])):
+    for rows in utils.batched(to_update, n=max_params // len(data[0])):
         session.execute(update, rows)
         session.commit()
         rows = []

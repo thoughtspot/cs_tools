@@ -3,7 +3,6 @@ from __future__ import annotations  # noqa: I001
 from . import _monkey  # noqa: F401
 
 from typing import TYPE_CHECKING, Any, Literal, Optional
-import functools as ft
 import logging
 import pathlib
 import uuid
@@ -19,8 +18,6 @@ import sqlmodel
 from cs_tools import __version__
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
-
-from . import const
 
 if TYPE_CHECKING:
     from cs_tools.sync.types import TableRows
@@ -46,6 +43,7 @@ class Snowflake(DatabaseSyncer):
     secret: Optional[str] = None
     private_key_path: Optional[pydantic.FilePath] = None
     log_level: Literal["debug", "info", "warning"] = "warning"
+    temp_dir: Optional[pydantic.DirectoryPath] = pathlib.Path(".")
 
     @pydantic.field_validator("secret", mode="before")
     def ensure_auth_secret_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
@@ -152,6 +150,7 @@ class Snowflake(DatabaseSyncer):
                 FIELD_DELIMITER = '|'
                 NULL_IF = ( '\\N' )
                 FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+                EMPTY_FIELD_AS_NULL = TRUE
             )
         """
         )
@@ -162,7 +161,7 @@ class Snowflake(DatabaseSyncer):
         # ==============================================================================================================
         # SAVE & UPLOAD CSV
         # ==============================================================================================================
-        with sync_utils.make_tempfile_for_upload(directory=pathlib.Path("."), filename=tablename, data=data) as fd:
+        with sync_utils.make_tempfile_for_upload(tmp=self.temp_dir, filename=tablename, data=data) as fd:
             fp = pathlib.Path(fd.name)
 
             # fmt: off
@@ -180,9 +179,7 @@ class Snowflake(DatabaseSyncer):
         return stage_name
 
     def copy_into(self, *, into: str, from_: str) -> None:
-        # ==============================================================================================================
-        # MOVE FILE FROM STAGE INTO TABLE
-        # ==============================================================================================================
+        """Implement the COPY INTO statement."""
         # fmt: off
         SQL_COPY_INTO = sa.sql.text(
             f"""
@@ -195,6 +192,30 @@ class Snowflake(DatabaseSyncer):
         # fmt: on
         r = self.session.execute(SQL_COPY_INTO)
         log.debug("Snowflake response >> COPY INTO\n%s", r.scalar())
+
+    def merge_into(self, *, into: sa.Table, from_: str, additional_search_expr: Optional[str] = None) -> None:
+        """Implement the MERGE INTO statement."""
+        joins = [f"SOURCE.{c.name} = TARGET.{c.name}" for c in into.primary_key]
+        extra = [] if additional_search_expr is None else [additional_search_expr]
+
+        joined = " AND ".join(joins + extra)
+        update = ", ".join(f"TARGET.{c.name} = SOURCE.{c.name}" for c in into.columns if c.name not in into.primary_key)
+        insert = ", ".join(c.name for c in into.columns)
+        values = ", ".join(f"SOURCE.{c.name}" for c in into.columns)
+
+        # fmt: off
+        SQL_MERGE_INTO = sa.sql.text(
+            f"""
+            MERGE INTO {into} AS TARGET
+            USING {from_}     AS SOURCE
+               ON {joined}
+             WHEN     MATCHED THEN UPDATE SET {update}
+             WHEN NOT MATCHED THEN INSERT ({insert}) VALUES ({values})
+            """
+        )
+        # fmt: on
+        r = self.session.execute(SQL_MERGE_INTO)
+        log.debug("Snowflake response >> MERGE INTO\n%s", r.scalar())
 
     # MANDATORY PROTOCOL MEMBERS
 
@@ -221,5 +242,8 @@ class Snowflake(DatabaseSyncer):
             self.copy_into(from_=f"@{stage}", into=tablename)
 
         if self.load_strategy == "UPSERT":
-            prepared = ft.partial(sync_utils.merge_into, table)
-            sync_utils.batched(prepared, session=self.session, data=data, max_parameters=const.SNOWFLAKE_MAX_VARIABLES)
+            # Since we PUT a file into @stage, we now need to tell Snowflake the name of
+            # each of the columns.
+            column = ", ".join(f"${i} as {c.name}" for i, c in enumerate(table.columns, start=1))
+            staged = f"(SELECT {column} FROM @{stage})"
+            self.merge_into(from_=staged, into=table)
