@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 import importlib
 import pathlib
+import shlex
 import sys
 
 from typer.testing import CliRunner, Result
@@ -113,26 +114,26 @@ class CSTool(_GlobalModel):
     @property
     def docs_url(self) -> str:
         """References the documentation page."""
-        return f"https://thoughtspot.github.io/cs_tools/cs-tools/{self.name}/"
+        return f"https://thoughtspot.github.io/cs_tools/tools/{self.name}/"
 
     @property
     def version(self) -> str:
         """Show an app's version."""
         return self._lib.__version__
 
-    def invoke(self, command: str, args: Optional[list[str]] = None) -> Result:
+    def invoke(self, command: str, args: Optional[str] = None) -> Result:
         """
         Run a command in this tool's app.
         """
         if args is None:
-            args = []
+            args = ""
 
         from cs_tools import utils
 
         self._lib.app.info.context_settings = {"obj": utils.State()}
 
         runner = CliRunner()
-        result = runner.invoke(app=self._lib.app, args=[command, *args], catch_exceptions=False)
+        result = runner.invoke(app=self._lib.app, args=[command, *shlex.split(args)], catch_exceptions=False)
         return result
 
     def __repr__(self) -> str:
