@@ -3,11 +3,10 @@ from __future__ import annotations
 import pathlib
 import shutil
 
-import typer
-
 from cs_tools.cli import _analytics
 from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
 from cs_tools.updater import cs_tools_venv
+import typer
 
 app = typer.Typer(cls=CSToolsGroup, name="logs", hidden=True)
 

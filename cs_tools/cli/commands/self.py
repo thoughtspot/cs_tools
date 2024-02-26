@@ -10,15 +10,14 @@ import sys
 import sysconfig
 
 from awesomeversion import AwesomeVersion
-import rich
-import typer
-
 from cs_tools import __version__, utils
 from cs_tools.cli import _analytics
 from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
 from cs_tools.settings import _meta_config as meta
 from cs_tools.updater import cs_tools_venv
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
+import rich
+import typer
 
 log = logging.getLogger(__name__)
 app = typer.Typer(

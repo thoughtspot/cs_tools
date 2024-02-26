@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 from traceback import format_exception
-from typing import Any
 import contextlib
 import datetime as dt
 import logging
 import random
 import sys
 
+from cs_tools import __project__, __version__, datastructures, utils
+from cs_tools.cli import _analytics
+from cs_tools.cli._logging import _setup_logging
+from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.errors import CSToolsError
+from cs_tools.settings import _meta_config as meta
+from cs_tools.updater import cs_tools_venv
 from rich.align import Align
 from rich.panel import Panel
 from rich.text import Text
@@ -15,15 +21,6 @@ import click
 import rich
 import sqlalchemy as sa
 import typer
-
-from cs_tools import __version__, datastructures, utils
-from cs_tools.cli._logging import _setup_logging
-from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.const import DOCS_BASE_URL, GH_DISCUSS, GH_ISSUES, TOOLS_DIR
-from cs_tools.errors import CSToolsError
-from cs_tools.programmatic import get_cs_tool
-from cs_tools.settings import _meta_config as meta
-from cs_tools.updater import cs_tools_venv
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(
@@ -35,7 +32,7 @@ app = CSToolsApp(
     These are scripts and utilities used to assist in the development, implementation,
     and administration of your ThoughtSpot platform.
 
-    Lost already? Check out our [cyan][link={DOCS_BASE_URL}/tutorial/config/]Tutorial[/][/]!
+    Lost already? Check out our [cyan][link={__project__.__docs__}/tutorial/config/]Tutorial[/][/]!
 
     {meta.newer_version_string()}
 
@@ -45,9 +42,9 @@ app = CSToolsApp(
     add_completion=False,
     epilog=(
         f":bookmark: v{__version__} "
-        f":books: [cyan][link={DOCS_BASE_URL}]Documentation[/] "
-        f"🛟 [link={GH_ISSUES}]Get Help[/] "
-        f":memo: [link={GH_DISCUSS}]Feedback[/][/] "
+        f":scroll: [cyan][link={__project__.__docs__}]Documentation[/] "
+        f":bug: [link={__project__.__bugs__}]Found a bug?[/] "
+        f":megaphone: [link={__project__.__help__}]Feedback[/][/] "
         + (
             f":computer_disk: [green]{meta.default_config_name}[/] (default)"
             if meta.default_config_name is not None
@@ -66,39 +63,23 @@ def main(version: bool = typer.Option(False, "--version", help="Show the version
         raise typer.Exit(0)
 
 
-def _setup_tools(tools_app: typer.Typer, ctx_settings: dict[str, Any]) -> None:
-    ctx_settings["obj"].tools = {}
-
-    for path in TOOLS_DIR.iterdir():
-        if path.name == "__pycache__" or not path.is_dir():
-            continue
-
-        tool = get_cs_tool(path.name)
-
-        if tool.privacy == "unknown":
-            continue
-
-        # add tool to the global state
-        ctx_settings["obj"].tools[tool.name] = tool
-
-        # add tool to the cli
-        tools_app.add_typer(
-            tool.app,
-            name=tool.name,
-            context_settings=ctx_settings,
-            rich_help_panel=tool.app.rich_help_panel,
-            hidden=tool.privacy != "public",
-        )
-
-
 def run() -> int:
     """
     Entrypoint into cs_tools.
     """
-    CURRENT_RUNTIME = datastructures.ExecutionEnvironment()
+    from cs_tools.cli.commands import (
+        config as config_app,
+        log as log_app,
+        self as self_app,
+        tools as tools_app,
+    )
 
-    # import all our tools
-    from cs_tools.cli import _analytics, _config, _log, _self, _tools
+    app.add_typer(tools_app.app)
+    app.add_typer(config_app.app)
+    app.add_typer(self_app.app)
+    app.add_typer(log_app.app)
+
+    CURRENT_RUNTIME = datastructures.ExecutionEnvironment()
 
     # first thing we do is request the database, this allows us to perform a migration if necessary
     db = _analytics.get_database()
@@ -114,12 +95,6 @@ def run() -> int:
     cs_tools_venv.ensure_directories()
 
     _setup_logging()
-    _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
-
-    app.add_typer(_tools.app)
-    app.add_typer(_config.app)
-    app.add_typer(_self.app)
-    app.add_typer(_log.app)
 
     try:
         return_code = app(standalone_mode=False)

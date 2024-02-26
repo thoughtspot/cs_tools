@@ -2,16 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from promptique.menu import Menu
-from promptique.prompts import Confirm, FileInput, Select, UserInput
-from promptique.prompts.select import PromptOption
-from promptique.validation import ResponseContext, response_is
-from rich.align import Align
-from rich.table import Table
-import pydantic
-import typer
-
-from cs_tools import __version__, errors, utils, validators
+from cs_tools import __version__, errors, validators
 from cs_tools.cli import _analytics
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.settings import (
@@ -20,6 +11,16 @@ from cs_tools.settings import (
 )
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.updater import cs_tools_venv
+from promptique.menu import Menu
+from promptique.prompts import Confirm, FileInput, Select, UserInput
+from promptique.prompts.select import PromptOption
+from promptique.validation import ResponseContext, response_is
+from rich.align import Align
+from rich.syntax import Syntax
+from rich.table import Table
+from rich.text import Text
+import pydantic
+import typer
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(
@@ -146,7 +147,7 @@ def create(
         (
             "Bearer Token",
             "token",
-            "[link=https://developers.thoughtspot.com/docs/restV2-playground?apiResourceId=http/api-endpoints/authentication/get-full-access-token]Get V2 Full Access token[/link]",
+            "[link=https://developers.thoughtspot.com/docs/restV2-playground?apiResourceId=http/api-endpoints/authentication/get-full-access-token]Get V2 Full Access token[/link]",  # noqa: E501
         ),
     )
 
@@ -229,17 +230,24 @@ def create(
 @app.command()
 def modify(
     ctx: typer.Context,
-    config: str = typer.Option(None, help="config file identifier", metavar="NAME"),
-    url: str = typer.Option(None, help="your thoughtspot server"),
-    username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
-    password: str = typer.Option(None, help="the password you type when using the ThoughtSpot login screen"),
-    secret: str = typer.Option(None, help="the trusted authentication secret key"),
-    token: str = typer.Option(None, help="the V2 API bearer token"),
-    disable_ssl: bool = typer.Option(
-        None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
+    config: str = typer.Option(None, help="config file identifier", show_default=False, metavar="NAME"),
+    url: str = typer.Option(None, help="your thoughtspot server", show_default=False),
+    username: str = typer.Option(None, help="username when logging into ThoughtSpot", show_default=False),
+    password: str = typer.Option(
+        None, help="the password you type when using the ThoughtSpot login screen", show_default=False
     ),
-    default_org: int = typer.Option(None, help="org ID to sign into by default"),
-    default: bool = typer.Option(None, help="whether or not to make this the default configuration"),
+    secret: str = typer.Option(None, help="the trusted authentication secret key", show_default=False),
+    token: str = typer.Option(None, help="the V2 API bearer token", show_default=False),
+    disable_ssl: bool = typer.Option(
+        None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate", show_default=False
+    ),
+    default_org: int = typer.Option(None, help="org ID to sign into by default", show_default=False),
+    default: bool = typer.Option(
+        None,
+        "--default / --remove-default",
+        help="whether or not to make this the default configuration",
+        show_default=False,
+    ),
 ):
     """
     Modify an existing config file.
@@ -297,7 +305,7 @@ def modify(
 
 
 @app.command()
-def delete(config: str = typer.Option(..., help="config file identifier", metavar="NAME")):
+def delete(config: str = typer.Option(..., help="config file identifier", show_default=False, metavar="NAME")):
     """
     Delete a config file.
     """
@@ -312,7 +320,7 @@ def delete(config: str = typer.Option(..., help="config file identifier", metava
 @app.command()
 def check(
     ctx: typer.Context,
-    config: str = typer.Option(..., help="config file identifier", metavar="NAME"),
+    config: str = typer.Option(..., help="config file identifier", show_default=False, metavar="NAME"),
     orgs: bool = typer.Option(False, "--orgs", help="if specified, show a table of all the org IDs"),
 ):
     """
@@ -365,101 +373,35 @@ def check(
 
 @app.command(no_args_is_help=False)
 def show(
-    config: str = typer.Option(None, help="optionally, display the contents of a particular config", metavar="NAME"),
-    anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
+    config: str = typer.Option(None, help="display a particular config", show_default=False, metavar="NAME"),
 ):
     """Display the currently saved config files."""
-    from rich.text import Text
-
-    # SHOW A TABLE OF ALL CONFIGURATIONS
-    if config is None:
-        configs = []
-
-        for file in cs_tools_venv.app_dir.iterdir():
-            if file.name.startswith("cluster-cfg_"):
-                config_name = file.stem.removeprefix("cluster-cfg_")
-                is_default = meta.default_config_name == config_name
-
-                if is_default:
-                    config_name += " [b green]<--- default[/]"
-
-                text = Text.from_markup(f"- {config_name}")
-                configs.append(text)
-
-        listed = Text("\n").join(configs)
-
-        rich_console.print(
-            f"\n[b]ThoughtSpot[/] cluster configurations are located at"
-            f"\n  [b blue][link={cs_tools_venv.app_dir}]{cs_tools_venv.app_dir}[/][/]"
-            f"\n"
-            f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
-            f"\n{listed}"
-        )
+    if config:
+        text = cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{config}.toml").read_text()
+        rich_console.print(Syntax(text, "toml", line_numbers=True))
         return 0
 
-    else:
-        conf = CSToolsConfig.from_name(name=config, automigrate=True)
+    # SHOW A TABLE OF ALL CONFIGURATIONS
+    configs = []
 
-    return
+    for file in cs_tools_venv.app_dir.iterdir():
+        if file.name.startswith("cluster-cfg_"):
+            config_name = file.stem.removeprefix("cluster-cfg_")
+            is_default = meta.default_config_name == config_name
 
-    configs = [f for f in cs_tools_venv.app_dir.iterdir() if f.name.startswith("cluster-cfg_")]
+            if is_default:
+                config_name += " [b green]<--- default[/]"
 
-    if not configs:
-        raise CSToolsError(
-            title="[yellow]no config files found just yet!",
-            mitigation="Run [blue]cs_tools config create --help[/] for more information",
-        )
+            text = Text.from_markup(f"- {config_name}")
+            configs.append(text)
 
-    if config is not None:
-        fp = cs_tools_venv.app_dir / f"cluster-cfg_{config}.toml"
-
-        try:
-            contents = escape(fp.open().read())
-        except FileNotFoundError:
-            raise CSToolsError(
-                title=f"could not find [blue]{config}",
-                mitigation="Did you spell the cluster configuration name correctly?",
-            ) from None
-
-        not_ = " not" if config == meta.default_config_name else ""
-        default = f"[b blue]{config}[/] is{not_} the [green]default[/] configuration"
-        path = fp.parent.as_posix()
-
-        if anonymous:
-            path = utils.anonymize(path)
-            new_contents = []
-
-            for line in contents.split("\n"):
-                if line.startswith("password"):
-                    continue
-
-                new_contents.append(utils.anonymize(line))
-
-            contents = "\n".join(new_contents)
-
-        text = (
-            f"\n:file_folder: [link={fp.parent}]{path}[/]" f"\n:page_facing_up: {default}" "\n" f"\n[b blue]{contents}"
-        )
-
-        renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
-        rich_console.print(renderable)
-        raise typer.Exit()
-
-    PREFIX = "cluster-cfg_"
-    cfg_list = []
-
-    for file in sorted(configs):
-        cfg_name = file.stem[len(PREFIX) :]
-
-        if meta.default_config_name == cfg_name:
-            cfg_name += "\t[green]<-- default[/]"
-
-        cfg_list.append(f"  - {cfg_name}")
+    listed = Text("\n").join(configs)
 
     rich_console.print(
         f"\n[b]ThoughtSpot[/] cluster configurations are located at"
         f"\n  [b blue][link={cs_tools_venv.app_dir}]{cs_tools_venv.app_dir}[/][/]"
         f"\n"
         f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
-        f"\n" + "\n".join(cfg_list) + "\n",
+        f"\n{listed}"
     )
+    return 0

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 try:
-    from cs_tools.cli.main import run
+    from cs_tools.cli.commands.main import run
 
 except ImportError:
     from cs_tools import __version__
