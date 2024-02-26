@@ -92,7 +92,7 @@ class MetadataColumn:
 @app.command(dependencies=[thoughtspot])
 def connection_check(
     ctx: typer.Context,
-    org: str = typer.Option(None, help="organization to use"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
     connection_guid: GUID = typer.Option(..., help="connection GUID"),
     syncer: DSyncer = typer.Option(
         None,
@@ -106,8 +106,8 @@ def connection_check(
     """
     ts = ctx.obj.thoughtspot
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     r = ts.api.v1.connection_export(guid=connection_guid)
     tml = Connection.loads(r.text)
@@ -235,7 +235,7 @@ def scriptability_export(
     export_associated: bool = typer.Option(
         False, "--export-associated", help="if specified, also export related content (does not export connections)"
     ),
-    org: str = typer.Option(None, help="name or ID of the org to export from"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
 ):
     """
     Exports TML from ThoughtSpot.
@@ -262,7 +262,7 @@ def scriptability_export(
         include_types=include_types,
         exclude_types=exclude_types,
         export_associated=export_associated,
-        org=org,
+        org=org_override,
     )
 
 
@@ -283,7 +283,7 @@ def scriptability_import(
     ),
     tags: list[str] = typer.Option([], help="one or more tags to add to the imported content"),
     share_with: list[str] = typer.Option([], help="one or more groups to share the uploaded content with"),
-    org: str = typer.Option(None, help="name of org to import to"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
     include_types: Optional[str] = typer.Option(
         None,
         hidden=False,
@@ -314,14 +314,14 @@ def scriptability_import(
     to_import(
         ts=ctx.obj.thoughtspot,
         path=path,
-        guid=guid and GUID(guid),
+        guid=guid,
         import_policy=import_policy,
         force_create=force_create,
         source=source,
         dest=dest,
         tags=tags,
         share_with=share_with,
-        org=org,
+        org=org_override,
         include_types=include_types,
         exclude_types=exclude_types,
         show_mapping=show_mapping,

@@ -37,10 +37,11 @@ def mapping_details(
     dest: str = typer.Option(
         ..., help="the destination environment the TML is importing into", rich_help_panel="GUID Mapping Options"
     ),
-    org: str = typer.Option(None, help="the destination org for metadata names or the user's default if not specified"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
 ):
     ts = ctx.obj.thoughtspot
-    show_mapping_details(ts, path, source, dest, org)
+
+    show_mapping_details(ts, path, source, dest, org_override)
 
 
 def show_mapping_details(
@@ -52,13 +53,12 @@ def show_mapping_details(
     dest: str = typer.Argument(
         ..., help="the destination environment the TML was importing into", rich_help_panel="GUID Mapping Options"
     ),
-    org: str = typer.Option(None, help="the destination org for metadata names"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
 ):
     """Function that can be called from other modules to show the mapping details."""
 
-    # switch to the source org for names if specified
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     # get the tmlfs object from the path
     tmlfs = ImportTMLFS(path, log)

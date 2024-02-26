@@ -28,7 +28,7 @@ def config_create(
     repository_url: str = typer.Option(..., help="the git repository to use"),
     username: str = typer.Option(..., help="the username to use for the git repository"),
     access_token: str = typer.Option(..., help="the access token to use for the git repository"),
-    org: str = typer.Option(None, help="the org to use if any"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
     branch_names: str = typer.Option(
         None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
     ),
@@ -48,15 +48,15 @@ def config_create(
         rich_console.print("[bold red]Must minimally provide the repository, username, and access_token.[/]")
         return
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     try:
         r = ts.api.v2.vcs_git_config_create(
             repository_url=repository_url,
             username=username,
             access_token=access_token,
-            org_identifier=org,
+            org_identifier=org_override,
             branch_names=branch_names,
             commit_branch_name=commit_branch_name,
             enable_guid_mapping=enable_guid_mapping,
@@ -68,7 +68,7 @@ def config_create(
     except HTTPStatusError as e:
         if e.response.status_code == 400 and "Repository already configured" in str(e.response.content):
             rich_console.print(
-                f'[bold yellow]Warning: There is already an configuration for "{org}".  '
+                f'[bold yellow]Warning: There is already an configuration for "{org_override}".  '
                 f"Either update or delete the existing config and create.[/]"
             )
         else:
@@ -81,7 +81,7 @@ def config_update(
     ctx: typer.Context,
     username: str = typer.Option(None, help="the username to use for the git repository"),
     access_token: str = typer.Option(None, help="the access token to use for the git repository"),
-    org: str = typer.Option(None, help="the org to update the configuration for"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
     branch_names: str = typer.Option(
         None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
     ),
@@ -96,14 +96,14 @@ def config_update(
     """
     ts = ctx.obj.thoughtspot
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     try:
         r = ts.api.v2.vcs_git_config_update(
             username=username,
             access_token=access_token,
-            org_identifier=org,
+            org_identifier=org_override,
             branch_names=branch_names,
             commit_branch_name=commit_branch_name,
             enable_guid_mapping=enable_guid_mapping,
@@ -120,7 +120,7 @@ def config_update(
 @app.command(dependencies=[thoughtspot], name="search")
 def config_search(
     ctx: typer.Context,
-    org: str = typer.Option(None, help="the org run in"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
     org_ids: str = typer.Option(None, click_type=MultipleChoiceType(), help="The org IDs to get the configuration for"),
 ):
     """
@@ -128,8 +128,8 @@ def config_search(
     """
     ts = ctx.obj.thoughtspot
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     try:
         r = ts.api.v2.vcs_git_config_search(org_ids=org_ids)
@@ -145,7 +145,7 @@ def config_search(
 @app.command(dependencies=[thoughtspot], name="delete")
 def config_delete(
     ctx: typer.Context,
-    org: str = typer.Option(None, help="the org id to delete from"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
     cluster_level: bool = typer.Option(False, help="the cluster level to use for the git repository"),
 ):
     """
@@ -153,8 +153,8 @@ def config_delete(
     """
     ts = ctx.obj.thoughtspot
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
     else:
         # DEV NOTE: delete doesn't take an org, so it will use whatever the last one was.
         # It might be prudent to prompt to user if they want to continue.  It won't apply to
