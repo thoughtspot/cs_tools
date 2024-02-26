@@ -53,7 +53,7 @@ def to_group(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
     out: list[TableRowsFormat] = []
 
     for row in data:
-        for org_id in row["header"]["orgIds"]:
+        for org_id in row["header"].get("orgIds", [0]):
             out.append(
                 models.Group.validated_init(
                     cluster_guid=cluster,
@@ -172,7 +172,7 @@ def to_tag(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
     out: list[TableRowsFormat] = []
 
     for row in data:
-        for org_id in row["orgIds"]:
+        for org_id in row.get("orgIds", [0]):
             out.append(
                 models.Tag.validated_init(
                     cluster_guid=cluster,
@@ -189,6 +189,33 @@ def to_tag(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
     return [model.model_dump() for model in out]
 
 
+def to_data_source(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+    """
+    Mostly simple field renaming, flattening of orgs.
+
+    SOURCE: /tspublic/v1/metadata/list ? details = LOGICAL_TABLE
+    """
+    out: list[TableRowsFormat] = []
+
+    for row in data:
+        if row.get("type", None) not in ("ONE_TO_ONE_LOGICAL", "SQL_VIEW"):
+            continue
+
+        for org_id in row.get("orgIds", [0]):
+            model = models.DataSource.validated_init(
+                cluster_guid=cluster,
+                org_id=org_id,
+                data_source_guid=row["data_source"]["id"],
+                dbms_type=row["data_source"]["type"],
+                name=row["data_source"]["name"],
+                description=row["data_source"].get("description"),
+            )
+
+            out.append(model)
+
+    return [model.model_dump() for model in out]
+
+
 def to_metadata_object(
     data: ArbitraryJsonFormat, cluster: str, ever_seen: set[tuple[str, ...]]
 ) -> list[TableRowsFormat]:
@@ -200,7 +227,10 @@ def to_metadata_object(
     out: list[TableRowsFormat] = []
 
     for row in data:
-        for org_id in row["orgIds"]:
+        for org_id in row.get("orgIds", [0]):
+            # NOTE: Sage is only valid on LOGICAL_TABLES as of 9.10.0
+            # NOTE: Verification is only valid on Liveboards as of 9.10.0
+
             model = models.MetadataObject.validated_init(
                 cluster_guid=cluster,
                 org_id=org_id,
@@ -212,6 +242,9 @@ def to_metadata_object(
                 modified=row["modified"] / 1000,
                 object_type=row["metadata_type"],
                 object_subtype=row.get("type", None),
+                data_source_guid=row["data_source"]["id"] if "data_source" in row else None,
+                is_sage_enabled=not row.get("aiAnswerGenerationDisabled", True),
+                is_verified=row.get("isVerified", False),
             )
 
             if (model.cluster_guid, str(model.org_id), model.object_guid) in ever_seen:
@@ -306,7 +339,8 @@ def to_dependent_object(data: ArbitraryJsonFormat, cluster: str) -> list[TableRo
                 author_guid=row["author"],
                 created=row["created"] / 1000,
                 modified=row["modified"] / 1000,
-                object_type=row["type"],
+                object_type=row["metadata_type"],
+                object_subtype=row.get("type", None),
             )
         )
 

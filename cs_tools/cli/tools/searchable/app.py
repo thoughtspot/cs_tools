@@ -77,7 +77,6 @@ def deploy(
             if is_falcon:
                 this_task.skip()
             else:
-
                 try:
                     info = ts.metadata.fetch_data_source_info(connection_guid)
                 except AttributeError:
@@ -132,24 +131,24 @@ def bi_server(
     ctx: typer.Context,
     syncer: DSyncer = typer.Option(
         ...,
-        custom_type=SyncerProtocolType(models=models.BISERVER_MODELS),
+        click_type=SyncerProtocolType(models=models.BISERVER_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
+    org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
     compact: bool = typer.Option(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
     from_date: dt.datetime = typer.Option(
         None,
-        custom_type=TZAwareDateTimeType(),
+        click_type=TZAwareDateTimeType(),
         metavar="YYYY-MM-DD",
         help="inclusive lower bound of rows to select from TS: BI Server",
     ),
     to_date: dt.datetime = typer.Option(
         None,
-        custom_type=TZAwareDateTimeType(),
+        click_type=TZAwareDateTimeType(),
         metavar="YYYY-MM-DD",
         help="inclusive upper bound of rows to select from TS: BI Server",
     ),
-    include_today: bool = typer.Option(False, "--include-today", help="pull partial day data", show_default=False),
 ):
     """
     Extract usage statistics from your ThoughtSpot platform.
@@ -164,19 +163,28 @@ def bi_server(
         - response size         - latency (us)          - database latency (us)
         - impressions
     """
+    ts = ctx.obj.thoughtspot
+
+    # DEV NOTE: @boonhapus
+    # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
+
+    if ts.session_context.thoughtspot.is_orgs_enabled:
+        ts.org.switch(org=0)
+
+    elif org_override is not None:
+        org_override = None
+
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
         "[org id] [incident id] [timestamp].'detailed' [url] [http response code] "
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
-        "[database latency (us)] [impressions]"
+        "[database latency (us)] [impressions] [timestamp] != 'today'"
         + ("" if not compact else " [User Action] != [User Action].invalid [User Action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
-        + ("" if include_today else " [timestamp] != 'today'")
+        + ("" if org_override is None else f"[org id] = {ts.org.guid_for(org_override)}")
     )
-
-    ts = ctx.obj.thoughtspot
 
     tasks = [
         ("gather_search", "Collecting data from [b blue]TS: BI Server"),
@@ -195,7 +203,7 @@ def bi_server(
 
             for row in data:
                 # care for data quality errors
-                if row["Incident Id"] is None or row["URL"] is None:
+                if row["Incident Id"] is None:
                     continue
 
                 # reset the surrogate key every day
@@ -228,7 +236,7 @@ def bi_server(
                             "latency_us": row["Total Latency (us)"],
                             "impressions": row["Total Impressions"],
                         }
-                    ).dict()
+                    ).model_dump()
                 )
 
         with tasks["syncer_dump"]:
@@ -244,10 +252,10 @@ def gather(
         "--include-column-access",
         help="if specified, include security controls for Column Level Security as well",
     ),
-    in_org_id: int = typer.Option(None, help="the org id to gather metadata from"),
+    org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
     syncer: DSyncer = typer.Option(
         ...,
-        custom_type=SyncerProtocolType(models=models.METADATA_MODELS),
+        click_type=SyncerProtocolType(models=models.METADATA_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -261,34 +269,17 @@ def gather(
     """
     ts = ctx.obj.thoughtspot
 
-    # SPECIFIED , NOT ORGS ENABLED
-    if in_org_id is not None and not ts.session_context.thoughtspot.is_orgs_enabled:
-        log.warning(f"Org ID {in_org_id} specified but this cluster is not enabled for orgs, ignoring..")
-        orgs = [-1]
-
-    # SPECIFIED , NOT AUTHORIZED
-    elif in_org_id is not None and not ts.org.check_authorization_for(org_id=in_org_id):
-        log.error(f"You do not have authorization for Org ID {in_org_id}")
-        return
-
-    # SPECIFED , ENABLED , AUTHORIZED
-    elif in_org_id is not None:
-        orgs = [in_org_id]
-
-    # NOT SPECIFIED , ENABLED (gather all data we have access to)
-    elif ts.session_context.thoughtspot.is_orgs_enabled:
-        r = ts.api.v1.session_orgs_read()
-        orgs = [org["orgId"] for org in r.json()["orgs"]]
-
-    # NOT SPECIFIED , NOT ENABLED (gather all)
+    if ts.session_context.thoughtspot.is_orgs_enabled:
+        info = ts.api.v1.session_orgs_read().json().get("orgs", [])
+        orgs = [i["orgId"] for i in info] if org_override is None else [ts.org.guid_for(org_override)]
     else:
-        orgs = [-1]
+        orgs = ["ThoughtSpot"]
 
     if not ts.session_context.user.is_admin:
         log.warning("Searchable is meant to be run from an Admin-level context, your results may vary..")
 
     table = layout.Table(data=[[str(org)] + [":popcorn:"] * 8 for org in orgs])
-    temp_sync = CSV(directory=ts.config.temp_dir)
+    temp_sync = CSV(directory=ts.config.temp_dir, empty_as_null=True, save_strategy="APPEND")
 
     # Orgs have the potential for having limited data, let's be less noisy.
     logger = logging.getLogger("cs_tools.sync.csv.syncer")
@@ -300,8 +291,7 @@ def gather(
 
         for row, org_id in zip(table.data, orgs):
             if ts.session_context.thoughtspot.is_orgs_enabled:
-                ts.config.thoughtspot.default_org = org_id
-                ts.login()
+                ts.org.switch(org_id)
                 row[1] = ":fire:"
 
                 # org info
@@ -315,6 +305,8 @@ def gather(
                 temp_sync.dump(models.OrgMembership.__tablename__, data=transformed)
                 row[1] = ":file_folder:"
             else:
+                default_org = {"orgId": 0, "orgName": "ThoughtSpot", "description": "Your cluster is not orgs enabled."}
+                temp_sync.dump(models.Org.__tablename__, data=transform.to_org(default_org, cluster=cluster_uuid))
                 row[1] = ""
 
             row[2] = ":fire:"
@@ -353,14 +345,19 @@ def gather(
             row[5] = ":fire:"
             # metadata
             content = [
-                *ts.logical_table.all(exclude_system_content=False, raise_on_error=False),
+                *ts.logical_table.all(exclude_system_content=False, include_data_source=True, raise_on_error=False),
                 *ts.answer.all(exclude_system_content=False, raise_on_error=False),
                 *ts.liveboard.all(exclude_system_content=False, raise_on_error=False),
             ]
+
             members = {
                 (m["cluster_guid"], m["org_id"], m["object_guid"])
                 for m in temp_sync.load(models.MetadataObject.__tablename__)
             }
+            temp_sync.dump(
+                models.DataSource.__tablename__,
+                data=transform.to_data_source(content, cluster=cluster_uuid),
+            )
             temp_sync.dump(
                 models.MetadataObject.__tablename__,
                 data=transform.to_metadata_object(content, cluster=cluster_uuid, ever_seen=members),

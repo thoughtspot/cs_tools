@@ -16,12 +16,12 @@ class Table(RichTable):
             title="Searchable Data Gatherer",
             title_style="bold white",
             box=box.SIMPLE_HEAD,
-            caption="" if self.current_org is None else f"fetching data in org {self.current_org}",
+            caption="fetching data" + "" if self.current_org is None else f" in org {self.current_org}",
         )
 
         table.add_column(header="", width=12, justify="right")
 
-        for column in ("Org", "User", "Group", "Tag", "Object", "Column", "Dependent", "Security"):
+        for column in ("Org", "User", "Group", "Tag", "Object", "Column", "Dependent", "Access"):
             table.add_column(header=column, width=9, justify="center")
 
         [table.add_row(*row) for row in self.data]

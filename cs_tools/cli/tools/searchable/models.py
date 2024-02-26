@@ -29,6 +29,11 @@ class Org(ValidatedSQLModel, table=True):
     name: str
     description: Optional[str]
 
+    @pydantic.field_validator("description", mode="before")
+    @classmethod
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
+
 
 class User(ValidatedSQLModel, table=True):
     __tablename__ = "ts_user"
@@ -60,6 +65,11 @@ class Group(ValidatedSQLModel, table=True):
     created: dt.datetime
     modified: dt.datetime
     group_type: str
+
+    @pydantic.field_validator("description", mode="before")
+    @classmethod
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -105,6 +115,26 @@ class Tag(ValidatedSQLModel, table=True):
         return validators.ensure_datetime_is_utc.func(value)
 
 
+class DataSource(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_data_source"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
+    data_source_guid: str = Field(primary_key=True)
+    dbms_type: str
+    name: str
+    description: Optional[str]
+
+    @pydantic.field_validator("description", mode="before")
+    @classmethod
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
+
+    @pydantic.field_validator("dbms_type", mode="before")
+    @classmethod
+    def clean_dbms_type(cls, value: Any) -> str:
+        return "FALCON" if value == "DEFAULT" else value.removeprefix("RDBMS_")
+
+
 class MetadataObject(ValidatedSQLModel, table=True):
     __tablename__ = "ts_metadata_object"
     cluster_guid: str = Field(primary_key=True)
@@ -117,6 +147,14 @@ class MetadataObject(ValidatedSQLModel, table=True):
     modified: dt.datetime
     object_type: str
     object_subtype: Optional[str]
+    data_source_guid: Optional[str]
+    is_sage_enabled: bool
+    is_verified: bool
+
+    @pydantic.field_validator("description", mode="before")
+    @classmethod
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -143,9 +181,20 @@ class MetadataColumn(ValidatedSQLModel, table=True):
     format_pattern: Optional[str]
     currency_type: Optional[str]
     attribution_dimension: bool
-    spotiq_preference: str
+    spotiq_preference: bool
     calendar_type: Optional[str]
+    # custom_sort: ... ???
     is_formula: bool
+
+    @pydantic.field_validator("description", mode="before")
+    @classmethod
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
+
+    @pydantic.field_validator("spotiq_preference", mode="before")
+    @classmethod
+    def cast_default_exclude_to_bool(cls, value: Any) -> bool:
+        return value == "DEFAULT"
 
 
 class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
@@ -155,7 +204,6 @@ class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
     cluster_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
     synonym: str = Field(primary_key=True)
-    # is_sage_generated: bool
 
 
 class TaggedObject(ValidatedSQLModel, table=True):
@@ -176,6 +224,12 @@ class DependentObject(ValidatedSQLModel, table=True):
     created: dt.datetime
     modified: dt.datetime
     object_type: str
+    object_subtype: Optional[str]
+
+    @pydantic.field_validator("description", mode="before")
+    @classmethod
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -197,14 +251,18 @@ class SharingAccess(ValidatedSQLModel, table=True):
     share_mode: str
 
 
+# class SecurityLogs(ValidatedSQLModel, table=True):
+#     __tablename__ = "ts_security_logs"
+
+
 class BIServer(ValidatedSQLModel, table=True):
     __tablename__ = "ts_bi_server"
     cluster_guid: str = Field(primary_key=True)
     sk_dummy: str = Field(primary_key=True)
     incident_id: str
     timestamp: dt.datetime
-    url: str
-    org_id: Optional[str]
+    url: Optional[str]
+    org_id: Optional[int]
     http_response_code: Optional[int]
     browser_type: Optional[str]
     browser_version: Optional[str]
@@ -215,8 +273,8 @@ class BIServer(ValidatedSQLModel, table=True):
     user_id: Optional[str]
     user_action: Optional[str]
     query_text: Optional[str]
-    response_size: Optional[int]
-    latency_us: Optional[int]
+    response_size: Optional[int] = Field(sa_column=Column(BigInteger))
+    latency_us: Optional[int] = Field(sa_column=Column(BigInteger))
     impressions: Optional[float]
 
     @pydantic.field_validator("timestamp", mode="before")
@@ -224,9 +282,22 @@ class BIServer(ValidatedSQLModel, table=True):
     def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
         return validators.ensure_datetime_is_utc.func(value)
 
+    @pydantic.field_validator("client_type", "user_action", mode="after")
+    @classmethod
+    def ensure_is_case_sensitive_thoughtspot_enum_value(cls, value: Optional[str]) -> Optional[str]:
+        # Why not Annotated[str, pydantic.StringContraints(to_upper=True)] ?
+        # sqlmodel#67: https://github.com/tiangolo/sqlmodel/issues/67
+        return None if value is None else value.upper()
+
+    @pydantic.field_validator("url", "browser_type", "browser_version", mode="after")
+    @classmethod
+    def ensure_is_uniform_lowered_value(cls, value: Optional[str]) -> Optional[str]:
+        # Why not Annotated[str, pydantic.StringContraints(to_lower=True)] ?
+        # sqlmodel#67: https://github.com/tiangolo/sqlmodel/issues/67
+        return None if value is None else value.lower()
+
     @pydantic.field_serializer("query_text")
-    def escape_characters(self, query_text: Optional[str]) -> Optional[str]:
-        """Ensure reserved characters are properly escaped."""
+    def export_reserved_characters_are_escaped(self, query_text: Optional[str]) -> Optional[str]:
         if query_text is None:
             return query_text
         reserved_characters = ("\\",)
@@ -246,6 +317,7 @@ METADATA_MODELS = [
     GroupPrivilege,
     GroupMembership,
     Tag,
+    DataSource,
     MetadataObject,
     MetadataColumn,
     ColumnSynonym,
