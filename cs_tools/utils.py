@@ -6,7 +6,6 @@ from base64 import (
 )
 from collections.abc import Generator, Iterable
 from typing import Any, Callable, Optional, TypeVar, Union
-import collections.abc
 import datetime as dt
 import getpass
 import io
@@ -24,7 +23,7 @@ T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 
-def chunks(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, None]:
+def batched(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, None]:
     """
     Yield successive n-sized chunks from list.
     """
@@ -36,48 +35,6 @@ def chunks(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, Non
 
     while batch := tuple(it.islice(iterable, n)):
         yield batch
-
-
-batched = chunks
-
-
-def deep_update(old: dict, new: dict, *, ignore: Any = None) -> dict:
-    """
-    Update existing dictionary with new data.
-
-    The operation dict1.update(dict2) will overwrite data in dict1 if it
-    is a multilevel dictionary with overlapping keys in dict2. This
-    recursive function solves that specific problem.
-
-    Parameters
-    ----------
-    old : dict
-      old dictionary to update
-
-    new : dict
-      new dictionary to pull values from
-
-    ignore : anything [default: None]
-      ignore values like <ignore>
-
-    Returns
-    -------
-    updated : dict
-      old dictionary updated with new's values
-    """
-    for k, v in new.items():
-        if v is ignore or str(v) == str(ignore):
-            continue
-
-        if isinstance(v, collections.abc.Mapping):
-            v = deep_update(old.get(k, {}), v, ignore=ignore)
-
-        if old is None:
-            old = {}
-
-        old[k] = v
-
-    return old
 
 
 def anonymize(text: str, *, anonymizer: str = " [dim]{anonymous}[/] ") -> str:

@@ -38,7 +38,7 @@ def _validate_objects_exist(ts, data: list[TableRowsFormat]) -> list[types.Delet
     )
 
     for objects, content_type in content_to_filter:
-        for chunk in utils.chunks(objects, n=25):
+        for chunk in utils.batched(objects, n=25):
             batch = list(chunk)
             r = ts.api.v1.metadata_list(metadata_type=content_type, fetch_guids=[c.object_guid for c in batch])
             headers = r.json()["headers"]

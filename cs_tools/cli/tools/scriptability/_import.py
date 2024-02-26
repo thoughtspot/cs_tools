@@ -19,6 +19,7 @@ from thoughtspot_tml._tml import TML
 from thoughtspot_tml.exceptions import TMLDecodeError
 from thoughtspot_tml.utils import _recursive_scan
 
+from cs_tools import utils
 from cs_tools.cli.tools.scriptability.util import GUIDMapping
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
@@ -30,7 +31,6 @@ from cs_tools.types import (
     TMLImportPolicy,
     TMLSupportedContent,
 )
-from cs_tools.utils import chunks
 
 from ._mapping import show_mapping_details
 from .tmlfs import ImportTMLFS, TMLType
@@ -658,7 +658,7 @@ def _wait_for_metadata(ts: ThoughtSpot, guids: list[GUID]) -> None:
         log.info(f"checking {len(guids): >3} guids, n={n}")
 
         for metadata_type in ("DATA_SOURCE", "LOGICAL_TABLE", "QUESTION_ANSWER_BOOK", "PINBOARD_ANSWER_BOOK"):
-            for chunk in chunks(list(set(guids).difference(ready_guids)), n=25):
+            for chunk in utils.batched(list(set(guids).difference(ready_guids)), n=25):
                 r = ts.api.v1.metadata_list(metadata_type=metadata_type, fetch_guids=list(chunk), show_hidden=False)
 
                 for metadata_object in r.json()["headers"]:

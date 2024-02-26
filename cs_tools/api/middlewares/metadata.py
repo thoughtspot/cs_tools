@@ -55,7 +55,7 @@ class MetadataMiddleware:
         sharing_access = []
         group_guids = [group["id"] for group in self.ts.group.all()]
 
-        for chunk in utils.chunks(guids, n=chunksize):
+        for chunk in utils.batched(guids, n=chunksize):
             r = self.ts.api.v1.security_metadata_permissions(metadata_type=type_to_supertype[type], guids=chunk)
 
             for data in r.json().values():
@@ -112,7 +112,7 @@ class MetadataMiddleware:
 
         dependents = []
 
-        for chunk in utils.chunks(guids, n=chunksize):
+        for chunk in utils.batched(guids, n=chunksize):
             r = self.ts.api.v1.dependency_list_dependents(guids=chunk, metadata_type=type_)
             data = r.json()
 

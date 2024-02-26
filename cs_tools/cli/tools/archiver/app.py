@@ -541,7 +541,7 @@ def remove(
                 for unique_type in [model.type for model in to_delete]:
                     content = [model.guid for model in to_delete if model.type == unique_type]
 
-                    for chunk in utils.chunks(content, n=50):
+                    for chunk in utils.batched(content, n=50):
                         chunk = list(chunk)
                         log.info(f"Attempting to delete {len(chunk)} {unique_type}s")
                         _extended_rest_api_v1.metadata_delete(

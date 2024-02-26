@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 import logging
 
+from cs_tools import utils
 from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import GUID, MetadataCategory, TableRowsFormat
-from cs_tools.utils import chunks
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
@@ -109,7 +109,7 @@ class LogicalTableMiddleware:
         """ """
         columns = []
 
-        for chunk in chunks(guids, n=chunksize):
+        for chunk in utils.batched(guids, n=chunksize):
             r = self.ts.api.v1.metadata_details(guids=chunk, show_hidden=include_hidden)
 
             for logical_table in r.json()["storables"]:

@@ -68,7 +68,7 @@ async def _(type: str = Body(...), guids: list[str] = Body(...)):  # noqa: A002
     """
     defined_permissions = {column_guid: {"permissions": {}} for column_guid in guids}
 
-    for chunk in utils.chunks(guids, n=15):
+    for chunk in utils.batched(guids, n=15):
         r = _scoped["ts"].api.security_metadata_permissions(metadata_type=type, guids=list(chunk))
 
         try:
