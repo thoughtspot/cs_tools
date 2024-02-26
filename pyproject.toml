@@ -106,9 +106,8 @@ docs = [
 ]
 
 [project.scripts]
-cs_tools = "cs_tools.cli.main:run"
-cstools = "cs_tools.cli.main:run"
-
+cs_tools = "cs_tools.cli.commands.main:run"
+cstools = "cs_tools.cli.commands.main:run"
 
 [tool.setuptools.dynamic]
 version = {attr = "cs_tools.__project__.__version__"}
