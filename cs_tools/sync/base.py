@@ -105,7 +105,7 @@ class Syncer(_GlobalSettings):
         if utils.determine_editable_install():
             return
 
-        manifest = SyncerManifest.model_validate_json(cls.__manifest_path__)
+        manifest = SyncerManifest.model_validate_json(cls.__manifest_path__.read_text())
 
         for requirement in manifest.requirements:
             log.debug(f"Processing requirement: {requirement}")
