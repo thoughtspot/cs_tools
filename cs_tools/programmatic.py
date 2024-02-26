@@ -1,19 +1,20 @@
-# DEV NOTE: @boonhapus, 2023/02/05
-#
-# This is a temporary fix. Now that CS Tools is a library and be a dependency, we will
-# change the tool and syncer implementations such that they can be inherited from and
-# properly registered. It's a v1.5.0 task though.
-#
 from __future__ import annotations
 
+import pathlib
+
+from cs_tools import __project__
 from cs_tools.cli._base import CSTool
-from cs_tools.const import TOOLS_DIR
 from cs_tools.errors import CSToolsError
 
 
 def get_cs_tool(name: str) -> CSTool:
-    """Get a CS Tool."""
-    tool_dir = TOOLS_DIR / name
+    """
+    Get a CS Tool.
+
+    See the tests for an example.
+        tests/programmatic/test_as_ci:test_integration_cli_searchable
+    """
+    tool_dir = pathlib.Path(__project__.__file__).parent / "cli" / "tools" / name
 
     if not tool_dir.exists():
         raise CSToolsError(title=f"no tool registered tool found by name '{name}'")

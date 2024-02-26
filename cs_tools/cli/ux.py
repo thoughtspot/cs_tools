@@ -8,9 +8,8 @@ import sys
 from rich.console import Console
 import typer
 
-from cs_tools import utils
+from cs_tools import __project__, utils
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.const import GH_SYNCER
 
 if TYPE_CHECKING:
     import click
@@ -56,7 +55,7 @@ class CSToolsCommand(typer.core.TyperCommand):
 
         # add syncer documentation page help text
         if any(isinstance(p.type, SyncerProtocolType) for p in seen_params):
-            syncer = f" :floppy_disk: [cyan][link={GH_SYNCER}]How do I use a Syncer?[/][/]"
+            syncer = f" :floppy_disk: [cyan][link={__project__.__docs__}/syncer/what-is/]How do I use a Syncer?[/][/]"
 
             if self.epilog is None:
                 self.epilog = ""
@@ -93,7 +92,7 @@ class CSToolsApp(typer.Typer):
 
         ctx_settings = passthru.pop("context_settings", None) or {}
         ctx_settings["help_option_names"] = ["--help", "-h"]
-        ctx_settings["obj"] = utils.State
+        ctx_settings["obj"] = utils.State()
         ctx_settings["max_content_width"] = rich_console.width
         ctx_settings["token_normalize_func"] = lambda x: x.casefold()
         super().__init__(**passthru, context_settings=ctx_settings)
