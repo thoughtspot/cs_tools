@@ -36,9 +36,7 @@ class DSyncer(Dependency):
         else:
             syncer_dir = PACKAGE_DIR / "sync" / self.protocol
 
-        manifest_path = syncer_dir / "MANIFEST.json"
-        manifest = base.SyncerManifest.parse_file(manifest_path)
-
+        manifest = base.SyncerManifest.model_validate_json(syncer_dir.joinpath("MANIFEST.json").read_text())
         SyncerClass = manifest.import_syncer_class(fp=syncer_dir / "syncer.py")
 
         ctx = click.get_current_context()

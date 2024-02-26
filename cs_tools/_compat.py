@@ -1,13 +1,5 @@
 import sys
 
-# AVAILABLE IN PYTHON 3.8
-from typing import Literal
-
-
-# AVAILABLE IN PYTHON 3.9
-from typing import Annotated
-
-
 if sys.version_info < (3, 11):
     from strenum import StrEnum
     from typing_extensions import Self

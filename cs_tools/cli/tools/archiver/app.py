@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Optional
 import functools as ft
 import logging
 import pathlib
@@ -68,28 +69,32 @@ def identify(
         help="content without recent edits will be [b green]selected[/] (exceeds days threshold)",
         rich_help_panel="Content Identification Criteria",
     ),
-    only_groups: str = typer.Option(
+    only_groups: Optional[str] = typer.Option(
         None,
         click_type=MultipleChoiceType(),
         help="content not authored by users in these groups will be [b red]filtered[/], comma separated",
+        show_default=False,
         rich_help_panel="Content Identification Criteria",
     ),
     ignore_groups: str = typer.Option(
         None,
         click_type=MultipleChoiceType(),
         help="content authored by users in these groups will be [b red]filtered[/], comma separated",
+        show_default=False,
         rich_help_panel="Content Identification Criteria",
     ),
     ignore_tags: str = typer.Option(
         None,
         click_type=MultipleChoiceType(),
         help="content with this tag (case sensitive) will be [b red]filtered[/], comma separated",
+        show_default=False,
         rich_help_panel="Content Identification Criteria",
     ),
     syncer: DSyncer = typer.Option(
         None,
         click_type=SyncerProtocolType(models=[models.ArchiverReport]),
         help="protocol and path for options to pass to the syncer",
+        show_default=False,
         rich_help_panel="Syncer Options",
     ),
 ):

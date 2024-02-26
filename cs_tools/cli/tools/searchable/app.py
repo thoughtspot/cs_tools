@@ -31,10 +31,12 @@ def deploy(
     connection_guid: GUID = typer.Option(
         ...,
         help="if Falcon, use [b blue]falcon[/], otherwise find your guid in the Connection URL in the Data Workspace",
+        show_default=False,
     ),
     database: str = typer.Option(
         ...,
         help="if Falcon, use [b blue]cs_tools[/], otherwise use the name of the database which holds Searchable data",
+        show_default=False,
     ),
     schema: str = typer.Option(
         ...,
@@ -42,8 +44,14 @@ def deploy(
             "if Falcon, use [b blue]falcon_default_schema[/], otherwise use the name of the schema which holds "
             "Searchable data"
         ),
+        show_default=False,
     ),
-    export: pathlib.Path = typer.Option(None, help="download the TML files of the SpotApp", file_okay=False),
+    export: pathlib.Path = typer.Option(
+        None,
+        help="download the TML files of the SpotApp",
+        file_okay=False,
+        show_default=False,
+    ),
 ):
     """
     Deploy the Searchable SpotApp.
@@ -69,15 +77,15 @@ def deploy(
             if is_falcon:
                 this_task.skip()
             else:
-                r = ts.api.v1.metadata_details(metadata_type="DATA_SOURCE", guids=[connection_guid])
 
-                if "storables" not in r.text:
+                try:
+                    info = ts.metadata.fetch_data_source_info(connection_guid)
+                except AttributeError:
                     log.error(f"Could not find a connection with guid {connection_guid}")
-                    raise typer.Exit(1)
+                    raise typer.Exit(1) from None
 
-                data = r.json()["storables"][0]["header"]
-                connection_guid = data["id"]
-                connection_name = data["name"]
+                connection_guid = info["header"]["id"]
+                connection_name = info["header"]["name"]
 
         with tasks["customize_spotapp"]:
             here = pathlib.Path(__file__).parent
@@ -90,26 +98,6 @@ def deploy(
                 if isinstance(tml, Table):
                     tml.table.db = database
                     tml.table.schema = schema
-
-                    # if is_falcon:
-                    #     # can we use TQL to join stats_tomcat_tomcat to our data?
-                    #     # need to redefine any worksheet that uses TS_BI_SERVER
-                    #     #
-
-                    #     # Falcon customizations
-                    #     # - remove connection
-                    #     # - remove top level guid
-                    #     # - lower physical tablename
-                    #     # - lower phyiscal column names
-                    #     # - remove FQNs
-                    #     tml.table.connection = None
-                    #     tml.table.name = tml.table.name.lower()
-                    #     tml.table.fqn = None
-
-                    #     for column in tml.table:
-                    #         column.db_column_name = column.db_column_name.lower()
-
-                    # else:
                     tml.table.connection.name = connection_name
                     tml.table.connection.fqn = connection_guid
 
@@ -117,7 +105,6 @@ def deploy(
 
                 if export is not None:
                     tml.dump(export.joinpath(file.name))
-                    return
 
         with tasks["deploy_spotapp"] as this_task:
             if export is not None:

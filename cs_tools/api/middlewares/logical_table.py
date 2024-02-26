@@ -97,11 +97,10 @@ class LogicalTableMiddleware:
 
         if include_data_source:
             for table in tables:
-                if table["type"] in ("ONE_TO_ONE_LOGICAL", "SQL_VIEW"):
-                    connection_guid = self.ts.metadata.find_data_source_of_logical_table(guid=table["id"])
-                    source_details = self.ts.metadata.fetch_data_source_info(guid=connection_guid)
-                    table["data_source"] = source_details["header"]
-                    table["data_source"]["type"] = source_details["type"]
+                connection_guid = self.ts.metadata.find_data_source_of_logical_table(guid=table["id"])
+                source_details = self.ts.metadata.fetch_data_source_info(guid=connection_guid)
+                table["data_source"] = source_details["header"]
+                table["data_source"]["type"] = source_details["type"]
 
         return tables
 
