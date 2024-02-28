@@ -40,7 +40,7 @@ class ThoughtSpot:
 
     def __init__(self, config: CSToolsConfig, auto_login: bool = False):
         self.config = config
-        self.api = RESTAPIClient(ts_url=str(config.thoughtspot.url), verify=config.thoughtspot.disable_ssl)
+        self.api = RESTAPIClient(ts_url=str(config.thoughtspot.url), verify=not config.thoughtspot.disable_ssl)
         self._session_context: Optional[SessionContext] = None
 
         # ==============================================================================================================
