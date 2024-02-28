@@ -195,10 +195,11 @@ def to_data_source(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFor
 
     SOURCE: /tspublic/v1/metadata/list ? details = LOGICAL_TABLE
     """
+    ever_seen: set[tuple[str]] = set()
     out: list[TableRowsFormat] = []
 
     for row in data:
-        if row.get("type", None) not in ("ONE_TO_ONE_LOGICAL", "SQL_VIEW"):
+        if row.get("metadata_type", None) != "LOGICAL_TABLE":
             continue
 
         for org_id in row.get("orgIds", [0]):
@@ -211,6 +212,10 @@ def to_data_source(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFor
                 description=row["data_source"].get("description"),
             )
 
+            if (model.cluster_guid, str(model.org_id), model.data_source_guid) in ever_seen:
+                continue
+
+            ever_seen.add((model.cluster_guid, str(model.org_id), model.data_source_guid))
             out.append(model)
 
     return [model.model_dump() for model in out]
