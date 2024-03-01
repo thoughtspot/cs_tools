@@ -4,9 +4,9 @@ from typing import Any
 import logging
 import pathlib
 
-import click
 import pydantic
 import sqlmodel
+import toml
 
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.const import PACKAGE_DIR
@@ -39,10 +39,8 @@ class DSyncer(Dependency):
         manifest = base.SyncerManifest.model_validate_json(syncer_dir.joinpath("MANIFEST.json").read_text())
         SyncerClass = manifest.import_syncer_class(fp=syncer_dir / "syncer.py")
 
-        ctx = click.get_current_context()
-
         if self.definition_fp:
-            conf = self._read_config_from_definition(ctx.obj.thoughtspot, self.protocol, self.definition_fp)
+            conf = toml.load(self.definition_fp)
         else:
             conf = {"configuration": self.definition_kw}
 
@@ -65,8 +63,9 @@ class DSyncer(Dependency):
     def __getattr__(self, member_name: str) -> Any:
         # proxy attribute calls to the underlying syncer first
         try:
+            self.__dict__["_syncer"]
             member = getattr(self._syncer, member_name)
-        except AttributeError:
+        except (KeyError, AttributeError):
             try:
                 member = self.__dict__[member_name]
             except KeyError:
