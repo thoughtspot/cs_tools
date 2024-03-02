@@ -321,7 +321,7 @@ class CSToolsConfig(_GlobalSettings):
         if dotfile is not None:
             extra["_env_file"] = pathlib.Path(dotfile).as_posix()
 
-        return cls(name=name, **extra)
+        return cls(name=name, thoughtspot={}, **extra)
 
     @classmethod
     def from_toml(cls, path: pathlib.Path, automigrate: bool = False) -> CSToolsConfig:
