@@ -368,8 +368,6 @@ def check(
     ts.logout()
     log.info("[b green]Success[/]!")
 
-    rich_console.print(ts.session_context)
-
 
 @app.command(no_args_is_help=False)
 def show(
