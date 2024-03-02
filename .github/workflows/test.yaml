@@ -2,7 +2,7 @@ name:
   dummy
 
 on:
-  gollum
+  workflow_dispatch:
 
 jobs:
   verify:
