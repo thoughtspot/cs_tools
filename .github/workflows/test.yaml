@@ -1,12 +1,7 @@
 name:
   dummy
 
-on:
-  workflow_dispatch:
-    inputs:
-      parameter:
-        description: My Parameter
-  push: -- Add this here
+on: workflow_dispatch
 
 jobs:
   verify:
