@@ -3,6 +3,10 @@ name:
 
 on:
   workflow_dispatch:
+    inputs:
+      parameter:
+        description: My Parameter
+  push: -- Add this here
 
 jobs:
   verify:
