@@ -140,6 +140,8 @@ class CSToolsVirtualEnvironment:
             "--isolated",
             # disable caching
             "--no-cache-dir",
+            # disable HTTP download progress bar
+            "--progress-bar", "off",
             # don't ping for new versions of pip -- it doesn't matter and is noisy
             "--disable-pip-version-check",
             # trust installs from the official python package index and the thoughtspot github repos

@@ -163,7 +163,7 @@ def cli():
                 )
 
             log.info("Installing CS Tools and its dependencies.")
-            venv.pip("install", requires, "--upgrade", "--progress-bar", "on" if args.verbose else "off")
+            venv.pip("install", requires, "--upgrade")
             path.add()
 
         if args.uninstall:
@@ -311,7 +311,7 @@ class ColorSupportedFormatter(logging.Formatter):
         kernel32 = ctypes.windll.kernel32
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
-    def format(self, record, *a, **kw):  # noqa: A003
+    def format(self, record, *a, **kw):
         # types: (logging.LogRecord, a, **kw) -> str
         color = self.COLOR_CODES.get(record.levelno, _create_color_code("white"))
         record.color_code = color
@@ -478,7 +478,7 @@ def get_path_manipulator(venv):
 
 
 def http_request(url, to_json=True, timeout=None):
-    # type: (str, bool) -> Dict[str, Any]
+    # type: (str, bool, Optional[]) -> Dict[str, Any]
     """
     Makes a GET request to <url>.
     """

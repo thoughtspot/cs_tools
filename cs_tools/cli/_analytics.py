@@ -36,12 +36,8 @@ def get_database() -> sa.engine.Engine:
     if meta.analytics.active_database is not None:
         return meta.analytics.active_database
 
-    elif datastructures.ExecutionEnvironment().is_ci:
-        db = sa.create_engine("sqlite://", future=True)
-    else:
-        db_path = cs_tools_venv.app_dir.resolve().joinpath("analytics.db")
-        db = sa.create_engine(f"sqlite:///{db_path}", future=True)
-
+    db_path = "" if datastructures.ExecutionEnvironment().is_ci else f"/{cs_tools_venv.app_dir / 'analytics.db'}"
+    db = sa.create_engine(f"sqlite://{db_path}", future=True)
     meta.analytics.set_database(db)
 
     with db.begin() as transaction:

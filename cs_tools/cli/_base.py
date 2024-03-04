@@ -121,19 +121,19 @@ class CSTool(_GlobalModel):
         """Show an app's version."""
         return self._lib.__version__
 
-    def invoke(self, command: str, args: Optional[str] = None) -> Result:
+    def invoke(self, command: str, arguments: Optional[str] = None) -> Result:
         """
         Run a command in this tool's app.
         """
-        if args is None:
-            args = ""
+        if arguments is None:
+            arguments = ""
 
         from cs_tools import utils
 
         self._lib.app.info.context_settings = {"obj": utils.State()}
 
         runner = CliRunner()
-        result = runner.invoke(app=self._lib.app, args=[command, *shlex.split(args)], catch_exceptions=False)
+        result = runner.invoke(app=self._lib.app, args=[command, *shlex.split(arguments)], catch_exceptions=False)
         return result
 
     def __repr__(self) -> str:
