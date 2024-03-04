@@ -33,7 +33,7 @@ def _setup_cli() -> typer.Typer:
 class CSToolsScreenshotProcesser(BlockProcessor):
     """CSToolsScreenshot block processors."""
 
-    BASE_FILEPATH = cs_tools.const.PACKAGE_DIR.parent.resolve() / "docs" / "terminal-screenshots"
+    BASE_FILEPATH = cs_tools.utils.get_package_dir("cs_tools") / "docs" / "terminal-screenshots"
     BLOCK_IDENTITY = "~cs~tools"
     CLASS_NAME = "screenshotter"
 

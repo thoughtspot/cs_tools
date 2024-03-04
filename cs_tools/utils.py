@@ -8,6 +8,7 @@ from collections.abc import Generator, Iterable
 from typing import Any, Callable, Optional, TypeVar, Union
 import datetime as dt
 import getpass
+import importlib
 import io
 import itertools as it
 import json
@@ -196,3 +197,13 @@ def determine_editable_install() -> bool:
             if "__editable__.cs_tools" in path.as_posix():
                 return True
     return False
+
+
+def get_package_directory(package_name: str) -> Optional[pathlib.Path]:
+    """Get the path to the package directory."""
+    try:
+        module = importlib.import_module(package_name)
+        assert module.__file__ is not None
+        return pathlib.Path(module.__file__).parent
+    except ModuleNotFoundError:
+        return None

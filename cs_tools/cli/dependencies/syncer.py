@@ -8,8 +8,8 @@ import pydantic
 import sqlmodel
 import toml
 
+from cs_tools import utils
 from cs_tools.cli.dependencies.base import Dependency
-from cs_tools.const import PACKAGE_DIR
 from cs_tools.sync import base
 
 log = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class DSyncer(Dependency):
             _, _, syncer_pathlike = self.protocol.rpartition("@")
             syncer_dir = pathlib.Path(syncer_pathlike)
         else:
-            syncer_dir = PACKAGE_DIR / "sync" / self.protocol
+            syncer_dir = utils.get_package_directory("cs_tools") / "sync" / self.protocol
 
         manifest = base.SyncerManifest.model_validate_json(syncer_dir.joinpath("MANIFEST.json").read_text())
         SyncerClass = manifest.import_syncer_class(fp=syncer_dir / "syncer.py")

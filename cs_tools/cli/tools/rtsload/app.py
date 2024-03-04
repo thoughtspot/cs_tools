@@ -6,7 +6,8 @@ import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.const import FMT_TSLOAD_DATE, FMT_TSLOAD_DATETIME, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
+
+from .const import FMT_TSLOAD_DATE, FMT_TSLOAD_DATETIME, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 
 app = CSToolsApp(
     help="""

@@ -1,13 +1,4 @@
-"""
-Do not rely on these. This is a legacy implementation of global context.
-
-It will be refactored out.
-"""
-
-import pathlib
-
-
-PACKAGE_DIR = pathlib.Path(__file__).parent
+from __future__ import annotations
 
 # ISO datetime format
 FMT_TSLOAD_DATE = "%Y-%m-%d"

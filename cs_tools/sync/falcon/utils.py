@@ -6,11 +6,11 @@ import json
 
 import sqlmodel
 
-from cs_tools.const import FMT_TSLOAD_DATETIME
-
 if TYPE_CHECKING:
     from cs_tools.sync.types import TableRows
     from cs_tools.thoughtspot import ThoughtSpot
+
+FMT_TSLOAD_DATETIME = "%Y-%m-%d %H:%M:%S"
 
 
 def maybe_fetch_from_context() -> ThoughtSpot:

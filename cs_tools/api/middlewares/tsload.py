@@ -13,7 +13,6 @@ import httpx
 
 from cs_tools import utils
 from cs_tools._compat import TypedDict
-from cs_tools.const import FMT_TSLOAD_DATE, FMT_TSLOAD_DATETIME, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
 from cs_tools.errors import InsufficientPrivileges, TSLoadServiceUnreachable
 from cs_tools.types import (
     GUID as CycleID,
@@ -29,6 +28,11 @@ if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
+# ISO datetime format
+FMT_TSLOAD_DATE = "%Y-%m-%d"
+FMT_TSLOAD_TIME = "%H:%M:%S"
+FMT_TSLOAD_DATETIME = f"{FMT_TSLOAD_DATE} {FMT_TSLOAD_TIME}"
+FMT_TSLOAD_TRUE_FALSE = "True_False"
 
 
 class CachedRedirectInfo(TypedDict):
