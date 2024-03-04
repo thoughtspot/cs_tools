@@ -243,8 +243,15 @@ def bi_server(
             syncer.dump("ts_bi_server", data=renamed)
 
 
+@app.command("gather", dependencies=[thoughtspot], hidden=True)
+def _gather(ctx: typer.Context):
+    # Here for backwards compatability.
+    command = typer.main.get_command(app).get_command(ctx, "metadata")
+    ctx.forward(command)
+
+
 @app.command(dependencies=[thoughtspot])
-def gather(
+def metadata(
     ctx: typer.Context,
     # tables: List[str] = typer.Option(None, help="table names to collect data on, can be specified multiple times"),
     include_column_access: bool = typer.Option(
