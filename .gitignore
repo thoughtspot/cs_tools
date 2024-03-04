@@ -36,6 +36,7 @@ venv.bak/
 
 # ignore project files
 *.sublime-*
+*.vscode*
 
 # ignore virtualization
 .python-version
