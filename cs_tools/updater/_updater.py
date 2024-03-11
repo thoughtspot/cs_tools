@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import contextlib
 import logging
+import json
 import os
 import pathlib
 import shutil
@@ -115,15 +116,16 @@ class CSToolsVirtualEnvironment:
 
         return output
 
-    def is_package_installed(self, package: str) -> bool:
+    def is_package_installed(self, package: "PipRequirement") -> bool:
         """ """
         # Import here, as _updater.py is used in _bootstrapper.py , but not this method.
         from awesomeversion import AwesomeVersion
 
         rc = self.pip("list", "--format", "json")
+        rc = json.loads(rc[0])
 
         for installed in rc:
-            if installed["name"] == package.name and AwesomeVersion(installed["version"]) >= package.version:
+            if installed["name"] == package.requirement.name:
                 return True
 
         return False

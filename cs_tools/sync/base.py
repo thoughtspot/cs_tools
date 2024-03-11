@@ -48,6 +48,7 @@ class SyncerManifest(_GlobalModel):
         __file__ = fp
         __path__ = [fp.parent.as_posix()]
 
+        self.__ensure_pip_requirements__()
         spec = importlib.util.spec_from_file_location(__name__, __file__, submodule_search_locations=__path__)
         module = importlib.util.module_from_spec(spec)
 
@@ -56,6 +57,21 @@ class SyncerManifest(_GlobalModel):
 
         spec.loader.exec_module(module)
         return getattr(module, self.syncer_class)
+
+    def __ensure_pip_requirements__(self) -> None:
+        """Parse the SyncerManifest and install requirements."""
+        if utils.determine_editable_install():
+            return
+
+        for requirement in self.requirements:
+            log.debug(f"Processing requirement: {requirement}")
+
+            if cs_tools_venv.is_package_installed(requirement):
+                log.debug("Requirement satisfied, no install necessary")
+                continue
+
+            log.info(f"Installing package: {requirement}")
+            cs_tools_venv.pip("install", f"{requirement.requirement}", *requirement.pip_args)
 
 
 class Syncer(_GlobalSettings):
@@ -82,7 +98,6 @@ class Syncer(_GlobalSettings):
         if cls.__syncer_name__ in _registry:
             return
 
-        cls.__ensure_pip_requirements__()
         cls.__init__ = ft.partialmethod(cls.__lifecycle_init__, __original_init__=cls.__init__)
 
         # Registration is successful, we can add it to the global now.
@@ -98,24 +113,6 @@ class Syncer(_GlobalSettings):
             raise errors.SyncerInitError(pydantic_error=e, proto=e.title) from None
 
         child_self.__finalize__()
-
-    @classmethod
-    def __ensure_pip_requirements__(cls) -> None:
-        """Parse the SyncerManifest and install requirements."""
-        if utils.determine_editable_install():
-            return
-
-        manifest = SyncerManifest.model_validate_json(cls.__manifest_path__.read_text())
-
-        for requirement in manifest.requirements:
-            log.debug(f"Processing requirement: {requirement}")
-
-            if cs_tools_venv.is_package_installed(requirement):
-                log.debug("Requirement satisfied, no install necessary")
-                continue
-
-            log.info(f"Installing package: {requirement}")
-            cs_tools_venv.pip("install", f"{requirement}", *requirement.pip_args)
 
     @property
     def name(self) -> str:
