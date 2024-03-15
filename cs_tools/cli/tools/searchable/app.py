@@ -180,6 +180,7 @@ def bi_server(
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions] [timestamp] != 'today'"
+        + "[incident id] != [incident id].{null}"
         + ("" if not compact else " [User Action] != [User Action].invalid [User Action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
@@ -195,20 +196,21 @@ def bi_server(
         with tasks["gather_search"]:
             data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
 
-            # CLUSTER BY --> TIMESTAMP , ANSWER_BOOK_GUID , USER_GUID
-            data.sort(key=lambda r: tuple(map(str, (r["Timestamp"], r["Answer Book GUID"], r["User Id"]))))
+            # SEARCH DATA API SEEMS TO HATE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
+            data = [dict(t) for t in {tuple(sorted(d.items())) for d in data}]
+
+            # CLUSTER BY --> TIMESTAMP .. everything else is irrelevant after TS.
+            data.sort(key=lambda r: (r["Timestamp"].replace(tzinfo=dt.timezone.utc), r["Incident Id"], r["Viz Id"]))
 
             renamed = []
             curr_date, sk_idx = None, 0
 
             for row in data:
-                # care for data quality errors
-                if row["Incident Id"] is None:
-                    continue
+                row_date = row["Timestamp"].replace(tzinfo=dt.timezone.utc).date()
 
                 # reset the surrogate key every day
-                if curr_date != row["Timestamp"].date():
-                    curr_date = row["Timestamp"].date()
+                if curr_date != row_date:
+                    curr_date = row_date
                     sk_idx = 0
 
                 sk_idx += 1
@@ -216,8 +218,8 @@ def bi_server(
                 renamed.append(
                     models.BIServer.validated_init(
                         **{
-                            "sk_dummy": f"{ts.session_context.thoughtspot.cluster_id}-{row['Timestamp']}-{sk_idx}",
                             "cluster_guid": ts.session_context.thoughtspot.cluster_id,
+                            "sk_dummy": f"{ts.session_context.thoughtspot.cluster_id}-{row_date}-{sk_idx}",
                             "org_id": row.get("Org ID", None),
                             "incident_id": row["Incident Id"],
                             "timestamp": row["Timestamp"],
