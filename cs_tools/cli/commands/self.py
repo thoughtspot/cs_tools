@@ -33,24 +33,11 @@ app = typer.Typer(
 
 
 @app.command(cls=CSToolsCommand)
-def pip_install(
-    requirement: str = typer.Argument(..., help="name or requirement of the package to install"),
-    upgrade: bool = typer.Option(False, help="upgrade the requirement to the newest available version"),
-    update: bool = typer.Option(False, help="alias for upgrade", hidden=True),
-    pip_opts: str = typer.Option(None, help="https://pip.pypa.io/en/stable/cli/pip_install/#options", hidden=True),
-):
+def sync():
     """
-    Interact with the CS Tools environment's pip.
+    Sync your local environment with the most up-to-date dependencies.
     """
-    args = []
-
-    if upgrade or update:
-        args.append("--upgrade")
-
-    if pip_opts is not None:
-        args.extend(pip_opts.split(" "))
-
-    cs_tools_venv.pip("install", requirement, *args)
+    cs_tools_venv.pip("install", "--upgrade", "--upgrade-strategy", "eager")
 
 
 @app.command(cls=CSToolsCommand, name="update")
