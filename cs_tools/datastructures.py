@@ -15,6 +15,7 @@ import datetime as dt
 import logging
 import platform
 import sys
+import uuid
 
 from awesomeversion import AwesomeVersion
 import pydantic
@@ -145,7 +146,7 @@ class LocalSystemInfo(_GlobalModel):
 class UserInfo(_GlobalModel):
     """Information about the logged in user."""
 
-    guid: pydantic.UUID4
+    guid: uuid.UUID
     username: str
     display_name: str
     privileges: set[Union[types.GroupPrivilege, str]]

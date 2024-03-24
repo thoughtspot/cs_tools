@@ -138,7 +138,7 @@ class SyncerProtocolType(click.ParamType):
 
             if not definition_fp.exists():
                 raise ConfigDoesNotExist(
-                    error="Syncer definition [b blue]{name}[/] does not exist.", name=definition_fp.as_posix()
+                    title="Syncer definition [b blue]{name}[/] does not exist.", name=definition_fp.as_posix()
                 )
 
             return {"definition_fp": definition_fp}

@@ -1,7 +1,7 @@
 """
 Contains code for the CS Tools Bootstrapper.
 
-This code must stay within the python standard library and be python 3.7+ compliant.
+This code must stay within the python standard library and be python 3.9+ compliant.
 
 Some of the imports look funny as hell, but essentially we delay them as late as
 possible so we don't need to worry about something not being available on an
@@ -13,6 +13,7 @@ from argparse import RawTextHelpFormatter
 import argparse
 import datetime as dt
 import logging
+import logging.config
 import os
 import platform
 import shutil
@@ -20,7 +21,8 @@ import sys
 import sysconfig
 
 log = logging.getLogger("cs_tools.bootstrapper")
-__version__ = "1.0.0"
+__version__ = "1.0.1"
+__minimum_python_version__ = (3, 9)
 
 
 def cli():
@@ -233,28 +235,45 @@ def _setup_logging(verbose=True):
     import pathlib
     import tempfile
 
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-
-    # CONSOLE LOGGER IS PRETTY
-    handler = logging.StreamHandler()
-    handler.name = "console"
-
-    format_ = ColorSupportedFormatter(datefmt="%H:%M:%S")
-    handler.setFormatter(format_)
-    handler.setLevel(logging.INFO if not verbose else logging.DEBUG)
-    root.addHandler(handler)
-
-    # FILE LOGGER IS VERBOSE
     random_dir = tempfile.NamedTemporaryFile().name
-    random_path = pathlib.Path.cwd() / f"cs_tools-bootstrap-error-{pathlib.Path(random_dir).name}.log"
-    handler = InMemoryUntilErrorHandler(random_path)
-    handler.name = "disk"
+    random_path = pathlib.Path.cwd().joinpath(f"cs_tools-bootstrap-error-{pathlib.Path(random_dir).name}.log")
 
-    format_ = logging.Formatter(fmt="%(levelname)-8s | %(asctime)s | %(filename)s:%(lineno)d | %(message)s")
-    handler.setFormatter(format_)
-    handler.setLevel(logging.DEBUG)
-    root.addHandler(handler)
+    config = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "pretty": {
+                "()": lambda: ColorSupportedFormatter(datefmt="%H:%M:%S"),
+            },
+            "detail": {
+                "format": "%(levelname)-8s | %(asctime)s | %(filename)s:%(lineno)d | %(message)s",
+                "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": logging.INFO if not verbose else logging.DEBUG,
+                "formatter": "pretty",
+            },
+            "disk": {
+                "()": lambda: InMemoryUntilErrorHandler(filename=random_path),
+                "level": "DEBUG",
+                "formatter": "detail",
+            },
+        },
+        "loggers": {
+            "root": {
+                "level": "DEBUG",
+                "handlers": [
+                    "console",
+                    "disk",
+                ],
+            }
+        },
+    }
+
+    logging.config.dictConfig(config)
 
 
 class ColorSupportedFormatter(logging.Formatter):
@@ -400,13 +419,13 @@ def cli_type_filepath(fp):
         raise argparse.ArgumentTypeError(f"path '{fp}' does not exist")
 
     if path.is_file():
-        raise argparse.ArgumentValueError(f"path must be a directory, got '{fp}'")
+        raise argparse.ArgumentTypeError(f"path must be a directory, got '{fp}'")
 
     return path
 
 
 def get_cs_tools_venv(find_links):
-    # type: () -> CSToolsVirtualEnvironment
+    # type: (bool) -> _updater.CSToolsVirtualEnvironment
     """Get the CS Tools Virtual Environment."""
     import pathlib
 
@@ -416,8 +435,10 @@ def get_cs_tools_venv(find_links):
     if not updater_py.exists():
         log.info(f"Missing '{updater_py}', downloading from GitHub")
         url = "https://api.github.com/repos/thoughtspot/cs_tools/contents/cs_tools/updater/_updater.py"
-        data = http_request(url)
+        data = http_request(url, to_json=True)
+        assert isinstance(data, dict)
         data = http_request(data["download_url"], to_json=False)
+        assert isinstance(data, bytes)
         updater_py.write_text(data.decode())
         log.info(f"Downloaded as '{updater_py}'")
 
@@ -457,14 +478,11 @@ def _cleanup():
             shutil.rmtree(path, ignore_errors=True)
 
         if path.is_file():
-            try:
-                path.unlink()
-            except FileNotFoundError:
-                pass
+            path.unlink(missing_ok=True)
 
 
 def get_path_manipulator(venv):
-    # type: () -> _updater.ShellProfilePath
+    # type: (_bootstrapper.CSToolsVirtualEnvironment) -> _updater.ShellProfilePath
     """Get the system's ShellProfile. This is a CS Tools abstraction."""
     import _updater
 
@@ -478,7 +496,7 @@ def get_path_manipulator(venv):
 
 
 def http_request(url, to_json=True, timeout=None):
-    # type: (str, bool, Optional[]) -> Dict[str, Any]
+    # type: (str, bool, typing.Optional[float]) -> dict[str, typing.Any] | bytes
     """
     Makes a GET request to <url>.
     """
@@ -509,11 +527,12 @@ def http_request(url, to_json=True, timeout=None):
 
 
 def get_latest_cs_tools_release(allow_beta=False, timeout=None):
-    # type: (bool) -> Dict[str, Any]
+    # type: (bool, typing.Optional[float]) -> dict[str, typing.Any]
     """
     Get the latest CS Tools release.
     """
     releases = http_request("https://api.github.com/repos/thoughtspot/cs_tools/releases", timeout=timeout)
+    assert isinstance(releases, list)
 
     for release in releases:
         if release["prerelease"] and not allow_beta:
@@ -534,7 +553,7 @@ def main():
         return_code = cli()
 
     except Exception as e:
-        disk_handler = next(h for h in log.root.handlers if h.name == "disk")
+        disk_handler = next(h for h in log.root.handlers if isinstance(h, InMemoryUntilErrorHandler))
         disk_handler.drain_buffer()
         log.debug(f"Error found: {e}", exc_info=True)
         log.warning(
@@ -556,7 +575,7 @@ def main():
     msg = (
         "{y}It looks like you are running {r}Python v{version}{y}!{x}"
         "\n"
-        "\nCS Tools supports {b}python version 3.7{x} or greater."
+        "\nCS Tools supports {b}python version {minimum_support}{x} or greater."
     )
 
     if sys.version_info <= (2, 7, 99) and not (sys.platform == "win32"):
@@ -575,6 +594,7 @@ def main():
         "y": _YELLOW,
         "x": _RESET,
         "version": py_vers,
+        "minimum_support": ".".join(__minimum_python_version__),
         "args": args,
     }
 

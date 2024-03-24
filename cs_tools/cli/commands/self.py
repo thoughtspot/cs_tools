@@ -131,6 +131,7 @@ def info(
 def analytics():
     """Re-prompt for analytics."""
     # RESET THE ASKS
+    assert meta.analytics is not None
     meta.analytics.is_opted_in = None
     meta.analytics.can_record_url = None
 
@@ -168,10 +169,16 @@ def download(
     venv = cs_tools_venv
 
     # freeze our own environment, which has all the dependencies needed to build
-    frozen = {req for req in venv.pip("freeze", "--quiet") if "cs_tools" not in req}
+    frozen = {req for req in venv.pip("freeze", "--quiet").stdout.decode().split("\n") if "cs_tools" not in req}
+
+    # add in the latest release
+    frozen.add(f"cs_tools @ https://github.com/thoughtspot/cs_tools/archive/{release_tag}.zip")
 
     # add packaging stuff since we'll use --no-deps
-    frozen.update(("pip >= 23.1", "setuptools >= 42", "setuptools_scm >= 6.2", "wheel"))
+    frozen.add("pip >= 23.1")
+    frozen.add("setuptools >= 42")
+    frozen.add("setuptools_scm >= 6.2")
+    frozen.add("wheel")
 
     # fmt: off
     # add in version specific constraints (in case they don't get exported from the current environment)
@@ -181,9 +188,6 @@ def download(
 
     if "win" in platform:
         frozen.add("pyreadline3 == 3.4.1")        # from cs_tools
-
-    # add in the latest release
-    frozen.add(f"cs_tools @ https://github.com/thoughtspot/cs_tools/archive/{release_tag}.zip")
 
     venv.pip(
         "download", *frozen,
@@ -200,9 +204,10 @@ def download(
 
     from cs_tools.updater import _bootstrapper, _updater
 
+    zip_fp = directory.joinpath(f"cs-tools_{__version__}_{platform}_{python_version}")
     shutil.copy(_bootstrapper.__file__, requirements.joinpath("_bootstrapper.py"))
     shutil.copy(_updater.__file__, requirements.joinpath("_updater.py"))
-    shutil.make_archive(directory.joinpath(f"cs-tools_{__version__}_{platform}_{python_version}"), "zip", requirements)
+    shutil.make_archive(zip_fp.as_posix(), "zip", requirements)
     shutil.rmtree(requirements)
 
 
