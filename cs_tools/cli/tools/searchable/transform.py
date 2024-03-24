@@ -249,7 +249,7 @@ def to_metadata_object(
                 object_subtype=row.get("type", None),
                 data_source_guid=row["data_source"]["id"] if "data_source" in row else None,
                 is_sage_enabled=not row.get("aiAnswerGenerationDisabled", True),
-                is_verified=row.get("isVerified", False),
+                is_verified=row.get("isVerified", False) if row["metadata_type"] == "PINBOARD_ANSWER_BOOK" else None,
             )
 
             if (model.cluster_guid, str(model.org_id), model.object_guid) in ever_seen:
@@ -346,6 +346,7 @@ def to_dependent_object(data: ArbitraryJsonFormat, cluster: str) -> list[TableRo
                 modified=row["modified"] / 1000,
                 object_type=row["metadata_type"],
                 object_subtype=row.get("type", None),
+                is_verified=row.get("isVerified", False) if row["metadata_type"] == "PINBOARD_ANSWER_BOOK" else None,
             )
         )
 

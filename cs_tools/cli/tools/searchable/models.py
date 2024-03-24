@@ -149,7 +149,7 @@ class MetadataObject(ValidatedSQLModel, table=True):
     object_subtype: Optional[str]
     data_source_guid: Optional[str]
     is_sage_enabled: bool
-    is_verified: bool
+    is_verified: Optional[bool]
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
@@ -225,6 +225,7 @@ class DependentObject(ValidatedSQLModel, table=True):
     modified: dt.datetime
     object_type: str
     object_subtype: Optional[str]
+    is_verified: Optional[bool]
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
