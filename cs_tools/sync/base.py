@@ -26,7 +26,7 @@ _registry: set[str] = set()
 
 class PipRequirement(_GlobalModel):
     requirement: Requirement
-    pip_args: Optional[list[str]] = pydantic.Field(default_factory=list)
+    pip_args: Optional[list[str]] = []  # noqa: RUF012
 
     @pydantic.model_validator(mode="before")
     @classmethod
@@ -41,7 +41,7 @@ class PipRequirement(_GlobalModel):
 class SyncerManifest(_GlobalModel):
     name: str
     syncer_class: str
-    requirements: Optional[list[PipRequirement]] = pydantic.Field(default_factory=list)
+    requirements: Optional[list[PipRequirement]] = []  # noqa: RUF012
 
     def import_syncer_class(self, fp: pathlib.Path) -> type[Syncer]:
         __name__ = f"cs_tools_{fp.parent.stem}_syncer"  # noqa: A001
@@ -139,7 +139,7 @@ class DatabaseSyncer(Syncer, is_base_class=True):
     """A connection to an Database."""
 
     metadata: sqlmodel.MetaData = sqlmodel.MetaData()
-    models: list[type[ValidatedSQLModel]] = pydantic.Field(default_factory=list)
+    models: list[type[ValidatedSQLModel]] = []  # noqa: RUF012
     load_strategy: Literal["APPEND", "TRUNCATE", "UPSERT"] = "APPEND"
 
     # To be defined during __init__() by subclasses of the DatabaseSyncer

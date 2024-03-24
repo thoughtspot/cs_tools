@@ -33,7 +33,7 @@ class CSV(Syncer):
     header: bool = True
     save_strategy: Literal["APPEND", "OVERWRITE"] = "OVERWRITE"
 
-    _written_header: dict[str, bool] = pydantic.PrivateAttr(default_factory=dict)
+    _written_header: dict[str, bool] = {}  # noqa: RUF012
     """Whether or not the header has been written for a given file already"""
 
     @pydantic.field_validator("delimiter", "escape_character", mode="after")

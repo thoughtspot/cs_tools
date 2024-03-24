@@ -248,7 +248,7 @@ class TMLAPIResponse(pydantic.BaseModel):
     tml_type_name: str
     name: str
     status_code: str
-    error_messages: Optional[list[str]] = pydantic.Field(default_factory=list)
+    error_messages: Optional[list[str]] = []
     _full_response: Any = None
 
     @pydantic.field_validator("status_code", mode="before")
