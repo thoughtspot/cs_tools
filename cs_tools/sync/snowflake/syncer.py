@@ -135,6 +135,7 @@ class Snowflake(DatabaseSyncer):
 
     def stage_and_put(self, tablename: str, *, data: TableRows) -> str:
         """ """
+        assert self.temp_dir is not None
         # ==============================================================================================================
         # DEFINE WHERE TO UPLOAD
         # ==============================================================================================================

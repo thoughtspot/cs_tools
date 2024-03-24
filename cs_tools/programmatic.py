@@ -17,6 +17,6 @@ def get_cs_tool(name: str) -> CSTool:
     tool_dir = pathlib.Path(__project__.__file__).parent / "cli" / "tools" / name
 
     if not tool_dir.exists():
-        raise CSToolsError(title=f"no tool registered tool found by name '{name}'")
+        raise CSToolsError(f"no tool registered tool found by name '{name}'")
 
     return CSTool(directory=tool_dir)

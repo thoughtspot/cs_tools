@@ -26,7 +26,7 @@ _registry: set[str] = set()
 
 class PipRequirement(_GlobalModel):
     requirement: Requirement
-    pip_args: Optional[list[str]] = []  # noqa: RUF012
+    pip_args: list[str] = []  # noqa: RUF012
 
     @pydantic.model_validator(mode="before")
     @classmethod
@@ -41,7 +41,7 @@ class PipRequirement(_GlobalModel):
 class SyncerManifest(_GlobalModel):
     name: str
     syncer_class: str
-    requirements: Optional[list[PipRequirement]] = []  # noqa: RUF012
+    requirements: list[PipRequirement] = []  # noqa: RUF012
 
     def import_syncer_class(self, fp: pathlib.Path) -> type[Syncer]:
         __name__ = f"cs_tools_{fp.parent.stem}_syncer"  # noqa: A001
@@ -50,6 +50,10 @@ class SyncerManifest(_GlobalModel):
 
         self.__ensure_pip_requirements__()
         spec = importlib.util.spec_from_file_location(__name__, __file__, submodule_search_locations=__path__)
+
+        if spec is None or spec.loader is None:
+            raise errors.CSToolsError(f"Could not import syncer class: {__name__} from {__file__}")
+
         module = importlib.util.module_from_spec(spec)
 
         # add to already-loaded modules, so further imports within each directory will work
@@ -77,8 +81,8 @@ class SyncerManifest(_GlobalModel):
 class Syncer(_GlobalSettings):
     """A connection to a Data store."""
 
-    __manifest_path__: pathlib.Path = None
-    __syncer_name__: str = None
+    __manifest_path__: Optional[pathlib.Path] = None
+    __syncer_name__: Optional[str] = None
 
     def __init_subclass__(cls, is_base_class: bool = False):
         # DEV NOTE: @boonhapus, 2023/12/18
@@ -98,7 +102,7 @@ class Syncer(_GlobalSettings):
         if cls.__syncer_name__ in _registry:
             return
 
-        cls.__init__ = ft.partialmethod(cls.__lifecycle_init__, __original_init__=cls.__init__)
+        cls.__init__ = ft.partialmethod(cls.__lifecycle_init__, __original_init__=cls.__init__)  # type: ignore
 
         # Registration is successful, we can add it to the global now.
         _registry.add(cls.__syncer_name__)
@@ -117,6 +121,7 @@ class Syncer(_GlobalSettings):
     @property
     def name(self) -> str:
         """Name of the Syncer."""
+        assert self.__syncer_name__ is not None
         return self.__syncer_name__
 
     def __finalize__(self) -> None:

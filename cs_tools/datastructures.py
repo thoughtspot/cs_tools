@@ -76,7 +76,7 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
     @property
     def clustered_on(self) -> list[sa.Column]:
         """Define the sorting strategy for the given table."""
-        return self.primary_key if self._clustered_on is None else self._clustered_on
+        return self.__table__.primary_key if self._clustered_on is None else self._clustered_on
 
 
 class ExecutionEnvironment(_GlobalSettings):

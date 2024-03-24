@@ -45,8 +45,14 @@ class CSV(Syncer):
 
     @pydantic.field_validator("quoting", mode="after")
     @classmethod
-    def _map_to_csv_literals(cls, value: str) -> str:
-        return {"ALL": csv.QUOTE_ALL, "MINIMAL": csv.QUOTE_MINIMAL}.get(value)
+    def _map_to_csv_literals(cls, value: str) -> int:
+        if value.upper() == "ALL":
+            return csv.QUOTE_ALL
+
+        if value.upper() == "MINIMAL":
+            return csv.QUOTE_MINIMAL
+
+        raise ValueError(f"Invalid quoting type: {value}")
 
     def dialect_and_format_parameters(self) -> dict[str, Any]:
         """The specification passed to csv.DictWriter"""

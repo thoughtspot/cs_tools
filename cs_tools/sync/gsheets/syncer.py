@@ -81,4 +81,13 @@ class GoogleSheets(Syncer):
             new.append(list(row.values()))
 
         # SAVE ON API CALLS, ONLY MAKE A SINGLE ONE
-        tab.append_rows(new)
+        try:
+            tab.append_rows(new)
+        except gspread.exceptions.APIError as e:
+            try:
+                log.error(f"GoogleSheets Error: {e._extract_text(e)}")
+            except AttributeError:
+                log.error(f"GoogleSheets Error: {e}")
+
+            if "limit of 10000000 cells" in str(e):
+                log.warning("Consider using a Database Syncer instead, such as SQLite.")
