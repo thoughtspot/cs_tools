@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
-import os
 import pathlib
 import platform
 import shutil
@@ -58,19 +57,10 @@ def update(
         file_okay=False,
         resolve_path=True,
     ),
-    force_reinstall: bool = typer.Option(
-        False,
-        "--force-reinstall",
-        help="reinstall all packages even if they are already up-to-date.",
-    ),
-    venv_name: str = typer.Option(None, "--venv-name", hidden=True),
 ):
     """
     Upgrade CS Tools.
     """
-    if venv_name is not None:
-        os.environ["CS_TOOLS_CONFIG_DIRNAME"] = venv_name
-
     requires = "cs_tools[cli]"
 
     if offline is not None:
@@ -87,8 +77,8 @@ def update(
         log.info(f"Found version: [b cyan]{release['tag_name']}")
         requires += f" @ https://github.com/thoughtspot/cs_tools/archive/{release['tag_name']}.zip"
 
-        if not force_reinstall and AwesomeVersion(release["tag_name"]) <= AwesomeVersion(__version__):
-            log.info("CS Tools is [b green]already up to date[/]!")
+        if AwesomeVersion(release["tag_name"]) <= AwesomeVersion(__version__):
+            log.info(f"CS Tools is [b green]already up to date[/]! (your version: {__version__})")
             raise typer.Exit(0)
 
     log.info("Upgrading CS Tools and its dependencies.")
