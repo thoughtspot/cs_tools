@@ -13,14 +13,16 @@ import json
 import logging
 import pathlib
 import urllib
+import urllib.error
 import uuid
 
 from awesomeversion import AwesomeVersion
 import pydantic
+import rich
 import sqlalchemy as sa
 import toml
 
-from cs_tools import __version__, types, utils, validators
+from cs_tools import __project__, __version__, types, utils, validators
 from cs_tools._compat import Self
 from cs_tools.datastructures import ExecutionEnvironment, _GlobalModel, _GlobalSettings
 from cs_tools.errors import ConfigDoesNotExist
@@ -65,6 +67,8 @@ class MetaConfig(_GlobalModel):
     analytics: Optional[AnalyticsOptIn] = AnalyticsOptIn()
     environment: Optional[ExecutionEnvironment] = ExecutionEnvironment()
     created_in_cs_tools_version: validators.CoerceVersion = __version__
+
+    _new_version_notified_ack: bool = False
 
     @pydantic.model_validator(mode="before")
     @classmethod
@@ -176,10 +180,38 @@ class MetaConfig(_GlobalModel):
         if AwesomeVersion(self.remote.version or "v0.0.0") <= AwesomeVersion(__version__):
             return ""
 
-        url = f"https://github.com/thoughtspot/cs_tools/releases/tag/{self.remote.version}"
-        msg = f"[b green]Newer version available![/] [b cyan][link={url}]{self.remote.version}[/][/]"
-        log.info(msg)
-        return msg
+        assert self.remote is not None
+        assert self.environment is not None
+
+        url = f"{__project__.__repo__}/releases/tag/{self.remote.version}"
+
+        # DEV NOTE: @boonhapus, 2024/03/19
+        # It's super likely that we haven't set up logging yet in this part of the process flow.
+
+        if not self._new_version_notified_ack:
+            self._new_version_notified_ack = True
+
+            if self.environment.is_ci:
+                print(  # noqa: T201
+                    f"WARNING: You are using cs tools version {__version__}, however version {self.remote.version} is "
+                    f"available. You should consider pinning your dependency to a newer release.\n\nMore information "
+                    f"can be found at   {__project__.__repo__}/releases/latest"
+                )
+            else:
+                rich.print(
+                    rich.panel.Panel.fit(
+                        (
+                            f"\nOut now, CS Tools version {self.remote.version}!"
+                            f"\n\nCheck out the changes in the [b cyan][link={url}]Release Notes[/][/]"
+                            f"\n\nUpgrade with [b yellow]cs_tools self update[/]"
+                        ),
+                        title="An update has been released! :tada:",
+                        title_align="left",
+                        border_style="bold green",
+                    )
+                )
+
+        return f"A [b green]new[/] CS Tools version is available! :tada: [b cyan link={url}]{self.remote.version}[/]"
 
 
 # GLOBAL SCOPE
@@ -282,6 +314,8 @@ class CSToolsConfig(_GlobalSettings):
     @pydantic.field_serializer("temp_dir")
     @classmethod
     def _serialize_as_string(self, temp_dir: pathlib.Path) -> str:
+        if temp_dir is None:
+            return None
         return temp_dir.as_posix()
 
     # ====================
