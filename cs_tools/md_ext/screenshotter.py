@@ -1,57 +1,60 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any
 from xml.etree.ElementTree import Element, SubElement
 import datetime as dt
 import functools as ft
 import io
 
-from cs_tools.cli.main import _setup_tools, app
 from cs_tools.cli.ux import rich_console
+from markdown import Markdown
 from markdown.blockprocessors import BlockProcessor
 from markdown.extensions import Extension
 import cs_tools
-
-if TYPE_CHECKING:
-    from markdown import Markdown
-    import typer
+import typer
 
 
 @ft.cache
 def _setup_cli() -> typer.Typer:
     """ """
-    from cs_tools.cli import _config, _log, _self, _tools
+    from cs_tools.cli.commands import (
+        config as config_app,
+        log as log_app,
+        self as self_app,
+        tools as tools_app,
+    )
+    from cs_tools.cli.commands.main import app
 
-    _setup_tools(_tools.app, ctx_settings=app.info.context_settings)
-    app.add_typer(_tools.app)
-    app.add_typer(_config.app)
-    app.add_typer(_self.app)
-    app.add_typer(_log.app)
+    app.add_typer(tools_app.app)
+    app.add_typer(config_app.app)
+    app.add_typer(self_app.app)
+    app.add_typer(log_app.app)
     return app
 
 
 class CSToolsScreenshotProcesser(BlockProcessor):
     """CSToolsScreenshot block processors."""
 
-    BASE_FILEPATH = cs_tools.utils.get_package_dir("cs_tools") / "docs" / "terminal-screenshots"
+    BASE_FILEPATH = cs_tools.utils.get_package_directory("cs_tools").parent / "docs" / "terminal-screenshots"
     BLOCK_IDENTITY = "~cs~tools"
     CLASS_NAME = "screenshotter"
 
-    def _path_safe_command(self, command: list[str]) -> str:
-        """ """
+    def _path_safe_command(self, command: Any) -> str:
+        """Clean the command to make it pathsafe, for saving SVG to disk."""
         if isinstance(command, list):
             command = " ".join(command)
 
+        assert isinstance(command, str)
         return command.replace(" ", "_").replace("-", "_").replace("://", "_").replace(".", "_")
 
     def make_svg_screenshot(self, command: list[str]) -> None:
         """Save a screenshot for a given command."""
-        file = self.BASE_FILEPATH.joinpath(f"{self._path_safe_command(command)}.svg")
-        now = dt.datetime.now(tz=dt.timezone.utc)
-        last_file_audit = dt.datetime.fromtimestamp(file.stat().st_mtime, tz=dt.timezone.utc)
+        if (fp := self.BASE_FILEPATH.joinpath(f"{self._path_safe_command(command)}.svg")).exists():
+            now = dt.datetime.now(tz=dt.timezone.utc)
+            last_file_audit = dt.datetime.fromtimestamp(fp.stat().st_mtime, tz=dt.timezone.utc)  # type: ignore
 
-        if file.exists() and (now - last_file_audit) <= dt.timedelta(minutes=5):
-            return
+            if (now - last_file_audit) <= dt.timedelta(minutes=5):
+                return
 
         cli = _setup_cli()
 
@@ -64,7 +67,7 @@ class CSToolsScreenshotProcesser(BlockProcessor):
         cli(args=command[1:], prog_name="cs_tools", standalone_mode=False)
 
         # save to disk
-        rich_console.save_svg(f"{self.BASE_FILEPATH}/{self._path_safe_command(command)}.svg", title=" ".join(command))
+        rich_console.save_svg(fp.as_posix(), title=" ".join(command))
 
     #
     #
@@ -74,7 +77,7 @@ class CSToolsScreenshotProcesser(BlockProcessor):
         """Determine if a Markdown block of test matches, and if we should write."""
         return block.startswith(self.BLOCK_IDENTITY)
 
-    def run(self, parent: Element, blocks: list[str]) -> None:
+    def run(self, parent: Element, blocks: list[str]) -> bool:
         """Modify the blocks passed in this text blob."""
         for idx, block in enumerate(blocks[:]):
             # Process the block that matches our CS TOOLS tag
