@@ -1,0 +1,175 @@
+guid: 95901c39-5987-4631-9d5d-d4ed6b73c2b1
+view:
+  name: TS_BI_SERVER
+  tables:
+  - id: "TS: BI Server"
+    name: "TS: BI Server"
+  formulas:
+  - id: org_id
+    name: org_id
+    expr: "0"
+    properties:
+      column_type: ATTRIBUTE
+    was_auto_generated: false
+  - id: sk_dummy
+    name: sk_dummy
+    expr: "concat ( [cluster_guid] , \"-\" , to_string ( [Timestamp] , \"%Y-%m-%d\" ) , \"-\" , group_aggregate ( to_string ( rank ( max ( [Timestamp] ) , 'asc' ) ) , { [Timestamp] } , { } ) )"
+    was_auto_generated: false
+  - id: cluster_guid
+    name: cluster_guid
+    expr: "'{{ TS_CLUSTER_GUID }}'"
+    was_auto_generated: false
+  search_query: "sort by [Timestamp] [Timestamp].detailed [cluster_guid] [sk_dummy] [org_id] [Incident Id] [Timestamp] [Timestamp].detailed [URL] [HTTP Response Code] [Browser Type] [Browser Version] [Client Type] [Client Id] [Answer Book GUID] [Viz Id] [User Id] [User Action] [Query Text] [Response Size] [Latency (us)] [Impressions] [User Action] != [User Action].invalid [User Action].{null}"
+  view_columns:
+  - name: Timestamp
+    description: Datetime of when the action took place
+    search_output_column: Timestamp
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      format_pattern: yyyyMMdd HH':'mm':'ss
+      value_casing: UNKNOWN
+  - name: CLUSTER_GUID
+    description: This column is only used for JOINs.
+    search_output_column: cluster_guid
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+  - name: SK_DUMMY
+    description: This column is only used for uniqueness.
+    search_output_column: sk_dummy
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+  - name: ORG_ID
+    description: This column is only used for JOINs.
+    search_output_column: org_id
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+  - name: Incident ID
+    description: Unique ID of the event
+    search_output_column: Incident Id
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+  - name: URL
+    description: API endpoint called as part of the event
+    search_output_column: URL
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+  - name: HTTP Response
+    description: Indicates whether the event request was successfully completed (<300) or failed (>=400)
+    search_output_column: HTTP Response Code
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      synonyms:
+      - HTTP Response Code
+  - name: Browser Type
+    description: The web browser client used to access ThoughtSpot
+    search_output_column: Browser Type
+    properties:
+      column_type: ATTRIBUTE
+  - name: Browser Version
+    description: The web browser client version used to access ThoughtSpot
+    search_output_column: Browser Version
+    properties:
+      column_type: ATTRIBUTE
+  - name: Client Type
+    description: "Either Class Experience, New Experience, TSE Embed, or Mobile"
+    search_output_column: Client Type
+    properties:
+      column_type: ATTRIBUTE
+  - name: Client ID
+    description: Unique ID of the application accessing ThoughtSpot
+    search_output_column: Client Id
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+  - name: ANSWER_BOOK_GUID
+    description: This column is only used for JOINs.
+    search_output_column: Answer Book GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+  - name: Visualization GUID
+    description: "GUID of the Visualization, typically used to identify a liveboard viz"
+    search_output_column: Viz Id
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      synonyms:
+      - Viz Id
+  - name: USER_ID
+    description: This column is only used for JOINs.
+    search_output_column: User Id
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+  - name: User Action
+    description: "An event type category, describing what action the User took"
+    search_output_column: User Action
+    properties:
+      column_type: ATTRIBUTE
+  - name: Search Query
+    description: Columns / Search Terms used to generate the query
+    search_output_column: Query Text
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      synonyms:
+      - Query Text
+  - name: Response Size (b)
+    description: Size of response content from the action taken by the User
+    search_output_column: Total Response Size
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+  - name: Latency (us)
+    description: "Roundtrip time in microseconds, from the point of \"Go\" to Visualization"
+    search_output_column: Total Latency (us)
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+  - name: Impressions
+    description: A scaling factor based on the number of visualizations shown
+    search_output_column: Total Impressions
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+  joins_with:
+  - name: TS_BI_SERVER_to_TS_CLUSTER
+    destination:
+      name: TS_CLUSTER
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_CLUSTER::Cluster GUID]"
+    type: INNER
+  - name: TS_BI_SERVER_to_TS_DEPENDENT_OBJECT
+    destination:
+      name: TS_DEPENDENT_OBJECT
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_DEPENDENT_OBJECT::CLUSTER_GUID] AND [TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_DEPENDENT_OBJECT::Dependent GUID]"
+    type: LEFT_OUTER
+  - name: TS_BI_SERVER_to_TS_ORG
+    destination:
+      name: TS_ORG
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_ORG::CLUSTER_GUID] AND [TS_BI_SERVER::ORG_ID] = [TS_ORG::Org ID]"
+    type: LEFT_OUTER
+  - name: TS_BI_SERVER_to_TS_USER
+    destination:
+      name: TS_USER
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_USER::CLUSTER_GUID] AND [TS_BI_SERVER::USER_ID] = [TS_USER::User GUID]"
+    type: LEFT_OUTER
+  - name: TS_BI_SERVER_to_TS_METADATA_OBJECT
+    destination:
+      name: TS_METADATA_OBJECT
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_METADATA_OBJECT::CLUSTER_GUID] AND [TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_METADATA_OBJECT::Object GUID]"
+    type: LEFT_OUTER
