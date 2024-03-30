@@ -220,7 +220,7 @@ def bi_server(
                         **{
                             "cluster_guid": ts.session_context.thoughtspot.cluster_id,
                             "sk_dummy": f"{ts.session_context.thoughtspot.cluster_id}-{row_date}-{sk_idx}",
-                            "org_id": row.get("Org ID", None),
+                            "org_id": row.get("Org ID", 0),
                             "incident_id": row["Incident Id"],
                             "timestamp": row["Timestamp"],
                             "url": row["URL"],

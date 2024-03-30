@@ -84,6 +84,7 @@ class CSToolsScreenshotProcesser(BlockProcessor):
             if block.startswith(self.BLOCK_IDENTITY):
                 # Pull off the relative path
                 _, relative_to_base, *cs_tools_command = block.split(" ")
+                pathsafe_command = self._path_safe_command(cs_tools_command)
 
                 # Pop off the tag itself.
                 blocks.pop(idx)
@@ -92,7 +93,6 @@ class CSToolsScreenshotProcesser(BlockProcessor):
                 self.make_svg_screenshot(cs_tools_command)
 
                 # Add to the parent
-                pathsafe_command = self._path_safe_command(cs_tools_command)
                 svg = SubElement(
                     parent,
                     f"object class={self.CLASS_NAME} data='{relative_to_base}/terminal-screenshots/{pathsafe_command}.svg'",  # noqa: E501

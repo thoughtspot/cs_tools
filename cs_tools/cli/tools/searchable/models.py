@@ -260,10 +260,10 @@ class BIServer(ValidatedSQLModel, table=True):
     __tablename__ = "ts_bi_server"
     cluster_guid: str = Field(primary_key=True)
     sk_dummy: str = Field(primary_key=True)
+    org_id: int = 0
     incident_id: str
     timestamp: dt.datetime
     url: Optional[str]
-    org_id: Optional[int]
     http_response_code: Optional[int]
     browser_type: Optional[str]
     browser_version: Optional[str]

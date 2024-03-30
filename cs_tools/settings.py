@@ -256,6 +256,9 @@ class ThoughtSpotConfiguration(_GlobalSettings):
     @pydantic.field_validator("url", mode="after")
     @classmethod
     def ensure_only_netloc(cls, data) -> str:
+        if isinstance(data, ipaddress.IPv4Address):
+            return f"https://{data}"
+
         netloc = data.host
 
         if data.scheme == "http" and data.port != 80:
@@ -283,7 +286,7 @@ class CSToolsConfig(_GlobalSettings):
     name: str
     thoughtspot: ThoughtSpotConfiguration
     verbose: bool = False
-    temp_dir: Optional[pydantic.DirectoryPath] = pydantic.Field(default=cs_tools_venv.tmp_dir)
+    temp_dir: pydantic.DirectoryPath = cs_tools_venv.tmp_dir
     created_in_cs_tools_version: validators.CoerceVersion = __version__
 
     @pydantic.model_validator(mode="before")
