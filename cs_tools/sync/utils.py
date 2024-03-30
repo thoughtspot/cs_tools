@@ -20,7 +20,7 @@ DATETIME_FORMAT_TSLOAD = "%Y-%m-%d %H:%M:%S"
 
 
 @contextlib.contextmanager
-def make_tempfile_for_upload(tmp: pathlib.Path, *, filename: str, data: TableRows, include_header: bool = False):
+def temp_csv_for_upload(tmp: pathlib.Path, *, filename: str, data: TableRows, include_header: bool = False):
     """Temporarily create a file for HTTP multipart file uploads."""
     file_opts = {"mode": "w+", "newline": "", "encoding": "utf-8"}
 

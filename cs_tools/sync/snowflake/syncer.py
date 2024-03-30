@@ -162,7 +162,7 @@ class Snowflake(DatabaseSyncer):
         # ==============================================================================================================
         # SAVE & UPLOAD CSV
         # ==============================================================================================================
-        with sync_utils.make_tempfile_for_upload(tmp=self.temp_dir, filename=tablename, data=data) as fd:
+        with sync_utils.temp_csv_for_upload(tmp=self.temp_dir, filename=tablename, data=data) as fd:
             fp = pathlib.Path(fd.name)
 
             # fmt: off
