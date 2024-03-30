@@ -89,7 +89,7 @@ class TQLMiddleware:
         schema_: str = "falcon_default_schema",
         # raise_errors: bool = False,
     ) -> TableRowsFormat:
-        """ """
+        """Issue a TQL command."""
         if not self.ts.session_context.user.is_data_manager:
             raise InsufficientPrivileges(
                 user=self.ts.session_context.user, service="remote TQL", required_privileges="Can Manage Data"
@@ -118,7 +118,7 @@ class TQLMiddleware:
         return out
 
     def script(self, fp: pathlib.Path) -> TableRowsFormat:
-        """ """
+        """Issue mnay TQL commands, separated by semicolons."""
         if not self.ts.session_context.user.is_data_manager:
             raise InsufficientPrivileges(
                 user=self.ts.session_context.user, service="remote TQL", required_privileges="Can Manage Data"

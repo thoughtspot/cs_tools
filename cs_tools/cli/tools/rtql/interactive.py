@@ -79,7 +79,7 @@ class InteractiveTQL:
         self.http_timeout = http_timeout
 
     @property
-    def print(self):  # noqa: A003
+    def print(self):
         return self.console.print
 
     def _query(self, questions: Optional[list[dict]] = None):

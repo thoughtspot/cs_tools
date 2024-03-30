@@ -8,7 +8,8 @@ import httpx
 import pydantic
 import sqlalchemy as sa
 
-from cs_tools import errors, sync
+from cs_tools import errors
+from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 from cs_tools.thoughtspot import ThoughtSpot
 
@@ -85,8 +86,9 @@ class Falcon(DatabaseSyncer):
             return
 
         data = utils.roundtrip_json_for_falcon(data)
+        name = f"{self.database}_{self.schema_}_{tablename}"
 
-        with sync.utils.make_tempfile_for_upload(self.thoughtspot.config.temp_dir, data=data) as file:
+        with sync_utils.temp_csv_for_upload(tmp=self.thoughtspot.config.temp_dir, filename=name, data=data) as file:
             upload_options: dict[str, Any] = {
                 "ignore_node_redirect": self.ignore_load_balancer_redirect,
                 "database": self.database,

@@ -11,7 +11,6 @@ import time
 
 import httpx
 
-from cs_tools import utils
 from cs_tools._compat import TypedDict
 from cs_tools.errors import InsufficientPrivileges, TSLoadServiceUnreachable
 from cs_tools.types import (
@@ -22,7 +21,7 @@ from cs_tools.types import (
 from cs_tools.updater import cs_tools_venv
 
 if TYPE_CHECKING:
-    from io import BufferedIOBase, TextIOWrapper
+    from io import TextIOWrapper
     from tempfile import _TemporaryFileWrapper
 
     from cs_tools.thoughtspot import ThoughtSpot
@@ -77,6 +76,8 @@ class TSLoadNodeRedirectCache:
             # if the format is not known
             if init_ts is None:
                 continue
+
+            assert isinstance(init_ts, float)
 
             if (NOW - init_ts) <= DAYS_TO_KEEP:
                 keep[cycle_id] = redirect_info
@@ -158,16 +159,11 @@ class TSLoadMiddleware:
         redirect_info = self._cache_fp.get_for(cycle_id)
 
         if redirect_info is not None:
-            redirect_url = self.ts.api.v1.session.base_url.copy_with(
-                host=redirect_info["host"], port=redirect_info["port"]
-            )
-            self.ts.api.v1._redirected_url_due_to_tsload_load_balancer = redirect_url
+            redirected = self.ts.api._session.base_url.copy_with(host=redirect_info["host"], port=redirect_info["port"])
+            self.ts.api.v1._redirected_url_due_to_tsload_load_balancer = redirected
 
-            log.debug(f"redirecting to: {redirect_url}")
-            self.ts.api.v1.dataservice_dataload_session(
-                username=self.ts.config.auth["frontend"].username,
-                password=utils.reveal(self.ts.config.auth["frontend"].password).decode(),
-            )
+            log.debug(f"redirecting to: {redirected}")
+            self.ts.login()
 
     def _check_privileges(self) -> None:
         """
@@ -175,12 +171,14 @@ class TSLoadMiddleware:
         """
         REQUIRED = {GroupPrivilege.can_administer_thoughtspot, GroupPrivilege.can_manage_data}
 
-        if not set(self.ts.me.privileges).intersection(REQUIRED):
-            raise InsufficientPrivileges(user=self.ts.me, service="remote TQL", required_privileges=", ".join(REQUIRED))
+        user = self.ts.session_context.user
+
+        if not user.is_data_manager:
+            raise InsufficientPrivileges(user=user, service="remote TQL", required_privileges=", ".join(REQUIRED))
 
     def upload(
         self,
-        fd: Union[BufferedIOBase, TextIOWrapper, _TemporaryFileWrapper],
+        fd: Union[TextIOWrapper, _TemporaryFileWrapper],
         *,
         database: str,
         table: str,
@@ -200,7 +198,7 @@ class TSLoadMiddleware:
         flexible: bool = False,
         # not related to Remote TSLOAD API
         ignore_node_redirect: bool = False,
-        http_timeout: int = 60.0,
+        http_timeout: float = 60.0,
     ) -> TableRowsFormat:
         """
         Load a file via tsload on a remote server.

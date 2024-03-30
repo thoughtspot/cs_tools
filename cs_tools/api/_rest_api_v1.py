@@ -48,6 +48,7 @@ class RESTAPIv1:
 
     def __init__(self, api_client: RESTAPIClient):
         self._api_client = api_client
+        self._redirected_url_due_to_tsload_load_balancer: httpx.URL | None = None
 
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Pre-process the request to remove undefined parameters."""
@@ -550,10 +551,11 @@ class RESTAPIv1:
 
     @property
     def dataservice_url(self) -> httpx.URL:
-        if hasattr(self, "_redirected_url_due_to_tsload_load_balancer"):
+        """Override the URL if the ThoughtSpot serving node redirects us to another."""
+        if self._redirected_url_due_to_tsload_load_balancer is not None:
             url = self._redirected_url_due_to_tsload_load_balancer
         else:
-            url = self._api_clientsession.base_url.copy_with(port=8442)
+            url = self._api_client._session.base_url.copy_with(port=8442)
 
         return url
 
@@ -580,13 +582,13 @@ class RESTAPIv1:
         return r
 
     def dataservice_dataload_session(self, *, username: str, password: str) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/session")
+        fullpath = self.dataservice_url.copy_with(path="/ts_dataservice/v1/public/session")
         d = {"username": username, "password": password}
         r = self.request("POST", fullpath, data=d)
         return r
 
     def dataservice_dataload_initialize(self, *, data: Any, timeout: float = _utils.UNDEFINED) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path="ts_dataservice/v1/public/loads")
+        fullpath = self.dataservice_url.copy_with(path="/ts_dataservice/v1/public/loads")
         r = self.request("POST", fullpath, timeout=timeout, json=data)
         return r
 
@@ -600,21 +602,21 @@ class RESTAPIv1:
         # This endpoint returns immediately once the file uploads to the remote host.
         # Processing of the dataload happens concurrently, and this function may be
         # called multiple times to paralellize the full data load across multiple files.
-        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
+        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
         r = self.request("POST", fullpath, timeout=timeout, files={"upload-file": fd})
         return r
 
     def dataservice_dataload_commit(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/commit")
+        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/commit")
         r = self.request("POST", fullpath)
         return r
 
     def dataservice_dataload_status(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}")
+        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
         r = self.request("GET", fullpath)
         return r
 
     def dataservice_dataload_bad_records(self, *, cycle_id: GUID) -> httpx.Response:
-        fullpath = self.dataservice_url.copy_with(path=f"ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")
+        fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")
         r = self.request("GET", fullpath)
         return r
