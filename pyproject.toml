@@ -76,10 +76,10 @@ cli = [
     "typer[all] >= 0.9.0",
 
     # WEB
-    "litestar",
+    "litestar >= 2.7.0",
     # TO REPLACE WITH LITESTAR
-    "uvicorn",
-    "fastapi",
+    "uvicorn >= 0.29.0",
+    "fastapi >= 0.110.0",
 ]
 dev = [
     # CS Tools CLI
@@ -179,9 +179,6 @@ runtime-evaluated-base-classes = [
     "sqlmodel.SQLModel",
 ]
 
-[flake8]
-type-checking-pydantic-enabled = true
-
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-wrap-aliases = true
@@ -189,12 +186,14 @@ from-first = true
 required-imports = ["from __future__ import annotations"]
 
 [tool.taskipy.tasks]
-develop = "python -m pip install -e .[dev]"
+develop = "python -m pip install -e .[dev,docs]"
 
 lint = "task lint_dead && lint_check && task lint_format"
 lint_dead = "vulture --min-confidence 100"
 lint_check = "ruff check --config pyproject.toml"
 lint_format = "ruff format --config pyproject.toml"
+
+docs_local = "mkdocs serve"
 
 [tool.vulture]
 paths = ["cs_tools"]
