@@ -4,6 +4,7 @@ import logging
 
 from rich.live import Live
 import httpx
+import rich.prompt
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
@@ -90,6 +91,9 @@ def from_tabular(
     if not data:
         log.info("[red]found no valid objects to delete")
         raise typer.Exit(1)
+
+    if not rich.prompt.Confirm.ask(f"Continue deleting {len(data):,} objects?", console=rich_console):
+        return
 
     with Live(layout.build_table(data), console=rich_console) as display:
         for row in data:
