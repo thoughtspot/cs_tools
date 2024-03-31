@@ -22,7 +22,6 @@ log = logging.getLogger(__name__)
 app = CSToolsApp(
     name="mapping",
     help="Tools for working with TML GUID mappings.",
-    add_completion=False,
     invoke_without_command=True,
 )
 

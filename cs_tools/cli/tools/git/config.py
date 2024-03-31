@@ -17,7 +17,6 @@ Identifier = Union[GUID, int, str]
 app = CSToolsApp(
     name="config",
     help="Tools for working with git configurations.",
-    add_completion=False,
     invoke_without_command=True,
 )
 

@@ -222,7 +222,6 @@ class ImportTMLFS(BaseTMLFileSystem):
 app = typer.Typer(
     name="tmlsfs",
     help="TML Scriptability File System",
-    add_completion=False,
     invoke_without_command=True,
 )
 

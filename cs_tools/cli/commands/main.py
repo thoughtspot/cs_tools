@@ -39,7 +39,7 @@ app = CSToolsApp(
     :sparkles: [yellow]All tools are provided as-is[/] :sparkles:
     :floppy_disk: [red]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
     """,
-    add_completion=False,
+    add_completion=True,
     epilog=(
         f":bookmark: v{__version__} "
         f":scroll: [cyan][link={__project__.__docs__}]Documentation[/] "
@@ -67,6 +67,7 @@ def run() -> int:
     """
     Entrypoint into cs_tools.
     """
+    from cs_tools.cli import _monkey  # noqa: F401
     from cs_tools.cli.commands import (
         config as config_app,
         log as log_app,

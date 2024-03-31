@@ -13,7 +13,6 @@ from cs_tools.types import DeployPolicy, DeployType
 app = CSToolsApp(
     name="branches",
     help="Tools for working with git branches and commits.",
-    add_completion=False,
     invoke_without_command=True,
 )
 
