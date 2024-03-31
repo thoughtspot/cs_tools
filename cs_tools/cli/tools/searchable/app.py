@@ -100,6 +100,12 @@ def deploy(
                     tml.table.connection.name = connection_name
                     tml.table.connection.fqn = connection_guid
 
+                if is_falcon and "TS_BI_SERVER.table.tml" in tml.name:
+                    continue
+
+                if is_falcon and "TS_BI_SERVER.view.tml" in tml.name:
+                    tml.view.formulas[-1].expr = f"'{ts.session_context.thoughtspot.cluster_id}'"
+
                 tmls.append(tml)
 
                 if export is not None:
