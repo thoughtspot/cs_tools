@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 import collections.abc
 import itertools as it
 import logging
@@ -9,16 +9,33 @@ import urllib.parse
 
 import click
 import pendulum
+import pydantic
+import sqlalchemy
 
 from cs_tools._compat import StrEnum
 from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.errors import ConfigDoesNotExist
 
-if TYPE_CHECKING:
-    import sqlalchemy
-    import typer
-
 log = logging.getLogger(__name__)
+
+
+class Directory(click.ParamType):
+    name = "directory"
+
+    @pydantic.validate_call
+    def validate(self, value: pydantic.DirectoryPath) -> pathlib.Path:
+        return value
+
+    def convert(self, value, param, ctx):  # noqa: ARG002
+        try:
+            return self.validate(value)
+        except pydantic.ValidationError as e:
+            error_string = []
+
+            for error in e.errors():
+                error_string.append(f"{error['msg']}, got [b red]{error['input']}[/]")
+
+            self.fail("\n".join(error_string))
 
 
 class MultipleChoiceType(click.ParamType):
@@ -28,7 +45,7 @@ class MultipleChoiceType(click.ParamType):
         self.return_type = return_type
         self.separator = separator
 
-    def convert(self, value: str, _param: click.Parameter = None, _ctx: typer.Context = None) -> list[str]:
+    def convert(self, value, param, ctx):  # noqa: ARG002
         if isinstance(value, str):
             values = [value.split(self.separator)]
 
@@ -49,7 +66,7 @@ class MetadataType(click.ParamType):
     def get_metavar(self, _param) -> str:
         return "|".join(self.enum)
 
-    def convert(self, value: str, param: click.Parameter = None, ctx: typer.Context = None) -> list[str]:
+    def convert(self, value, param, ctx):
         if value is None:
             return value
 
@@ -92,7 +109,7 @@ class CommaSeparatedValuesType(click.ParamType):
         super().__init__(*args_passthru, **kwargs_passthru)
         self.return_type = return_type
 
-    def convert(self, value: str, _param: click.Parameter = None, _ctx: typer.Context = None) -> list[str]:
+    def convert(self, value, param, ctx):  # noqa: ARG002
         if value is None:
             return None
 
@@ -112,7 +129,7 @@ class TZAwareDateTimeType(click.ParamType):
 
     name = "datetime"
 
-    def convert(self, value: Any, _param: click.Parameter = None, _ctx: click.Context = None) -> pendulum.DateTime:
+    def convert(self, value, param, ctx):  # noqa: ARG002
         if value is None:
             return None
 
@@ -147,7 +164,7 @@ class SyncerProtocolType(click.ParamType):
         definition_kw = {k: vs[0] for k, vs in urllib.parse.parse_qs(query_string).items()}
         return {"definition_kw": definition_kw}
 
-    def convert(self, value: Any, _param: click.Parameter = None, ctx: typer.Context = None) -> DSyncer:
+    def convert(self, value, param, ctx):  # noqa: ARG002
         if value is None:
             return value
 

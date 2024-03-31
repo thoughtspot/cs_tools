@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Annotated, Optional
 import datetime as dt
 import logging
 import pathlib
@@ -11,6 +12,7 @@ import sysconfig
 from awesomeversion import AwesomeVersion
 from cs_tools import __version__, utils
 from cs_tools.cli import _analytics
+from cs_tools.cli.types import Directory
 from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
 from cs_tools.settings import _meta_config as meta
 from cs_tools.updater import cs_tools_venv
@@ -42,21 +44,14 @@ def sync():
 @app.command(cls=CSToolsCommand, name="update")
 @app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
 def update(
-    beta: bool = typer.Option(False, "--beta", help="pin your install to a pre-release build"),
-    dev: pathlib.Path = typer.Option(
-        None,
-        "--dev",
-        help="pin your install to a local developement build, providing the directory",
-        file_okay=False,
-        resolve_path=True,
-        hidden=True,
-    ),
-    offline: pathlib.Path = typer.Option(
-        None,
-        help="install cs_tools from a distributable directory instead of from github",
-        file_okay=False,
-        resolve_path=True,
-    ),
+    beta: Annotated[bool, typer.Option("--beta", help="pin your install to a pre-release build")] = False,
+    dev: Annotated[
+        Optional[Directory], typer.Option(help="pin your install to a local build", click_type=Directory())
+    ] = None,
+    offline: Annotated[
+        Optional[Directory],
+        typer.Option(help="install cs_tools from a local directory instead of from github", click_type=Directory()),
+    ] = None,
 ):
     """
     Upgrade CS Tools.
@@ -87,8 +82,11 @@ def update(
 
 @app.command(cls=CSToolsCommand)
 def info(
-    directory: pathlib.Path = typer.Option(None, "--directory", help="export an image to share with the CS Tools team"),
-    anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
+    directory: Annotated[
+        Optional[Directory],
+        typer.Option(help="export an image to share with the CS Tools team", click_type=Directory()),
+    ] = None,
+    anonymous: Annotated[bool, typer.Option("--anonymous", help="remove personal references from the output")] = False,
 ):
     """
     Get information on your install.
@@ -141,15 +139,15 @@ def analytics():
 
 @app.command(cls=CSToolsCommand, hidden=True)
 def download(
-    directory: pathlib.Path = typer.Option(..., help="location to download the python binaries to"),
-    platform: str = typer.Option(..., help="tag which describes the OS and CPU architecture of the target environment"),
-    python_version: AwesomeVersion = typer.Option(
-        ...,
-        metavar="X.Y",
-        help="major and minor version of your python install",
-        parser=AwesomeVersion,
-    ),
-    beta: bool = typer.Option(False, "--beta", help="if included, download the latest pre-release binary"),
+    directory: Annotated[
+        Directory, typer.Option(help="location to download the python binaries to", click_type=Directory())
+    ],
+    platform: Annotated[str, typer.Option(help="tag describing the OS and CPU architecture of the target environment")],
+    python_version: Annotated[
+        AwesomeVersion,
+        typer.Option(metavar="X.Y", help="major and minor version of your python install", parser=AwesomeVersion),
+    ],
+    beta: Annotated[bool, typer.Option("--beta", help="if included, download the latest pre-release binary")] = False,
 ):
     """
     Generate an offline binary.
@@ -159,7 +157,7 @@ def download(
     so. Have the customer execute the below command so you have the necessary
     information to generate this binary.
 
-       [b blue]python -m sysconfig[/]
+       [b yellow]python -m sysconfig[/]
 
     """
     requirements = directory.joinpath("requirements")
@@ -209,15 +207,3 @@ def download(
     shutil.copy(_updater.__file__, requirements.joinpath("_updater.py"))
     shutil.make_archive(zip_fp.as_posix(), "zip", requirements)
     shutil.rmtree(requirements)
-
-
-# @app.command(cls=CSToolsCommand, hidden=True)
-# def uninstall(
-#     delete_configs: bool = typer.Option(
-#         False, "--delete-configs", help="delete all the configurations in CS Tools directory"
-#     ),
-# ):
-#     """
-#     Remove CS Tools.
-#     """
-#     raise NotImplementedError("Not yet.")
