@@ -17,6 +17,7 @@ import typer
 @ft.cache
 def _setup_cli() -> typer.Typer:
     """ """
+    from cs_tools.cli import _monkey  # noqa: F401
     from cs_tools.cli.commands import (
         config as config_app,
         log as log_app,

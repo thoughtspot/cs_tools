@@ -14,6 +14,8 @@ def get_cs_tool(name: str) -> CSTool:
     See the tests for an example.
         tests/programmatic/test_as_ci:test_integration_cli_searchable
     """
+    from cs_tools.cli import _monkey  # noqa: F401
+
     tool_dir = pathlib.Path(__project__.__file__).parent / "cli" / "tools" / name
 
     if not tool_dir.exists():
