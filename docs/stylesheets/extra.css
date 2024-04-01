@@ -1,8 +1,4 @@
 @font-face {
-  font-family: "Optimo-Plain";
-}
-
-@font-face {
     font-family: Optimo-Plain;
     src: url("../assets/fonts/Optimo-Plain/Plain-Light.woff") format("woff");
     font-style: normal;
@@ -82,15 +78,11 @@
   text-decoration: underline;
 }
 
-.md-grid {
-  max-width: 85%;
-}
-
 .md-typeset [type="checkbox"]:checked + .task-list-indicator::before {
   background-color: var(--ts-color-green);
 }
 
-.grid-even-columns {
+.grid-define-columns {
     display: grid;
     gap: 1rem;
     align-items: center;
@@ -98,21 +90,21 @@
 }
 
 @media (width > 1500px) {
-    .grid-even-columns[data-columns="1"] {
+    .grid-define-columns[data-columns="1"] {
         --column-count: 1;
     }
-    .grid-even-columns[data-columns="2"] {
+    .grid-define-columns[data-columns="2"] {
         --column-count: 2;
     }
-    .grid-even-columns[data-columns="3"] {
+    .grid-define-columns[data-columns="3"] {
         --column-count: 3;
     }
-    .grid-even-columns[data-columns="4"] {
+    .grid-define-columns[data-columns="4"] {
         --column-count: 4;
     }
 }
 
-@media (width <= 1500px) {
+/* @media (width <= 1500px) {
     .md-typeset .admonition {
         height: auto;
         margin: 0em;
@@ -121,4 +113,4 @@
         height: auto;
         margin: 0em 0em 1rem 0em;
     }
-}
+} */

@@ -3,16 +3,7 @@ hide:
   - toc
 ---
 
-??? example "In Beta"
-
-    The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
-    __provisional basis__. It may change significantly in future releases and its
-    interface will not be concrete until v2.
-
-    Feedback from the community while it's still provisional would be extremely useful;
-    either comment on [#25][gh-issue25] or create a new issue.
-
-With Google Sheets, you can create and edit spreadsheets directly in your web browser - no special software is required. Multiple people can work simultaneously, you can see people’s changes as they make them, and every change is saved automatically.
+Google Sheets is a free online spreadsheet program that's part of the Google Workspace suite of tools. It's kind of like a digital version of those old-school paper spreadsheets, but way more powerful and flexible.
 
 <span class=fc-coral>__In order to use the Google Sheets syncer__</span>, you must first configure your local environment. The setup instructions below will help you create a __Google Cloud Project__ and utilize the OAuth Client ID workflow to allow __CS Tools__ to selectively interact with your Google Sheet.
 
@@ -35,53 +26,46 @@ With Google Sheets, you can create and edit spreadsheets directly in your web br
     <br/>:fontawesome-brands-apple:, :fontawesome-brands-linux: Move the downloaded file to `~/.config/cs_tools/gsheets/credentials.json`.
     <br/>:fontawesome-brands-windows: Move the downloaded file to `%APPDATA%\cs_tools\gsheets\credentials.json`.
 
+!!! note "Google Sheets parameters"
 
-??? info "Want to see the source code?"
+    ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
-    *If you're writing a Custom Syncer, you can check our project code for an example.*
+    ---
 
-    [cs_tools/sync/__gsheets__/syncer.py][syncer.py]
+    - [x] __spreadsheet__{ .fc-red }, _the name of the Google Sheet to write data to_
 
-## Google Sheets `DEFINITION.toml` spec
+    ---
 
-> __spreadsheet__{ .fc-blue }: name of the google sheet to interact with
+    - [x] __credentials_file__{ .fc-red }, _the full path where your credentials.json is located_
 
-> __mode__{ .fc-blue }: <span class=fc-coral>optional</span>, either `append` or `overwrite`
-<br/>*<span class=fc-mint>default</span>:* `overwrite`
+    ---
 
-> __credentials_file__{ .fc-blue }: <span class=fc-coral>optional</span>, absolute path to your credentials JSON file
-<br/>*<span class=fc-mint>default</span>:* `cs_tools-app-directory/gsheets/credentials.json`
-<br/>*you can find the cs_tools app directory by running `cs_tools config show`*
+    - [ ] __date_time_format__{ .fc-blue }, _the string representation of date times_
+    <br />__default__{ .fc-gray }: `%Y-%m-%dT%H:%M:%S.%f` ( use the [strftime.org](https://strftime.org) cheatsheet as a guide )
+    
+    ---
+
+    - [ ] __save_strategy__{ .fc-blue }, _how to save new data into an existing directory_
+    <br />__default__{ .fc-gray }: `OVERWRITE` ( __allowed__{ .fc-green }: `APPEND`, `OVERWRITE` )
 
 
 ??? question "How do I use the Google Sheets syncer in commands?"
 
-    === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
+    `cs_tools tools searchable bi-server --syncer gsheets://spreadsheet=data&credentials_file=data-6538a3a8f574.json&save_strategy=APPEND`
 
-        `cs_tools tools searchable bi-server gsheets:///home/user/syncers/google-sheets-definition.toml --compact`
+    __- or -__{ .fc-blue }
 
-        `cs_tools tools searchable bi-server gsheets://default --compact`
-
-    === ":fontawesome-brands-windows: Windows"
-
-        `cs_tools tools searchable bi-server gsheets://C:\Users\%USERNAME%\Downloads\google-sheets-definition.toml --compact`
-
-        `cs_tools tools searchable bi-server gsheets://default --compact`
-
-    *Learn how to register a default for syncers in [How-to: Setup a Configuration File][how-to-config].*
+    `cs_tools tools searchable bi-server --syncer gsheets://definition.toml`
 
 
-## Full Definition Example
+## Definition TOML Example
 
 `definition.toml`
 ```toml
 [configuration]
-spreadsheet = 'ThoughtSpot Data Sink'
-mode = 'overwrite'
-credentials_file = 'C:\Users\NameyNamerson\Downloads\syncers\<project-name>.json'
+spreadsheet = data
+credentials_file = data-6538a3a8f574.json
+save_strategy = APPEND
 ```
 
-[gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
-[syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/gsheets/syncer.py
 [gc-dev-console]: https://console.cloud.google.com/apis/dashboard
-[how-to-config]: ../tutorial/config.md

@@ -49,14 +49,54 @@ Now that we've decided how to track our content, we're ready to schedule our com
      5  3  *  *  1  cs_tools tools archiver identify --syncer csv://directory=$HOME/Downloads --config non-prod
     ```
 
+=== ":simple-serverless: Serverless"
+
+    __Here are some examples.__{ .fc-green } It's still recommended to test __CS Tools__ locally first.
+
+    === ":simple-githubactions: GitHub Actions"
+        `actions-workflow.yaml`
+        ```yaml
+        name:
+          Extract data with CS Tools.
+
+        on:
+          schedule:
+            # Runs every day at 3:15 AM UTC
+            - cron: "15 3 * * *"
+
+        jobs:
+          extract_data_from_thoughtspot:
+
+            # Configure Environment Variables for CS Tools configuration
+            env:
+              CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
+              CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
+              CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
+              # CS_TOOLS_TEMP_DIR: ...
+
+            runs-on: ubuntu-latest
+            steps:
+
+            - name: Set up Python 3.12
+              uses: actions/setup-python@v4
+              with:
+                python-version: 3.12
+
+            - name: Install a specific version of CS Tools
+              run: python -m pip install https://github.com/thoughtspot/cs_tools/archive/v1.5.0.zip[cli]
+
+            # --config ENV:   tells CS Tools to pull the information from environment variables.
+            - name: Run your CS Tools Command
+              run: "cs_tools config check --config ENV:"
+        ```
 
 ## Closing Thoughts
 
 And that's it! Now you have all the tools (pun fully intended :wink:) you need to be able to get up and running with the
 __CS Tools__ project. Be sure to check out the rest of the documentation, and also find us on __ThoughtSpot Community__.
 
-<div class=grid-even-columns data-columns=4 markdown="block">
-[:octicons-tools-16: All the Tools](/tools){ .md-button }
+<div class=grid-define-columns data-columns=4 markdown="block">
+[:octicons-tools-16: All the Tools](../tools/index.md){ .md-button }
 
 [:octicons-comment-discussion-16: Chat with us](https://github.com/thoughtspot/cs_tools/discussions/55){ .md-button }
 

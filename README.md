@@ -20,3 +20,12 @@
 - Universally installable for Windows, MacOS, and Linux
 - Multiple-cluster support (Dev, QA, Prod)
 - Scheduler-friendly execution 
+
+---
+
+> **🧙 IMPORTANT**
+> 
+> While **CS Tools** is maintained by members of the ThoughtSpot team, it is totally free!
+>
+
+---

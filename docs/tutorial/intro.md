@@ -4,21 +4,19 @@ hide:
 ---
 
 <style>
-    /* I absolutely hate declared heights in CSS, but I also hate uneven items. */
-    .admonition, details[open] { height: 215px; }
-    img#with-fill-height { height: 100px; }
-    .grid-even-columns { align-items: start; }
+    img#with-fill-height { height: 75px; }
+    .grid-define-columns { align-items: start; }
 </style>
 
 # __Getting Started__ with `cs_tools` { hidden="" }
 
-<div class=grid-even-columns markdown="block" data-columns=3>
+<div class=grid-define-columns markdown="block" data-columns=3>
 !!! success "We'll learn how to.."
     - [x] Install __CS Tools__
     - [x] Set up a __configuration file__
     - [x] Run a popular tool: __Archiver__{ .fc-purple }
     - [x] Export data with a __Syncer__
-    - [x] Schedule __Archiver__{ .fc-purple } to run regularly
+    - [x] Schedule it to run regularly
 
 !!! note "See one of these boxes?"
     <center markdown="block">
@@ -41,7 +39,7 @@ hide:
 
     </center>
 
-??? abstract "You might need to expand it"
+??? abstract "Click to expand me.."
     <center>
     <b>in order to see all the detailed information.</b>
 

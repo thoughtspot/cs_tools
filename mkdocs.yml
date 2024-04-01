@@ -97,6 +97,9 @@ markdown_extensions:
 plugins:
   - glightbox
   - open-in-new-tab
+  - redirects:
+      redirect_maps:
+        'get/bootstrapper.md': 'https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py'
 
 nav:
   - Home: index.md
@@ -122,17 +125,22 @@ nav:
     - User Management: tools/user-management/README.md
   - Syncers:
     - "What's a Syncer?": syncer/what-is.md
-    - ThoughtSpot Falcon: syncer/falcon.md
-    - Snowflake: syncer/snowflake.md
-    - Google BigQuery: syncer/bigquery.md
     # - Amazon Redshift: syncer/redshift.md
-    - Google Sheets: syncer/gsheets.md
-    # - Microsoft Excel: syncer/excel.md
     - CSV: syncer/csv.md
+    # - Databricks: syncer/databricks.md
+    # - Google BigQuery: syncer/bigquery.md
+    - Google Sheets: syncer/gsheets.md
+    - JSON: syncer/json.md
+    - Microsoft Excel: syncer/excel.md
     - Parquet: syncer/parquet.md
+    # - Postgres: syncer/postgres.md
+    - Snowflake: syncer/snowflake.md
     - SQLite: syncer/sqlite.md
-    # - JSON: syncer/json.md
+    - Starburst: syncer/starburst.md
+    - ThoughtSpot Falcon: syncer/falcon.md
+    - Trino: syncer/trino.md
   - Changelog:
+    - v1.5.0: changelog/1.5.0.md
     - v1.4.0: changelog/1.4.0.md
     - v1.3.0: changelog/1.3.0.md
     - v1.2.0: changelog/1.2.0.md

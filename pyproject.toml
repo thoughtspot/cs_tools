@@ -101,6 +101,7 @@ docs = [
     "cs_tools[cli]",
     "mkdocs-material",
     # Plugins..
+    "mkdocs-redirects",
     "mkdocs-glightbox",
     "mkdocs-open-in-new-tab",
 ]

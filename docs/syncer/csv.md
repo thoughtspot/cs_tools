@@ -3,68 +3,70 @@ hide:
   - toc
 ---
 
-??? example "In Beta"
-
-    The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
-    __provisional basis__. It may change significantly in future releases and its
-    interface will not be concrete until v2.
-
-    Feedback from the community while it's still provisional would be extremely useful;
-    either comment on [#25][gh-issue25] or create a new issue.
-
-A __comma-separated values__ (CSV) file is a delimited text file that uses a comma to separate values. Each line of the file is a data record. Each record consists of one or more fields, separated by commas.
+A CSV file, or __Comma-Separated Values__ file, is a simple type of spreadsheet or database file. It's a way to store and share data in a structured format that's easy for computers to read and understand. Each line of the file is a data record. Each record consists of one or more fields, separated by commas.
 
 A CSV file typically stores tabular data in plain text, in which case each line will have the same number of fields. Alternative delimiter-separated files are often given a ".csv" extension despite the use of a non-comma field separator.
 
-??? info "Want to see the source code?"
+!!! note "CSV parameters"
+
+    ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
-    *If you're writing a Custom Syncer, you can check our project code for an example.*
+    ---
 
-    [cs_tools/sync/__csv__/syncer.py][syncer.py]
+    - [x] __directory__{ .fc-red }, _the folder location to write CSV files to_
 
+    ---
 
-## CSV `DEFINITION.toml` spec
+    - [ ] __delimiter__{ .fc-blue }, _a one-character string used to separate fields_
+    <br />__default__{ .fc-gray }: `|`
+ 
+    ---
 
-> __directory__{ .fc-blue }: file location to write CSV data to
+    - [ ] __escape_character__{ .fc-blue }, _a one-character string used to escape the delimiter_
+    <br />__default__{ .fc-gray }: `\\` ( if the escape character is itself, it must be escaped as well )
 
-> __delimiter__{ .fc-blue }: <span class=fc-coral>optional</span>, one-character string used to separate fields
-<br/>*<span class=fc-mint>default</span>:* `|` *the pipe character will be used*
+    ---
 
-> __escape_character__{ .fc-blue }: <span class=fc-coral>optional</span>, one-character string used to escape the delimiter
-<br/>*<span class=fc-mint>default</span>: no escaping happens*
+    - [ ] __empty_as_null__{ .fc-blue }, _whether or not to convert empty strings to the `None` sentinel_
+    <br />__default__{ .fc-gray }: `false` ( __allowed__{ .fc-green }: `true`, `false` )
+    
+    ---
 
-> __zipped__{ .fc-blue }: <span class=fc-coral>optional</span>, whether or not to zip the directory after writing all files
-<br/>*<span class=fc-mint>default</span>:* `false`
+    - [ ] __quoting__{ .fc-blue }, _how to quote individual cell values_
+    <br />__default__{ .fc-gray }: `MINIMAL` ( __allowed__{ .fc-green }: `ALL`, `MINIMAL` )
+    
+    ---
+
+    - [ ] __date_time_format__{ .fc-blue }, _the string representation of date times_
+    <br />__default__{ .fc-gray }: `%Y-%m-%d %H:%M:%S` ( use the [strftime.org](https://strftime.org) cheatsheet as a guide )
+    
+    ---
+
+    - [ ] __header__{ .fc-blue }, _whether or not to write the column headers as the first row_
+    <br />__default__{ .fc-gray }: `true` ( __allowed__{ .fc-green }: `true`, `false` )
+    
+    ---
+
+    - [ ] __save_strategy__{ .fc-blue }, _how to save new data into an existing directory_
+    <br />__default__{ .fc-gray }: `OVERWRITE` ( __allowed__{ .fc-green }: `APPEND`, `OVERWRITE` )
 
 
 ??? question "How do I use the CSV syncer in commands?"
 
-    === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
+    `cs_tools tools searchable bi-server --syncer csv://directory=.&header=false&save_strategy=APPEND`
 
-        `cs_tools tools searchable bi-server csv:///home/user/syncers/csv-definition.toml --compact`
+    __- or -__{ .fc-blue }
 
-        `cs_tools tools searchable bi-server csv://default --compact`
-
-    === ":fontawesome-brands-windows: Windows"
-
-        `cs_tools tools searchable bi-server csv://C:\Users\%USERNAME%\Downloads\csv-definition.toml --compact`
-
-        `cs_tools tools searchable bi-server csv://default --compact`
-
-    *Learn how to register a default for syncers in [How-to: Setup a Configuration File][how-to-config].*
+    `cs_tools tools searchable bi-server --syncer csv://definition.toml`
 
 
-## Full Definition Example
+## Definition TOML Example
 
 `definition.toml`
 ```toml
 [configuration]
-directory = 'C:\Users\NameyNamerson\Downloads\thoughtspot'
+directory = '...'
 delimiter = '|'
 escape_character = '\'
-zipped = true
+save_strategy = APPEND
 ```
-
-[gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
-[syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/csv/syncer.py
-[how-to-config]: ../tutorial/config.md
