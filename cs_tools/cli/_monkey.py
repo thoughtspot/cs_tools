@@ -13,7 +13,6 @@ class _MonkeyPatchedTyper:
 
     def __init__(self):
         self._original_get_rich_console = typer.rich_utils._get_rich_console
-        self._original_get_click_type = typer.main.get_click_type
         self._patch()
 
     def argument_with_better_default(self, default=..., **passthru) -> typer.models.ArgumentInfo:
