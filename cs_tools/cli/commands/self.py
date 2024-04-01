@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Annotated, Optional
 import datetime as dt
 import logging
 import pathlib
@@ -44,14 +43,11 @@ def sync():
 @app.command(cls=CSToolsCommand, name="update")
 @app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
 def update(
-    beta: Annotated[bool, typer.Option("--beta", help="pin your install to a pre-release build")] = False,
-    dev: Annotated[
-        Optional[Directory], typer.Option(help="pin your install to a local build", click_type=Directory())
-    ] = None,
-    offline: Annotated[
-        Optional[Directory],
-        typer.Option(help="install cs_tools from a local directory instead of from github", click_type=Directory()),
-    ] = None,
+    beta: bool = typer.Option(False, "--beta", help="pin your install to a pre-release build"),
+    dev: pathlib.Path = typer.Option(None, help="pin your install to a local build", click_type=Directory()),
+    offline: pathlib.Path = typer.Option(
+        None, help="install cs_tools from a local directory instead of from github", click_type=Directory()
+    ),
 ):
     """
     Upgrade CS Tools.
@@ -64,7 +60,7 @@ def update(
 
     elif dev is not None:
         log.info("Installing locally using the development environment.")
-        requires = f"{dev.as_posix()}[cli]"
+        requires = f"-e {dev.as_posix()}"
 
     else:
         log.info(f"Getting the latest CS Tools {'beta ' if beta else ''}release.")
@@ -82,11 +78,10 @@ def update(
 
 @app.command(cls=CSToolsCommand)
 def info(
-    directory: Annotated[
-        Optional[Directory],
-        typer.Option(help="export an image to share with the CS Tools team", click_type=Directory()),
-    ] = None,
-    anonymous: Annotated[bool, typer.Option("--anonymous", help="remove personal references from the output")] = False,
+    directory: pathlib.Path = typer.Option(
+        None, help="export an image to share with the CS Tools team", click_type=Directory()
+    ),
+    anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
 ):
     """
     Get information on your install.
@@ -109,7 +104,7 @@ def info(
     )
 
     if anonymous:
-        text = utils.anonymize(text)
+        text = utils.anonymize(text, anonymizer=" [dim]{anonymous}[/] ")
 
     renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
     rich_console.print(renderable)
@@ -139,15 +134,12 @@ def analytics():
 
 @app.command(cls=CSToolsCommand, hidden=True)
 def download(
-    directory: Annotated[
-        Directory, typer.Option(help="location to download the python binaries to", click_type=Directory())
-    ],
-    platform: Annotated[str, typer.Option(help="tag describing the OS and CPU architecture of the target environment")],
-    python_version: Annotated[
-        AwesomeVersion,
-        typer.Option(metavar="X.Y", help="major and minor version of your python install", parser=AwesomeVersion),
-    ],
-    beta: Annotated[bool, typer.Option("--beta", help="if included, download the latest pre-release binary")] = False,
+    directory: pathlib.Path = typer.Option(help="location to download the python binaries to", click_type=Directory()),
+    platform: str = typer.Option(help="tag describing the OS and CPU architecture of the target environment"),
+    python_version: str = typer.Option(
+        metavar="X.Y", help="major and minor version of your python install", parser=AwesomeVersion
+    ),
+    beta: bool = typer.Option(False, "--beta", help="if included, download the latest pre-release binary"),
 ):
     """
     Generate an offline binary.
