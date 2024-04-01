@@ -40,11 +40,11 @@ jobs:
       
       - if: ${{ runner.os == 'Windows' }}
         name: Install on Windows
-        run: IWR -Uri https://thoughtspot.github.io/cs_tools/get/bootstrapper -MaximumRedirection 3 -ErrorAction SilentlyContinue | python - --install
+        run: IWR -Uri https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py -MaximumRedirection 3 -ErrorAction SilentlyContinue | python - --install
       
       - if: ${{ runner.os != 'Windows' }}
         name: Install on Linux/MacOS
-        run: curl -sSL https://thoughtspot.github.io/cs_tools/get/bootstrapper | python - --install
+        run: curl -sSL https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py | python - --install
 
       - name: Check for a successful install
         run: cs_tools --version
