@@ -1,56 +1,47 @@
 from __future__ import annotations
 
-import platform
-import datetime as dt
+from typing import TYPE_CHECKING, Optional
+import collections
 import logging
-import json
-import sys
-import os
-from typing import Optional
 
 import httpx
 
-from cs_tools.api._rest_api_v1 import RESTAPIv1
-from cs_tools.api._rest_api_v2 import RESTAPIv2
+from cs_tools import errors
+from cs_tools.api._client import RESTAPIClient
 from cs_tools.api.middlewares import (
-    LogicalTableMiddleware,
-    PinboardMiddleware,
-    MetadataMiddleware,
-    TSLoadMiddleware,
-    SearchMiddleware,
     AnswerMiddleware,
     GroupMiddleware,
-    UserMiddleware,
+    LogicalTableMiddleware,
+    MetadataMiddleware,
+    OrgMiddleware,
+    PinboardMiddleware,
+    SearchMiddleware,
+    TagMiddleware,
     TMLMiddleware,
     TQLMiddleware,
-    TagMiddleware,
-    OrgMiddleware,
+    TSLoadMiddleware,
+    UserMiddleware,
 )
-from cs_tools.settings import CSToolsConfig
-from cs_tools._version import __version__
-from cs_tools.errors import ThoughtSpotUnavailable, AuthenticationError
-from cs_tools.types import ThoughtSpotPlatform, LoggedInUser
-from cs_tools import utils
+from cs_tools.datastructures import SessionContext
+from cs_tools.errors import AuthenticationError, ThoughtSpotUnavailable
+
+if TYPE_CHECKING:
+    from cs_tools.settings import CSToolsConfig
 
 log = logging.getLogger(__name__)
 
 
 class ThoughtSpot:
-    """ """
+    """
+    The top-level ThoughtSpot object.
 
-    def __init__(self, config: CSToolsConfig):
+    Represents a connection to your ThoughtSpot cluster.
+    """
+
+    def __init__(self, config: CSToolsConfig, auto_login: bool = False):
         self.config = config
-
-        info = {"ts_url": config.thoughtspot.fullpath, "verify": not config.thoughtspot.disable_ssl}
-        self._rest_api_v1 = RESTAPIv1(client_version="V1", **info)
-        self._rest_api_v2 = RESTAPIv2(client_version="V2", **info)
-
-        # BDB temporary hack.  V1 and V2 are creating separate sessions, so we need to share the session.
-        self._rest_api_v2.session = self._rest_api_v1.session
-
-        # assigned at self.login()
-        self._logged_in_user: Optional[LoggedInUser] = None
-        self._platform: Optional[ThoughtSpotPlatform] = None
+        self.api = RESTAPIClient(ts_url=str(config.thoughtspot.url), verify=not config.thoughtspot.disable_ssl)
+        self._session_context: Optional[SessionContext] = None
 
         # ==============================================================================================================
         # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
@@ -70,145 +61,168 @@ class ThoughtSpot:
         self.tql = TQLMiddleware(self)
         self.tsload = TSLoadMiddleware(self)
 
-    @property
-    def api(self) -> RESTAPIv1:
-        """
-        Access the REST API.
-        """
-        return self._rest_api_v1
+        if auto_login:
+            self.login()
 
     @property
-    def api_v2(self) -> RESTAPIv2:
-        """
-        Access the REST API v2.
-        """
-        return self._rest_api_v2
+    def session_context(self) -> SessionContext:
+        """Returns information about the ThoughtSpot session."""
+        if self._session_context is None:
+            raise errors.NoSessionEstablished()
 
-    @property
-    def me(self) -> LoggedInUser:
-        """
-        Return information about the logged in user.
-        """
-        if not hasattr(self, "_logged_in_user"):
-            raise RuntimeError("attempted to access user details before logging into the ThoughtSpot platform")
+        return self._session_context
 
-        return self._logged_in_user
-
-    @property
-    def platform(self) -> ThoughtSpotPlatform:
+    def _attempt_do_authenticate(self, authentication_method, **authentication_keywords) -> httpx.Response:
         """
-        Return information about the ThoughtSpot platform.
-        """
-        if not hasattr(self, "_this_platform"):
-            raise RuntimeError("attempted to access platform details before logging into the ThoughtSpot platform")
+        Peform the authentication loop, with REQUEST and RESPONSE error handling.
 
-        return self._this_platform
+        If authentication is successful, the .session_context will be set.
+        """
+        try:
+            r = authentication_method(**authentication_keywords)
+            r.raise_for_status()
+
+        # REQUEST ERROR, COULD NOT REACH THOUGHTSPOT
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            if "SSL: CERTIFICATE_VERIFY_FAILED" in str(e):
+                reason = "Outdated Python default certificate detected."
+                mitigation = (
+                    f"Quick fix: run [b blue]cs_tools config modify --config {self.config.name} --disable_ssl[/] "
+                    f"and try again.\n\nLonger fix: try running [b blue]cs_tools self pip install certifi "
+                    f"--upgrade[/] and try again."
+                )
+            else:
+                reason = (
+                    f"Cannot connect to ThoughtSpot ( [b blue]{self.config.thoughtspot.url}[/] ) from your " f"computer"
+                )
+                mitigation = f"Does your ThoughtSpot require a VPN to connect?\n\n[white]>>>[/] {e}"
+
+            raise errors.ThoughtSpotUnreachable(reason=reason, mitigation=mitigation) from None
+
+        # RESPONSE ERROR, UNAUTHORIZED OR SERVER ERROR
+        # - RETURN THE RESPONSE SO THAT IT CAN BE PROCESSED BY THE CALLER
+        except httpx.HTTPStatusError as e:
+            log.debug(f"HTTP Error ({e.response.status_code}) for {e.response.url}\n{e.response.text}")
+
+        # SERVER RESPONDED OK, BUT POTENTIALLY UNHAPPY DUE TO SERVICE UNAVAILABILITY
+        else:
+            if "Site Maintenance".casefold() in r.text.casefold():
+                MaintenanceState = collections.namedtuple("MaintenanceState", ["response", "reason", "mitigation"])
+
+                site_state_priority = [
+                    MaintenanceState(
+                        response="Enable service",
+                        reason="Your cluster is in Economy Mode.",
+                        mitigation="Visit [b blue]{host}[/] to start it.",
+                    ),
+                    MaintenanceState(
+                        response="Estimated time to complete",
+                        reason="Your cluster is upgrading.",
+                        mitigation="Contact ThoughtSpot with any issues.",
+                    ),
+                    MaintenanceState(
+                        response="Service will be online shortly",
+                        reason="Your cluster is starting.",
+                        mitigation="Contact ThoughtSpot with any issues.",
+                    ),
+                ]
+
+                for state in site_state_priority:
+                    if state.response in r.text.casefold():
+                        break
+
+                # Default state
+                else:
+                    log.debug(r.text)
+                    state = MaintenanceState(
+                        response=None,
+                        reason="Your cluster is not allowing API access.",
+                        mitigation="Check the logs for more details.",
+                    )
+
+                raise ThoughtSpotUnavailable(
+                    reason=state.reason, mitigation=state.mitigation, host=self.config.thoughtspot.url
+                )
+
+            # GOOD TO GO , INTERACT WITH THE APIs
+            i = self.api.v1.session_info()
+            d = {
+                "__is_session_info__": True,
+                "__url__": self.config.thoughtspot.url,
+                "__is_orgs_enabled__": self.api.v1.session_orgs_read().is_success,
+                **i.json(),
+            }
+            self._session_context = SessionContext(environment={}, thoughtspot=d, system={}, user=d)
+
+        return r
 
     def login(self) -> None:
         """
         Log in to ThoughtSpot.
         """
+        # RESET SESSION_CONTEXT IN CASE WE ATTEMPT TO CALL .login MULTIPLE TIMES
+        self._session_context = None
+
+        login_info = {"username": self.config.thoughtspot.username}
+
+        if self.config.thoughtspot.is_orgs_enabled:
+            login_info["org_id"] = self.config.thoughtspot.default_org
+            in_org = f"in org id {self.config.thoughtspot.default_org}"
+        else:
+            in_org = ""
+
+        #
+        # PRIORITY LIST OF AUTHENTICATION MECHANISMS TO ATTEMPT
+        #
+        attempted_auth_method: dict[str, httpx.Response] = {}
+
+        if self.config.thoughtspot.bearer_token is not None and self._session_context is None:
+            log.info(f"Attempting Bearer Token authentication {in_org}")
+            self.api._session.headers["Authorization"] = f"Bearer {self.config.thoughtspot.bearer_token}"
+            r = self._attempt_do_authenticate(self.api.v2.auth_session_user)
+            attempted_auth_method["BEARER_TOKEN_AUTHENTICATION"] = r
+
+            # Bearer Token auth failed, unset the Header.
+            if r.is_error:
+                self.api._session.headers.pop("authorization")
+
+        if self.config.thoughtspot.secret_key is not None and self._session_context is None:
+            log.info(f"Attempting Trusted authentication {in_org}")
+            login_info["secret"] = self.config.thoughtspot.secret_key
+            r = self._attempt_do_authenticate(self.api.v1._trusted_auth, **login_info)
+            attempted_auth_method["TRUSTED_AUTHENTICATION"] = r
+
+            # Trusted auth failed, unset the secret.
+            if r.is_error:
+                login_info.pop("secret")
+
+        if self.config.thoughtspot.password is not None and self._session_context is None:
+            log.info(f"Attempting Basic authentication {in_org}")
+            login_info["password"] = self.config.thoughtspot.decoded_password
+            r = self._attempt_do_authenticate(self.api.v1.session_login, **login_info)
+            attempted_auth_method["BASIC_AUTHENTICATION"] = r
+
+            # Trusted auth failed, unset the password.
+            if r.is_error:
+                login_info.pop("password")
 
         try:
+            log.debug(f"Session context\n{self.session_context.model_dump()}")
+        except errors.NoSessionEstablished:
+            for method, r in attempted_auth_method.items():
+                log.info(f"Attempted  {method.title().replace('_', ' ')}: HTTP {r.status_code}, see logs for details..")
 
-            if os.environ.get("THOUGHTSPOT_SECRET_KEY") is not None:
-                r = self.api._trusted_auth(
-                    username=self.config.auth["frontend"].username,
-                    secret=os.environ["THOUGHTSPOT_SECRET_KEY"],
-                )
+            raise AuthenticationError(config=self.config) from None
 
-            else:
-                r = self.api.session_login(
-                    username=self.config.auth["frontend"].username,
-                    password=utils.reveal(self.config.auth["frontend"].password).decode(),
-                    # disableSAMLAutoRedirect=self.config.thoughtspot.disable_sso
-                )
+        if (noti := self.session_context.thoughtspot.notification_banner) is not None:
+            logger = getattr(log, noti.log_level)
 
-# This would log in the v2 API, but it would then be in a different session.
-#                r = self.api_v2.auth_session_login(
-#                    username=self.config.auth["frontend"].username,
-#                    password=utils.reveal(self.config.auth["frontend"].password).decode(),
-#                    org_identifier=self.config.thoughtspot.org,
-#                    remember_me=True,
-#                )
-
-        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-            if "CERTIFICATE_VERIFY_FAILED" in str(e):
-                rzn = "Local SSL certificate verification has failed (you're likely using a self-signed cert)!"
-                fwd = f"Run [b blue]cs_tools config modify --config {self.config.name} --disable_ssl[/] and try again."
-            else:
-                rzn = "Cannot connect to ThoughtSpot ( [b blue]{host}[/] ) from your computer"
-                fwd = "Is your [white]ThoughtSpot[/] accessible outside of the VPN? \n\n[white]>>>[/] {exc}"
-            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host, exc=e) from None
-
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == httpx.codes.UNAUTHORIZED:
-                raise AuthenticationError(
-                    config_name=self.config.name,
-                    config_username=self.config.auth["frontend"].username,
-                    debug="".join(json.loads(e.response.json().get("debug", []))),
-                    incident_id=e.response.json().get("incident_id_guid", "<missing>"),
-                )
-            raise e
-
-        # .session_login() returns 200 OK , but the instance is unavailable for the API
-        if "Site Maintenance".casefold() in r.text.casefold():
-            site_states = [
-                ("Enable service", "Your cluster is in Economy Mode.", "Visit [b blue]{host}[/] to start it."),
-                ("Service will be online shortly", "Your cluster is starting.", "Contact ThoughtSpot with any issues."),
-                ("Estimated time to complete", "Your cluster is upgrading.", "Contact ThoughtSpot with any issues."),
-            ]
-
-            for page_response, rzn, fwd in site_states:
-                if page_response.casefold() in r.text.casefold():
-                    break
-            else:
-                rzn = "Your cluster is not allowing API access."
-                fwd = "Check the logs for more details."
-                log.debug(r.text)
-
-            raise ThoughtSpotUnavailable(reason=rzn, mitigation=fwd, host=self.config.thoughtspot.host)
-
-        # ==============================================================================================================
-        # GOOD TO GO , INTERACT WITH THE APIs
-        # ==============================================================================================================
-
-        r = self.api.session_info()
-        d = r.json()
-
-        self._logged_in_user = LoggedInUser.from_api_v1_session_info(d)
-        self._this_platform = ThoughtSpotPlatform.from_api_v1_session_info(d)
-
-        log.debug(
-            f"""execution context...
-
-        [CS TOOLS COMMAND]
-        cs_tools {' '.join(sys.argv[1:])}
-
-        [PLATFORM DETAILS]
-        system: {platform.system()} (detail: {platform.platform()})
-        python: {platform.python_version()}
-        ran at: {dt.datetime.now(dt.timezone.utc).astimezone().strftime('%Y-%m-%d %H:%M:%S%z')}
-        cs_tools: v{__version__}
-
-        [THOUGHTSPOT]
-        cluster id: {self._this_platform.cluster_id}
-        cluster: {self._this_platform.cluster_name}
-        url: {self._this_platform.url}
-        timezone: {self._this_platform.timezone}
-        branch: {self._this_platform.deployment}
-        version: {self._this_platform.version}
-
-        [LOGGED IN USER]
-        user_id: {self._logged_in_user.guid}
-        username: {self._logged_in_user.username}
-        display_name: {self._logged_in_user.display_name}
-        privileges: {list(map(str, self._logged_in_user.privileges))}
-        """
-        )
+            # Time to be really noisy.
+            for line in [_ for _ in noti.message.split(".") if _]:
+                logger(line.strip() + ".")
 
     def logout(self) -> None:
         """
         Log out of ThoughtSpot.
         """
-        self.api.session_logout()
+        self.api.v1.session_logout()

@@ -1,88 +1,47 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
-from typing import Optional, Callable, Any, Dict
-from base64 import urlsafe_b64encode as b64e
-from base64 import urlsafe_b64decode as b64d
-import collections.abc
-import threading
-import itertools as it
+
+from base64 import (
+    urlsafe_b64decode as b64d,
+    urlsafe_b64encode as b64e,
+)
+from collections.abc import Generator, Iterable
+from typing import Any, Callable, Optional, TypeVar, Union
 import datetime as dt
 import getpass
-import logging
-import zlib
-import json
+import importlib
 import io
+import itertools as it
+import json
+import logging
+import pathlib
+import site
+import threading
+import zlib
 
 import rich
 
-from cs_tools._compat import Literal
-
-if TYPE_CHECKING:
-    import pathlib
-
+T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 
-def chunks(iter_, *, n: int) -> iter:
+def batched(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, None]:
     """
     Yield successive n-sized chunks from list.
     """
+    # batched('ABCDEFG', 3) --> ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
 
-    iterable = iter(iter_)
+    iterable = iter(iterable)
 
-    while True:
-        batch = tuple(it.islice(iterable, n))
-
-        if not batch:
-            break
-
+    while batch := tuple(it.islice(iterable, n)):
         yield batch
 
 
-def deep_update(old: dict, new: dict, *, ignore: Any = None) -> dict:
-    """
-    Update existing dictionary with new data.
-
-    The operation dict1.update(dict2) will overwrite data in dict1 if it
-    is a multilevel dictionary with overlapping keys in dict2. This
-    recursive function solves that specific problem.
-
-    Parameters
-    ----------
-    old : dict
-      old dictionary to update
-
-    new : dict
-      new dictionary to pull values from
-
-    ignore : anything [default: None]
-      ignore values like <ignore>
-
-    Returns
-    -------
-    updated : dict
-      old dictionary updated with new's values
-    """
-    for k, v in new.items():
-        if v is ignore or str(v) == str(ignore):
-            continue
-
-        if isinstance(v, collections.abc.Mapping):
-            v = deep_update(old.get(k, {}), v, ignore=ignore)
-
-        if old is None:
-            old = {}
-
-        old[k] = v
-
-    return old
-
-
-def anonymize(text: str, *, anonymizer: str = " [dim]{anonymous}[/] ") -> str:
+def anonymize(text: str, *, anonymizer: str = " {anonymous} ") -> str:
     """Replace text with an anonymous value."""
-    return text.replace(getpass.getuser(), anonymizer)
+    text = text.replace(getpass.getuser(), anonymizer)
+    return text
 
 
 def obscure(data: bytes) -> bytes:
@@ -128,9 +87,9 @@ class State:
     An object that can be used to store arbitrary state.
     """
 
-    _state: Dict[str, Any]
+    _state: dict[str, Any]
 
-    def __init__(self, state: Optional[Dict[str, Any]] = None):
+    def __init__(self, state: Optional[dict[str, Any]] = None):
         if state is None:
             state = {}
 
@@ -144,7 +103,7 @@ class State:
             return self._state[key]
         except KeyError:
             cls_name = self.__class__.__name__
-            raise AttributeError(f"'{cls_name}' object has no attribute '{key}'")
+            raise AttributeError(f"'{cls_name}' object has no attribute '{key}'") from None
 
     def __delattr__(self, key: Any) -> None:
         del self._state[key]
@@ -154,7 +113,7 @@ def svg_screenshot(
     *renderables: tuple[rich.console.RenderableType],
     path: pathlib.Path,
     console: rich.console.Console = None,
-    width: int | Literal["fit"] | None = None,
+    width: Optional[Union[int, str]] = None,
     centered: bool = False,
     **svg_kwargs,
 ) -> None:
@@ -210,6 +169,7 @@ def svg_screenshot(
 
 class DateTimeEncoder(json.JSONEncoder):
     """ """
+
     def default(self, object_: Any) -> Any:
         if isinstance(object_, (dt.date, dt.datetime)):
             return object_.isoformat()
@@ -226,3 +186,25 @@ class ExceptedThread(threading.Thread):
 
         except Exception:
             log.debug(f"Something went wrong in {self}", exc_info=True)
+
+
+def determine_editable_install() -> bool:
+    """Determine if the current CS Tools context is an editable install."""
+    for site_directory in site.getsitepackages():
+        for path in pathlib.Path(site_directory).iterdir():
+            if not path.is_file():
+                continue
+
+            if "__editable__.cs_tools" in path.as_posix():
+                return True
+    return False
+
+
+def get_package_directory(package_name: str) -> Optional[pathlib.Path]:
+    """Get the path to the package directory."""
+    try:
+        module = importlib.import_module(package_name)
+        assert module.__file__ is not None
+        return pathlib.Path(module.__file__).parent
+    except ModuleNotFoundError:
+        return None

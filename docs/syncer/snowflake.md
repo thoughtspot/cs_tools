@@ -3,91 +3,94 @@ hide:
   - toc
 ---
 
-??? example "In Beta"
+Snowflake is a powerful cloud-based data warehouse that makes it super easy to store, analyze, and share your company's data. It can handle massive amounts of information, from traditional spreadsheets to complex, unstructured data like web logs and sensor readings. The key thing that sets Snowflake apart is its unique architecture.
 
-    The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
-    __provisional basis__. It may change significantly in future releases and its
-    interface will not be concrete until v2.
+Instead of having a single, monolithic database, Snowflake separates the storage of your data from the computing power needed to analyze it. This means you can scale up or down the amount of processing power you use without having to worry about moving or reorganizing your data.
 
-    Feedback from the community while it's still provisional would be extremely useful;
-    either comment on [#25][gh-issue25] or create a new issue.
+!!! note "Snowflake parameters"
 
-__Snowflake__ is a fully managed SaaS (software as a service) that provides a single platform for data warehousing, data lakes, data engineering, data science, data application development, and secure sharing and consumption of real-time / shared data.
-
-__Snowflake__ features out-of-the-box features like separation of storage and compute, on-the-fly scalable compute, data sharing, data cloning, and third-party tools support in order to handle the demanding needs of growing enterprises.
-
-
-??? info "Want to see the source code?"
+    ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
-    *If you're writing a Custom Syncer, you can check our project code for an example.*
+    ---
 
-    [cs_tools/sync/__snowflake__/syncer.py][syncer.py]
+    - [X] __account_name__{ .fc-red }, _your Snowflake [account identifier][snowflake-account-id]_
 
+    ---
 
-## Snowflake `DEFINITION.toml` spec
+    - [X] __username__{ .fc-red }, _your Snowflake username_
+    
+    ---
 
-> __snowflake_account_identifier__{ .fc-blue }: your snowflake account name
-<br/>*your account identifier can be seen in the web interface URL `<account_identifier>.snowflakecomputing.com`*
+    - [X] __warehouse__{ .fc-red }, _the name of a Snowflake warehouse you have accces to_
+    
+    ---
 
-> __username__{ .fc-blue }: username to your Snowflake account
+    - [X] __role__{ .fc-red }, _the name of a Snowflake role you have access to_
+    
+    ---
 
-> __password__{ .fc-blue }: password to your Snowflake account
+    - [X] __authentication__{ .fc-red }, _the type of [authentication mechanism][snowflake-auth] to use to connect to Snowflake_
+    <br />( __allowed__{ .fc-green }: `basic`, `key-pair`, `sso`, `oauth` )
 
-> __warehouse__{ .fc-blue }: warehouse name for the Snowflake session
+    ---
 
-> __role__{ .fc-blue }: role name for the Snowflake session
+    - [X] __database__{ .fc-red }, _the database to write new data to_
+    <br />___if tables do not exist in the database.schema location already, we'll auto-create them___{ .fc-green }
+    
+    ---
 
-> __database__{ .fc-blue }: database name for the Snowflake session
+    - [ ] __schema___{ .fc-blue }, _the schema to write new data to_
+    <br />___if tables do not exist in the database.schema location already, we'll auto-create them___{ .fc-green }
 
-> __schema\___{ .fc-blue }: <span class=fc-coral>optional</span>, schema name for the Snowflake session
-<br/>*<span class=fc-mint>default</span>:* `PUBLIC`
+    ---
 
-> __auth_type__{ .fc-blue }: <span class=fc-coral>optional</span>, either `local` or `multi-factor`
-<br/>*<span class=fc-mint>default</span>:* `local`
-<br/>*both local and multi-factor auth use your username and password, <span class=fc-coral>^^if using multi-factor^^ access to a browser window is required*</span>[^1]
+    - [ ] __secret__{ .fc-blue }, _the secret value to pass to the authentication mechanism_
+    <br />_this will be either a __password__{ .fc-purple } or __oauth token__{ .fc-purple }_
+    
+    ---
 
-> __truncate_on_load__{ .fc-blue }: <span class=fc-coral>optional</span>, either `true` or `false`, remove all data in the table prior to a new data load
-<br/>*<span class=fc-mint>default</span>:* `true`
+    - [ ] __private_key_path__{ .fc-blue }, _full path to an encrypted private key file_
+    
+    ---
+
+    - [ ] __log_level__{ .fc-blue }, _the noisiness of the underlying Snowflake sql driver_
+    <br />__default__{ .fc-gray }: `warning` ( __allowed__{ .fc-green }: `debug`, `info`, `warning` )
+    
+    ---
+
+    - [ ] __temp_dir__{ .fc-blue }, _location to write temporary files prior to staging to Snowflake_
+    <br />__default__{ .fc-gray }: `CS_TOOLS.TEMP_DIR` (your temporary directory in the CS Tools configuration)
+
+    ---
+
+    - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
+    <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
 
 
 ??? question "How do I use the Snowflake syncer in commands?"
 
-    === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
+    `cs_tools tools searchable bi-server --syncer snowflake://account_name=...&username=...&secret=...&warehouse=WH_DATA_LOADS_XS&role=DATA_OPERATIONS&database=GO_TO_MARKET&authentication=basic`
 
-        `cs_tools tools searchable bi-server snowflake:///home/user/syncers/snowflake-definition.toml --compact`
+    __- or -__{ .fc-blue }
 
-        `cs_tools tools searchable bi-server snowflake://default --compact`
-
-    === ":fontawesome-brands-windows: Windows"
-
-        `cs_tools tools searchable bi-server snowflake://C:\Users\%USERNAME%\Downloads\snowflake-definition.toml --compact`
-
-        `cs_tools tools searchable bi-server snowflake://default --compact`
-
-    *Learn how to register a default for syncers in [How-to: Setup a Configuration File][how-to-config].*
+    `cs_tools tools searchable bi-server --syncer snowflake://definition.toml`
 
 
-## Full Definition Example
+## Definition TOML Example
 
 `definition.toml`
 ```toml
 [configuration]
-snowflake_account_identifier = 'thoughtspot'
-username = 'namey.namerson@thoughtspot.com'
-password = '*********************'
-warehouse = 'DATALOAD_WH_XS'
-role = 'SYSADMIN'
-database = 'CS_TOOLS'
-schema_ = 'PUBLIC'
-auth_type = 'multi-factor'
-truncate_on_load = true
+account_name = '...'
+username = '...'
+secret = '...'
+warehouse = 'WH_DATA_LOADS_XS'
+role = 'DATA_OPERATIONS'
+database = 'GO_TO_MARKET'
+schema = 'CS_TOOLS'
+authentication = 'basic'
+load_strategy = 'truncate'
 ```
 
-[^1]: 
-    While Snowflake supports two methods of multi-factor authentication, CS Tools will utilize [Browser-based SSO][browser-sso]. With browser-based SSO, the Snowflake-provided client (for example, the Snowflake JDBC driver) needs to be able to open the user’s web browser. <span class=fc-coral>__Browser-based SSO does not work if the Snowflake-provided client is used by code that runs on a server.__</span>
-    
-
-[gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
-[syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/snowflake/syncer.py
-[browser-sso]: https://docs.snowflake.com/en/user-guide/admin-security-fed-auth-use.html#browser-based-sso
-[how-to-config]: ../tutorial/config.md
+[snowflake-account-id]: https://docs.snowflake.com/en/user-guide/admin-account-identifier
+[snowflake-auth]: https://docs.snowflake.com/en/developer-guide/node-js/nodejs-driver-authenticate

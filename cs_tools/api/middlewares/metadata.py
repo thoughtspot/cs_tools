@@ -1,23 +1,20 @@
 from __future__ import annotations
 
-from json import JSONDecodeError
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import TYPE_CHECKING, Optional, Union
 import functools as ft
 import logging
 
-from pydantic import validate_arguments
-
+from cs_tools import utils
 from cs_tools.errors import CSToolsError
 from cs_tools.types import (
+    GUID,
     MetadataObjectSubtype,
-    TMLSupportedContent,
     MetadataObjectType,
     MetadataParent,
     PermissionType,
-    RecordsFormat,
-    GUID,
+    TableRowsFormat,
+    TMLSupportedContent,
 )
-from cs_tools import utils
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
@@ -31,15 +28,14 @@ class MetadataMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
     def permissions(
         self,
-        guids: List[GUID],
+        guids: list[GUID],
         *,
-        type: Union[MetadataObjectType, MetadataObjectSubtype],
+        type: Union[MetadataObjectType, MetadataObjectSubtype],  # noqa: A002
         permission_type: PermissionType = PermissionType.explicit,
         chunksize: int = 25,
-    ) -> RecordsFormat:
+    ) -> TableRowsFormat:
         """ """
         type_to_supertype = {
             "FORMULA": "LOGICAL_COLUMN",
@@ -59,8 +55,8 @@ class MetadataMiddleware:
         sharing_access = []
         group_guids = [group["id"] for group in self.ts.group.all()]
 
-        for chunk in utils.chunks(guids, n=chunksize):
-            r = self.ts.api.security_metadata_permissions(metadata_type=type_to_supertype[type.value], guids=chunk)
+        for chunk in utils.batched(guids, n=chunksize):
+            r = self.ts.api.v1.security_metadata_permissions(metadata_type=type_to_supertype[type], guids=chunk)
 
             for data in r.json().values():
                 for shared_to_principal_guid, permission in data["permissions"].items():
@@ -68,7 +64,7 @@ class MetadataMiddleware:
                         "object_guid": permission["topLevelObjectId"],
                         # 'shared_to_user_guid':
                         # 'shared_to_group_guid':
-                        "permission_type": permission_type.value,
+                        "permission_type": permission_type,
                         "share_mode": permission["shareMode"],
                     }
 
@@ -81,10 +77,9 @@ class MetadataMiddleware:
 
         return sharing_access
 
-    @validate_arguments
     def dependents(
-        self, guids: List[GUID], *, for_columns: bool = False, include_columns: bool = False, chunksize: int = 50
-    ) -> RecordsFormat:
+        self, guids: list[GUID], *, for_columns: bool = False, include_columns: bool = False, chunksize: int = 50
+    ) -> TableRowsFormat:
         """
         Get all dependencies of content in ThoughtSpot.
 
@@ -104,7 +99,7 @@ class MetadataMiddleware:
 
         Returns
         -------
-        dependencies : RecordsFormat
+        dependencies : TableRowsFormat
           all dependencies' headers
         """
         if include_columns:
@@ -117,27 +112,26 @@ class MetadataMiddleware:
 
         dependents = []
 
-        for chunk in utils.chunks(guids, n=chunksize):
-            r = self.ts.api.dependency_list_dependents(guids=chunk, metadata_type=type_)
+        for chunk in utils.batched(guids, n=chunksize):
+            r = self.ts.api.v1.dependency_list_dependents(guids=chunk, metadata_type=type_)
             data = r.json()
 
             for parent_guid, all_dependencies in data.items():
                 for dependency_type, headers in all_dependencies.items():
                     for header in headers:
-                        dependents.append({"parent_guid": parent_guid, "type": dependency_type, **header})
+                        dependents.append({"parent_guid": parent_guid, "metadata_type": dependency_type, **header})
 
         return dependents
 
-    @validate_arguments
-    def get(self, guids: List[GUID]) -> RecordsFormat:
+    def get(self, guids: list[GUID]) -> TableRowsFormat:
         """
         Find all objects based on the supplied guids.
         """
-        content: List[RecordsFormat] = []
+        content: list[TableRowsFormat] = []
         guids = set(guids)
 
         for metadata_type in MetadataObjectType:
-            r = self.ts.api.metadata_list(metadata_type=metadata_type, fetch_guids=list(guids))
+            r = self.ts.api.v1.metadata_list(metadata_type=metadata_type, fetch_guids=list(guids))
 
             for header in r.json()["headers"]:
                 header["metadata_type"] = metadata_type
@@ -151,24 +145,25 @@ class MetadataMiddleware:
                 break
 
         if guids:
-            raise CSToolsError(error=f"failed to find content for guids: {guids}",
-                               reason="GUIDs not found in ThoughtSpot",
-                               suggestion="check the GUIDs passed to the function and verify they exist.")
+            raise CSToolsError(
+                title=f"failed to find content for guids: {guids}",
+                reason="GUIDs not found in ThoughtSpot",
+                suggestion="check the GUIDs passed to the function and verify they exist.",
+            )
 
         return content
 
-    @validate_arguments
     def find(
         self,
         *,
-        tags: List[str] = None,
+        tags: Optional[list[str]] = None,
         author: GUID = None,
-        pattern: str = None,
-        include_types: List[str] = None,
-        include_subtypes: List[str] = None,
-        exclude_types: List[str] = None,
-        exclude_subtypes: List[str] = None,
-    ) -> RecordsFormat:
+        pattern: Optional[str] = None,
+        include_types: Optional[list[str]] = None,
+        include_subtypes: Optional[list[str]] = None,
+        exclude_types: Optional[list[str]] = None,
+        exclude_subtypes: Optional[list[str]] = None,
+    ) -> TableRowsFormat:
         """
         Find all object which meet the predicates in the keyword args.
         """
@@ -186,8 +181,11 @@ class MetadataMiddleware:
 
         for metadata_type in MetadataObjectType:
             # can't exclude logical tables because they have sub-types.  Logical tables will be checked on subtype.
-            if exclude_types and metadata_type is not MetadataObjectType.logical_table \
-                    and (metadata_type in exclude_types):
+            if (
+                exclude_types
+                and metadata_type is not MetadataObjectType.logical_table
+                and (metadata_type in exclude_types)
+            ):
                 continue
 
             if include_types and (metadata_type not in include_types):
@@ -196,7 +194,7 @@ class MetadataMiddleware:
             metadata_list_kw["offset"] = 0
 
             while True:
-                r = self.ts.api.metadata_list(metadata_type=metadata_type, batchsize=500, **metadata_list_kw)
+                r = self.ts.api.v1.metadata_list(metadata_type=metadata_type, batchsize=500, **metadata_list_kw)
 
                 if r.is_error:
                     metadata_list_kw["metadata_type"] = metadata_type
@@ -225,29 +223,34 @@ class MetadataMiddleware:
 
         return content
 
-    @validate_arguments
-    def objects_exist(self, metadata_type: MetadataObjectType, guids: List[GUID]) -> Dict[GUID, bool]:
+    def objects_exist(self, metadata_type: MetadataObjectType, guids: list[GUID]) -> dict[GUID, bool]:
         """
         Check if the input GUIDs exist.
         """
-        r = self.ts.api.metadata_list(metadata_type=metadata_type, fetch_guids=guids)
+        r = self.ts.api.v1.metadata_list(metadata_type=metadata_type, fetch_guids=guids)
 
         # metadata/list only returns objects that exist
         existence = {header["id"] for header in r.json()["headers"]}
         return {guid: guid in existence for guid in guids}
 
-    @ft.lru_cache(maxsize=1000)
-    @validate_arguments
+    @ft.lru_cache(maxsize=1000)  # noqa: B019
+    def fetch_data_source_info(self, guid: GUID) -> GUID:
+        """
+        METADATA DETAILS is expensive. Here's our shortcut.
+        """
+        r = self.ts.api.v1.metadata_details(metadata_type="DATA_SOURCE", guids=[guid], show_hidden=True)
+        return r.json()["storables"][0]
+
+    @ft.lru_cache(maxsize=1000)  # noqa: B019
     def find_data_source_of_logical_table(self, guid: GUID) -> GUID:
         """
         METADATA DETAILS is expensive. Here's our shortcut.
         """
-        r = self.ts.api.metadata_details(metadata_type="LOGICAL_TABLE", guids=[guid], show_hidden=True)
+        r = self.ts.api.v1.metadata_details(metadata_type="LOGICAL_TABLE", guids=[guid], show_hidden=True)
         storable = r.json()["storables"][0]
         return storable["dataSourceId"]
 
-    @validate_arguments
-    def table_references(self, guid: GUID, *, tml_type: str, hidden: bool = False) -> List[MetadataParent]:
+    def table_references(self, guid: GUID, *, tml_type: str, hidden: bool = False) -> list[MetadataParent]:
         """
         Returns a mapping of parent LOGICAL_TABLEs
 
@@ -262,8 +265,8 @@ class MetadataMiddleware:
 
         """
         metadata_type = TMLSupportedContent.from_friendly_type(tml_type)
-        r = self.ts.api.metadata_details(metadata_type=metadata_type, guids=[guid], show_hidden=hidden)
-        mappings: List[MetadataParent] = []
+        r = self.ts.api.v1.metadata_details(metadata_type=metadata_type, guids=[guid], show_hidden=hidden)
+        mappings: list[MetadataParent] = []
 
         if "storables" not in r.json():
             log.warning(f"no detail found for {tml_type} = {guid}")
@@ -293,10 +296,10 @@ class MetadataMiddleware:
                         connection_guid = self.find_data_source_of_logical_table(logical_table["id"])
 
                         parent = MetadataParent(
-                                parent_guid=logical_table["id"],
-                                parent_name=logical_table["name"],
-                                connection=connection_guid,
-                            )
+                            parent_guid=logical_table["id"],
+                            parent_name=logical_table["name"],
+                            connection=connection_guid,
+                        )
 
                         if parent not in mappings:
                             mappings.append(parent)

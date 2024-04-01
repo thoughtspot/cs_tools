@@ -1,19 +1,19 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List
 import contextlib
-import subprocess as sp
+import json
 import logging
+import os
 import pathlib
 import shutil
 import site
-import venv
+import subprocess as sp
 import sys
-import os
+import venv
 
 log = logging.getLogger(__name__)
 logging.getLogger("venv").setLevel(logging.ERROR)
-IS_WINDOWS = sys.platform == "win32"
-IS_MACOSX = sys.platform == "darwin"
 
 
 class CSToolsVirtualEnvironment:
@@ -21,70 +21,43 @@ class CSToolsVirtualEnvironment:
     Manage the CS Tools virtual environment.
     """
 
+    IS_WINDOWS = sys.platform == "win32"
+    IS_MACOSX = sys.platform == "darwin"
+
     def __init__(self):
+        # instance variables
         self.venv_path = self.get_venv_path()
         self.find_links = None
+
+        # the parent application directory
+        self.app_dir = self.venv_path.parent
+
+        # useful subdirectories
+        self.cache_dir = self.venv_path.parent / ".cache"
+        self.log_dir = self.venv_path.parent / ".logs"
+        self.tmp_dir = self.venv_path.parent / "tmp"
+
+    @property
+    def exe(self) -> pathlib.Path:
+        """Get the Python executable."""
+        directory = "Scripts" if self.IS_WINDOWS else "bin"
+        exec_name = "python.exe" if self.IS_WINDOWS else "python"
+        return self.venv_path / directory / exec_name
 
     @property
     def exists(self) -> bool:
         return self.exe.exists()
 
-    @property
-    def app_dir(self) -> pathlib.Path:
-        return self.venv_path.parent.resolve()
-
-    @property
-    def config_directory_name(self) -> str:
-        return os.environ.get("CS_TOOLS_CONFIG_DIRNAME", "cs_tools")
-
-    @property
-    def exe(self) -> pathlib.Path:
-        """Get the Python executable."""
-        directory = "Scripts" if IS_WINDOWS else "bin"
-        exec_name = "python.exe" if IS_WINDOWS else "python"
-        return self.venv_path / directory / exec_name
-
-    @staticmethod
-    def run(*args, raise_on_failure: bool = True, **kwargs) -> List[str]:
-        """Run a SHELL command."""
-        levels = {"ERROR": log.error, "WARNING": log.warning}
-        output = []
-
-        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, close_fds=False, **kwargs) as proc:
-            for line_bytes in proc.stdout:
-                line = line_bytes.decode().strip()
-
-                if line.startswith(tuple(levels)):
-                    log_level, _, line = line.partition(": ")
-                    logger = levels[log_level]
-
-                else:
-                    logger = log.info
-
-                cant_uninstall_cs_tools_exe = "OSError" in line and "tools.exe" in line
-
-                if not line or cant_uninstall_cs_tools_exe:
-                    continue
-
-                logger(line)
-                output.append(line)
-
-        if raise_on_failure and proc.returncode != 0:
-            cmd = " ".join(args)
-            raise RuntimeError(f"Failed with exit code: {proc.returncode}\n\nCOMMAND: {cmd}")
-
-        return output
-
     def get_venv_path(self) -> pathlib.Path:
         """Resolve to a User configuration-supported virtual environment directory."""
-        if IS_WINDOWS:
+        if self.IS_WINDOWS:
             user_directory = pathlib.Path(os.environ.get("APPDATA", "~"))
-        elif IS_MACOSX:
+        elif self.IS_MACOSX:
             user_directory = pathlib.Path("~/Library/Application Support")
         else:
             user_directory = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", "~/.config"))
 
-        cs_tools_venv_dir = pathlib.Path(user_directory).expanduser() / self.config_directory_name / ".cs_tools"
+        cs_tools_venv_dir = pathlib.Path(user_directory).expanduser() / "cs_tools" / ".cs_tools"
 
         # BPO-45337 - handle Micrsoft Store downloads
         #   @steve.dower
@@ -94,7 +67,7 @@ class CSToolsVirtualEnvironment:
         #
         #   Further reading: https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes
         #
-        if IS_WINDOWS:
+        if self.IS_WINDOWS:
             context = venv.EnvBuilder().ensure_directories(cs_tools_venv_dir)
 
             if cs_tools_venv_dir.resolve() != pathlib.Path(context.env_dir).resolve():
@@ -106,9 +79,52 @@ class CSToolsVirtualEnvironment:
                     context.env_dir,
                 )
 
-            cs_tools_venv_dir = pathlib.Path(context.env_dir).resolve()
+            cs_tools_venv_dir = pathlib.Path(context.env_dir)
 
-        return cs_tools_venv_dir
+        return cs_tools_venv_dir.resolve()
+
+    @staticmethod
+    def run(*args, raise_on_failure: bool = True, visible_output: bool = True, **kwargs) -> sp.CompletedProcess:
+        """Run a SHELL command."""
+        levels = {"ERROR": log.error, "WARNING": log.warning}
+        output = []
+        errors = []
+
+        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, close_fds=False, **kwargs) as proc:
+            assert proc.stdout is not None
+
+            for line_as_bytes in proc.stdout.readlines():
+                line = line_as_bytes.decode().strip()
+
+                if line.startswith(tuple(levels)):
+                    log_level, _, line = line.partition(": ")
+                    logger = levels[log_level]
+
+                else:
+                    logger = log.info
+
+                if visible_output:
+                    logger(line)
+
+                output.append(line) if logger == log.info else errors.append(line)
+
+        if raise_on_failure and proc.returncode != 0:
+            cmd = " ".join(arg.replace(" ", "") for arg in args)
+            raise RuntimeError(f"Failed with exit code: {proc.returncode}\n\nPIP COMMAND BELOW\n{cmd}")
+
+        output_as_bytes = "\n".join(output).encode()
+        errors_as_bytes = "\n".join(errors).encode()
+        return sp.CompletedProcess(proc.args, proc.returncode, stdout=output_as_bytes, stderr=errors_as_bytes)
+
+    def is_package_installed(self, package: "cs_tools.sync.base.PipRequirement") -> bool:  # noqa: F821
+        """Check if a package is installed. This should be called only within CS Tools."""
+        cp = self.pip("list", "--format", "json", visible_output=False)
+
+        for installed in json.loads(cp.stdout.decode()):
+            if installed["name"] == package.requirement.name:
+                return True
+
+        return False
 
     def python(self, *args, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment."""
@@ -116,12 +132,13 @@ class CSToolsVirtualEnvironment:
 
     def pip(self, command: str, *args, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment's pip."""
+        # fmt: off
         required_general_args = (
             # ignore environment variables and user configuration
             "--isolated",
             # disable caching
             "--no-cache-dir",
-            # don't ping for new versions of pip -- it doesn't matter and is noisy
+            # don't ping pypi for new versions of pip -- it doesn't matter and is noisy
             "--disable-pip-version-check",
             # trust installs from the official python package index and the thoughtspot github repos
             "--trusted-host", "files.pythonhost.org",
@@ -130,9 +147,13 @@ class CSToolsVirtualEnvironment:
             "--trusted-host", "github.com",
             "--trusted-host", "codeload.github.com",
         )
+        # fmt: on
+
+        # TODO: proxy = get from ENVVAR ?
+        # required_general_args = (*required_general_args, "--proxy", "scheme://[user:passwd@]proxy.server:port")
 
         if command == "install" and self.find_links is not None:
-            args = (*args, "--no-index", "--find-links", self.find_links.as_posix())
+            args = (*args, "--progress-bar", "off", "--no-index", "--find-links", self.find_links.as_posix())
 
         return self.python("-m", "pip", command, *required_general_args, *args, **kwargs)
 
@@ -140,25 +161,53 @@ class CSToolsVirtualEnvironment:
         """Set CS Tools into offline mode, fetching requirements from path."""
         self.find_links = find_links
 
+    def ensure_directories(self) -> None:
+        # ala venv.EnvBuilder.ensure_directories
+        self.venv_path.mkdir(parents=True, exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.tmp_dir.mkdir(parents=True, exist_ok=True)
+
+        # Clean the temporary directory.
+        for path in self.tmp_dir.iterdir():
+            try:
+                path.unlink(missing_ok=True) if path.is_file() else shutil.rmtree(path, ignore_errors=True)
+            except PermissionError:
+                log.warning(f"{path} appears to be in use and can't be cleaned up.. do you have it open somewhere?")
+
     def make(self) -> None:
         """Create the virtual environment."""
         if self.exists:
             return
 
-        # ala venv.EnvBuilder.ensure_directories
-        self.venv_path.mkdir(parents=True, exist_ok=True)
+        sys_pydir = pathlib.Path(sys.base_prefix)
+        directory = "Scripts" if self.IS_WINDOWS else "bin"
+        exec_name = "python.exe" if self.IS_WINDOWS else "python"
+
+        if "pyenv" in sys_pydir.as_posix():
+            python = sys_pydir / exec_name
+        else:
+            python = sys_pydir / directory / exec_name
 
         # Run with global/system python , equivalent to..
         #   python -m venv $USER_DIR/cs_tools/.cs_tools
-        self.run(sys.executable, "-m", "venv", self.venv_path.as_posix())
+        self.run(python, "-m", "venv", self.venv_path.as_posix())
 
         # Ensure `pip` is at least V23.1 so that backjumping is available
         self.pip("install", "pip >= 23.1", "--upgrade")
 
     def reset(self) -> None:
         """Reset the virtual environment to base."""
+        cp = self.pip("freeze", visible_output=False)
+        frozen = [
+            line
+            for line in cp.stdout.decode().split("\n")
+            for version_specifier in ("==", "@")
+            if version_specifier in line
+        ]
+
         installed = self.venv_path.joinpath("INSTALLED-REQUIREMENTS.txt")
-        installed.write_text("\n".join(self.pip("freeze")))
+        installed.write_text("\n".join(frozen))
 
         if installed.stat().st_size:
             self.pip("uninstall", "-r", installed.as_posix(), "-y")
@@ -207,23 +256,12 @@ class WindowsPath:
         return self.venv.exe.parent
 
     @property
-    def sys_py_dir(self) -> pathlib.Path:
+    def sys_pydir(self) -> pathlib.Path:
         return pathlib.Path(site.getuserbase()) / "Scripts"
-
-    def unlink_path(self, path: pathlib.Path) -> None:
-        """
-        Remove `path`.
-
-        Compat py3.7 for missing_ok=True
-        """
-        try:
-            path.unlink()
-        except FileNotFoundError:
-            pass
 
     def symlink_paths(self, target_path: pathlib.Path, original_path: pathlib.Path) -> None:
         """Attempt to symlink in Windows."""
-        self.unlink_path(target_path)
+        target_path.unlink(missing_ok=True)
 
         try:
             log.info(f"Attempting to symlink: '{target_path}' -> '{original_path}'")
@@ -271,8 +309,8 @@ class WindowsPath:
             # Couldn't get PATH variable from registry, so we have to try to bruteforce
             # the path linking. First try to symlink, then just copy the damn thing.
             if PATH is None:
-                self.symlink_paths(self.sys_py_dir / "cs_tools.exe", self.bin_dir / "cs_tools.exe")
-                self.symlink_paths(self.sys_py_dir / "cstools.exe", self.bin_dir / "cstools.exe")
+                self.symlink_paths(self.sys_pydir / "cs_tools.exe", self.bin_dir / "cs_tools.exe")
+                self.symlink_paths(self.sys_pydir / "cstools.exe", self.bin_dir / "cstools.exe")
                 return
 
             # Append to the PATH variable
@@ -291,8 +329,8 @@ class WindowsPath:
 
             # Couldn't get the PATH variable from registry
             if PATH is None:
-                self.unlink_path(self.sys_py_dir / "cs_tools.exe")
-                self.unlink_path(self.sys_py_dir / "cstools.exe")
+                self.sys_pydir.joinpath("cs_tools.exe").unlink(missing_ok=True)
+                self.sys_pydir.joinpath("cstools.exe").unlink(missing_ok=True)
                 return
 
             log.info(f"Removing '{self.bin_dir}' from User %PATH%")
@@ -336,11 +374,11 @@ class UnixPath:
         )
         return addition
 
-    def get_shell_profiles(self) -> List[pathlib.Path]:
+    def get_shell_profiles(self) -> list[pathlib.Path]:
         profiles = []
 
         # .profile is the base shell profile
-        #  - if it doesn't exist, we'll create it 
+        #  - if it doesn't exist, we'll create it
         base_profile = self.home.joinpath(".profile")
         base_profile.touch(exist_ok=True)
         profiles.append(base_profile)

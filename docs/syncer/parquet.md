@@ -3,58 +3,45 @@ hide:
   - toc
 ---
 
-??? example "In Beta"
+A Parquet file is a special type of data file that's designed to store large amounts of information in a way that's really efficient and easy to work with. It's kind of like a digital filing cabinet for your data.
 
-    The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
-    __provisional basis__. It may change significantly in future releases and its
-    interface will not be concrete until v2.
+Parquet files are really handy for working with large, complex datasets. They're super efficient, fast, and flexible, which makes them a popular choice for a lot of big data and analytics applications.
 
-    Feedback from the community while it's still provisional would be extremely useful;
-    either comment on [#25][gh-issue25] or create a new issue.
+Some of the key benefits of Parquet files include:
 
-Apache Parquet is an open source, column-oriented data file format designed for efficient data storage and retrieval. It provides efficient data compression and encoding schemes with enhanced performance to handle complex data in bulk.
+  - __Smaller file size__: The columnar storage and compression features make Parquet files much smaller than other data formats.
+  - __Faster performance__: Data is organized making it really quick and easy to find and access the specific information you need.
+  - __Cross-platform__: They can be used with all kinds of different tools and frameworks, so you can share your data anywhere.
+  - __Metadata support__: They store information about the data structure and schema, which makes them really easy to work with.
 
-??? info "Want to see the source code?"
+!!! note "Parquet parameters"
+
+    ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
-    *If you're writing a Custom Syncer, you can check our project code for an example.*
+    ---
 
-    [cs_tools/sync/__parquet__/syncer.py][syncer.py]
+    - [x] __directory__{ .fc-red }, _the folder location to write JSON files to_
 
+    ---
 
-## Parquet `DEFINITION.toml` spec
-
-> __directory__{ .fc-blue }: file location to write parquet data to
-
-> __compression__{ .fc-blue }: <span class=fc-coral>optional</span>, one of: __gzip__ or __snappy__
-<br/>*<span class=fc-mint>default</span>:* `gzip`
+    - [ ] __compression__{ .fc-blue }, _the method used to compress data_
+    <br />__default__{ .fc-gray }: `GZIP` ( __allowed__{ .fc-green }: `GZIP`, `SNAPPY` )
 
 
 ??? question "How do I use the Parquet syncer in commands?"
 
-    === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
+    `cs_tools tools searchable bi-server --syncer parquet://directory=.`
 
-        `cs_tools tools searchable bi-server parquet:///home/user/syncers/parquet-definition.toml --compact`
+    __- or -__{ .fc-blue }
 
-        `cs_tools tools searchable bi-server parquet://default --compact`
-
-    === ":fontawesome-brands-windows: Windows"
-
-        `cs_tools tools searchable bi-server parquet://C:\Users\%USERNAME%\Downloads\parquet-definition.toml --compact`
-
-        `cs_tools tools searchable bi-server parquet://default --compact`
-
-    *Learn how to register a default for syncers in [How-to: Setup a Configuration File][how-to-config].*
+    `cs_tools tools searchable bi-server --syncer parquet://definition.toml`
 
 
-## Full Definition Example
+## Definition TOML Example
 
 `definition.toml`
 ```toml
 [configuration]
-directory = 'C:\Users\NameyNamerson\Downloads\thoughtspot'
-compression = 'gzip'
+directory = '...'
+compression = 'SNAPPY'
 ```
-
-[gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
-[syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/parquet/syncer.py
-[how-to-config]: ../tutorial/config.md

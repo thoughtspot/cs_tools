@@ -1,2 +1,0 @@
-GOOGLE_SHEET_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
-GOOGLE_SHEET_DEFAULT_SIZE = (100, 26)  # rows, columns

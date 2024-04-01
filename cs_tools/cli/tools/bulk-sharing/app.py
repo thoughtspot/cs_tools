@@ -1,16 +1,17 @@
+from __future__ import annotations
+
 import logging
 
 from thoughtspot_tml import _yaml
-import uvicorn
 import typer
+import uvicorn
 
 from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.types import GUID, ShareModeAccessLevel
 
-from .web_app import _scoped
 from . import work
+from .web_app import _scoped
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(
@@ -51,9 +52,9 @@ def single(
     ctx: typer.Context,
     group: str = typer.Option(..., help="group to share with"),
     permission: ShareModeAccessLevel = typer.Option(..., help="permission type to assign"),
-    table: str = typer.Option(None, help='name of the table to share'),
-    table_guid: GUID = typer.Option(None, help='guid of the table to share'),
-    connection_guid: GUID = typer.Option(None, help='guid of the connction to share all tables for'),
+    table: str = typer.Option(None, help="name of the table to share"),
+    table_guid: GUID = typer.Option(None, help="guid of the table to share"),
+    connection_guid: GUID = typer.Option(None, help="guid of the connction to share all tables for"),
 ):
     """
     Share a Table or Connection with a Group.
@@ -69,13 +70,11 @@ def single(
     group_id = ts.group.guid_for(group_name=group)
 
     if not group_id:
-        rich_console.log(
-            f'[red]Group "{group}" not found. Verify the name and try again.[/]'
-        )
+        rich_console.log(f'[red]Group "{group}" not found. Verify the name and try again.[/]')
         raise typer.Exit()
 
     if table:
-        r = ts.api.metadata_list(metadata_type="LOGICAL_TABLE", pattern=table)
+        r = ts.api.v1.metadata_list(metadata_type="LOGICAL_TABLE", pattern=table)
         data = r.json()
 
         if not data["headers"]:
@@ -99,14 +98,16 @@ def single(
         table_ids = [table_guid]
 
     if connection_guid:
-        cnxn_data = _yaml.load(ts.api.connection_export(guid=connection_guid).text)
+        cnxn_data = _yaml.load(ts.api.v1.connection_export(guid=connection_guid).text)
         table_ids = [table["id"] for table in cnxn_data["table"]]
 
     if not table_ids:
         rich_console.log("No tables found..")
         raise typer.Exit()
 
-    r = ts.api.security_share(metadata_type='LOGICAL_TABLE', guids=table_ids, permissions={group_id: str(permission)})
+    r = ts.api.v1.security_share(
+        metadata_type="LOGICAL_TABLE", guids=table_ids, permissions={group_id: str(permission)}
+    )
     status = "[b green]Success" if r.is_success else "[b red]Failed[/]"
     rich_console.log(f"Sharing with group [b blue]{group}[/]: {status}")
 

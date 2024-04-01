@@ -1,24 +1,25 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-from typing import Callable, List, NewType, Tuple, Union
-
-from rich.align import Align
-from rich.table import Table
-from rich.live import Live
-from rich import box
-
+from typing import TYPE_CHECKING, Callable, NewType, Union
+import asyncio
 import datetime as dt
+
+from promptique import keys
+from promptique.keyboard import KeyboardListener, KeyPressContext
+from rich import box
+from rich.align import Align
+from rich.live import Live
+from rich.table import Table
 
 if TYPE_CHECKING:
     from rich.console import Console, RenderableType
-
 
 _TaskName = NewType("_TaskName", str)
 _TaskDescription = NewType("_TaskDescription", str)
 
 
-def _default_layout(data: List[WorkTask]) -> Table:
+def _default_layout(data: list[WorkTask]) -> Table:
     table = Table(
         width=150,
         box=box.SIMPLE_HEAD,
@@ -28,8 +29,8 @@ def _default_layout(data: List[WorkTask]) -> Table:
         show_footer=True,
     )
 
-    table.add_column("Status", justify="center", width=10)       # 4 + length of title
-    table.add_column("Started At", justify="center", width=14)   # 4 + length of title
+    table.add_column("Status", justify="center", width=10)  # 4 + length of title
+    table.add_column("Started At", justify="center", width=14)  # 4 + length of title
     table.add_column("Duration (s)", justify="right", width=16)  # 4 + length of title
     table.add_column("Task", width=150 - 10 - 14 - 16, no_wrap=True)
 
@@ -59,6 +60,7 @@ class WorkTask:
     duration : int
 
     """
+
     name: str
     description: str
     status: str = ":popcorn:"
@@ -78,10 +80,10 @@ class WorkTask:
         if self._stopped:
             return self._total_duration
 
-        return (dt.datetime.now() - self.started_at) + self._total_duration
+        return (dt.datetime.now(tz=dt.timezone.utc) - self.started_at) + self._total_duration
 
     @property
-    def values(self) -> Tuple[str]:
+    def values(self) -> tuple[str]:
         started_at = "" if self.started_at is None else self.started_at.strftime("%H:%M:%S")
         duration = "" if self.started_at is None else f"{self.duration.total_seconds(): >6.2f}"
         return self.status, started_at, duration, self.description
@@ -92,14 +94,14 @@ class WorkTask:
 
     def start(self) -> None:
         self.status = ":fire:"
-        self._started_at = dt.datetime.now()
+        self._started_at = dt.datetime.now(tz=dt.timezone.utc)
         self._stopped = False
 
     def stop(self, error: bool = False) -> None:
         if not self._skipped:
             self.status = ":cross_mark:" if error else ":white_heavy_check_mark:"
 
-        self._total_duration += (dt.datetime.now() - self._started_at)
+        self._total_duration += dt.datetime.now(tz=dt.timezone.utc) - self._started_at
         self._stopped = True
 
     def __enter__(self):
@@ -115,7 +117,7 @@ class WorkTask:
 
 class LiveTasks(Live):
     """
-    A live renderable which can 
+    A live renderable which can
 
     Attributes
     ----------
@@ -129,8 +131,8 @@ class LiveTasks(Live):
 
     def __init__(
         self,
-        work_items: List[Union[WorkTask, Tuple[_TaskName, _TaskDescription]]],
-        layout: Callable[[List[WorkTask]], [RenderableType]] = _default_layout,
+        work_items: list[Union[WorkTask, tuple[_TaskName, _TaskDescription]]],
+        layout: Callable[[list[WorkTask]], [RenderableType]] = _default_layout,
         console: Console = None,
     ):
         super().__init__(console=console)
@@ -138,11 +140,11 @@ class LiveTasks(Live):
         self.layout = layout
 
     @property
-    def work_items(self) -> List[WorkTask]:
+    def work_items(self) -> list[WorkTask]:
         return self._work_items
 
     @work_items.setter
-    def work_items(self, items: List[Union[WorkTask, Tuple[_TaskName, _TaskDescription]]]) -> None:
+    def work_items(self, items: list[Union[WorkTask, tuple[_TaskName, _TaskDescription]]]) -> None:
         if not hasattr(self, "_work_items"):
             self._work_items = []
 
@@ -165,3 +167,44 @@ class LiveTasks(Live):
         with self._lock:
             self._renderable = self.layout(self.work_items)
             super().refresh()
+
+
+class ConfirmationListener(KeyboardListener):
+    """A small utility which listeners to Y/N answers."""
+
+    def __init__(self, timeout: float):
+        super().__init__()
+        self.timeout = timeout
+        self._timer_task: asyncio.Task = None
+        self.response: str = None
+
+        for character in "YyNn":
+            self.bind(keys.Key.letter(character), fn=self.set_result)
+
+    async def set_result(self, ctx: KeyPressContext) -> None:
+        """Set the response and immediately terminate."""
+        self.response = ctx.key.data
+        await self.stop()
+
+    async def timer(self) -> None:
+        """Background timer."""
+        try:
+            await asyncio.sleep(self.timeout)
+
+        # If we get cancelled before reaching timeout, nothing needs to happen.
+        except asyncio.CancelledError:
+            pass
+
+        # If we hit the timeout, stop the background key loop.
+        else:
+            await self.stop()
+
+    async def start(self) -> None:
+        """Start a timer and kick off the background key loop."""
+        self._timer_task = asyncio.create_task(self.timer())
+        await super().start()
+
+    async def stop(self, **passthru) -> None:
+        """Ensure the timer gets cancelled."""
+        self._timer_task.cancel()
+        await super().stop(**passthru)

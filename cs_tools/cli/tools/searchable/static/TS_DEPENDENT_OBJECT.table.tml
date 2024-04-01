@@ -1,73 +1,114 @@
-guid: 83fa2082-051e-4760-b0c3-42f80c43c40e
+guid: db93b51b-e19b-4cfc-938b-e7dc7d3d3091
 table:
   name: TS_DEPENDENT_OBJECT
+  description: "Dependencies in ThoughtSpot are any object which are built from another object. In the majority case a dependent is an Answer or Liveboard, however Worksheets and ThoughtSpot Views are dependents of their underlying Tables."
   db: GTM_DB
-  schema: CS_TOOLS
+  schema: CS_TOOLS_V150
   db_table: TS_DEPENDENT_OBJECT
   connection:
     name: CS Tools
-    fqn: 8ac29e17-fe9f-4efd-99ac-8e8059b72c89
   columns:
-  - name: DEPENDENT_GUID
+  - name: Dependent Subtype
+    description: The internal ThoughtSpot sub-type name.
+    db_column_name: OBJECT_SUBTYPE
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Dependent Is Verified
+    description: Determines whether or not this object has been Verified.
+    db_column_name: IS_VERIFIED
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: BOOL
+  - name: CLUSTER_GUID
+    description: This column is only used for JOINs.
+    db_column_name: CLUSTER_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Dependent GUID
+    description: "The unique identifier of the object, which can be found in the ThoughtSpot UI."
     db_column_name: DEPENDENT_GUID
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
     db_column_properties:
       data_type: VARCHAR
   - name: COLUMN_GUID
+    description: This column is only used for JOINs.
     db_column_name: COLUMN_GUID
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
     db_column_properties:
       data_type: VARCHAR
-  - name: NAME
+  - name: Dependent
+    description: "An object which can be interacted with in the UI like a Table, Answer, or Liveboard."
     db_column_name: NAME
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
     db_column_properties:
       data_type: VARCHAR
-  - name: DESCRIPTION
+  - name: Dependent Description
+    description: A user-driven field which details extra infomation about the object.
     db_column_name: DESCRIPTION
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
     db_column_properties:
       data_type: VARCHAR
   - name: AUTHOR_GUID
+    description: This column is only used for JOINs.
     db_column_name: AUTHOR_GUID
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
     db_column_properties:
       data_type: VARCHAR
-  - name: CREATED
+  - name: Dependent Created At
+    description: The datetime of when the object was initially created.
     db_column_name: CREATED
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
     db_column_properties:
       data_type: DATE_TIME
-  - name: MODIFIED
+  - name: Dependent Modified At
+    description: The datetime of when the object was last edited and saved.
     db_column_name: MODIFIED
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
     db_column_properties:
       data_type: DATE_TIME
-  - name: OBJECT_TYPE
+  - name: Dependent Type
+    description: The internal ThoughtSpot type name.
     db_column_name: OBJECT_TYPE
     properties:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
   joins_with:
-  - name: REL_DEPENDENT_OBJECT-TS_METADATA_COLUMN
-    destination:
-      name: TS_METADATA_COLUMN
-      fqn: 76f33272-c7a2-45ae-b0f7-61506182fed2
-    "on": "[TS_DEPENDENT_OBJECT::COLUMN_GUID] = [TS_METADATA_COLUMN::COLUMN_GUID]"
-    type: INNER
-  - name: REL_DEPENDENT_OBJECT-TS_USER
+  - name: TS_DEPENDENT_OBJECT_to_TS_USER
     destination:
       name: TS_USER
-      fqn: e571cf91-9988-4080-aff0-696d1507d2eb
-    "on": "[TS_DEPENDENT_OBJECT::AUTHOR_GUID] = [TS_USER::USER_GUID]"
+    "on": "[TS_DEPENDENT_OBJECT::AUTHOR_GUID] = [TS_USER::User GUID] AND [TS_DEPENDENT_OBJECT::CLUSTER_GUID] = [TS_USER::CLUSTER_GUID]"
     type: INNER
+  - name: TS_DEPENDENT_OBJECT_to_VW_TS_BI_SERVER_AUTHOR
+    destination:
+      name: VW_TS_BI_SERVER_ADVANCED_AUTHOR
+    "on": "[TS_DEPENDENT_OBJECT::AUTHOR_GUID] = [VW_TS_BI_SERVER_ADVANCED_AUTHOR::User GUID] AND [TS_DEPENDENT_OBJECT::CLUSTER_GUID] = [VW_TS_BI_SERVER_ADVANCED_AUTHOR::CLUSTER_GUID]"
+    type: INNER
+  - name: TS_DEPENDENT_OBJECT_to_TS_METADATA_COLUMN
+    destination:
+      name: TS_METADATA_COLUMN
+    "on": "[TS_DEPENDENT_OBJECT::COLUMN_GUID] = [TS_METADATA_COLUMN::Column GUID] AND [TS_DEPENDENT_OBJECT::CLUSTER_GUID] = [TS_METADATA_COLUMN::CLUSTER_GUID]"
+    type: RIGHT_OUTER

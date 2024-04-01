@@ -1,4 +1,6 @@
-from typing import Dict
+from __future__ import annotations
+
+from typing import Optional
 
 try:
     import readline
@@ -32,7 +34,7 @@ class TQLCompleter:
       candidates for autocompletion
     """
 
-    def __init__(self, tokens: Dict[str, list] = None, max_to_display: int = 30):
+    def __init__(self, tokens: Optional[dict[str, list]] = None, max_to_display: int = 30):
         self.tokens = tokens if tokens is not None else {}
         self.max_to_display = max_to_display
         readline.set_completer(self.complete)
@@ -126,7 +128,7 @@ class TQLCompleter:
     #     #
     #     # readline.redisplay()
 
-    def update(self, new_tokens: Dict[str, list]) -> None:
+    def update(self, new_tokens: dict[str, list]) -> None:
         """
         Updates candidate tokens for autocompletion.
 

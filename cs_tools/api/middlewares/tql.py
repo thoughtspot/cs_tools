@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-import pathlib
-import logging
+from typing import TYPE_CHECKING, Optional
 import json
+import logging
 
-from pydantic.typing import Annotated
-from pydantic import validate_arguments, Field
+import pydantic
 
 from cs_tools.errors import InsufficientPrivileges
-from cs_tools.types import GroupPrivilege, RecordsFormat
+from cs_tools.types import TableRowsFormat
 
 if TYPE_CHECKING:
+    import pathlib
+
+    from cs_tools._compat import Annotated
     from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
@@ -32,25 +33,14 @@ class TQLMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    def _check_privileges(self) -> None:
-        """
-        Determine if the user has necessary Data Manager privileges.
-        """
-        REQUIRED = set([GroupPrivilege.can_administer_thoughtspot, GroupPrivilege.can_manage_data])
-
-        if not set(self.ts.me.privileges).intersection(REQUIRED):
-            raise InsufficientPrivileges(user=self.ts.me, service="remote TQL", required_privileges=", ".join(REQUIRED))
-
-    @validate_arguments
     def query(
         self,
         statement: str,
         *,
         sample: int = 50,
-        database: str = None,
-        schema_: Annotated[str, Field(alias="schema")] = "falcon_default_schema",
-        http_timeout: int = 60.0,
-    ) -> RecordsFormat:
+        database: Optional[str] = None,
+        schema_: Annotated[str, pydantic.Field(alias="schema")] = "falcon_default_schema",
+    ) -> TableRowsFormat:
         """
 
         Parameters
@@ -61,7 +51,10 @@ class TQLMiddleware:
         sample : int, default 50
           number of records to fetch from Falcon, use a negative number to express "all"
         """
-        self._check_privileges()
+        if not self.ts.session_context.user.is_data_manager:
+            raise InsufficientPrivileges(
+                user=self.ts.session_context.user, service="remote TQL", required_privileges="Can Manage Data"
+            )
 
         data = {
             "context": {"database": database, "schema": schema_, "server_schema_version": -1},
@@ -74,7 +67,7 @@ class TQLMiddleware:
             "query": {"statement": statement},
         }
 
-        r = self.ts.api.dataservice_query(data=data, timeout=http_timeout)
+        r = self.ts.api.v1.dataservice_query(data=data)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []
@@ -88,18 +81,19 @@ class TQLMiddleware:
 
         return out
 
-    @validate_arguments
     def command(
         self,
         command: str,
         *,
-        database: str = None,
+        database: Optional[str] = None,
         schema_: str = "falcon_default_schema",
-        raise_errors: bool = False,
-        http_timeout: int = 60.0,
-    ) -> RecordsFormat:
-        """ """
-        self._check_privileges()
+        # raise_errors: bool = False,
+    ) -> TableRowsFormat:
+        """Issue a TQL command."""
+        if not self.ts.session_context.user.is_data_manager:
+            raise InsufficientPrivileges(
+                user=self.ts.session_context.user, service="remote TQL", required_privileges="Can Manage Data"
+            )
 
         if not command.strip().endswith(";"):
             command = f"{command.strip()};"
@@ -109,7 +103,7 @@ class TQLMiddleware:
             "query": {"statement": command},
         }
 
-        r = self.ts.api.dataservice_query(data=data, timeout=http_timeout)
+        r = self.ts.api.v1.dataservice_query(data=data)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []
@@ -123,10 +117,12 @@ class TQLMiddleware:
 
         return out
 
-    @validate_arguments
-    def script(self, fp: pathlib.Path, *, raise_errors: bool = False, http_timeout: int = 60.0) -> RecordsFormat:
-        """ """
-        self._check_privileges()
+    def script(self, fp: pathlib.Path) -> TableRowsFormat:
+        """Issue mnay TQL commands, separated by semicolons."""
+        if not self.ts.session_context.user.is_data_manager:
+            raise InsufficientPrivileges(
+                user=self.ts.session_context.user, service="remote TQL", required_privileges="Can Manage Data"
+            )
 
         with fp.open() as f:
             data = {
@@ -135,7 +131,7 @@ class TQLMiddleware:
                 "script": f.read(),
             }
 
-        r = self.ts.api.dataservice_script(data=data, timeout=http_timeout)
+        r = self.ts.api.v1.dataservice_script(data=data)
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []

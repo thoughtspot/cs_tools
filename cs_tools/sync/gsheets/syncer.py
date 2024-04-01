@@ -1,90 +1,93 @@
-from typing import List, Dict, Any
-import pathlib
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal
 import logging
-import enum
+import pathlib
 
-from pydantic.dataclasses import dataclass
 import gspread
+import pydantic
 
-from .const import GOOGLE_SHEET_DEFAULT_SIZE
-from . import sanitize
+from cs_tools.sync import utils as sync_utils
+from cs_tools.sync.base import Syncer
+
+if TYPE_CHECKING:
+    from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
 
 
-class InsertMode(enum.Enum):
-    append = "APPEND"
-    overwrite = "OVERWRITE"
+class GoogleSheets(Syncer):
+    """Interact with a GoogleSheet."""
 
-
-@dataclass
-class GoogleSheets:
-    """
-    Interact with Google Sheets.
-
-    To access spreadsheets, you'll need to authenticate first
-      https://docs.gspread.org/en/latest/oauth2.html
-
-    Parameters
-    ----------
-    spreadsheet: str
-      name of the google sheet to interact with
-
-    mode: str, default 'overwrite'
-      either "append" or "overwrite"
-
-    credentials_file: pathlib.Path
-      absolute path to your credentials file
-    """
+    __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
+    __syncer_name__ = "sheets"
 
     spreadsheet: str
-    mode: InsertMode = InsertMode.overwrite
-    credentials_file: pathlib.Path
+    credentials_file: pydantic.FilePath
+    date_time_format: str = sync_utils.DATETIME_FORMAT_ISO_8601
+    save_strategy: Literal["APPEND", "OVERWRITE"] = "OVERWRITE"
 
-    def __post_init_post_parse__(self):
+    def __init__(self, **data):
+        super().__init__(**data)
         self.client = gspread.service_account(filename=self.credentials_file)
-        self.ws = self.client.open(self.spreadsheet)
+        self.workbook = self.client.open(self.spreadsheet)
 
-    def _get_or_create_tab(self, tab_name: str) -> gspread.worksheet.Worksheet:
+    @property
+    def url(self) -> str:
+        """Return the URL of the Google Sheet."""
+        return self.workbook.url
+
+    def tab(self, tab_name: str) -> gspread.worksheet.Worksheet:
+        """Fetch the tab. If it does not yet exist, create it."""
         try:
-            t = self.ws.worksheet(tab_name)
+            tab = self.workbook.worksheet(title=tab_name)
         except gspread.WorksheetNotFound:
-            t = self.ws.add_worksheet(tab_name, *GOOGLE_SHEET_DEFAULT_SIZE)
+            tab = self.workbook.add_worksheet(title=tab_name, rows=1000, cols=26)
 
-        return t
+        return tab
 
     def __repr__(self):
-        return f"<GoogleSheet sync: worksheet='{self.ws.title}', id={self.ws.id}'>"
+        return f"<GoogleSheetsSyncer url='{self.workbook.url}' in '{self.save_strategy}' mode>"
 
     # MANDATORY PROTOCOL MEMBERS
 
-    @property
-    def name(self) -> str:
-        return "gsheets"
+    def load(self, tab_name: str) -> TableRows:
+        """Read rows from a tab in the Workbook."""
+        tab = self.tab(tab_name)
 
-    def load(self, tab_name: str) -> List[Dict[str, Any]]:
-        t = self._get_or_create_tab(tab_name)
-        data = t.get_all_records()
-
-        if not data:
-            log.warning(f"no data found in tab '{tab_name}'!")
+        if not (data := tab.get_all_records()):
+            log.warning(f"No data found in tab '{tab_name}'")
 
         return data
 
-    def dump(self, tab_name: str, *, data: List[Dict[str, Any]]) -> None:
-        t = self._get_or_create_tab(tab_name)
-
+    def dump(self, tab_name: str, *, data: TableRows) -> None:
+        """Write rows to a tab in the Workbook."""
         if not data:
-            log.warning(f"no data to write to syncer {self}")
+            log.warning(f"No data to write to syncer {self}")
             return
 
-        if self.mode == InsertMode.overwrite:
-            XN = gspread.utils.rowcol_to_a1(t.row_count, t.col_count)
-            t.batch_clear([f"A2:{XN}"])
+        tab = self.tab(tab_name)
+        new = []
 
-        # write the header if it does not exist
-        if not t.get("A1"):
-            t.append_row(list(data[0].keys()))
+        if self.save_strategy == "OVERWRITE":
+            tab.clear()
 
-        d = sanitize.clean_for_gsheets(data)
-        t.append_rows(d)
+            # HEADER
+            new.append(list(data[0].keys()))
+
+        # DATA
+        for row in data:
+            row = sync_utils.format_datetime_values(row, dt_format=self.date_time_format)
+            new.append(list(row.values()))
+
+        # SAVE ON API CALLS, ONLY MAKE A SINGLE ONE
+        try:
+            tab.append_rows(new)
+        except gspread.exceptions.APIError as e:
+            try:
+                log.error(f"GoogleSheets Error: {e._extract_text(e)}")
+            except AttributeError:
+                log.error(f"GoogleSheets Error: {e}")
+
+            if "limit of 10000000 cells" in str(e):
+                log.warning("Consider using a Database Syncer instead, such as SQLite.")

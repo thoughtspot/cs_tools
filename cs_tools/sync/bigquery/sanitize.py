@@ -1,4 +1,6 @@
-from typing import List, Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import datetime as dt
 import json
 
@@ -12,7 +14,7 @@ def clean_datetime(o: Any) -> str:
     return o
 
 
-def clean_for_bq(data: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+def clean_for_bq(data: list[dict[str, Any]]) -> list[dict[str, str]]:
     """
     Round-trip from JSON to sanitize.
 

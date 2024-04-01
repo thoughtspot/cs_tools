@@ -1,103 +1,91 @@
-from typing import List, Dict, Any
-import datetime as dt
-import tempfile
+from __future__ import annotations  # noqa: I001
+
+from . import _monkey  # noqa: F401
+
+from typing import TYPE_CHECKING, Any, Literal, Optional
 import logging
 import pathlib
-import enum
 import uuid
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from pydantic_core import PydanticCustomError
 from snowflake.sqlalchemy import URL
-from pydantic import root_validator, Field, BaseModel
-import pyarrow.parquet as pq
+import pydantic
 import sqlalchemy as sa
-import pyarrow as pa
+import sqlmodel
 
 from cs_tools import __version__
+from cs_tools.sync import utils as sync_utils
+from cs_tools.sync.base import DatabaseSyncer
 
-from . import utils
+if TYPE_CHECKING:
+    from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
 
 
-class AuthType(enum.Enum):
-    local = "local"
-    multi_factor = "multi-factor"
-
-
-class Snowflake(BaseModel, extra="allow"):
+class Snowflake(DatabaseSyncer):
     """
     Interact with a Snowflake database.
     """
 
-    snowflake_account_identifier: str
+    __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
+    __syncer_name__ = "snowflake"
+
+    account_name: str
     username: str
     warehouse: str
     role: str
     database: str
-    password: str = Field(default=None)
-    schema_: str = Field(default="PUBLIC", alias="schema")
-    private_key: pathlib.Path = Field(default=None)
-    auth_type: AuthType = Field(default=AuthType.local)
-    truncate_on_load: bool = Field(default=True)
+    authentication: Literal["basic", "key-pair", "sso", "oauth"]
+    schema_: str = pydantic.Field(default="PUBLIC", alias="schema")
+    secret: Optional[str] = None
+    private_key_path: Optional[pydantic.FilePath] = None
+    log_level: Literal["debug", "info", "warning"] = "warning"
+    temp_dir: Optional[pydantic.DirectoryPath] = pathlib.Path(".")
 
-    # DATABASE ATTRIBUTES
-    __is_database__ = True
+    @pydantic.field_validator("secret", mode="before")
+    def ensure_auth_secret_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
+        if info.data.get("authentication") == "sso" or value is not None:
+            return value
 
-    @root_validator(pre=True)
-    def prepare_aliases(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """ """
-        if (values.get("password"), values.get("private_key")) == (None, None):
-            raise ValueError("You must include either [b blue]password[/] or [b blue]private_key[/].")
+        if info.data.get("authentication") == "basic":
+            raise PydanticCustomError("missing", "Field required, you must provide a password", {"secret": value})
 
-        return values
+        if info.data.get("authentication") == "oauth":
+            raise PydanticCustomError("missing", "Field required, you must provide an oauth token", {"secret": value})
 
-    def __post_init_post_parse__(self):
-        # silence the noise that snowflake dialect creates
-        logging.getLogger("snowflake").setLevel("WARNING")
+    @pydantic.field_validator("private_key_path", mode="before")
+    def ensure_pk_path_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
+        if info.data.get("authentication") != "key-pair" or value is not None:
+            return value
+        raise PydanticCustomError("missing", "Field required", {"private_key_path": value})
 
-        url = URL(
-            account=self.snowflake_account_identifier,
-            user=self.username,
-            password=self.password,
-            database=self.database,
-            schema=self.schema_,
-            warehouse=self.warehouse,
-            role=self.role,
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        logging.getLogger("snowflake").setLevel(self.log_level.upper())
 
-        connect_args = {"session_parameters": {"query_tag": f"thoughtspot.cs_tools (v{__version__})"}}
+        self._engine = sa.create_engine(self.make_url())
+        self.metadata = sqlmodel.MetaData(schema=self.schema_)
 
-        if self.auth_type != AuthType.local:
-            connect_args["authenticator"] = "externalbrowser"
+    def __repr__(self) -> str:
+        account_name = self.account_name
+        username = self.username
+        role = self.role
+        warehouse = self.warehouse
+        return f"<SnowflakeSyncer ACCOUNT='{account_name}', USER='{username}', ROLE='{role}', WAREHOUSE='{warehouse}'>"
 
-        if self.private_key is not None:
-            connect_args["private_key"] = self._fetch_secret()
+    def _fetch_private_key(self) -> bytes:
+        """
+        Summarized from the Snowflake SQLAlchemy documentation.
 
-        self.engine = sa.create_engine(url, connect_args=connect_args)
-        self.cnxn = self.engine.connect()
-        self.metadata = sa.MetaData(schema=self.schema_)
-
-    def __repr__(self):
-        u = self.username
-        w = self.warehouse
-        r = self.role
-        return f"<Database ({self.name}) sync: user='{u}', warehouse='{w}', role='{r}'>"
-
-    #
-
-    def _fetch_secret(self, private_key_fp: pathlib.Path) -> bytes:
-        """Ripped from Snowflake documentation."""
-        from cryptography.hazmat.primitives import serialization
-        from cryptography.hazmat.backends import default_backend
-        import os
-
-        pem_data = private_key_fp.read_bytes()
-        password = os.environ.get("PRIVATE_KEY_PASSPHRASE", None)
-
-        if password is not None:
-            password = password.encode()
-
-        private_key = serialization.load_pem_private_key(data=pem_data, password=password, backend=default_backend())
+        https://github.com/snowflakedb/snowflake-sqlalchemy/tree/main#key-pair-authentication-support
+        """
+        assert self.private_key_path is not None
+        pem_data = self.private_key_path.read_bytes()
+        passphrase = self.secret.encode() if self.secret is not None else self.secret
+        private_key = serialization.load_pem_private_key(data=pem_data, password=passphrase, backend=default_backend())
         pk_as_bytes = private_key.private_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PrivateFormat.PKCS8,
@@ -106,80 +94,157 @@ class Snowflake(BaseModel, extra="allow"):
 
         return pk_as_bytes
 
+    def make_url(self) -> URL:
+        """Format a connection string for the Snowflake JDBC driver."""
+        url_kwargs: dict[str, Any] = {
+            "account": self.account_name,
+            "user": self.username,
+            "database": self.database,
+            "schema": self.schema_,
+            "warehouse": self.warehouse,
+            "role": self.role,
+            "connect_args": {
+                "session_parameters": {"query_tag": f"thoughtspot.cs_tools (v{__version__})"},
+            },
+        }
+
+        # SNOWFLAKE DOCS:
+        # https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect#connecting-using-the-default-authenticator
+        if self.authentication == "basic":
+            url_kwargs["authenticator"] = "snowflake"
+            url_kwargs["password"] = self.secret
+
+        # SNOWFLAKE DOCS:
+        # https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect#using-key-pair-authentication-key-pair-rotation
+        if self.authentication == "key-pair":
+            url_kwargs["authenticator"] = "snowflake"
+            url_kwargs["connect_args"]["private_key"] = self._fetch_private_key()
+
+        # SNOWFLAKE DOCS:
+        # https://docs.snowflake.com/en/user-guide/admin-security-fed-auth-use#browser-based-sso
+        if self.authentication == "sso":
+            url_kwargs["authenticator"] = "externalbrowser"
+
+        # SNOWFLAKE DOCS:
+        # https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect#connecting-with-oauth
+        if self.authentication == "oauth":
+            url_kwargs["authenticator"] = "oauth"
+            url_kwargs["token"] = self.secret
+
+        return URL(**url_kwargs)
+
+    def stage_and_put(self, tablename: str, *, data: TableRows) -> str:
+        """ """
+        assert self.temp_dir is not None
+        # ==============================================================================================================
+        # DEFINE WHERE TO UPLOAD
+        # ==============================================================================================================
+        stage_name = f"{self.database}.{self.schema_}.TMP_STAGE_{tablename}_{uuid.uuid4().hex[:5]}"
+
+        # fmt: off
+        SQL_TEMP_STAGE = sa.sql.text(
+            f"""
+            CREATE TEMPORARY STAGE {stage_name}
+            COMMENT = 'a temporary landing spot for CS Tools (+github: thoughtspot/cs_tools) syncer data dumps'
+            FILE_FORMAT = (
+                TYPE = CSV
+                FIELD_DELIMITER = '|'
+                NULL_IF = ( '\\N' )
+                FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+                EMPTY_FIELD_AS_NULL = TRUE
+            )
+        """
+        )
+        # fmt: on
+        r = self.session.execute(SQL_TEMP_STAGE)
+        log.debug("Snowflake response >> CREATE STAGE\n%s", r.scalar())
+
+        # ==============================================================================================================
+        # SAVE & UPLOAD CSV
+        # ==============================================================================================================
+        with sync_utils.temp_csv_for_upload(tmp=self.temp_dir, filename=tablename, data=data) as fd:
+            fp = pathlib.Path(fd.name)
+
+            # fmt: off
+            SQL_PUT = sa.sql.text(
+                f"""
+                PUT 'file://{fp.as_posix()}' @{stage_name}
+                PARALLEL = 4
+                AUTO_COMPRESS = TRUE
+                """
+            )
+            # fmt: on
+            r = self.session.execute(SQL_PUT)
+            log.debug("Snowflake response >> PUT FILE\n%s", r.scalar())
+
+        return stage_name
+
+    def copy_into(self, *, into: str, from_: str) -> None:
+        """Implement the COPY INTO statement."""
+        # fmt: off
+        SQL_COPY_INTO = sa.sql.text(
+            f"""
+            COPY INTO {into}
+            FROM {from_}
+            ON_ERROR = ABORT_STATEMENT
+            PURGE = TRUE
+            """
+        )
+        # fmt: on
+        r = self.session.execute(SQL_COPY_INTO)
+        log.debug("Snowflake response >> COPY INTO\n%s", r.scalar())
+
+    def merge_into(self, *, into: sa.Table, from_: str, additional_search_expr: Optional[str] = None) -> None:
+        """Implement the MERGE INTO statement."""
+        joins = [f"SOURCE.{c.name} = TARGET.{c.name}" for c in into.primary_key]
+        extra = [] if additional_search_expr is None else [additional_search_expr]
+
+        joined = " AND ".join(joins + extra)
+        update = ", ".join(f"TARGET.{c.name} = SOURCE.{c.name}" for c in into.columns if c.name not in into.primary_key)
+        insert = ", ".join(c.name for c in into.columns)
+        values = ", ".join(f"SOURCE.{c.name}" for c in into.columns)
+
+        # fmt: off
+        SQL_MERGE_INTO = sa.sql.text(
+            f"""
+            MERGE INTO {into} AS TARGET
+            USING {from_}     AS SOURCE
+               ON {joined}
+             WHEN     MATCHED THEN UPDATE SET {update}
+             WHEN NOT MATCHED THEN INSERT ({insert}) VALUES ({values})
+            """
+        )
+        # fmt: on
+        r = self.session.execute(SQL_MERGE_INTO)
+        log.debug("Snowflake response >> MERGE INTO\n%s", r.scalar())
+
     # MANDATORY PROTOCOL MEMBERS
 
-    @property
-    def name(self) -> str:
-        return "snowflake"
+    def load(self, tablename: str) -> TableRows:
+        """SELECT rows from Snowflake."""
+        table = self.metadata.tables[f"{self.schema_}.{tablename}"]
+        rows = self.session.execute(table.select())
+        return [row.model_dump() for row in rows]
 
-    def load(self, table: str) -> List[Dict[str, Any]]:
-        t = self.metadata.tables[f"{self.schema_}.{table}"]
-
-        with self.cnxn.begin():
-            r = self.cnxn.execute(t.select())
-
-        return [dict(_) for _ in r]
-
-    def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, tablename: str, *, data: TableRows) -> None:
+        """INSERT rows into Snowflake."""
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return
 
-        t = self.metadata.tables[f"{self.schema_}.{table}"]
+        table = self.metadata.tables[f"{self.schema_}.{tablename}"]
+        stage = self.stage_and_put(tablename=tablename, data=data)
 
-        if self.truncate_on_load:
-            with self.cnxn.begin():
-                self.cnxn.execute(t.delete())
+        if self.load_strategy == "APPEND":
+            self.copy_into(from_=f"@{stage}", into=tablename)
 
-        # ==============================================================================================================
-        # DEFINE WHERE TO UPLOAD
-        # ==============================================================================================================
-        stage_name = f"{self.database}.{self.schema_}.TMP_STAGE_{uuid.uuid4().hex}"
+        if self.load_strategy == "TRUNCATE":
+            self.session.execute(table.delete())
+            self.copy_into(from_=f"@{stage}", into=tablename)
 
-        SQL_TEMP_STAGE = (
-            f"""
-                CREATE TEMPORARY STAGE "{stage_name}"
-                COMMENT = 'a temporary landing spot for CS Tools (+github: thoughtspot/cs_tools) syncer data dumps'
-                FILE_FORMAT = (
-                    TYPE = PARQUET
-                    COMPRESSION = AUTO
-                    NULL_IF = ( '\\N', 'None', 'none', 'null' )
-                )
-            """
-        )
-        r = self.cnxn.execute(SQL_TEMP_STAGE, _is_internal=True)
-        log.debug("Snowflake response\n%s", dict(r.first()))
-
-        # ==============================================================================================================
-        # SAVE & UPLOAD PARQUET
-        # ==============================================================================================================
-        COMPRESSION = "gzip"
-        fp = pathlib.Path(tempfile.gettempdir()) / f"output-{dt.datetime.now():%Y%m%dT%H%M%S}.parquet"
-        pq.write_table(pa.Table.from_pylist(data), fp, compression=COMPRESSION)
-
-        SQL_PUT = (
-            f"""
-                PUT 'file://{fp.as_posix()}' @"{stage_name}"
-                PARALLEL = 4
-                AUTO_COMPRESS = FALSE
-                SOURCE_COMPRESSION = {COMPRESSION.upper()}
-            """
-        )
-        r = self.cnxn.execute(SQL_PUT, _is_internal=True)
-        log.debug("Snowflake response\n%s", dict(r.first()))
-
-        # ==============================================================================================================
-        # CONVERT PARQUET to TABLE
-        # ==============================================================================================================
-        table_name = f"{self.database}.{self.schema_}.{table.upper()}"
-
-        SQL_COPY_INTO = (
-            f"""
-                COPY INTO {table_name} ({','.join([c.key for c in t.columns])})
-                FROM (SELECT {','.join(map(utils.parse_field, t.columns))} FROM @"{stage_name}")
-                ON_ERROR = ABORT_STATEMENT
-                PURGE = TRUE
-            """
-        )
-        r = self.cnxn.execute(SQL_COPY_INTO, _is_internal=True)
-        log.debug("Snowflake response\n%s", dict(r.first()))
+        if self.load_strategy == "UPSERT":
+            # Since we PUT a file into @stage, we now need to tell Snowflake the name of
+            # each of the columns.
+            column = ", ".join(f"${i} as {c.name}" for i, c in enumerate(table.columns, start=1))
+            staged = f"(SELECT {column} FROM @{stage})"
+            self.merge_into(from_=staged, into=table)

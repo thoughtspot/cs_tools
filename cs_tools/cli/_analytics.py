@@ -4,40 +4,41 @@ Built-in Analytics to CS Tools.
 This file localizes all the analytics activities that CS Tools performs.
 """
 from __future__ import annotations
-from typing import Any, Dict, Optional, Union
-import sysconfig
+
+from typing import Annotated, Any, Optional
 import datetime as dt
-import platform
-import logging
-import shutil
-import uuid
 import json
-import os
+import logging
+import platform
+import shutil
+import sysconfig
 
 from awesomeversion import AwesomeVersion
-from rich.prompt import Prompt
+from rich.align import Align
 from rich.panel import Panel
-from sqlmodel import SQLModel, Field
-from pydantic import validator
-import sqlalchemy as sa
+from rich.prompt import Prompt
 import httpx
+import pydantic
+import sqlalchemy as sa
+import sqlmodel
 
-from cs_tools.updater import cs_tools_venv
-from cs_tools._version import __version__
-from cs_tools.settings import _meta_config as meta
+from cs_tools import __version__, datastructures, utils, validators
 from cs_tools.cli.ux import rich_console
-from cs_tools import utils
+from cs_tools.datastructures import ValidatedSQLModel
+from cs_tools.settings import _meta_config as meta
+from cs_tools.updater import cs_tools_venv
 
 log = logging.getLogger(__name__)
 
 
 def get_database() -> sa.engine.Engine:
     """Get the local SQLite Analytics database."""
-    if os.getenv("CI"):
-        db = sa.create_engine("sqlite://", future=True)
-    else:
-        db_path = cs_tools_venv.app_dir.resolve().joinpath("analytics.db")
-        db = sa.create_engine(f"sqlite:///{db_path}", future=True)
+    if meta.analytics.active_database is not None:
+        return meta.analytics.active_database
+
+    db_path = "" if datastructures.ExecutionEnvironment().is_ci else f"/{cs_tools_venv.app_dir / 'analytics.db'}"
+    db = sa.create_engine(f"sqlite://{db_path}", future=True)
+    meta.analytics.set_database(db)
 
     with db.begin() as transaction:
         try:
@@ -51,24 +52,24 @@ def get_database() -> sa.engine.Engine:
 
     # PERFROM AN ELEGANT DATABASE MIGRATION :~)
     if __version__ == "1.4.9" and AwesomeVersion(latest_recorded_version) != AwesomeVersion("1.4.9"):
-        SQLModel.metadata.drop_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
+        ValidatedSQLModel.metadata.drop_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
 
     # SET UP THE DATABASE
-    SQLModel.metadata.create_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
+    ValidatedSQLModel.metadata.create_all(bind=db, tables=[RuntimeEnvironment.__table__, CommandExecution.__table__])
 
     # INSERT OUR CURRENT ENVIRONMENT
     if AwesomeVersion(latest_recorded_version) < AwesomeVersion(__version__):
         with db.begin() as transaction:
-            data = {"envt_uuid": meta.install_uuid, "cs_tools_version": __version__}
-            stmt = sa.insert(RuntimeEnvironment).values([RuntimeEnvironment(**data).dict()])
+            envt = RuntimeEnvironment.validated_init(envt_uuid=meta.install_uuid, cs_tools_version=__version__)
+            stmt = sa.insert(RuntimeEnvironment).values([envt.model_dump()])
             transaction.execute(stmt)
 
     return db
 
 
 def prompt_for_opt_in() -> None:
-    """ """
-    if meta.analytics_opt_in is not None:
+    """Ask the User if they'd like to send information about their experience."""
+    if meta.analytics.is_opted_in is not None:
         return
 
     rich_console.print()
@@ -85,29 +86,26 @@ def prompt_for_opt_in() -> None:
         title="[b blue]Would you like to send analytics to the CS Tools team?",
         border_style="bold blue",
     )
-    rich_console.print(prompt)
+    rich_console.print(Align.center(prompt))
     choices = {"yes": True, "no": False, "prompt": None}
     response = Prompt.ask("\n  Response", choices=choices.keys(), console=rich_console)
 
-    if choices[response] is not False and meta.record_thoughtspot_url is None:
+    if choices[response] is not False and meta.analytics.can_record_url is None:
         choices = {"yes": True, "no": False}
         response = Prompt.ask("\n  Can we record your ThoughtSpot URL?", choices=choices.keys(), console=rich_console)
-        meta.record_thoughtspot_url = bool(response)
+        meta.analytics.can_record_url = bool(response)
 
     rich_console.print()
-    meta.analytics_opt_in = choices[response]
+    meta.analytics.is_opted_in = choices[response]
     meta.save()
 
 
 def maybe_send_analytics_data() -> None:
-    """ """
-    db = get_database()
-
-    if meta.analytics_opt_in is None:
-        prompt_for_opt_in()
-
-    if meta.analytics_opt_in is False:
+    """If registered for analytics, regularly send information about the experience."""
+    if not meta.analytics.is_opted_in or meta.environment.is_dev:
         return
+
+    db = get_database()
 
     host = "https://cs-tools-analytics.vercel.app"
     # host = "http://127.0.0.1:8001"
@@ -115,7 +113,7 @@ def maybe_send_analytics_data() -> None:
     analytics_checkpoints = []
 
     with db.begin() as transaction:
-        stmt = sa.select(RuntimeEnvironment).where(RuntimeEnvironment.capture_dt >= meta.last_analytics_checkpoint)
+        stmt = sa.select(RuntimeEnvironment).where(RuntimeEnvironment.capture_dt >= meta.analytics.last_checkpoint)
         rows = json.dumps([dict(row) for row in transaction.execute(stmt).mappings()], cls=utils.DateTimeEncoder)
 
         if rows != "[]":
@@ -123,7 +121,7 @@ def maybe_send_analytics_data() -> None:
             log.debug(f"/analytics/runtimes :: {r_runtimes}")
             analytics_checkpoints.append(r_runtimes.is_success)
 
-        stmt = sa.select(CommandExecution).where(CommandExecution.start_dt >= meta.last_analytics_checkpoint)
+        stmt = sa.select(CommandExecution).where(CommandExecution.start_dt >= meta.analytics.last_checkpoint)
         rows = json.dumps([dict(row) for row in transaction.execute(stmt).mappings()], cls=utils.DateTimeEncoder)
 
         if rows != "[]":
@@ -134,94 +132,66 @@ def maybe_send_analytics_data() -> None:
     if analytics_checkpoints == []:
         log.debug("No analytics checkpoint data to send.")
     elif all(analytics_checkpoints):
-        meta.last_analytics_checkpoint = dt.datetime.utcnow()
+        meta.analytics.last_checkpoint = dt.datetime.now(tz=dt.timezone.utc)
         meta.save()
         log.debug("Sent analytics to CS Tools!")
     else:
         log.debug("Failed to send analytics.")
 
 
-class RuntimeEnvironment(SQLModel, table=True):
+class RuntimeEnvironment(ValidatedSQLModel, table=True):
     """
     Represent the environment that CS Tools lives in.
 
     This is an default-anonymous database record of the environment under which CS Tools
     executes commands in.
     """
+
     __tablename__ = "runtime_environment"
 
-    envt_uuid: str = Field(max_length=32, primary_key=True)
-    cs_tools_version: str = Field(primary_key=True)
-    capture_dt: dt.datetime = Field(default_factory=dt.datetime.utcnow)
-    operating_system: str = Field(default_factory=platform.system)
-    is_thoughtspot_cluster: bool = Field(default_factory=lambda: bool(shutil.which("tscli")))
-    python_platform_tag: str = Field(default_factory=sysconfig.get_platform)
-    python_version: str = Field(default_factory=platform.python_version)
-
-    @validator("envt_uuid", pre=True)
-    def _uuid_to_hex_string(cls, value: Union[uuid.UUID, str]) -> str:
-        if isinstance(value, uuid.UUID):
-            return value.hex
-        return value
+    envt_uuid: validators.CoerceHexUUID = sqlmodel.Field(max_length=32, primary_key=True)
+    cs_tools_version: validators.CoerceVersion = sqlmodel.Field(primary_key=True)
+    capture_dt: validators.DateTimeInUTC = dt.datetime.now(tz=dt.timezone.utc)
+    operating_system: str = sqlmodel.Field(default_factory=platform.system)
+    is_thoughtspot_cluster: bool = sqlmodel.Field(default_factory=lambda: bool(shutil.which("tscli")))
+    python_platform_tag: str = sqlmodel.Field(default_factory=sysconfig.get_platform)
+    python_version: validators.CoerceVersion = sqlmodel.Field(default_factory=platform.python_version)
 
 
-class CommandExecution(SQLModel, table=True):
+class CommandExecution(ValidatedSQLModel, table=True):
     """
     Record the execution context.
 
     This is an default-anonymous database record of the CS Tools command executed.
     """
+
     __tablename__ = "command_execution"
 
-    envt_uuid: str = Field(max_length=32, primary_key=True)
-    cs_tools_version: str = Field(primary_key=True)
-    start_dt: dt.datetime = Field(primary_key=True)
-    end_dt: dt.datetime
+    envt_uuid: validators.CoerceHexUUID = sqlmodel.Field(max_length=32, primary_key=True)
+    cs_tools_version: validators.CoerceVersion = sqlmodel.Field(primary_key=True)
+    start_dt: validators.DateTimeInUTC = sqlmodel.Field(primary_key=True)
+    end_dt: validators.DateTimeInUTC
     is_success: bool
     os_args: str
     tool_name: Optional[str] = None
     command_name: Optional[str] = None
-    config_cluster_url: Optional[str] = None
+    config_cluster_url: Annotated[Optional[str], validators.ensure_stringified_url_format] = None
     is_known_error: Optional[bool] = None
     traceback: Optional[str] = None
 
-    @validator("envt_uuid", pre=True)
-    def _uuid_to_hex_string(cls, value: Union[uuid.UUID, str]) -> str:
-        if isinstance(value, uuid.UUID):
-            return value.hex
-        return value
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def check_input_data_structure(cls, data: Any, info: pydantic.ValidationInfo) -> dict[str, Any]:
+        if info.context is utils.State:
+            _, _, tool_name_and_args = data["os_args"].partition(" tools ")
 
-    @validator("tool_name", always=True)
-    def _extract_tool_name(cls, value: Any, values: Dict[str, Any]) -> Optional[str]:
-        """Here, `value` will always be None."""
-        _, _, tools = values["os_args"].partition(" tools ")
+            if tool_name_and_args:
+                data["tool_name"], *rest = tool_name_and_args.split(" ")
 
-        if tools:
-            tool_name, *_ = tools.split(" ")
-            return tool_name
+                if rest and not rest[0].startswith("--"):
+                    data["command_name"] = rest[1]
 
-        return None
+            if meta.analytics.can_record_url and (ts := getattr(info.context, "thoughtspot", None)):
+                data["config_cluster_url"] = ts.config.thoughtspot.url
 
-    @validator("command_name", always=True)
-    def _extract_command_name(cls, value: Any, values: Dict[str, Any]) -> Optional[str]:
-        """Here, `value` will always be None."""
-        _, _, tools = values["os_args"].partition(" tools ")
-
-        if len(tools.split(" ")) > 1:
-            _, command_name, *_ = tools.split(" ")
-            return command_name
-
-        return None
-
-    @validator("config_cluster_url", pre=True)
-    def _extract_config_cluster_url(cls, value: Any) -> Optional[str]:
-        if isinstance(value, utils.State) and hasattr(value, "thoughtspot"):
-            try:
-                return value.thoughtspot.platform.url
-            except RuntimeError:
-                return None
-
-        if isinstance(value, str):
-            return value
-
-        return None
+        return data

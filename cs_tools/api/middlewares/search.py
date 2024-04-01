@@ -1,22 +1,20 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Optional
 import datetime as dt
 import logging
 
-from pydantic import validate_arguments
-
-from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist
-from cs_tools.types import RecordsFormat
 from cs_tools.api import _utils
+from cs_tools.errors import AmbiguousContentError, ContentDoesNotExist
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
+    from cs_tools.types import TableRowsFormat
 
 log = logging.getLogger(__name__)
 
 
-def _fix_for_scal_101507(row: RecordsFormat) -> RecordsFormat:
+def _fix_for_scal_101507(row: TableRowsFormat) -> TableRowsFormat:
     # BUG: SCAL-101507
     #
     # DATE_TIME formatted columns return data in the format below. This fixes that.
@@ -33,11 +31,11 @@ def _fix_for_scal_101507(row: RecordsFormat) -> RecordsFormat:
     return row
 
 
-def _to_records(columns: List[str], rows: List[RecordsFormat]) -> List[RecordsFormat]:
+def _to_records(columns: list[str], rows: list[TableRowsFormat]) -> list[TableRowsFormat]:
     return [dict(zip(columns, _fix_for_scal_101507(row))) for row in rows]
 
 
-def _cast(data: List[RecordsFormat], headers_to_types: Dict[str, str]) -> list[RecordsFormat]:
+def _cast(data: list[TableRowsFormat], headers_to_types: dict[str, str]) -> list[TableRowsFormat]:
     """
     Cast data coming back from Search API to their intended column types.
     """
@@ -54,7 +52,7 @@ def _cast(data: List[RecordsFormat], headers_to_types: Dict[str, str]) -> list[R
     }
 
     _logged = {}
-    column_names = list(sorted(headers_to_types.keys(), key=len, reverse=True))
+    column_names = sorted(headers_to_types.keys(), key=len, reverse=True)
 
     for row in data:
         for column, value in row.items():
@@ -104,10 +102,15 @@ class SearchMiddleware:
     #   ... right now we use __call__ so the UX is nicer.
     #
 
-    @validate_arguments
     def __call__(
-        self, query: str, *, worksheet: str = None, table: str = None, view: str = None, sample: bool = -1
-    ) -> RecordsFormat:
+        self,
+        query: str,
+        *,
+        worksheet: Optional[str] = None,
+        table: Optional[str] = None,
+        view: Optional[str] = None,
+        sample: bool = -1,
+    ) -> TableRowsFormat:
         """
         Search a data source.
 
@@ -132,7 +135,7 @@ class SearchMiddleware:
 
         Returns
         -------
-        data : RecordsFormat
+        data : TableRowsFormat
           search result in data records format
 
         Raises
@@ -175,7 +178,7 @@ class SearchMiddleware:
             subtype = "AGGR_WORKSHEET"
 
         if not _utils.is_valid_guid(guid):
-            d = self.ts.api.metadata_list(
+            d = self.ts.api.v1.metadata_list(
                 metadata_type="LOGICAL_TABLE", subtypes=[subtype], pattern=guid, sort="CREATED", sort_ascending=True
             ).json()
 
@@ -194,9 +197,9 @@ class SearchMiddleware:
         data = []
 
         while True:
-            r = self.ts.api.search_data(
-                    query_string=query, data_source_guid=guid, format_type="COMPACT", batchsize=sample, offset=offset
-                )
+            r = self.ts.api.v1.search_data(
+                query_string=query, data_source_guid=guid, format_type="COMPACT", batchsize=sample, offset=offset
+            )
 
             d = r.json()
             data.extend(d.pop("data"))
@@ -216,7 +219,7 @@ class SearchMiddleware:
                 )
 
         # Get the data types
-        r = self.ts.api.metadata_details(metadata_type="LOGICAL_TABLE", guids=[guid])
+        r = self.ts.api.v1.metadata_details(metadata_type="LOGICAL_TABLE", guids=[guid])
         data_types = {c["header"]["name"]: c["dataType"] for c in r.json()["storables"][0]["columns"]}
 
         # Cleanups

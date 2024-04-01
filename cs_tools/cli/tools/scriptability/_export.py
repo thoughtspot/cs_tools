@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Optional
 import collections
 import logging
 import re
-from dataclasses import dataclass
-from typing import List, Optional
 
 from awesomeversion import AwesomeVersion
 from httpx import HTTPStatusError
@@ -15,7 +15,8 @@ from thoughtspot_tml.utils import determine_tml_type, disambiguate
 
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
-from cs_tools.types import TMLSupportedContent, TMLSupportedContentSubtype, GUID
+from cs_tools.types import GUID, TMLSupportedContent, TMLSupportedContentSubtype
+
 from .tmlfs import ExportTMLFS
 
 log = logging.getLogger(__name__)
@@ -28,12 +29,12 @@ class TMLExportResponse:
     tml_type_name: str
     name: str
     status_code: str  # ERROR, WARNING, OK
-    error_messages: Optional[List[str]] = None
+    error_messages: Optional[list[str]] = None
 
     def __post_init__(self):
         self.error_messages = self._process_errors()
 
-    def _process_errors(self) -> List[str]:
+    def _process_errors(self) -> list[str]:
         if self.error_messages is None:
             return []
         return [_.strip() for _ in re.split("<br/>|\n", self.error_messages) if _.strip()]
@@ -46,7 +47,7 @@ class TMLExportResponse:
 def export(ts, path, guids, tags, author, include_types, exclude_types, pattern, export_associated, org):
     if guids and (tags or author or include_types or exclude_types or pattern):
         raise CSToolsError(
-            error="GUID cannot be used with other filters.",
+            title="GUID cannot be used with other filters.",
             reason="You can only specify GUIDs or a combination of other filters, such as author and tag.",
             mitigation=(
                 "Modify your parameters to have GUIDS or author/tag. Note that tags and author can be used together."
@@ -62,20 +63,26 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
     if include_types:
         include_types = [t.lower() for t in include_types]
         # have to do subtypes first since types is overwritten.
-        include_subtypes = [str(TMLSupportedContentSubtype.from_friendly_type(t)) for t in include_types
-                            if str(TMLSupportedContentSubtype.from_friendly_type(t))]
+        include_subtypes = [
+            str(TMLSupportedContentSubtype.from_friendly_type(t))
+            for t in include_types
+            if str(TMLSupportedContentSubtype.from_friendly_type(t))
+        ]
         include_types = [str(TMLSupportedContent.from_friendly_type(t)) for t in include_types]
 
     exclude_subtypes = None
     if exclude_types:
         exclude_types = [t.lower() for t in exclude_types]
         # have to do subtypes first since types is overwritten.
-        exclude_subtypes = [str(TMLSupportedContentSubtype.from_friendly_type(t)) for t in exclude_types
-                            if str(TMLSupportedContentSubtype.from_friendly_type(t))]
+        exclude_subtypes = [
+            str(TMLSupportedContentSubtype.from_friendly_type(t))
+            for t in exclude_types
+            if str(TMLSupportedContentSubtype.from_friendly_type(t))
+        ]
         exclude_types = [str(TMLSupportedContent.from_friendly_type(t)) for t in exclude_types]
     # some types you always want to exclude.
     exclude_types = (exclude_types or []) + ["LOGICAL_COLUMN", "LOGICAL_RELATIONSHIP", "USER", "USER_GROUP"]
-    exclude_subtypes = (exclude_subtypes or [])
+    exclude_subtypes = exclude_subtypes or []
 
     log.debug(
         f"EXPORT args"
@@ -115,7 +122,6 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
         with_ = "with" if export_associated else "without"
 
         with rich_console.status(f"[b green]exporting {guid} ({metadata_type}) {with_} associated content.[/]"):
-
             try:
                 if metadata_type == TMLSupportedContent.connection:
                     r = _download_connection(ts=ts, tmlfs=tmlfs, guid=guid)
@@ -151,7 +157,7 @@ def _download_connection(ts, tmlfs: ExportTMLFS, guid: GUID) -> list[TMLExportRe
 
     Connections aren't supported by TML yet.
     """
-    r = ts.api.connection_export(guid=guid)
+    r = ts.api.v1.connection_export(guid=guid)
     tml = Connection.loads(r.text)
     tml.guid = guid
 
@@ -166,7 +172,7 @@ def _download_connection(ts, tmlfs: ExportTMLFS, guid: GUID) -> list[TMLExportRe
 
     try:
         tmlfs.write_tml(tml=tml)
-    except IOError:
+    except OSError:
         r.status_code = "ERROR"
         r.error_messages = [f"Error writing to file: {tml.name}"]
 
@@ -175,7 +181,7 @@ def _download_connection(ts, tmlfs: ExportTMLFS, guid: GUID) -> list[TMLExportRe
 
 def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -> list[TMLExportResponse]:
     # DEV NOTE: @billdback 2023/01/14 , we'll only download one parent at a time to account for FQN mapping
-    r = ts.api.metadata_tml_export(
+    r = ts.api.v1.metadata_tml_export(
         export_guids=[guid],
         format_type="YAML",
         export_associated=export_associated,
@@ -254,6 +260,5 @@ def _show_results_as_table(results: list[TMLExportResponse]) -> None:
     for r in sorted(results, key=lambda r: r.status_code):
         log.info(f"{r.status_code} {r.guid} {r.name} {' '.join(r.error_messages)}")
         table.add_row(r.status_code, r.guid, r.name, " ".join(r.error_messages))
-
 
     rich_console.print(table)

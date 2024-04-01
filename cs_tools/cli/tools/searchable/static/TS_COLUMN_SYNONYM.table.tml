@@ -1,0 +1,40 @@
+guid: 8ac404a7-1f00-4536-860e-50031b0be524
+table:
+  name: TS_COLUMN_SYNONYM
+  db: GTM_DB
+  schema: CS_TOOLS_V150
+  db_table: TS_COLUMN_SYNONYM
+  connection:
+    name: CS Tools
+  columns:
+  - name: CLUSTER_GUID
+    description: This column is only used for JOINs.
+    db_column_name: CLUSTER_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: VARCHAR
+  - name: COLUMN_GUID
+    description: This column is only used for JOINs.
+    db_column_name: COLUMN_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Column Synonym
+    description: An alternate name for a column.
+    db_column_name: SYNONYM
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: VARCHAR
+  joins_with:
+  - name: TS_COLUMN_SYNONYM_to_TS_METADATA_COLUMN
+    destination:
+      name: TS_METADATA_COLUMN
+    "on": "[TS_COLUMN_SYNONYM::COLUMN_GUID] = [TS_METADATA_COLUMN::Column GUID] AND [TS_COLUMN_SYNONYM::CLUSTER_GUID] = [TS_METADATA_COLUMN::CLUSTER_GUID]"
+    type: RIGHT_OUTER

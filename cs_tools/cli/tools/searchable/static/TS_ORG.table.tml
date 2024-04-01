@@ -1,0 +1,47 @@
+guid: c861952f-7d1b-4672-a809-8eef8525d35a
+table:
+  name: TS_ORG
+  db: GTM_DB
+  schema: CS_TOOLS_V150
+  db_table: TS_ORG
+  connection:
+    name: CS Tools
+  columns:
+  - name: CLUSTER_GUID
+    description: This column is only used for JOINs.
+    db_column_name: CLUSTER_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Org ID
+    description: The unique identifier of the org.
+    db_column_name: ORG_ID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Org
+    description: "The organization name found in the ThoughtSpot UI, either in the switcher or on the Administrator panel."
+    db_column_name: NAME
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Org Description
+    description: A user-driven field which details extra infomation about the Org.
+    db_column_name: DESCRIPTION
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  joins_with:
+  - name: TS_ORG_to_TS_CLUSTER
+    destination:
+      name: TS_CLUSTER
+    "on": "[TS_ORG::CLUSTER_GUID] = [TS_CLUSTER::Cluster GUID]"
+    type: INNER

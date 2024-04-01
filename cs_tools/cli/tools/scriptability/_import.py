@@ -3,12 +3,12 @@ This file contains the methods to execute the 'scriptability import' command.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Optional
 import logging
 import pathlib
 import re
 import time
-from dataclasses import dataclass
-from typing import List, Dict, Optional, Tuple
 
 from awesomeversion import AwesomeVersion
 from httpx import HTTPStatusError
@@ -19,12 +19,19 @@ from thoughtspot_tml._tml import TML
 from thoughtspot_tml.exceptions import TMLDecodeError
 from thoughtspot_tml.utils import _recursive_scan
 
+from cs_tools import utils
 from cs_tools.cli.tools.scriptability.util import GUIDMapping
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
 from cs_tools.thoughtspot import ThoughtSpot
-from cs_tools.types import GUID, MetadataObjectType, ShareModeAccessLevel, TMLImportPolicy, TMLSupportedContent, TMLSupportedContentSubtype
-from cs_tools.utils import chunks
+from cs_tools.types import (
+    GUID,
+    MetadataObjectType,
+    ShareModeAccessLevel,
+    TMLImportPolicy,
+    TMLSupportedContent,
+)
+
 from ._mapping import show_mapping_details
 from .tmlfs import ImportTMLFS, TMLType
 
@@ -38,12 +45,12 @@ class TMLImportResponse:
     tml_type_name: str
     name: str
     status_code: str  # ERROR, WARNING, OK
-    error_messages: Optional[List[str]] = None
+    error_messages: Optional[list[str]] = None
 
     def __post_init__(self):
         self.error_messages = self._process_errors()
 
-    def _process_errors(self) -> List[str]:
+    def _process_errors(self) -> list[str]:
         res = []
         if self.error_messages:
             try:  # most, but not all errors are in this format
@@ -64,20 +71,20 @@ class TMLImportResponse:
 
 
 def to_import(
-        ts: ThoughtSpot,
-        path: pathlib.Path,  # root of the TML file system.
-        guid: GUID,  # GUID for the TML to import if only one is being imported.  Assumes dependencies are met, so
-        # this is usually an update.
-        import_policy: TMLImportPolicy,  # Import policy to use.
-        force_create: bool,  # Force creation of new content.
-        source: str,  # Source of the TML being imported.  Used for mapping.
-        dest: str,  # Destination of the TML being imported.  Used for mapping.
-        tags: Optional[List[str]],  # Tags to apply to imported content.
-        share_with: Optional[List[str]],  # Users and groups to share with.
-        org: str,  # Org to import into.
-        include_types: Optional[List[str]],  # Types of TML to import.
-        exclude_types: Optional[List[str]],  # Types of TML to exclude from import.
-        show_mapping: bool,  # Show the mapping file details.
+    ts: ThoughtSpot,
+    path: pathlib.Path,  # root of the TML file system.
+    guid: GUID,  # GUID for the TML to import if only one is being imported.  Assumes dependencies are met, so
+    # this is usually an update.
+    import_policy: TMLImportPolicy,  # Import policy to use.
+    force_create: bool,  # Force creation of new content.
+    source: str,  # Source of the TML being imported.  Used for mapping.
+    dest: str,  # Destination of the TML being imported.  Used for mapping.
+    tags: Optional[list[str]],  # Tags to apply to imported content.
+    share_with: Optional[list[str]],  # Users and groups to share with.
+    org: str,  # Org to import into.
+    include_types: Optional[list[str]],  # Types of TML to import.
+    exclude_types: Optional[list[str]],  # Types of TML to exclude from import.
+    show_mapping: bool,  # Show the mapping file details.
 ):
     """
     Import TML from a file or directory into ThoughtSpot.
@@ -89,15 +96,16 @@ def to_import(
 
        https://github.com/thoughtspot/thoughtspot_tml/tree/v2_0_release#environmentguidmapper
     """
-    all_responses: List[TMLImportResponse] = []
+    all_responses: list[TMLImportResponse] = []
 
     # ideally this will be moved to the config file
     if org is not None:
         ts.org.switch(org)
 
     # Check the parameters to make sure they make sense together.  If not, then raise an exception.
-    _check_parameters(path=path, source=source, dest=dest, guid=guid,
-                      include_types=include_types, exclude_types=exclude_types)
+    _check_parameters(
+        path=path, source=source, dest=dest, guid=guid, include_types=include_types, exclude_types=exclude_types
+    )
 
     tmlfs = ImportTMLFS(path, log)
 
@@ -109,12 +117,27 @@ def to_import(
         mapping_file = tmlfs.read_mapping_file(source=ts.config.name, dest=ts.config.name)
 
     if guid:
-        all_responses.extend(_load_from_file(ts=ts, tmlfs=tmlfs, guid=guid, import_policy=import_policy,
-                                             force_create=force_create, mapping_file=mapping_file))
+        all_responses.extend(
+            _load_from_file(
+                ts=ts,
+                tmlfs=tmlfs,
+                guid=guid,
+                import_policy=import_policy,
+                force_create=force_create,
+                mapping_file=mapping_file,
+            )
+        )
     else:
         all_responses.extend(
-            _load_from_dir(ts=ts, tmlfs=tmlfs, import_policy=import_policy, force_create=force_create,
-                           mapping_file=mapping_file, include_types=include_types, exclude_types=exclude_types)
+            _load_from_dir(
+                ts=ts,
+                tmlfs=tmlfs,
+                import_policy=import_policy,
+                force_create=force_create,
+                mapping_file=mapping_file,
+                include_types=include_types,
+                exclude_types=exclude_types,
+            )
         )
 
     mapping_file.save()  # save any changes to the mapping file.
@@ -139,47 +162,50 @@ def to_import(
     if show_mapping:
         show_mapping_details(ts=ts, path=tmlfs.path, source=source, dest=dest, org=org)
 
-    print('done')
-
 
 def _check_parameters(
-        path: pathlib.Path,  # root of the TML file system.
-        guid: GUID,  # GUID for the TML to import if only one is being imported.
-        source: str,  # Source of the TML being imported.  Used for mapping.
-        dest: str,  # Destination of the TML being imported.  Used for mapping.
-        include_types: Optional[List[str]],  # Types of TML to import.
-        exclude_types: Optional[List[str]],  # Types of TML to exclude from import.
+    path: pathlib.Path,  # root of the TML file system.
+    guid: GUID,  # GUID for the TML to import if only one is being imported.
+    source: str,  # Source of the TML being imported.  Used for mapping.
+    dest: str,  # Destination of the TML being imported.  Used for mapping.
+    include_types: Optional[list[str]],  # Types of TML to import.
+    exclude_types: Optional[list[str]],  # Types of TML to exclude from import.
 ):
     """
     Checks the parameters to make sure they make sense together.  If not, then raise an exception.
     """
     if (source or dest) and not (source and dest):
         error_msg = "source specified, but not destination" if source else "destination specified, but not source"
-        raise CSToolsError(error=error_msg, reason="Source and destination must both be specified.",
-                           mitigation="Specify both source and destination when using mapping.")
+        raise CSToolsError(
+            title=error_msg,
+            reason="Source and destination must both be specified.",
+            mitigation="Specify both source and destination when using mapping.",
+        )
 
     path_mitigation = "The path must exist and be a valid TML file system."
     if not path.exists():
-        raise CSToolsError(error=f"Path {path} does not exist.", mitigation=path_mitigation)
+        raise CSToolsError(title=f"Path {path} does not exist.", mitigation=path_mitigation)
 
     if not (path / ".tmlfs"):
-        raise CSToolsError(error=f"Path {path} does not appear to be a TML file system.", mitigation=path_mitigation)
+        raise CSToolsError(title=f"Path {path} does not appear to be a TML file system.", mitigation=path_mitigation)
 
     if guid and (include_types or exclude_types):
-        raise CSToolsError(error="A guid and include/exclude specified.",
-                           reason="Cannot specify both a file and include/exclude types.",
-                           mitigation="Specify either a file or include/exclude types, but not both.")
+        raise CSToolsError(
+            title="A guid and include/exclude specified.",
+            reason="Cannot specify both a file and include/exclude types.",
+            mitigation="Specify either a file or include/exclude types, but not both.",
+        )
 
 
 def _load_from_file(
-        ts: ThoughtSpot,
-        tmlfs: ImportTMLFS,
-        guid: GUID,
-        import_policy: TMLImportPolicy,
-        force_create: bool,
-        mapping_file: GUIDMapping,
-) -> List[TMLImportResponse]:
-    all_responses: List[TMLImportResponse] = []
+    ts: ThoughtSpot,
+    tmlfs: ImportTMLFS,
+    guid: GUID,
+    import_policy: TMLImportPolicy,
+    force_create: bool,
+    mapping_file: GUIDMapping,
+) -> list[TMLImportResponse]:
+    all_responses: list[TMLImportResponse] = []
 
     tml = tmlfs.load_tml_for_guid(guid)
 
@@ -194,54 +220,46 @@ def _load_from_file(
 
 
 def _load_from_dir(
-        ts: ThoughtSpot,
-        tmlfs: ImportTMLFS,
-        import_policy: TMLImportPolicy,
-        force_create: bool,
-        mapping_file: GUIDMapping,
-        include_types: Optional[List[str]],
-        exclude_types: Optional[List[str]],
-) -> List[TMLImportResponse]:
-    def _load_from_dir(
-            ts: ThoughtSpot,
-            tmlfs: ImportTMLFS,
-            import_policy: TMLImportPolicy,
-            force_create: bool,
-            mapping_file: GUIDMapping,
-            include_types: Optional[List[str]] = None,
-            exclude_types: Optional[List[str]] = None,
-    ) -> List[TMLImportResponse]:
+    ts: ThoughtSpot,
+    tmlfs: ImportTMLFS,
+    import_policy: TMLImportPolicy,
+    force_create: bool,
+    mapping_file: GUIDMapping,
+    include_types: Optional[list[str]],
+    exclude_types: Optional[list[str]],
+) -> list[TMLImportResponse]:
+    all_responses: list[TMLImportResponse] = []
 
-        all_responses = []
+    # Determine the types of TML to import.
+    types_to_import = include_types or list(TMLType)
+    if exclude_types:
+        types_to_import = [TMLType(_) for _ in types_to_import if _ not in exclude_types]
 
-        # Determine the types of TML to import.
-        types_to_import = set(include_types or TMLType) - set(exclude_types or [])
+    # First load the connections.  Those need to be done first and use different APIs.
+    if types_to_import and TMLType.connection in types_to_import:
+        connection_tml = tmlfs.load_tml([TMLType.connection])
+        responses = _load_connections(ts, tmlfs, connection_tml, import_policy, force_create, mapping_file)
+        all_responses.extend(responses)
 
-        # If connections need to be imported, do it first.
-        if TMLType.connection in types_to_import:
-            types_to_import.remove(TMLType.connection)
-            connection_tml = tmlfs.load_tml([TMLType.connection])
-            responses = _load_connections(ts, tmlfs, connection_tml, import_policy, force_create, mapping_file)
-            all_responses.extend(responses)
+    # Now load all types remaining that were requested.
+    other_types = [_ for _ in TMLType if _ != TMLType.connection and _ in types_to_import]
+    if other_types:
+        other_tml = tmlfs.load_tml(other_types)
+        responses = _load_tml(ts, tmlfs, other_tml, import_policy, force_create, mapping_file)
+        all_responses.extend(responses)
 
-        # Load other requested types.
-        if types_to_import:
-            other_tml = tmlfs.load_tml(list(types_to_import))
-            responses = _load_tml(ts, tmlfs, other_tml, import_policy, force_create, mapping_file)
-            all_responses.extend(responses)
-
-        return all_responses
+    return all_responses
 
 
 def _load_connections(
-        ts: ThoughtSpot,
-        tmlfs: ImportTMLFS,
-        connection_tml: [TML],
-        import_policy: TMLImportPolicy,
-        force_create: bool,
-        mapping_file: GUIDMapping,
-) -> List[TMLImportResponse]:
-    responses: List[TMLImportResponse] = []
+    ts: ThoughtSpot,
+    tmlfs: ImportTMLFS,
+    connection_tml: [TML],
+    import_policy: TMLImportPolicy,
+    force_create: bool,
+    mapping_file: GUIDMapping,
+) -> list[TMLImportResponse]:
+    responses: list[TMLImportResponse] = []
 
     old_guids = []
     for tml in connection_tml:
@@ -283,7 +301,6 @@ def _verify_connection_passwords(connection_tml: [TML]) -> None:
     :param connection_tml: The list of connection TML.
     """
     for tml in connection_tml:
-
         # connections without passwords can be created, but then the following table create fails (and you
         # get errors in the UI.  So throw an exception to avoid future pain.
         for p in tml.connection.properties:
@@ -291,17 +308,17 @@ def _verify_connection_passwords(connection_tml: [TML]) -> None:
                 break
         else:
             raise CSToolsError(
-                error=f'Connection "{tml.connection.name}" missing password',
+                title=f'Connection "{tml.connection.name}" missing password',
                 reason="Connections require a valid password to create tables.",
                 mitigation="Add a password to the connection file and try again.",
             )
 
 
 def _create_connections(
-        ts: ThoughtSpot,
-        tmlfs: ImportTMLFS,
-        connection_tml: [TML],
-) -> List[TMLImportResponse]:
+    ts: ThoughtSpot,
+    tmlfs: ImportTMLFS,
+    connection_tml: [TML],
+) -> list[TMLImportResponse]:
     """
     Creates a new connection.  Note that tables are not created as part of the conneciton and must be created
     separately.  This will create an empty connection.
@@ -310,15 +327,14 @@ def _create_connections(
     :param connection_tml: The TML to create.
     """
 
-    responses: List[TMLImportResponse] = []
+    responses: list[TMLImportResponse] = []
 
     for tml in connection_tml:
-
         log.info(f"Creating connection {tml.connection.name} ({tml.guid})")
         tmlfs.log_tml(tml)
 
         try:
-            r = ts.api.connection_create(
+            r = ts.api.v1.connection_create(
                 name=tml.name,
                 description="",
                 external_database_type=tml.connection.type,
@@ -328,7 +344,6 @@ def _create_connections(
 
             # Add the results to the response list.
             if not r.is_success:  # failed
-
                 responses.append(
                     TMLImportResponse(
                         guid=tml.guid,
@@ -336,12 +351,11 @@ def _create_connections(
                         tml_type_name="connection",
                         name=tml.name,
                         status_code=r.reason_phrase,
-                        error_messages=[str(r.status_code)]
+                        error_messages=[str(r.status_code)],
                     )
                 )
 
             else:  # succeeded
-
                 d = r.json()
                 data = d.get("dataSource", d)
 
@@ -367,17 +381,18 @@ def _create_connections(
                     tml_type_name="connection",
                     name=tml.name,
                     status_code="ERROR",
-                    error_messages=[e.response.content.decode("utf-8")]
+                    error_messages=[e.response.content.decode("utf-8")],
                 )
             )
 
     return responses
 
 
-def _update_connections(ts: ThoughtSpot,
-                        tmlfs: ImportTMLFS,
-                        connection_tml: [TML],
-                        ) -> List[TMLImportResponse]:
+def _update_connections(
+    ts: ThoughtSpot,
+    tmlfs: ImportTMLFS,
+    connection_tml: [TML],
+) -> list[TMLImportResponse]:
     """
     Updates an existing connection.  Checks to see if the connection actually exists and will create if not.
     Note that when creating a connection the tables aren't created.  But when updating, the tables are updated.
@@ -387,11 +402,10 @@ def _update_connections(ts: ThoughtSpot,
     :param tmlfs: The ThoughtSpot TML file system.
     :param connection_tml: The TML for the connection to update.
     """
-    responses: List[TMLImportResponse] = []
+    responses: list[TMLImportResponse] = []
 
     # connections are processed one at a time.
     for tml in connection_tml:
-
         # if it doesn't exist, we have to call and create it.
         existing_connection = _get_connection(ts, tml.guid)
         if not existing_connection:
@@ -407,7 +421,7 @@ def _update_connections(ts: ThoughtSpot,
             tmlfs.log_tml(tml)
 
             try:
-                r = ts.api.connection_update(
+                r = ts.api.v1.connection_update(
                     guid=tml.guid,
                     name=tml.name,
                     description="",
@@ -457,7 +471,7 @@ def _update_connections(ts: ThoughtSpot,
                         tml_type_name="connection",
                         name=tml.name,
                         status_code="ERROR",
-                        error_messages=[e.args[0], e.response.content.decode("utf-8")]
+                        error_messages=[e.args[0], e.response.content.decode("utf-8")],
                     )
                 )
 
@@ -472,7 +486,7 @@ def _get_connection(ts: ThoughtSpot, connection_guid: GUID) -> Optional[Connecti
     :return:  True if the connection exists.
     """
     try:
-        r = ts.api.connection_export(guid=connection_guid)
+        r = ts.api.v1.connection_export(guid=connection_guid)
         cnx = Connection.loads(r.text)
         cnx.guid = connection_guid
         return cnx
@@ -480,12 +494,15 @@ def _get_connection(ts: ThoughtSpot, connection_guid: GUID) -> Optional[Connecti
         if e.response.status_code == 404:  # the API will return a 400 if the connection doesn't exist.
             return None
         else:
-            raise CSToolsError(error=f"Unknown error checking for connection {connection_guid}: {e}",
-                               reason=str(e.response.content),
-                               mitigation="Verify TS connection and GUID")
+            raise CSToolsError(
+                title=f"Unknown error checking for connection {connection_guid}: {e}",
+                reason=str(e.response.content),
+                mitigation="Verify TS connection and GUID",
+            ) from None
     except TMLDecodeError as e:
-        raise CSToolsError(error=f"Error decoding connection {connection_guid}: {e}",
-                           mitigation="Verify TS connection and GUID")
+        raise CSToolsError(
+            title=f"Error decoding connection {connection_guid}: {e}", mitigation="Verify TS connection and GUID"
+        ) from None
 
 
 def _remove_new_tables_from_connection(new_connection: Connection, existing_connection: Connection) -> None:
@@ -510,10 +527,12 @@ def _remove_new_tables_from_connection(new_connection: Connection, existing_conn
 
         found = False
         if nbr_existing_tables:  # only do if there are tables.
-            for (idx, existing_table) in enumerate(existing_connection.connection.table):
-                if table.external_table.db_name == existing_table.external_table.db_name \
-                        and table.external_table.schema_name == existing_table.external_table.schema_name \
-                        and table.external_table.table_name == existing_table.external_table.table_name:
+            for _idx, existing_table in enumerate(existing_connection.connection.table):
+                if (
+                    table.external_table.db_name == existing_table.external_table.db_name
+                    and table.external_table.schema_name == existing_table.external_table.schema_name
+                    and table.external_table.table_name == existing_table.external_table.table_name
+                ):
                     found = True
                     break
 
@@ -525,9 +544,10 @@ def _remove_new_tables_from_connection(new_connection: Connection, existing_conn
         new_connection.connection.table.remove(table)
 
 
-def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportPolicy, force_create: bool, mapping_file
-              ) -> List[TMLImportResponse]:
-    responses: List[TMLImportResponse] = []
+def _load_tml(
+    ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportPolicy, force_create: bool, mapping_file
+) -> list[TMLImportResponse]:
+    responses: list[TMLImportResponse] = []
 
     if not tml_list:
         return responses
@@ -543,17 +563,16 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
 
         # if we are forcing the creation of new content, we want to delete guids that aren't mapped
         mapping_file.disambiguate(tml=tml, delete_unmapped_guids=force_create)
-        # BDB - in 9.8 this is causing the validation to fail.
-        # tml = _remove_viz_guid(tml)
+        tml = _remove_viz_guid(tml)
         tmlfs.log_tml(tml, old_guid)  # write the updated TML to the logs
 
-    r = ts.api.metadata_tml_import(
+    r = ts.api.v1.metadata_tml_import(
         import_objects=[tml.dumps() for tml in tml_list],
         import_policy=import_policy,
         force_create=force_create,
     )
 
-    guids_to_map: Dict[GUID, GUID] = {}
+    guids_to_map: dict[GUID, GUID] = {}
 
     guid_cnt = 0
     for obj in r.json()["object"]:
@@ -586,18 +605,16 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
                 tml_type_name=tml_list[guid_cnt].tml_type_name,
                 name=name,
                 status_code=status_code,
-                error_messages=error_messages
+                error_messages=error_messages,
             )
         )
 
         guid_cnt += 1
 
-
     # Have to make sure it's not an error.  is_success is False on warnings, but content is created.
     is_error_free = all(not r.is_error for r in responses)
 
     if import_policy != TMLImportPolicy.validate:  # no need to update or wait if only validating.
-
         if is_error_free or import_policy != TMLImportPolicy.all_or_none:
             for old_guid, new_guid in guids_to_map.items():
                 mapping_file.set_mapped_guid(old_guid, new_guid)
@@ -608,7 +625,7 @@ def _load_tml(ts, tmlfs: ImportTMLFS, tml_list: [TML], import_policy: TMLImportP
     return responses
 
 
-def _get_guids_to_map(old_guids: List[GUID], responses: List[TMLImportResponse]) -> Tuple[List[GUID], List[GUID]]:
+def _get_guids_to_map(old_guids: list[GUID], responses: list[TMLImportResponse]) -> tuple[list[GUID], list[GUID]]:
     """
     Returns a list of old guid to new guid mapping.  Responses that had errors are ignored because they didn't map.
     :param old_guids: The old GUIDs for the imported content.
@@ -628,7 +645,7 @@ def _get_guids_to_map(old_guids: List[GUID], responses: List[TMLImportResponse])
     return new_old_guids, new_guids
 
 
-def _wait_for_metadata(ts: ThoughtSpot, guids: List[GUID]) -> None:
+def _wait_for_metadata(ts: ThoughtSpot, guids: list[GUID]) -> None:
     """
     Waits on the existence of metadata objects.  There can be a delay between creation and being available.
     """
@@ -641,8 +658,8 @@ def _wait_for_metadata(ts: ThoughtSpot, guids: List[GUID]) -> None:
         log.info(f"checking {len(guids): >3} guids, n={n}")
 
         for metadata_type in ("DATA_SOURCE", "LOGICAL_TABLE", "QUESTION_ANSWER_BOOK", "PINBOARD_ANSWER_BOOK"):
-            for chunk in chunks(list(set(guids).difference(ready_guids)), n=25):
-                r = ts.api.metadata_list(metadata_type=metadata_type, fetch_guids=list(chunk), show_hidden=False)
+            for chunk in utils.batched(list(set(guids).difference(ready_guids)), n=25):
+                r = ts.api.v1.metadata_list(metadata_type=metadata_type, fetch_guids=list(chunk), show_hidden=False)
 
                 for metadata_object in r.json()["headers"]:
                     ready_guids.add(metadata_object["id"])
@@ -650,7 +667,7 @@ def _wait_for_metadata(ts: ThoughtSpot, guids: List[GUID]) -> None:
         time.sleep(5.0)
 
 
-def _some_tml_updated(import_policy: TMLImportPolicy, results: List[TMLImportResponse]) -> bool:
+def _some_tml_updated(import_policy: TMLImportPolicy, results: list[TMLImportResponse]) -> bool:
     """
     Returns True if any of the TML was updated.  This is known based on the policy and results:
     * Validate - always False
@@ -661,15 +678,15 @@ def _some_tml_updated(import_policy: TMLImportPolicy, results: List[TMLImportRes
         return False
 
     if import_policy == TMLImportPolicy.all_or_none:
-        return all([not r.is_error for r in results])  # if any of the results weren't an error, return true.
+        return all(not r.is_error for r in results)  # if any of the results weren't an error, return true.
 
     if import_policy == TMLImportPolicy.partial:
-        return any([not r.is_error for r in results])  # if any of the results weren't an error, return true.
+        return any(not r.is_error for r in results)  # if any of the results weren't an error, return true.
 
     return False  # this should never happen, but just in case a new value is added.
 
 
-def _show_results_as_table(results: List[TMLImportResponse]) -> None:
+def _show_results_as_table(results: list[TMLImportResponse]) -> None:
     """
     Writes a pretty results table to the rich_console.
     """
@@ -683,7 +700,7 @@ def _show_results_as_table(results: List[TMLImportResponse]) -> None:
 
     for r in results:
         try:
-            error_messages = ' '.join(r.error_messages) if r.error_messages else ""
+            error_messages = " ".join(r.error_messages) if r.error_messages else ""
             table.add_row(r.status_code, r.guid, r.name, error_messages)
         except Exception as e:
             rich_console(f"Error adding row for {r.name}: {e}")
@@ -691,7 +708,7 @@ def _show_results_as_table(results: List[TMLImportResponse]) -> None:
     rich_console.print(Align.center(table))
 
 
-def _add_tags(ts: ThoughtSpot, objects: List[TMLImportResponse], tags: List[str]) -> None:
+def _add_tags(ts: ThoughtSpot, objects: list[TMLImportResponse], tags: list[str]) -> None:
     """
     Adds the tags to the items in the response.
     :param ts: The ThoughtSpot object.
@@ -707,12 +724,12 @@ def _add_tags(ts: ThoughtSpot, objects: List[TMLImportResponse], tags: List[str]
         if ids:  # might all be errors
             log.info(f"Adding tags {tags} to {ids}")
             try:
-                ts.api.metadata_assign_tag(metadata_guids=ids, metadata_types=types, tag_names=tags)
+                ts.api.v1.metadata_assign_tag(metadata_guids=ids, metadata_types=types, tag_names=tags)
             except HTTPStatusError as e:
                 log.error(f"Error adding tags {tags} for metadata {ids}: {types}. Error: {e}")
 
 
-def _share_with(ts: ThoughtSpot, objects: List[TMLImportResponse], share_with: List[str]) -> None:
+def _share_with(ts: ThoughtSpot, objects: list[TMLImportResponse], share_with: list[str]) -> None:
     """
     Shares the objects with the groups.
     :param ts: The ThoughtSpot interface object.
@@ -729,13 +746,13 @@ def _share_with(ts: ThoughtSpot, objects: List[TMLImportResponse], share_with: L
                 log.error(f"unable to get ID for group {group}: {e}")
 
         if groups:  # make sure some mapped
-
             # Bundling by type to save on calls.
             type_bundles = {}
             for _ in objects:
                 # Connection sharing is available in 9.3+
-                if _.metadata_object_type == MetadataObjectType.connection and \
-                        ts.platform.version < AwesomeVersion("9.3.0"):
+                if _.metadata_object_type == MetadataObjectType.connection and ts.platform.version < AwesomeVersion(
+                    "9.3.0"
+                ):
                     continue
 
                 guid_list = type_bundles.get(_.metadata_object_type, [])
@@ -753,9 +770,9 @@ def _share_with(ts: ThoughtSpot, objects: List[TMLImportResponse], share_with: L
                     # for some bizarre reason you can only share connections one at a time.
                     if ctype == MetadataObjectType.connection:
                         for objectid in objectids:
-                            ts.api.security_share(metadata_type=ctype, guids=[objectid], permissions=permissions)
+                            ts.api.v1.security_share(metadata_type=ctype, guids=[objectid], permissions=permissions)
                     else:
-                        ts.api.security_share(metadata_type=ctype, guids=objectids, permissions=permissions)
+                        ts.api.v1.security_share(metadata_type=ctype, guids=objectids, permissions=permissions)
                 except HTTPStatusError as e:
                     log.error(f"Unable to share {objectids} of type {ctype} with permissions: {permissions}: {e}")
 

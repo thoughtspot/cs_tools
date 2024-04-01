@@ -1,6 +1,8 @@
+from __future__ import annotations
+
+from rich import box
 from rich.align import Align
 from rich.table import Table
-from rich import box
 
 
 def build_table() -> Table:
@@ -13,7 +15,7 @@ def build_table() -> Table:
         row_styles=("dim", ""),
         title_style="white",
         caption_style="white",
-        show_footer=True
+        show_footer=True,
     )
     table.add_column("Database", justify="center")
     table.add_column("Schema", justify="center")

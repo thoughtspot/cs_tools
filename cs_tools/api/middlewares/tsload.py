@@ -1,31 +1,37 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from tempfile import _TemporaryFileWrapper
-from typing import Optional, Any, TYPE_CHECKING, Dict, Union
-from io import BufferedIOBase, TextIOWrapper
-import ipaddress as ip
+from typing import TYPE_CHECKING, Any, Optional, Union
 import datetime as dt
-import pathlib
-import logging
-import time
+import ipaddress as ip
 import json
+import logging
+import pathlib
+import time
 
-from pydantic import validate_arguments
 import httpx
 
 from cs_tools._compat import TypedDict
+from cs_tools.errors import InsufficientPrivileges, TSLoadServiceUnreachable
+from cs_tools.types import (
+    GUID as CycleID,
+    GroupPrivilege,
+    TableRowsFormat,
+)
 from cs_tools.updater import cs_tools_venv
-from cs_tools.errors import TSLoadServiceUnreachable, InsufficientPrivileges
-from cs_tools.types import GroupPrivilege, RecordsFormat
-from cs_tools.types import GUID as CycleID
-from cs_tools.const import FMT_TSLOAD_TRUE_FALSE, FMT_TSLOAD_DATETIME, FMT_TSLOAD_TIME, FMT_TSLOAD_DATE
-from cs_tools import utils
 
 if TYPE_CHECKING:
+    from io import TextIOWrapper
+    from tempfile import _TemporaryFileWrapper
+
     from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
+# ISO datetime format
+FMT_TSLOAD_DATE = "%Y-%m-%d"
+FMT_TSLOAD_TIME = "%H:%M:%S"
+FMT_TSLOAD_DATETIME = f"{FMT_TSLOAD_DATE} {FMT_TSLOAD_TIME}"
+FMT_TSLOAD_TRUE_FALSE = "True_False"
 
 
 class CachedRedirectInfo(TypedDict):
@@ -50,17 +56,17 @@ class TSLoadNodeRedirectCache:
         self.cache_fp.touch(exist_ok=True)
         self._remove_old_data()
 
-    def load(self) -> Dict[CycleID, CachedRedirectInfo]:
+    def load(self) -> dict[CycleID, CachedRedirectInfo]:
         text = self.cache_fp.read_text()
         return json.loads(text) if text else {}
 
-    def dump(self, data: Dict[CycleID, CachedRedirectInfo]) -> None:
+    def dump(self, data: dict[CycleID, CachedRedirectInfo]) -> None:
         text = json.dumps(data, indent=4)
         self.cache_fp.write_text(text)
 
     def _remove_old_data(self) -> None:
         DAYS_TO_KEEP = 10 * 86400
-        NOW = dt.datetime.utcnow().timestamp()
+        NOW = dt.datetime.now(tz=dt.timezone.utc).timestamp()
 
         keep = {}
 
@@ -70,6 +76,8 @@ class TSLoadNodeRedirectCache:
             # if the format is not known
             if init_ts is None:
                 continue
+
+            assert isinstance(init_ts, float)
 
             if (NOW - init_ts) <= DAYS_TO_KEEP:
                 keep[cycle_id] = redirect_info
@@ -151,28 +159,26 @@ class TSLoadMiddleware:
         redirect_info = self._cache_fp.get_for(cycle_id)
 
         if redirect_info is not None:
-            redirect_url = self.ts.api.session.base_url.copy_with(host=redirect_info["host"], port=redirect_info["port"])
-            self.ts.api._redirected_url_due_to_tsload_load_balancer = redirect_url
+            redirected = self.ts.api._session.base_url.copy_with(host=redirect_info["host"], port=redirect_info["port"])
+            self.ts.api.v1._redirected_url_due_to_tsload_load_balancer = redirected
 
-            log.debug(f"redirecting to: {redirect_url}")
-            self.ts.api.dataservice_dataload_session(
-                username=self.ts.config.auth["frontend"].username,
-                password=utils.reveal(self.ts.config.auth["frontend"].password).decode(),
-            )
+            log.debug(f"redirecting to: {redirected}")
+            self.ts.login()
 
     def _check_privileges(self) -> None:
         """
         Determine if the user has necessary Data Manager privileges.
         """
-        REQUIRED = set([GroupPrivilege.can_administer_thoughtspot, GroupPrivilege.can_manage_data])
+        REQUIRED = {GroupPrivilege.can_administer_thoughtspot, GroupPrivilege.can_manage_data}
 
-        if not set(self.ts.me.privileges).intersection(REQUIRED):
-            raise InsufficientPrivileges(user=self.ts.me, service="remote TQL", required_privileges=", ".join(REQUIRED))
+        user = self.ts.session_context.user
 
-    @validate_arguments(config=dict(arbitrary_types_allowed=True))
+        if not user.is_data_manager:
+            raise InsufficientPrivileges(user=user, service="remote TQL", required_privileges=", ".join(REQUIRED))
+
     def upload(
         self,
-        fd: Union[BufferedIOBase, TextIOWrapper, _TemporaryFileWrapper],
+        fd: Union[TextIOWrapper, _TemporaryFileWrapper],
         *,
         database: str,
         table: str,
@@ -192,8 +198,8 @@ class TSLoadMiddleware:
         flexible: bool = False,
         # not related to Remote TSLOAD API
         ignore_node_redirect: bool = False,
-        http_timeout: int = 60.0,
-    ) -> RecordsFormat:
+        http_timeout: float = 60.0,
+    ) -> TableRowsFormat:
         """
         Load a file via tsload on a remote server.
 
@@ -261,7 +267,7 @@ class TSLoadMiddleware:
         }
 
         try:
-            r = self.ts.api.dataservice_dataload_initialize(data=flags, timeout=http_timeout)
+            r = self.ts.api.v1.dataservice_dataload_initialize(data=flags, timeout=http_timeout)
         except httpx.HTTPStatusError as e:
             raise TSLoadServiceUnreachable(
                 http_error=e,
@@ -286,7 +292,7 @@ class TSLoadMiddleware:
                     + ("--skip_second_fraction " if skip_second_fraction else "")
                     + ("--flexible" if flexible else ""),
                 ),
-            )
+            ) from None
 
         data = r.json()
 
@@ -296,14 +302,13 @@ class TSLoadMiddleware:
         if not ignore_node_redirect:
             self._check_for_redirect_auth(data["cycle_id"])
 
-        self.ts.api.dataservice_dataload_start(cycle_id=data["cycle_id"], fd=fd, timeout=http_timeout)
-        self.ts.api.dataservice_dataload_commit(cycle_id=data["cycle_id"])
+        self.ts.api.v1.dataservice_dataload_start(cycle_id=data["cycle_id"], fd=fd, timeout=http_timeout)
+        self.ts.api.v1.dataservice_dataload_commit(cycle_id=data["cycle_id"])
         return data["cycle_id"]
 
-    @validate_arguments
     def status(
         self, cycle_id: CycleID, *, ignore_node_redirect: bool = False, wait_for_complete: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get the status of a previously started data load.
 
@@ -324,7 +329,7 @@ class TSLoadMiddleware:
             self._check_for_redirect_auth(cycle_id)
 
         while True:
-            r = self.ts.api.dataservice_dataload_status(cycle_id=cycle_id)
+            r = self.ts.api.v1.dataservice_dataload_status(cycle_id=cycle_id)
             data = r.json()
 
             if not wait_for_complete:
@@ -342,13 +347,13 @@ class TSLoadMiddleware:
         return data
 
     # @validate_arguments
-    # def bad_records(self, cycle_id: str) -> RecordsFormat:
+    # def bad_records(self, cycle_id: str) -> TableRowsFormat:
     #     """
     #     """
-    #     r = self.ts.api.ts_dataservice.load_params(cycle_id)
+    #     r = self.ts.api.v1.ts_dataservice.load_params(cycle_id)
     #     params = r.json()
     #     print(params)
     #     raise
 
-    #     r = self.ts.api.ts_dataservice.bad_records(cycle_id)
+    #     r = self.ts.api.v1.ts_dataservice.bad_records(cycle_id)
     #     r.text

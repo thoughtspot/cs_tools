@@ -1,15 +1,15 @@
+from __future__ import annotations
+
 import logging
 
 import typer
 
+from cs_tools._compat import StrEnum
 from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools._compat import StrEnum
-from cs_tools.cli.ux import rich_console
-
-from cs_tools.cli.ux import CSToolsApp
-from cs_tools.cli.dependencies.syncer import DSyncer
+from cs_tools.cli.ux import CSToolsApp, rich_console
 
 from . import work
 
@@ -31,7 +31,7 @@ def search(
     data_type: SearchableDataSource = typer.Option("worksheet", help="type of object to search"),
     syncer: DSyncer = typer.Option(
         ...,
-        custom_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -54,12 +54,11 @@ def search(
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
-
         with tasks["gather_search"]:
             data = ts.search(query, **{data_type: dataset})
 
         if not data:
-            rich_console.log("[red]No data returned from query:[/] " + fr"{query}")
+            rich_console.log("[red]No data returned from query:[/] " + rf"{query}")
             return
 
         with tasks["syncer_dump"]:

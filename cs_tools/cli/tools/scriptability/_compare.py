@@ -2,13 +2,17 @@
 This file contains the methods to execute the 'scriptability compare' command.
 """
 from __future__ import annotations
-from typing import Dict, List
-import pathlib
+
+from typing import TYPE_CHECKING
 
 from thoughtspot_tml.utils import determine_tml_type
-from thoughtspot_tml.types import TMLObject
 
 from cs_tools.cli.ux import rich_console
+
+if TYPE_CHECKING:
+    import pathlib
+
+    from thoughtspot_tml.types import TMLObject
 
 
 def compare(file1, file2):
@@ -34,9 +38,9 @@ def _compare_tml(file1: str, tml1: TMLObject, file2: str, tml2: TMLObject) -> bo
     return _compare_dict(file1, tml1.to_dict(), file2, tml2.to_dict())
 
 
-def _compare_dict(f1: str, d1: Dict, f2: str, d2: Dict) -> bool:
+def _compare_dict(f1: str, d1: dict, f2: str, d2: dict) -> bool:
     """Compares two dictionaries, logging any changes."""
-    if not (type(d1) is dict and type(d2) is dict):
+    if not (isinstance(d1, dict) and isinstance(d2, dict)):
         rich_console.log(f"[bold red]{d1} and {d2} are different types.")
         return False
 
@@ -58,9 +62,9 @@ def _compare_dict(f1: str, d1: Dict, f2: str, d2: Dict) -> bool:
     common_keys = list(set(d1.keys()) & set(d2.keys()))
 
     for k in common_keys:
-        if type(d1[k]) is dict:
+        if isinstance(d1[k], dict):
             same = _compare_dict(f1, d1[k], f2, d2[k]) and same  # need to set to false if one is false
-        elif type(d1[k]) is list:
+        elif isinstance(d1[k], list):
             same = _compare_list(f1, d1[k], f2, d2[k]) and same  # need to set to false if one is false
         else:
             if d1[k] != d2[k]:
@@ -71,11 +75,11 @@ def _compare_dict(f1: str, d1: Dict, f2: str, d2: Dict) -> bool:
     return same
 
 
-def _compare_list(f1: str, l1: List, f2: str, l2: List) -> bool:
+def _compare_list(f1: str, l1: list, f2: str, l2: list) -> bool:
     """Compares the contents of a list."""
     same = True
 
-    if not (type(l1) is list and type(l2) is list):
+    if not (isinstance(l1, list) and isinstance(l2, list)):
         rich_console.log(f"[bold red]{l1} and {l2} are different types.")
         return False
 
@@ -84,13 +88,13 @@ def _compare_list(f1: str, l1: List, f2: str, l2: List) -> bool:
         same = False
 
     for cnt in range(0, len(l1)):
-        if type(l1[cnt]) is dict:
+        if isinstance(l1[cnt], dict):
             same = _compare_dict(f1, l1[cnt], f2, l2[cnt]) and same
-        elif type(l1[cnt]) is list:
+        elif isinstance(l1[cnt], list):
             same = _compare_list(f1, l1[cnt], f2, l2[cnt]) and same
         else:
             if l1[cnt] != l2[cnt]:
-                rich_console.log(f"[bold red]Values are different: [/]")
+                rich_console.log("[bold red]Values are different: [/]")
                 rich_console.log(f"[bold red]]\t{l1[cnt]} != {l2[cnt]}[/]")
                 same = False
 

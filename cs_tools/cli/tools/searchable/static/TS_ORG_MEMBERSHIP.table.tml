@@ -1,0 +1,45 @@
+guid: 657f0e27-1163-4ab2-aa40-2896e641c10a
+table:
+  name: TS_ORG_MEMBERSHIP
+  description: This is a link table. Users in ThoughtSpot may be a member of one or more Orgs.
+  db: GTM_DB
+  schema: CS_TOOLS_V150
+  db_table: TS_XREF_ORG
+  connection:
+    name: CS Tools
+  columns:
+  - name: CLUSTER_GUID
+    description: This column is only used for JOINs.
+    db_column_name: CLUSTER_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  - name: USER_GUID
+    description: This column is only used for JOINs.
+    db_column_name: USER_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  - name: ORG_ID
+    description: This column is only used for JOINs.
+    db_column_name: ORG_ID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  joins_with:
+  - name: TS_ORG_MEMBERSHIP_to_TS_USER
+    destination:
+      name: TS_USER
+    "on": "[TS_ORG_MEMBERSHIP::CLUSTER_GUID] = [TS_USER::CLUSTER_GUID] AND [TS_ORG_MEMBERSHIP::USER_GUID] = [TS_USER::User GUID]"
+    type: INNER
+  - name: TS_ORG_MEMBERSHIP_to_TS_ORG
+    destination:
+      name: TS_ORG
+    "on": "[TS_ORG_MEMBERSHIP::CLUSTER_GUID] = [TS_ORG::CLUSTER_GUID] AND [TS_ORG_MEMBERSHIP::ORG_ID] = [TS_ORG::Org ID]"
+    type: INNER

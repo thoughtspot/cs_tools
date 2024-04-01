@@ -3,16 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import logging
 
-from pydantic import validate_arguments
 import httpx
 
-from cs_tools.errors import ContentDoesNotExist
-from cs_tools.types import RecordsFormat, GUID
 from cs_tools.api import _utils
+from cs_tools.errors import ContentDoesNotExist
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
-
+    from cs_tools.types import GUID, TableRowsFormat
 
 log = logging.getLogger(__name__)
 
@@ -23,8 +21,7 @@ class UserMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
-    def all(self, batchsize: int = 50) -> RecordsFormat:
+    def all(self, batchsize: int = 50) -> TableRowsFormat:  # noqa: A003
         """
         Get all users in ThoughtSpot.
         """
@@ -32,7 +29,7 @@ class UserMiddleware:
 
         while True:
             # user/list doesn't offer batching..
-            r = self.ts.api.metadata_list(metadata_type="USER", batchsize=batchsize, offset=len(users))
+            r = self.ts.api.v1.metadata_list(metadata_type="USER", batchsize=batchsize, offset=len(users))
             data = r.json()
             users.extend(data["headers"])
 
@@ -41,7 +38,6 @@ class UserMiddleware:
 
         return users
 
-    @validate_arguments
     def guid_for(self, username: str) -> GUID:
         """
         Return the GUID for a given User.
@@ -50,7 +46,7 @@ class UserMiddleware:
             return username
 
         try:
-            r = self.ts.api.user_read(username=username)
+            r = self.ts.api.v1.user_read(username=username)
         except httpx.HTTPStatusError as e:
             if e.response.is_client_error:
                 info = {
