@@ -1,6 +1,6 @@
 guid: 381db1c8-688f-4620-9a45-ce9a2dea108c
 worksheet:
-  name: "CS Tools: Worksheet Column Utilization"
+  name: CS Tools - Worksheet Column Utilization
   description: Show the data lineage of Worksheets and how the columns are used in the ThoughtSpot system.
   tables:
   - name: TS_BI_SERVER
@@ -13,6 +13,11 @@ worksheet:
   - name: TS_ORG
   - name: TS_USER
   joins:
+  - name: TS_BI_SERVER_to_TS_USER
+    source: TS_BI_SERVER
+    destination: TS_USER
+    type: LEFT_OUTER
+    is_one_to_one: false
   - name: TS_BI_SERVER_to_TS_DEPENDENT_OBJECT
     source: TS_BI_SERVER
     destination: TS_DEPENDENT_OBJECT
@@ -144,15 +149,24 @@ worksheet:
     - join:
       - TS_BI_SERVER_to_TS_DEPENDENT_OBJECT
       - TS_DEPENDENT_OBJECT_to_TS_USER
+  - id: TS_USER_2
+    table: TS_USER
+    join_path:
+    - join:
+      - TS_BI_SERVER_to_TS_USER
+    - join:
+      - TS_COLUMN_SYNONYM_to_TS_METADATA_COLUMN
+      - TS_METADATA_COLUMN_to_TS_METADATA_OBJECT
+      - TS_METADATA_OBJECT_to_TS_USER
   formulas:
   - name: Data Exports
-    expr: "unique_count_if ( contains ( [TS_BI_SERVER_1::User Action] , 'export' ) , [TS_BI_SERVER_1::Incident ID] )"
+    expr: "count_if ( [TS_BI_SERVER_1::User Action] in { 'data_export' , 'pinboard_print_view' , 'pinboard_print_filter' , 'tspublic_data_export' } , [TS_BI_SERVER_1::SK_DUMMY] )"
     was_auto_generated: false
   - name: Dependent Interaction Date
     expr: "date ( [TS_BI_SERVER_1::Timestamp] )"
     was_auto_generated: false
   - name: Dependent Interactions
-    expr: "unique count ( [TS_BI_SERVER_1::Incident ID] )"
+    expr: "count_if ( [TS_DEPENDENT_OBJECT_1::Dependent GUID] = [TS_BI_SERVER_1::ANSWER_BOOK_GUID] , [TS_BI_SERVER_1::SK_DUMMY] )"
     was_auto_generated: false
   - name: Dependent Link
     expr: "concat ( '{caption}' , [TS_DEPENDENT_OBJECT_1::Dependent] , '{/caption}' , [TS_CLUSTER_2::ThoughtSpot URL] , if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'question_answer_book' ) then '#/saved-answer/' else if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'pinboard_answer_book' ) then \"#/pinboard/\" else \"#/data/tables/\" , [TS_DEPENDENT_OBJECT_1::Dependent GUID] )"
@@ -163,11 +177,11 @@ worksheet:
   - name: Has Synonyms
     expr: "count ( [TS_COLUMN_SYNONYM_1::Column Synonym] ) > 0"
     was_auto_generated: false
-  - name: "User Facing: Dependent Type"
-    expr: "if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'question_answer_book' ) then 'answer' else if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'pinboard_answer_book' ) then 'liveboard' else if ( [TS_DEPENDENT_OBJECT_1::Dependent Subtype] = 'aggr_worksheet' ) then 'thoughtspot view' else null"
-    was_auto_generated: false
   - name: Worksheet Link
     expr: "concat ( '{caption}' , [TS_METADATA_OBJECT_1::Object] , '{/caption}' , [TS_CLUSTER_1::ThoughtSpot URL] , '#/data/tables/' , [TS_METADATA_OBJECT_1::Object GUID] )"
+    was_auto_generated: false
+  - name: fx Dependent Type
+    expr: "if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'question_answer_book' ) then 'answer' else if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'pinboard_answer_book' ) then 'liveboard' else if ( [TS_DEPENDENT_OBJECT_1::Dependent Subtype] = 'aggr_worksheet' ) then 'thoughtspot view' else null"
     was_auto_generated: false
   filters:
   - column:
@@ -182,17 +196,16 @@ worksheet:
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
+      synonyms:
+      - Additive
+      synonym_type: USER_DEFINED
   - name: "(Hidden, Filtered) Column Parent is Worksheet"
     description: This column is only used for the Worksheet Filter.
     formula_id: "Filtered: Column Parent is Worksheet"
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
-      synonyms:
-      - "Hidden, Filtered Column Parent is Spreadsheet"
-      - "Hidden, Filtered Column Parent is Table"
       is_hidden: true
-      synonym_type: AUTO_GENERATED
   - name: Format Pattern
     description: The display format for values within a column.
     column_id: TS_METADATA_COLUMN_1::Format Pattern
@@ -204,12 +217,14 @@ worksheet:
     column_id: TS_ORG_1::Org
     properties:
       column_type: ATTRIBUTE
+      synonyms:
+      - Org Name
+      synonym_type: USER_DEFINED
   - name: Dependent Type
     description: "The type of Dependency, typically an Answer or Liveboard, includes all descendants of a Worksheet (Worksheet -> View -> Answer)."
-    formula_id: "User Facing: Dependent Type"
+    formula_id: fx Dependent Type
     properties:
       column_type: ATTRIBUTE
-      index_type: DONT_INDEX
   - name: Suggestions Type
     description: How ThoughtSpot can use stored values for Search recommendation purposes.
     column_id: TS_METADATA_COLUMN_1::Suggestions Type
@@ -237,6 +252,9 @@ worksheet:
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
+      synonyms:
+      - Worksheet URL
+      synonym_type: USER_DEFINED
   - name: ThoughtSpot URL
     description: The web address of your ThoughtSpot platform.
     column_id: TS_CLUSTER_1::ThoughtSpot URL
@@ -252,6 +270,9 @@ worksheet:
     column_id: TS_USER_1::User
     properties:
       column_type: ATTRIBUTE
+      synonyms:
+      - Dependent Author Display Name
+      synonym_type: USER_DEFINED
   - name: Dependent Description
     description: A user-driven field which details extra infomation about the object.
     column_id: TS_DEPENDENT_OBJECT_1::Dependent Description
@@ -269,12 +290,14 @@ worksheet:
     column_id: TS_METADATA_OBJECT_1::Object
     properties:
       column_type: ATTRIBUTE
-      index_type: DONT_INDEX
   - name: Column
     description: "A column can be interacted with in the UI in Search, Visualizations, and Liveboards."
     column_id: TS_METADATA_COLUMN_1::Column
     properties:
       column_type: ATTRIBUTE
+      synonyms:
+      - Column Name
+      synonym_type: USER_DEFINED
   - name: Default Calendar
     description: The default calendar to align to when using date keywords.
     column_id: TS_METADATA_COLUMN_1::Default Calendar
@@ -342,7 +365,6 @@ worksheet:
     column_id: TS_METADATA_COLUMN_1::Is Attributable
     properties:
       column_type: ATTRIBUTE
-      index_type: DONT_INDEX
       synonyms:
       - Attribution Dimension
       synonym_type: USER_DEFINED
@@ -356,13 +378,15 @@ worksheet:
     column_id: TS_DEPENDENT_OBJECT_1::Dependent
     properties:
       column_type: ATTRIBUTE
-      index_type: DONT_INDEX
   - name: Dependent Link
     description: A direct URL to the Dependent.
     formula_id: Dependent Link
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
+      synonyms:
+      - Dependent URL
+      synonym_type: USER_DEFINED
   - name: Dependent Interactions
     description: "The amount of times any User has Viewed, Edits, or Saved a Dependent."
     formula_id: Dependent Interactions
@@ -399,9 +423,46 @@ worksheet:
     column_id: TS_DATA_SOURCE_1::Data Source Type
     properties:
       column_type: ATTRIBUTE
+      synonyms:
+      - Connection Type
+      synonym_type: USER_DEFINED
   - name: Data Source
     description: A data source which contains Tables which can be found with in the UI.
     column_id: TS_DATA_SOURCE_1::Data Source
+    properties:
+      column_type: ATTRIBUTE
+      synonyms:
+      - Connection
+      - Embrace Connection
+      synonym_type: USER_DEFINED
+  - name: Dependent Created Date
+    description: The datetime of when the object was initially created.
+    column_id: TS_DEPENDENT_OBJECT_1::Dependent Created At
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+  - name: Dependent Last Modified Date
+    description: The datetime of when the object was last edited and saved.
+    column_id: TS_DEPENDENT_OBJECT_1::Dependent Modified At
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+  - name: Interaction User
+    description: The user's display name.
+    column_id: TS_USER_2::User
+    properties:
+      column_type: ATTRIBUTE
+      synonyms:
+      - Interaction User Display Name
+      synonym_type: USER_DEFINED
+  - name: Interaction User Email
+    description: The user's registered email.
+    column_id: TS_USER_2::User Email
+    properties:
+      column_type: ATTRIBUTE
+  - name: Dependent Is Verified
+    description: Determines whether or not this object has been Verified.
+    column_id: TS_DEPENDENT_OBJECT_1::Dependent Is Verified
     properties:
       column_type: ATTRIBUTE
   properties:

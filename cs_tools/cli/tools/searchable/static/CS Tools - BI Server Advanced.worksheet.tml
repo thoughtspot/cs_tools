@@ -1,7 +1,6 @@
 guid: bc6cd02a-9123-43ed-aa50-f919f3d3c907
 worksheet:
-  name: "CS Tools: BI Server Extended"
-  description: "BETA: we still need to add Groups and Tags"
+  name: CS Tools - BI Server Advanced
   tables:
   - name: TS_BI_SERVER
   - name: TS_CLUSTER
@@ -13,6 +12,7 @@ worksheet:
   - name: TS_METADATA_OBJECT
   - name: TS_ORG
   - name: TS_USER
+  - name: VW_TS_BI_SERVER_ADVANCED_AUTHOR
   joins:
   - name: TS_BI_SERVER_to_TS_USER
     source: TS_BI_SERVER
@@ -34,14 +34,14 @@ worksheet:
     destination: TS_DEPENDENT_OBJECT
     type: LEFT_OUTER
     is_one_to_one: false
-  - name: TS_DEPENDENT_OBJECT_to_TS_USER
-    source: TS_DEPENDENT_OBJECT
-    destination: TS_USER
-    type: INNER
-    is_one_to_one: false
   - name: TS_DEPENDENT_OBJECT_to_TS_METADATA_COLUMN
     source: TS_DEPENDENT_OBJECT
     destination: TS_METADATA_COLUMN
+    type: INNER
+    is_one_to_one: false
+  - name: TS_DEPENDENT_OBJECT_to_VW_TS_BI_SERVER_AUTHOR
+    source: TS_DEPENDENT_OBJECT
+    destination: VW_TS_BI_SERVER_ADVANCED_AUTHOR
     type: INNER
     is_one_to_one: false
   - name: TS_XREF_PRINCIPAL_to_TS_USER
@@ -57,11 +57,6 @@ worksheet:
   - name: TS_METADATA_COLUMN_to_TS_METADATA_OBJECT
     source: TS_METADATA_COLUMN
     destination: TS_METADATA_OBJECT
-    type: INNER
-    is_one_to_one: false
-  - name: TS_METADATA_OBJECT_to_TS_USER
-    source: TS_METADATA_OBJECT
-    destination: TS_USER
     type: INNER
     is_one_to_one: false
   - name: TS_METADATA_OBJECT_to_TS_DATA_SOURCE
@@ -97,12 +92,6 @@ worksheet:
     join_path:
     - join:
       - TS_GROUP_MEMBERSHIP_to_TS_GROUP
-  - id: TS_METADATA_COLUMN_1
-    table: TS_METADATA_COLUMN
-    join_path:
-    - join:
-      - TS_BI_SERVER_to_TS_DEPENDENT_OBJECT
-      - TS_DEPENDENT_OBJECT_to_TS_METADATA_COLUMN
   - id: TS_METADATA_OBJECT_1
     table: TS_METADATA_OBJECT
     join_path:
@@ -119,53 +108,27 @@ worksheet:
     table: TS_USER
     join_path:
     - join:
-      - TS_XREF_PRINCIPAL_to_TS_USER
-    - join:
-      - TS_BI_SERVER_to_TS_DEPENDENT_OBJECT
-      - TS_DEPENDENT_OBJECT_to_TS_METADATA_COLUMN
-      - TS_METADATA_COLUMN_to_TS_METADATA_OBJECT
-      - TS_METADATA_OBJECT_to_TS_USER
-  - id: TS_USER_2
-    table: TS_USER
-    join_path:
-    - join:
       - TS_BI_SERVER_to_TS_USER
     - join:
       - TS_XREF_PRINCIPAL_to_TS_USER
-  - id: TS_USER_3
-    table: TS_USER
-    join_path:
-    - join:
-      - TS_XREF_PRINCIPAL_to_TS_USER
-    - join:
-      - TS_BI_SERVER_to_TS_DEPENDENT_OBJECT
-      - TS_DEPENDENT_OBJECT_to_TS_USER
-  - id: TS_USER_4
-    table: TS_USER
-    join_path:
-    - join:
-      - TS_BI_SERVER_to_TS_USER
-  - id: TS_USER_5
-    table: TS_USER
+  - id: VW_TS_BI_SERVER_ADVANCED_AUTHOR_1
+    table: VW_TS_BI_SERVER_ADVANCED_AUTHOR
     join_path:
     - join:
       - TS_BI_SERVER_to_TS_DEPENDENT_OBJECT
-      - TS_DEPENDENT_OBJECT_to_TS_USER
+      - TS_DEPENDENT_OBJECT_to_VW_TS_BI_SERVER_AUTHOR
   formulas:
-  - name: Acitvity Group
-    expr: "if ( [TS_GROUP_1::Group Sharing] = 'default' and [TS_BI_SERVER_1::USER_ID] = [TS_USER_4::User GUID] ) then [TS_GROUP_1::Group] else null"
+  - name: Active Users
+    expr: "unique count ( [TS_BI_SERVER_1::USER_ID] )"
     was_auto_generated: false
-  - name: HTTP Response Is Error
-    expr: "[TS_BI_SERVER_1::HTTP Response] >= 400"
-    was_auto_generated: false
-  - name: HTTP Response Is Success
-    expr: "[TS_BI_SERVER_1::HTTP Response] < 400"
+  - name: Interactions
+    expr: "count ( [TS_BI_SERVER_1::SK_DUMMY] )"
     was_auto_generated: false
   - name: Latency (s)
-    expr: "round ( [TS_BI_SERVER_1::Latency (us)] * 000001 , 2 )"
+    expr: "[TS_BI_SERVER_1::Latency (us)] * 0.000001"
     was_auto_generated: false
-  - name: Object Author's Group
-    expr: "if ( [TS_GROUP_1::Group Sharing] = 'default' and [TS_DEPENDENT_OBJECT_1::AUTHOR_GUID] = [TS_USER_5::User GUID] ) then [TS_GROUP_1::Group] else null"
+  - name: Object Link
+    expr: "concat ( '{caption}' , [TS_DEPENDENT_OBJECT_1::Dependent] , '{/caption}' , [TS_CLUSTER_1::ThoughtSpot URL] , if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'question_answer_book' ) then '#/saved-answer/' else if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'pinboard_answer_book' ) then \"#/pinboard/\" else \"#/data/tables/\" , [TS_DEPENDENT_OBJECT_1::Dependent GUID] )"
     was_auto_generated: false
   - name: Object Type
     expr: "if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'question_answer_book' ) then 'answer' else if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'pinboard_answer_book' ) then 'liveboard' else [TS_DEPENDENT_OBJECT_1::Dependent Type]"
@@ -176,16 +139,22 @@ worksheet:
   - name: Worksheet
     expr: "if ( [TS_METADATA_OBJECT_1::Object Subtype] = \"worksheet\" ) then [TS_METADATA_OBJECT_1::Object] else null"
     was_auto_generated: false
+  - name: fx Client Type
+    expr: "if ( [TS_BI_SERVER_1::Client Type] = \"blink\" ) then \"classic experience\" else if ( [TS_BI_SERVER_1::Client Type] = \"blink_v2\" ) then \"new answer experience\" else if ( [TS_BI_SERVER_1::Client Type] = \"mobile\" ) then \"mobile\" else if ( [TS_BI_SERVER_1::Client Type] = \"full_embed\" ) then \"embedded thoughtspot\" else [TS_BI_SERVER_1::Client Type]"
+    was_auto_generated: false
+  - name: fx HTTP Response Status
+    expr: "if ( [TS_BI_SERVER_1::HTTP Response] < 400 ) then 'success' else 'error'"
+    was_auto_generated: false
+  - name: fx Interaction Timestamp
+    expr: "[TS_BI_SERVER_1::Timestamp]"
+    was_auto_generated: false
+  - name: fx User Action Category
+    expr: "if ( [TS_BI_SERVER_1::User Action] = 'answer_unsaved' ) then 'search' else if ( [TS_BI_SERVER_1::User Action] in { 'data_export' , 'pinboard_print_view' , 'pinboard_print_filter' , 'tspublic_data_export' } ) then 'data exports' else if ( [TS_BI_SERVER_1::User Action] in { 'answer_view_list' , 'answer_view_save' } ) then 'thoughtspot views' else if ( [TS_BI_SERVER_1::User Action] = 'pinboard_insight_view' ) then 'spot iq' else if ( [TS_BI_SERVER_1::User Action] in { 'answer_pinboard_context' , 'answer_viz_context_view' , 'pinboard_ad_hoc' , 'pinboard_filter' , 'pinboard_admin_view' , 'pinboard_view' , 'pinboard_tspublic_no_runtime_filter' , 'pinboard_embed_view' , 'pinboard_tspublic_runtime_filter' } ) then 'liveboards' else if ( [TS_BI_SERVER_1::User Action] in { 'answer_view' , 'answer_saved' , 'answer_add_new_filter' , 'data_show_underlying' , 'data_show_underlying_viz' , 'data_show_underlying_row' , 'data_chart_config' } ) then 'answers' else 'other'"
+    was_auto_generated: false
+  - name: fx Interaction Timestamp (Local) (Snowflake impl.)
+    expr: "sql_date_time_op ( \"convert_timezone ( upper('utc') , {1} , {0} )\" , [TS_BI_SERVER_1::Timestamp] , [TS_CLUSTER_1::ThoughtSpot Timezone] )"
+    was_auto_generated: false
   worksheet_columns:
-  - name: Source Table Author
-    description: The user's display name.
-    column_id: TS_USER_1::User
-    properties:
-      column_type: ATTRIBUTE
-      synonyms:
-      - Source Table Creator
-      - Source Table Maker
-      synonym_type: AUTO_GENERATED
   - name: Object GUID
     description: "The unique identifier of the object, which can be found in the ThoughtSpot UI."
     column_id: TS_DEPENDENT_OBJECT_1::Dependent GUID
@@ -203,6 +172,7 @@ worksheet:
       column_type: MEASURE
       aggregation: SUM
       index_type: DONT_INDEX
+      format_pattern: "0.00"
   - name: Object Modified At
     description: The datetime of when the object was last edited and saved.
     column_id: TS_DEPENDENT_OBJECT_1::Dependent Modified At
@@ -215,12 +185,6 @@ worksheet:
       column_type: MEASURE
       aggregation: SUM
       index_type: DONT_INDEX
-  - name: Timestamp
-    description: Datetime of when the action took place
-    column_id: TS_BI_SERVER_1::Timestamp
-    properties:
-      column_type: ATTRIBUTE
-      index_type: DONT_INDEX
   - name: Client ID
     description: Unique ID of the application accessing ThoughtSpot
     column_id: TS_BI_SERVER_1::Client ID
@@ -232,16 +196,6 @@ worksheet:
     column_id: TS_DATA_SOURCE_1::Data Source
     properties:
       column_type: ATTRIBUTE
-      synonyms:
-      - Data Repository
-      - Data Pool
-      synonym_type: AUTO_GENERATED
-  - name: Org ID
-    description: The unique identifier of the org.
-    column_id: TS_ORG_1::Org ID
-    properties:
-      column_type: ATTRIBUTE
-      index_type: DONT_INDEX
   - name: Incident ID
     description: Unique ID of the event
     column_id: TS_BI_SERVER_1::Incident ID
@@ -254,16 +208,9 @@ worksheet:
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
-      synonyms:
-      - Query Text
   - name: Browser Type
     description: The web browser client used to access ThoughtSpot
     column_id: TS_BI_SERVER_1::Browser Type
-    properties:
-      column_type: ATTRIBUTE
-  - name: Activity User
-    description: The user's display name.
-    column_id: TS_USER_2::User
     properties:
       column_type: ATTRIBUTE
   - name: Browser Version
@@ -289,29 +236,7 @@ worksheet:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
   - name: Object Type
-    description: "Either Answer, Liveboard, or content that Users can visualization from."
     formula_id: Object Type
-    properties:
-      column_type: ATTRIBUTE
-      index_type: DONT_INDEX
-  - name: Column GUID
-    description: The unique identifier of the column.
-    column_id: TS_METADATA_COLUMN_1::Column GUID
-    properties:
-      column_type: ATTRIBUTE
-      index_type: DONT_INDEX
-      synonyms:
-      - Column Global Unique Identifier
-      - Column Universal Unique Identifier
-      synonym_type: AUTO_GENERATED
-  - name: Object Author
-    description: The user's display name.
-    column_id: TS_USER_3::User
-    properties:
-      column_type: ATTRIBUTE
-  - name: Client Type
-    description: "Either Class Experience, New Experience, TSE Embed, or Mobile"
-    column_id: TS_BI_SERVER_1::Client Type
     properties:
       column_type: ATTRIBUTE
   - name: Visualization GUID
@@ -320,8 +245,6 @@ worksheet:
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
-      synonyms:
-      - Viz Id
   - name: URL
     description: API endpoint called as part of the event
     column_id: TS_BI_SERVER_1::URL
@@ -333,13 +256,8 @@ worksheet:
     column_id: TS_BI_SERVER_1::User Action
     properties:
       column_type: ATTRIBUTE
-  - name: HTTP Response Is Success
-    formula_id: HTTP Response Is Success
-    properties:
-      column_type: ATTRIBUTE
-      index_type: DONT_INDEX
-  - name: HTTP Response Is Error
-    formula_id: HTTP Response Is Error
+  - name: HTTP Response Status
+    formula_id: fx HTTP Response Status
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
@@ -348,29 +266,78 @@ worksheet:
     column_id: TS_DATA_SOURCE_1::Data Source Type
     properties:
       column_type: ATTRIBUTE
-      synonyms:
-      - Data Origin Type
-      - Data Source Kind
-      synonym_type: AUTO_GENERATED
-  - name: Activity User's Group
-    formula_id: Acitvity Group
-    properties:
-      column_type: ATTRIBUTE
-      index_type: DONT_INDEX
-      synonym_type: AUTO_GENERATED
-  - name: Object Author's Group
-    formula_id: Object Author's Group
-    properties:
-      column_type: ATTRIBUTE
-      index_type: DONT_INDEX
   - name: Worksheet
     formula_id: Worksheet
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
+  - name: Interaction User
+    description: The user's display name.
+    column_id: TS_USER_1::User
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Link
+    formula_id: Object Link
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+  - name: Interactions
+    formula_id: Interactions
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+  - name: Active Users
+    formula_id: Active Users
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+  - name: ThoughtSpot Timezone
+    description: The system timezone configured for your ThoughtSpot platform.
+    column_id: TS_CLUSTER_1::ThoughtSpot Timezone
+    properties:
+      column_type: ATTRIBUTE
+  - name: Interaction Timestamp
+    description: Datetime of when the action took place
+    formula_id: fx Interaction Timestamp
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+  - name: User Action Category
+    formula_id: fx User Action Category
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Author
+    column_id: VW_TS_BI_SERVER_ADVANCED_AUTHOR_1::User
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group
+    description: The group's display name.
+    column_id: TS_GROUP_1::Group
+    properties:
+      column_type: ATTRIBUTE
+  - name: Experience Type
+    formula_id: fx Client Type
+    properties:
+      column_type: ATTRIBUTE
+  - name: Interaction User Email
+    description: The user's registered email.
+    column_id: TS_USER_1::User Email
+    properties:
+      column_type: ATTRIBUTE
+  - name: Object Author Email
+    column_id: VW_TS_BI_SERVER_ADVANCED_AUTHOR_1::User Email
+    properties:
+      column_type: ATTRIBUTE
+  - name: Group Sharing
+    description: Whether or not the group may appear in the sharing dialog menu.
+    column_id: TS_GROUP_1::Group Sharing
+    properties:
+      column_type: ATTRIBUTE
       synonyms:
-      - Spreadsheet
-      - Workbook
+      - Group Distribution
+      - Group Allocation
       synonym_type: AUTO_GENERATED
   properties:
     is_bypass_rls: false

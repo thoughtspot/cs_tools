@@ -1,0 +1,1283 @@
+guid: 0efe34bb-cd5c-4ee4-86d1-9413d99e1a09
+liveboard:
+  name: "CS Tools: Worksheet Column Utilization"
+  description: Gain an understanding of how a Worksheet's columns are used across ThoughtSpot.
+  visualizations:
+  - id: Viz_1
+    answer:
+      name: Columns
+      description: included in the worksheet
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "unique count [Column] [Worksheet] = '(sample) retail - apparel'"
+      answer_columns:
+      - name: Unique Number of Column
+        custom_name: Columns
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      table:
+        table_columns:
+        - column_id: Unique Number of Column
+          show_headline: false
+        ordered_column_ids:
+        - Unique Number of Column
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"columnProperties\": [{\"columnId\": \"Unique Number of Column\",\"columnProperty\": {}}]}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Unique Number of Column
+        axis_configs:
+        - "y":
+          - Unique Number of Column
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Unique Number of Column\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"GREATER_THAN_EQUAL_TO\",\"value\": \"200\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#f36775\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN_EQUAL_TO\",\"value\": \"150\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#ff9a68\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"LESS_THAN\",\"value\": \"150\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#56D3A8\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}],\"axisProperties\": [{\"id\": \"c2f08115-98fc-4506-b292-27f78a7f0507\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Column\"],\"isOpposite\": false}},{\"id\": \"027bb649-bb9e-4ad5-ab88-6428ba0c5c44\",\"properties\": {\"axisType\": \"X\"}}]}"
+      display_mode: CHART_MODE
+    viz_guid: c0f6a787-1458-4521-8b1d-5ef89057ddab
+  - id: Viz_2
+    answer:
+      name: Synonyms
+      description: manually or ai-generated
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "count [Synonym] [Worksheet] = '(sample) retail - apparel'"
+      answer_columns:
+      - name: Number of Synonym
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      table:
+        table_columns:
+        - column_id: Number of Synonym
+          show_headline: false
+        ordered_column_ids:
+        - Number of Synonym
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Number of Synonym
+        axis_configs:
+        - "y":
+          - Number of Synonym
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Number of Synonym\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"8babe60c-3124-49d8-bb90-52a8c549c0df\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Number of Synonym\"],\"isOpposite\": false}},{\"id\": \"f6da0314-5164-492f-ba47-f17ef8686ad2\",\"properties\": {\"axisType\": \"X\"}}]}"
+      display_mode: CHART_MODE
+    viz_guid: 4c1d5517-a2a0-4e52-9db1-9e1b60b59c27
+  - id: Viz_3
+    answer:
+      name: Top 15 Most Influential Creators
+      description: based on engagement on their Liveboards and Answers
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      formulas:
+      - id: Engagement Score
+        name: Engagement Score
+        expr: "( [Dependent Interactions] * average ( [Decay Function] ) ) / ( [Answers] + [Liveboards] )"
+        was_auto_generated: false
+      - id: Include Author Interactions
+        name: Include Author Interactions
+        expr: "[Dependent Author] = [Interaction User] "
+        was_auto_generated: false
+      - id: Answers
+        name: Answers
+        expr: "unique_count_if ( [Dependent Type] = 'answer' , [Dependent] )"
+        was_auto_generated: false
+      - id: Decay Function
+        name: Decay Function
+        expr: "greatest ( 1 - ( diff_days ( today ( ) , [Dependent Interaction Date] ) / 365 * 2 ) , 0 )"
+        properties:
+          column_type: ATTRIBUTE
+        was_auto_generated: false
+      - id: Liveboards
+        name: Liveboards
+        expr: "unique_count_if ( [Dependent Type] = 'liveboard' , [Dependent] )"
+        was_auto_generated: false
+      search_query: "[Dependent Author] [Dependent Author Email] top 15 by [Dependent Interactions] [Worksheet] = '(sample) retail - apparel' [Engagement Score] sort by [Engagement Score] descending [Dependent Author] != [Dependent Author].administrator [Dependent Author].{Null} [Include Author Interactions] = false"
+      answer_columns:
+      - name: Dependent Author
+      - name: Dependent Author Email
+      - name: Dependent Interactions
+        custom_name: Interactions against User's Content
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Engagement Score
+        custom_name: Engagement Score
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      table:
+        table_columns:
+        - column_id: Dependent Author
+          show_headline: false
+        - column_id: Dependent Author Email
+          show_headline: false
+        - column_id: Dependent Interactions
+          show_headline: false
+        - column_id: Engagement Score
+          show_headline: false
+        ordered_column_ids:
+        - Dependent Author
+        - Dependent Author Email
+        - Dependent Interactions
+        - Engagement Score
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Dependent Author\",\"width\": 210.0},{\"columnId\": \"Dependent Interactions\",\"width\": 153.0},{\"columnId\": \"Dependent Author Email\",\"width\": 277.0},{\"columnId\": \"Engagement Score\",\"width\": 112.5625}],\"theme\": \"ZEBRA\",\"density\": \"REGULAR\",\"orderedColumnIds\": [\"Dependent Author\",\"Dependent Author Email\"],\"columnProperties\": [{\"columnId\": \"Dependent Author\",\"columnProperty\": {\"wrapColumnText\": false}},{\"columnId\": \"Dependent Author Email\",\"columnProperty\": {\"wrapColumnText\": false}},{\"columnId\": \"Engagement Score\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"GREATER_THAN\",\"value\": \"0\",\"fontProperties\": {\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}]}"
+      chart:
+        type: STACKED_BAR
+        chart_columns:
+        - column_id: Dependent Author
+        - column_id: Dependent Author Email
+        - column_id: Dependent Interactions
+        - column_id: Engagement Score
+        axis_configs:
+        - x:
+          - Dependent Author
+          "y":
+          - Engagement Score
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {\"xGridlineEnabled\": false,\"yGridlineEnabled\": false},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"},\"showStackedLabels\": true,\"allLabels\": false},\"columnProperties\": [{\"columnId\": \"Dependent Author\",\"columnProperty\": {}},{\"columnId\": \"Dependent Author Email\",\"columnProperty\": {}},{\"columnId\": \"Dependent Interactions\",\"columnProperty\": {}},{\"columnId\": \"Engagement Score\",\"columnProperty\": {\"dataLabels\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"GREATER_THAN\",\"value\": \"100\",\"plotAsBand\": false,\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#56D3A8\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN\",\"value\": \"75\",\"plotAsBand\": false,\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#82DFE9\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN\",\"value\": \"50\",\"plotAsBand\": false,\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#71A1F4\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN\",\"value\": \"25\",\"plotAsBand\": false,\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#B094F8\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN\",\"value\": \"0\",\"plotAsBand\": false,\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#A2ACBA\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}],\"axisProperties\": [{\"id\": \"03efae68-8a63-4bc6-b4b7-58f2e317561e\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Dependent Author\"],\"name\": \"User\",\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":true,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}},{\"id\": \"94d2d82b-7405-4903-8aa7-4d45674a1f20\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Engagement Score\"],\"yAxisRange\": {\"max\": 100.0},\"isOpposite\": false}}],\"systemSeriesColors\": [{\"serieName\": \"a2335f84-210e-41ae-9cbb-e940d9c15a08\",\"color\": \"#F04152\"},{\"serieName\": \"9e31ab88-4204-4acb-9f04-8c32855979ba\",\"color\": \"#48D1E0\"},{\"serieName\": \"Engagement Score\",\"color\": \"#48D1E0\"}],\"tooltipConfig\": {\"columnIds\": [\"Engagement Score\",\"Dependent Author Email\"]}}"
+      display_mode: CHART_MODE
+    viz_guid: 76e56eb3-ebd2-441d-aa41-1481a69d19c1
+  - id: Viz_4
+    answer:
+      name: Formulas
+      description: defined
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "unique count [Column] [Is Formula] = true [Worksheet] = '(sample) retail - apparel'"
+      answer_columns:
+      - name: Unique Number of Column
+      table:
+        table_columns:
+        - column_id: Unique Number of Column
+          show_headline: false
+        ordered_column_ids:
+        - Unique Number of Column
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"columnProperties\": [{\"columnId\": \"Unique Number of Column\",\"columnProperty\": {}}]}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Unique Number of Column
+        axis_configs:
+        - "y":
+          - Unique Number of Column
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Unique Number of Column\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"08e4da4c-b64b-4e82-a4dc-b6504f73834a\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Column\"],\"isOpposite\": false}},{\"id\": \"ab809496-2da9-4107-be13-d50fd06e2073\",\"properties\": {\"axisType\": \"X\"}}]}"
+      display_mode: CHART_MODE
+    viz_guid: 9b7069eb-964b-4de7-b885-27e2dc069880
+  - id: Viz_5
+    answer:
+      name: Column Type Breakdown
+      description: "hover to see Synonym-, Hidden-, and Formula-counts"
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      formulas:
+      - id: Column Type (incl. DATE)
+        name: Column Type (incl. DATE)
+        expr: "if ( [Data Type] in { 'date' , 'datetime' , 'timestamp' } ) then sql_string_op ( 'upper({0})' , 'date' ) else [Column Type]"
+        was_auto_generated: false
+      - id: Formulas
+        name: Formulas
+        expr: "unique_count_if ( [Is Formula] , [Column] )"
+        was_auto_generated: false
+      - id: Hidden Columns
+        name: Hidden Columns
+        expr: "unique_count_if ( [Is Hidden] , [Column] )"
+        was_auto_generated: false
+      search_query: "unique count [Column] unique count [Synonym] [Formulas] [Hidden Columns] [Worksheet] = '(sample) retail - apparel' [Column Type (incl. DATE)]"
+      answer_columns:
+      - name: Unique Number of Column
+        custom_name: Columns
+      - name: Unique Number of Synonym
+        custom_name: Synonyms
+      - name: Formulas
+      - name: Hidden Columns
+      - name: Column Type (incl. DATE)
+        custom_name: Column Type
+      table:
+        table_columns:
+        - column_id: Column Type (incl. DATE)
+          show_headline: false
+        - column_id: Unique Number of Column
+          show_headline: false
+        - column_id: Unique Number of Synonym
+          show_headline: false
+        - column_id: Formulas
+          show_headline: false
+        - column_id: Hidden Columns
+          show_headline: false
+        ordered_column_ids:
+        - Column Type (incl. DATE)
+        - Unique Number of Column
+        - Unique Number of Synonym
+        - Formulas
+        - Hidden Columns
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: PIE
+        chart_columns:
+        - column_id: Column Type (incl. DATE)
+        - column_id: Unique Number of Column
+        - column_id: Unique Number of Synonym
+        - column_id: Formulas
+        - column_id: Hidden Columns
+        axis_configs:
+        - x:
+          - Column Type (incl. DATE)
+          "y":
+          - Unique Number of Column
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {\"pivotSummariesState\": {}},\"showStackedLabels\": true,\"allLabels\": true},\"columnProperties\": [{\"columnId\": \"Unique Number of Column\",\"columnProperty\": {\"dataLabels\": true}},{\"columnId\": \"Formulas\",\"columnProperty\": {\"dataLabels\": true}},{\"columnId\": \"Hidden Columns\",\"columnProperty\": {\"dataLabels\": true}},{\"columnId\": \"Unique Number of Synonym\",\"columnProperty\": {\"dataLabels\": true}},{\"columnId\": \"Column Type (incl. DATE)\",\"columnProperty\": {\"dataLabels\": true,\"customProps\": \"{\\\"advancedProperties\\\":[]}\"}}],\"axisProperties\": [{\"id\": \"60082238-b3dd-4f52-a343-41be848e25fa\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Column\"],\"isOpposite\": false}},{\"id\": \"442dc05c-c2ed-4dfd-bc62-e9ca99380b73\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Column Type (incl. DATE)\"]}}],\"seriesColors\": [{\"serieName\": \"attribute, attribute\",\"color\": \"#FCC838\"},{\"serieName\": \"date, attribute\",\"color\": \"#48D1E0\"},{\"serieName\": \"measure, measure\",\"color\": \"#2E75F0\"},{\"serieName\": \"date\",\"color\": \"#B094F8\"},{\"serieName\": \"attribute\",\"color\": \"#71A1F4\"},{\"serieName\": \"measure\",\"color\": \"#56D3A8\"}],\"systemSeriesColors\": [{\"serieName\": \"attribute\",\"color\": \"#48D1E0\"},{\"serieName\": \"measure\",\"color\": \"#7A7DF3\"},{\"serieName\": \"attribute, attribute\",\"color\": \"#FCC838\"},{\"serieName\": \"date, attribute\",\"color\": \"#48D1E0\"},{\"serieName\": \"measure, measure\",\"color\": \"#2E75F0\"},{\"serieName\": \"date\",\"color\": \"#2E75F0\"}],\"tooltipConfig\": {\"columnIds\": [\"Unique Number of Column\",\"Unique Number of Synonym\",\"Formulas\",\"Hidden Columns\",\"Column Type (incl. DATE)\"]}}"
+      display_mode: CHART_MODE
+    viz_guid: 382e9b51-533f-45a3-a2d7-b2e7169217a9
+  - id: Viz_6
+    answer:
+      name: Hidden
+      description: columns
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "unique count [Column] [Is Hidden] = true [Worksheet] = '(sample) retail - apparel'"
+      answer_columns:
+      - name: Unique Number of Column
+      table:
+        table_columns:
+        - column_id: Unique Number of Column
+          show_headline: false
+        ordered_column_ids:
+        - Unique Number of Column
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Unique Number of Column
+        axis_configs:
+        - "y":
+          - Unique Number of Column
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Unique Number of Column\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"GREATER_THAN\",\"value\": \"0\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#F47E89\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"EQUAL_TO\",\"value\": \"0\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#56D3A8\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false}}]}}}],\"axisProperties\": [{\"id\": \"da242398-ade7-4103-a5e7-8b6a2973a52e\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Column\"],\"isOpposite\": false}},{\"id\": \"ca0bb2b7-b442-4fcc-9c90-d4d86a9e266c\",\"properties\": {\"axisType\": \"X\"}}]}"
+      display_mode: CHART_MODE
+    viz_guid: 63a17f93-0a03-4292-9303-e1e2c1da4a4a
+  - id: Viz_7
+    answer:
+      name: Natural Language Search is
+      description: currently
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      formulas:
+      - id: Sage Is
+        name: Sage Is
+        expr: "if ( [Worksheet Is Sage Enabled] ) then 'enabled 🧘' else 'disabled'"
+        was_auto_generated: false
+      - id: Formulas
+        name: Formulas
+        expr: "unique_count_if ( [Is Formula] , [Column] )"
+        was_auto_generated: false
+      - id: Hidden Columns
+        name: Hidden Columns
+        expr: "unique_count_if ( [Is Hidden] , [Column] )"
+        was_auto_generated: false
+      search_query: "[Sage Is]"
+      answer_columns:
+      - name: Sage Is
+      table:
+        table_columns:
+        - column_id: Sage Is
+          show_headline: false
+        ordered_column_ids:
+        - Sage Is
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"columnProperties\": [{\"columnId\": \"Sage Is\",\"columnProperty\": {}}]}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Sage Is
+        axis_configs:
+        - "y":
+          - Sage Is
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Sage Is\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"cbbfa057-0987-4f7f-9418-7d3b21a2d9f7\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Sage Is\"],\"isOpposite\": false}},{\"id\": \"fcefbbdf-fd04-4a5c-a131-fb37b228b97f\",\"properties\": {\"axisType\": \"X\"}}]}"
+      display_mode: CHART_MODE
+    viz_guid: 7636506a-e3c4-4846-b106-a139a43614d1
+  - id: Viz_8
+    answer:
+      name: Types of objects
+      description: created from the Worksheet
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      formulas:
+      - id: Dependent Type (Pretty)
+        name: Dependent Type (Pretty)
+        expr: "ifnull ( [Dependent Type] , \"other\" )"
+        was_auto_generated: false
+      - id: Single Column Layout
+        name: Single Column Layout
+        expr: ''' '''
+        was_auto_generated: false
+      search_query: "unique count [Dependent] [Worksheet] = '(sample) retail - apparel' [Single Column Layout] [Dependent Type (Pretty)] sort by [Dependent Type (Pretty)] descending"
+      answer_columns:
+      - name: Unique Number of Dependent
+        custom_name: Dependents
+      - name: Single Column Layout
+        custom_name: Layout
+      - name: Dependent Type (Pretty)
+        custom_name: Dependent Type
+      table:
+        table_columns:
+        - column_id: Single Column Layout
+          show_headline: false
+        - column_id: Dependent Type (Pretty)
+          show_headline: false
+        - column_id: Unique Number of Dependent
+          show_headline: false
+        ordered_column_ids:
+        - Single Column Layout
+        - Dependent Type (Pretty)
+        - Unique Number of Dependent
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: STACKED_BAR
+        chart_columns:
+        - column_id: Single Column Layout
+        - column_id: Dependent Type (Pretty)
+        - column_id: Unique Number of Dependent
+        axis_configs:
+        - x:
+          - Single Column Layout
+          "y":
+          - Unique Number of Dependent
+          color:
+          - Dependent Type (Pretty)
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"isStackedAsPercent\": true,\"stackedAsPercentFormat\": {\"category\": \"PERCENTAGE\",\"percentageFormatConfig\": {\"decimals\": 0.0},\"isCategoryEditable\": false},\"customProps\": \"{\\\"advancedProperties\\\":{\\\"tooltip\\\":{\\\"enabled\\\":true,\\\"borderWidth\\\":\\\"1\\\",\\\"opacity\\\":\\\"100\\\",\\\"label\\\":{\\\"color\\\":\\\"#FFFFFF\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false},\\\"value\\\":{\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"regression\\\":{\\\"lineWidth\\\":\\\"2\\\",\\\"dashStyle\\\":\\\"Solid\\\"},\\\"gridlines\\\":{\\\"xAxis\\\":{\\\"gridLineWidth\\\":\\\"2\\\",\\\"gridLineDashStyle\\\":\\\"Solid\\\"},\\\"yAxis\\\":{\\\"gridLineColor\\\":\\\"\\\",\\\"gridLineWidth\\\":\\\"2\\\",\\\"gridLineDashStyle\\\":\\\"Solid\\\"}},\\\"answerLevelSettings\\\":{\\\"width\\\":\\\"125\\\",\\\"padding\\\":\\\"0\\\",\\\"paddingCategories\\\":\\\"0\\\",\\\"dashStyle\\\":\\\"Solid\\\",\\\"lineWidth\\\":\\\"\\\",\\\"markerType\\\":\\\"Circle\\\",\\\"markerRadius\\\":\\\"\\\",\\\"borderWidth\\\":\\\"0\\\",\\\"connectingLines\\\":false}}}\",\"pivotSummariesState\": {}},\"showStackedLabels\": true,\"allLabels\": true,\"legendPosition\": \"TOP_LEGEND\"},\"columnProperties\": [{\"columnId\": \"Single Column Layout\",\"columnProperty\": {\"dataLabels\": true,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"dataLabels\\\":{\\\"backgroundColor\\\":\\\"\\\",\\\"borderColor\\\":\\\"\\\",\\\"borderWidth\\\":\\\"\\\",\\\"filter\\\":{\\\"operator\\\":\\\"Equal to\\\",\\\"value\\\":\\\"0\\\"},\\\"align\\\":\\\"center\\\",\\\"style\\\":{\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false},\\\"maxCharacters\\\":\\\"0\\\"}}}\"}},{\"columnId\": \"Unique Number of Dependent\",\"columnProperty\": {\"dataLabels\": true,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"dataLabels\\\":{\\\"backgroundColor\\\":\\\"\\\",\\\"borderColor\\\":\\\"\\\",\\\"borderWidth\\\":\\\"\\\",\\\"filter\\\":{\\\"operator\\\":\\\"\\\",\\\"value\\\":\\\"\\\"},\\\"align\\\":\\\"center\\\",\\\"style\\\":{\\\"color\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false},\\\"maxCharacters\\\":\\\"\\\"}}}\"}},{\"columnId\": \"Dependent Type (Pretty)\",\"columnProperty\": {\"dataLabels\": true}}],\"axisProperties\": [{\"id\": \"e649805d-e4ed-4cae-8fad-047540a57660\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Single Column Layout\"],\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":false,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":true,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}},{\"id\": \"73aba371-8656-4da8-8109-b535e276b9ea\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Dependent\"],\"isOpposite\": false,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":false,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":true,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}}],\"seriesColors\": [{\"serieName\": \"061a97dd-f674-4f4a-b0c7-18dd5dd15711\",\"color\": \"#8C62F5\"},{\"serieName\": \"Unique Number of Dependent\",\"color\": \"#8c62f5\"},{\"serieName\": \"liveboard\",\"color\": \"#8c62f5\"},{\"serieName\": \"answer\",\"color\": \"#38cc99\"},{\"serieName\": \"{null}\",\"color\": \"#5D6570\"},{\"serieName\": \"thoughtspot view\",\"color\": \"#F04152\"},{\"serieName\": \"other\",\"color\": \"#747E8C\"}],\"systemSeriesColors\": [{\"serieName\": \"061a97dd-f674-4f4a-b0c7-18dd5dd15711\",\"color\": \"#8C62F5\"},{\"serieName\": \"Unique Number of Dependent\",\"color\": \"#8c62f5\"},{\"serieName\": \"liveboard\",\"color\": \"#8c62f5\"},{\"serieName\": \"answer\",\"color\": \"#38cc99\"},{\"serieName\": \"{null}\",\"color\": \"#5D6570\"},{\"serieName\": \"thoughtspot view\",\"color\": \"#F04152\"},{\"serieName\": \"other\",\"color\": \"#48D1E0\"}],\"tooltipConfig\": {\"columnIds\": [\"Unique Number of Dependent\",\"Dependent Type (Pretty)\"]}}"
+      display_mode: CHART_MODE
+    viz_guid: 6169aff3-77cd-4500-93bd-985c3a2666bd
+  - id: Viz_9
+    viz_guid: 1819f280-fffe-47a2-bb3e-4f1a4a6c3997
+    note_tile:
+      html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
+  - id: Viz_10
+    answer:
+      name: Columns Usage
+      description: profile how your columns are interacted with
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      formulas:
+      - id: Answers
+        name: Answers
+        expr: "unique_count_if ( [Dependent Type] = 'answer' , [Dependent] )"
+        was_auto_generated: false
+      - id: Is Formula (Pretty)
+        name: Is Formula (Pretty)
+        expr: "if ( [Is Formula] ) then \"formula\" else \"-\""
+        was_auto_generated: false
+      - id: Is Hidden (Pretty)
+        name: Is Hidden (Pretty)
+        expr: "if ( [Is Hidden] ) then \"hidden\" else \"-\""
+        was_auto_generated: false
+      - id: Is not Used
+        name: Is not Used
+        expr: "if ( count ( [Dependent] ) = 0 ) then 'no saved content' else '-'"
+        was_auto_generated: false
+      - id: Liveboards
+        name: Liveboards
+        expr: "unique_count_if ( [Dependent Type] = 'liveboard' , [Dependent] )"
+        was_auto_generated: false
+      - id: Suggestions (Pretty)
+        name: Suggestions (Pretty)
+        expr: "if ( [Column Type (incl. DATE)] = 'attribute' ) then ( if ( [Suggestions Type] = 'dont_index' ) then 'disabled' else 'enabled' ) else '-'"
+        was_auto_generated: false
+      - id: Column Type (incl. DATE)
+        name: Column Type (incl. DATE)
+        expr: "if ( [Data Type] in { 'date' , 'datetime' , 'timestamp' } ) then sql_string_op ( 'upper({0})' , 'date' ) else [Column Type]"
+        was_auto_generated: false
+      search_query: "[Column] count [Column] [Dependent Interactions] [Is Formula (Pretty)] [Is Hidden (Pretty)] sort by [Column] [Answers] [Liveboards] [Is not Used] unique count [Dependent Author] [Column Type (incl. DATE)] [Worksheet].'(sample) retail - apparel' [Suggestions (Pretty)]"
+      answer_columns:
+      - name: Column
+      - name: Number of Column
+      - name: Dependent Interactions
+        custom_name: Interactions
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Is Formula (Pretty)
+        custom_name: Is Formula
+      - name: Is Hidden (Pretty)
+        custom_name: Is Hidden
+      - name: Answers
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Liveboards
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Is not Used
+      - name: Unique Number of Dependent Author
+        custom_name: Authors
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Column Type (incl. DATE)
+        custom_name: Column Type
+      - name: Suggestions (Pretty)
+        custom_name: Suggestions
+      table:
+        table_columns:
+        - column_id: Column
+          show_headline: false
+        - column_id: Is Formula (Pretty)
+          show_headline: false
+        - column_id: Is Hidden (Pretty)
+          show_headline: false
+        - column_id: Column Type (incl. DATE)
+          show_headline: false
+        - column_id: Suggestions (Pretty)
+          show_headline: false
+        - column_id: Is not Used
+          show_headline: false
+        - column_id: Number of Column
+          show_headline: false
+        - column_id: Dependent Interactions
+          show_headline: false
+        - column_id: Answers
+          show_headline: false
+        - column_id: Liveboards
+          show_headline: false
+        - column_id: Unique Number of Dependent Author
+          show_headline: false
+        ordered_column_ids:
+        - Column
+        - Is Formula (Pretty)
+        - Is Hidden (Pretty)
+        - Column Type (incl. DATE)
+        - Suggestions (Pretty)
+        - Is not Used
+        - Number of Column
+        - Dependent Interactions
+        - Answers
+        - Liveboards
+        - Unique Number of Dependent Author
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Is Hidden (Pretty)\",\"width\": 97.35416793823242},{\"columnId\": \"Is not Used\",\"width\": 138.0},{\"columnId\": \"Unique Number of Dependent Author\",\"width\": 89.75},{\"columnId\": \"Is Formula (Pretty)\",\"width\": 99.79166793823242},{\"columnId\": \"Column Type (incl. DATE)\",\"width\": 113.08333206176758},{\"columnId\": \"Dependent Interactions\",\"width\": 113.0},{\"columnId\": \"Column\",\"width\": 238.0},{\"columnId\": \"Suggestions (Pretty)\",\"width\": 111.5}],\"orderedColumnIds\": [\"Column\",\"Column Type (incl. DATE)\",\"Suggestions (Pretty)\",\"Is Formula (Pretty)\",\"Is Hidden (Pretty)\",\"Is not Used\",\"Unique Number of Dependent Author\",\"Liveboards\",\"Answers\",\"Dependent Interactions\"],\"columnProperties\": [{\"columnId\": \"Number of Column\",\"columnProperty\": {\"isHidden\": true}},{\"columnId\": \"Column\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS_NOT_EMPTY\",\"value\": \"SKU\",\"fontProperties\": {\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]},\"isHidden\": false}},{\"columnId\": \"Suggestions (Pretty)\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS\",\"value\": \"enabled\",\"fontProperties\": {\"color\": \"#06BF7F\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"IS\",\"value\": \"disabled\",\"fontProperties\": {\"color\": \"#747E8C\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Is Formula (Pretty)\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS\",\"value\": \"-\",\"fontProperties\": {\"color\": \"#747E8C\",\"bold\": false,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"IS\",\"value\": \"formula\",\"fontProperties\": {\"color\": \"#ff5f0f\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]},\"isHidden\": false}},{\"columnId\": \"Is Hidden (Pretty)\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS\",\"value\": \"-\",\"fontProperties\": {\"color\": \"#747E8C\"},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"IS\",\"value\": \"hidden\",\"fontProperties\": {\"color\": \"#F04152\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#FDE9AF\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]},\"isHidden\": false}},{\"columnId\": \"Is not Used\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS\",\"value\": \"-\",\"fontProperties\": {\"color\": \"#747E8C\"},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"IS\",\"value\": \"no saved content\",\"fontProperties\": {\"color\": \"#F04152\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#FDE9AF\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Column Type (incl. DATE)\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS\",\"value\": \"MEASURE\",\"fontProperties\": {\"color\": \"#06BF7F\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"IS\",\"value\": \"ATTRIBUTE\",\"fontProperties\": {\"color\": \"#2E75F0\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"IS\",\"value\": \"DATE\",\"fontProperties\": {\"color\": \"#8C62F5\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Unique Number of Dependent Author\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS_EMPTY\",\"fontProperties\": {\"color\": \"#F04152\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#FDE9AF\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Liveboards\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS_EMPTY\",\"fontProperties\": {\"color\": \"#F04152\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#FDE9AF\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Answers\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS_EMPTY\",\"fontProperties\": {\"color\": \"#F04152\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#FDE9AF\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Dependent Interactions\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"GREATER_THAN\",\"value\": \"0\",\"fontProperties\": {\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"IS_EMPTY\",\"fontProperties\": {\"color\": \"#F04152\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"solidBackgroundAttrs\": {\"color\": \"#FDE9AF\"},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}]}"
+      chart:
+        type: STACKED_BAR
+        chart_columns:
+        - column_id: Column
+        - column_id: Is Formula (Pretty)
+        - column_id: Is Hidden (Pretty)
+        - column_id: Is not Used
+        - column_id: Column Type (incl. DATE)
+        - column_id: Suggestions (Pretty)
+        - column_id: Number of Column
+        - column_id: Dependent Interactions
+        - column_id: Answers
+        - column_id: Liveboards
+        - column_id: Unique Number of Dependent Author
+        axis_configs:
+        - x:
+          - Column Type (incl. DATE)
+          "y":
+          - Number of Column
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Column\",\"columnProperty\": {}},{\"columnId\": \"Number of Column\",\"columnProperty\": {}},{\"columnId\": \"Dependent Interactions\",\"columnProperty\": {}},{\"columnId\": \"Is Formula (Pretty)\",\"columnProperty\": {}},{\"columnId\": \"Is Hidden (Pretty)\",\"columnProperty\": {}},{\"columnId\": \"Is not Used\",\"columnProperty\": {}},{\"columnId\": \"Answers\",\"columnProperty\": {}},{\"columnId\": \"Liveboards\",\"columnProperty\": {}},{\"columnId\": \"Unique Number of Dependent Author\",\"columnProperty\": {}},{\"columnId\": \"Column Type (incl. DATE)\",\"columnProperty\": {}},{\"columnId\": \"Suggestions (Pretty)\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"98e3cd28-4ed2-462e-9e2b-4baae2977e0c\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Number of Column\"],\"isOpposite\": false}},{\"id\": \"694e837b-01ec-44c3-950e-5f9bcca85c76\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Column Type (incl. DATE)\"]}}],\"systemSeriesColors\": [{\"serieName\": \"Number of Column\",\"color\": \"#F04152\"},{\"serieName\": \"attribute\",\"color\": \"#48D1E0\"},{\"serieName\": \"measure\",\"color\": \"#7A7DF3\"}],\"tooltipConfig\": {\"columnIds\": [\"Column\"]}}"
+      display_mode: TABLE_MODE
+    viz_guid: cad79e07-5cec-40bd-a374-ba2b13771379
+  - id: Viz_11
+    viz_guid: 15f25fb2-55e5-422a-a1aa-f6a34776a384
+    note_tile:
+      html_parsed_string: "<h2 dir=\"ltr\"><span>A note about dependencies..</span></h2><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>Objects in </span><b><strong class=\"theme-module__editor-text-bold\">ThoughtSpot</strong></b><span> can be divided into 2 categories.</span><br><br><b><strong class=\"theme-module__editor-text-bold\">Searchables</strong></b><span> - objects which can produce Searches, like Tables, ThoughtSpot Views, SQL Views, and Worksheets.</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><b><strong class=\"theme-module__editor-text-bold\">Visualizations</strong></b><span> - objects which can produce a chart or table, like Answers, Liveboards, and even ThoughtSpot Views.</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><span>Because some Searchables can result in another Searchable, dependencies in ThoughtSpot can appear misleading.</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><span>The </span><a href=\"https://developers.thoughtspot.com/docs/rest-api-reference#_dependent_objects\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">dependency APIs</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> </strong></b><span>show all of the downstream objects built from a given object. This means a Table will show Answers and Liveboards as dependents, </span><u><span class=\"theme-module__editor-text-underline\">even if no content was built directly from the table itself</span></u><span>.</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><span>The </span><b><strong class=\"theme-module__editor-text-bold\">CS Tools: Worksheet Column Utilization</strong></b><span> worksheet has been filtered for Worksheets as the only form of searchable object type to limit this behavior. If you wish to expand the use case upwards in the hierarchy, you can remove that filter.</span></p>"
+  - id: Viz_12
+    answer:
+      name: List of all Dependents
+      description: detailed information about who owns content built from the Worksheet
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      formulas:
+      - id: Days since last modified
+        name: Days since last modified
+        expr: "diff_days ( today ( ) , [Dependent Last Modified Date] )"
+        was_auto_generated: false
+      - id: Dependent Description (Pretty)
+        name: Dependent Description (Pretty)
+        expr: "ifnull ( [Dependent Description] , \"-\" )"
+        was_auto_generated: false
+      search_query: "[Dependent Link] [Dependent Author] [Dependent Type] [Dependent Description (Pretty)] [Dependent Interactions] [Data Exports] sort by [Dependent Interactions] descending average [Days since last modified] [Dependent Type] != '{null}'"
+      answer_columns:
+      - name: Dependent Link
+      - name: Dependent Author
+      - name: Dependent Type
+        custom_name: Type
+      - name: Dependent Description (Pretty)
+        custom_name: Description
+      - name: Dependent Interactions
+        custom_name: Total Interactions
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Data Exports
+        custom_name: Total Data Exports
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Average Days since last modified
+        custom_name: Days since last modified
+      table:
+        table_columns:
+        - column_id: Dependent Link
+          show_headline: false
+        - column_id: Dependent Author
+          show_headline: false
+        - column_id: Dependent Type
+          show_headline: false
+        - column_id: Dependent Description (Pretty)
+          show_headline: false
+        - column_id: Dependent Interactions
+          show_headline: false
+        - column_id: Data Exports
+          show_headline: false
+        - column_id: Average Days since last modified
+          show_headline: false
+        ordered_column_ids:
+        - Dependent Link
+        - Dependent Author
+        - Dependent Type
+        - Dependent Description (Pretty)
+        - Dependent Interactions
+        - Data Exports
+        - Average Days since last modified
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Dependent Author\",\"width\": 159.0},{\"columnId\": \"Dependent Link\",\"width\": 343.0},{\"columnId\": \"Dependent Type\",\"width\": 131.70833587646484},{\"columnId\": \"Average Days since last modified\",\"width\": 113.66666793823242},{\"columnId\": \"Dependent Description (Pretty)\",\"width\": 716.0},{\"columnId\": \"Data Exports\",\"width\": 102.41666412353516},{\"columnId\": \"Dependent Interactions\",\"width\": 138.27083587646484}],\"theme\": \"ZEBRA\",\"orderedColumnIds\": [\"Dependent Type\",\"Dependent Author\",\"Dependent Interactions\",\"Data Exports\",\"Dependent Link\",\"Average Days since last modified\",\"Dependent Description (Pretty)\"],\"columnProperties\": [{\"columnId\": \"Dependent Author\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS_NOT_EMPTY\",\"value\": \"tarun.sharma\",\"fontProperties\": {\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Dependent Link\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS_NOT_EMPTY\",\"value\": \"{caption}Copy of Revenue Marketing Performance{/caption}https://champagne.thoughtspotstaging.cloud/#/pinboard/e84a25e2-ce5a-4148-853f-ff7d424d5d0b\",\"fontProperties\": {\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Dependent Description (Pretty)\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS_NOT\",\"value\": \"-\",\"fontProperties\": {\"bold\": false,\"italic\": true,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Dependent Type\",\"columnProperty\": {\"wrapColumnText\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"IS\",\"value\": \"thoughtspot view\",\"fontProperties\": {\"color\": \"#FF8142\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"IS\",\"value\": \"liveboard\",\"fontProperties\": {\"color\": \"#8C62F5\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"IS\",\"value\": \"answer\",\"fontProperties\": {\"color\": \"#06BF7F\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}]}"
+      chart:
+        type: COLUMN
+        chart_columns:
+        - column_id: Dependent Link
+        - column_id: Dependent Author
+        - column_id: Dependent Type
+        - column_id: Dependent Description (Pretty)
+        - column_id: Dependent Interactions
+        - column_id: Data Exports
+        - column_id: Average Days since last modified
+        axis_configs:
+        - x:
+          - Dependent Description (Pretty)
+          "y":
+          - Dependent Interactions
+          - Data Exports
+          - Average Days since last modified
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Dependent Link\",\"columnProperty\": {}},{\"columnId\": \"Dependent Author\",\"columnProperty\": {}},{\"columnId\": \"Dependent Type\",\"columnProperty\": {}},{\"columnId\": \"Dependent Description (Pretty)\",\"columnProperty\": {}},{\"columnId\": \"Dependent Interactions\",\"columnProperty\": {}},{\"columnId\": \"Data Exports\",\"columnProperty\": {}},{\"columnId\": \"Average Days since last modified\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"42245344-9284-4fdd-b68d-5efc5c74238e\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Dependent Interactions\"],\"isOpposite\": false}},{\"id\": \"b65c82f1-c32a-4f82-b4fd-632413e4663c\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Data Exports\"],\"isOpposite\": true}},{\"id\": \"008a7555-47c9-4201-9744-e8b8b356ce32\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Average Days since last modified\"],\"isOpposite\": true}},{\"id\": \"d08a2b60-1a52-4605-be9a-5bdc8ce53329\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Dependent Description (Pretty)\"]}}]}"
+      display_mode: TABLE_MODE
+    viz_guid: 5d2a7d54-7f7d-405e-add5-228e6bf2013f
+  - id: Viz_13
+    answer:
+      name: Monthly Interactions
+      description: "views, edits, saves (but not searches)"
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "[Dependent Interactions] [Worksheet] = '(sample) retail - apparel' [Dependent Interaction Date] [Dependent Interaction Date].monthly"
+      answer_columns:
+      - name: Dependent Interactions
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Month(Dependent Interaction Date)
+        custom_name: Interaction Month
+      table:
+        table_columns:
+        - column_id: Month(Dependent Interaction Date)
+          show_headline: false
+        - column_id: Dependent Interactions
+          show_headline: false
+        ordered_column_ids:
+        - Month(Dependent Interaction Date)
+        - Dependent Interactions
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Month(Dependent Interaction Date)
+        - column_id: Dependent Interactions
+        axis_configs:
+        - x:
+          - Month(Dependent Interaction Date)
+          "y":
+          - Dependent Interactions
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Dependent Interactions\",\"columnProperty\": {}},{\"columnId\": \"Month(Dependent Interaction Date)\",\"columnProperty\": {\"excludeNullValues\": false}}],\"axisProperties\": [{\"id\": \"6c61ee2c-d319-4e57-96e0-9d07596bf383\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Dependent Interactions\"],\"isOpposite\": false}},{\"id\": \"1dbcff92-9249-444b-acea-b385eccf1764\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Dependent Interaction Date)\"]}}],\"seriesColors\": [{\"serieName\": \"Dependent Interactions\",\"color\": \"#2E75F0\"}],\"systemSeriesColors\": [{\"serieName\": \"Dependent Interactions\",\"color\": \"#8C62F5\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: 2f485310-ee7f-45a1-9014-275c87271b37
+  - id: Viz_14
+    answer:
+      name: New <b><font color="#06BF7F">Answers</font></b> Created
+      description: trended monthly
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "[Dependent Created Date] [Dependent Created Date].monthly unique count [Dependent] [Worksheet].'(sample) retail - apparel' [Dependent Type] = 'answer'"
+      answer_columns:
+      - name: Month(Dependent Created Date)
+      - name: Unique Number of Dependent
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      table:
+        table_columns:
+        - column_id: Month(Dependent Created Date)
+          show_headline: false
+        - column_id: Unique Number of Dependent
+          show_headline: false
+        ordered_column_ids:
+        - Month(Dependent Created Date)
+        - Unique Number of Dependent
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Month(Dependent Created Date)
+        - column_id: Unique Number of Dependent
+        axis_configs:
+        - x:
+          - Month(Dependent Created Date)
+          "y":
+          - Unique Number of Dependent
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Month(Dependent Created Date)\",\"columnProperty\": {}},{\"columnId\": \"Unique Number of Dependent\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"fec9336d-3cc9-489a-8603-11ee0e78e55f\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Dependent\"],\"isOpposite\": false}},{\"id\": \"3af4e161-8f75-4456-be06-eb30ff749234\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Dependent Created Date)\"]}}],\"seriesColors\": [{\"serieName\": \"6143c932-5e8e-4365-b085-f68ff21c3f30\",\"color\": \"#F36775\"},{\"serieName\": \"Unique Number of Dependent\",\"color\": \"#06BF7F\"}],\"systemSeriesColors\": [{\"serieName\": \"6143c932-5e8e-4365-b085-f68ff21c3f30\",\"color\": \"#F36775\"},{\"serieName\": \"Unique Number of Dependent\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: 112f29b2-a1f1-4042-85ad-4f6562684d09
+  - id: Viz_15
+    answer:
+      name: New <b><font color="#8C62F5">Liveboards</font></b> Created
+      description: trended monthly
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "[Dependent Created Date] [Dependent Created Date].monthly unique count [Dependent] [Worksheet].'(sample) retail - apparel' [Dependent Type].liveboard"
+      answer_columns:
+      - name: Month(Dependent Created Date)
+      - name: Unique Number of Dependent
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      table:
+        table_columns:
+        - column_id: Month(Dependent Created Date)
+          show_headline: false
+        - column_id: Unique Number of Dependent
+          show_headline: false
+        ordered_column_ids:
+        - Month(Dependent Created Date)
+        - Unique Number of Dependent
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Month(Dependent Created Date)
+        - column_id: Unique Number of Dependent
+        axis_configs:
+        - x:
+          - Month(Dependent Created Date)
+          "y":
+          - Unique Number of Dependent
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Month(Dependent Created Date)\",\"columnProperty\": {}},{\"columnId\": \"Unique Number of Dependent\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"fec9336d-3cc9-489a-8603-11ee0e78e55f\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Dependent\"],\"isOpposite\": false}},{\"id\": \"3af4e161-8f75-4456-be06-eb30ff749234\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Dependent Created Date)\"]}}],\"seriesColors\": [{\"serieName\": \"6143c932-5e8e-4365-b085-f68ff21c3f30\",\"color\": \"#F36775\"},{\"serieName\": \"Unique Number of Dependent\",\"color\": \"#8C62F5\"}],\"systemSeriesColors\": [{\"serieName\": \"6143c932-5e8e-4365-b085-f68ff21c3f30\",\"color\": \"#F36775\"},{\"serieName\": \"Unique Number of Dependent\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: 1e3d47b5-68d1-4718-b27a-cd2befbf5f2d
+  - id: Viz_16
+    viz_guid: 39702d16-753b-4b32-b400-b6edfc09a2ad
+    note_tile:
+      html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
+  - id: Viz_17
+    answer:
+      name: Engagement Score
+      description: |-
+        <b><font color="2E75F0">Interactions</font> / (
+        <font color="#8C62F5">Liveboards</font> +
+
+        <font color="#06BF7F">Answers</font> )</b>
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      formulas:
+      - id: Include Author Interactions
+        name: Include Author Interactions
+        expr: "[Dependent Author] = [Interaction User] "
+        was_auto_generated: false
+      - id: Influencer Score
+        name: Influencer Score
+        expr: "[Dependent Interactions] / ( [Answers] + [Liveboards] )"
+        properties:
+          aggregation: AVERAGE
+        was_auto_generated: false
+      - id: Answers
+        name: Answers
+        expr: "unique_count_if ( [Dependent Type] = 'answer' , [Dependent] )"
+        was_auto_generated: false
+      - id: Decay Function
+        name: Decay Function
+        expr: "greatest ( 1 - ( diff_days ( today ( ) , [Dependent Interaction Date] ) / 365 * 2 ) , 0 )"
+        properties:
+          column_type: ATTRIBUTE
+        was_auto_generated: false
+      - id: Liveboards
+        name: Liveboards
+        expr: "unique_count_if ( [Dependent Type] = 'liveboard' , [Dependent] )"
+        was_auto_generated: false
+      search_query: "[Worksheet] = '(sample) retail - apparel' [Influencer Score] [Include Author Interactions] = false"
+      answer_columns:
+      - name: Influencer Score
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      table:
+        table_columns:
+        - column_id: Influencer Score
+          show_headline: false
+        ordered_column_ids:
+        - Influencer Score
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"widthState\": [{\"columnId\": \"Influencer Score\",\"width\": 100.5625}],\"theme\": \"ZEBRA\",\"density\": \"REGULAR\",\"columnProperties\": [{\"columnId\": \"Influencer Score\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"GREATER_THAN\",\"value\": \"0\",\"fontProperties\": {\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"backgroundFormatType\": \"SOLID\",\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}]}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Influencer Score
+        axis_configs:
+        - "y":
+          - Influencer Score
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Influencer Score\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"GREATER_THAN_EQUAL_TO\",\"value\": \"100\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#06BF7F\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN_EQUAL_TO\",\"value\": \"75\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#48D1E0\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN_EQUAL_TO\",\"value\": \"50\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#2E75F0\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN_EQUAL_TO\",\"value\": \"25\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#8C62F5\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN_EQUAL_TO\",\"value\": \"0\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#747E8C\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}],\"axisProperties\": [{\"id\": \"a1f7547a-476e-481f-b399-526c281efa49\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Influencer Score\"],\"isOpposite\": false}},{\"id\": \"d4d4b3d2-4685-4d68-a058-baf5704c0a19\",\"properties\": {\"axisType\": \"X\"}}],\"systemSeriesColors\": [{\"serieName\": \"a2335f84-210e-41ae-9cbb-e940d9c15a08\",\"color\": \"#F04152\"},{\"serieName\": \"9e31ab88-4204-4acb-9f04-8c32855979ba\",\"color\": \"#48D1E0\"},{\"serieName\": \"Influencer Score\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: f1f024bc-40b6-401e-96f6-dca180b6fcfa
+  - id: Viz_18
+    viz_guid: 6840ede1-7050-451b-81ea-d2ccecde2f3f
+    note_tile:
+      html_parsed_string: "<h2 dir=\"ltr\"><span>  How does Influence get measured?</span></h2><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><b><strong class=\"theme-module__editor-text-bold\">Engagement = # Interactions / ( # Liveboards + # Answers )</strong></b></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><i><em class=\"theme-module__editor-text-italic\">Influencers produce content that is engaging for other Users in </em></i><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">ThoughtSpot</strong></b></i><i><em class=\"theme-module__editor-text-italic\">. The more interactions that a User's content generates, the stronger their influence is said to be.</em></i></p>"
+  - id: Viz_19
+    viz_guid: 5620547e-ac40-435e-8f23-9274977d9495
+    note_tile:
+      html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
+  - id: Viz_20
+    answer:
+      name: Total Creators
+      description: last 12 months
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "unique count [Dependent Author] [Worksheet] = '(sample) retail - apparel' [Dependent Created Date].'last 12 months' [Dependent Created Date] [Dependent Created Date].monthly"
+      answer_columns:
+      - name: Unique Number of Dependent Author
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Month(Dependent Created Date)
+      table:
+        table_columns:
+        - column_id: Month(Dependent Created Date)
+          show_headline: false
+        - column_id: Unique Number of Dependent Author
+          show_headline: false
+        ordered_column_ids:
+        - Month(Dependent Created Date)
+        - Unique Number of Dependent Author
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Month(Dependent Created Date)
+        - column_id: Unique Number of Dependent Author
+        axis_configs:
+        - x:
+          - Month(Dependent Created Date)
+          "y":
+          - Unique Number of Dependent Author
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Unique Number of Dependent Author\",\"columnProperty\": {}},{\"columnId\": \"Month(Dependent Created Date)\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"a818c575-2444-41d4-8b2e-fae7386f1408\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Dependent Author\"],\"isOpposite\": false}},{\"id\": \"0d3786fb-5a52-4ef8-a46e-c4019c8f860d\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Dependent Created Date)\"]}}],\"seriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"},{\"serieName\": \"Unique Number of Dependent Author\",\"color\": \"#8C62F5\"}],\"systemSeriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"},{\"serieName\": \"Unique Number of Dependent Author\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: 3b27a8b9-2b55-48f7-af87-45b6077da262
+  - id: Viz_21
+    answer:
+      name: Total Consumers
+      description: last 12 months
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "unique count [Interaction User] [Worksheet] = '(sample) retail - apparel' [Dependent Interaction Date].'last 12 months' [Dependent Interaction Date] [Dependent Interaction Date].monthly"
+      answer_columns:
+      - name: Unique Number of Interaction User
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Month(Dependent Interaction Date)
+      table:
+        table_columns:
+        - column_id: Month(Dependent Interaction Date)
+          show_headline: false
+        - column_id: Unique Number of Interaction User
+          show_headline: false
+        ordered_column_ids:
+        - Month(Dependent Interaction Date)
+        - Unique Number of Interaction User
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Month(Dependent Interaction Date)
+        - column_id: Unique Number of Interaction User
+        axis_configs:
+        - x:
+          - Month(Dependent Interaction Date)
+          "y":
+          - Unique Number of Interaction User
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Month(Dependent Interaction Date)\",\"columnProperty\": {}},{\"columnId\": \"Unique Number of Interaction User\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"40f1a3d6-7128-44af-839b-da56dc0f26f0\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Interaction User\"],\"isOpposite\": false}},{\"id\": \"a3d43d6f-b863-430d-9d7d-92c860d11f3b\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Dependent Interaction Date)\"]}}],\"seriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"}],\"systemSeriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"},{\"serieName\": \"Unique Number of Interaction User\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: 013fa8ca-b3cf-4ba7-aad9-c60350b856c7
+  - id: Viz_22
+    answer:
+      name: First Interaction Date
+      description: for the filters above
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "[Worksheet] = '(sample) retail - apparel' min [Dependent Interaction Date]"
+      answer_columns:
+      - name: Minimum Dependent Interaction Date
+      table:
+        table_columns:
+        - column_id: Minimum Dependent Interaction Date
+          show_headline: false
+        ordered_column_ids:
+        - Minimum Dependent Interaction Date
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Minimum Dependent Interaction Date
+        axis_configs:
+        - "y":
+          - Minimum Dependent Interaction Date
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Minimum Dependent Interaction Date\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"e0e0e211-bd01-4610-a2bc-d538c90043bc\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Minimum Dependent Interaction Date\"],\"isOpposite\": false}},{\"id\": \"c7b65577-7a86-4e07-8665-4c85b64afed5\",\"properties\": {\"axisType\": \"X\"}}],\"seriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"}],\"systemSeriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"},{\"serieName\": \"b1a05c5c-d525-472a-98ca-e1e0f05a5d58\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: d2071e9f-7621-43fc-9905-e7d29b931be7
+  - id: Viz_23
+    answer:
+      name: Interaction Date
+      description: "in TS: BI event history"
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "max [Dependent Interaction Date]"
+      answer_columns:
+      - name: Maximum Dependent Interaction Date
+      table:
+        table_columns:
+        - column_id: Maximum Dependent Interaction Date
+          show_headline: false
+        ordered_column_ids:
+        - Maximum Dependent Interaction Date
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Maximum Dependent Interaction Date
+        axis_configs:
+        - "y":
+          - Maximum Dependent Interaction Date
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Maximum Dependent Interaction Date\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"8c1718ba-1bdb-421a-a116-9a372c90146a\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Maximum Dependent Interaction Date\"],\"isOpposite\": false}},{\"id\": \"0a17829f-f01a-4dac-acd3-48020adebf21\",\"properties\": {\"axisType\": \"X\"}}],\"seriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"}],\"systemSeriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"},{\"serieName\": \"b1a05c5c-d525-472a-98ca-e1e0f05a5d58\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: b9a82593-d2a7-4a23-abba-3205cababaeb
+  - id: Viz_24
+    answer:
+      name: First Interaction Date
+      description: "in TS: BI event history"
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "min [Dependent Interaction Date]"
+      answer_columns:
+      - name: Minimum Dependent Interaction Date
+      table:
+        table_columns:
+        - column_id: Minimum Dependent Interaction Date
+          show_headline: false
+        ordered_column_ids:
+        - Minimum Dependent Interaction Date
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Minimum Dependent Interaction Date
+        axis_configs:
+        - "y":
+          - Minimum Dependent Interaction Date
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Minimum Dependent Interaction Date\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"e0e0e211-bd01-4610-a2bc-d538c90043bc\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Minimum Dependent Interaction Date\"],\"isOpposite\": false}},{\"id\": \"c7b65577-7a86-4e07-8665-4c85b64afed5\",\"properties\": {\"axisType\": \"X\"}}],\"seriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"}],\"systemSeriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"},{\"serieName\": \"b1a05c5c-d525-472a-98ca-e1e0f05a5d58\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: 08c87bf8-06a5-408b-bffa-6d128203d628
+  - id: Viz_25
+    viz_guid: 1fe42e4b-ddd9-4d5e-940a-b589838a7320
+    note_tile:
+      html_parsed_string: "<h2 dir=\"ltr\"><span>Data Sources</span></h2><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><b><strong class=\"theme-module__editor-text-bold\">1/ ThoughtSpot Worksheets</strong></b><span> - [</span><u><span class=\"theme-module__editor-text-underline\">command</span></u><span> cs_tools searchable metadata]</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><i><em class=\"theme-module__editor-text-italic\">Worksheet columns' settings are included, as is the data source (Falcon, Connection) and which cluster/org the Worksheet belongs to. The \"Worksheet\" field in this Liveboard is not unique - if you have identically named worksheets, consider adding the guid to disambiguate.</em></i></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><b><strong class=\"theme-module__editor-text-bold\">2/ ThoughtSpot Dependencies</strong></b><span> - [</span><u><span class=\"theme-module__editor-text-underline\">command</span></u><span> cs_tools searchable metadata]</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><i><em class=\"theme-module__editor-text-italic\">Objects which are can be created from Worksheets are considered as dependencies. (primarily these are Liveboards and Answers)</em></i></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><b><strong class=\"theme-module__editor-text-bold\">3/ TS: BI Server</strong></b><span> - [</span><u><span class=\"theme-module__editor-text-underline\">command</span></u><span> cs_tools searchable bi-server]</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><i><em class=\"theme-module__editor-text-italic\">A built-in worksheet which describes how Users interact with content created in ThoughtSpot.</em></i></p>"
+  - id: Viz_26
+    viz_guid: 3be4b513-6ce1-4505-8588-2f1f230de641
+    note_tile:
+      html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
+  - id: Viz_27
+    answer:
+      name: Latest Interaction Date
+      description: for the filters above
+      tables:
+      - id: CS Tools - Worksheet Column Utilization
+        name: CS Tools - Worksheet Column Utilization
+      search_query: "[Worksheet] = '(sample) retail - apparel' max [Dependent Interaction Date]"
+      answer_columns:
+      - name: Maximum Dependent Interaction Date
+      table:
+        table_columns:
+        - column_id: Maximum Dependent Interaction Date
+          show_headline: false
+        ordered_column_ids:
+        - Maximum Dependent Interaction Date
+        client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\"}"
+      chart:
+        type: KPI
+        chart_columns:
+        - column_id: Maximum Dependent Interaction Date
+        axis_configs:
+        - "y":
+          - Maximum Dependent Interaction Date
+        client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Maximum Dependent Interaction Date\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"e0e0e211-bd01-4610-a2bc-d538c90043bc\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Maximum Dependent Interaction Date\"],\"isOpposite\": false}},{\"id\": \"c7b65577-7a86-4e07-8665-4c85b64afed5\",\"properties\": {\"axisType\": \"X\"}}],\"seriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"}],\"systemSeriesColors\": [{\"serieName\": \"ce32e51e-3dbb-42d1-b7ff-80e6da4bc61b\",\"color\": \"#2E75F0\"},{\"serieName\": \"b1a05c5c-d525-472a-98ca-e1e0f05a5d58\",\"color\": \"#2770ef\"}]}"
+      display_mode: CHART_MODE
+    viz_guid: 8526fc9a-e596-4194-ae78-b40fb0b16e59
+  - id: Viz_28
+    viz_guid: 776ca426-d192-4278-a0e1-7d885c86f171
+    note_tile:
+      html_parsed_string: "<h2 dir=\"ltr\"><span>Worksheet Recommendations</span></h2><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><i><em class=\"theme-module__editor-text-italic\">for a friendly, easy to use worksheet, consider the following points</em></i></p><p class=\"theme-module__editor-paragraph\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><b><strong class=\"theme-module__editor-text-bold\">Modeling for Search </strong></b><i><em class=\"theme-module__editor-text-italic\">- </em></i><a href=\"https://docs.thoughtspot.com/cloud/latest/data-modeling-settings\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><i><em class=\"theme-module__editor-text-italic\">columns should have their settings applied</em></i></a><i><em class=\"theme-module__editor-text-italic\">, with the most important fields being required: Column Name, Description, Synonyms, and Index Type (Search Suggestions). Aim to keep column names under 30 characters long to ensure they fit appropriately in the left hand panel when Searching.</em></i></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><b><strong class=\"theme-module__editor-text-bold\">Enable Search Suggestions</strong></b><span> - </span><i><em class=\"theme-module__editor-text-italic\">used in the Search bar and Liveboard Explore as recommendations to the User. The Search Suggestions index is built once-daily and is the list of unique values for any column with the INDEX TYPE table setting applied.</em></i></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><b><strong class=\"theme-module__editor-text-bold\">Number of Columns</strong></b><i><em class=\"theme-module__editor-text-italic\"> - More is not always better! Consider your Users needs and include the relevant fields. ThoughtSpot has found that having fewer than 150 columns in your Worksheet to be optimal for strong adoption of a searchable.</em></i></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><b><strong class=\"theme-module__editor-text-bold\">Hidden Columns </strong></b><i><em class=\"theme-module__editor-text-italic\">- Visualizations with Hidden columns become locked unless you have Can Edit access to the underlying Searchable.</em></i></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><b><strong class=\"theme-module__editor-text-bold\">Engagement Score</strong></b><span> - </span><i><em class=\"theme-module__editor-text-italic\">Try to strike a balance between creators and consumers of content. Scoring above 100 indicates strongly adopted content.</em></i></p>"
+  filters:
+  - column:
+    - ThoughtSpot URL
+    is_mandatory: false
+    is_single_value: false
+    display_name: ""
+  - column:
+    - Org
+    is_mandatory: false
+    is_single_value: false
+    display_name: ""
+  - column:
+    - Worksheet Is Sage Enabled
+    excluded_visualizations:
+    - Viz_23
+    - Viz_24
+    is_mandatory: false
+    is_single_value: false
+    display_name: ""
+  - column:
+    - Worksheet
+    oper: in
+    values:
+    - (Sample) Retail - Apparel
+    excluded_visualizations:
+    - Viz_23
+    - Viz_24
+    is_mandatory: true
+    is_single_value: true
+    display_name: ""
+  - column:
+    - Column Type
+    excluded_visualizations:
+    - Viz_23
+    - Viz_24
+    is_mandatory: false
+    is_single_value: false
+    display_name: ""
+  - column:
+    - Column
+    excluded_visualizations:
+    - Viz_23
+    - Viz_24
+    is_mandatory: false
+    is_single_value: false
+    display_name: ""
+  - column:
+    - Has Synonyms
+    excluded_visualizations:
+    - Viz_23
+    - Viz_24
+    is_mandatory: false
+    is_single_value: true
+    display_name: ""
+  layout:
+    tabs:
+    - name: Overview
+      description: ""
+      tiles:
+      - visualization_id: Viz_1
+        x: 0
+        "y": 0
+        height: 2
+        width: 2
+      - visualization_id: Viz_2
+        x: 0
+        "y": 2
+        height: 2
+        width: 2
+      - visualization_id: Viz_4
+        x: 2
+        "y": 2
+        height: 2
+        width: 1
+      - visualization_id: Viz_5
+        x: 0
+        "y": 4
+        height: 4
+        width: 4
+      - visualization_id: Viz_6
+        x: 3
+        "y": 2
+        height: 2
+        width: 1
+      - visualization_id: Viz_7
+        x: 4
+        "y": 0
+        height: 2
+        width: 3
+      - visualization_id: Viz_8
+        x: 7
+        "y": 0
+        height: 2
+        width: 5
+      - visualization_id: Viz_10
+        x: 4
+        "y": 2
+        height: 6
+        width: 8
+      - visualization_id: Viz_16
+        x: 3
+        "y": 8
+        height: 1
+        width: 6
+      - visualization_id: Viz_17
+        x: 2
+        "y": 0
+        height: 2
+        width: 2
+    - name: Dependencies
+      description: ""
+      tiles:
+      - visualization_id: Viz_12
+        x: 0
+        "y": 0
+        height: 9
+        width: 10
+      - visualization_id: Viz_9
+        x: 3
+        "y": 9
+        height: 1
+        width: 6
+      - visualization_id: Viz_13
+        x: 10
+        "y": 0
+        height: 3
+        width: 2
+      - visualization_id: Viz_14
+        x: 10
+        "y": 6
+        height: 3
+        width: 2
+      - visualization_id: Viz_15
+        x: 10
+        "y": 3
+        height: 3
+        width: 2
+    - name: Influencers
+      description: ""
+      tiles:
+      - visualization_id: Viz_3
+        x: 3
+        "y": 0
+        height: 8
+        width: 9
+      - visualization_id: Viz_18
+        x: 0
+        "y": 0
+        height: 2
+        width: 3
+      - visualization_id: Viz_19
+        x: 3
+        "y": 8
+        height: 1
+        width: 6
+      - visualization_id: Viz_20
+        x: 0
+        "y": 2
+        height: 3
+        width: 3
+      - visualization_id: Viz_21
+        x: 0
+        "y": 5
+        height: 3
+        width: 3
+    - name: Appendix
+      description: ""
+      tiles:
+      - visualization_id: Viz_11
+        x: 6
+        "y": 5
+        height: 4
+        width: 6
+      - visualization_id: Viz_22
+        x: 0
+        "y": 0
+        height: 2
+        width: 3
+      - visualization_id: Viz_23
+        x: 9
+        "y": 2
+        height: 2
+        width: 3
+      - visualization_id: Viz_24
+        x: 9
+        "y": 0
+        height: 2
+        width: 3
+      - visualization_id: Viz_25
+        x: 0
+        "y": 5
+        height: 4
+        width: 6
+      - visualization_id: Viz_26
+        x: 3
+        "y": 4
+        height: 1
+        width: 6
+      - visualization_id: Viz_27
+        x: 0
+        "y": 2
+        height: 2
+        width: 3
+      - visualization_id: Viz_28
+        x: 3
+        "y": 0
+        height: 4
+        width: 6
+  views:
+  - view_guid: b2f594b9-6eae-40ea-ab48-cb9390e5dd63
+    name: GTM
+    view_filters:
+    - column:
+      - Worksheet
+      oper: in
+      values:
+      - GTM
+    is_public: true

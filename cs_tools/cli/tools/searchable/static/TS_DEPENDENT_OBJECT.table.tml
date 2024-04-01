@@ -15,6 +15,13 @@ table:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
+  - name: Dependent Is Verified
+    description: Determines whether or not this object has been Verified.
+    db_column_name: IS_VERIFIED
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: BOOL
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.
     db_column_name: CLUSTER_GUID
@@ -94,6 +101,11 @@ table:
     destination:
       name: TS_USER
     "on": "[TS_DEPENDENT_OBJECT::AUTHOR_GUID] = [TS_USER::User GUID] AND [TS_DEPENDENT_OBJECT::CLUSTER_GUID] = [TS_USER::CLUSTER_GUID]"
+    type: INNER
+  - name: TS_DEPENDENT_OBJECT_to_VW_TS_BI_SERVER_AUTHOR
+    destination:
+      name: VW_TS_BI_SERVER_ADVANCED_AUTHOR
+    "on": "[TS_DEPENDENT_OBJECT::AUTHOR_GUID] = [VW_TS_BI_SERVER_ADVANCED_AUTHOR::User GUID] AND [TS_DEPENDENT_OBJECT::CLUSTER_GUID] = [VW_TS_BI_SERVER_ADVANCED_AUTHOR::CLUSTER_GUID]"
     type: INNER
   - name: TS_DEPENDENT_OBJECT_to_TS_METADATA_COLUMN
     destination:
