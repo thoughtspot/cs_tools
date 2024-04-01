@@ -38,9 +38,10 @@ def batched(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, No
         yield batch
 
 
-def anonymize(text: str, *, anonymizer: str = " [dim]{anonymous}[/] ") -> str:
+def anonymize(text: str, *, anonymizer: str = " {anonymous} ") -> str:
     """Replace text with an anonymous value."""
-    return text.replace(getpass.getuser(), anonymizer)
+    text = text.replace(getpass.getuser(), anonymizer)
+    return text
 
 
 def obscure(data: bytes) -> bytes:

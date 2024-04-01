@@ -47,7 +47,7 @@ class DSyncer(Dependency):
         if issubclass(SyncerClass, base.DatabaseSyncer) and self.models is not None:
             conf["configuration"]["models"] = self.models
 
-        log.debug(f"Initializing syncer: {SyncerClass}")
+        log.info(f"Initializing syncer: {SyncerClass}")
         self.__dict__["_syncer"] = SyncerClass(**conf["configuration"])
 
     def __exit__(self, exc_type, exc_value, exc_traceback):

@@ -118,7 +118,7 @@ class CSToolsVirtualEnvironment:
 
     def is_package_installed(self, package: "cs_tools.sync.base.PipRequirement") -> bool:  # noqa: F821
         """Check if a package is installed. This should be called only within CS Tools."""
-        cp = self.pip("list", "--format", "json")
+        cp = self.pip("list", "--format", "json", visible_output=False)
 
         for installed in json.loads(cp.stdout.decode()):
             if installed["name"] == package.requirement.name:

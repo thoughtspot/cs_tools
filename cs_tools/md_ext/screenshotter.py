@@ -11,11 +11,10 @@ from markdown import Markdown
 from markdown.blockprocessors import BlockProcessor
 from markdown.extensions import Extension
 import cs_tools
-import typer
 
 
 @ft.cache
-def _setup_cli() -> typer.Typer:
+def _setup_cli():
     """ """
     from cs_tools.cli import _monkey  # noqa: F401
     from cs_tools.cli.commands import (

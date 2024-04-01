@@ -172,6 +172,9 @@ class MetaConfig(_GlobalModel):
         except urllib.error.URLError:
             log.warning(f"Fetching latest CS Tools release version timed out after {TIMEOUT_AFTER}s")
 
+        except FileNotFoundError:
+            log.debug("Could not save to .meta-config.json")
+
         except Exception as e:
             log.warning(f"Could not fetch release url: {e}")
 

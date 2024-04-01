@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from cs_tools import __version__, errors, validators
+from cs_tools import __version__, datastructures, errors, utils, validators
 from cs_tools.cli import _analytics
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.settings import (
@@ -14,8 +14,10 @@ from cs_tools.updater import cs_tools_venv
 from promptique.menu import Menu
 from promptique.prompts import Confirm, FileInput, Select, UserInput
 from promptique.prompts.select import PromptOption
+from promptique.theme import PromptTheme, ThemeElement
 from promptique.validation import ResponseContext, response_is
 from rich.align import Align
+from rich.style import Style
 from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
@@ -63,7 +65,7 @@ def create(
         try:
             validators.ensure_stringified_url_format.func(ctx.response)
         except pydantic.ValidationError:
-            raise AssertionError("[bold green]{ctx.response or '{empty}'}[/] is not a valid URL.") from None
+            raise AssertionError(f"[bold green]{ctx.response or '{empty}'}[/] is not a valid URL.") from None
         return True
 
     prompts = (
@@ -121,7 +123,18 @@ def create(
         Confirm(id="is_default", prompt="Do you want to make this the default config?", default="No"),
     )
 
-    menu = Menu(*prompts, console=rich_console, intro="[white on blue]cs_tools config create", outro="Complete!")
+    theme = PromptTheme()
+
+    if "Windows" in datastructures.LocalSystemInfo().system:
+        theme.active = ThemeElement(marker="◆", style=Style(color="white", bold=True))
+
+    menu = Menu(
+        *prompts,
+        console=rich_console,
+        intro="[white on blue]cs_tools config create",
+        outro="Complete!",
+        theme=theme,
+    )
 
     #
     # Set up secondary actions
@@ -230,23 +243,20 @@ def create(
 @app.command()
 def modify(
     ctx: typer.Context,
-    config: str = typer.Option(None, help="config file identifier", show_default=False, metavar="NAME"),
-    url: str = typer.Option(None, help="your thoughtspot server", show_default=False),
-    username: str = typer.Option(None, help="username when logging into ThoughtSpot", show_default=False),
-    password: str = typer.Option(
-        None, help="the password you type when using the ThoughtSpot login screen", show_default=False
-    ),
-    secret: str = typer.Option(None, help="the trusted authentication secret key", show_default=False),
-    token: str = typer.Option(None, help="the V2 API bearer token", show_default=False),
+    config: str = typer.Option(None, help="config file identifier", metavar="NAME"),
+    url: str = typer.Option(None, help="your thoughtspot server"),
+    username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
+    password: str = typer.Option(None, help="the password you type when using the ThoughtSpot login screen"),
+    secret: str = typer.Option(None, help="the trusted authentication secret key"),
+    token: str = typer.Option(None, help="the V2 API bearer token"),
     disable_ssl: bool = typer.Option(
-        None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate", show_default=False
+        None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
-    default_org: int = typer.Option(None, help="org ID to sign into by default", show_default=False),
+    default_org: int = typer.Option(None, help="org ID to sign into by default"),
     default: bool = typer.Option(
         None,
         "--default / --remove-default",
         help="whether or not to make this the default configuration",
-        show_default=False,
     ),
 ):
     """
@@ -372,10 +382,15 @@ def check(
 @app.command(no_args_is_help=False)
 def show(
     config: str = typer.Option(None, help="display a particular config", show_default=False, metavar="NAME"),
+    anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
 ):
     """Display the currently saved config files."""
     if config:
         text = cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{config}.toml").read_text()
+
+        if anonymous:
+            text = utils.anonymize(text)
+
         rich_console.print(Syntax(text, "toml", line_numbers=True))
         return 0
 
