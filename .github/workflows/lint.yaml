@@ -1,0 +1,15 @@
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - dev
+
+jobs:
+  ruff:
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chartboost/ruff-action@v1

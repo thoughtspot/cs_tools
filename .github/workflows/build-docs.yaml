@@ -8,35 +8,19 @@ on:
 jobs:
  build:
 
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11"]
-        os: [ubuntu-latest]
     env:
-      DISPLAY: :0
+      CS_TOOLS_THOUGHTSPOT__URL: https://dogfood.thoughtspot.cloud
+      CS_TOOLS_THOUGHTSPOT__USERNAME: FakeUser
+      CS_TOOLS_THOUGHTSPOT__SECRET_KEY: 00000000-0000-0000-0000-000000000000
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      # GitHub Actions is headless, so we need an x-server
-      - name: Setup xvfb (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
-          # start xvfb in the background
-          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+      - name: Set up Python
+        uses: actions/setup-python@v5
 
       - name: Install Python dependencies
         run: pip install -e .[docs]
-
-      - name: Create a CS Tools configuration
-        run: cs_tools config create --config non-prod --host https://my1.thoughtspot.cloud --username cs_tools --password ***** --default --overwrite
 
       - name: Build and Deploy Documentation
         run: mkdocs build
