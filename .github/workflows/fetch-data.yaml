@@ -1,0 +1,37 @@
+name:
+  Extract data with CS Tools.
+
+on:
+  push:
+    branches:
+      - dev
+
+  # schedule:
+  #   # Runs every day at 3:15 AM UTC
+  #   - cron: "15 3 * * *"
+
+jobs:
+  extract_data_from_thoughtspot:
+
+    # Configure Environment Variables for CS Tools configuration
+    env:
+      CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
+      CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
+      CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
+      # CS_TOOLS_TEMP_DIR: ...
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install a specific version of CS Tools
+        run: python -m pip -e .[cli]
+
+      # --config ENV:   tells CS Tools to pull the information from environment variables.
+      - name: Run your CS Tools Command
+        run: "cs_tools config check --config ENV:"
