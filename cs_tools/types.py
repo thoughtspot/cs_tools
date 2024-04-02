@@ -1,21 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, List, Dict, Optional, Union
+from typing import Annotated, Any, Optional
 import logging
-import typing
-import uuid
 import re
+import uuid
 
-from thoughtspot_tml.types import ConnectionMetadata, TMLObject
-from awesomeversion import AwesomeVersion
-import pendulum
 import pydantic
 
+from cs_tools import errors
 from cs_tools._compat import StrEnum, TypedDict
-from cs_tools.errors import CSToolsError
 
 log = logging.getLogger(__name__)
-GUID = typing.cast(uuid.UUID, str)
+GUID = Annotated[str, uuid.UUID]
 
 
 # ======================================================================================================================
@@ -55,7 +51,7 @@ class MetadataObjectSubtype(StrEnum):
 
 
 class MetadataCategory(StrEnum):
-    all = "ALL"
+    all = "ALL"  # noqa: A003
     my = "MY"
     favorite = "FAVORITE"
     requested = "REQUESTED"
@@ -151,13 +147,16 @@ class SecurityPrincipal(TypedDict):
 # REST API V2 input parameter types
 # ======================================================================================================================
 
+
 class DeployType(StrEnum):
     delta = "DELTA"
     full = "FULL"
 
+
 class DeployPolicy(StrEnum):
     all_or_none = "ALL_OR_NONE"
     partial = "PARTIAL"
+
 
 # ======================================================================================================================
 # CS Tools Middleware types
@@ -180,7 +179,7 @@ class TMLSupportedContent(StrEnum):
         return cls[friendly_type]
 
     @staticmethod
-    def type_subtype_to_tml_type(type: str, subtype: str = "") -> TMLSupportedContent:
+    def type_subtype_to_tml_type(metadata_type: str, subtype: str = "") -> TMLSupportedContent:
         """
         Convert a type and subtype to a TMLSupportedContent enum value.  Both type and subtype must be correct.
         :param type: The type of object to convert, e.g. LOGICAL_TABLE
@@ -197,12 +196,14 @@ class TMLSupportedContent(StrEnum):
             ("QUESTION_ANSWER_BOOK", ""): TMLSupportedContent.answer,
         }
 
-        tml_type = mappings.get((type, subtype))
+        tml_type = mappings.get((metadata_type, subtype))
         if not tml_type:
-            raise CSToolsError(f"Unknown type/subtype combination: {type}/{subtype}",
-                               mitigation="Check that the type and subtype are correct.")
+            raise errors.CSToolsCLIError(
+                title=f"Unknown type/subtype combination: {metadata_type}/{subtype}",
+                mitigation="Check that the type and subtype are correct.",
+            )
 
-        return mappings[(type, subtype)]
+        return mappings[(metadata_type, subtype)]
 
 
 class TMLSupportedContentSubtype(StrEnum):
@@ -221,13 +222,12 @@ class TMLSupportedContentSubtype(StrEnum):
         return cls[friendly_type]
 
 
-
 # ======================================================================================================================
 # CS Tools Middleware output types
 # ======================================================================================================================
 
 
-RecordsFormat = List[Dict[str, Any]]
+TableRowsFormat = list[dict[str, Any]]
 # records are typically a metadata header fragment, but not always.
 #
 # [
@@ -243,19 +243,16 @@ RecordsFormat = List[Dict[str, Any]]
 
 
 class TMLAPIResponse(pydantic.BaseModel):
-    guid: Optional[GUID]
+    guid: Optional[GUID] = None
     metadata_object_type: MetadataObjectType
     tml_type_name: str
     name: str
     status_code: str
-    error_messages: List[str] = Optional[List[str]]
+    error_messages: Optional[list[str]] = []
     _full_response: Any = None
 
-    # pydantic model configuration
-    class Config:
-        underscore_attrs_are_private = True
-
-    @pydantic.validator("status_code", pre=True)
+    @pydantic.field_validator("status_code", mode="before")
+    @classmethod
     def _one_of(cls, status: str) -> str:
         ALLOWED = ("OK", "WARNING", "ERROR")
 
@@ -265,8 +262,9 @@ class TMLAPIResponse(pydantic.BaseModel):
 
         return status.upper()
 
-    @pydantic.validator("error_messages", pre=True)
-    def _parse_errors(cls, error_string: str) -> List[str]:
+    @pydantic.field_validator("error_messages", mode="before")
+    @classmethod
+    def _parse_errors(cls, error_string: str) -> list[str]:
         if error_string is None:
             return []
 
@@ -285,92 +283,16 @@ class MetadataParent(pydantic.BaseModel):
     parent_guid: GUID
     parent_name: str
     connection: GUID
-    visualization_guid: GUID = None  # viz_guid
-    visualization_index: str = Optional[str]  # Viz_N
+    visualization_guid: Optional[GUID] = None  # viz_guid
+    visualization_index: Optional[str] = None  # Viz_N
 
     def __eq__(self, other):
         return (self.parent_guid, self.visualization_guid) == (other.parent_guid, other.visualization_guid)
 
 
-# ======================================================================================================================
-# CS Tools Internal types
-# ======================================================================================================================
+class ThoughtSpotNotificationBanner(pydantic.BaseModel):
+    """Represents the notification banner shown across ThoughtSpot."""
 
-
-class ThoughtSpotPlatform(pydantic.BaseModel):
-    version: AwesomeVersion
-    deployment: str
-    url: str
-    timezone: pendulum._Timezone
-    cluster_name: str
-    cluster_id: str
-
-    @pydantic.validator("version", pre=True)
-    def _strip_patches(cls, version: str) -> str:
-        major, minor, patch, *extra = version.split(".")
-        return AwesomeVersion(f"{major}.{minor}.{patch}")
-
-    @pydantic.validator("deployment", pre=True)
-    def _one_of(cls, deployment: str) -> str:
-        if deployment.lower() not in ("software", "cloud"):
-            raise ValueError(f"'deployment' must be one of 'software' or 'cloud', got '{deployment}'")
-        return deployment.lower()
-
-    @pydantic.validator("timezone", pre=True)
-    def _get_tz(cls, tz_name: str) -> pendulum._Timezone:
-        timezone = pendulum.timezone(tz_name)
-
-        if timezone is None:
-            log.warning(f"could not retrieve timezone for '{tz_name}'")
-
-        return timezone
-
-    @classmethod
-    def from_api_v1_session_info(cls, info: Dict[str, Any]) -> ThoughtSpotPlatform:
-        config_info = info.get("configInfo")
-
-        data = {
-            "version": info["releaseVersion"],
-            "deployment": "cloud" if config_info["isSaas"] else "software",
-            "url": config_info.get("emailConfig", {}).get("welcomeEmailConfig", {}).get("getStartedLink", "NOT SET"),
-            "timezone": info["timezone"],
-            "cluster_name": config_info["selfClusterName"],
-            "cluster_id": config_info["selfClusterId"],
-        }
-
-        version = data["version"]
-        version_parts = version.split(".")
-        if len(version_parts) == 1:
-            version += ".0.0"
-        elif len(version_parts) == 2:
-            version += ".0"
-
-        data["version"] = version
-
-        return cls(**data)
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class LoggedInUser(pydantic.BaseModel):
-    guid: GUID
-    username: str
-    display_name: str
-    email: str
-    privileges: List[Union[GroupPrivilege, str]]
-
-    @classmethod
-    def from_api_v1_session_info(cls, info: Dict[str, Any]) -> LoggedInUser:
-        data = {
-            "guid": info["userGUID"],
-            "username": info["userName"],
-            "display_name": info["userDisplayName"],
-            "email": info["userEmail"],
-            "privileges": info["privileges"],
-        }
-
-        return cls(**data)
-
-    class Config:
-        arbitrary_types_allowed = True
+    message: str
+    log_level: Annotated[str, pydantic.StringConstraints(to_lower=True)] = pydantic.Field(alias="type")
+    enabled: bool

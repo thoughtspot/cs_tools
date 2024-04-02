@@ -1,9 +1,11 @@
-from typing import List, Dict, Any
-import pathlib
-import logging
+from __future__ import annotations
 
-from pydantic.dataclasses import dataclass
+from typing import Any
+import logging
+import pathlib
+
 from google.cloud import bigquery
+from pydantic.dataclasses import dataclass
 import sqlalchemy as sa
 
 from . import sanitize
@@ -59,7 +61,7 @@ class BigQuery:
     def name(self) -> str:
         return "bigquery"
 
-    def load(self, table: str) -> List[Dict[str, Any]]:
+    def load(self, table: str) -> list[dict[str, Any]]:
         t = self.metadata.tables[table]
 
         with self.cnxn.begin():
@@ -67,7 +69,7 @@ class BigQuery:
 
         return [dict(_) for _ in r]
 
-    def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, table: str, *, data: list[dict[str, Any]]) -> None:
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return
@@ -95,4 +97,4 @@ class BigQuery:
         d = sanitize.clean_for_bq(data)
 
         cfg = bigquery.LoadJobConfig(schema=t.schema)
-        job = self.bq.load_table_from_json(d, t, job_config=cfg)
+        self.bq.load_table_from_json(d, t, job_config=cfg)

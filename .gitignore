@@ -34,6 +34,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# ignore project files
+*.sublime-*
+*.vscode*
 
 # ignore virtualization
 .python-version
@@ -46,6 +49,7 @@ docs/terminal-screenshots/*.svg
 
 # test data
 testtml/*
+tests/.data/generated/*
 
 # keep mandatory empty directories
 !.gitdontignore

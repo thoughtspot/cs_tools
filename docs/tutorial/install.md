@@ -10,7 +10,7 @@ __ThoughtSpot__ cluster through the [REST APIs][ts-rest-apis].
 
 ??? warning "Don't have Python installed yet?"
 
-    __Python 3.7 or greater is__ __required__{ .fc-red } __to install CS Tools!__
+    __Python 3.9 or greater is__ __required__{ .fc-red } __to install CS Tools!__
 
     === ":fontawesome-brands-windows: Windows"
         If you've never worked directly with __Python__ before, chances are it is not installed on your computer.
@@ -21,8 +21,8 @@ __ThoughtSpot__ cluster through the [REST APIs][ts-rest-apis].
         If you do not have python installed, or your version is not greater than the above version, you can install it
         by going to Python's [downloads website][python].
 
-        :rotating_light: __Make sure you check__{ .fc-purple } __Customize Installation__{ .fc-orange } __and__{ .fc-purple } __add Python
-        to your__{ .fc-orange } `PATH`. :rotating_light:
+        :rotating_light: __During Install, Make sure you check__{ .fc-purple } __Customize Installation__{ .fc-orange }
+        __and__{ .fc-purple } __add Python to your__{ .fc-orange } `PATH`. :rotating_light:
 
     === ":fontawesome-brands-apple: Mac"
         More than likely, you have multiple versions of Python bundled with your distribution.
@@ -49,17 +49,6 @@ __ThoughtSpot__ cluster through the [REST APIs][ts-rest-apis].
         it's acceptable to install multiple versions on this hardware.
 
         One alternative for installing multiple system-level python distributions is [`pyenv`][pyenv].
-
-    === ":material-application-braces-outline: ThoughtSpot cluster"
-        More than likely, you are good to go! Python is installed with every cluster configuration.
-
-        __If you are on__{ .fc-red } __ThoughtSpot-managed CentOS__{ .fc-black } __and installed__{ .fc-red }
-        __ThoughtSpot__{ .fc-black } __prior to Software version 8.4.1__{ .fc-red }, <br/>then you may need to upgrade
-        your system python version.
-
-        __ThoughtSpot__ provides instructions on [how to do this][ts-upgrade-python]. 
-
-        __This incurs downtime event.__{ .fc-red }
 
 ---
 
@@ -151,6 +140,50 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 
         If you see this error in your terminal, try using `python` instead of `python3` above.
 
+=== ":simple-serverless: Serverless"
+
+    If you want to run CS Tools from a serverless environment, you can skip installing from the bootstrapper and instead
+    install the python package directly.
+
+    __Here are some examples.__{ .fc-green }
+
+    === ":simple-githubactions: GitHub Actions"
+        `actions-workflow.yaml`
+        ```yaml
+        name:
+          Extract data with CS Tools.
+
+        on:
+          schedule:
+            # Runs every day at 3:15 AM UTC
+            - cron: "15 3 * * *"
+
+        jobs:
+          extract_data_from_thoughtspot:
+
+            # Configure Environment Variables for CS Tools configuration
+            env:
+              CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
+              CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
+              CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
+              # CS_TOOLS_TEMP_DIR: ...
+
+            runs-on: ubuntu-latest
+            steps:
+
+            - name: Set up Python 3.12
+              uses: actions/setup-python@v4
+              with:
+                python-version: 3.12
+
+            - name: Install a specific version of CS Tools
+              run: python -m pip install https://github.com/thoughtspot/cs_tools/archive/v1.5.0.zip[cli]
+
+            # --config ENV:   tells CS Tools to pull the information from environment variables.
+            - name: Run your CS Tools Command
+              run: "cs_tools config check --config ENV:"
+        ```
+
 
 ??? tip "Upgrading from a recent version?"
 
@@ -159,11 +192,11 @@ Follow the steps below to get __CS Tools__ installed on your platform.
     ~cs~tools ../.. cs_tools self upgrade --help
 
 
-Try running __CS Tools__ by typing..
+<h2 class="fc-purple">Try running <b>CS Tools</b> by typing..</h2>
 
 ~cs~tools ../.. cs_tools self info --anonymous
 
-!!! info "Where can I reach out for help?"
+!!! warning "Where can I reach out for help?"
 
     __CS Tools__ is maintained by our __Solutions Consultants__ with contributions from you, our customers!
 
@@ -186,7 +219,6 @@ __Read on to the next section__ to learn about how to set up a configuration fil
 
 
 [ts-rest-apis]: https://developers.thoughtspot.com/docs/?pageid=rest-apis
-[ts-upgrade-python]: https://docs.thoughtspot.com/software/latest/python-upgrade#_upgrade_your_python_version
 [gh-discussions]: https://github.com/thoughtspot/cs_tools/discussions
 [pyenv]: https://github.com/pyenv/pyenv
 [python]: https://www.python.org/downloads/

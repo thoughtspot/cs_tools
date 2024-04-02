@@ -1,25 +1,24 @@
-from typing import Dict, List
-import itertools as it
+from __future__ import annotations
+
 import datetime as dt
+import itertools as it
+import json
 import logging
 import pathlib
-import json
 
-import typer
 import httpx
+import typer
 
-from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.api._utils import SYSTEM_USERS
+from cs_tools.cli.dependencies import thoughtspot
+from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import MetadataType, MultipleChoiceType, SyncerProtocolType
+from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.errors import CSToolsError
 from cs_tools.updater import cs_tools_venv
-from cs_tools.cli.ux import rich_console
-from cs_tools.cli.ux import CSToolsApp
-from cs_tools.cli.dependencies.syncer import DSyncer
 
-from . import _extended_rest_api_v1
-from . import layout
-from . import work
+from . import _extended_rest_api_v1, layout, work
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(help="""Manage Users and Groups in bulk.""")
@@ -32,20 +31,19 @@ def transfer(
     to_username: str = typer.Option(..., "--to", help="username to transfer content to"),
     tags: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="if specified, only move content marked with one or more of these tags",
     ),
-    metadata_types: List[MetadataType] = typer.Option(
+    metadata_types: list[MetadataType] = typer.Option(
         None,
-        custom_type=MetadataType(to_system_types=True, include_subtype=True),
+        click_type=MetadataType(to_system_types=True, include_subtype=True),
         help="if specified, only move specific types of objects",
     ),
     guids: str = typer.Option(
         None,
-        custom_type=MultipleChoiceType(),
+        click_type=MultipleChoiceType(),
         help="if specified, only move specific objects",
     ),
-    include_dataflow: bool = typer.Option(False, "--include-dataflow", help="whether or not to include DataFlow jobs"),
 ):
     """
     Transfer ownership of objects from one User to another.
@@ -66,7 +64,7 @@ def transfer(
         guids_to_transfer = set()
 
         with tasks["gather_content"]:
-            if (tags or guids or metadata_types):
+            if tags or guids or metadata_types:
                 include = None if not metadata_types else [t[0] for t in metadata_types]
                 subtype = None if not metadata_types else [t[1] for t in metadata_types if t[1] is not None]
                 content = ts.metadata.find(author=from_username, include_types=include, include_subtypes=subtype)
@@ -84,7 +82,7 @@ def transfer(
         with tasks["transfer_ownership"]:
             extra = {}
 
-            if (tags or guids or metadata_types):
+            if tags or guids or metadata_types:
                 if not guids_to_transfer:
                     rich_console.log(
                         f"No content found for [b blue]{from_username}[/] with [b blue]--tags[/] or "
@@ -95,10 +93,13 @@ def transfer(
                 extra["object_guids"] = list(guids_to_transfer)
 
             try:
-                ts.api.user_transfer_ownership(from_username=from_username, to_username=to_username, **extra)
+                ts.api.v1.user_transfer_ownership(from_username=from_username, to_username=to_username, **extra)
             except httpx.HTTPStatusError as e:
                 log.debug(e, exc_info=True)
-                raise typer.Exit(1)
+                raise CSToolsError(
+                    title=f"Could not transfer ownership from {from_username} to {to_username}",
+                    reason="See logs for additional details..",
+                ) from None
 
             rich_console.log(
                 f"Transferred {len(guids_to_transfer) or 'all'} objects from [b blue]{from_username}[/] to "
@@ -108,9 +109,7 @@ def transfer(
         if ts.platform.deployment == "software":
             with tasks["transfer_dataflow"]:
                 _extended_rest_api_v1.dataflow_transfer_ownership(
-                    ts.api,
-                    from_username=from_username,
-                    to_username=to_username
+                    ts.api.v1, from_username=from_username, to_username=to_username
                 )
 
 
@@ -121,11 +120,13 @@ def rename(
     to_username: str = typer.Option(None, "--to", help="new username"),
     syncer: DSyncer = typer.Option(
         None,
-        custom_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
-        rich_help_panel="Syncer Options"
+        rich_help_panel="Syncer Options",
     ),
-    remapping: str = typer.Option(None, help="directive to find usernames to sync at", rich_help_panel="Syncer Options"),
+    remapping: str = typer.Option(
+        None, help="directive to find usernames to sync at", rich_help_panel="Syncer Options"
+    ),
 ):
     """
     Rename Users from one username to another.
@@ -154,7 +155,7 @@ def rename(
 
     if syncer is None:
         users_map[from_username] = to_username
-    
+
     elif remapping is None:
         rich_console.print("[red]you must provide a syncer directive to --remapping")
         raise typer.Exit(-1)
@@ -172,7 +173,7 @@ def rename(
         failed = []
 
         with tasks["gather_users"]:
-            responses: Dict[str, httpx.Response] = {}
+            responses: dict[str, httpx.Response] = {}
 
             for from_username in users_map:
                 if from_username in SYSTEM_USERS:
@@ -180,8 +181,8 @@ def rename(
                     continue
 
                 try:
-                    r = ts.api.user_read(username=from_username)
-                except httpx.HTTPStatusError as e:
+                    r = ts.api.v1.user_read(username=from_username)
+                except httpx.HTTPStatusError:
                     log.error(f"failed to find user [b blue]{from_username}[/]")
                     log.debug("detailed info", exc_info=True)
                     continue
@@ -189,7 +190,7 @@ def rename(
                 responses[from_username] = r
 
             # back up the state of users
-            filename = f"user-rename-{dt.datetime.now()::%Y%m%dT%H%M%S}"
+            filename = f"user-rename-{dt.datetime.now(tz=dt.timezone.utc)::%Y%m%dT%H%M%S}"
             with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
                 json.dump([r.text for r in responses], f, indent=4)
 
@@ -199,7 +200,7 @@ def rename(
                 user_info["header"]["name"] = users_map[from_username]
 
                 try:
-                    ts.api.user_update(user_guid=user_info["header"]["id"], content=user_info)
+                    ts.api.v1.user_update(user_guid=user_info["header"]["id"], content=user_info)
                 except httpx.HTTPStatusError:
                     header = user_info["header"]
                     user = f"{header['id']} [b blue]{header['displayName']}[/] ({from_username})"
@@ -220,30 +221,22 @@ def sync(
     ),
     new_user_password: str = typer.Option(None, help="password to set for all newly created users"),
     remove_deleted: bool = typer.Option(
-        False,
-        "--remove-deleted",
-        help="delete users and groups not found after loading from the syncer"
+        False, "--remove-deleted", help="delete users and groups not found after loading from the syncer"
     ),
     syncer: DSyncer = typer.Option(
         ...,
-        custom_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(),
         help="protocol and path for options to pass to the syncer",
-        rich_help_panel="Syncer Options"
+        rich_help_panel="Syncer Options",
     ),
     users: str = typer.Option(
-        "ts_auth_sync_users",
-        help="directive to find users to sync at",
-        rich_help_panel="Syncer Options"
+        "ts_auth_sync_users", help="directive to find users to sync at", rich_help_panel="Syncer Options"
     ),
     groups: str = typer.Option(
-        "ts_auth_sync_groups",
-        help="directive to find groups to sync at",
-        rich_help_panel="Syncer Options"
+        "ts_auth_sync_groups", help="directive to find groups to sync at", rich_help_panel="Syncer Options"
     ),
     associations: str = typer.Option(
-        "ts_auth_sync_xref",
-        help="directive to find associations to sync at",
-        rich_help_panel="Syncer Options"
+        "ts_auth_sync_xref", help="directive to find associations to sync at", rich_help_panel="Syncer Options"
     ),
     export: bool = typer.Option(
         False,
@@ -254,7 +247,7 @@ def sync(
         False,
         "--create-empty",
         help="write the structure of principal data to your syncer without any data",
-        rich_help_panel="Syncer Options"
+        rich_help_panel="Syncer Options",
     ),
 ):
     """
@@ -283,7 +276,7 @@ def sync(
     # ==================================================================================================================
     # EXPORT MODE
     # ==================================================================================================================
-    
+
     tasks = [
         ("export_principals", "Getting existing Security Strategy"),
         ("dump_principals", f"Writing Security Strategy to {syncer.name}"),
@@ -307,14 +300,13 @@ def sync(
     # ==================================================================================================================
     # IMPORT MODE
     # ==================================================================================================================
-    
+
     tasks = [
         ("load_principals", f"Reading Security Strategy from {syncer.name}"),
         ("sync_principals", "Syncing Security Strategy to ThoughtSpot"),
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
-
         with tasks["load_principals"]:
             u = syncer.load(users)
             g = syncer.load(groups)
@@ -325,12 +317,12 @@ def sync(
 
             # back up the state of users
             u, g, x = work._get_current_security(ts)
-            filename = f"user-sync-{dt.datetime.now():%Y%m%dT%H%M%S}"
+            filename = f"user-sync-{dt.datetime.now(tz=dt.timezone.utc):%Y%m%dT%H%M%S}"
             with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
                 json.dump({"users": u, "groups": g, "memberships": x}, f, indent=4)
 
             try:
-                r = ts.api.user_sync(
+                r = ts.api.v1.user_sync(
                     principals=principals,
                     apply_changes=apply_changes,
                     remove_deleted=remove_deleted,
@@ -343,7 +335,7 @@ def sync(
 
                 if "password" in err.casefold():
                     log.warning(f"{err.strip()}, did you use [b cyan]--new-user-password[/]?")
-                    raise typer.Exit(0)
+                    raise typer.Exit(0) from None
 
                 raise e from None
 
@@ -359,7 +351,6 @@ def sync(
         rows = it.zip_longest(create, update, delete)
 
         for idx, row in enumerate(rows, start=1):
-
             if idx < 10:
                 centered_table.renderable.add_row(*row)
             elif idx == 10:

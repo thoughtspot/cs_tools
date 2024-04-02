@@ -1,16 +1,43 @@
-from typing import Optional, List
+from __future__ import annotations
+
+from typing import Any, Optional
 import datetime as dt
 import logging
 
-from pydantic.datetime_parse import parse_datetime
-from pydantic import validator
-from sqlmodel import SQLModel, Field
+from sqlalchemy.schema import Column
+from sqlalchemy.types import BigInteger
+from sqlmodel import Field
+import pydantic
+
+from cs_tools import validators
+from cs_tools.datastructures import ValidatedSQLModel
 
 log = logging.getLogger(__name__)
 
 
-class User(SQLModel, table=True):
+class Cluster(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_cluster"
+    cluster_guid: str = Field(primary_key=True)
+    url: validators.AnyHttpURLStr
+    timezone: str
+
+
+class Org(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_org"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(sa_column=Column(BigInteger, autoincrement=False, primary_key=True))
+    name: str
+    description: Optional[str]
+
+    @pydantic.field_validator("description", mode="before")
+    @classmethod
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
+
+
+class User(ValidatedSQLModel, table=True):
     __tablename__ = "ts_user"
+    cluster_guid: str = Field(primary_key=True)
     user_guid: str = Field(primary_key=True)
     username: str
     email: Optional[str]
@@ -20,30 +47,16 @@ class User(SQLModel, table=True):
     modified: dt.datetime
     user_type: str
 
-    @validator("created", "modified", pre=True)
-    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
-        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
-
+    @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
-    def from_api_v1(cls, data) -> "User":
-        """
-        Takes input from /tspublic/v1/user.
-        """
-        data = {
-            "user_guid": data["header"]["id"],
-            "username": data["header"]["name"],
-            "email": data["userContent"]["userProperties"].get("mail"),
-            "display_name": data["header"]["displayName"],
-            "sharing_visibility": data["visibility"],
-            "created": data["header"]["created"],
-            "modified": data["header"]["modified"],
-            "user_type": data["type"],
-        }
-        return cls(**data)
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        return validators.ensure_datetime_is_utc.func(value)
 
 
-class Group(SQLModel, table=True):
+class Group(ValidatedSQLModel, table=True):
     __tablename__ = "ts_group"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
     group_guid: str = Field(primary_key=True)
     group_name: str
     description: Optional[str]
@@ -53,47 +66,42 @@ class Group(SQLModel, table=True):
     modified: dt.datetime
     group_type: str
 
-    @validator("created", "modified", pre=True)
-    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
-        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
-
+    @pydantic.field_validator("description", mode="before")
     @classmethod
-    def from_api_v1(cls, data) -> "Group":
-        data = {
-            "group_guid": data["header"]["id"],
-            "group_name": data["header"]["name"],
-            "description": data["header"].get("description"),
-            "display_name": data["header"]["displayName"],
-            "sharing_visibility": data["visibility"],
-            "created": data["header"]["created"],
-            "modified": data["header"]["modified"],
-            "group_type": data["type"],
-        }
-        return cls(**data)
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
+
+    @pydantic.field_validator("created", "modified", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        return validators.ensure_datetime_is_utc.func(value)
 
 
-class GroupPrivilege(SQLModel, table=True):
+class GroupPrivilege(ValidatedSQLModel, table=True):
     __tablename__ = "ts_group_privilege"
+    cluster_guid: str = Field(primary_key=True)
     group_guid: str = Field(primary_key=True)
     privilege: str = Field(primary_key=True)
 
-    @classmethod
-    def from_api_v1(cls, data) -> List["GroupPrivilege"]:
-        return [cls(group_guid=data["header"]["id"], privilege=p) for p in data["privileges"]]
+
+class OrgMembership(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_xref_org"
+    cluster_guid: str = Field(primary_key=True)
+    user_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
 
 
-class XREFPrincipal(SQLModel, table=True):
+class GroupMembership(ValidatedSQLModel, table=True):
     __tablename__ = "ts_xref_principal"
+    cluster_guid: str = Field(primary_key=True)
     principal_guid: str = Field(primary_key=True)
     group_guid: str = Field(primary_key=True)
 
-    @classmethod
-    def from_api_v1(cls, data) -> List["XREFPrincipal"]:
-        return [cls(principal_guid=data["header"]["id"], group_guid=g) for g in data["assignedGroups"]]
 
-
-class Tag(SQLModel, table=True):
+class Tag(ValidatedSQLModel, table=True):
     __tablename__ = "ts_tag"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
     tag_guid: str = Field(primary_key=True)
     tag_name: str
     author_guid: str
@@ -101,24 +109,36 @@ class Tag(SQLModel, table=True):
     modified: dt.datetime
     color: Optional[str]
 
-    @validator("created", "modified", pre=True)
-    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
-        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
-
+    @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
-    def from_api_v1(cls, data) -> List["Tag"]:
-        return cls(
-            tag_guid=data["id"],
-            tag_name=data["name"],
-            color=data.get("clientState", {}).get("color"),
-            author_guid=data["author"],
-            created=data["created"],
-            modified=data["modified"],
-        )
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        return validators.ensure_datetime_is_utc.func(value)
 
 
-class MetadataObject(SQLModel, table=True):
+class DataSource(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_data_source"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
+    data_source_guid: str = Field(primary_key=True)
+    dbms_type: str
+    name: str
+    description: Optional[str]
+
+    @pydantic.field_validator("description", mode="before")
+    @classmethod
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
+
+    @pydantic.field_validator("dbms_type", mode="before")
+    @classmethod
+    def clean_dbms_type(cls, value: Any) -> str:
+        return "FALCON" if value == "DEFAULT" else value.removeprefix("RDBMS_")
+
+
+class MetadataObject(ValidatedSQLModel, table=True):
     __tablename__ = "ts_metadata_object"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(primary_key=True)
     object_guid: str = Field(primary_key=True)
     name: str
     description: Optional[str]
@@ -127,28 +147,24 @@ class MetadataObject(SQLModel, table=True):
     modified: dt.datetime
     object_type: str
     object_subtype: Optional[str]
+    data_source_guid: Optional[str]
+    is_sage_enabled: bool
+    is_verified: Optional[bool]
 
-    @validator("created", "modified", pre=True)
-    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
-        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
-
+    @pydantic.field_validator("description", mode="before")
     @classmethod
-    def from_api_v1(cls, data) -> "MetadataObject":
-        data = {
-            "object_guid": data["id"],
-            "name": data["name"],
-            "description": data.get("description"),
-            "author_guid": data["author"],
-            "created": data["created"],
-            "modified": data["modified"],
-            "object_type": data["metadata_type"],
-            "object_subtype": data.get("type", None),
-        }
-        return cls(**data)
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
+
+    @pydantic.field_validator("created", "modified", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        return validators.ensure_datetime_is_utc.func(value)
 
 
-class MetadataColumn(SQLModel, table=True):
+class MetadataColumn(ValidatedSQLModel, table=True):
     __tablename__ = "ts_metadata_column"
+    cluster_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
     object_guid: str
     column_name: str
@@ -165,37 +181,41 @@ class MetadataColumn(SQLModel, table=True):
     format_pattern: Optional[str]
     currency_type: Optional[str]
     attribution_dimension: bool
-    spotiq_preference: str
+    spotiq_preference: bool
     calendar_type: Optional[str]
+    # custom_sort: ... ???
     is_formula: bool
 
+    @pydantic.field_validator("description", mode="before")
     @classmethod
-    def from_api_v1(cls, data) -> "MetadataColumn":
-        return cls(**data)
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
+
+    @pydantic.field_validator("spotiq_preference", mode="before")
+    @classmethod
+    def cast_default_exclude_to_bool(cls, value: Any) -> bool:
+        return value == "DEFAULT"
 
 
-class ColumnSynonym(SQLModel, table=True):
+class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
+    """Representation of a Table's column's synonym."""
+
     __tablename__ = "ts_column_synonym"
+    cluster_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
     synonym: str = Field(primary_key=True)
 
-    @classmethod
-    def from_api_v1(cls, data) -> "ColumnSynonym":
-        return [cls(column_guid=data["column_guid"], synonym=s) for s in data.get("synonyms", [])]
 
-
-class TaggedObject(SQLModel, table=True):
+class TaggedObject(ValidatedSQLModel, table=True):
     __tablename__ = "ts_tagged_object"
+    cluster_guid: str = Field(primary_key=True)
     object_guid: str = Field(primary_key=True)
     tag_guid: str = Field(primary_key=True)
 
-    @classmethod
-    def from_api_v1(cls, data) -> List["TaggedObject"]:
-        return [cls(object_guid=data["id"], tag_guid=t["id"]) for t in data["tags"]]
 
-
-class DependentObject(SQLModel, table=True):
+class DependentObject(ValidatedSQLModel, table=True):
     __tablename__ = "ts_dependent_object"
+    cluster_guid: str = Field(primary_key=True)
     dependent_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
     name: str
@@ -204,28 +224,23 @@ class DependentObject(SQLModel, table=True):
     created: dt.datetime
     modified: dt.datetime
     object_type: str
+    object_subtype: Optional[str]
+    is_verified: Optional[bool]
 
-    @validator("created", "modified", pre=True)
-    def _naive_timestamp(cls, timestamp: int) -> dt.datetime:
-        return parse_datetime(timestamp).replace(microsecond=0, tzinfo=None)
-
+    @pydantic.field_validator("description", mode="before")
     @classmethod
-    def from_api_v1(cls, data) -> "DependentObject":
-        data = {
-            "dependent_guid": data["id"],
-            "column_guid": data["parent_guid"],
-            "name": data["name"],
-            "description": data.get("description"),
-            "author_guid": data["author"],
-            "created": data["created"],
-            "modified": data["modified"],
-            "object_type": data["type"],
-        }
-        return cls(**data)
+    def remove_leading_trailing_spaces(cls, value: Any) -> str:
+        return None if value is None else value.strip()
+
+    @pydantic.field_validator("created", "modified", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        return validators.ensure_datetime_is_utc.func(value)
 
 
-class SharingAccess(SQLModel, table=True):
+class SharingAccess(ValidatedSQLModel, table=True):
     __tablename__ = "ts_sharing_access"
+    cluster_guid: str = Field(primary_key=True)
     sk_dummy: str = Field(
         primary_key=True,
         sa_column_kwargs={"comment": "shared_to_* is a composite PK, but can be nullable, so we need a dummy"},
@@ -236,29 +251,20 @@ class SharingAccess(SQLModel, table=True):
     permission_type: str
     share_mode: str
 
-    @classmethod
-    def from_api_v1(cls, data) -> "SharingAccess":
-        PK = (data["object_guid"], data.get("shared_to_user_guid", "NULL"), data.get("shared_to_group_guid", "NULL"))
 
-        data = {
-            "sk_dummy": "-".join(PK),
-            "object_guid": data["object_guid"],
-            "shared_to_user_guid": data.get("shared_to_user_guid", None),
-            "shared_to_group_guid": data.get("shared_to_group_guid", None),
-            "permission_type": data["permission_type"],
-            "share_mode": data["share_mode"],
-        }
-
-        return cls(**data)
+# class SecurityLogs(ValidatedSQLModel, table=True):
+#     __tablename__ = "ts_security_logs"
 
 
-class BIServer(SQLModel, table=True):
+class BIServer(ValidatedSQLModel, table=True):
     __tablename__ = "ts_bi_server"
+    cluster_guid: str = Field(primary_key=True)
     sk_dummy: str = Field(primary_key=True)
+    org_id: int = 0
     incident_id: str
-    timestamp: Optional[dt.datetime]
-    url: str
-    http_response_code: Optional[str]
+    timestamp: dt.datetime
+    url: Optional[str]
+    http_response_code: Optional[int]
     browser_type: Optional[str]
     browser_version: Optional[str]
     client_type: Optional[str]
@@ -268,17 +274,51 @@ class BIServer(SQLModel, table=True):
     user_id: Optional[str]
     user_action: Optional[str]
     query_text: Optional[str]
-    response_size: Optional[int]
-    latency_us: Optional[int]
+    response_size: Optional[int] = Field(sa_column=Column(BigInteger))
+    latency_us: Optional[int] = Field(sa_column=Column(BigInteger))
     impressions: Optional[float]
+
+    @pydantic.field_validator("timestamp", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        return validators.ensure_datetime_is_utc.func(value)
+
+    @pydantic.field_validator("client_type", "user_action", mode="after")
+    @classmethod
+    def ensure_is_case_sensitive_thoughtspot_enum_value(cls, value: Optional[str]) -> Optional[str]:
+        # Why not Annotated[str, pydantic.StringContraints(to_upper=True)] ?
+        # sqlmodel#67: https://github.com/tiangolo/sqlmodel/issues/67
+        return None if value is None else value.upper()
+
+    @pydantic.field_validator("url", "browser_type", "browser_version", mode="after")
+    @classmethod
+    def ensure_is_uniform_lowered_value(cls, value: Optional[str]) -> Optional[str]:
+        # Why not Annotated[str, pydantic.StringContraints(to_lower=True)] ?
+        # sqlmodel#67: https://github.com/tiangolo/sqlmodel/issues/67
+        return None if value is None else value.lower()
+
+    @pydantic.field_serializer("query_text")
+    def export_reserved_characters_are_escaped(self, query_text: Optional[str]) -> Optional[str]:
+        if query_text is None:
+            return query_text
+        reserved_characters = ("\\",)
+
+        for character in reserved_characters:
+            query_text = query_text.replace(character, f"\\{character}")
+
+        return query_text
 
 
 METADATA_MODELS = [
+    Cluster,
+    Org,
     User,
+    OrgMembership,
     Group,
     GroupPrivilege,
-    XREFPrincipal,
+    GroupMembership,
     Tag,
+    DataSource,
     MetadataObject,
     MetadataColumn,
     ColumnSynonym,

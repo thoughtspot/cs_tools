@@ -1,0 +1,5 @@
+{
+    "name": "trino",
+    "syncer_class": "Trino",
+    "requirements": ["trino[sqlalchemy] == 0.327.0"]
+}

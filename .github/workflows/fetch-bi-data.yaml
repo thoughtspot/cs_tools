@@ -1,0 +1,48 @@
+name:
+  Extract data with CS Tools.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs every day at 5:15 AM UTC
+    - cron: "15 5 * * *"
+
+jobs:
+  extract_data_from_thoughtspot:
+
+    # Configure Environment Variables for CS Tools configuration
+    env:
+      CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
+      CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
+      CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
+      # CS_TOOLS_TEMP_DIR: ...
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get 7 days ago
+        id: days_ago_7
+        run: |
+          DAYS_AGO=7
+          DATE=$(date -d "-$DAYS_AGO days" +'%Y-%m-%d')
+          echo "days_ago_5=$DATE" >> $GITHUB_ENV
+
+      - name: Get 1 days ago
+        id: days_ago_1
+        run: |
+          DAYS_AGO=1
+          DATE=$(date -d "-$DAYS_AGO days" +'%Y-%m-%d')
+          echo "days_ago_1=$DATE" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install a specific version of CS Tools
+        run: python -m pip install -e .[cli]
+
+      # --config ENV:   tells CS Tools to pull the information from environment variables.
+      - name: Grab N-7 to N-1 days of BI Server Data
+        run: "cs_tools tools seachable bi-server --from-date ${{ env.days_ago_7 }} --to-date ${{ env.days_ago_1 }} --syncer ${{ secrets.SYNCER_DECLARATIVE_STRING }} --config ENV:"

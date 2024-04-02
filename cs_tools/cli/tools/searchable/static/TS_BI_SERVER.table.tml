@@ -1,26 +1,50 @@
-guid: 3a60f1f3-e6a8-4e13-95e5-0484ef766497
+guid: 95901c39-5987-4631-9d5d-d4ed6b73c2b1
 table:
   name: TS_BI_SERVER
+  description: "TS: BI Server is an event history. Metadata (Answers, Liveboards, Users, Orgs) exists at the time of recording, but may become deleted as time progresses so we LEFT OUTER JOIN to all other objects. TS_CLUSTER is a CS Tools-maintained field and is not vulnerable to the same issue."
   db: GTM_DB
-  schema: CS_TOOLS
+  schema: CS_TOOLS_V150
   db_table: TS_BI_SERVER
   connection:
     name: CS Tools
-    fqn: 8ac29e17-fe9f-4efd-99ac-8e8059b72c89
   columns:
+  - name: CLUSTER_GUID
+    description: This column is only used for JOINs.
+    db_column_name: CLUSTER_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: VARCHAR
+  - name: ORG_ID
+    description: This column is only used for JOINs.
+    db_column_name: ORG_ID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: INT64
   - name: SK_DUMMY
+    description: This column is only used for uniqueness.
     db_column_name: SK_DUMMY
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
     db_column_properties:
       data_type: VARCHAR
-  - name: INCIDENT_ID
+  - name: Incident ID
+    description: Unique ID of the event
     db_column_name: INCIDENT_ID
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
     db_column_properties:
       data_type: VARCHAR
-  - name: TIMESTAMP
+  - name: Timestamp
+    description: Datetime of when the action took place
     db_column_name: TIMESTAMP
     properties:
       column_type: ATTRIBUTE
@@ -28,66 +52,99 @@ table:
     db_column_properties:
       data_type: DATE_TIME
   - name: URL
+    description: API endpoint called as part of the event
     db_column_name: URL
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
     db_column_properties:
       data_type: VARCHAR
-  - name: HTTP_RESPONSE_CODE
+  - name: HTTP Response
+    description: Indicates whether the event request was successfully completed (<300) or failed (>=400)
     db_column_name: HTTP_RESPONSE_CODE
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      synonyms:
+      - HTTP Response Code
     db_column_properties:
-      data_type: VARCHAR
-  - name: BROWSER_TYPE
+      data_type: INT64
+  - name: Browser Type
+    description: The web browser client used to access ThoughtSpot
     db_column_name: BROWSER_TYPE
     properties:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
-  - name: BROWSER_VERSION
+  - name: Browser Version
+    description: The web browser client version used to access ThoughtSpot
     db_column_name: BROWSER_VERSION
     properties:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
-  - name: CLIENT_TYPE
+  - name: Client Type
+    description: "Either Class Experience, New Experience, TSE Embed, or Mobile"
     db_column_name: CLIENT_TYPE
     properties:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
-  - name: CLIENT_ID
+  - name: Client ID
+    description: Unique ID of the application accessing ThoughtSpot
     db_column_name: CLIENT_ID
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
     db_column_properties:
       data_type: VARCHAR
   - name: ANSWER_BOOK_GUID
+    description: This column is only used for JOINs.
     db_column_name: ANSWER_BOOK_GUID
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Visualization GUID
+    description: "GUID of the Visualization, typically used to identify a liveboard viz"
+    db_column_name: VIZ_ID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      synonyms:
+      - Viz Id
     db_column_properties:
       data_type: VARCHAR
   - name: USER_ID
+    description: This column is only used for JOINs.
     db_column_name: USER_ID
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
     db_column_properties:
       data_type: VARCHAR
-  - name: USER_ACTION
+  - name: User Action
+    description: "An event type category, describing what action the User took"
     db_column_name: USER_ACTION
     properties:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
-  - name: QUERY_TEXT
+  - name: Search Query
+    description: Columns / Search Terms used to generate the query
     db_column_name: QUERY_TEXT
     properties:
       column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      synonyms:
+      - Query Text
     db_column_properties:
       data_type: VARCHAR
-  - name: RESPONSE_SIZE
+  - name: Response Size (b)
+    description: Size of response content from the action taken by the User
     db_column_name: RESPONSE_SIZE
     properties:
       column_type: MEASURE
@@ -95,7 +152,8 @@ table:
       index_type: DONT_INDEX
     db_column_properties:
       data_type: INT64
-  - name: LATENCY_US
+  - name: Latency (us)
+    description: "Roundtrip time in microseconds, from the point of \"Go\" to Visualization"
     db_column_name: LATENCY_US
     properties:
       column_type: MEASURE
@@ -103,7 +161,8 @@ table:
       index_type: DONT_INDEX
     db_column_properties:
       data_type: INT64
-  - name: IMPRESSIONS
+  - name: Impressions
+    description: A scaling factor based on the number of visualizations shown
     db_column_name: IMPRESSIONS
     properties:
       column_type: MEASURE
@@ -112,33 +171,28 @@ table:
     db_column_properties:
       data_type: DOUBLE
   joins_with:
-  - name: REL_TS_BI_SERVER-TS_VW_WORKSHEET_DEPENDENT
+  - name: TS_BI_SERVER_to_TS_CLUSTER
     destination:
-      name: TS_VW_WORKSHEET_DEPENDENT
-      fqn: e613a84b-49a9-4bff-9d8b-81fb35e0f092
-    "on": "[TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_VW_WORKSHEET_DEPENDENT::DEPENDENT_GUID]"
+      name: TS_CLUSTER
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_CLUSTER::Cluster GUID]"
     type: INNER
-  - name: REL_TS_BI_SERVER-TS_USER
-    destination:
-      name: TS_USER
-      fqn: e571cf91-9988-4080-aff0-696d1507d2eb
-    "on": "[TS_BI_SERVER::USER_ID] = [TS_USER::USER_GUID]"
-    type: INNER
-  - name: REL_TS_BI_SERVER-TS_DEPENDENT_OBJECT
+  - name: TS_BI_SERVER_to_TS_DEPENDENT_OBJECT
     destination:
       name: TS_DEPENDENT_OBJECT
-      fqn: 83fa2082-051e-4760-b0c3-42f80c43c40e
-    "on": "[TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_DEPENDENT_OBJECT::DEPENDENT_GUID]"
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_DEPENDENT_OBJECT::CLUSTER_GUID] AND [TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_DEPENDENT_OBJECT::Dependent GUID]"
     type: LEFT_OUTER
-  - name: SYS_CONSTRAINT_7d5a8977-f229-477e-b1cb-eb65d7e34355
+  - name: TS_BI_SERVER_to_TS_ORG
+    destination:
+      name: TS_ORG
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_ORG::CLUSTER_GUID] AND [TS_BI_SERVER::ORG_ID] = [TS_ORG::Org ID]"
+    type: LEFT_OUTER
+  - name: TS_BI_SERVER_to_TS_USER
+    destination:
+      name: TS_USER
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_USER::CLUSTER_GUID] AND [TS_BI_SERVER::USER_ID] = [TS_USER::User GUID]"
+    type: LEFT_OUTER
+  - name: TS_BI_SERVER_to_TS_METADATA_OBJECT
     destination:
       name: TS_METADATA_OBJECT
-      fqn: abbc71f0-ba37-4505-b8d9-1d0babac8ddb
-    "on": "[TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_METADATA_OBJECT::OBJECT_GUID]"
-    type: INNER
-  - name: REL_TS_BI_SERVER-TS_USER_VIEW
-    destination:
-      name: TS_USER_VIEW
-      fqn: 084ec359-3642-48fb-9027-1efb55e88b0e
-    "on": "[TS_BI_SERVER::USER_ID] = [TS_USER_VIEW::USER_ID]"
-    type: INNER
+    "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_METADATA_OBJECT::CLUSTER_GUID] AND [TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_METADATA_OBJECT::Object GUID]"
+    type: LEFT_OUTER

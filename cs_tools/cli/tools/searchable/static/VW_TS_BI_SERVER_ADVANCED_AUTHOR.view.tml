@@ -1,0 +1,26 @@
+guid: 4fff9eda-e70b-41b0-859e-260246bc7d4e
+view:
+  name: VW_TS_BI_SERVER_ADVANCED_AUTHOR
+  tables:
+  - id: TS_USER
+    name: TS_USER
+  search_query: "[CLUSTER_GUID] [User GUID] [User] [User Email]"
+  view_columns:
+  - name: CLUSTER_GUID
+    search_output_column: CLUSTER_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+  - name: User GUID
+    search_output_column: User GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+  - name: User
+    search_output_column: User
+    properties:
+      column_type: ATTRIBUTE
+  - name: User Email
+    search_output_column: User Email
+    properties:
+      column_type: ATTRIBUTE

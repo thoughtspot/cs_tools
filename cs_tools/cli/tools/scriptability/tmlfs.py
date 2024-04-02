@@ -2,21 +2,21 @@
 This file contains code for the TML file system.  The TML file system is a structured file system for storing TML and
 related files.
 """
-import datetime
+from __future__ import annotations
+
+import datetime as dt
 import logging
 import os
 import pathlib
 import shutil
 
-import typer
-from typing import List
-
 from thoughtspot_tml._tml import TML
 from thoughtspot_tml.utils import determine_tml_type
+import typer
 
 from cs_tools._compat import StrEnum
 from cs_tools.api import _utils
-from cs_tools.cli.tools.scriptability.util import GUIDMapping, EnvName
+from cs_tools.cli.tools.scriptability.util import EnvName, GUIDMapping
 from cs_tools.cli.ux import rich_console
 from cs_tools.errors import CSToolsError
 from cs_tools.types import GUID
@@ -26,6 +26,7 @@ TMLFS_FILENAME = ".tmlfs"
 
 class TMLType(StrEnum):
     """TML types.  These must map to what thoughtspot_tml.util.determine_tml_type returns."""
+
     connection = "connection"
     table = "table"
     view = "view"
@@ -38,7 +39,6 @@ class TMLType(StrEnum):
 
 
 class BaseTMLFileSystem:
-
     def __init__(self, path: pathlib.Path, log_for: str, logger: logging.Logger):
         """
         Creates a new TML File System object.  If the path does not exist, it will be created.
@@ -46,15 +46,16 @@ class BaseTMLFileSystem:
         :param log_for: The type of log file to create.  Must be "export" or "import".
         """
         if log_for not in ["export", "import"]:
-            raise CSToolsError(error=f"Invalid log_for value: {log_for}.  Must be 'export' or 'import'.",
-                               mitigation="Specify a valid log_for value.")
+            raise CSToolsError(
+                title=f"Invalid log_for value: {log_for}.  Must be 'export' or 'import'.",
+                mitigation="Specify a valid log_for value.",
+            )
 
         self.path = path
-        self.start_time = datetime.datetime.now()
+        self.start_time = dt.datetime.now(tz=dt.timezone.utc)
 
         self._log_path = self._create_log_path(log_for=log_for)
         if logger:  # Add a file handler for logging.
-
             log_file = self._log_path / f"{log_for}-{self.start_time.strftime('%Y.%m.%d-%H.%M.%S')}.log"
 
             file_handler = logging.FileHandler(log_file)
@@ -88,7 +89,7 @@ class BaseTMLFileSystem:
         """
         if path.exists():
             if not path.is_dir():
-                raise CSToolsError(f"TML Path {path} exists but is not a directory.")
+                raise CSToolsError(title=f"TML Path {path} exists but is not a directory.")
             else:
                 fsfile = path / TMLFS_FILENAME
                 if not fsfile.exists():
@@ -109,7 +110,7 @@ class BaseTMLFileSystem:
 
         # make sure the path already exists.
         if not self.path.exists():
-            raise CSToolsError(error=f"Path {self.path} does not exist.", mitigation="Specify a valid path to the FS.")
+            raise CSToolsError(title=f"Path {self.path} does not exist.", mitigation="Specify a valid path to the FS.")
 
         # create the log folder and file.
         log_name = f"{log_for}-{self.start_time.strftime('%Y.%m.%d-%H.%M.%S')}"
@@ -125,7 +126,7 @@ class BaseTMLFileSystem:
         """
         # A guid is being used for the file name.  Ideally use the old one if provided.  If not, use the new one.
         # If that doesn't exist, use the current time.
-        guid = old_guid if old_guid else tml.guid if tml.guid else str(datetime.datetime.now())
+        guid = old_guid if old_guid else tml.guid if tml.guid else str(dt.datetime.now(tz=dt.timezone.utc))
         fn = guid + "." + tml.tml_type_name + ".tml"
         tml_file = self._log_path / fn
         tml.dump(tml_file)
@@ -152,7 +153,6 @@ class BaseTMLFileSystem:
 
 
 class ExportTMLFS(BaseTMLFileSystem):
-
     def __init__(self, path: pathlib.Path, logger: logging.Logger):
         super().__init__(path=path, log_for="export", logger=logger)
         self.create_tml_file_system(self.path)
@@ -167,23 +167,24 @@ class ExportTMLFS(BaseTMLFileSystem):
             directory = self.path / tml_type
             tml.dump(directory / f"{tml.guid}.{tml_type}.tml")
         except Exception as e:
-            raise CSToolsError(error=f"Error writing TML {tml.name} to {directory}: {e}",
-                               mitigation="Check write permissions in the file system..")
+            raise CSToolsError(
+                title=f"Error writing TML {tml.name} to {directory}: {e}",
+                mitigation="Check write permissions in the file system..",
+            ) from None
 
 
 class ImportTMLFS(BaseTMLFileSystem):
-
     def __init__(self, path: pathlib.Path, logger: logging.Logger):
         super().__init__(path=path, log_for="import", logger=logger)
 
-    def load_tml(self, types: [TMLType] = None) -> List[TML]:
+    def load_tml(self, types: [TMLType] = None) -> list[TML]:
         """
         Returns TML that matches the types requested.  If no types are specified, then all TML will be returned.
         :return: A list of TML.
         """
 
-        types_to_load = [_ for _ in types] if types else [_ for _ in TMLType]
-        tml_list: List[TML] = []
+        types_to_load = list(types) if types else list(TMLType)
+        tml_list: list[TML] = []
 
         for t in types_to_load:
             directory = self.path / t
@@ -207,7 +208,7 @@ class ImportTMLFS(BaseTMLFileSystem):
         :return: The TML for the given GUID.
         """
 
-        for t in [_ for _ in TMLType]:
+        for t in list(TMLType):
             directory = self.path / t
             for f in directory.glob("*.tml"):
                 name, dot, extra = f.name.split(".")
@@ -215,23 +216,21 @@ class ImportTMLFS(BaseTMLFileSystem):
                     tml_cls = determine_tml_type(path=f)
                     return tml_cls.load(f)
 
-        raise CSToolsError(error=f"Could not find TML with GUID {guid}.", mitigation="Check the GUID and try again.")
+        raise CSToolsError(title=f"Could not find TML with GUID {guid}.", mitigation="Check the GUID and try again.")
 
 
 app = typer.Typer(
     name="tmlsfs",
     help="TML Scriptability File System",
-    add_completion=False,
     invoke_without_command=True,
-    no_args_is_help=True,
 )
 
 
 @app.command(name="init")
 def scriptability_init_fs(
-        directory: pathlib.Path = typer.Argument(
-            ..., help="directory to save TML to", file_okay=False, resolve_path=True, exists=True
-        )
+    directory: pathlib.Path = typer.Argument(
+        ..., help="directory to save TML to", file_okay=False, resolve_path=True, exists=True
+    ),
 ) -> None:
     """
     Creates a new TML file system in the specified directory.  New files systems are also create the first time
@@ -241,34 +240,38 @@ def scriptability_init_fs(
 
 
 @app.command(name="cleanup")
-def scriptability_init_fs(
-        directory: pathlib.Path = typer.Argument(
-            ..., help="Root of the TML file system", file_okay=False, resolve_path=True, exists=True
-        ),
-        nbr_days: int = typer.Option(30, help="number of days to keep logs")
+def scriptability_fs_cleanup(
+    directory: pathlib.Path = typer.Argument(
+        ..., help="Root of the TML file system", file_okay=False, resolve_path=True, exists=True
+    ),
+    nbr_days: int = typer.Option(30, help="number of days to keep logs"),
 ) -> None:
     """
     Performs cleanup of the TML file system.  It removes log files older than the number of days specified.
     """
     if not directory.exists():
-        raise CSToolsError(error=f"{directory} does not exist.",
-                           reason="An invalid directory was provided.",
-                           mitigation="Verify the the directory exists.")
+        raise CSToolsError(
+            title=f"{directory} does not exist.",
+            reason="An invalid directory was provided.",
+            mitigation="Verify the the directory exists.",
+        )
 
     if not is_tmlfs(directory):
-        raise CSToolsError(error=f"{directory} is not a TML file system.",
-                           reason="Only TML file systems can be cleaned up.",
-                           mitigation="Verify the the directory is the root of a TML file system.")
+        raise CSToolsError(
+            title=f"{directory} is not a TML file system.",
+            reason="Only TML file systems can be cleaned up.",
+            mitigation="Verify the the directory is the root of a TML file system.",
+        )
 
     rich_console.log(f"Cleaning up logs in {directory} that are older than {nbr_days} days.")
 
-    now = datetime.datetime.now()
+    now = dt.datetime.now(tz=dt.timezone.utc)
     logdir = directory / "logs"
     nbr_deleted = 0
 
     for folder in os.listdir(logdir):
         folder_path = os.path.join(logdir, folder)
-        folder_age = now - datetime.datetime.fromtimestamp(os.path.getmtime(folder_path))
+        folder_age = now - dt.datetime.fromtimestamp(os.path.getmtime(folder_path), tz=dt.timezone.utc)
         if folder_age.days > nbr_days:
             nbr_deleted += 1
             rich_console.log(f"Removing {folder_path}")

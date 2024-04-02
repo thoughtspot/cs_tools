@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Any
 import logging
 
-from pydantic import validate_arguments
-
-from cs_tools.errors import ContentDoesNotExist
-from cs_tools.types import RecordsFormat
-from cs_tools.api._utils import dumps
 from cs_tools import utils
+from cs_tools.api._utils import dumps
+from cs_tools.errors import ContentDoesNotExist
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
+    from cs_tools.types import TableRowsFormat
 
 log = logging.getLogger(__name__)
 
@@ -22,8 +20,7 @@ class TagMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
 
-    @validate_arguments
-    def create(self, tag_name: str) -> Dict[str, Any]:
+    def create(self, tag_name: str) -> dict[str, Any]:
         """
         Create a new tag in ThoughtSpot.
 
@@ -32,10 +29,9 @@ class TagMiddleware:
         tag_name : str
           name of the tag to create
         """
-        r = self.ts.api.request("POST", "callosum/v1/metadata/create", data={"type": "TAG", "name": tag_name})
+        r = self.ts.api.v1.request("POST", "callosum/v1/metadata/create", data={"type": "TAG", "name": tag_name})
         return r.json()["header"]
 
-    @validate_arguments
     def delete(self, tag_name: str) -> None:
         """
         Remove a tag from ThoughtSpot.
@@ -52,17 +48,16 @@ class TagMiddleware:
         """
         tag = self.get(tag_name)
 
-        self.ts.api.request("POST", "callosum/v1/metadata/delete", data={"type": "TAG", "id": dumps([tag["id"]])})
+        self.ts.api.v1.request("POST", "callosum/v1/metadata/delete", data={"type": "TAG", "id": dumps([tag["id"]])})
 
-    @validate_arguments
-    def all(self) -> RecordsFormat:
+    def all(self) -> TableRowsFormat:  # noqa: A003
         """
         Get all tags in ThoughtSpot.
         """
         tags = []
 
         while True:
-            r = self.ts.api.metadata_list(metadata_type="TAG", batchsize=50, offset=len(tags))
+            r = self.ts.api.v1.metadata_list(metadata_type="TAG", batchsize=50, offset=len(tags))
             data = r.json()
             tags.extend(data["headers"])
 
@@ -71,8 +66,7 @@ class TagMiddleware:
 
         return tags
 
-    @validate_arguments
-    def get(self, tag_name: str, *, create_if_not_exists: bool = False) -> Dict[str, Any]:
+    def get(self, tag_name: str, *, create_if_not_exists: bool = False) -> dict[str, Any]:
         """
         Find a tag in ThoughtSpot.
 

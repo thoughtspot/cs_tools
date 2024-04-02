@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Union, List
+from typing import TYPE_CHECKING, Optional, Union
 import logging
 
-from pydantic import validate_arguments
-
-from cs_tools.errors import ContentDoesNotExist
-from cs_tools.types import MetadataCategory, RecordsFormat, GUID
-from cs_tools.utils import chunks
+from cs_tools import utils
 from cs_tools.api import _utils
+from cs_tools.errors import ContentDoesNotExist
+from cs_tools.types import GUID, MetadataCategory, TableRowsFormat
 
 if TYPE_CHECKING:
     from cs_tools.thoughtspot import ThoughtSpot
@@ -23,16 +21,17 @@ class LogicalTableMiddleware:
         self.ts = ts
         self.cache = {"calendar_type": {}, "currency_type": {}}
 
-    @validate_arguments
-    def all(
+    def all(  # noqa: A003
         self,
         *,
-        tags: Union[str, List[str]] = None,
+        tags: Optional[Union[str, list[str]]] = None,
         category: MetadataCategory = MetadataCategory.all,
         hidden: bool = False,
         exclude_system_content: bool = True,
+        include_data_source: bool = True,
         chunksize: int = 500,
-    ) -> RecordsFormat:
+        raise_on_error: bool = True,
+    ) -> TableRowsFormat:
         """
         Get all tables in ThoughtSpot.
 
@@ -61,7 +60,7 @@ class LogicalTableMiddleware:
         tables = []
 
         while True:
-            r = self.ts.api.metadata_list(
+            r = self.ts.api.v1.metadata_list(
                 metadata_type="LOGICAL_TABLE",
                 category=category,
                 tag_names=tags or _utils.UNDEFINED,
@@ -78,7 +77,7 @@ class LogicalTableMiddleware:
 
             tables.extend([{"metadata_type": "LOGICAL_TABLE", **table} for table in to_extend])
 
-            if not tables:
+            if not tables and raise_on_error:
                 info = {
                     "incl": "exclude" if exclude_system_content else "include",
                     "category": category,
@@ -96,15 +95,21 @@ class LogicalTableMiddleware:
             if data["isLastBatch"]:
                 break
 
+        if include_data_source:
+            for table in tables:
+                connection_guid = self.ts.metadata.find_data_source_of_logical_table(guid=table["id"])
+                source_details = self.ts.metadata.fetch_data_source_info(guid=connection_guid)
+                table["data_source"] = source_details["header"]
+                table["data_source"]["type"] = source_details["type"]
+
         return tables
 
-    @validate_arguments
-    def columns(self, guids: List[GUID], *, include_hidden: bool = False, chunksize: int = 10) -> RecordsFormat:
+    def columns(self, guids: list[GUID], *, include_hidden: bool = False, chunksize: int = 10) -> TableRowsFormat:
         """ """
         columns = []
 
-        for chunk in chunks(guids, n=chunksize):
-            r = self.ts.api.metadata_details(guids=chunk, show_hidden=include_hidden)
+        for chunk in utils.batched(guids, n=chunksize):
+            r = self.ts.api.v1.metadata_details(guids=chunk, show_hidden=include_hidden)
 
             for logical_table in r.json()["storables"]:
                 for column in logical_table.get("columns", []):
@@ -163,7 +168,7 @@ class LogicalTableMiddleware:
             return None
 
         if ccal_guid not in self.cache["calendar_type"]:
-            r = self.ts.api.metadata_list(metadata_type="LOGICAL_TABLE", show_hidden=True, fetch_guids=[ccal_guid])
+            r = self.ts.api.v1.metadata_list(metadata_type="LOGICAL_TABLE", show_hidden=True, fetch_guids=[ccal_guid])
             d = r.json()["headers"][0]
             self.cache["calendar_type"][ccal_guid] = d["name"]
 
@@ -184,7 +189,7 @@ class LogicalTableMiddleware:
             g = currency_info["columnGuid"]
 
             if g not in self.cache["currency_type"]:
-                r = self.ts.api.metadata_list(metadata_type="LOGICAL_COLUMN", show_hidden=True, fetch_guids=[g])
+                r = self.ts.api.v1.metadata_list(metadata_type="LOGICAL_COLUMN", show_hidden=True, fetch_guids=[g])
                 d = r.json()["headers"][0]
                 self.cache["currency_type"][g] = name = f'From a column: {d["name"]}'
             else:

@@ -1,17 +1,15 @@
-from typing import List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 import json
 
-import httpx
+if TYPE_CHECKING:
+    import httpx
 
-from cs_tools.types import MetadataObjectType, GUID
+    from cs_tools.types import GUID, MetadataObjectType
 
 
-def metadata_delete(
-    ts_client: httpx.Client,
-    *,
-    metadata_type: MetadataObjectType,
-    guids: List[GUID]
-) -> httpx.Response:
+def metadata_delete(ts_client: httpx.Client, *, metadata_type: MetadataObjectType, guids: list[GUID]) -> httpx.Response:
     """
     DELETE metadata
     """

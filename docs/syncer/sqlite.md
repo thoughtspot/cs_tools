@@ -3,59 +3,39 @@ hide:
   - toc
 ---
 
-??? example "In Beta"
+SQLite is a powerful, lightweight, and embedded database management system that has been around for over 20 years. It's a great choice for a wide range of applications, from mobile apps and embedded systems to desktop software and web applications. 
 
-    The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
-    __provisional basis__. It may change significantly in future releases and its
-    interface will not be concrete until v2.
+Unlike traditional database management systems that require a separate server process, SQLite is self-contained and serverless. This means that the entire database is stored in a single file on the local file system, making it incredibly easy to set up and use.
 
-    Feedback from the community while it's still provisional would be extremely useful;
-    either comment on [#25][gh-issue25] or create a new issue.
+!!! note "SQLite parameters"
 
-
-SQLite is a C-language library that implements a small, fast, self-contained, high-reliability, full-featured, SQL database engine. SQLite is the most used database engine in the world. The SQLite file format is stable, cross-platform, and backwards compatible and the developers pledge to keep it that way through the year 2050.
-
-??? info "Want to see the source code?"
+    ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
-    *If you're writing a Custom Syncer, you can check our project code for an example.*
+    ---
 
-    [cs_tools/sync/__SQLite__/syncer.py][syncer.py]
+    - [X] __database_path__{ .fc-red }, _the full path to a sqlite database_
+    <br />_this filepath may not yet exist, but it __must__{ .fc-red } end in `.db`_
 
-## SQLite `DEFINITION.toml` spec
+    ---
 
-> __database_path__{ .fc-blue }: name of the database to store data within
-<br/>*`database` will be created if it does not exist*
-
-> __truncate_on_load__{ .fc-blue }: <span class=fc-coral>optional</span>, either `true` or `false`
-<br/>*<span class=fc-mint>default</span>:* `true`
-<br/>*a* `TRUNCATE` *statement will be issued prior to loading any data loads if* `true` *is used*
+    - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
+    <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
 
 
 ??? question "How do I use the SQLite syncer in commands?"
 
-    === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
+    `cs_tools tools searchable bi-server --syncer sqlite://database_path=data.db`
 
-        `cs_tools tools searchable bi-server sqlite:///home/user/syncers/sqlite-definition.toml --compact`
+    __- or -__{ .fc-blue }
 
-        `cs_tools tools searchable bi-server sqlite://default --compact`
-
-    === ":fontawesome-brands-windows: Windows"
-
-        `cs_tools tools searchable bi-server sqlite://C:\Users\%USERNAME%\Downloads\sqlite-definition.toml --compact`
-
-        `cs_tools tools searchable bi-server sqlite://default --compact`
-
-    *Learn how to register a default for syncers in [How-to: Setup a Configuration File][how-to-config].*
+    `cs_tools tools searchable bi-server --syncer sqlite://definition.toml`
 
 
-## Full Definition Example
+## Definition TOML Example
 
 `definition.toml`
 ```toml
 [configuration]
-database_path = '/home/user/ts-data/production.db'
+database_path = '...'
+load_strategy = 'truncate'
 ```
-
-[gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
-[syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/sqlite/syncer.py
-[how-to-config]: ../tutorial/config.md

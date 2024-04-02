@@ -1,10 +1,13 @@
 from __future__ import annotations
-from typing import List, Tuple
+
+from typing import TYPE_CHECKING
 import collections
 
-from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools._compat import TypedDict
-from cs_tools.types import SecurityPrincipal
+
+if TYPE_CHECKING:
+    from cs_tools.thoughtspot import ThoughtSpot
+    from cs_tools.types import SecurityPrincipal
 
 
 class _UserInfo(TypedDict):
@@ -12,7 +15,7 @@ class _UserInfo(TypedDict):
     email: str
     display_name: str
     visibility: str  # one of: DEFAULT, NOT_SHAREABLE
-    type: str  # principal
+    type: str  # principal  # noqa: A003
 
 
 class _GroupInfo(TypedDict):
@@ -20,7 +23,7 @@ class _GroupInfo(TypedDict):
     email: str
     display_name: str
     visibility: str  # one of: DEFAULT, NOT_SHAREABLE
-    type: str  # principal
+    type: str  # principal  # noqa: A003
 
 
 class _AssociationInfo(TypedDict):
@@ -29,12 +32,12 @@ class _AssociationInfo(TypedDict):
     group_name: str
 
 
-def _get_current_security(ts: ThoughtSpot) -> Tuple[List[_UserInfo], List[_GroupInfo], List[_AssociationInfo]]:
+def _get_current_security(ts: ThoughtSpot) -> tuple[list[_UserInfo], list[_GroupInfo], list[_AssociationInfo]]:
     """ """
-    users_and_groups: List[SecurityPrincipal] = ts.api.user_list().json()
-    users: List[_UserInfo] = []
-    groups: List[_GroupInfo] = []
-    associations: List[_AssociationInfo] = []
+    users_and_groups: list[SecurityPrincipal] = ts.api.v1.user_list().json()
+    users: list[_UserInfo] = []
+    groups: list[_GroupInfo] = []
+    associations: list[_AssociationInfo] = []
 
     for principal in users_and_groups:
         data = {
@@ -58,10 +61,8 @@ def _get_current_security(ts: ThoughtSpot) -> Tuple[List[_UserInfo], List[_Group
 
 
 def _form_principals(
-    users: List[_UserInfo],
-    groups: List[_GroupInfo],
-    xref: List[_AssociationInfo]
-) -> List[SecurityPrincipal]:
+    users: list[_UserInfo], groups: list[_GroupInfo], xref: list[_AssociationInfo]
+) -> list[SecurityPrincipal]:
     principals = []
     principals_groups = collections.defaultdict(list)
 

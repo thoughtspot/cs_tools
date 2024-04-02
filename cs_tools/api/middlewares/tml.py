@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-from typing import List, Union
+from typing import TYPE_CHECKING, Union
 import logging
 
-from thoughtspot_tml.types import TMLObject
 from thoughtspot_tml.utils import determine_tml_type
-from thoughtspot_tml._tml import TML
-from pydantic import validate_arguments
 import httpx
 
-from cs_tools.types import GUID, TMLImportPolicy, TMLSupportedContent, TMLAPIResponse
+from cs_tools.types import GUID, TMLAPIResponse, TMLImportPolicy, TMLSupportedContent
 
 if TYPE_CHECKING:
+    from thoughtspot_tml._tml import TML
+
     from cs_tools.thoughtspot import ThoughtSpot
 
 log = logging.getLogger(__name__)
@@ -28,20 +26,16 @@ class TMLMiddleware:
 
     # @validate_arguments
     def to_import(
-        self,
-        tmls: List[Union[TML, str]],
-        *,
-        policy: TMLImportPolicy = TMLImportPolicy.all_or_none,
-        force: bool = False
-    ) -> List[TMLAPIResponse]:
+        self, tmls: list[Union[TML, str]], *, policy: TMLImportPolicy = TMLImportPolicy.all_or_none, force: bool = False
+    ) -> list[TMLAPIResponse]:
         """
         Import TML objects.
         """
-        r = self.ts.api.metadata_tml_import(
-                import_objects=[t.dumps() if not isinstance(t, str) else t for t in tmls],
-                import_policy=policy,
-                force_create=force,
-            )
+        r = self.ts.api.v1.metadata_tml_import(
+            import_objects=[t.dumps() if not isinstance(t, str) else t for t in tmls],
+            import_policy=policy,
+            force_create=force,
+        )
 
         responses = []
 
@@ -59,14 +53,13 @@ class TMLMiddleware:
 
         return responses
 
-    @validate_arguments
     def to_export(
         self,
-        guids: List[GUID],
+        guids: list[GUID],
         *,
-        export_associated: bool=False,
-        iterator: bool=False,
-    ) -> List[TML]:
+        export_associated: bool = False,
+        iterator: bool = False,
+    ) -> list[TML]:
         """
         Import TML objects.
         """
@@ -75,15 +68,15 @@ class TMLMiddleware:
         #   running individual exports is not efficient, how can we provide a better API for customers with large
         #   amount of content ot export?
         #
-        tmls: List[TML] = []
+        tmls: list[TML] = []
 
         for guid in guids:
             try:
-                r = self.ts.api.metadata_tml_export(export_guids=[guid])
+                r = self.ts.api.v1.metadata_tml_export(export_guids=[guid], export_associated=export_associated)
 
                 for content in r.json().get("object", []):
                     info = content["info"]
-                    
+
                     if info["status"]["status_code"] == "ERROR":
                         r.status_code = 417
                         m = f"417: hijacked by CS Tools, response from API: {info['status'].get('error_message', None)}"

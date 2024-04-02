@@ -16,7 +16,16 @@
 - Explore your ThoughtSpot data with the Searchable SpotApp
 - Clean stale and unused content with Archiver
 - Extract your ThoughtSpot data to popular formats with Syncers
-- Support for Software 8.4.1+ and the Latest Cloud release
+- Support for Software 9.0.1+ and the Latest Cloud release
 - Universally installable for Windows, MacOS, and Linux
 - Multiple-cluster support (Dev, QA, Prod)
 - Scheduler-friendly execution 
+
+---
+
+> **🧙 IMPORTANT**
+> 
+> While **CS Tools** is maintained by members of the ThoughtSpot team, it is totally free!
+>
+
+---

@@ -1,4 +1,9 @@
-import httpx
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import httpx
 
 
 def periscope_sage_combined_table_info(ts_client: httpx.Client) -> httpx.Response:

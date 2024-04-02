@@ -1,12 +1,14 @@
-from typing import List, Dict, Any
+from __future__ import annotations
+
+from typing import Any
+import json
 import logging
 import pathlib
-import json
 
+from fastapi import Body, FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
-from fastapi import Request, FastAPI, Body
 import httpx
 
 from cs_tools import utils
@@ -45,7 +47,7 @@ async def read_index(request: Request):
 
 
 @web_app.post("/api/security/share")
-async def _(type: str = Body(...), guids: List[str] = Body(...), permissions: Dict[str, Any] = Body(...)):
+async def _(type: str = Body(...), guids: list[str] = Body(...), permissions: dict[str, Any] = Body(...)):  # noqa: A002
     """
     TSSetPermissionRequest
     """
@@ -60,13 +62,13 @@ async def _(type: str = Body(...), guids: List[str] = Body(...), permissions: Di
 
 @web_app.post("/api/defined_permission")
 # async def _(request: Request):  # could also do it like this ... how lazy to be?
-async def _(type: str = Body(...), guids: List[str] = Body(...)):
+async def _(type: str = Body(...), guids: list[str] = Body(...)):  # noqa: A002
     """
     TSGetTablePermissionsRequest
     """
     defined_permissions = {column_guid: {"permissions": {}} for column_guid in guids}
 
-    for chunk in utils.chunks(guids, n=15):
+    for chunk in utils.batched(guids, n=15):
         r = _scoped["ts"].api.security_metadata_permissions(metadata_type=type, guids=list(chunk))
 
         try:
@@ -97,12 +99,8 @@ async def _():
     TSGetUserGroupsRequest
     """
     r = _scoped["ts"].api.metadata_list(
-            metadata_type="USER_GROUP",
-            category="ALL",
-            sort="DEFAULT",
-            offset=-1,
-            auto_created=False
-        )
+        metadata_type="USER_GROUP", category="ALL", sort="DEFAULT", offset=-1, auto_created=False
+    )
     return r.json()
 
 

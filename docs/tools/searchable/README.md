@@ -32,8 +32,8 @@ provide value to others in your platform.
 === "searchable --help"
     ~cs~tools ../.. cs_tools tools searchable --help
 
-=== "searchable gather"
-    ~cs~tools ../.. cs_tools tools searchable gather --help
+=== "searchable metadata"
+    ~cs~tools ../.. cs_tools tools searchable metadata --help
 
 === "searchable bi-server"
     ~cs~tools ../.. cs_tools tools searchable bi-server --help
@@ -45,26 +45,39 @@ provide value to others in your platform.
 
 ## Changelog
 
-!!! tldr ":octicons-tag-16: v1.3.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
+!!! tldr ":octicons-tag-16: v1.5.0 &nbsp; &nbsp; :material-calendar-text: 2024-04-01"
 
-    === ":wrench: &nbsp; Modified"
-        - now known as simply Searchable, `searchable`
+    === ":hammer_and_wrench: &nbsp; Added"
+        - Added support for Orgs
             - includes metadata about..
-                - Tables
-                - Views
-                - Worksheets
-                - Columns & Formulas
-                - Answers
-                - Liveboards
-                - Dependencies
-                - Users
-                - Groups
-                - Privileges
-                - Tags
-                - Access Control
-                - TS: BI Server
+                - Orgs
+                - Org Membership
+        - Added support for multiple ThoughtSpot clusters
+            - includes metadata about..
+                - ThoughtSpot Cluster
+        - Added __CS Tools: Worksheet Column Utilization SpotApp__
+        - Added __CS Tools: TS BI Server Advanced SpotApp__
 
 ??? info "Changes History"
+
+    ??? tldr ":octicons-tag-16: v1.3.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
+
+        === ":wrench: &nbsp; Modified"
+            - now known as simply Searchable, `searchable`
+                - includes metadata about..
+                    - Tables
+                    - Views
+                    - Worksheets
+                    - Columns & Formulas
+                    - Answers
+                    - Liveboards
+                    - Dependencies
+                    - Users
+                    - Groups
+                    - Privileges
+                    - Tags
+                    - Access Control
+                    - TS: BI Server
 
     ??? tldr ":octicons-tag-16: v1.2.1 &nbsp; &nbsp; :material-calendar-text: 2021-11-09"
         === ":wrench: &nbsp; Modified"

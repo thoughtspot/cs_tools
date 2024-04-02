@@ -1,19 +1,19 @@
-import typer
+from __future__ import annotations
+
 from httpx import HTTPStatusError
 from rich.align import Align
 from rich.table import Table
+import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import MultipleChoiceType
 from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.types import DeployType, DeployPolicy
+from cs_tools.types import DeployPolicy, DeployType
 
 app = CSToolsApp(
     name="branches",
     help="Tools for working with git branches and commits.",
-    add_completion=False,
     invoke_without_command=True,
-    no_args_is_help=True,
 )
 
 # consider moving to types.
@@ -22,25 +22,23 @@ VALID_METADATA_COMMIT_TYPES = ["LOGICAL_TABLE", "PINBOARD_ANSWER_BOOK", "QUESTIO
 
 @app.command(dependencies=[thoughtspot], name="commit")
 def branches_commit(
-        ctx: typer.Context,
-        org: str = typer.Option(None, help="the org to use if any"),
-        tag: str = typer.Option(None, help="the tag for metadata to commit"),
-        metadata_ids: str = typer.Option("",
-                                     custom_type=MultipleChoiceType(),
-                                     help="the metadata GUIDs or names to commit"),
-        branch_name: str =
-        typer.Option(None,
-                     help="the branch name to use for the git repository (or use the default if not provided"),
-        comment: str = typer.Option(..., help="the comment to use for the commit"),
-        delete_aware: bool = typer.Option(False, help="deletes content that doesn't exist in TS from the repo"),
+    ctx: typer.Context,
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+    tag: str = typer.Option(None, help="the tag for metadata to commit"),
+    metadata_ids: str = typer.Option("", click_type=MultipleChoiceType(), help="the metadata GUIDs or names to commit"),
+    branch_name: str = typer.Option(
+        None, help="the branch name to use for the git repository (or use the default if not provided"
+    ),
+    comment: str = typer.Option(..., help="the comment to use for the commit"),
+    delete_aware: bool = typer.Option(False, help="deletes content that doesn't exist in TS from the repo"),
 ):
     """
     Commits from ThoughtSpot to a branch in a git repository.
     """
     ts = ctx.obj.thoughtspot
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     # TODO consider a check of metadata to make sure there are only the supported types.
 
@@ -50,12 +48,12 @@ def branches_commit(
             rich_console.print(f"{m['id']}: {m['name']} ({m['metadata_type']})")
             metadata_ids.append(m["id"])
 
-    metadata_identifiers = []   # format for the call.
+    metadata_identifiers = []  # format for the call.
     for m in metadata_ids:
         metadata_identifiers.append({"identifier": m})
 
     try:
-        r = ts.api_v2.vcs_git_branches_commit(
+        r = ts.api.v2.vcs_git_branches_commit(
             metadata=metadata_identifiers,
             branch_name=branch_name,
             comment=comment,
@@ -70,26 +68,26 @@ def branches_commit(
 
 @app.command(dependencies=[thoughtspot], name="search-commits")
 def commits_search(
-        ctx: typer.Context,
-        metadata_id: str = typer.Argument(..., help="the metadata GUID or name to search for"),
-        metadata_type: str = typer.Argument(...,
-                                          help=f"the metadata type to search for: {', '.join(VALID_METADATA_COMMIT_TYPES)}"),
-        org: str = typer.Option(None, help="the org ID or name to use if any"),
-        branch_name: str = typer.Option(None,
-                                        help="the branch name to use for the git repository or use the default"),
-        record_offset: int = typer.Option(0, help="the record offset to use"),
-        record_size: int = typer.Option(-1, help="the record size to use"),
+    ctx: typer.Context,
+    metadata_id: str = typer.Argument(..., help="the metadata GUID or name to search for"),
+    metadata_type: str = typer.Argument(
+        ..., help=f"the metadata type to search for: {', '.join(VALID_METADATA_COMMIT_TYPES)}"
+    ),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+    branch_name: str = typer.Option(None, help="the branch name to use for the git repository or use the default"),
+    record_offset: int = typer.Option(0, help="the record offset to use"),
+    record_size: int = typer.Option(-1, help="the record size to use"),
 ):
     """
     Searches for the commits for the given metadata ID.
     """
     ts = ctx.obj.thoughtspot
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     try:
-        r = ts.api_v2.vcs_git_commits_search(
+        r = ts.api.v2.vcs_git_commits_search(
             metadata_identifier=metadata_id,
             metadata_type=metadata_type,
             branch_name=branch_name,
@@ -102,17 +100,17 @@ def commits_search(
 
     rich_console.print(r.json())
 
+
 @app.command(dependencies=[thoughtspot], name="revert-commit")
 def commit_revert(
-        ctx: typer.Context,
-        commit_id: str = typer.Argument(..., help="the commit ID to revert (found on GitHub)"),
-        org: str = typer.Option(None, help="the org ID or name to use if any"),
-        metadata_ids: str = typer.Option(None, custom_type=MultipleChoiceType(),
-                                         help="the metadata GUIDs or names to revert"),
-        revert_policy: str = typer.Option("ALL_OR_NONE",
-                                          help="the revert policy to use, either PARTIAL or ALL_OR_NONE"),
-        branch_name: str = typer.Option(None,
-                                        help="the branch name to use for the git repository or use the default"),
+    ctx: typer.Context,
+    commit_id: str = typer.Argument(..., help="the commit ID to revert (found on GitHub)"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+    metadata_ids: str = typer.Option(
+        None, click_type=MultipleChoiceType(), help="the metadata GUIDs or names to revert"
+    ),
+    revert_policy: str = typer.Option("ALL_OR_NONE", help="the revert policy to use, either PARTIAL or ALL_OR_NONE"),
+    branch_name: str = typer.Option(None, help="the branch name to use for the git repository or use the default"),
 ):
     """
     Reverts a commit in a git repository.
@@ -124,8 +122,8 @@ def commit_revert(
         rich_console.log(f"[b red]Invalid revert policy: {revert_policy}.  Must be one of {', '.join(valid_policies)}")
         raise typer.Exit(1)
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     metadata_identifiers = None  # format for the call.
     if metadata_ids:
@@ -134,7 +132,7 @@ def commit_revert(
             metadata_identifiers.append({"identifier": m})
 
     try:
-        r = ts.api_v2.vcs_git_commits_id_revert(
+        r = ts.api.v2.vcs_git_commits_id_revert(
             commit_id=commit_id,
             metadata=metadata_identifiers,
             branch_name=branch_name,
@@ -146,48 +144,50 @@ def commit_revert(
 
     rich_console.print(r.json())
 
+
 @app.command(dependencies=[thoughtspot], name="validate")
 def branches_validate(
-        ctx: typer.Context,
-        source_branch: str = typer.Argument(..., help="the source branch to use"),
-        target_branch: str = typer.Argument(..., help="the target branch to use"),
-        org: str = typer.Option(None, help="the org ID or name to use if any"),
+    ctx: typer.Context,
+    source_branch: str = typer.Argument(..., help="the source branch to use"),
+    target_branch: str = typer.Argument(..., help="the target branch to use"),
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
 ):
     """
     Validates a branch in a git repository before merging.
     """
     ts = ctx.obj.thoughtspot
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     try:
-        ts.api_v2.vcs_git_branches_validate(source_branch_name=source_branch, target_branch_name=target_branch)
+        ts.api.v2.vcs_git_branches_validate(source_branch_name=source_branch, target_branch_name=target_branch)
     except HTTPStatusError as e:
         rich_console.print(f"[b red]Error validating {source_branch} to {target_branch}: {e}.")
         rich_console.print(f"[b red]{e.response.content}.")
 
     rich_console.print("[bold green]Validation successful.  Ok to deploy.")
 
+
 @app.command(dependencies=[thoughtspot], name="deploy")
 def branches_deploy(
-        ctx: typer.Context,
-        org: str = typer.Option(None, help="the org ID or name to use if any"),
-        commit_id: str = typer.Option(None, help="the commit ID to deploy or none for latest"),
-        branch_name: str = typer.Option(None, help="the branch name to use, or default"),
-        deploy_type: str = typer.Option("DELTA", help="the deploy type to use, either DELTA or FULL"),
-        deploy_policy: str = typer.Option("ALL_OR_NONE", help="the deploy policy to use, either PARTIAL or ALL_OR_NONE"),
+    ctx: typer.Context,
+    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+    commit_id: str = typer.Option(None, help="the commit ID to deploy or none for latest"),
+    branch_name: str = typer.Option(None, help="the branch name to use, or default"),
+    deploy_type: str = typer.Option("DELTA", help="the deploy type to use, either DELTA or FULL"),
+    deploy_policy: str = typer.Option("ALL_OR_NONE", help="the deploy policy to use, either PARTIAL or ALL_OR_NONE"),
 ):
     """
     Pulls from a branch in a git repository to ThoughtSpot.
     """
     ts = ctx.obj.thoughtspot
 
-    if org is not None:
-        ts.org.switch(org)
+    if org_override is not None:
+        ts.org.switch(org_override)
 
     try:
-        r = ts.api_v2.vcs_git_commits_deploy(
+        r = ts.api.v2.vcs_git_commits_deploy(
             commit_id=commit_id,
             branch_name=branch_name,
             deploy_type=DeployType.full if deploy_type == "FULL" else DeployType.delta,

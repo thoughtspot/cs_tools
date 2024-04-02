@@ -1,65 +1,72 @@
-from typing import List, Dict, Any
-import pathlib
-import logging
+from __future__ import annotations
 
-from pydantic.dataclasses import dataclass
+from typing import TYPE_CHECKING, Union
+import logging
+import pathlib
+
+import pydantic
 import sqlalchemy as sa
+
+from cs_tools.sync import utils as sync_utils
+from cs_tools.sync.base import DatabaseSyncer
+
+from . import const
+
+if TYPE_CHECKING:
+    from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class SQLite:
-    """
-    Interact with a SQLite database.
-    """
+class SQLite(DatabaseSyncer):
+    """Interact with a SQLite database."""
 
-    database_path: pathlib.Path
-    truncate_on_load: bool = True
+    __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
+    __syncer_name__ = "sqlite"
 
-    # DATABASE ATTRIBUTES
-    __is_database__ = True
+    database_path: Union[pydantic.FilePath, pydantic.NewPath]
 
-    def __post_init_post_parse__(self):
-        self.database_path = path = self.database_path.resolve()
-        self.engine = sa.create_engine(f"sqlite:///{path}", future=True)
-        self.cnxn = self.engine.connect()
+    @pydantic.field_validator("database_path", mode="after")
+    def ensure_endswith_db(cls, path: pathlib.Path) -> pathlib.Path:
+        if path.suffix != ".db":
+            raise ValueError("path must be a valid .db file")
+        return path
 
-        # self.metadata = sa.MetaData(bind=self.cnxn)
-        # self.metadata.reflect()
-
-        # decorators must be declared here, SQLAlchemy doesn't care about instances
-        sa.event.listen(sa.schema.MetaData, "after_create", self.capture_metadata)
-
-    def capture_metadata(self, metadata, cnxn, **kw):
-        self.metadata = metadata
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._engine = sa.create_engine(f"sqlite:///{self.database_path}", future=True)
 
     def __repr__(self):
-        return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
+        return f"<SQLiteSyncer conn_string='{self.engine.url}'>"
 
     # MANDATORY PROTOCOL MEMBERS
 
-    @property
-    def name(self) -> str:
-        return "sqlite"
+    def load(self, tablename: str) -> TableRows:
+        """SELECT rows from SQLite."""
+        table = self.metadata.tables[tablename]
+        rows = self.session.execute(table.select())
+        return [row.model_dump() for row in rows]
 
-    def load(self, table: str) -> List[Dict[str, Any]]:
-        t = self.metadata.tables[table]
-
-        with self.cnxn.begin_nested():
-            r = self.cnxn.execute(t.select())
-
-        return [dict(_) for _ in r]
-
-    def dump(self, table: str, *, data: List[Dict[str, Any]]) -> None:
+    def dump(self, tablename: str, *, data: TableRows) -> None:
+        """INSERT rows into SQLite."""
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return
 
-        t = self.metadata.tables[table]
+        table = self.metadata.tables[tablename]
 
-        with self.cnxn.begin_nested():
-            if self.truncate_on_load:
-                self.cnxn.execute(t.delete())
+        if self.load_strategy == "APPEND":
+            sync_utils.batched(
+                table.insert().values, session=self.session, data=data, max_parameters=const.SQLITE_MAX_VARIABLES
+            )
 
-            self.cnxn.execute(t.insert(), data)
+        if self.load_strategy == "TRUNCATE":
+            self.session.execute(table.delete())
+            sync_utils.batched(
+                table.insert().values, session=self.session, data=data, max_parameters=const.SQLITE_MAX_VARIABLES
+            )
+
+        if self.load_strategy == "UPSERT":
+            sync_utils.generic_upsert(table, session=self.session, data=data)
+
+        self.session.commit()
