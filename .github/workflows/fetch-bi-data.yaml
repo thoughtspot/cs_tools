@@ -45,4 +45,4 @@ jobs:
 
       # --config ENV:   tells CS Tools to pull the information from environment variables.
       - name: Grab N-7 to N-1 days of BI Server Data
-        run: "cs_tools tools seachable bi-server --from-date ${{ env.days_ago_7 }} --to-date ${{ env.days_ago_1 }} --syncer ${{ secrets.SYNCER_DECLARATIVE_STRING }} --config ENV:"
+        run: "cs_tools tools searchable bi-server --from-date ${{ env.days_ago_7 }} --to-date ${{ env.days_ago_1 }} --syncer ${{ secrets.SYNCER_DECLARATIVE_STRING }} --config ENV:"
