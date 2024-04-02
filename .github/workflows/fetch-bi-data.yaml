@@ -20,19 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get 7 days ago
-        id: days_ago_7
-        run: |
-          DAYS_AGO=7
-          DATE=$(date -d "-$DAYS_AGO days" +'%Y-%m-%d')
-          echo "days_ago_5=$DATE" >> $GITHUB_ENV
+        run: echo "days_ago_7=$(date -d "-7 days" +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Get 1 days ago
-        id: days_ago_1
-        run: |
-          DAYS_AGO=1
-          DATE=$(date -d "-$DAYS_AGO days" +'%Y-%m-%d')
-          echo "days_ago_1=$DATE" >> $GITHUB_ENV
+        run: echo "days_ago_1=$(date -d "-1 days" +'%Y-%m-%d')" >> $GITHUB_ENV
 
+      - name: Check out the repository main branch
       - uses: actions/checkout@v4
 
       - name: Set up Python 3.12
@@ -45,4 +38,4 @@ jobs:
 
       # --config ENV:   tells CS Tools to pull the information from environment variables.
       - name: Grab N-7 to N-1 days of BI Server Data
-        run: "cs_tools tools searchable bi-server --from-date ${{ env.days_ago_7 }} --to-date ${{ env.days_ago_1 }} --syncer ${{ secrets.SYNCER_DECLARATIVE_STRING }} --config ENV:"
+        run: "cs_tools tools searchable bi-server --from-date $days_ago_7 --to-date $days_ago_1 --syncer ${{ secrets.SYNCER_DECLARATIVE_STRING }} --config ENV:"
