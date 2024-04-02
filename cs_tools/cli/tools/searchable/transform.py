@@ -287,6 +287,13 @@ def to_column_synonym(data: ArbitraryJsonFormat, cluster: str) -> list[TableRows
 
     for row in data:
         for synonym in row["synonyms"]:
+            if synonym is None:
+                log.warning(
+                    f"{row['column_guid']} has a NULL synonym, this shouldn't be possible, please share details with "
+                    f"the CS Tools team."
+                )
+                continue
+
             model = models.ColumnSynonym.validated_init(
                 cluster_guid=cluster,
                 column_guid=row["column_guid"],
