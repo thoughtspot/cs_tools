@@ -13,6 +13,7 @@ jobs:
       CS_TOOLS_THOUGHTSPOT__USERNAME: FakeUser
       CS_TOOLS_THOUGHTSPOT__SECRET_KEY: 00000000-0000-0000-0000-000000000000
 
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
