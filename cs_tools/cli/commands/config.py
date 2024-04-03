@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+import pathlib
 
-from cs_tools import __version__, datastructures, errors, utils, validators
+from cs_tools import __version__, errors, utils
 from cs_tools.cli import _analytics
+from cs_tools.cli.types import Directory
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.settings import (
     CSToolsConfig,
@@ -11,17 +13,11 @@ from cs_tools.settings import (
 )
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.updater import cs_tools_venv
-from promptique.menu import Menu
-from promptique.prompts import Confirm, FileInput, Select, UserInput
-from promptique.prompts.select import PromptOption
-from promptique.theme import PromptTheme, ThemeElement
-from promptique.validation import ResponseContext, response_is
 from rich.align import Align
-from rich.style import Style
+from rich.prompt import Confirm
 from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
-import pydantic
 import typer
 
 log = logging.getLogger(__name__)
@@ -41,179 +37,49 @@ app = CSToolsApp(
 
 @app.command(no_args_is_help=False)
 def create(
-    config: str = typer.Option(None, help="config file identifier", metavar="NAME"),
-    url: str = typer.Option(None, help="your thoughtspot server"),
-    username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
+    config: str = typer.Option(..., help="config file identifier", metavar="NAME"),
+    url: str = typer.Option(..., help="your thoughtspot url or IP"),
+    username: str = typer.Option(..., help="username when logging into ThoughtSpot"),
+    password: str = typer.Option(None, help="the password you type when using the ThoughtSpot login screen"),
+    secret: str = typer.Option(None, help="the trusted authentication secret key, found in the developer tab"),
+    token: str = typer.Option(None, help="the V2 API bearer token"),
     default_org: int = typer.Option(None, help="org ID to sign into by default"),
+    temp_dir: pathlib.Path = typer.Option(
+        None, help="the temporary directory to use for uploading files", click_type=Directory()
+    ),
+    disable_ssl: bool = typer.Option(
+        False, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
+    ),
+    default: bool = typer.Option(False, "--default", help="whether or not to make this the default configuration"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="enable verbose logging"),
 ):
     """
     Create a new config file.
     """
 
-    def buffer_is_not_empty(ctx: ResponseContext) -> bool:
-        """Ensure some value is given."""
-        assert len(ctx.response) != 0, "Name must be at least one character."
-        return True
+    if CSToolsConfig.exists(name=config):
+        log.warning(f'[b yellow]Configuration file "{config}" already exists.')
 
-    def select_at_least_one(ctx: ResponseContext) -> bool:
-        """Ensure some option is selected."""
-        assert len(ctx.response) != 0, "You must select at least one option."
-        return True
+        if not Confirm.ask("\nDo you want to overwrite it?", console=rich_console):
+            raise typer.Abort()
 
-    def is_valid_url(ctx: ResponseContext) -> bool:
-        """Ensure the URL given is valid."""
-        try:
-            validators.ensure_stringified_url_format.func(ctx.response)
-        except pydantic.ValidationError:
-            raise AssertionError(f"[bold green]{ctx.response or '{empty}'}[/] is not a valid URL.") from None
-        return True
-
-    prompts = (
-        Select(
-            id="controls",
-            prompt="This menu will help you configure CS Tools.",
-            detail="Use the Arrow keys to navigate, Spacebar to select, and Enter to submit, and Escape or Q to quit.",
-            mode="SINGLE",
-            choices=[PromptOption(text="Continue", is_selected=True)],
-            transient=True,
-        ),
-        UserInput(
-            id="config",
-            prompt="Please name your configuration.",
-            detail="This can be anything you want.",
-            prefill=config,
-            input_validator=buffer_is_not_empty,
-        ),
-        UserInput(
-            id="url",
-            prompt="What is the URL of your ThoughtSpot server?",
-            detail="Make sure to include http/s.",
-            prefill=url,
-            input_validator=is_valid_url,
-        ),
-        UserInput(
-            id="username",
-            prompt="Who do you want to login as?",
-            detail="Usernames only!",
-            prefill=username,
-            input_validator=buffer_is_not_empty,
-        ),
-        Select(
-            id="auth_method",
-            prompt="Which authentication method do you want to use?",
-            choices=[
-                PromptOption(text="Password", description="this is the password used on the ThoughtSpot login screen"),
-                PromptOption(text="Trusted Authentication", description="generate a secret key from the Develop tab"),
-                PromptOption(text="Bearer Token", description="generate your token from the REST API V2 playground"),
-            ],
-            mode="MULTI",
-            selection_validator=select_at_least_one,
-        ),
-        Confirm(id="org_confirm", prompt="Is Orgs enabled on your cluster?", default="No"),
-        Select(
-            id="extras",
-            prompt="Set any additional options for this configuration",
-            choices=[
-                PromptOption(text="Disable SSL", description="Turn off checking the SSL certificate."),
-                PromptOption(text="Temporary Directory", description="Route temporary file writing to this directory."),
-                PromptOption(text="Verbose Logging", description="Capture more descriptive log files."),
-            ],
-            mode="MULTI",
-        ),
-        Confirm(id="is_default", prompt="Do you want to make this the default config?", default="No"),
-    )
-
-    theme = PromptTheme()
-
-    if "Windows" in datastructures.LocalSystemInfo().system:
-        theme.active = ThemeElement(marker="◆", style=Style(color="white", bold=True))
-
-    menu = Menu(
-        *prompts,
-        console=rich_console,
-        intro="[white on blue]cs_tools config create",
-        outro="Complete!",
-        theme=theme,
-    )
-
-    #
-    # Set up secondary actions
-    #
-
-    menu["config"].link(
-        Confirm(
-            id="config_confirm",
-            prompt="A config by this name already exists, do you want to overwrite it?",
-            default="No",
-            choice_means_stop="No",
-        ),
-        validator=lambda ctx: CSToolsConfig.exists(ctx.response),
-    )
-
-    auth_info = (
-        ("Password", "password", "This is the password you type when using the ThoughtSpot login screen."),
-        (
-            "Trusted Authentication",
-            "secret key",
-            "[link=https://developers.thoughtspot.com/docs/api-authv2#trusted-auth-v2]Get Secret Key[/link]",
-        ),
-        (
-            "Bearer Token",
-            "token",
-            "[link=https://developers.thoughtspot.com/docs/restV2-playground?apiResourceId=http/api-endpoints/authentication/get-full-access-token]Get V2 Full Access token[/link]",  # noqa: E501
-        ),
-    )
-
-    for name, secret, detail in auth_info:
-        menu["auth_method"].link(
-            UserInput(
-                id=f"auth_{secret.replace(' ', '_')}",
-                prompt=f"Please enter your {secret}..",
-                detail=detail,
-                is_secret=secret == "password",
-                input_validator=buffer_is_not_empty,
-            ),
-            validator=response_is(name, any_of=True),
-        )
-
-    menu["org_confirm"].link(
-        UserInput(
-            id="org_name",
-            prompt="Type the org's id to sign in to by default..",
-            prefill=default_org,
-            input_validator=buffer_is_not_empty,
-        ),
-        validator=response_is("Yes", any_of=True),
-    )
-
-    menu["extras"].link(
-        FileInput(
-            id="temporary_directory",
-            prompt="Where should we write temporary files to?",
-            detail="This should be a permanent, valid directory.",
-            path_type="DIRECTORY",
-        ),
-        validator=response_is("Temporary Directory", any_of=True),
-    )
-
-    menu.run()
-
-    if menu["outro"].status == "HIDDEN":
-        return
+    if all(safe is None for safe in (password, secret, token)):
+        log.error("You must specify at least one authentication method")
+        return -1
 
     data = {
-        "name": menu["config"].buffer_as_string(),
+        "name": config,
         "thoughtspot": {
-            "url": menu["url"].buffer_as_string(),
-            "username": menu["username"].buffer_as_string(),
-            "password": menu["auth_password"].buffer_as_string() if "auth_password" in menu else None,
-            "secret_key": menu["auth_secret_key"].buffer_as_string() if "auth_secret_key" in menu else None,
-            "bearer_token": menu["auth_token"].buffer_as_string() if "auth_token" in menu else None,
-            "default_org": menu["org_name"].buffer_as_string() if "org_name" in menu else None,
-            "disable_ssl": any(option.text == "Disable SSL" for option in menu["extras"]._response),
+            "url": url,
+            "username": username,
+            "password": password,
+            "secret_key": secret,
+            "bearer_token": token,
+            "default_org": default_org,
+            "disable_ssl": disable_ssl,
         },
-        "verbose": any(option.text == "Verbose Logging" for option in menu["extras"]._response),
-        "temp_dir": menu["temporary_directory"].buffer_as_string() if "temporary_directory" in menu else None,
+        "verbose": verbose,
+        "temp_dir": temp_dir or cs_tools_venv.tmp_dir,
     }
 
     data["created_in_cs_tools_version"] = __version__
@@ -233,7 +99,7 @@ def create(
         conf.save()
         log.info(f"Saving as {conf.name}!")
 
-        if menu["is_default"]._response == "Yes":
+        if default:
             meta.default_config_name = config
             meta.save()
 
