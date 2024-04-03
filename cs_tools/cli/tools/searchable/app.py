@@ -252,7 +252,22 @@ def bi_server(
 
 
 @app.command("gather", dependencies=[thoughtspot], hidden=True)
-def _gather(ctx: typer.Context):
+def _gather(
+    ctx: typer.Context,
+    # tables: List[str] = typer.Option(None, help="table names to collect data on, can be specified multiple times"),
+    include_column_access: bool = typer.Option(
+        False,
+        "--include-column-access",
+        help="if specified, include security controls for Column Level Security as well",
+    ),
+    org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
+    syncer: DSyncer = typer.Option(
+        ...,
+        click_type=SyncerProtocolType(models=models.METADATA_MODELS),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
+):
     # Here for backwards compatability.
     command = typer.main.get_command(app).get_command(ctx, "metadata")
     ctx.forward(command)
