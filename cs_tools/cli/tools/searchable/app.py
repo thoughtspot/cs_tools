@@ -57,25 +57,23 @@ def deploy(
     Deploy the Searchable SpotApp.
     """
     ts = ctx.obj.thoughtspot
-    is_falcon = connection_guid.lower() == "falcon"
-
-    if is_falcon:
-        log.warning(
-            "[b yellow]The SpotApp is only configured for Connections at this time. Please reach out to the CS Tools "
-            "team or your Solutions Consultant to get on the waitlist.",
-        )
-        raise typer.Abort()
 
     tasks = [
-        ("connection_details", f"Getting details for connection {'' if is_falcon else connection_guid}"),
+        ("connection_details", "Getting details for data source"),
         ("customize_spotapp", "Customizing [b blue]Searchable Worksheets[/] to your environment"),
         ("deploy_spotapp", "Deploying the SpotApp to ThoughtSpot"),
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
         with tasks["connection_details"] as this_task:
-            if is_falcon:
+            connection_guid: str = None
+            connection_name: str = None
+            dialect: str = None
+
+            if connection_guid == "falcon":
+                dialect = "FALCON"
                 this_task.skip()
+
             else:
                 try:
                     info = ts.metadata.fetch_data_source_info(connection_guid)
@@ -85,6 +83,10 @@ def deploy(
 
                 connection_guid = info["header"]["id"]
                 connection_name = info["header"]["name"]
+                dialect = info["header"]["type"]
+
+        # Care for UPPERCASE or lowercase identity convention in dialects
+        should_upper = "SNOWFLAKE" in dialect
 
         with tasks["customize_spotapp"]:
             here = pathlib.Path(__file__).parent
@@ -97,13 +99,18 @@ def deploy(
                 if isinstance(tml, Table):
                     tml.table.db = database
                     tml.table.schema = schema
-                    tml.table.connection.name = connection_name
-                    tml.table.connection.fqn = connection_guid
+                    tml.table.db_table = tml.table.db_table.upper() if should_upper else tml.table.db_table.lower()
+                    tml.table.name = tml.table.name.upper() if should_upper else tml.table.name.lower()
 
-                if is_falcon and "TS_BI_SERVER.table.tml" in tml.name:
+                    if dialect != "FALCON":
+                        tml.table.connection.name = connection_name
+                        tml.table.connection.fqn = connection_guid
+
+                # No need to replicate TS_BI_SERVER in Falcon, we'll use a Sage View instead.
+                if dialect == "FALCON" and "TS_BI_SERVER.table.tml" in file.name:
                     continue
 
-                if is_falcon and "TS_BI_SERVER.view.tml" in tml.name:
+                if dialect == "FALCON" and "TS_BI_SERVER.view.tml" in file.name:
                     tml.view.formulas[-1].expr = f"'{ts.session_context.thoughtspot.cluster_id}'"
 
                 tmls.append(tml)
