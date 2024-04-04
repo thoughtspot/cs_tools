@@ -37,7 +37,10 @@ def sync():
     """
     Sync your local environment with the most up-to-date dependencies.
     """
-    cs_tools_venv.pip("install", "--upgrade", "--upgrade-strategy", "eager")
+    # RIGHT NOW, we limit to these packages only.
+    # - thoughtspot_tml
+    #
+    cs_tools_venv.pip("install", "thoughtspot_tml", "--upgrade", "--upgrade-strategy", "eager")
 
 
 @app.command(cls=CSToolsCommand, name="update")
