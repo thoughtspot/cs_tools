@@ -58,12 +58,15 @@ class DThoughtSpot(Dependency):
         return getattr(ctx.obj, "thoughtspot", self)
 
     def _process_leftover_options(self) -> None:
-        """Extra args will never actually be arguments. They will always be options."""
+        """Perform parsing of extra args."""
         ctx = click.get_current_context()
 
-        # First check the parameters to see if `--config` exists in them. If it does, we're missing an argument.
-        for name in (k for k, v in ctx.params.items() if v == "--config"):
-            ctx.fail(f"Missing argument '{name.upper()}'")
+        # DEV NOTE: @boonhapus, 2024/04/03
+        # context.args.... list[str], the leftover arguments
+        # context.params.. dict[str, Any], parameter names to parsed values. params with expose_value=False arn't stored
+        #
+        # Basiclly, we want to take the args, check if `--config` is in them and add it to .params
+        #
 
         extra: list[str] = []
         unrecognized = collections.deque(ctx.args)
@@ -109,8 +112,8 @@ class DThoughtSpot(Dependency):
         if ctx.args:
             log.warning(f"[b yellow]Ignoring extra arguments ({' '.join(ctx.args)})")
 
-        command_option = [p.name for p in ctx.command.params if isinstance(p, click.Option)]
-        overrides = {k: ctx.params.pop(k) for k in ctx.params.copy() if k not in command_option}
+        command_params = [p.name for p in ctx.command.params]
+        overrides = {k: ctx.params.pop(k) for k in ctx.params.copy() if k not in command_params}
 
         log.debug(f"Command Overrides: {' '.join(overrides)}")
 
