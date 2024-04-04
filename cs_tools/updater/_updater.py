@@ -184,10 +184,17 @@ class CSToolsVirtualEnvironment:
         directory = "Scripts" if self.IS_WINDOWS else "bin"
         exec_name = "python.exe" if self.IS_WINDOWS else "python"
 
-        if "pyenv" in sys_pydir.as_posix():
-            python = sys_pydir / exec_name
+        for python in (sys_pydir / exec_name, sys_pydir / directory / exec_name):
+            if python.exists():
+                break
         else:
-            python = sys_pydir / directory / exec_name
+            log.error("Could not find global python executable. Do you have python installed?")
+            raise SystemExit(1)
+
+        # if "pyenv" in sys_pydir.as_posix():
+        #     python = sys_pydir / exec_name
+        # else:
+        #     python = sys_pydir / directory / exec_name
 
         # Run with global/system python , equivalent to..
         #   python -m venv $USER_DIR/cs_tools/.cs_tools
