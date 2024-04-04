@@ -18,7 +18,7 @@ from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.errors import CSToolsError
 from cs_tools.updater import cs_tools_venv
 
-from . import _extended_rest_api_v1, layout, work
+from . import layout, work
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(help="""Manage Users and Groups in bulk.""")
@@ -56,9 +56,6 @@ def transfer(
         ("gather_content", f"Getting content for [b blue]{from_username}[/]"),
         ("transfer_ownership", f"Setting [b blue]{to_username}[/] as the content Author"),
     ]
-
-    if ts.platform.deployment == "software":
-        tasks.append(("transfer_dataflow", f"Transferring DataFlow ownership to [b blue]{to_username}[/]"))
 
     with LiveTasks(tasks, console=rich_console) as tasks:
         guids_to_transfer = set()
@@ -105,12 +102,6 @@ def transfer(
                 f"Transferred {len(guids_to_transfer) or 'all'} objects from [b blue]{from_username}[/] to "
                 f"[b blue]{to_username}[/]"
             )
-
-        if ts.platform.deployment == "software":
-            with tasks["transfer_dataflow"]:
-                _extended_rest_api_v1.dataflow_transfer_ownership(
-                    ts.api.v1, from_username=from_username, to_username=to_username
-                )
 
 
 @app.command(dependencies=[thoughtspot])

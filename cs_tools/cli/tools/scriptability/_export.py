@@ -224,7 +224,7 @@ def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -
                 r.error_messages = ["Unable to parse to TML object."]
 
     # .export_fqn NEW in 8.7.0, here's the backwards compat
-    if AwesomeVersion(ts.platform.version) < AwesomeVersion("8.7.0"):
+    if ts.session_context.thoughtspot.version < AwesomeVersion("8.7.0"):
         for tml in tml_objects:
             parents = ts.metadata.table_references(tml.guid, tml_type=tml.tml_type_name)
             guid_name_map = {parent.parent_guid: parent.parent_name for parent in parents}
