@@ -750,8 +750,9 @@ def _share_with(ts: ThoughtSpot, objects: list[TMLImportResponse], share_with: l
             type_bundles = {}
             for _ in objects:
                 # Connection sharing is available in 9.3+
-                if _.metadata_object_type == MetadataObjectType.connection and ts.platform.version < AwesomeVersion(
-                    "9.3.0"
+                if (
+                    _.metadata_object_type == MetadataObjectType.connection
+                    and ts.session_context.thoughtspot.version < AwesomeVersion("9.3.0")
                 ):
                     continue
 
