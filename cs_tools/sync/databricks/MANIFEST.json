@@ -1,0 +1,5 @@
+{
+    "name": "databricks",
+    "syncer_class": "Databricks",
+    "requirements": ["databricks-sql-connector>=2.9.3"]
+}
