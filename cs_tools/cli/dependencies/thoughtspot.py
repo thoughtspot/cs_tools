@@ -115,7 +115,8 @@ class DThoughtSpot(Dependency):
         command_params = [p.name for p in ctx.command.params]
         overrides = {k: ctx.params.pop(k) for k in ctx.params.copy() if k not in command_params}
 
-        log.debug(f"Command Overrides: {' '.join(overrides)}")
+        if overrides:
+            log.debug(f"Command Overrides: {' '.join(overrides)}")
 
         cfg = CSToolsConfig.from_name(config, **overrides, automigrate=True)
 
