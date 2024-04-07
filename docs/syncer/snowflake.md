@@ -39,7 +39,7 @@ Instead of having a single, monolithic database, Snowflake separates the storage
     
     ---
 
-    - [ ] __schema___{ .fc-blue }, _the schema to write new data to_
+    - [ ] __schema__{ .fc-blue }, _the schema to write new data to_
     <br />___if tables do not exist in the database.schema location already, we'll auto-create them___{ .fc-green }
 
     ---
