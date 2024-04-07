@@ -127,7 +127,7 @@ nav:
     - "What's a Syncer?": syncer/what-is.md
     # - Amazon Redshift: syncer/redshift.md
     - CSV: syncer/csv.md
-    # - Databricks: syncer/databricks.md
+    - Databricks: syncer/databricks.md
     # - Google BigQuery: syncer/bigquery.md
     - Google Sheets: syncer/gsheets.md
     - JSON: syncer/json.md
