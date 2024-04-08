@@ -3,7 +3,7 @@
     "syncer_class": "Redshift",
     "requirements": [
         "sqlalchemy-redshift>=1.4.1",
-        "redshift-connector>=2.0.905",
+        "redshift_connector>=2.1.0",
         "s3fs>=2022.2.0"
     ]
 }
