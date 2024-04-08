@@ -67,4 +67,5 @@ class Redshift(DatabaseSyncer):
             self.session.execute(table.insert(), data)
 
         if self.load_strategy == "UPSERT":
-            raise NotImplementedError("Not Done...")
+            self.session.execute(table.merge())
+            self.session.commit()  #
