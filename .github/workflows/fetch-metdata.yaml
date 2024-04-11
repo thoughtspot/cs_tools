@@ -31,4 +31,4 @@ jobs:
 
       # --config ENV:   tells CS Tools to pull the information from environment variables.
       - name: Refresh Metadata from ThoughtSpot
-        run: "cs_tools tools seachable metadata --syncer ${{ secrets.SYNCER_DECLARATIVE_STRING }} --config ENV:"
+        run: "cs_tools tools searchable metadata --syncer ${{ secrets.SYNCER_DECLARATIVE_STRING }} --config ENV:"
