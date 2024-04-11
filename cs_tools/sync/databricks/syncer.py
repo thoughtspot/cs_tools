@@ -8,7 +8,6 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import __version__
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 from cs_tools.sync.types import TableRows
@@ -16,18 +15,9 @@ from cs_tools.sync.types import TableRows
 log = logging.getLogger(__name__)
 
 
-
 class Databricks(DatabaseSyncer):
-    """
-    Interact with a Databricks database.
+    """Interact with a Databricks database."""
 
-    SSL Error [Mac OS]: Install Certificates -> /Applications/Python x.y/Install Certificates.command
-    -> Check if mac
-
-    1. Insert Many Pattern for Databricks
-    2. Dialects-> max variable in single statment
-    
-    """
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
     __syncer_name__ = "Databricks"
 
@@ -37,10 +27,11 @@ class Databricks(DatabaseSyncer):
     catalog: str
     schema_: Optional[str] = pydantic.Field(default="default", alias="schema")
     port: Optional[int] = 443
+    temp_dir: Optional[pydantic.DirectoryPath] = pathlib.Path(".")
 
     @pydantic.field_validator("access_token", mode="before")
     @classmethod
-    def ensure_dapi_prefix(cls,value: Any) -> str:
+    def ensure_dapi_prefix(cls, value: Any) -> str:
         if not str(value).startswith("dapi"):
             raise ValueError("Token should start with 'dapi'")
         return value
@@ -64,7 +55,7 @@ class Databricks(DatabaseSyncer):
     def __repr__(self):
         return f"<DatabricksSyncer to {self.server_hostname}/{self.http_path}/{self.catalog}>"
 
-    def load(self, tablename: str) -> TableRows:  
+    def load(self, tablename: str) -> TableRows:
         """SELECT rows from Databricks"""
         table = self.metadata.tables[f"{self.schema_}.{tablename}"]
         rows = self.session.execute(table.select())
@@ -77,13 +68,13 @@ class Databricks(DatabaseSyncer):
             return
 
         table = self.metadata.tables[f"{self.schema_}.{tablename}"]
-        
+
         if self.load_strategy == "APPEND":
-            sync_utils.batched(table.insert().values, session=self.session, data=data)
+            sync_utils.batched(table.insert().values, session=self.session, data=data, max_parameters=250)
 
         if self.load_strategy == "TRUNCATE":
             self.session.execute(table.delete())
-            sync_utils.batched(table.insert().values, session=self.session, data=data)
+            sync_utils.batched(table.insert().values, session=self.session, data=data, max_parameters=250)
 
         if self.load_strategy == "UPSERT":
-            sync_utils.generic_upsert(table, session=self.session, data=data)
+            sync_utils.generic_upsert(table, session=self.session, data=data, max_params=250)
