@@ -180,19 +180,15 @@ class CSToolsVirtualEnvironment:
         if self.exists:
             return
 
-        sys_pydir = pathlib.Path(sys.base_prefix)
-        directory = "Scripts" if self.IS_WINDOWS else "bin"
-        exec_name = "python.exe" if self.IS_WINDOWS else "python"
-
-        for python in (sys_pydir / exec_name, sys_pydir / directory / exec_name):
-            if python.exists():
-                break
-        else:
-            log.error("Could not find global python executable. Do you have python installed?")
-            raise SystemExit(1)
+        # TODO: need to replace this with an implementation which finds the system python executable, apparently
+        #       sys.base_prefix is NOT the way.
+        #
+        # LIKELY: https://virtualenv.pypa.io/en/16.7.9/reference.html#compatibility-with-the-stdlib-venv-module
+        python = sys.executable
 
         # Run with global/system python , equivalent to..
         #   python -m venv $USER_DIR/cs_tools/.cs_tools
+        log.debug(f"Executing venv creation: {python} -m venv {self.venv_path}")
         self.run(python, "-m", "venv", self.venv_path.as_posix())
 
         # Ensure `pip` is at least V23.1 so that backjumping is available
@@ -200,21 +196,11 @@ class CSToolsVirtualEnvironment:
 
     def reset(self) -> None:
         """Reset the virtual environment to base."""
-        cp = self.pip("freeze", visible_output=False)
-        frozen = [
-            line
-            for line in cp.stdout.decode().split("\n")
-            for version_specifier in ("==", "@")
-            if version_specifier in line
-        ]
+        # Destroy the venv.
+        shutil.rmtree(self.venv_path, ignore_errors=True)
 
-        installed = self.venv_path.joinpath("INSTALLED-REQUIREMENTS.txt")
-        installed.write_text("\n".join(frozen))
-
-        if installed.stat().st_size:
-            self.pip("uninstall", "-r", installed.as_posix(), "-y")
-
-        installed.unlink()
+        # Re-make the venv.
+        self.make()
 
 
 cs_tools_venv = CSToolsVirtualEnvironment()

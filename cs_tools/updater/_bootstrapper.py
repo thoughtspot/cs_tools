@@ -89,12 +89,19 @@ def cli():
         action="store_true",
         default=False,
     )
+    parser.add_argument(
+        "--no-clean",
+        help="don't remove existing BOOTSTRAPPER files",
+        dest="pre_clean",
+        action="store_false",
+        default=True,
+    )
 
     args = parser.parse_args()
     _setup_logging(args.verbose)
 
     # remove any pre-existing work from a historical install
-    if not args.offline_mode:
+    if args.pre_clean:
         _cleanup()
 
     log.info(
@@ -146,7 +153,7 @@ def cli():
             requires = "cs_tools[cli]"
 
             if args.offline_mode:
-                log.info("Using the offline binary found at {p}{v.find_links}{x}".format(p=_PURPLE, x=_RESET, v=venv))
+                log.info(f"Using the offline binary found at {_PURPLE}{venv.find_links}{_RESET}")
 
             elif args.dev:
                 log.info("Installing locally using the development environment.")
@@ -154,7 +161,7 @@ def cli():
                 dir_updater = os.path.dirname(here)
                 dir_library = os.path.dirname(dir_updater)
                 dir_package = os.path.dirname(dir_library)
-                requires = "{local}[cli]".format(local=dir_package)
+                requires = f"{dir_package}[cli]"
 
             else:
                 log.info("Getting the latest CS Tools {beta}release.".format(beta="beta " if args.beta else ""))
@@ -173,7 +180,7 @@ def cli():
             shutil.rmtree(venv.venv_path, ignore_errors=True)
             path.unset()
 
-        log.info("{g}Done!{x} Thank you for trying CS Tools.".format(g=_GREEN, x=_RESET))
+        log.info(f"{_GREEN}Done!{_RESET} Thank you for trying CS Tools.")
 
         if args.install or args.reinstall:
             log.info(
