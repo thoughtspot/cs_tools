@@ -34,7 +34,7 @@ def is_valid_guid(to_test: str) -> bool:
     return str(guid) == to_test
 
 
-def scrub_undefined_sentinel(inp: Any, *, null: Union[UNDEFINED, None]) -> Any:
+def scrub_undefined_sentinel(inp: Any, *, null: Union[type[UNDEFINED], None]) -> Any:
     """
     Remove sentinel values from input parameters.
 
@@ -59,7 +59,7 @@ def obfuscate_sensitive_data(request_query: httpx.QueryParams) -> dict[str, Any]
     httpx.QueryParams.items() returns only the first specified parameter. If the user
     specifies the parameter multiple times, we'd have to switch to .multi_items().
     """
-    SAFEWORDS = ("password", "access_token")
+    SAFEWORDS = ("auth_token", "secret_key", "password", "access_token")
 
     # don't modify the actual keywords we want to build into the request
     secure = copy.deepcopy({k: v for k, v in request_query.items() if k not in ("file", "files")})
