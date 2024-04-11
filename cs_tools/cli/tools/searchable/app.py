@@ -209,7 +209,7 @@ def bi_server(
         with tasks["gather_search"]:
             data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
 
-            # SEARCH DATA API SEEMS TO HATE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
+            # SEARCH DATA API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
             data = [dict(t) for t in {tuple(sorted(d.items())) for d in data}]
 
             # CLUSTER BY --> TIMESTAMP .. everything else is irrelevant after TS.
