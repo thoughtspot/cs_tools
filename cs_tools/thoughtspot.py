@@ -22,7 +22,7 @@ from cs_tools.api.middlewares import (
     TSLoadMiddleware,
     UserMiddleware,
 )
-from cs_tools.datastructures import SessionContext
+from cs_tools.datastructures import LocalSystemInfo, SessionContext
 from cs_tools.errors import AuthenticationError, ThoughtSpotUnavailable
 
 if TYPE_CHECKING:
@@ -86,11 +86,19 @@ class ThoughtSpot:
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
             if "SSL: CERTIFICATE_VERIFY_FAILED" in str(e):
                 reason = "Outdated Python default certificate detected."
+                # fmt: off
                 mitigation = (
                     f"Quick fix: run [b blue]cs_tools config modify --config {self.config.name} --disable_ssl[/] "
-                    f"and try again.\n\nLonger fix: try running [b blue]pip install certifi "
-                    f"--upgrade[/] and try again."
+                    f"and try again."
+                    f"\n\nLonger fix: try running [b blue]pip install certifi --upgrade[/] and try again."
                 )
+                # fmt: on
+
+                if LocalSystemInfo().is_mac_osx:
+                    mitigation = (
+                        "\n\nLonger fix: install (double click) the pre-bundled python certificates located at "
+                        "[b blue]/Applications/Python x.y/Install Certificates.command[/]"
+                    )
             else:
                 reason = (
                     f"Cannot connect to ThoughtSpot ( [b blue]{self.config.thoughtspot.url}[/] ) from your " f"computer"

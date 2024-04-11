@@ -67,9 +67,10 @@ def batched(prepared_statement, *, session: sa.orm.Session, data: TableRows, max
             rows = []
 
     # Final commit, grab the rest of the data rows.
-    stmt = prepared_statement(rows)
-    session.execute(stmt)
-    session.commit()
+    if rows:
+        stmt = prepared_statement(rows)
+        session.execute(stmt)
+        session.commit()
 
 
 def generic_upsert(
@@ -86,7 +87,7 @@ def generic_upsert(
     Performs multiple queries to classify and then properly add records.
     """
     if unique_key is None and not target.primary_key:
-        raise ValueError()
+        raise ValueError(f"No unique key was supplied for {target}")
 
     log.debug(f"   TABLE: {target}")
     log.debug(f"DATA IN: {len(data): >7,} rows")
