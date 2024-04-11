@@ -25,6 +25,18 @@ class Parquet(Syncer):
     directory: Union[pydantic.DirectoryPath, pydantic.NewPath]
     compression: Literal["GZIP", "SNAPPY"] = "GZIP"
 
+    @pydantic.field_validator("directory", mode="after")
+    @classmethod
+    def _ensure_directory_exists(cls, value: Union[pydantic.DirectoryPath, pydantic.NewPath]) -> pydantic.DirectoryPath:
+        if value.is_file():
+            raise ValueError(f"{value.resolve().as_posix()} is a file, not a directory.")
+
+        if not value.exists():
+            log.warning(f"The directory '{value.resolve().as_posix()}' does not yet exist, creating it..")
+            value.mkdir(parents=True, exist_ok=True)
+
+        return value
+
     def __repr__(self):
         return f"<ParquetSyncer directory='{self.directory}'>"
 
