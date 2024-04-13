@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 import collections
+import json
 import logging
 
 import httpx
@@ -214,7 +215,7 @@ class ThoughtSpot:
                 login_info.pop("password")
 
         try:
-            log.debug(f"Session context\n{self.session_context.model_dump()}")
+            log.debug(f"SESSION CONTEXT\n{json.dumps(self.session_context.model_dump(mode='json'), indent=4)}")
         except errors.NoSessionEstablished:
             for method, r in attempted_auth_method.items():
                 log.info(f"Attempted  {method.title().replace('_', ' ')}: HTTP {r.status_code}, see logs for details..")

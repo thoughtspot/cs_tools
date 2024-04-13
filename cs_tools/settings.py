@@ -179,7 +179,7 @@ class MetaConfig(_GlobalModel):
             log.debug("Could not save to .meta-config.json")
 
         except Exception as e:
-            log.warning(f"Could not fetch release url: {e}")
+            log.debug(f"Could not fetch release url: {e}", exc_info=True)
 
     def newer_version_string(self) -> str:
         """Return the CLI new version media string."""
