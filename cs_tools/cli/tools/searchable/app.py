@@ -46,6 +46,7 @@ def deploy(
         ),
         show_default=False,
     ),
+    org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
     export: pathlib.Path = typer.Option(
         None,
         help="download the TML files of the SpotApp",
@@ -58,6 +59,9 @@ def deploy(
     """
     ts = ctx.obj.thoughtspot
 
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.org.switch(org=org_override)
+
     tasks = [
         ("connection_details", "Getting details for data source"),
         ("customize_spotapp", "Customizing [b blue]Searchable Worksheets[/] to your environment"),
@@ -66,7 +70,6 @@ def deploy(
 
     with LiveTasks(tasks, console=rich_console) as tasks:
         with tasks["connection_details"] as this_task:
-            connection_guid: str = None
             connection_name: str = None
             dialect: str = None
 
@@ -77,13 +80,12 @@ def deploy(
             else:
                 try:
                     info = ts.metadata.fetch_data_source_info(connection_guid)
-                except AttributeError:
-                    log.error(f"Could not find a connection with guid {connection_guid}")
+                except (KeyError, IndexError):
+                    log.error(f"Could not find a connection with guid '{connection_guid}'")
                     raise typer.Exit(1) from None
 
-                connection_guid = info["header"]["id"]
                 connection_name = info["header"]["name"]
-                dialect = info["header"]["type"]
+                dialect = info["type"]
 
         # Care for UPPERCASE or lowercase identity convention in dialects
         should_upper = "SNOWFLAKE" in dialect
@@ -180,12 +182,8 @@ def bi_server(
 
     # DEV NOTE: @boonhapus
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
-
     if ts.session_context.thoughtspot.is_orgs_enabled:
         ts.org.switch(org=0)
-
-    elif org_override is not None:
-        org_override = None
 
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
