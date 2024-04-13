@@ -63,9 +63,9 @@ class MetaConfig(_GlobalModel):
 
     install_uuid: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
     default_config_name: Optional[str] = None
-    remote: Optional[RemoteRepositoryInfo] = RemoteRepositoryInfo()
-    analytics: Optional[AnalyticsOptIn] = AnalyticsOptIn()
-    environment: Optional[ExecutionEnvironment] = ExecutionEnvironment()
+    remote: RemoteRepositoryInfo = RemoteRepositoryInfo()
+    analytics: AnalyticsOptIn = AnalyticsOptIn()
+    environment: ExecutionEnvironment = ExecutionEnvironment()
     created_in_cs_tools_version: validators.CoerceVersion = __version__
 
     _new_version_notified_ack: bool = False
