@@ -172,7 +172,7 @@ def run() -> int:
     this_run = _analytics.CommandExecution.validated_init(**this_run_data, context=app.info.context_settings["obj"])
 
     # Add the analytics to the local database
-    if not (CURRENT_RUNTIME.is_ci or CURRENT_RUNTIME.is_dev):
+    if not CURRENT_RUNTIME.is_dev:
         try:
             with db.begin() as transaction:
                 stmt = sa.insert(_analytics.CommandExecution).values([this_run.model_dump()])

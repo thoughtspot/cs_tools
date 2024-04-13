@@ -129,7 +129,7 @@ class DThoughtSpot(Dependency):
 
     def _send_analytics_in_background(self) -> None:
         """Send analyics in the background."""
-        if meta.analytics.is_opted_in is not True or meta.environment.is_dev:
+        if meta.analytics.is_opted_in or meta.environment.is_dev or meta.environment.is_ci:
             return
 
         # AVOID CIRCULAR IMPORTS WITH cli.ux

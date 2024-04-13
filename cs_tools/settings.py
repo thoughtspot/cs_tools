@@ -139,6 +139,9 @@ class MetaConfig(_GlobalModel):
 
     def save(self) -> None:
         """Store the meta-config."""
+        if self.environment.is_ci:
+            return
+
         full_path = cs_tools_venv.app_dir / ".meta-config.json"
 
         # Don't save extra data.
@@ -356,12 +359,12 @@ class CSToolsConfig(_GlobalSettings):
     @classmethod
     def from_environment(cls, name: str = "ENV", *, dotfile: Optional[pathlib.Path] = None) -> CSToolsConfig:
         """Read in a config from environment variables."""
-        extra = {}
+        config = {"name": name}
 
         if dotfile is not None:
-            extra["_env_file"] = pathlib.Path(dotfile).as_posix()
+            config["_env_file"] = pathlib.Path(dotfile).as_posix()
 
-        return cls(name=name, thoughtspot={}, **extra)
+        return cls.model_validate(config)
 
     @classmethod
     def from_toml(cls, path: pathlib.Path, automigrate: bool = False) -> CSToolsConfig:

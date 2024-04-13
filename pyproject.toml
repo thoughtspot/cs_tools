@@ -114,6 +114,9 @@ cstools = "cs_tools.cli.commands.main:run"
 version = {attr = "cs_tools.__project__.__version__"}
 
 [tool.mypy]
+plugins = [
+    "pydantic.mypy"
+]
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
