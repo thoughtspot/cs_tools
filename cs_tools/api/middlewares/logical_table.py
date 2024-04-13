@@ -75,6 +75,12 @@ class LogicalTableMiddleware:
             if exclude_system_content:
                 to_extend = [table for table in to_extend if table.get("authorName") not in _utils.SYSTEM_USERS]
 
+            # Fake the .type for Models.
+            to_extend = [
+                {**table, "type": "MODEL" if table.get("worksheetVersion") == "V2" else table["type"]}
+                for table in to_extend
+            ]
+
             tables.extend([{"metadata_type": "LOGICAL_TABLE", **table} for table in to_extend])
 
             if not tables and raise_on_error:
