@@ -40,7 +40,9 @@ def create(
     config: str = typer.Option(..., help="config file identifier", metavar="NAME"),
     url: str = typer.Option(..., help="your thoughtspot url or IP"),
     username: str = typer.Option(..., help="username when logging into ThoughtSpot"),
-    password: str = typer.Option(None, help="the password you type when using the ThoughtSpot login screen"),
+    password: str = typer.Option(
+        None, help="the password you type on the ThoughtSpot login screen, use [b magenta]prompt[/] to type it hidden"
+    ),
     secret: str = typer.Option(None, help="the trusted authentication secret key, found in the developer tab"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
     default_org: int = typer.Option(None, help="org ID to sign into by default"),
@@ -57,15 +59,18 @@ def create(
     Create a new config file.
     """
 
+    if not any((password, secret, token)):
+        log.error("You must specify at least one authentication method (--password, --secret, or --token)")
+        raise typer.Exit()
+
     if CSToolsConfig.exists(name=config):
         log.warning(f'[b yellow]Configuration file "{config}" already exists.')
 
         if not Confirm.ask("\nDo you want to overwrite it?", console=rich_console):
             raise typer.Abort()
 
-    if all(safe is None for safe in (password, secret, token)):
-        log.error("You must specify at least one authentication method")
-        return -1
+    if password == "prompt":
+        password = rich_console.input("\nType your password [b yellow](your input is hidden)\n", password=True)
 
     data = {
         "name": config,
@@ -112,7 +117,9 @@ def modify(
     config: str = typer.Option(None, help="config file identifier", metavar="NAME"),
     url: str = typer.Option(None, help="your thoughtspot server"),
     username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
-    password: str = typer.Option(None, help="the password you type when using the ThoughtSpot login screen"),
+    password: str = typer.Option(
+        None, help="the password you type on the ThoughtSpot login screen, use [b magenta]prompt[/] to type it hidden"
+    ),
     secret: str = typer.Option(None, help="the trusted authentication secret key"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
     disable_ssl: bool = typer.Option(
@@ -140,7 +147,7 @@ def modify(
         data["thoughtspot"]["default_org"] = default_org
 
     if password == "prompt":
-        password = rich_console.input("[b yellow]Type your password (your input is hidden)\n", password=True)
+        password = rich_console.input("\nType your password [b yellow](your input is hidden)\n", password=True)
 
     if password is not None:
         data["thoughtspot"]["password"] = password
