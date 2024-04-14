@@ -2,8 +2,8 @@
     "name": "redshift",
     "syncer_class": "Redshift",
     "requirements": [
-        "sqlalchemy-redshift>=1.4.1",
-        "redshift_connector>=2.1.0",
-        "psycopg2-binary>=2.9.9"
+        "sqlalchemy-redshift >= 1.4.1",
+        "redshift_connector >= 2.1.0",
+        "psycopg2-binary >= 2.9.9"
     ]
 }

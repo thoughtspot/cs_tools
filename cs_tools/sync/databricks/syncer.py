@@ -33,7 +33,7 @@ class Databricks(DatabaseSyncer):
     @classmethod
     def ensure_dapi_prefix(cls, value: Any) -> str:
         if not str(value).startswith("dapi"):
-            raise ValueError("Token should start with 'dapi'")
+            raise ValueError("Access Token should start with 'dapi'")
         return value
 
     def __init__(self, **kwargs):
@@ -43,14 +43,12 @@ class Databricks(DatabaseSyncer):
 
     def make_url(self) -> str:
         """Create a connection string for the Databricks JDBC driver."""
-        url_kwargs = {
-            "username": "token",
-            "password": self.access_token,
-            "host": self.server_hostname,
-            "port": self.port,
-            "query": f"http_path={self.http_path}&catalog={self.catalog}&schema={self.schema_}",
-        }
-        return "databricks://{username}:{password}@{host}:{port}?{query}".format(**url_kwargs)
+        username = "token"
+        password = self.access_token
+        host = self.server_hostname
+        port = self.port
+        query = f"http_path={self.http_path}&catalog={self.catalog}&schema={self.schema_}"
+        return f"databricks://{username}:{password}@{host}:{port}?{query}"
 
     def __repr__(self):
         return f"<DatabricksSyncer to {self.server_hostname}/{self.http_path}/{self.catalog}>"
@@ -77,4 +75,8 @@ class Databricks(DatabaseSyncer):
             sync_utils.batched(table.insert().values, session=self.session, data=data, max_parameters=250)
 
         if self.load_strategy == "UPSERT":
+            # TODO: @sameerjain901, 2024/02/10
+            #   need to investigate COPY->MERGE INTO functionality, similar to how we have in Snowflake syncer
+            #   https://docs.databricks.com/en/sql/language-manual/delta-merge-into.html
+            #
             sync_utils.generic_upsert(table, session=self.session, data=data, max_params=250)
