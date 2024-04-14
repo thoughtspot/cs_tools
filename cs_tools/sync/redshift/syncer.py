@@ -22,7 +22,7 @@ class Redshift(DatabaseSyncer):
     host: str
     port: int = 5439
     username: str
-    password: str
+    secret: str
     database: str
     authentication: Literal["basic"] = "basic"
 
@@ -35,9 +35,9 @@ class Redshift(DatabaseSyncer):
         host = self.host
         port = self.port
         username = self.username
-        password = self.password
+        secret = self.secret
         database = self.database
-        return f"redshift+psycopg2://{username}:{password}@{host}:{port}/{database}"
+        return f"redshift+psycopg2://{username}:{secret}@{host}:{port}/{database}"
 
     def __repr__(self):
         return f"<RedshiftSyncer to {self.host}/{self.database}>"
