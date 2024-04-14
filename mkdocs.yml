@@ -125,19 +125,19 @@ nav:
     - User Management: tools/user-management/README.md
   - Syncers:
     - "What's a Syncer?": syncer/what-is.md
-    # - Amazon Redshift: syncer/redshift.md
     - CSV: syncer/csv.md
     - Databricks: syncer/databricks.md
+    - Excel: syncer/excel.md
+    - Falcon: syncer/falcon.md
     # - Google BigQuery: syncer/bigquery.md
     - Google Sheets: syncer/gsheets.md
     - JSON: syncer/json.md
-    - Microsoft Excel: syncer/excel.md
     - Parquet: syncer/parquet.md
     # - Postgres: syncer/postgres.md
+    - Redshift: syncer/redshift.md
     - Snowflake: syncer/snowflake.md
     - SQLite: syncer/sqlite.md
     - Starburst: syncer/starburst.md
-    - ThoughtSpot Falcon: syncer/falcon.md
     - Trino: syncer/trino.md
   - Changelog:
     - v1.5.0: changelog/1.5.0.md
