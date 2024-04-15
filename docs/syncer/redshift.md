@@ -8,6 +8,13 @@ Redshift is a powerful data warehousing service provided by Amazon Web Services 
 
 Redshift's combination of high performance, scalability, cost-effectiveness, ease of use, and advanced analytics capabilities make it a highly useful data warehousing solution for businesses of all sizes, especially those dealing with large and growing datasets.
 
+??? example "Setup instructions"
+
+    If you face issues with connectivity to your Redshift cluster, make sure you can first access the cluster from your local machine.
+
+    You can learn how to make your cluster accessible in the [__Redshift documentation__](https://repost.aws/knowledge-center/redshift-cluster-private-public).
+
+
 !!! note "Redshift parameters"
 
     ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
