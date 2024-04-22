@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 import functools as ft
 import logging
 
@@ -8,7 +8,6 @@ from cs_tools import utils
 from cs_tools.errors import CSToolsError
 from cs_tools.types import (
     GUID,
-    MetadataObjectSubtype,
     MetadataObjectType,
     MetadataParent,
     PermissionType,
@@ -32,31 +31,18 @@ class MetadataMiddleware:
         self,
         guids: list[GUID],
         *,
-        type: Union[MetadataObjectType, MetadataObjectSubtype],  # noqa: A002
+        metadata_type: MetadataObjectType,
         permission_type: PermissionType = PermissionType.explicit,
         chunksize: int = 25,
     ) -> TableRowsFormat:
-        """ """
-        type_to_supertype = {
-            "FORMULA": "LOGICAL_COLUMN",
-            "CALENDAR_TABLE": "LOGICAL_COLUMN",
-            "LOGICAL_COLUMN": "LOGICAL_COLUMN",
-            "QUESTION_ANSWER_BOOK": "QUESTION_ANSWER_BOOK",
-            "PINBOARD_ANSWER_BOOK": "PINBOARD_ANSWER_BOOK",
-            "ONE_TO_ONE_LOGICAL": "LOGICAL_TABLE",
-            "USER_DEFINED": "LOGICAL_TABLE",
-            "WORKSHEET": "LOGICAL_TABLE",
-            "AGGR_WORKSHEET": "LOGICAL_TABLE",
-            "MATERIALIZED_VIEW": "LOGICAL_TABLE",
-            "SQL_VIEW": "LOGICAL_TABLE",
-            "LOGICAL_TABLE": "LOGICAL_TABLE",
-        }
-
+        """
+        Fetch permissions for a given object type.
+        """
         sharing_access = []
         group_guids = [group["id"] for group in self.ts.group.all()]
 
         for chunk in utils.batched(guids, n=chunksize):
-            r = self.ts.api.v1.security_metadata_permissions(metadata_type=type_to_supertype[type], guids=chunk)
+            r = self.ts.api.v1.security_metadata_permissions(metadata_type=metadata_type, guids=chunk)
 
             for data in r.json().values():
                 for shared_to_principal_guid, permission in data["permissions"].items():
@@ -233,23 +219,36 @@ class MetadataMiddleware:
         existence = {header["id"] for header in r.json()["headers"]}
         return {guid: guid in existence for guid in guids}
 
-    @ft.lru_cache(maxsize=1000)  # noqa: B019
-    def fetch_data_source_info(self, guid: GUID) -> GUID:
+    @ft.cache  # noqa: B019
+    def fetch_header_and_extras(self, metadata_type: MetadataObjectType, guid: GUID) -> dict:
         """
         METADATA DETAILS is expensive. Here's our shortcut.
         """
-        r = self.ts.api.v1.metadata_details(metadata_type="DATA_SOURCE", guids=[guid], show_hidden=True)
-        return r.json()["storables"][0]
+        r = self.ts.api.v1.metadata_details(metadata_type=metadata_type, guids=[guid], show_hidden=True)
 
-    @ft.lru_cache(maxsize=1000)  # noqa: B019
+        d = r.json()["storables"][0]
+
+        header_and_extras = {
+            "metadata_type": metadata_type,
+            "header": d["header"],
+            "type": d.get("type"),  # READ: .subtype  (eg. ONE_TO_ONE_LOGICAL, WORKSHEET, etc..)
+            # LOGICAL_TABLE extras
+            "dataSourceId": d.get("dataSourceId"),
+            "columns": d.get("columns"),
+            # VIZ extras (answer, liveboard)
+            "reportContent": d.get("reportContent"),
+        }
+
+        return header_and_extras
+
     def find_data_source_of_logical_table(self, guid: GUID) -> GUID:
         """
         METADATA DETAILS is expensive. Here's our shortcut.
         """
-        r = self.ts.api.v1.metadata_details(metadata_type="LOGICAL_TABLE", guids=[guid], show_hidden=True)
-        storable = r.json()["storables"][0]
-        return storable["dataSourceId"]
+        info = self.fetch_header_and_extras(metadata_type="LOGICAL_TABLE", guid=guid)
+        return info["dataSourceId"]
 
+    @ft.cache  # noqa: B019
     def table_references(self, guid: GUID, *, tml_type: str, hidden: bool = False) -> list[MetadataParent]:
         """
         Returns a mapping of parent LOGICAL_TABLEs
@@ -265,7 +264,7 @@ class MetadataMiddleware:
 
         """
         metadata_type = TMLSupportedContent.from_friendly_type(tml_type)
-        r = self.ts.api.v1.metadata_details(metadata_type=metadata_type, guids=[guid], show_hidden=hidden)
+        r = self.fetch_header_and_extras(metadata_type=metadata_type, guids=guid, show_hidden=hidden)
         mappings: list[MetadataParent] = []
 
         if "storables" not in r.json():

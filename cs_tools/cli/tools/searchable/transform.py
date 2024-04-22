@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 ArbitraryJsonFormat = list[dict[str, Any]]
 
 
-def to_cluster(data: SessionContext) -> list[TableRowsFormat]:
+def to_cluster(data: SessionContext) -> TableRowsFormat:
     """
     Extract information from the active session.
 
@@ -26,13 +26,13 @@ def to_cluster(data: SessionContext) -> list[TableRowsFormat]:
     return [info.model_dump()]
 
 
-def to_org(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_org(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Simple field renaming.
 
     SOURCE: /tspublic/v1/orgs
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
     out.append(
         models.Org.validated_init(
             cluster_guid=cluster,
@@ -44,13 +44,13 @@ def to_org(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
     return [model.model_dump() for model in out]
 
 
-def to_group(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_group(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming, flattening of orgs.
 
     SOURCE: /tspublic/v1/group
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         for org_id in row["header"].get("orgIds", [0]):
@@ -72,13 +72,13 @@ def to_group(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
     return [model.model_dump() for model in out]
 
 
-def to_group_privilege(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_group_privilege(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming, flattening of privileges.
 
     SOURCE: /tspublic/v1/group . privileges
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         for privilege in row["privileges"]:
@@ -91,13 +91,13 @@ def to_group_privilege(data: ArbitraryJsonFormat, cluster: str) -> list[TableRow
     return [model.model_dump() for model in out]
 
 
-def to_user(data: ArbitraryJsonFormat, ever_seen: set[str], cluster: str) -> list[TableRowsFormat]:
+def to_user(data: ArbitraryJsonFormat, ever_seen: set[str], cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming.
 
     SOURCE: /tspublic/v1/user
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         if row["header"]["id"] in ever_seen:
@@ -120,15 +120,13 @@ def to_user(data: ArbitraryJsonFormat, ever_seen: set[str], cluster: str) -> lis
     return [model.model_dump() for model in out]
 
 
-def to_org_membership(
-    data: ArbitraryJsonFormat, cluster: str, ever_seen: set[tuple[str, ...]]
-) -> list[TableRowsFormat]:
+def to_org_membership(data: ArbitraryJsonFormat, cluster: str, ever_seen: set[tuple[str, ...]]) -> TableRowsFormat:
     """
     Mostly simple field renaming, flattening of assigned orgs.
 
     SOURCE: /tspublic/v1/user . orgIds
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         for org_id in row["header"]["orgIds"]:
@@ -144,13 +142,13 @@ def to_org_membership(
     return [model.model_dump() for model in out]
 
 
-def to_group_membership(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_group_membership(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming, flattening of assigned groups.
 
     SOURCE: /tspublic/v1/group . assignedGroups
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         for group in row["assignedGroups"]:
@@ -163,13 +161,13 @@ def to_group_membership(data: ArbitraryJsonFormat, cluster: str) -> list[TableRo
     return [model.model_dump() for model in out]
 
 
-def to_tag(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_tag(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming, flattening of orgs.
 
     SOURCE: /tspublic/v1/metadata/list ? type = TAG
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         for org_id in row.get("orgIds", [0]):
@@ -189,14 +187,14 @@ def to_tag(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
     return [model.model_dump() for model in out]
 
 
-def to_data_source(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_data_source(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming, flattening of orgs.
 
     SOURCE: /tspublic/v1/metadata/list ? details = LOGICAL_TABLE
     """
     ever_seen: set[tuple[str]] = set()
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         if row.get("metadata_type", None) != "LOGICAL_TABLE":
@@ -221,15 +219,13 @@ def to_data_source(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFor
     return [model.model_dump() for model in out]
 
 
-def to_metadata_object(
-    data: ArbitraryJsonFormat, cluster: str, ever_seen: set[tuple[str, ...]]
-) -> list[TableRowsFormat]:
+def to_metadata_object(data: ArbitraryJsonFormat, cluster: str, ever_seen: set[tuple[str, ...]]) -> TableRowsFormat:
     """
     Mostly simple field renaming, flattening of orgs.
 
     SOURCE: /tspublic/v1/metadata/list ? type = { LOGICAL_TABLE|QUESTION_ANSWER_BOOK|PINBOARD_ANSWER_BOOK }
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         for org_id in row.get("orgIds", [0]):
@@ -260,13 +256,13 @@ def to_metadata_object(
     return [model.model_dump() for model in out]
 
 
-def to_metadata_column(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_metadata_column(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming.
 
     SOURCE: /tspublic/v1/metadata/list ? type = LOGICAL_COLUMN  (cs_tools.middleswares.metadata.columns)
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         out.append(models.MetadataColumn.validated_init(cluster_guid=cluster, **row))
@@ -274,7 +270,7 @@ def to_metadata_column(data: ArbitraryJsonFormat, cluster: str) -> list[TableRow
     return [model.model_dump() for model in out]
 
 
-def to_column_synonym(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_column_synonym(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Clean and de-duplicate synonyms.
 
@@ -287,11 +283,7 @@ def to_column_synonym(data: ArbitraryJsonFormat, cluster: str) -> list[TableRows
 
     for row in data:
         for synonym in row["synonyms"]:
-            if synonym is None:
-                log.warning(
-                    f"{row['column_guid']} has a NULL synonym, this shouldn't be possible, please share details with "
-                    f"the CS Tools team."
-                )
+            if synonym is None or not synonym:
                 continue
 
             model = models.ColumnSynonym.validated_init(
@@ -311,13 +303,13 @@ def to_column_synonym(data: ArbitraryJsonFormat, cluster: str) -> list[TableRows
     return [row.model_dump() for row in sanitized]
 
 
-def to_tagged_object(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_tagged_object(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming.
 
     SOURCE: /tspublic/v1/metadata/list ? type = TAG
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         for tag in row["tags"]:
@@ -332,13 +324,13 @@ def to_tagged_object(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsF
     return [model.model_dump() for model in out]
 
 
-def to_dependent_object(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_dependent_object(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming.
 
     SOURCE: /tspublic/v1/dependency/listdependents
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         out.append(
@@ -360,13 +352,13 @@ def to_dependent_object(data: ArbitraryJsonFormat, cluster: str) -> list[TableRo
     return [model.model_dump() for model in out]
 
 
-def to_sharing_access(data: ArbitraryJsonFormat, cluster: str) -> list[TableRowsFormat]:
+def to_sharing_access(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
     """
     Mostly simple field renaming.
 
     SOURCE: /tspublic/v1/security/metadata/permissions
     """
-    out: list[TableRowsFormat] = []
+    out: TableRowsFormat = []
 
     for row in data:
         PK = (row["object_guid"], row.get("shared_to_user_guid", "NULL"), row.get("shared_to_group_guid", "NULL"))

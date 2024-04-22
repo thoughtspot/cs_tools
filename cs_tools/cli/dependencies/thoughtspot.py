@@ -115,7 +115,8 @@ class DThoughtSpot(Dependency):
         command_params = [p.name for p in ctx.command.params]
         overrides = {k: ctx.params.pop(k) for k in ctx.params.copy() if k not in command_params}
 
-        log.debug(f"Command Overrides: {' '.join(overrides)}")
+        if overrides:
+            log.debug(f"Command Overrides: {' '.join(overrides)}")
 
         cfg = CSToolsConfig.from_name(config, **overrides, automigrate=True)
 
@@ -128,7 +129,7 @@ class DThoughtSpot(Dependency):
 
     def _send_analytics_in_background(self) -> None:
         """Send analyics in the background."""
-        if meta.analytics.is_opted_in is not True or meta.environment.is_dev:
+        if meta.analytics.is_opted_in or meta.environment.is_dev or meta.environment.is_ci:
             return
 
         # AVOID CIRCULAR IMPORTS WITH cli.ux

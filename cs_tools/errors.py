@@ -176,7 +176,7 @@ class SyncerInitError(CSToolsCLIError):
      │                                                             │
      │ Mitigation                                                  │
      │ Check the Syncer's documentation page for more information. │
-     │ https://thoughtspot.github.io/cs_tools/syncer/Starburst/    │
+     │ https://thoughtspot.github.io/cs_tools/syncer/starburst/    │
      ╰─────────────────────────────────────────────────────────────╯
     """
 
@@ -184,13 +184,13 @@ class SyncerInitError(CSToolsCLIError):
     mitigation = (
         # fmt: off
         "Check the Syncer's documentation page for more information."
-        "\n[b blue]https://thoughtspot.github.io/cs_tools/syncer/{proto}/"
+        "\n[b blue]https://thoughtspot.github.io/cs_tools/syncer/{proto_lower}/"
         # fmt: on
     )
 
     def __init__(self, pydantic_error: pydantic.ValidationError, *, proto: str):
         self.pydantic_error = pydantic_error
-        self.error_info = {"proto": proto or pydantic_error.title}
+        self.error_info = {"proto": proto, "proto_lower": proto.lower()}
 
     @property
     def reason(self) -> str:  # type: ignore[override]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 import collections
+import json
 import logging
 
 import httpx
@@ -22,7 +23,7 @@ from cs_tools.api.middlewares import (
     TSLoadMiddleware,
     UserMiddleware,
 )
-from cs_tools.datastructures import SessionContext
+from cs_tools.datastructures import LocalSystemInfo, SessionContext
 from cs_tools.errors import AuthenticationError, ThoughtSpotUnavailable
 
 if TYPE_CHECKING:
@@ -40,8 +41,13 @@ class ThoughtSpot:
 
     def __init__(self, config: CSToolsConfig, auto_login: bool = False):
         self.config = config
-        self.api = RESTAPIClient(ts_url=str(config.thoughtspot.url), verify=not config.thoughtspot.disable_ssl)
         self._session_context: Optional[SessionContext] = None
+        self.config = config
+        self.api = RESTAPIClient(
+            ts_url=str(config.thoughtspot.url),
+            verify=not config.thoughtspot.disable_ssl,
+            proxy=config.thoughtspot.proxy,
+        )
 
         # ==============================================================================================================
         # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
@@ -86,11 +92,18 @@ class ThoughtSpot:
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
             if "SSL: CERTIFICATE_VERIFY_FAILED" in str(e):
                 reason = "Outdated Python default certificate detected."
+                # fmt: off
                 mitigation = (
-                    f"Quick fix: run [b blue]cs_tools config modify --config {self.config.name} --disable_ssl[/] "
-                    f"and try again.\n\nLonger fix: try running [b blue]cs_tools self pip install certifi "
-                    f"--upgrade[/] and try again."
+                    f"Quick fix: run [b blue]cs_tools config modify --config {self.config.name} --disable_ssl[/] and "
+                    f"try again."
                 )
+                # fmt: on
+
+                if LocalSystemInfo().is_mac_osx:
+                    mitigation = (
+                        "\n\nLonger fix: install (double click) the pre-bundled python certificates located at "
+                        "[b blue]/Applications/Python x.y/Install Certificates.command[/]"
+                    )
             else:
                 reason = (
                     f"Cannot connect to ThoughtSpot ( [b blue]{self.config.thoughtspot.url}[/] ) from your " f"computer"
@@ -207,7 +220,7 @@ class ThoughtSpot:
                 login_info.pop("password")
 
         try:
-            log.debug(f"Session context\n{self.session_context.model_dump()}")
+            log.debug(f"SESSION CONTEXT\n{json.dumps(self.session_context.model_dump(mode='json'), indent=4)}")
         except errors.NoSessionEstablished:
             for method, r in attempted_auth_method.items():
                 log.info(f"Attempted  {method.title().replace('_', ' ')}: HTTP {r.status_code}, see logs for details..")

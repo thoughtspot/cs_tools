@@ -1,131 +1,74 @@
 from __future__ import annotations
 
-from typing import Any
-import csv
-import enum
-import io
+from typing import Literal
 import logging
+import pathlib
 
-from pydantic.dataclasses import dataclass
-from sqlalchemy_redshift import dialect
-import s3fs
 import sqlalchemy as sa
+
+from cs_tools.sync import utils as sync_utils
+from cs_tools.sync.base import DatabaseSyncer
+from cs_tools.sync.types import TableRows
+
+from . import compiler  # noqa: F401
 
 log = logging.getLogger(__name__)
 
 
-class AuthType(enum.Enum):
-    local = "local"
-    okta = "okta"
+class Redshift(DatabaseSyncer):
+    """Interact with a Redshift Database."""
 
+    __manifest_path__ = pathlib.Path(__file__).parent
+    __syncer_name__ = "Redshift"
 
-@dataclass
-class Redshift:
-    """
-    Interact with an AWS Redshift database.
-    """
-
-    username: str
-    password: str
-    database: str
-    aws_access_key: str  # for S3 data load
-    aws_secret_key: str  # for S3 data load
-    aws_endpoint: str  # FMT: <clusterid>.xxxxxx.<aws-region>.redshift.amazonaws.com
+    host: str
     port: int = 5439
-    auth_type: AuthType = AuthType.local
-    # okta_account_name: str = None
-    # okta_app_id: str = None
-    truncate_on_load: bool = True
+    username: str
+    secret: str
+    database: str
+    authentication: Literal["basic"] = "basic"
 
-    # DATABASE ATTRIBUTES
-    __is_database__ = True
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._engine = sa.create_engine(self.make_url(), future=True)
 
-    def __post_init_post_parse__(self):
-        if self.auth_type == AuthType.local:
-            connect_args = {}
-            url = sa.engine.URL.create(
-                drivername="redshift+redshift_connector",
-                host=self.aws_endpoint,
-                port=self.port,
-                database=self.database,
-                username=self.username,
-                password=self.password,
-            )
-
-        elif self.auth_type == AuthType.okta:
-            # aws_cluster_id, _, aws_region, *_ = self.aws_endpoint.split('.')
-            # connect_args = {
-            #     'credentials_provider': 'OktaCredentialsProvider',
-            #     'idp_host': '<prefix>.okta.com',
-            #     'app_id': '<appid>',
-            #     'app_name': 'amazon_aws_redshift',
-            #     'cluster_identifier': aws_cluster_id,
-            #     'region': aws_region,
-            #     'ssl_insecure': False,
-            #     **connect_args
-            # }
-            # url = sa.engine.URL.create(
-            #     drivername='redshift+redshift_connector',
-            #     database=self.database,
-            #     username=self.username,
-            #     password=self.password
-            # )
-            raise NotImplementedError(
-                "our implementation is best-effort, but lacks testing.. see the source "
-                "code for ideas on how to implement MFA to Okta."
-            )
-
-        self.engine = sa.create_engine(url, connect_args=connect_args)
-        self.cnxn = self.engine.connect()
-
-        # decorators must be declared here, SQLAlchemy doesn't care about instances
-        sa.event.listen(sa.schema.MetaData, "after_create", self.capture_metadata)
-
-    def capture_metadata(self, metadata, cnxn, **kw):
-        self.metadata = metadata
+    def make_url(self) -> str:
+        """Create a connection string for the Redshift JDBC driver."""
+        host = self.host
+        port = self.port
+        username = self.username
+        secret = self.secret
+        database = self.database
+        return f"redshift+psycopg2://{username}:{secret}@{host}:{port}/{database}"
 
     def __repr__(self):
-        return f"<Database ({self.name}) sync: conn_string='{self.engine.url}'>"
+        return f"<RedshiftSyncer to {self.host}/{self.database}>"
 
-    # MANDATORY PROTOCOL MEMBERS
+    def load(self, tablename: str) -> TableRows:
+        """SELECT rows from Redshift."""
+        table = self.metadata.tables[tablename]
+        rows = self.session.execute(table.select())
+        return [row.model_dump() for row in rows]
 
-    @property
-    def name(self) -> str:
-        return "redshift"
-
-    def load(self, table: str) -> list[dict[str, Any]]:
-        t = self.metadata.tables[table]
-
-        with self.cnxn.begin():
-            r = self.cnxn.execute(t.select())
-
-        return [dict(_) for _ in r]
-
-    def dump(self, table: str, *, data: list[dict[str, Any]]) -> None:
+    def dump(self, tablename: str, *, data: TableRows) -> None:
+        """INSERT rows into Redshift."""
         if not data:
-            log.warning(f"no data to write to syncer {self}")
+            log.warning(f"No data to write to syncer {self}")
             return
 
-        t = self.metadata.tables[table]
+        table = self.metadata.tables[tablename]
 
-        if self.truncate_on_load:
-            with self.cnxn.begin():
-                self.cnxn.execute(table.delete().where(True))
+        if self.load_strategy == "APPEND":
+            sync_utils.batched(table.insert().values, session=self.session, data=data, max_parameters=250)
+            self.session.commit()
 
-        # 1. Load file to S3
-        fs = s3fs.S3FileSystem(key=self.aws_access_key, secret=self.aws_secret_key)
-        fp = f"s3://{self.s3_bucket_name}/ts_{table}.csv"
+        if self.load_strategy == "TRUNCATE":
+            self.session.execute(table.delete())
+            sync_utils.batched(table.insert().values, session=self.session, data=data, max_parameters=250)
 
-        with io.StringIO() as buf, fs.open(fp, "w") as f:
-            header = list(data[0].keys())
-            writer = csv.DictWriter(buf, fieldnames=header, dialect="excel", delimiter="|")
-            writer.writeheader()
-            writer.writerows(data)
-
-            f.write(buf.getvalue())
-
-        # 2. Perform a COPY operation
-        q = dialect.CopyCommand(t, data_location=fp, ignore_header=0)
-
-        with self.cnxn.begin():
-            self.cnxn.execute(q)  # .execution_options(autocommit=True)
+        if self.load_strategy == "UPSERT":
+            # TODO: @saurabhsingh1608, 2024/04/09
+            #   need to investigate COPY->MERGE INTO functionality, similar to how we have in Snowflake syncer
+            #   https://docs.aws.amazon.com/redshift/latest/dg/r_MERGE.html
+            #
+            sync_utils.generic_upsert(table, session=self.session, data=data, max_params=250)

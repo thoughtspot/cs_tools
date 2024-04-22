@@ -36,6 +36,18 @@ class CSV(Syncer):
     _written_header: dict[str, bool] = {}  # noqa: RUF012
     """Whether or not the header has been written for a given file already"""
 
+    @pydantic.field_validator("directory", mode="after")
+    @classmethod
+    def _ensure_directory_exists(cls, value: Union[pydantic.DirectoryPath, pydantic.NewPath]) -> pydantic.DirectoryPath:
+        if value.is_file():
+            raise ValueError(f"{value.resolve().as_posix()} is a file, not a directory.")
+
+        if not value.exists():
+            log.warning(f"The directory '{value.resolve().as_posix()}' does not yet exist, creating it..")
+            value.mkdir(parents=True, exist_ok=True)
+
+        return value
+
     @pydantic.field_validator("delimiter", "escape_character", mode="after")
     @classmethod
     def _only_single_characters_allowed(cls, value: str, info: pydantic.ValidationInfo) -> str:

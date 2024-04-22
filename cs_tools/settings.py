@@ -15,6 +15,7 @@ import pathlib
 import urllib
 import urllib.error
 import uuid
+import zlib
 
 from awesomeversion import AwesomeVersion
 import pydantic
@@ -63,9 +64,9 @@ class MetaConfig(_GlobalModel):
 
     install_uuid: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
     default_config_name: Optional[str] = None
-    remote: Optional[RemoteRepositoryInfo] = RemoteRepositoryInfo()
-    analytics: Optional[AnalyticsOptIn] = AnalyticsOptIn()
-    environment: Optional[ExecutionEnvironment] = ExecutionEnvironment()
+    remote: RemoteRepositoryInfo = RemoteRepositoryInfo()
+    analytics: AnalyticsOptIn = AnalyticsOptIn()
+    environment: ExecutionEnvironment = ExecutionEnvironment()
     created_in_cs_tools_version: validators.CoerceVersion = __version__
 
     _new_version_notified_ack: bool = False
@@ -139,6 +140,9 @@ class MetaConfig(_GlobalModel):
 
     def save(self) -> None:
         """Store the meta-config."""
+        if self.environment.is_ci:
+            return
+
         full_path = cs_tools_venv.app_dir / ".meta-config.json"
 
         # Don't save extra data.
@@ -176,7 +180,7 @@ class MetaConfig(_GlobalModel):
             log.debug("Could not save to .meta-config.json")
 
         except Exception as e:
-            log.warning(f"Could not fetch release url: {e}")
+            log.debug(f"Could not fetch release url: {e}", exc_info=True)
 
     def newer_version_string(self) -> str:
         """Return the CLI new version media string."""
@@ -229,6 +233,7 @@ class ThoughtSpotConfiguration(_GlobalSettings):
     bearer_token: Optional[types.GUID] = pydantic.Field(default=None)
     default_org: Optional[int] = None
     disable_ssl: bool = False
+    proxy: Optional[str] = None  # See: https://www.python-httpx.org/advanced/proxies/
 
     @pydantic.model_validator(mode="before")
     @classmethod
@@ -249,7 +254,7 @@ class ThoughtSpotConfiguration(_GlobalSettings):
 
         try:
             utils.reveal(data.encode()).decode()
-        except binascii.Error:
+        except (binascii.Error, zlib.error):
             pass
         else:
             return data
@@ -356,12 +361,12 @@ class CSToolsConfig(_GlobalSettings):
     @classmethod
     def from_environment(cls, name: str = "ENV", *, dotfile: Optional[pathlib.Path] = None) -> CSToolsConfig:
         """Read in a config from environment variables."""
-        extra = {}
+        config = {"name": name}
 
         if dotfile is not None:
-            extra["_env_file"] = pathlib.Path(dotfile).as_posix()
+            config["_env_file"] = pathlib.Path(dotfile).as_posix()
 
-        return cls(name=name, thoughtspot={}, **extra)
+        return cls.model_validate(config)
 
     @classmethod
     def from_toml(cls, path: pathlib.Path, automigrate: bool = False) -> CSToolsConfig:

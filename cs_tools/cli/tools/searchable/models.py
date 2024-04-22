@@ -5,7 +5,7 @@ import datetime as dt
 import logging
 
 from sqlalchemy.schema import Column
-from sqlalchemy.types import BigInteger
+from sqlalchemy.types import BigInteger, Text
 from sqlmodel import Field
 import pydantic
 
@@ -59,7 +59,7 @@ class Group(ValidatedSQLModel, table=True):
     org_id: int = Field(primary_key=True)
     group_guid: str = Field(primary_key=True)
     group_name: str
-    description: Optional[str]
+    description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     display_name: str
     sharing_visibility: str
     created: dt.datetime
@@ -141,7 +141,7 @@ class MetadataObject(ValidatedSQLModel, table=True):
     org_id: int = Field(primary_key=True)
     object_guid: str = Field(primary_key=True)
     name: str
-    description: Optional[str]
+    description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     author_guid: str
     created: dt.datetime
     modified: dt.datetime
@@ -168,7 +168,7 @@ class MetadataColumn(ValidatedSQLModel, table=True):
     column_guid: str = Field(primary_key=True)
     object_guid: str
     column_name: str
-    description: Optional[str]
+    description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     data_type: str
     column_type: str
     additive: bool
@@ -219,7 +219,7 @@ class DependentObject(ValidatedSQLModel, table=True):
     dependent_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
     name: str
-    description: Optional[str]
+    description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     author_guid: str
     created: dt.datetime
     modified: dt.datetime
@@ -270,10 +270,10 @@ class BIServer(ValidatedSQLModel, table=True):
     client_type: Optional[str]
     client_id: Optional[str]
     answer_book_guid: Optional[str]
-    viz_id: Optional[str]
+    viz_id: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     user_id: Optional[str]
     user_action: Optional[str]
-    query_text: Optional[str]
+    query_text: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     response_size: Optional[int] = Field(sa_column=Column(BigInteger))
     latency_us: Optional[int] = Field(sa_column=Column(BigInteger))
     impressions: Optional[float]

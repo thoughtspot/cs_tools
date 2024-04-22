@@ -1,10 +1,10 @@
 name: Test CS Tools Bootstrapper
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
-      - dev
 
 jobs:
  test-bootstrapper:

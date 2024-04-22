@@ -88,17 +88,14 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 === ":fontawesome-brands-windows: Windows"
 
     Open up __Windows Terminal__ or __Powershell__.
-
+    
     <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
     ```powershell
-    (Invoke-WebRequest `# (1)!
-        -Uri https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py `
-        -UseBasicParsing `
-    ).Content | python - --install # (2)!
+    powershell -c "IRM https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py | python - --install"
     ```
 
-    1.  `Invoke-WebRequest` is like `curl`, but for Windows. It will download a file from the URL specified.
-    2.  The `IWR` response is sent or "piped" to `python` for install.
+    !!! example "To open Powershell"
+        Press the __Windows key__ &nbsp; ++windows++ &nbsp; and type __Powershell__{ .fc-purple }, then hit __enter__ &nbsp; ++enter++
 
 === ":fontawesome-brands-apple: :fontawesome-brands-linux: Mac, Linux"
 
@@ -193,6 +190,8 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 
 
 <h2 class="fc-purple">Try running <b>CS Tools</b> by typing..</h2>
+
+__cs_tools self info --anonymous__
 
 ~cs~tools ../.. cs_tools self info --anonymous
 

@@ -37,7 +37,7 @@ def cls_ui(ctx: typer.Context, webserver_port: int = typer.Option(5000, help="po
 
     _scoped["ts"] = ts
 
-    rich_console.print("starting webserver..." f"\nplease visit [green]http://{visit_ip}:5000/[/] in your browser")
+    log.info(f"Starting webserver...\nplease visit [green]http://{visit_ip}:{webserver_port}/[/] in your browser\n\n")
 
     uvicorn.run(
         "cs_tools.cli.tools.bulk-sharing.web_app:web_app",

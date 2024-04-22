@@ -172,7 +172,7 @@ worksheet:
     expr: "concat ( '{caption}' , [TS_DEPENDENT_OBJECT_1::Dependent] , '{/caption}' , [TS_CLUSTER_2::ThoughtSpot URL] , if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'question_answer_book' ) then '#/saved-answer/' else if ( [TS_DEPENDENT_OBJECT_1::Dependent Type] = 'pinboard_answer_book' ) then \"#/pinboard/\" else \"#/data/tables/\" , [TS_DEPENDENT_OBJECT_1::Dependent GUID] )"
     was_auto_generated: false
   - name: "Filtered: Column Parent is Worksheet"
-    expr: "[TS_METADATA_OBJECT_1::Object Type] = 'logical_table' and [TS_METADATA_OBJECT_1::Object Subtype] = 'worksheet'"
+    expr: "[TS_METADATA_OBJECT_1::Object Type] = 'logical_table' and [TS_METADATA_OBJECT_1::Object Subtype] in { 'worksheet', 'model' }"
     was_auto_generated: false
   - name: Has Synonyms
     expr: "count ( [TS_COLUMN_SYNONYM_1::Column Synonym] ) > 0"

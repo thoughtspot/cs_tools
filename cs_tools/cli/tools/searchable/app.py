@@ -46,6 +46,7 @@ def deploy(
         ),
         show_default=False,
     ),
+    org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
     export: pathlib.Path = typer.Option(
         None,
         help="download the TML files of the SpotApp",
@@ -58,6 +59,9 @@ def deploy(
     """
     ts = ctx.obj.thoughtspot
 
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.org.switch(org=org_override)
+
     tasks = [
         ("connection_details", "Getting details for data source"),
         ("customize_spotapp", "Customizing [b blue]Searchable Worksheets[/] to your environment"),
@@ -66,7 +70,6 @@ def deploy(
 
     with LiveTasks(tasks, console=rich_console) as tasks:
         with tasks["connection_details"] as this_task:
-            connection_guid: str = None
             connection_name: str = None
             dialect: str = None
 
@@ -76,14 +79,13 @@ def deploy(
 
             else:
                 try:
-                    info = ts.metadata.fetch_data_source_info(connection_guid)
-                except AttributeError:
-                    log.error(f"Could not find a connection with guid {connection_guid}")
+                    info = ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guid=connection_guid)
+                except (KeyError, IndexError):
+                    log.error(f"Could not find a connection with guid '{connection_guid}'")
                     raise typer.Exit(1) from None
 
-                connection_guid = info["header"]["id"]
                 connection_name = info["header"]["name"]
-                dialect = info["header"]["type"]
+                dialect = info["type"]
 
         # Care for UPPERCASE or lowercase identity convention in dialects
         should_upper = "SNOWFLAKE" in dialect
@@ -180,12 +182,8 @@ def bi_server(
 
     # DEV NOTE: @boonhapus
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
-
     if ts.session_context.thoughtspot.is_orgs_enabled:
         ts.org.switch(org=0)
-
-    elif org_override is not None:
-        org_override = None
 
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
@@ -209,7 +207,7 @@ def bi_server(
         with tasks["gather_search"]:
             data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
 
-            # SEARCH DATA API SEEMS TO HATE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
+            # SEARCH DATA API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
             data = [dict(t) for t in {tuple(sorted(d.items())) for d in data}]
 
             # CLUSTER BY --> TIMESTAMP .. everything else is irrelevant after TS.
@@ -427,30 +425,18 @@ def metadata(
 
             # access_controls
             row[8] = ":fire:"
-            types = {
-                "QUESTION_ANSWER_BOOK": ("QUESTION_ANSWER_BOOK",),
-                "PINBOARD_ANSWER_BOOK": ("PINBOARD_ANSWER_BOOK",),
-                "LOGICAL_TABLE": (
-                    "ONE_TO_ONE_LOGICAL",
-                    "USER_DEFINED",
-                    "WORKSHEET",
-                    "AGGR_WORKSHEET",
-                    "MATERIALIZED_VIEW",
-                    "SQL_VIEW",
-                    "LOGICAL_TABLE",
-                ),
-            }
+            types = ["QUESTION_ANSWER_BOOK", "PINBOARD_ANSWER_BOOK", "LOGICAL_TABLE", "DATA_SOURCE"]
 
             if include_column_access:
-                types["LOGICAL_COLUMN"] = ("FORMULA", "CALENDAR_TABLE", "LOGICAL_COLUMN")
+                types.append("LOGICAL_COLUMN")
 
             # NOTE:
             #    In the case the ThoughtSpot cluster has a high number of users, the
             #    column access block will take an incredibly long amount of time to
             #    complete. We can probably find a better algorithm.
             #
-            for metadata_type, metadata_subtypes in types.items():
-                guids = [obj["id"] for obj in content if obj["metadata_type"] in metadata_subtypes]
+            for metadata_type in types:
+                guids = [obj["id"] for obj in content if obj["metadata_type"] == metadata_type]
                 r = ts.metadata.permissions(guids, type=metadata_type)
                 temp_sync.dump(
                     models.SharingAccess.__tablename__, data=transform.to_sharing_access(r, cluster=cluster_uuid)
