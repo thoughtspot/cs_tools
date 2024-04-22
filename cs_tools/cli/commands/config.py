@@ -52,6 +52,7 @@ def create(
     disable_ssl: bool = typer.Option(
         False, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
+    proxy: str = typer.Option(None, help="proxy server to use to connect to ThoughtSpot"),
     default: bool = typer.Option(False, "--default", help="whether or not to make this the default configuration"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="enable verbose logging"),
 ):
@@ -82,6 +83,7 @@ def create(
             "bearer_token": token,
             "default_org": default_org,
             "disable_ssl": disable_ssl,
+            "proxy": proxy,
         },
         "verbose": verbose,
         "temp_dir": temp_dir or cs_tools_venv.tmp_dir,
@@ -126,6 +128,7 @@ def modify(
         None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
     default_org: int = typer.Option(None, help="org ID to sign into by default"),
+    proxy: str = typer.Option(None, help="proxy server to use to connect to ThoughtSpot"),
     default: bool = typer.Option(
         None,
         "--default / --remove-default",
@@ -160,6 +163,9 @@ def modify(
 
     if disable_ssl is not None:
         data["thoughtspot"]["disable_ssl"] = disable_ssl
+
+    if proxy is not None:
+        data["thoughtspot"]["proxy"] = proxy
 
     if default is not None:
         meta.default_config_name = config
