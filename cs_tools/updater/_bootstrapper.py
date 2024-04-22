@@ -7,8 +7,6 @@ Some of the imports look funny as hell, but essentially we delay them as late as
 possible so we don't need to worry about something not being available on an
 under-supported version of Python.
 """
-from __future__ import annotations
-
 from argparse import RawTextHelpFormatter
 import argparse
 import datetime as dt
@@ -60,7 +58,7 @@ def cli():
     operation.add_argument(
         "-i",
         "--install",
-        help=f"install cs_tools to your system {_GREEN}(default option){_RESET}",
+        help="install cs_tools to your system {c}(default option){x}".format(c=_GREEN, x=_RESET),
         dest="install",
         action="store_true",
         default=False,
@@ -153,7 +151,7 @@ def cli():
             requires = "cs_tools[cli]"
 
             if args.offline_mode:
-                log.info(f"Using the offline binary found at {_PURPLE}{venv.find_links}{_RESET}")
+                log.info("Using the offline binary found at {c}{fp}{x}".format(c=_PURPLE, fp=venv.find_links, x=_RESET))
 
             elif args.dev:
                 log.info("Installing locally using the development environment.")
@@ -161,7 +159,7 @@ def cli():
                 dir_updater = os.path.dirname(here)
                 dir_library = os.path.dirname(dir_updater)
                 dir_package = os.path.dirname(dir_library)
-                requires = f"{dir_package}[cli]"
+                requires = "{pdir}[cli]".format(pdir=dir_package)
 
             else:
                 log.info("Getting the latest CS Tools {beta}release.".format(beta="beta " if args.beta else ""))
@@ -180,7 +178,7 @@ def cli():
             shutil.rmtree(venv.venv_path, ignore_errors=True)
             path.unset()
 
-        log.info(f"{_GREEN}Done!{_RESET} Thank you for trying CS Tools.")
+        log.info("{c}Done!{x} Thank you for trying CS Tools.".format(c=_GREEN, x=_RESET))
 
         if args.install or args.reinstall:
             log.info(
@@ -223,7 +221,7 @@ def _create_color_code(color, bold=False):
     }
 
     if color not in foreground_color_map:
-        raise ValueError(f"invalid terminal color code: '{color}'")
+        raise ValueError("invalid terminal color code: '{c}'".format(c=color))
 
     to_bold = int(bold)  # 0 = reset , 1 = bold
     to_color = foreground_color_map[color]
@@ -242,8 +240,8 @@ def _setup_logging(verbose=True):
     import pathlib
     import tempfile
 
-    random_dir = tempfile.NamedTemporaryFile().name
-    random_path = pathlib.Path.cwd().joinpath(f"cs_tools-bootstrap-error-{pathlib.Path(random_dir).name}.log")
+    random_name = tempfile.NamedTemporaryFile().name
+    random_path = pathlib.Path.cwd().joinpath("cs_tools-bootstrap-error-{n}.log".format(n=random_name))
 
     config = {
         "version": 1,
@@ -360,7 +358,7 @@ class ColorSupportedFormatter(logging.Formatter):
         s = self.formatMessage(record)
         prefix, _, _ = s.partition(record.msg[:10])
         prefix = prefix.replace(formatted_time, len(formatted_time) * " ")
-        record.msg = record.msg.replace("\n", f"\n{prefix}")
+        record.msg = record.msg.replace("\n", "\n{p}".format(p=prefix))
 
         return super().format(record, *a, **kw)
 
@@ -423,10 +421,10 @@ def cli_type_filepath(fp):
     path = pathlib.Path(fp)
 
     if not path.exists():
-        raise argparse.ArgumentTypeError(f"path '{fp}' does not exist")
+        raise argparse.ArgumentTypeError("path '{fp}' does not exist".format(fp=path))
 
     if path.is_file():
-        raise argparse.ArgumentTypeError(f"path must be a directory, got '{fp}'")
+        raise argparse.ArgumentTypeError("path must be a directory, got '{fp}'".format(fp=path))
 
     return path
 
@@ -440,14 +438,14 @@ def get_cs_tools_venv(find_links):
     updater_py = here / "_updater.py"
 
     if not updater_py.exists():
-        log.info(f"Missing '{updater_py}', downloading from GitHub")
+        log.info("Missing '{py}', downloading from GitHub".format(py=updater_py))
         url = "https://api.github.com/repos/thoughtspot/cs_tools/contents/cs_tools/updater/_updater.py"
         data = http_request(url, to_json=True)
         assert isinstance(data, dict)
         data = http_request(data["download_url"], to_json=False)
         assert isinstance(data, bytes)
         updater_py.write_text(data.decode())
-        log.info(f"Downloaded as '{updater_py}'")
+        log.info("Downloaded as '{py}'".format(py=updater_py))
 
     # Hack the PATH var so we can import from _updater
     sys.path.insert(0, here.as_posix())
@@ -459,7 +457,7 @@ def get_cs_tools_venv(find_links):
             "Unable to find the CS Tools _updater.py, try getting at "
             "{b}https://github.com/thoughtspot/cs_tools/releases/latest{x}".format(b=_BLUE, x=_RESET)
         )
-        raise SystemExit(1) from None
+        raise SystemExit(1)  # noqa: B904
 
     if find_links is not None:
         cs_tools_venv.with_offline_mode(find_links=find_links)
@@ -562,7 +560,7 @@ def main():
     except Exception as e:
         disk_handler = next(h for h in log.root.handlers if isinstance(h, InMemoryUntilErrorHandler))
         disk_handler.drain_buffer()
-        log.debug(f"Error found: {e}", exc_info=True)
+        log.debug("Error found: {err}".format(err=e), exc_info=True)
         log.warning(
             "Unexpected error in bootstrapper, see {b}{logfile}{x} for details..".format(
                 b=_BLUE, logfile=disk_handler.baseFilename, x=_RESET
@@ -572,42 +570,74 @@ def main():
 
     return return_code
 
+
+if __name__ == "__main__":
+
     # =====================
     # VERSION CHECK FAILED
     # =====================
+    if sys.version_info <= __minimum_python_version__:
+        args = " ".join(map(str, sys.argv))
+        py_vers = ".".join(map(str, sys.version_info[:2]))
 
-    args = " ".join(map(str, sys.argv))
-    py_vers = ".".join(map(str, sys.version_info[:2]))
-
-    msg = (
-        "{y}It looks like you are running {r}Python v{version}{y}!{x}"
-        "\n"
-        "\nCS Tools supports {b}python version {minimum_support}{x} or greater."
-    )
-
-    if sys.version_info <= (2, 7, 99) and not (sys.platform == "win32"):
-        msg += "\n" "{b}Please re-run the following command..{x}" "\n" "\npython3 {args}" "\n"
-    else:
-        msg += (
+        msg = (
+            "\n{y}It looks like you are running {r}Python v{version}{y}!{x}"
             "\n"
-            "\n{y}Python installers are available for download for all versions at..{x}"
-            "\n{b}https://www.python.org/downloads/{x}"
+            "\nCS Tools supports {b}python version {minimum_support}{x} or greater."
+        )
+
+        if sys.platform != "win32":
+            msg += (
+                "\n"
+                "{b}Please re-run the following command..{x}"
+                "\n"
+                "\npython3 {args}"
+                "\n"
+            )
+        else:
+            msg += (
+                "\n"
+                "\n{y}Python installers are available for download for all versions at..{x}"
+                "\n{b}https://www.python.org/downloads/{x}"
+                "\n"
+            )
+
+        formatting = {
+            "b": _BLUE,
+            "r": _RED,
+            "y": _YELLOW,
+            "x": _RESET,
+            "version": py_vers,
+            "minimum_support": ".".join(map(str, __minimum_python_version__)),
+            "args": args,
+        }
+
+        print(msg.format(**formatting))  # noqa: T201
+        raise SystemExit(1)
+    
+    elif "CONDA_ENV_PATH" in os.environ and "CS_TOOLS_IGNORE_CONDA_PATH" not in os.environ:
+        msg = (
+            "\n{y}It looks like you are running in an Anaconda environment!{x}"
+            "\n"
+            "\n{r}Installation within conda is not tested and may lead to issues.{x}"
+            "\n"
+            "\nPlease deactivate the environment and run again."
+            "\n  {g}See{x} https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#deactivating-an-environment"
+            "\n"
+            "\nTo ignore this warning, set the environment variable {b}CS_TOOLS_IGNORE_CONDA_PATH{x} to any value."
             "\n"
         )
 
-    formatting = {
-        "b": _BLUE,
-        "r": _RED,
-        "y": _YELLOW,
-        "x": _RESET,
-        "version": py_vers,
-        "minimum_support": ".".join(__minimum_python_version__),
-        "args": args,
-    }
+        formatting = {
+            "b": _BLUE,
+            "g": _GREEN,
+            "r": _RED,
+            "y": _YELLOW,
+            "x": _RESET,
+        }
 
-    print(msg.format(**formatting))  # noqa: T201
-    return 1
+        print(msg.format(**formatting))  # noqa: T201
+        raise SystemExit(1)
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    else:
+        raise SystemExit(main())
