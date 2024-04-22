@@ -28,6 +28,7 @@ app = typer.Typer(
 
     {meta.newer_version_string()}
     """,
+    no_args_is_help=True,
     invoke_without_command=True,
 )
 
