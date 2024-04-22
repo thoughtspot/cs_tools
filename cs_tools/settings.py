@@ -15,6 +15,7 @@ import pathlib
 import urllib
 import urllib.error
 import uuid
+import zlib
 
 from awesomeversion import AwesomeVersion
 import pydantic
@@ -253,7 +254,7 @@ class ThoughtSpotConfiguration(_GlobalSettings):
 
         try:
             utils.reveal(data.encode()).decode()
-        except binascii.Error:
+        except (binascii.Error, zlib.error):
             pass
         else:
             return data
