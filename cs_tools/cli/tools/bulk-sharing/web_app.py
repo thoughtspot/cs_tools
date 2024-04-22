@@ -29,7 +29,11 @@ templates = Jinja2Templates(directory=f"{HERE}/static")
 
 @web_app.get("/", response_class=HTMLResponse)
 async def read_index(request: Request):
-    data = {"request": request, "host": _scoped["ts"].platform.url, "user": _scoped["ts"].me.display_name}
+    data = {
+        "request": request,
+        "host": _scoped["ts"].session_context.thoughtspot.url,
+        "user": _scoped["ts"].session_context.user.display_name,
+    }
     return templates.TemplateResponse("index.html", data)
 
 
@@ -52,7 +56,7 @@ async def _(type: str = Body(...), guids: list[str] = Body(...), permissions: di
     TSSetPermissionRequest
     """
     permissions = {guid: data["shareMode"] for guid, data in permissions.items()}
-    r = _scoped["ts"].api.security_share(metadata_type=type, guids=guids, permissions=permissions)
+    r = _scoped["ts"].api.v1.security_share(metadata_type=type, guids=guids, permissions=permissions)
 
     try:
         return r.json()
@@ -69,7 +73,7 @@ async def _(type: str = Body(...), guids: list[str] = Body(...)):  # noqa: A002
     defined_permissions = {column_guid: {"permissions": {}} for column_guid in guids}
 
     for chunk in utils.batched(guids, n=15):
-        r = _scoped["ts"].api.security_metadata_permissions(metadata_type=type, guids=list(chunk))
+        r = _scoped["ts"].api.v1.security_metadata_permissions(metadata_type=type, guids=list(chunk))
 
         try:
             r.raise_for_status()
@@ -98,7 +102,7 @@ async def _():
     """
     TSGetUserGroupsRequest
     """
-    r = _scoped["ts"].api.metadata_list(
+    r = _scoped["ts"].api.v1.metadata_list(
         metadata_type="USER_GROUP", category="ALL", sort="DEFAULT", offset=-1, auto_created=False
     )
     return r.json()
@@ -109,5 +113,5 @@ async def _():
     """
     TSGetTablesRequest
     """
-    r = _scoped["ts"].api.metadata_list(metadata_type="LOGICAL_TABLE", subtypes=["ONE_TO_ONE_LOGICAL"])
+    r = _scoped["ts"].api.v1.metadata_list(metadata_type="LOGICAL_TABLE", subtypes=["ONE_TO_ONE_LOGICAL"])
     return r.json()
