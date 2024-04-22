@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 import logging
 
-from cs_tools import utils
 from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import GUID, MetadataCategory, TableRowsFormat
@@ -104,7 +103,9 @@ class LogicalTableMiddleware:
         if include_data_source:
             for table in tables:
                 connection_guid = self.ts.metadata.find_data_source_of_logical_table(guid=table["id"])
-                source_details = self.ts.metadata.fetch_data_source_info(guid=connection_guid)
+                source_details = self.ts.metadata.fetch_header_and_extras(
+                    metadata_type="DATA_SOURCE", guid=connection_guid
+                )
                 table["data_source"] = source_details["header"]
                 table["data_source"]["type"] = source_details["type"]
 
@@ -114,8 +115,9 @@ class LogicalTableMiddleware:
         """ """
         columns = []
 
-        for chunk in utils.batched(guids, n=chunksize):
-            r = self.ts.api.v1.metadata_details(guids=chunk, show_hidden=include_hidden)
+        # for chunk in utils.batched(guids, n=chunksize):
+        for guid in guids:
+            r = self.ts.metadata.fetch_header_and_extras(metadata_type="LOGICAL_TABLE", guid=guid)
 
             for logical_table in r.json()["storables"]:
                 for column in logical_table.get("columns", []):

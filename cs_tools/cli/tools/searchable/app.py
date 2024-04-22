@@ -79,7 +79,7 @@ def deploy(
 
             else:
                 try:
-                    info = ts.metadata.fetch_data_source_info(connection_guid)
+                    info = ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guid=connection_guid)
                 except (KeyError, IndexError):
                     log.error(f"Could not find a connection with guid '{connection_guid}'")
                     raise typer.Exit(1) from None
@@ -425,30 +425,18 @@ def metadata(
 
             # access_controls
             row[8] = ":fire:"
-            types = {
-                "QUESTION_ANSWER_BOOK": ("QUESTION_ANSWER_BOOK",),
-                "PINBOARD_ANSWER_BOOK": ("PINBOARD_ANSWER_BOOK",),
-                "LOGICAL_TABLE": (
-                    "ONE_TO_ONE_LOGICAL",
-                    "USER_DEFINED",
-                    "WORKSHEET",
-                    "AGGR_WORKSHEET",
-                    "MATERIALIZED_VIEW",
-                    "SQL_VIEW",
-                    "LOGICAL_TABLE",
-                ),
-            }
+            types = ["QUESTION_ANSWER_BOOK", "PINBOARD_ANSWER_BOOK", "LOGICAL_TABLE", "DATA_SOURCE"]
 
             if include_column_access:
-                types["LOGICAL_COLUMN"] = ("FORMULA", "CALENDAR_TABLE", "LOGICAL_COLUMN")
+                types.append("LOGICAL_COLUMN")
 
             # NOTE:
             #    In the case the ThoughtSpot cluster has a high number of users, the
             #    column access block will take an incredibly long amount of time to
             #    complete. We can probably find a better algorithm.
             #
-            for metadata_type, metadata_subtypes in types.items():
-                guids = [obj["id"] for obj in content if obj["metadata_type"] in metadata_subtypes]
+            for metadata_type in types:
+                guids = [obj["id"] for obj in content if obj["metadata_type"] == metadata_type]
                 r = ts.metadata.permissions(guids, type=metadata_type)
                 temp_sync.dump(
                     models.SharingAccess.__tablename__, data=transform.to_sharing_access(r, cluster=cluster_uuid)
