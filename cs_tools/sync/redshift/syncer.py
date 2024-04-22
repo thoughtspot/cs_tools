@@ -10,6 +10,8 @@ from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 from cs_tools.sync.types import TableRows
 
+from . import compiler  # noqa: F401
+
 log = logging.getLogger(__name__)
 
 

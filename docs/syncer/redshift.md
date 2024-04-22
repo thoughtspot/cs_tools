@@ -35,11 +35,6 @@ Redshift's combination of high performance, scalability, cost-effectiveness, eas
 
     ---
 
-    - [X] __authentication__{ .fc-red }, _the type of authentication mechanism to use to connect to Redshift_
-    <br />( __allowed__{ .fc-green }: `basic` )
-
-    ---
-
     - [X] __username__{ .fc-red }, _your Redshift username_
 
     ---
