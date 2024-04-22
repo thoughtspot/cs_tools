@@ -156,10 +156,11 @@ exclude = [
     ".nox",          # ignore virtual environments
 
     # project specific ignores
-    "__init__.py",     # ignore __init__.py
-    "__project__.py",  # ignore project metadata
-    "_compat.py",      # ignore compatibles
-    "const.py",        # ignore constants
+    "__init__.py",       # ignore __init__.py
+    "__project__.py",    # ignore project metadata
+    "_compat.py",        # ignore compatibles
+    "const.py",          # ignore constants
+    "_bootstrapper.py",  # ignore bootstrapper
     "noxfile.py",
     "setup.py",
 ]
