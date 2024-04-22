@@ -142,6 +142,18 @@ class LocalSystemInfo(_GlobalModel):
     python: validators.CoerceVersion = AwesomeVersion(platform.python_version())
     ran_at: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = dt.datetime.now(tz=dt.timezone.utc)
 
+    @property
+    def is_linux(self) -> bool:
+        return self.system.startswith("Linux")
+
+    @property
+    def is_mac_osx(self) -> bool:
+        return self.system.startswith("Darwin")
+
+    @property
+    def is_windows(self) -> bool:
+        return self.system.startswith("Windows")
+
 
 class UserInfo(_GlobalModel):
     """Information about the logged in user."""

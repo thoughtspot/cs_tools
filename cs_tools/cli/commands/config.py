@@ -40,7 +40,9 @@ def create(
     config: str = typer.Option(..., help="config file identifier", metavar="NAME"),
     url: str = typer.Option(..., help="your thoughtspot url or IP"),
     username: str = typer.Option(..., help="username when logging into ThoughtSpot"),
-    password: str = typer.Option(None, help="the password you type when using the ThoughtSpot login screen"),
+    password: str = typer.Option(
+        None, help="the password you type on the ThoughtSpot login screen, use [b magenta]prompt[/] to type it hidden"
+    ),
     secret: str = typer.Option(None, help="the trusted authentication secret key, found in the developer tab"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
     default_org: int = typer.Option(None, help="org ID to sign into by default"),
@@ -50,6 +52,7 @@ def create(
     disable_ssl: bool = typer.Option(
         False, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
+    proxy: str = typer.Option(None, help="proxy server to use to connect to ThoughtSpot"),
     default: bool = typer.Option(False, "--default", help="whether or not to make this the default configuration"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="enable verbose logging"),
 ):
@@ -57,15 +60,18 @@ def create(
     Create a new config file.
     """
 
+    if not any((password, secret, token)):
+        log.error("You must specify at least one authentication method (--password, --secret, or --token)")
+        raise typer.Exit()
+
     if CSToolsConfig.exists(name=config):
         log.warning(f'[b yellow]Configuration file "{config}" already exists.')
 
         if not Confirm.ask("\nDo you want to overwrite it?", console=rich_console):
             raise typer.Abort()
 
-    if all(safe is None for safe in (password, secret, token)):
-        log.error("You must specify at least one authentication method")
-        return -1
+    if password == "prompt":
+        password = rich_console.input("\nType your password [b yellow](your input is hidden)\n", password=True)
 
     data = {
         "name": config,
@@ -77,6 +83,7 @@ def create(
             "bearer_token": token,
             "default_org": default_org,
             "disable_ssl": disable_ssl,
+            "proxy": proxy,
         },
         "verbose": verbose,
         "temp_dir": temp_dir or cs_tools_venv.tmp_dir,
@@ -112,13 +119,19 @@ def modify(
     config: str = typer.Option(None, help="config file identifier", metavar="NAME"),
     url: str = typer.Option(None, help="your thoughtspot server"),
     username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
-    password: str = typer.Option(None, help="the password you type when using the ThoughtSpot login screen"),
+    password: str = typer.Option(
+        None, help="the password you type on the ThoughtSpot login screen, use [b magenta]prompt[/] to type it hidden"
+    ),
     secret: str = typer.Option(None, help="the trusted authentication secret key"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
+    temp_dir: pathlib.Path = typer.Option(
+        None, help="the temporary directory to use for uploading files", click_type=Directory()
+    ),
     disable_ssl: bool = typer.Option(
         None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
     default_org: int = typer.Option(None, help="org ID to sign into by default"),
+    proxy: str = typer.Option(None, help="proxy server to use to connect to ThoughtSpot"),
     default: bool = typer.Option(
         None,
         "--default / --remove-default",
@@ -140,7 +153,7 @@ def modify(
         data["thoughtspot"]["default_org"] = default_org
 
     if password == "prompt":
-        password = rich_console.input("[b yellow]Type your password (your input is hidden)\n", password=True)
+        password = rich_console.input("\nType your password [b yellow](your input is hidden)\n", password=True)
 
     if password is not None:
         data["thoughtspot"]["password"] = password
@@ -151,8 +164,14 @@ def modify(
     if token is not None:
         data["thoughtspot"]["bearer_token"] = token
 
+    if temp_dir is not None:
+        data["temp_dir"] = temp_dir
+
     if disable_ssl is not None:
         data["thoughtspot"]["disable_ssl"] = disable_ssl
+
+    if proxy is not None:
+        data["thoughtspot"]["proxy"] = proxy
 
     if default is not None:
         meta.default_config_name = config

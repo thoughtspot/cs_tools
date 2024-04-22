@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional, Union
 import json
 import logging
 import pathlib
@@ -21,8 +21,20 @@ class JSON(Syncer):
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
     __syncer_name__ = "json"
 
-    directory: pydantic.DirectoryPath
+    directory: Union[pydantic.DirectoryPath, pydantic.NewPath]
     encoding: Optional[Literal["UTF-8"]] = None
+
+    @pydantic.field_validator("directory", mode="after")
+    @classmethod
+    def _ensure_directory_exists(cls, value: Union[pydantic.DirectoryPath, pydantic.NewPath]) -> pydantic.DirectoryPath:
+        if value.is_file():
+            raise ValueError(f"{value.resolve().as_posix()} is a file, not a directory.")
+
+        if not value.exists():
+            log.warning(f"The directory '{value.resolve().as_posix()}' does not yet exist, creating it..")
+            value.mkdir(parents=True, exist_ok=True)
+
+        return value
 
     def __repr__(self):
         return f"<JSONSyncer directory={self.directory.as_posix()}'>"

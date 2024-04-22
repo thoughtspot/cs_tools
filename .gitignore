@@ -44,6 +44,9 @@ venv.bak/
 # ignore coverage file
 .coverage
 
+# ignore linting
+.mypy_cache/
+
 # generated documentation
 docs/terminal-screenshots/*.svg
 

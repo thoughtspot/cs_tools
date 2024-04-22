@@ -149,7 +149,6 @@ class Snowflake(DatabaseSyncer):
             FILE_FORMAT = (
                 TYPE = CSV
                 FIELD_DELIMITER = '|'
-                NULL_IF = ( '\\N' )
                 FIELD_OPTIONALLY_ENCLOSED_BY = '"'
                 EMPTY_FIELD_AS_NULL = TRUE
             )

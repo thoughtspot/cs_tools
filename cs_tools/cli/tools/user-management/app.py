@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import datetime as dt
 import itertools as it
 import json
 import logging
-import pathlib
 
 import httpx
 import typer
@@ -16,9 +14,8 @@ from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import MetadataType, MultipleChoiceType, SyncerProtocolType
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.errors import CSToolsError
-from cs_tools.updater import cs_tools_venv
 
-from . import layout, work
+from . import layout, models, work
 
 log = logging.getLogger(__name__)
 app = CSToolsApp(help="""Manage Users and Groups in bulk.""")
@@ -111,7 +108,7 @@ def rename(
     to_username: str = typer.Option(None, "--to", help="new username"),
     syncer: DSyncer = typer.Option(
         None,
-        click_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(models=models.USER_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -181,9 +178,7 @@ def rename(
                 responses[from_username] = r
 
             # back up the state of users
-            filename = f"user-rename-{dt.datetime.now(tz=dt.timezone.utc)::%Y%m%dT%H%M%S}"
-            with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
-                json.dump([r.text for r in responses], f, indent=4)
+            work._backup_security([r.text for r in responses.values()])
 
         with tasks["update_users"]:
             for from_username, r in responses.items():
@@ -216,7 +211,7 @@ def sync(
     ),
     syncer: DSyncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(),
+        click_type=SyncerProtocolType(models=models.USER_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -308,9 +303,7 @@ def sync(
 
             # back up the state of users
             u, g, x = work._get_current_security(ts)
-            filename = f"user-sync-{dt.datetime.now(tz=dt.timezone.utc):%Y%m%dT%H%M%S}"
-            with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
-                json.dump({"users": u, "groups": g, "memberships": x}, f, indent=4)
+            work._backup_security({"users": u, "groups": g, "memberships": x})
 
             try:
                 r = ts.api.v1.user_sync(

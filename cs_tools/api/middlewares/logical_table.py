@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 import logging
 
-from cs_tools import utils
 from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import GUID, MetadataCategory, TableRowsFormat
@@ -75,6 +74,12 @@ class LogicalTableMiddleware:
             if exclude_system_content:
                 to_extend = [table for table in to_extend if table.get("authorName") not in _utils.SYSTEM_USERS]
 
+            # Fake the .type for Models.
+            to_extend = [
+                {**table, "type": "MODEL" if table.get("worksheetVersion") == "V2" else table["type"]}
+                for table in to_extend
+            ]
+
             tables.extend([{"metadata_type": "LOGICAL_TABLE", **table} for table in to_extend])
 
             if not tables and raise_on_error:
@@ -98,7 +103,9 @@ class LogicalTableMiddleware:
         if include_data_source:
             for table in tables:
                 connection_guid = self.ts.metadata.find_data_source_of_logical_table(guid=table["id"])
-                source_details = self.ts.metadata.fetch_data_source_info(guid=connection_guid)
+                source_details = self.ts.metadata.fetch_header_and_extras(
+                    metadata_type="DATA_SOURCE", guid=connection_guid
+                )
                 table["data_source"] = source_details["header"]
                 table["data_source"]["type"] = source_details["type"]
 
@@ -108,8 +115,9 @@ class LogicalTableMiddleware:
         """ """
         columns = []
 
-        for chunk in utils.batched(guids, n=chunksize):
-            r = self.ts.api.v1.metadata_details(guids=chunk, show_hidden=include_hidden)
+        # for chunk in utils.batched(guids, n=chunksize):
+        for guid in guids:
+            r = self.ts.metadata.fetch_header_and_extras(metadata_type="LOGICAL_TABLE", guid=guid)
 
             for logical_table in r.json()["storables"]:
                 for column in logical_table.get("columns", []):

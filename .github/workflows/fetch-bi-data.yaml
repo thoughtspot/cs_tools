@@ -1,5 +1,5 @@
 name:
-  Extract data with CS Tools.
+  Extract BI Server with CS Tools.
 
 on:
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
         run: echo "days_ago_1=$(date -d "-1 days" +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Check out the repository main branch
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v4

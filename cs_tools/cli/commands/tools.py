@@ -18,6 +18,7 @@ app = typer.Typer(
     which aren't native to ThoughtSpot or advanced functionality for
     clients who have a well-adopted platform.
     """,
+    no_args_is_help=True,
     subcommand_metavar="<tool>",
     invoke_without_command=True,
     epilog=(

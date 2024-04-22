@@ -1271,13 +1271,3 @@ liveboard:
         "y": 0
         height: 4
         width: 6
-  views:
-  - view_guid: b2f594b9-6eae-40ea-ab48-cb9390e5dd63
-    name: GTM
-    view_filters:
-    - column:
-      - Worksheet
-      oper: in
-      values:
-      - GTM
-    is_public: true

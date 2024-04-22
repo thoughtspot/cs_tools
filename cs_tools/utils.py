@@ -56,7 +56,7 @@ def obscure(data: bytes) -> bytes:
     if isinstance(data, str):
         data = str.encode(data)
 
-    return b64e(zlib.compress(data, 9))
+    return b64e(zlib.compress(data, level=9))
 
 
 def reveal(obscured: bytes) -> bytes:
@@ -67,7 +67,6 @@ def reveal(obscured: bytes) -> bytes:
     """
     if obscured is None:
         return
-
     return zlib.decompress(b64d(obscured))
 
 
@@ -190,13 +189,21 @@ class ExceptedThread(threading.Thread):
 
 def determine_editable_install() -> bool:
     """Determine if the current CS Tools context is an editable install."""
-    for site_directory in site.getsitepackages():
-        for path in pathlib.Path(site_directory).iterdir():
+    for directory in site.getsitepackages():
+        try:
+            site_directory = pathlib.Path(directory)
+
+        # not all distros will bundle python the same (eg. ubuntu-slim)
+        except FileNotFoundError:
+            continue
+
+        for path in site_directory.iterdir():
             if not path.is_file():
                 continue
 
             if "__editable__.cs_tools" in path.as_posix():
                 return True
+
     return False
 
 

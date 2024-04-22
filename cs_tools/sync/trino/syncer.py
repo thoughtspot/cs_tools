@@ -29,7 +29,7 @@ class Trino(DatabaseSyncer):
     __syncer_name__ = "trino"
 
     host: pydantic.IPvAnyAddress
-    port: int = 8080
+    port: Optional[int] = 8080
     catalog: str
     schema_: Optional[str] = pydantic.Field(default="public", alias="schema")
     authentication: Literal["basic", "jwt"]
