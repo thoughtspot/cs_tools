@@ -124,6 +124,9 @@ def modify(
     ),
     secret: str = typer.Option(None, help="the trusted authentication secret key"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
+    temp_dir: pathlib.Path = typer.Option(
+        None, help="the temporary directory to use for uploading files", click_type=Directory()
+    ),
     disable_ssl: bool = typer.Option(
         None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
@@ -160,6 +163,9 @@ def modify(
 
     if token is not None:
         data["thoughtspot"]["bearer_token"] = token
+
+    if temp_dir is not None:
+        data["temp_dir"] = temp_dir
 
     if disable_ssl is not None:
         data["thoughtspot"]["disable_ssl"] = disable_ssl
