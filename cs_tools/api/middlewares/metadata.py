@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
-import functools as ft
 import logging
 
 from cs_tools import utils
@@ -26,6 +25,7 @@ class MetadataMiddleware:
 
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
+        self._details_cache: dict[GUID, dict] = {}
 
     def permissions(
         self,
@@ -219,36 +219,50 @@ class MetadataMiddleware:
         existence = {header["id"] for header in r.json()["headers"]}
         return {guid: guid in existence for guid in guids}
 
-    @ft.cache  # noqa: B019
-    def fetch_header_and_extras(self, metadata_type: MetadataObjectType, guid: GUID) -> dict:
+    def fetch_header_and_extras(self, metadata_type: MetadataObjectType, guids: list[GUID]) -> list[dict]:
         """
         METADATA DETAILS is expensive. Here's our shortcut.
         """
-        r = self.ts.api.v1.metadata_details(metadata_type=metadata_type, guids=[guid], show_hidden=True)
+        data = []
 
-        d = r.json()["storables"][0]
+        for guid in guids:
+            try:
+                data.append(self._details_cache[guid])
+                continue
+            except KeyError:
+                pass
 
-        header_and_extras = {
-            "metadata_type": metadata_type,
-            "header": d["header"],
-            "type": d.get("type"),  # READ: .subtype  (eg. ONE_TO_ONE_LOGICAL, WORKSHEET, etc..)
-            # LOGICAL_TABLE extras
-            "dataSourceId": d.get("dataSourceId"),
-            "columns": d.get("columns"),
-            # VIZ extras (answer, liveboard)
-            "reportContent": d.get("reportContent"),
-        }
+            r = self.ts.api.v1.metadata_details(metadata_type=metadata_type, guids=[guid], show_hidden=True)
 
-        return header_and_extras
+            if r.is_error:
+                log.warning(f"Failed to fetch details for {guid} ({metadata_type})")
+                continue
+
+            d = r.json()["storables"][0]
+
+            header_and_extras = {
+                "metadata_type": metadata_type,
+                "header": d["header"],
+                "type": d.get("type"),  # READ: .subtype  (eg. ONE_TO_ONE_LOGICAL, WORKSHEET, etc..)
+                # LOGICAL_TABLE extras
+                "dataSourceId": d.get("dataSourceId"),
+                "columns": d.get("columns"),
+                # VIZ extras (answer, liveboard)
+                "reportContent": d.get("reportContent"),
+            }
+
+            self._details_cache[guid] = header_and_extras
+            data.append(header_and_extras)
+
+        return data
 
     def find_data_source_of_logical_table(self, guid: GUID) -> GUID:
         """
         METADATA DETAILS is expensive. Here's our shortcut.
         """
-        info = self.fetch_header_and_extras(metadata_type="LOGICAL_TABLE", guid=guid)
-        return info["dataSourceId"]
+        info = self.fetch_header_and_extras(metadata_type="LOGICAL_TABLE", guids=[guid])
+        return info[0]["dataSourceId"]
 
-    @ft.cache  # noqa: B019
     def table_references(self, guid: GUID, *, tml_type: str, hidden: bool = False) -> list[MetadataParent]:
         """
         Returns a mapping of parent LOGICAL_TABLEs
@@ -264,61 +278,56 @@ class MetadataMiddleware:
 
         """
         metadata_type = TMLSupportedContent.from_friendly_type(tml_type)
-        r = self.fetch_header_and_extras(metadata_type=metadata_type, guids=guid, show_hidden=hidden)
+        info = self.fetch_header_and_extras(metadata_type=metadata_type, guids=[guid])
         mappings: list[MetadataParent] = []
 
-        if "storables" not in r.json():
-            log.warning(f"no detail found for {tml_type} = {guid}")
-            return mappings
-
-        for storable in r.json()["storables"]:
-            # LOOP THROUGH ALL COLUMNS LOOKING FOR TABLES WE HAVEN'T SEEN
-            if metadata_type == "LOGICAL_TABLE":
-                for column in storable["columns"]:
-                    for logical_table in column["sources"]:
-                        parent = MetadataParent(
-                            parent_guid=logical_table["tableId"],
-                            parent_name=logical_table["tableName"],
-                            connection=storable["dataSourceId"],
-                        )
-
-                        if parent not in mappings:
-                            mappings.append(parent)
-
-            # FIND THE TABLE, LOOP THROUGH ALL COLUMNS LOOKING FOR TABLES WE HAVEN'T SEEN
-            if metadata_type == "QUESTION_ANSWER_BOOK":
-                visualizations = storable["reportContent"]["sheets"][0]["sheetContent"]["visualizations"]
-                table_viz = next(v for v in visualizations if v["vizContent"]["vizType"] == "TABLE")
-
-                for column in table_viz["vizContent"]["columns"]:
-                    for logical_table in column["referencedTableHeaders"]:
-                        connection_guid = self.find_data_source_of_logical_table(logical_table["id"])
-
-                        parent = MetadataParent(
-                            parent_guid=logical_table["id"],
-                            parent_name=logical_table["name"],
-                            connection=connection_guid,
-                        )
-
-                        if parent not in mappings:
-                            mappings.append(parent)
-
-            # LOOP THROUGH ALL THE VISUALIZATIONS, FIND THE REFERENCE ANSWER, SEARCH AND ADD THE ANSWER-VIZ MAPPINGS
-            if metadata_type == "PINBOARD_ANSWER_BOOK":
-                visualizations = storable["reportContent"]["sheets"][0]["sheetContent"]["visualizations"]
-
-                for idx, visualization in enumerate(visualizations, start=1):
-                    viz_mappings = self.table_references(
-                        visualization["vizContent"]["refAnswerBook"]["id"],
-                        tml_type="answer",
-                        hidden=True,
+        # LOOP THROUGH ALL COLUMNS LOOKING FOR TABLES WE HAVEN'T SEEN
+        if metadata_type == "LOGICAL_TABLE":
+            for column in info[0]["columns"]:
+                for logical_table in column["sources"]:
+                    parent = MetadataParent(
+                        parent_guid=logical_table["tableId"],
+                        parent_name=logical_table["tableName"],
+                        connection=info[0]["dataSourceId"],
                     )
 
-                    for parent in viz_mappings:
-                        parent.visualization_guid = visualization["header"]["id"]
-                        parent.visualization_index = f"Viz_{idx}"
+                    if parent not in mappings:
+                        mappings.append(parent)
 
-                        if parent not in mappings:
-                            mappings.append(parent)
+        # FIND THE TABLE, LOOP THROUGH ALL COLUMNS LOOKING FOR TABLES WE HAVEN'T SEEN
+        if metadata_type == "QUESTION_ANSWER_BOOK":
+            visualizations = info[0]["reportContent"]["sheets"][0]["sheetContent"]["visualizations"]
+            table_viz = next(v for v in visualizations if v["vizContent"]["vizType"] == "TABLE")
+
+            for column in table_viz["vizContent"]["columns"]:
+                for logical_table in column["referencedTableHeaders"]:
+                    connection_guid = self.find_data_source_of_logical_table(logical_table["id"])
+
+                    parent = MetadataParent(
+                        parent_guid=logical_table["id"],
+                        parent_name=logical_table["name"],
+                        connection=connection_guid,
+                    )
+
+                    if parent not in mappings:
+                        mappings.append(parent)
+
+        # LOOP THROUGH ALL THE VISUALIZATIONS, FIND THE REFERENCE ANSWER, SEARCH AND ADD THE ANSWER-VIZ MAPPINGS
+        if metadata_type == "PINBOARD_ANSWER_BOOK":
+            visualizations = info[0]["reportContent"]["sheets"][0]["sheetContent"]["visualizations"]
+
+            for idx, visualization in enumerate(visualizations, start=1):
+                viz_mappings = self.table_references(
+                    visualization["vizContent"]["refAnswerBook"]["id"],
+                    tml_type="answer",
+                    hidden=True,
+                )
+
+                for parent in viz_mappings:
+                    parent.visualization_guid = visualization["header"]["id"]
+                    parent.visualization_index = f"Viz_{idx}"
+
+                    if parent not in mappings:
+                        mappings.append(parent)
 
         return mappings

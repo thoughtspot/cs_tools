@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 import logging
 
+from cs_tools import utils
 from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import GUID, MetadataCategory, TableRowsFormat
@@ -103,11 +104,9 @@ class LogicalTableMiddleware:
         if include_data_source:
             for table in tables:
                 connection_guid = self.ts.metadata.find_data_source_of_logical_table(guid=table["id"])
-                source_details = self.ts.metadata.fetch_header_and_extras(
-                    metadata_type="DATA_SOURCE", guid=connection_guid
-                )
-                table["data_source"] = source_details["header"]
-                table["data_source"]["type"] = source_details["type"]
+                info = self.ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guids=[connection_guid])  # type: ignore
+                table["data_source"] = info[0]["header"]
+                table["data_source"]["type"] = info[0]["type"]
 
         return tables
 
@@ -115,16 +114,15 @@ class LogicalTableMiddleware:
         """ """
         columns = []
 
-        # for chunk in utils.batched(guids, n=chunksize):
-        for guid in guids:
-            r = self.ts.metadata.fetch_header_and_extras(metadata_type="LOGICAL_TABLE", guid=guid)
+        for chunk in utils.batched(guids, n=chunksize):
+            info = self.ts.metadata.fetch_header_and_extras(metadata_type="LOGICAL_TABLE", guids=chunk)
 
-            for logical_table in r.json()["storables"]:
-                for column in logical_table.get("columns", []):
+            for table in info:
+                for column in table.get("columns", []):
                     columns.append(
                         {
                             "column_guid": column["header"]["id"],
-                            "object_guid": logical_table["header"]["id"],
+                            "object_guid": table["header"]["id"],
                             "column_name": column["header"]["name"],
                             "description": column["header"].get("description"),
                             "data_type": column["dataType"],

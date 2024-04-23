@@ -84,8 +84,8 @@ def deploy(
                     log.error(f"Could not find a connection with guid '{connection_guid}'")
                     raise typer.Exit(1) from None
 
-                connection_name = info["header"]["name"]
-                dialect = info["type"]
+                connection_name = info[0]["header"]["name"]
+                dialect = info[0]["type"]
 
         # Care for UPPERCASE or lowercase identity convention in dialects
         should_upper = "SNOWFLAKE" in dialect
@@ -437,7 +437,7 @@ def metadata(
             #
             for metadata_type in types:
                 guids = [obj["id"] for obj in content if obj["metadata_type"] == metadata_type]
-                r = ts.metadata.permissions(guids, type=metadata_type)
+                r = ts.metadata.permissions(guids, metadata_type=metadata_type)
                 temp_sync.dump(
                     models.SharingAccess.__tablename__, data=transform.to_sharing_access(r, cluster=cluster_uuid)
                 )
