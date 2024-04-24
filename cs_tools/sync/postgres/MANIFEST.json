@@ -1,0 +1,6 @@
+{
+    "name": "postgres",
+    "syncer_class": "Postgres",
+    "requirements": ["psycopg2-binary >= 2.9.9"
+    ]
+}
