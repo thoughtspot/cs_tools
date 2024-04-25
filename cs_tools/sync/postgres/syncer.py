@@ -5,10 +5,8 @@ import sqlalchemy as sa
 import sqlmodel
 from cs_tools.sync.base import DatabaseSyncer
 from typing import TYPE_CHECKING, Any, Literal ,Optional
-from pydantic_core import PydanticCustomError
 import pathlib
 import logging
-from sqlalchemy.orm import sessionmaker
 from cs_tools import __version__
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
@@ -27,68 +25,56 @@ class Postgres(DatabaseSyncer):
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
     __syncer_name__ = "postgres"
    
-    dbname: str 
-    user:  str 
-    password:  str 
+    database: str 
+    username:  str 
+    secret:  Optional[str] = None 
     host:  str 
-    port: int 
+    port: Optional[int] = pydantic.Field(default=5432)
     schema_ : str = pydantic.Field(default="PUBLIC",alias="schema")
-    authentication: Literal["basic", "key-pair", "sso", "oauth"]
+    
+    # authentication needs to be implemented 
     log_level: Literal["debug", "info", "warning"] = "warning"
-    secret: Optional[str] = None
-    private_key_path: Optional[pydantic.FilePath] = None
-        
-    @pydantic.field_validator("secret", mode="before")
-    def ensure_auth_secret_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
-        if info.data.get("authentication") == "sso" or value is not None:
-            return value
-
-        if info.data.get("authentication") == "basic":
-            raise PydanticCustomError("missing", "Field required, you must provide a password", {"secret": value})
-
-        if info.data.get("authentication") == "oauth":
-            raise PydanticCustomError("missing", "Field required, you must provide an oauth token", {"secret": value})
+    @pydantic.field_validator("secret", mode="before") 
     
         
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        logging.getLogger("postgres").setLevel(self.log_level.upper())
         
         self._engine = sa.create_engine(self.make_url())
-        self.Session = sessionmaker(bind=self.engine)
         self.metadata = sqlmodel.MetaData(schema=self.schema_)
 
     def __repr__(self) -> str:
-        database = self.dbname
-        username = self.user
+        database = self.database
+        username = self.username
         host = self.host
         port = self.port
         return f"<PostgresSyncer DATABASE='{database}', USER='{username}', HOST='{host}', PORT='{port}'>"
     
     def make_url(self):
         """Create a connection string for the Postgres JDBC driver."""
-        dialect = "postgresql"
-        driver = "psycopg2"
-        connection_string = f"{dialect}+{driver}://{self.user}:{self.password}@{self.host}/{self.dbname}"
-        return connection_string
+        auth = self.username if self.password is None else f"{self.username}:{self.password}"
+        return f"postgresql+psycopg2://{auth}@{self.host}/{self.dbname}"
     
     # MANDATORY PROTOCOL MEMBERS
     
-    @staticmethod
-    def output_to_list(rows):
-        output_list = []
-        for row in rows:
-            values = [str(value) for value in row]
-            output_list.append(values)
-        return output_list
     
-    def load(self, tablename: str) -> TableRows:
-        """SELECT rows from Postgresql SQL."""
+    def load(self, tablename: str, batch_size: int = 1000) -> TableRows:
+        """SELECT rows from Postgres SQL"""
         table = self.metadata.tables[f"{self.schema_}.{tablename}"]
         rows = self.session.execute(table.select())
-        result = self.output_to_list(rows) 
+        result = []
+        for batch in self.batched(rows, batch_size):
+            result.extend([row.model_dump() for row in batch])
         return result
 
+    def batched(self, iterable, n):
+        """Yield successive n-sized chunks from iterable."""
+        for i in range(0, len(iterable), n):
+            yield iterable[i:i + n]
+            
+    # COPY_INTO method needs to be implemented. Work Around to be researched for the same.
+    
+            
     def dump(self, tablename: str, *, data: TableRows) -> None:
         """INSERT rows into Postgres SQL."""
         if not data:
