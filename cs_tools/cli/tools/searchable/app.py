@@ -192,7 +192,7 @@ def bi_server(
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions] [timestamp] != 'today'"
         + "[incident id] != [incident id].{null}"
-        + ("" if not compact else " [User Action] != [User Action].invalid [User Action].{null}")
+        + ("" if not compact else " [user action] != [user action].invalid [user action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if org_override is None else f"[org id] = {ts.org.guid_for(org_override)}")
@@ -231,7 +231,7 @@ def bi_server(
                         **{
                             "cluster_guid": ts.session_context.thoughtspot.cluster_id,
                             "sk_dummy": f"{ts.session_context.thoughtspot.cluster_id}-{row_date}-{sk_idx}",
-                            "org_id": row.get("Org ID", 0),
+                            "org_id": row.get("Org Id", 0),
                             "incident_id": row["Incident Id"],
                             "timestamp": row["Timestamp"],
                             "url": row["URL"],
