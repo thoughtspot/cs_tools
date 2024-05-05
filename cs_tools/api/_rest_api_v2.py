@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 import logging
-from urllib.error import HTTPError
 
 from cs_tools.api import _utils
-from cs_tools.types import GUID, DeployPolicy, DeployType, MetadataObjectType, MetadataIdentity
+from cs_tools.types import GUID, DeployPolicy, DeployType, MetadataIdentity, MetadataObjectType
 
 if TYPE_CHECKING:
     import httpx
@@ -57,19 +56,10 @@ class RESTAPIv2:
     # METADATA ::  https://developers.thoughtspot.com/docs/rest-apiv2-reference#_tags
     # ==================================================================================================================
 
-    def tags_assign(self, metadata: [MetadataIdentity], tag_identifiers: List[Identifier], ) -> httpx.Response:
-        body = {
-            "metadata": metadata,
-            "tag_identifiers": tag_identifiers
-        }
+    def tags_assign(self, metadata: [MetadataIdentity], tag_identifiers: list[Identifier]) -> httpx.Response:
+        body = {"metadata": metadata, "tag_identifiers": tag_identifiers}
 
         r = self.request("POST", "/api/rest/2.0/tags/assign", json=body)
-        try:
-            r.raise_for_status()
-            print(f"Tags {tag_identifiers} assigned to {metadata}.")
-        except HTTPError as e:
-            print(e)
-
         return r
 
     # ==================================================================================================================
