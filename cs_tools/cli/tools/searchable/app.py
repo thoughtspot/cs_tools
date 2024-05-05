@@ -79,7 +79,7 @@ def deploy(
 
             else:
                 try:
-                    info = ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guid=connection_guid)
+                    info = ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guids=[connection_guid])
                 except (KeyError, IndexError):
                     log.error(f"Could not find a connection with guid '{connection_guid}'")
                     raise typer.Exit(1) from None
@@ -127,18 +127,9 @@ def deploy(
 
             responses = ts.tml.to_import(tmls, policy=TMLImportPolicy.partial)
 
-            centered_table = layout.build_table()
+            for response in responses:
+                log.info(f"{response.status_code} {response.reason_phrase} >> {response.url}")
 
-            for row in responses:
-                centered_table.renderable.add_row(
-                    ":cross_mark:" if row.is_error else ":white_heavy_check_mark:",
-                    row.tml_type_name,
-                    row.guid or "{null}",
-                    row.name,
-                    "; ".join(row.error_messages) or "{null}",
-                )
-
-            rich_console.print(centered_table)
 
 
 @app.command(dependencies=[thoughtspot])
@@ -406,7 +397,7 @@ def metadata(
             # synonyms
             row[6] = ":fire:"
             guids = [obj["id"] for obj in content if obj["metadata_type"] == "LOGICAL_TABLE"]
-            r = ts.logical_table.columns(guids, include_hidden=True)
+            r = ts.logical_table.columns(guids)
             temp_sync.dump(
                 models.MetadataColumn.__tablename__, data=transform.to_metadata_column(r, cluster=cluster_uuid)
             )
