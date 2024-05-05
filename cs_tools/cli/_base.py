@@ -18,14 +18,6 @@ if TYPE_CHECKING:
     import typer
 
 
-WARNING_BETA = "\n\n[bold yellow]USE AT YOUR OWN RISK![/] " "This tool is currently in beta."
-WARNING_PRIVATE = (
-    "\n\n[bold yellow]USE AT YOUR OWN RISK![/] "
-    "This tool utilized private / internal API calls. These API calls are not "
-    "[b]gauranteed[/] to be stable across ThoughtSpot version upgrades."
-)
-
-
 class CSTool(_GlobalModel):
     """
     Represent a tool which a user can interact with.
@@ -65,7 +57,7 @@ class CSTool(_GlobalModel):
 
         if self.privacy == "beta":
             self.app.rich_help_panel = f"[BETA Tools] [green]feedback at [cyan][link={__project__.__help__}]GitHub"
-            self.app.info.help += WARNING_BETA
+            self.app.info.help += "\n\n[bold yellow]USE AT YOUR OWN RISK![/] This tool is currently in beta."
 
         self.app.info.epilog = f":bookmark: v{self.version} :scroll: [cyan][link={self.docs_url}]Documentation"
 
