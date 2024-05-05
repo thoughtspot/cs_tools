@@ -533,6 +533,14 @@ def http_request(url, to_json=True, timeout=None):
 
     with urllib.request.urlopen(url, timeout=timeout, context=ctx) as r:
         data = r.read()
+    
+    if r.status >= 400:
+        log.error("Something went wrong when requesting: {u}".format(u=url))
+        raise urllib.error.HTTPError(url=url, code=r.status, msg="HTTP Error", hdrs=r.headers, fp=r)
+
+    if not data:
+        log.error("Something went wrong when requesting: {u}".format(u=url))
+        raise urllib.error.HTTPError(url=url, code=r.status, msg="HTTP Error", hdrs=r.headers, fp=r)
 
     if to_json:
         data = json.loads(data)
