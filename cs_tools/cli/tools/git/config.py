@@ -176,7 +176,7 @@ def _show_configs_as_table(configs: list[dict], title: str = "Configuration Deta
     """
     use_cnt = len(configs) > 1
 
-    for count, config in configs:
+    for count, config in enumerate(configs):
         title = f"{title} {count}" if use_cnt else title
 
         table = Table(title=f"Configuration Details {count}", width=100)

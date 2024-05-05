@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Optional, Union
 import logging
 import re
 import uuid
@@ -157,6 +157,21 @@ class DeployPolicy(StrEnum):
     all_or_none = "ALL_OR_NONE"
     partial = "PARTIAL"
 
+
+MetadataIdentifier = Union[str, GUID]
+
+
+class MetadataTypeV2(StrEnum):
+    liveboard = "LIVEBOARD"
+    answer = "ANSWER"
+    logical_table = "LOGICAL_TABLE"
+    logical_column = "LOGICAL_COLUMN"
+    connection = "CONNECTION"
+
+
+class MetadataIdentity(TypedDict):
+    type: MetadataTypeV2
+    identifier: MetadataIdentifier
 
 # ======================================================================================================================
 # CS Tools Middleware types
