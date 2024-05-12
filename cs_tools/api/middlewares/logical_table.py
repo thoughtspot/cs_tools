@@ -104,6 +104,11 @@ class LogicalTableMiddleware:
             for table in tables:
                 connection_guid = self.ts.metadata.find_data_source_of_logical_table(guid=table["id"])
                 info = self.ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guids=[connection_guid])  # type: ignore
+
+                # BUGFIX: SCAL-199984 .. eta 10.0.0.cl
+                if info[0]["type"] == "Default":
+                    continue
+
                 table["data_source"] = info[0]["header"]
                 table["data_source"]["type"] = info[0]["type"]
 
