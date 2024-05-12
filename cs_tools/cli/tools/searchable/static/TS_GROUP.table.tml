@@ -1,11 +1,11 @@
 guid: 5e399117-6d55-423f-8612-0c38d759435e
 table:
   name: TS_GROUP
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_GROUP
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

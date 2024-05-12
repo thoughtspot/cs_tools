@@ -81,7 +81,7 @@ def deploy(
                 try:
                     info = ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guids=[connection_guid])
                 except (KeyError, IndexError):
-                    log.error(f"Could not find a connection with guid '{connection_guid}'")
+                    log.error(f"Could not find a connection with guid {connection_guid}")
                     raise typer.Exit(1) from None
 
                 connection_name = info[0]["header"]["name"]
@@ -109,7 +109,10 @@ def deploy(
                         tml.table.connection.fqn = connection_guid
 
                 # No need to replicate TS_BI_SERVER in Falcon, we'll use a Sage View instead.
-                if dialect == "FALCON" and "TS_BI_SERVER.table.tml" in file.name:
+                falcon_and_table = dialect == "FALCON" and "TS_BI_SERVER.table.tml" in file.name
+                embrace_and_view = dialect != "FALCON" and "TS_BI_SERVER.view.tml" in file.name
+
+                if falcon_and_table or embrace_and_view:
                     continue
 
                 if dialect == "FALCON" and "TS_BI_SERVER.view.tml" in file.name:
@@ -125,11 +128,20 @@ def deploy(
                 this_task.skip()
                 raise typer.Exit(0)
 
-            responses = ts.tml.to_import(tmls, policy=TMLImportPolicy.partial)
+            api_responses = ts.tml.to_import(tmls, policy=TMLImportPolicy.partial)
 
-            for response in responses:
-                log.info(f"{response.status_code} {response.reason_phrase} >> {response.url}")
+            for r in api_responses:
+                divider = "[dim bold white]>>[/]"
 
+                if r.is_success:
+                    logger = log.info
+                    info = f"{r.guid} {r.metadata_object_type}"
+                else:
+                    logger = log.warn if r.status_code == "WARNING" else log.error
+                    message = "\n   ".join(r.error_messages)
+                    info = f"import log..\n   {message}"
+
+                logger(f"{divider} [b blue]{r.name}[/] {divider} {info}")
 
 
 @app.command(dependencies=[thoughtspot])

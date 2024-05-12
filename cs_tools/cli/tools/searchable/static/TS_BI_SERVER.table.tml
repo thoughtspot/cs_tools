@@ -2,11 +2,11 @@ guid: 95901c39-5987-4631-9d5d-d4ed6b73c2b1
 table:
   name: TS_BI_SERVER
   description: "TS: BI Server is an event history. Metadata (Answers, Liveboards, Users, Orgs) exists at the time of recording, but may become deleted as time progresses so we LEFT OUTER JOIN to all other objects. TS_CLUSTER is a CS Tools-maintained field and is not vulnerable to the same issue."
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_BI_SERVER
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

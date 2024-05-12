@@ -1,6 +1,6 @@
 guid: 1a5e1046-62e6-4f36-8c69-724f0adadb45
 liveboard:
-  name: "CS Tools: ThoughtSpot Adoption"
+  name: "CS Tools ~ ThoughtSpot Adoption"
   description: |-
     Learn how your ThoughtSpot cluster is used..
 
@@ -11,8 +11,8 @@ liveboard:
       name: Monthly
       description: active users
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "[Active Users] [Interaction Timestamp] [Interaction Timestamp].monthly"
       answer_columns:
       - name: Active Users
@@ -56,8 +56,8 @@ liveboard:
       name: Quarterly
       description: active users
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "[Active Users] [User Action] != [User Action].data_export [User Action].tspublic_data_export [User Action].{null} [Interaction Timestamp].quarterly"
       answer_columns:
       - name: Active Users
@@ -101,8 +101,8 @@ liveboard:
       name: Total
       description: active users
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "[Active Users] [User Action] != [User Action].data_export [User Action].tspublic_data_export [User Action].{null} [Interaction Timestamp].yearly"
       answer_columns:
       - name: Active Users
@@ -146,8 +146,8 @@ liveboard:
       name: Day at a Glance
       description: <i>users interacting in ThoughtSpot throughout the day</i>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "[Active Users] by [Interaction Timestamp].'day of week' by [Interaction Timestamp].'hour of day' sort by [Interaction Timestamp] [Interaction Timestamp].'day of week' descending"
       answer_columns:
       - name: Active Users
@@ -191,8 +191,8 @@ liveboard:
       name: <b><font color="#8C62F5">Liveboard</font></b>
       description: visits (page loads only)
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "[Interactions] [Interaction Timestamp] [Interaction Timestamp].monthly [User Action] = [User Action].pinboard_admin_view [User Action].pinboard_embed_view [User Action].pinboard_view"
       answer_columns:
       - name: Interactions
@@ -236,8 +236,8 @@ liveboard:
       name: Searches
       description: <b><font color="#F04152">see Appendix</font> for details</b>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "[Interactions] [Interaction Timestamp] [Interaction Timestamp].monthly [User Action Category] = 'search'"
       answer_columns:
       - name: Interactions
@@ -281,8 +281,8 @@ liveboard:
       name: <b><font color="#06BF7F">Answer</font></b>
       description: visits (page loads only)
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "[Interactions] [Interaction Timestamp] [Interaction Timestamp].monthly [User Action] = 'answer_view'"
       answer_columns:
       - name: Interactions
@@ -338,8 +338,8 @@ liveboard:
       name: Are users striking a balance between consumption and creation?
       description: "<i>aim to have a linear cumulative growth of content creation, <b><font color=\"#F04152\">see Appendix</font></b> for more details</i>"
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: New Content Creation
         name: New Content Creation
@@ -399,8 +399,8 @@ liveboard:
       name: Query Errors
       description: "<i>(ex. timeouts, database errors, etc)</i>"
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Errors
         name: Errors
@@ -449,8 +449,8 @@ liveboard:
       name: Average Query Latency (s)
       description: <i>excluding queries under 1 second (ex. database results cached)</i>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Is Likely Results Cachced
         name: Is Likely Results Cachced
@@ -509,8 +509,8 @@ liveboard:
       name: Database Results Cache
       description: <i>as a percentage of all queries (&lt;1s)</i>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Results Cache Usage (approximation)
         name: Results Cache Usage (approximation)
@@ -563,8 +563,8 @@ liveboard:
     answer:
       name: <b><font color="#8C62F5">Liveboard</font></b> activity per User
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Liveboard Interactions per Active User
         name: Liveboard Interactions per Active User
@@ -612,8 +612,8 @@ liveboard:
       name: ThoughtSpot Leaderboard
       description: "<i>weighted by data exploration activities, <b>hover each user for details</b></i>"
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Leaderboard Rank
         name: Leaderboard Rank
@@ -741,8 +741,8 @@ liveboard:
       name: Disengaged Users
       description: <i>no interaction in 35 days</i>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: fx Net Active Users
         name: fx Net Active Users
@@ -813,8 +813,8 @@ liveboard:
     answer:
       name: 50 <font color="#F04152">Slowest</font> Queries
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "[Latency (s)] [Search Query] top 50 ranked by [Latency (s)] [Search Query] != '{null}' [Interaction Timestamp] [Interaction Timestamp].detailed [Interaction User] [HTTP Response Status]"
       answer_columns:
       - name: Total Latency (s)
@@ -875,8 +875,8 @@ liveboard:
       name: Search Experience
       description: <i>as a percentage of all queries&nbsp; (&lt;15s)</i>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Is Likely Search Token AutoComplete
         name: Is Likely Search Token AutoComplete
@@ -926,8 +926,8 @@ liveboard:
       name: Forgotten Objects
       description: <i>content which exceeds the activity or modification thresholds</i>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Days since last Activity
         name: Days since last Activity
@@ -1049,8 +1049,8 @@ liveboard:
       name: Days since
       description: ' Median Modify Date'
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: modified before median modify date
         name: modified before median modify date
@@ -1093,8 +1093,8 @@ liveboard:
       name: Users Experiencing
       description: <i>high query latency (&gt;30s)</i>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Slow Queries
         name: Slow Queries
@@ -1144,8 +1144,8 @@ liveboard:
       name: Total <b><font color="#8C62F5">Liveboards</font></b>
       description: "created, all time"
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "unique count [Object] [Object Type] = 'liveboard'"
       answer_columns:
       - name: Unique Number of Object
@@ -1181,8 +1181,8 @@ liveboard:
       name: Total <b><font color="#06BF7F">Answers</font></b>
       description: "created, all time"
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "unique count [Object] [Object Type] = 'answer'"
       answer_columns:
       - name: Unique Number of Object
@@ -1218,8 +1218,8 @@ liveboard:
       name: Weekly User Breakdown
       description: <i>*users are <b><font color="#F47E89">disengaged</font></b> or <b><font color="#FCC838">won back</font></b> after 35 consecutive days of inactivity</i>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Net Active Users
         name: Net Active Users
@@ -1344,8 +1344,8 @@ liveboard:
       name: Brand New Users
       description: <i>Welcome to ThoughtSpot!</i> 😁
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Net Active Users
         name: Net Active Users
@@ -1434,8 +1434,8 @@ liveboard:
       name: <b><font color="#F04152">Data Exports</font></b> per User
       description: <i>do these users have what they need?<i/>
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Data Exports per User
         name: Data Exports per User
@@ -1483,8 +1483,8 @@ liveboard:
       name: ThoughtSpot Group Leaderboard
       description: "<i>weighted by data exploration activities, <b>hover for details</b></i>"
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Leaderboard Rank
         name: Leaderboard Rank
@@ -1613,8 +1613,8 @@ liveboard:
       name: Users in more than 1 Shareable Group
       description: These users' Interactions will overcount when including Groups
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Shareable Group Memberships
         name: Shareable Group Memberships
@@ -1674,8 +1674,8 @@ liveboard:
     answer:
       name: Group Breakdown
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       search_query: "[Group] [Interaction User] [Group Sharing] = 'default' [Interaction User] not in ( [Interaction User] [Group] = [Group].'administration group' [Group].'system management group' ) [User Action Category] [Interactions] [User Action Category] != [User Action Category].'thoughtspot views' [User Action Category].{Null}"
       answer_columns:
       - name: Group
@@ -1742,8 +1742,8 @@ liveboard:
       name: First Interaction Date
       description: for the filters above
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Interaction Date
         name: Interaction Date
@@ -1774,8 +1774,8 @@ liveboard:
       name: Latest Interaction Date
       description: for the filters above
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Interaction Date
         name: Interaction Date
@@ -1806,8 +1806,8 @@ liveboard:
       name: First Interaction Date
       description: "in TS: BI event history"
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Interaction Date
         name: Interaction Date
@@ -1838,8 +1838,8 @@ liveboard:
       name: Latest Interaction Date
       description: "in TS: BI event history"
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Interaction Date
         name: Interaction Date
@@ -1885,8 +1885,8 @@ liveboard:
     answer:
       name: Most Popular Worksheet
       tables:
-      - id: CS Tools - BI Server Advanced
-        name: CS Tools - BI Server Advanced
+      - id: CS Tools ~ BI Server Advanced
+        name: CS Tools ~ BI Server Advanced
       formulas:
       - id: Interaction Date
         name: Interaction Date
