@@ -190,11 +190,16 @@ def bi_server(
 
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
-        "[org id] [incident id] [timestamp].'detailed' [url] [http response code] "
+        "[incident id] [timestamp].'detailed' [url] [http response code] "
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions] [timestamp] != 'today'"
+
+        # FOR DATA QUALITY PURPOSES
         + "[incident id] != [incident id].{null}"
+
+        # CONDITIONALS BASED ON CLI OPTIONS OR ENVIRONMENT
+        + ("" if not ts.session_context.thoughtspot.is_orgs_enabled else "[org id]")
         + ("" if not compact else " [user action] != [user action].invalid [user action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
