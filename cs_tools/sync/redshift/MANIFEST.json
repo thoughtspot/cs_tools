@@ -2,7 +2,7 @@
     "name": "redshift",
     "syncer_class": "Redshift",
     "requirements": [
-        ["sqlalchemy-redshift >= 1.4.1", "--no-deps"],
+        ["sqlalchemy-redshift >= 0.8.14", "--no-deps"],
         "redshift_connector >= 2.1.0",
         "psycopg2-binary >= 2.9.9"
     ]

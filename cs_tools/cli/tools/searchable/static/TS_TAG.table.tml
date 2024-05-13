@@ -5,11 +5,11 @@ table:
     Tags are objects which can be added to categorize other objects in the UI like Worksheets, Answers, and Liveboards.
 
     https://docs.thoughtspot.com/cloud/latest/tags
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_TAG
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

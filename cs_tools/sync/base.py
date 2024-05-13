@@ -131,6 +131,8 @@ class Syncer(_GlobalSettings):
     def __repr__(self) -> str:
         return f"<Syncer to '{self.name}'>"
 
+    __str__ = __repr__
+
     def load(self, directive: str) -> TableRows:
         """Fetch data from the external data source."""
         raise NotImplementedError(f"There is no default implementation for {self.__class__.__name__}.load")

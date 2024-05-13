@@ -1,11 +1,11 @@
 guid: e6d43b82-be02-4c3f-971c-db73e071e12b
 table:
   name: TS_METADATA_COLUMN
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_METADATA_COLUMN
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

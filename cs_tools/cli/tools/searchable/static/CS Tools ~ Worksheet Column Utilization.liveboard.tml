@@ -1,6 +1,6 @@
 guid: 0efe34bb-cd5c-4ee4-86d1-9413d99e1a09
 liveboard:
-  name: "CS Tools: Worksheet Column Utilization"
+  name: "CS Tools ~ Worksheet Column Utilization"
   description: Gain an understanding of how a Worksheet's columns are used across ThoughtSpot.
   visualizations:
   - id: Viz_1
@@ -8,8 +8,8 @@ liveboard:
       name: Columns
       description: included in the worksheet
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "unique count [Column] [Worksheet] = '(sample) retail - apparel'"
       answer_columns:
       - name: Unique Number of Column
@@ -46,8 +46,8 @@ liveboard:
       name: Synonyms
       description: manually or ai-generated
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "count [Synonym] [Worksheet] = '(sample) retail - apparel'"
       answer_columns:
       - name: Number of Synonym
@@ -83,8 +83,8 @@ liveboard:
       name: Top 15 Most Influential Creators
       description: based on engagement on their Liveboards and Answers
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       formulas:
       - id: Engagement Score
         name: Engagement Score
@@ -170,8 +170,8 @@ liveboard:
       name: Formulas
       description: defined
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "unique count [Column] [Is Formula] = true [Worksheet] = '(sample) retail - apparel'"
       answer_columns:
       - name: Unique Number of Column
@@ -199,8 +199,8 @@ liveboard:
       name: Column Type Breakdown
       description: "hover to see Synonym-, Hidden-, and Formula-counts"
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       formulas:
       - id: Column Type (incl. DATE)
         name: Column Type (incl. DATE)
@@ -266,8 +266,8 @@ liveboard:
       name: Hidden
       description: columns
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "unique count [Column] [Is Hidden] = true [Worksheet] = '(sample) retail - apparel'"
       answer_columns:
       - name: Unique Number of Column
@@ -295,8 +295,8 @@ liveboard:
       name: Natural Language Search is
       description: currently
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       formulas:
       - id: Sage Is
         name: Sage Is
@@ -337,8 +337,8 @@ liveboard:
       name: Types of objects
       description: created from the Worksheet
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       formulas:
       - id: Dependent Type (Pretty)
         name: Dependent Type (Pretty)
@@ -396,8 +396,8 @@ liveboard:
       name: Columns Usage
       description: profile how your columns are interacted with
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       formulas:
       - id: Answers
         name: Answers
@@ -548,8 +548,8 @@ liveboard:
       name: List of all Dependents
       description: detailed information about who owns content built from the Worksheet
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       formulas:
       - id: Days since last modified
         name: Days since last modified
@@ -641,8 +641,8 @@ liveboard:
       name: Monthly Interactions
       description: "views, edits, saves (but not searches)"
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "[Dependent Interactions] [Worksheet] = '(sample) retail - apparel' [Dependent Interaction Date] [Dependent Interaction Date].monthly"
       answer_columns:
       - name: Dependent Interactions
@@ -686,8 +686,8 @@ liveboard:
       name: New <b><font color="#06BF7F">Answers</font></b> Created
       description: trended monthly
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "[Dependent Created Date] [Dependent Created Date].monthly unique count [Dependent] [Worksheet].'(sample) retail - apparel' [Dependent Type] = 'answer'"
       answer_columns:
       - name: Month(Dependent Created Date)
@@ -730,8 +730,8 @@ liveboard:
       name: New <b><font color="#8C62F5">Liveboards</font></b> Created
       description: trended monthly
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "[Dependent Created Date] [Dependent Created Date].monthly unique count [Dependent] [Worksheet].'(sample) retail - apparel' [Dependent Type].liveboard"
       answer_columns:
       - name: Month(Dependent Created Date)
@@ -782,8 +782,8 @@ liveboard:
 
         <font color="#06BF7F">Answers</font> )</b>
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       formulas:
       - id: Include Author Interactions
         name: Include Author Interactions
@@ -852,8 +852,8 @@ liveboard:
       name: Total Creators
       description: last 12 months
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "unique count [Dependent Author] [Worksheet] = '(sample) retail - apparel' [Dependent Created Date].'last 12 months' [Dependent Created Date] [Dependent Created Date].monthly"
       answer_columns:
       - name: Unique Number of Dependent Author
@@ -896,8 +896,8 @@ liveboard:
       name: Total Consumers
       description: last 12 months
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "unique count [Interaction User] [Worksheet] = '(sample) retail - apparel' [Dependent Interaction Date].'last 12 months' [Dependent Interaction Date] [Dependent Interaction Date].monthly"
       answer_columns:
       - name: Unique Number of Interaction User
@@ -940,8 +940,8 @@ liveboard:
       name: First Interaction Date
       description: for the filters above
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "[Worksheet] = '(sample) retail - apparel' min [Dependent Interaction Date]"
       answer_columns:
       - name: Minimum Dependent Interaction Date
@@ -969,8 +969,8 @@ liveboard:
       name: Interaction Date
       description: "in TS: BI event history"
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "max [Dependent Interaction Date]"
       answer_columns:
       - name: Maximum Dependent Interaction Date
@@ -998,8 +998,8 @@ liveboard:
       name: First Interaction Date
       description: "in TS: BI event history"
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "min [Dependent Interaction Date]"
       answer_columns:
       - name: Minimum Dependent Interaction Date
@@ -1035,8 +1035,8 @@ liveboard:
       name: Latest Interaction Date
       description: for the filters above
       tables:
-      - id: CS Tools - Worksheet Column Utilization
-        name: CS Tools - Worksheet Column Utilization
+      - id: CS Tools ~ Worksheet Column Utilization
+        name: CS Tools ~ Worksheet Column Utilization
       search_query: "[Worksheet] = '(sample) retail - apparel' max [Dependent Interaction Date]"
       answer_columns:
       - name: Maximum Dependent Interaction Date

@@ -9,6 +9,8 @@ import httpx
 import rich
 import typer
 
+from cs_tools.datastructures import SessionContext
+
 from .completer import TQLCompleter
 from .const import TQL_HELP
 
@@ -75,7 +77,7 @@ class InteractiveTQL:
         self.autocomplete = autocomplete
         self.completer = TQLCompleter()
         self._current_prompt = None
-        self.console = console if console is not None else Console()
+        self.console: Console = console if console is not None else Console()
         self.http_timeout = http_timeout
 
     @property
@@ -276,6 +278,28 @@ class InteractiveTQL:
             self.ctx["server_schema_version"] = new_ctx["server_schema_version"]
             self.update_tokens("dynamic")
 
+    def _authenticate(self):
+        if self.ts.config.thoughtspot.password is None:
+            log.error("Use of the Falcon data APIs requires Basic Authentication (username + password)")
+            raise typer.Exit()
+
+        r = self.ts.api.v1.session_login(
+            username=self.ts.config.thoughtspot.username, password=self.ts.config.thoughtspot.decoded_password
+        )
+
+        if not r.is_success:
+            log.error(r.text)
+            raise typer.Exit()
+
+        i = self.ts.api.v1.session_info()
+        d = {
+            "__is_session_info__": True,
+            "__url__": self.ts.config.thoughtspot.url,
+            "__is_orgs_enabled__": self.ts.api.v1.session_orgs_read().is_success,
+            **i.json(),
+        }
+        self.ts._session_context = SessionContext(environment={}, thoughtspot=d, system={}, user=d)
+
     def run(self) -> None:
         """
         Start the TQL client.
@@ -283,7 +307,7 @@ class InteractiveTQL:
         This method is purely functional.
         """
         with self.console.status("[bold green]starting remote TQL client..[/]"):
-            self.ts.login()
+            self._authenticate()
             self.update_tokens("static")
             self.update_tokens("dynamic")
 

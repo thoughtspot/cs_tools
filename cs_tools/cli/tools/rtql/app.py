@@ -50,13 +50,12 @@ def interactive(
 def file(
     ctx: typer.Context,
     file: pathlib.Path = typer.Argument(..., metavar="FILE.tql", help="path to file to execute, default to stdin"),
-    http_timeout: int = typer.Option(60.0, "--timeout", help="network call timeout threshold"),
 ):
     """
     Run multiple commands within TQL on a remote server.
     """
     ts = ctx.obj.thoughtspot
-    r = ts.tql.script(file, http_timeout=http_timeout)
+    r = ts.tql.script(file)
 
     color_map = {"INFO": "[white]", "ERROR": "[red]"}
 
@@ -84,7 +83,6 @@ def command(
     ctx: typer.Context,
     command: str = typer.Argument("-", help="TQL query to execute", metavar='"SELECT ..."'),
     schema: str = typer.Option("falcon_default_schema", help="schema name to use"),
-    http_timeout: int = typer.Option(60.0, "--timeout", help="network call timeout threshold"),
 ):
     """
     Run a single TQL command on a remote server.
@@ -103,7 +101,7 @@ def command(
         rich_console.print("[red]no valid input given to rtql command")
         raise typer.Exit()
 
-    r = ts.tql.command(command, schema_=schema, http_timeout=http_timeout)
+    r = ts.tql.command(command, schema_=schema)
 
     color_map = {"INFO": "[white]", "ERROR": "[red]"}
 

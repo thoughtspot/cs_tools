@@ -1,11 +1,11 @@
 guid: 7572d30f-ecd7-4166-9f27-1e92144b76d0
 table:
   name: TS_SHARING_ACCESS
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_SHARING_ACCESS
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

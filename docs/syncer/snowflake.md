@@ -42,10 +42,11 @@ Instead of having a single, monolithic database, Snowflake separates the storage
 
     - [ ] __schema__{ .fc-blue }, _the schema to write new data to_
     <br />___if tables do not exist in the database.schema location already, we'll auto-create them___{ .fc-green }
+    <br />__default__{ .fc-gray }: `PUBLIC`
 
     ---
 
-    - [ ] __secret__{ .fc-blue }, _the secret value to pass to the authentication mechanism_
+    - [X] __secret__{ .fc-red }, _the secret value to pass to the authentication mechanism_
     <br />_this will be either a __password__{ .fc-purple } or __oauth token__{ .fc-purple }_
     
     ---

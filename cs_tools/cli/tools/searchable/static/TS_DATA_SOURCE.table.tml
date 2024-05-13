@@ -2,11 +2,11 @@ guid: 9def4655-9c53-4487-924c-7e67403d1147
 table:
   name: TS_DATA_SOURCE
   description: "Data sources in ThoughtSpot hold the data which is presented in the UI. They may be internally located like Falcon, or externally linked to ThoughtSpot via the Connection interface."
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_DATA_SOURCE
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

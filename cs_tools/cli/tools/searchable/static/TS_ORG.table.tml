@@ -1,8 +1,8 @@
 guid: c861952f-7d1b-4672-a809-8eef8525d35a
 table:
   name: TS_ORG
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_ORG
   connection:
     name: CS Tools
