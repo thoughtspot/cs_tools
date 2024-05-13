@@ -2,11 +2,11 @@ guid: db93b51b-e19b-4cfc-938b-e7dc7d3d3091
 table:
   name: TS_DEPENDENT_OBJECT
   description: "Dependencies in ThoughtSpot are any object which are built from another object. In the majority case a dependent is an Answer or Liveboard, however Worksheets and ThoughtSpot Views are dependents of their underlying Tables."
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_DEPENDENT_OBJECT
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: Dependent Subtype
     description: The internal ThoughtSpot sub-type name.

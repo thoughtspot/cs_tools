@@ -35,6 +35,12 @@ jobs:
 
       - name: Install a specific version of CS Tools
         run: python -m pip install -e .[cli]
+      
+      - name: Install Syncer dependencies for Snowflake
+        run: python -m pip install "snowflake-connector-python < 4.0.0"
+
+      - name: Install Syncer dependencies for Snowflake SQLAlchemy
+        run: python -m pip install "snowflake-sqlalchemy >= 1.5.1 , < 1.6.0" --no-deps
 
       # --config ENV:   tells CS Tools to pull the information from environment variables.
       - name: Grab N-7 to N-1 days of BI Server Data

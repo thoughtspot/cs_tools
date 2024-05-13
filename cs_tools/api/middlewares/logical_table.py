@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 import logging
 
-from cs_tools import utils
 from cs_tools.api import _utils
 from cs_tools.errors import ContentDoesNotExist
 from cs_tools.types import GUID, MetadataCategory, TableRowsFormat
@@ -105,43 +104,47 @@ class LogicalTableMiddleware:
             for table in tables:
                 connection_guid = self.ts.metadata.find_data_source_of_logical_table(guid=table["id"])
                 info = self.ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guids=[connection_guid])  # type: ignore
+
+                # BUGFIX: SCAL-199984 .. eta 10.0.0.cl
+                if info[0]["type"] == "Default":
+                    continue
+
                 table["data_source"] = info[0]["header"]
                 table["data_source"]["type"] = info[0]["type"]
 
         return tables
 
-    def columns(self, guids: list[GUID], *, include_hidden: bool = False, chunksize: int = 10) -> TableRowsFormat:
+    def columns(self, guids: list[GUID]) -> TableRowsFormat:
         """ """
         columns = []
 
-        for chunk in utils.batched(guids, n=chunksize):
-            info = self.ts.metadata.fetch_header_and_extras(metadata_type="LOGICAL_TABLE", guids=chunk)
+        info = self.ts.metadata.fetch_header_and_extras(metadata_type="LOGICAL_TABLE", guids=guids)
 
-            for table in info:
-                for column in table.get("columns", []):
-                    columns.append(
-                        {
-                            "column_guid": column["header"]["id"],
-                            "object_guid": table["header"]["id"],
-                            "column_name": column["header"]["name"],
-                            "description": column["header"].get("description"),
-                            "data_type": column["dataType"],
-                            "column_type": column["type"],
-                            "additive": column["isAdditive"],
-                            "aggregation": column["defaultAggrType"],
-                            "hidden": column["header"]["isHidden"],
-                            "synonyms": column["synonyms"],
-                            "index_type": column["indexType"],
-                            "geo_config": self._lookup_geo_config(column),
-                            "index_priority": column["indexPriority"],
-                            "format_pattern": column.get("formatPattern"),
-                            "currency_type": self._lookup_currency_type(column),
-                            "attribution_dimension": column["isAttributionDimension"],
-                            "spotiq_preference": column["spotiqPreference"],
-                            "calendar_type": self._lookup_calendar_guid(column),
-                            "is_formula": "formulaId" in column,
-                        },
-                    )
+        for table in info:
+            for column in table.get("columns", []):
+                columns.append(
+                    {
+                        "column_guid": column["header"]["id"],
+                        "object_guid": table["header"]["id"],
+                        "column_name": column["header"]["name"],
+                        "description": column["header"].get("description"),
+                        "data_type": column["dataType"],
+                        "column_type": column["type"],
+                        "additive": column["isAdditive"],
+                        "aggregation": column["defaultAggrType"],
+                        "hidden": column["header"]["isHidden"],
+                        "synonyms": column["synonyms"],
+                        "index_type": column["indexType"],
+                        "geo_config": self._lookup_geo_config(column),
+                        "index_priority": column["indexPriority"],
+                        "format_pattern": column.get("formatPattern"),
+                        "currency_type": self._lookup_currency_type(column),
+                        "attribution_dimension": column["isAttributionDimension"],
+                        "spotiq_preference": column["spotiqPreference"],
+                        "calendar_type": self._lookup_calendar_guid(column),
+                        "is_formula": "formulaId" in column,
+                    },
+                )
 
         return columns
 

@@ -79,9 +79,9 @@ def deploy(
 
             else:
                 try:
-                    info = ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guid=connection_guid)
+                    info = ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guids=[connection_guid])
                 except (KeyError, IndexError):
-                    log.error(f"Could not find a connection with guid '{connection_guid}'")
+                    log.error(f"Could not find a connection with guid {connection_guid}")
                     raise typer.Exit(1) from None
 
                 connection_name = info[0]["header"]["name"]
@@ -109,7 +109,10 @@ def deploy(
                         tml.table.connection.fqn = connection_guid
 
                 # No need to replicate TS_BI_SERVER in Falcon, we'll use a Sage View instead.
-                if dialect == "FALCON" and "TS_BI_SERVER.table.tml" in file.name:
+                falcon_and_table = dialect == "FALCON" and "TS_BI_SERVER.table.tml" in file.name
+                embrace_and_view = dialect != "FALCON" and "TS_BI_SERVER.view.tml" in file.name
+
+                if falcon_and_table or embrace_and_view:
                     continue
 
                 if dialect == "FALCON" and "TS_BI_SERVER.view.tml" in file.name:
@@ -125,20 +128,20 @@ def deploy(
                 this_task.skip()
                 raise typer.Exit(0)
 
-            responses = ts.tml.to_import(tmls, policy=TMLImportPolicy.partial)
+            api_responses = ts.tml.to_import(tmls, policy=TMLImportPolicy.partial)
 
-            centered_table = layout.build_table()
+            for r in api_responses:
+                divider = "[dim bold white]>>[/]"
 
-            for row in responses:
-                centered_table.renderable.add_row(
-                    ":cross_mark:" if row.is_error else ":white_heavy_check_mark:",
-                    row.tml_type_name,
-                    row.guid or "{null}",
-                    row.name,
-                    "; ".join(row.error_messages) or "{null}",
-                )
+                if r.is_success:
+                    logger = log.info
+                    info = f"{r.guid} {r.metadata_object_type}"
+                else:
+                    logger = log.warn if r.status_code == "WARNING" else log.error
+                    message = "\n   ".join(r.error_messages)
+                    info = f"import log..\n   {message}"
 
-            rich_console.print(centered_table)
+                logger(f"{divider} [b blue]{r.name}[/] {divider} {info}")
 
 
 @app.command(dependencies=[thoughtspot])
@@ -187,12 +190,17 @@ def bi_server(
 
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
-        "[org id] [incident id] [timestamp].'detailed' [url] [http response code] "
+        "[incident id] [timestamp].'detailed' [url] [http response code] "
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions] [timestamp] != 'today'"
+
+        # FOR DATA QUALITY PURPOSES
         + "[incident id] != [incident id].{null}"
-        + ("" if not compact else " [User Action] != [User Action].invalid [User Action].{null}")
+
+        # CONDITIONALS BASED ON CLI OPTIONS OR ENVIRONMENT
+        + ("" if not ts.session_context.thoughtspot.is_orgs_enabled else "[org id]")
+        + ("" if not compact else " [user action] != [user action].invalid [user action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if org_override is None else f"[org id] = {ts.org.guid_for(org_override)}")
@@ -231,7 +239,7 @@ def bi_server(
                         **{
                             "cluster_guid": ts.session_context.thoughtspot.cluster_id,
                             "sk_dummy": f"{ts.session_context.thoughtspot.cluster_id}-{row_date}-{sk_idx}",
-                            "org_id": row.get("Org ID", 0),
+                            "org_id": row.get("Org Id", 0),
                             "incident_id": row["Incident Id"],
                             "timestamp": row["Timestamp"],
                             "url": row["URL"],
@@ -406,7 +414,7 @@ def metadata(
             # synonyms
             row[6] = ":fire:"
             guids = [obj["id"] for obj in content if obj["metadata_type"] == "LOGICAL_TABLE"]
-            r = ts.logical_table.columns(guids, include_hidden=True)
+            r = ts.logical_table.columns(guids)
             temp_sync.dump(
                 models.MetadataColumn.__tablename__, data=transform.to_metadata_column(r, cluster=cluster_uuid)
             )

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional, Union
 import logging
 
 from cs_tools.api import _utils
-from cs_tools.types import GUID, DeployPolicy, DeployType, MetadataObjectType
+from cs_tools.types import GUID, DeployPolicy, DeployType, MetadataIdentity, MetadataObjectType
 
 if TYPE_CHECKING:
     import httpx
@@ -50,6 +50,16 @@ class RESTAPIv2:
 
     def auth_session_user(self) -> httpx.Response:
         r = self.request("GET", "api/rest/2.0/auth/session/user")
+        return r
+
+    # ==================================================================================================================
+    # METADATA ::  https://developers.thoughtspot.com/docs/rest-apiv2-reference#_tags
+    # ==================================================================================================================
+
+    def tags_assign(self, metadata: [MetadataIdentity], tag_identifiers: list[Identifier]) -> httpx.Response:
+        body = {"metadata": metadata, "tag_identifiers": tag_identifiers}
+
+        r = self.request("POST", "/api/rest/2.0/tags/assign", json=body)
         return r
 
     # ==================================================================================================================

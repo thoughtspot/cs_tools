@@ -3,12 +3,13 @@ from __future__ import annotations
 from httpx import HTTPStatusError
 from rich.align import Align
 from rich.table import Table
+from typing import List
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import MultipleChoiceType
 from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.types import DeployPolicy, DeployType
+from cs_tools.types import DeployPolicy, DeployType, GUID, MetadataIdentity
 
 app = CSToolsApp(
     name="branches",
@@ -177,6 +178,7 @@ def branches_deploy(
     branch_name: str = typer.Option(None, help="the branch name to use, or default"),
     deploy_type: str = typer.Option("DELTA", help="the deploy type to use, either DELTA or FULL"),
     deploy_policy: str = typer.Option("ALL_OR_NONE", help="the deploy policy to use, either PARTIAL or ALL_OR_NONE"),
+    tags: list[str] = typer.Option([], help="one or more tags to add to the imported content"),
 ):
     """
     Pulls from a branch in a git repository to ThoughtSpot.
@@ -197,7 +199,7 @@ def branches_deploy(
         rich_console.print(f"[b red]Error deploying: {e}.")
         rich_console.print(f"[b red]{e.response.content}.")
 
-    # An OK response doesn"t mean the content was successful.
+    # An OK response doesn't mean the content was successful.
     results = r.json()
 
     table = Table(title="Deploy Results", width=135)
@@ -205,7 +207,35 @@ def branches_deploy(
     table.add_column("Status", width=10)
     table.add_column("Message", width=100)
 
+    guids = []
     for _ in results:
+        try:
+            guids.append(_["file_name"].split(".")[0])
+        except Exception as e:
+            rich_console.print(f"[b red]Error getting GUID for {_['file_name']}:  {e}")
         table.add_row(_["file_name"], _["status_code"], _["status_message"])
 
     rich_console.print(Align.center(table))
+
+    _add_tags(ts=ts, objects=guids, tags=tags)
+
+
+def _add_tags(ts: thoughtspot.ThoughtSpot, objects: list[GUID], tags: list[str]) -> None:
+    """
+    Adds the tags to the items in the response.
+    :param ts: The ThoughtSpot object.
+    :param objects: List of the objects to add the tags to.
+    :param tags: List of tags to create.
+    """
+    with rich_console.status(f"[bold green]adding tags: {tags}[/]"):
+        metadata: List[MetadataIdentity] = []
+        for guid in objects:
+            metadata.append({"identifier": guid})
+
+        if metadata and tags:  # might all be errors
+            rich_console.print(f"Adding tags {tags} to {objects}")
+            try:
+                ts.api.v2.tags_assign(metadata=metadata, tag_identifiers=tags)
+            except HTTPStatusError as e:
+                rich_console.error(f"Error adding tags {tags} for metadata {objects}. Error: {e}")
+

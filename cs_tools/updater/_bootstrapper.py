@@ -35,14 +35,6 @@ def cli():
         ),
     )
     parser.add_argument(
-        "--offline-mode",
-        metavar="DIRECTORY",
-        help="install cs_tools from a distributable directory instead of from remote",
-        dest="offline_mode",
-        type=cli_type_filepath,
-        default=None,
-    )
-    parser.add_argument(
         "--beta",
         help=argparse.SUPPRESS,  # "install a remote pre-release version of CS Tools"
         dest="beta",
@@ -86,6 +78,20 @@ def cli():
         dest="verbose",
         action="store_true",
         default=False,
+    )
+    parser.add_argument(
+        "--offline-mode",
+        metavar="DIRECTORY",
+        help="install cs_tools from a distributable directory instead of from remote",
+        dest="offline_mode",
+        type=cli_type_filepath,
+        default=None,
+    )
+    parser.add_argument(
+        "--proxy",
+        help="url to route through {c}fmt{x} http://[user:password@]proxy.server:port".format(c=_PURPLE, x=_RESET),
+        dest="proxy",
+        default=None,
     )
     parser.add_argument(
         "--no-clean",
@@ -133,6 +139,9 @@ def cli():
             now=dt.datetime.now(tz=dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %z"),
         ),
     )
+
+    if args.proxy is not None:
+        os.environ["HTTPS_PROXY"] = args.proxy
 
     try:
         venv = get_cs_tools_venv(find_links=args.offline_mode)
@@ -524,6 +533,14 @@ def http_request(url, to_json=True, timeout=None):
 
     with urllib.request.urlopen(url, timeout=timeout, context=ctx) as r:
         data = r.read()
+    
+    if r.status >= 400:
+        log.error("Something went wrong when requesting: {u}".format(u=url))
+        raise urllib.error.HTTPError(url=url, code=r.status, msg="HTTP Error", hdrs=r.headers, fp=r)
+
+    if not data:
+        log.error("Something went wrong when requesting: {u}".format(u=url))
+        raise urllib.error.HTTPError(url=url, code=r.status, msg="HTTP Error", hdrs=r.headers, fp=r)
 
     if to_json:
         data = json.loads(data)

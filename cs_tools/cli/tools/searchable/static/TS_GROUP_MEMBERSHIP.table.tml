@@ -7,11 +7,11 @@ table:
     This table denotes Group Memberships. Users may be a member of one or more groups. Groups may be nested, in which the Membership Group is the "parent" - as in, principal GroupA is a member of GroupJ.
 
     The nested relationship between groups' groups is not modeled in the ThoughtSpot TML as the modeling language does not support recursion.
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_XREF_PRINCIPAL
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

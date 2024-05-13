@@ -1,11 +1,11 @@
 guid: c5f22923-e4c5-4d28-973d-57efcd435ec3
 table:
   name: TS_GROUP_PRIVILEGE
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_GROUP_PRIVILEGE
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

@@ -1,11 +1,11 @@
 guid: 8ac404a7-1f00-4536-860e-50031b0be524
 table:
   name: TS_COLUMN_SYNONYM
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_COLUMN_SYNONYM
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

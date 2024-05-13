@@ -1,6 +1,6 @@
 guid: bc6cd02a-9123-43ed-aa50-f919f3d3c907
 worksheet:
-  name: CS Tools - BI Server Advanced
+  name: CS Tools ~ BI Server Advanced
   tables:
   - name: TS_BI_SERVER
   - name: TS_CLUSTER

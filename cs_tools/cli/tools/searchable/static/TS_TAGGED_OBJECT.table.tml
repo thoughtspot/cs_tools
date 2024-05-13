@@ -2,11 +2,11 @@ guid: befbaaa3-04e9-4edb-9638-a6eaa63f891f
 table:
   name: TS_TAGGED_OBJECT
   description: This is a link table. Objects in ThoughtSpot can be tagged multiple times.
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_TAGGED_OBJECT
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.

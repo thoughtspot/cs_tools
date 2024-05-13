@@ -7,11 +7,11 @@ table:
     LOGICAL_TABLEs are Tables, SQL Views, ThoughtSpot Views, and Worksheets
     QUESTION_ANSWER_BOOKs are Answers
     PINBOARD_ANSWER_BOOKs are Liveboards
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_METADATA_OBJECT
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: DATA_SOURCE_GUID
     description: This column is only used for JOINs.

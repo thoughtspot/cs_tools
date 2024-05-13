@@ -1,6 +1,6 @@
 guid: 381db1c8-688f-4620-9a45-ce9a2dea108c
 worksheet:
-  name: CS Tools - Worksheet Column Utilization
+  name: CS Tools ~ Worksheet Column Utilization
   description: Show the data lineage of Worksheets and how the columns are used in the ThoughtSpot system.
   tables:
   - name: TS_BI_SERVER

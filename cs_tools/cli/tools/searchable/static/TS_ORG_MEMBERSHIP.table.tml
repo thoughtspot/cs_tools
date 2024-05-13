@@ -2,11 +2,11 @@ guid: 657f0e27-1163-4ab2-aa40-2896e641c10a
 table:
   name: TS_ORG_MEMBERSHIP
   description: This is a link table. Users in ThoughtSpot may be a member of one or more Orgs.
-  db: GTM_DB
-  schema: CS_TOOLS_V150
+  db: << DATABASE >>
+  schema: << SCHEMA >>
   db_table: TS_XREF_ORG
   connection:
-    name: CS Tools
+    name: << CONNECTION_NAME >>
   columns:
   - name: CLUSTER_GUID
     description: This column is only used for JOINs.
