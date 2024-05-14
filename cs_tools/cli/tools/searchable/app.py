@@ -196,14 +196,14 @@ def bi_server(
         "[database latency (us)] [impressions] [timestamp] != 'today'"
 
         # FOR DATA QUALITY PURPOSES
-        + "[incident id] != [incident id].{null}"
+        + " [incident id] != [incident id].{null}"
 
         # CONDITIONALS BASED ON CLI OPTIONS OR ENVIRONMENT
-        + ("" if not ts.session_context.thoughtspot.is_orgs_enabled else "[org id]")
         + ("" if not compact else " [user action] != [user action].invalid [user action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
-        + ("" if org_override is None else f"[org id] = {ts.org.guid_for(org_override)}")
+        + ("" if not ts.session_context.thoughtspot.is_orgs_enabled else " [org id]")
+        + ("" if org_override is None else f" [org id] = {ts.org.guid_for(org_override)}")
     )
 
     tasks = [
