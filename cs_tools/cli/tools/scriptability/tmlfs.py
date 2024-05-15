@@ -94,6 +94,7 @@ class BaseTMLFileSystem:
                 fsfile = path / TMLFS_FILENAME
                 if not fsfile.exists():
                     rich_console.log(f"Creating TML File System at {path}")
+                    fsfile.touch()
 
         # now create the sub-folders.  If they already exist, then the creation will be ignored.
         (path / "logs").mkdir(exist_ok=True)
