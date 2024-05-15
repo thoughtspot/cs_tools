@@ -131,11 +131,7 @@ class MetadataMiddleware:
                 break
 
         if guids:
-            raise CSToolsError(
-                title=f"failed to find content for guids: {guids}",
-                reason="GUIDs not found in ThoughtSpot",
-                suggestion="check the GUIDs passed to the function and verify they exist.",
-            )
+            raise CSToolsError(f"failed to find content for guids: {guids}")
 
         return content
 
