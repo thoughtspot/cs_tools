@@ -1,1 +1,0 @@
-BIG_QUERY_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
