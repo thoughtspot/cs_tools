@@ -133,7 +133,7 @@ nav:
     - Google Sheets: syncer/gsheets.md
     - JSON: syncer/json.md
     - Parquet: syncer/parquet.md
-    # - Postgres: syncer/postgres.md
+    - Postgres: syncer/postgres.md
     - Redshift: syncer/redshift.md
     - Snowflake: syncer/snowflake.md
     - SQLite: syncer/sqlite.md
