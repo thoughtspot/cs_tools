@@ -22,7 +22,7 @@ from thoughtspot_tml.utils import _recursive_scan
 from cs_tools import utils
 from cs_tools.cli.tools.scriptability.util import GUIDMapping
 from cs_tools.cli.ux import rich_console
-from cs_tools.errors import CSToolsError
+from cs_tools.errors import CSToolsCLIError, CSToolsCLIError
 from cs_tools.thoughtspot import ThoughtSpot
 from cs_tools.types import (
     GUID,
@@ -176,7 +176,7 @@ def _check_parameters(
     """
     if (source or dest) and not (source and dest):
         error_msg = "source specified, but not destination" if source else "destination specified, but not source"
-        raise CSToolsError(
+        raise CSToolsCLIError(
             title=error_msg,
             reason="Source and destination must both be specified.",
             mitigation="Specify both source and destination when using mapping.",
@@ -184,13 +184,13 @@ def _check_parameters(
 
     path_mitigation = "The path must exist and be a valid TML file system."
     if not path.exists():
-        raise CSToolsError(title=f"Path {path} does not exist.", mitigation=path_mitigation)
+        raise CSToolsCLIError(title=f"Path {path} does not exist.", mitigation=path_mitigation)
 
     if not (path / ".tmlfs"):
-        raise CSToolsError(title=f"Path {path} does not appear to be a TML file system.", mitigation=path_mitigation)
+        raise CSToolsCLIError(title=f"Path {path} does not appear to be a TML file system.", mitigation=path_mitigation)
 
     if guid and (include_types or exclude_types):
-        raise CSToolsError(
+        raise CSToolsCLIError(
             title="A guid and include/exclude specified.",
             reason="Cannot specify both a file and include/exclude types.",
             mitigation="Specify either a file or include/exclude types, but not both.",
@@ -307,7 +307,7 @@ def _verify_connection_passwords(connection_tml: [TML]) -> None:
             if p.key == "password" and p.value:
                 break
         else:
-            raise CSToolsError(
+            raise CSToolsCLIError(
                 title=f'Connection "{tml.connection.name}" missing password',
                 reason="Connections require a valid password to create tables.",
                 mitigation="Add a password to the connection file and try again.",
@@ -494,13 +494,13 @@ def _get_connection(ts: ThoughtSpot, connection_guid: GUID) -> Optional[Connecti
         if e.response.status_code == 404:  # the API will return a 400 if the connection doesn't exist.
             return None
         else:
-            raise CSToolsError(
+            raise CSToolsCLIError(
                 title=f"Unknown error checking for connection {connection_guid}: {e}",
                 reason=str(e.response.content),
                 mitigation="Verify TS connection and GUID",
             ) from None
     except TMLDecodeError as e:
-        raise CSToolsError(
+        raise CSToolsCLIError(
             title=f"Error decoding connection {connection_guid}: {e}", mitigation="Verify TS connection and GUID"
         ) from None
 

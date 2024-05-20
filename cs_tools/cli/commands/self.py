@@ -77,7 +77,7 @@ def update(
             raise typer.Exit(0)
 
     log.info("Upgrading CS Tools and its dependencies.")
-    cs_tools_venv.pip("install", requires, "--upgrade", "--upgrade-strategy", "eager")
+    cs_tools_venv.pip("install", requires, "--upgrade", "--upgrade-strategy", "eager", with_system_python=True)
 
 
 @app.command(cls=CSToolsCommand)

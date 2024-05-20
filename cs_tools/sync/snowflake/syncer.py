@@ -134,7 +134,7 @@ class Snowflake(DatabaseSyncer):
         return URL(**url_kwargs)
 
     def stage_and_put(self, tablename: str, *, data: TableRows) -> str:
-        """ """
+        """Add a local file to Snowflake's internal temporary stage."""
         assert self.temp_dir is not None
         # ==============================================================================================================
         # DEFINE WHERE TO UPLOAD
@@ -242,8 +242,7 @@ class Snowflake(DatabaseSyncer):
             self.copy_into(from_=f"@{stage}", into=tablename)
 
         if self.load_strategy == "UPSERT":
-            # Since we PUT a file into @stage, we now need to tell Snowflake the name of
-            # each of the columns.
+            # Since we PUT a file into @stage, we now need to tell Snowflake the name of each of the columns.
             column = ", ".join(f"${i} as {c.name}" for i, c in enumerate(table.columns, start=1))
             staged = f"(SELECT {column} FROM @{stage})"
             self.merge_into(from_=staged, into=table)

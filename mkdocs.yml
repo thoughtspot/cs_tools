@@ -129,11 +129,11 @@ nav:
     - Databricks: syncer/databricks.md
     - Excel: syncer/excel.md
     - Falcon: syncer/falcon.md
-    # - Google BigQuery: syncer/bigquery.md
+    - Google BigQuery: syncer/bigquery.md
     - Google Sheets: syncer/gsheets.md
     - JSON: syncer/json.md
     - Parquet: syncer/parquet.md
-    # - Postgres: syncer/postgres.md
+    - Postgres: syncer/postgres.md
     - Redshift: syncer/redshift.md
     - Snowflake: syncer/snowflake.md
     - SQLite: syncer/sqlite.md

@@ -1,20 +1,12 @@
 ---
+icon: material/database
 hide:
   - toc
 ---
 
-??? example "In Beta"
-
-    The Syncer protocol is in beta, it has been added to __CS Tools__ in v1.3 on a
-    __provisional basis__. It may change significantly in future releases and its
-    interface will not be concrete until v2.
-
-    Feedback from the community while it's still provisional would be extremely useful;
-    either comment on [#25][gh-issue25] or create a new issue.
-
 __BigQuery__ is a serverless, cost-effective and multicloud data warehouse designed to help you turn big data into valuable business insights. It a fully-managed, serverless data warehouse that enables scalable analysis over petabytes of data.
 
-<span class=fc-coral>__In order to use the BigQuery syncer__</span>, you must first configure your local environment. The setup instructions below will help you create a __Google Cloud Project__ and enable the __BigQuery Storage API__ to allow __CS Tools__ to interact with your BigQuery environment.
+<span class=fc-red>__In order to use the BigQuery syncer__</span>, you must first configure your local environment. Click the __setup instructions__{ .fc-purple } below.
 
 ??? example "Setup instructions"
 
@@ -35,57 +27,49 @@ __BigQuery__ is a serverless, cost-effective and multicloud data warehouse desig
     <br/>:fontawesome-brands-windows: Move the downloaded file to `%APPDATA%\cs_tools\bigquery\credentials.json`.
 
 
-??? info "Want to see the source code?"
+!!! note "BigQuery parameters"
+
+    ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
-    *If you're writing a Custom Syncer, you can check our project code for an example.*
+    ---
 
-    [cs_tools/sync/__bigquery__/syncer.py][syncer.py]
+    - [X] __project_id__{ .fc-red }, _your BigQuery [__project identifier__][gc-project-id]_
 
+    ---
 
-## BigQuery `DEFINITION.toml` spec
+    - [X] __dataset__{ .fc-red }, _the dataset to write new data to_
+    <br />___if tables do not exist in the project.dataset location already, we'll auto-create them___{ .fc-green }
 
-> __project_id__{ .fc-blue }: id of your google cloud project
+    ---
 
-> __dataset__{ .fc-blue }: name of your bigquery dataset
+    - [X] __credentials_keyfile__{ .fc-red }, _the path to your credentials JSON_
 
-> __credentials_file__{ .fc-blue }: <span class=fc-coral>optional</span>, absolute path to your credentials JSON file
-<br/>*<span class=fc-mint>default</span>:* `<cs_tools-app-directory>/bigquery/credentials.json`
-<br/>*you can find the cs_tools app directory by running `cs_tools config show`*
+    ---
 
-> __truncate_on_load__{ .fc-blue }: <span class=fc-coral>optional</span>, either `true` or `false`, remove all data in the table prior to a new data load
-<br/>*<span class=fc-mint>default</span>:* `true`
+    - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
+    <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
 
 
 ??? question "How do I use the BigQuery syncer in commands?"
 
-    === ":fontawesome-brands-apple: Mac, :fontawesome-brands-linux: Linux"
+    `cs_tools tools searchable bi-server --syncer bigquery://project_id=cs_tools&dataset=cs_tools_v150&credentials_keyfile=/usr/etc/searchable-ef192fec85db.json`
 
-        `cs_tools tools searchable bi-server bigquery:///home/user/syncers/bigquery-definition.toml --compact`
+    __- or -__{ .fc-blue }
 
-        `cs_tools tools searchable bi-server bigquery://default --compact`
-
-    === ":fontawesome-brands-windows: Windows"
-
-        `cs_tools tools searchable bi-server bigquery://C:\Users\%USERNAME%\Downloads\bigquery-definition.toml --compact`
-
-        `cs_tools tools searchable bi-server bigquery://default --compact`
-
-    *Learn how to register a default for syncers in [How-to: Setup a Configuration File][how-to-config].*
+    `cs_tools tools searchable bi-server --syncer bigquery://definition.toml`
 
 
-## Full Definition Example
+## Definition TOML Example
 
 `definition.toml`
 ```toml
 [configuration]
-project_id = 'cs_tools'
-dataset = 'thoughtspot'
-credentials_file = 'C:\Users\NameyNamerson\Downloads\syncers\<project-name>.json'
-truncate_on_load = true
+project_id = "cs_tools"
+dataset = "cs_tools_v150"
+credentials_keyfile = "/usr/etc/searchable-ef192fec85db.json"
+load_strategy = 'truncate'
 ```
 
-[gh-issue25]: https://github.com/thoughtspot/cs_tools/issues/25
-[syncer.py]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/bigquery/syncer.py
 [gc-dev-console]: https://console.cloud.google.com/apis/dashboard
 [gc-service-account]: https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account
-[how-to-config]: ../tutorial/config.md
+[gc-project-id]: https://support.google.com/googleapi/answer/7014113?hl=en

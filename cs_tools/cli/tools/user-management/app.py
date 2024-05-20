@@ -13,7 +13,7 @@ from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import MetadataType, MultipleChoiceType, SyncerProtocolType
 from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.errors import CSToolsError
+from cs_tools.errors import CSToolsError, CSToolsCLIError
 
 from . import layout, models, work
 
@@ -90,7 +90,7 @@ def transfer(
                 ts.api.v1.user_transfer_ownership(from_username=from_username, to_username=to_username, **extra)
             except httpx.HTTPStatusError as e:
                 log.debug(e, exc_info=True)
-                raise CSToolsError(
+                raise CSToolsCLIError(
                     title=f"Could not transfer ownership from {from_username} to {to_username}",
                     reason="See logs for additional details..",
                 ) from None
