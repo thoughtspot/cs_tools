@@ -42,4 +42,5 @@ def before_create(metadata, connection, **kw):
             except KeyError:
                 continue
 
+            log.debug(f"Explicitly setting size of {column.name} to VARCHAR({MAX_VARCHAR_LENGTH})")
             column.type = TrimmedString(length=MAX_VARCHAR_LENGTH)
