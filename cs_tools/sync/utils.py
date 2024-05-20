@@ -90,7 +90,7 @@ def generic_upsert(
         raise ValueError(f"No unique key was supplied for {target}")
 
     log.debug(f"   TABLE: {target}")
-    log.debug(f"DATA IN: {len(data): >7,} rows")
+    log.debug(f" DATA IN: {len(data): >7,} rows")
     to_insert = []
     to_update = []
 

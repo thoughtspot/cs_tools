@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 import logging
 
 from cs_tools import utils
+from cs_tools.api import _utils
 from cs_tools.errors import CSToolsError
 from cs_tools.types import (
     GUID,
@@ -131,11 +132,7 @@ class MetadataMiddleware:
                 break
 
         if guids:
-            raise CSToolsError(
-                title=f"failed to find content for guids: {guids}",
-                reason="GUIDs not found in ThoughtSpot",
-                suggestion="check the GUIDs passed to the function and verify they exist.",
-            )
+            raise CSToolsError(f"failed to find content for guids: {guids}")
 
         return content
 
@@ -149,6 +146,7 @@ class MetadataMiddleware:
         include_subtypes: Optional[list[str]] = None,
         exclude_types: Optional[list[str]] = None,
         exclude_subtypes: Optional[list[str]] = None,
+        exclude_system_content: bool = True,
     ) -> TableRowsFormat:
         """
         Find all object which meet the predicates in the keyword args.
@@ -192,6 +190,9 @@ class MetadataMiddleware:
 
                 for header in data["headers"]:
                     subtype = header.get("type", None)
+
+                    if exclude_system_content and header.get("authorName") in _utils.SYSTEM_USERS:
+                        continue
 
                     # All subtypes will be retrieved, so need to filter the subtype appropriately.
                     # Mainly applies to LOGICAL_TABLE.
@@ -238,18 +239,28 @@ class MetadataMiddleware:
                 log.warning(f"Failed to fetch details for {guid} ({metadata_type})")
                 continue
 
-            d = r.json()["storables"][0]
+            j = r.json()
 
+            if not j["storables"]:
+                log.warning(f"Failed to fetch details for {guid} ({metadata_type})")
+                continue
+
+            d = j["storables"][0]
+
+            # fmt: off
             header_and_extras = {
                 "metadata_type": metadata_type,
                 "header": d["header"],
                 "type": d.get("type"),  # READ: .subtype  (eg. ONE_TO_ONE_LOGICAL, WORKSHEET, etc..)
+
                 # LOGICAL_TABLE extras
                 "dataSourceId": d.get("dataSourceId"),
                 "columns": d.get("columns"),
+
                 # VIZ extras (answer, liveboard)
                 "reportContent": d.get("reportContent"),
             }
+            # fmt: on
 
             self._details_cache[guid] = header_and_extras
             data.append(header_and_extras)

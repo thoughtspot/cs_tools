@@ -4,13 +4,11 @@ from typing import Any
 import datetime as dt
 import json
 
-from .const import BIG_QUERY_DATETIME_FORMAT
-
 
 def clean_datetime(o: Any) -> str:
-    """ """
+    """Convert the datatime into a string."""
     if isinstance(o, dt.datetime):
-        return o.strftime(BIG_QUERY_DATETIME_FORMAT)
+        return o.strftime("%Y-%m-%dT%H:%M:%S.%f")
     return o
 
 
