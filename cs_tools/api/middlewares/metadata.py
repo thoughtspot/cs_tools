@@ -234,18 +234,28 @@ class MetadataMiddleware:
                 log.warning(f"Failed to fetch details for {guid} ({metadata_type})")
                 continue
 
-            d = r.json()["storables"][0]
+            j = r.json()
 
+            if not j["storables"]:
+                log.warning(f"Failed to fetch details for {guid} ({metadata_type})")
+                continue
+
+            d = j["storables"][0]
+
+            # fmt: off
             header_and_extras = {
                 "metadata_type": metadata_type,
                 "header": d["header"],
                 "type": d.get("type"),  # READ: .subtype  (eg. ONE_TO_ONE_LOGICAL, WORKSHEET, etc..)
+
                 # LOGICAL_TABLE extras
                 "dataSourceId": d.get("dataSourceId"),
                 "columns": d.get("columns"),
+
                 # VIZ extras (answer, liveboard)
                 "reportContent": d.get("reportContent"),
             }
+            # fmt: on
 
             self._details_cache[guid] = header_and_extras
             data.append(header_and_extras)
