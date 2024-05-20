@@ -29,3 +29,15 @@
 >
 
 ---
+
+<sub><b>Workflow Automation</b></sub>
+
+📜
+[![Deploy docs to GH Pages](https://github.com/thoughtspot/cs_tools/actions/workflows/build-docs.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/build-docs.yaml)
+
+🧪
+[![Test CS Tools Bootstrapper](https://github.com/thoughtspot/cs_tools/actions/workflows/test-bootstrapper.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/test-bootstrapper.yaml)
+
+🧰
+[![Extract Metadata with CS Tools.](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-metdata.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-metdata.yaml)
+[![Extract BI Server with CS Tools.](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-bi-data.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-bi-data.yaml)
