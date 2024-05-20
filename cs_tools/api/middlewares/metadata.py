@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 import logging
 
 from cs_tools import utils
+from cs_tools.api import _utils
 from cs_tools.errors import CSToolsError
 from cs_tools.types import (
     GUID,
@@ -145,6 +146,7 @@ class MetadataMiddleware:
         include_subtypes: Optional[list[str]] = None,
         exclude_types: Optional[list[str]] = None,
         exclude_subtypes: Optional[list[str]] = None,
+        exclude_system_content: bool = True,
     ) -> TableRowsFormat:
         """
         Find all object which meet the predicates in the keyword args.
@@ -188,6 +190,9 @@ class MetadataMiddleware:
 
                 for header in data["headers"]:
                     subtype = header.get("type", None)
+
+                    if exclude_system_content and header.get("authorName") in _utils.SYSTEM_USERS:
+                        continue
 
                     # All subtypes will be retrieved, so need to filter the subtype appropriately.
                     # Mainly applies to LOGICAL_TABLE.
