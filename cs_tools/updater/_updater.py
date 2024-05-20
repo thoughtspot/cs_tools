@@ -38,6 +38,20 @@ class CSToolsVirtualEnvironment:
         self.tmp_dir = self.venv_path.parent / "tmp"
 
     @property
+    def system_exe(self) -> pathlib.Path:
+        """Get the system python executable."""
+        # SEE: https://virtualenv.pypa.io/en/16.7.9/reference.html#compatibility-with-the-stdlib-venv-module
+        base_exe = pathlib.Path(sys._base_executable)
+
+        if not base_exe.exists():
+            raise FileNotFoundError(
+                f"Global Python ({base_exe}) could not be found, please use the install method found in the CS Tools "
+                f"documentation."
+            )
+
+        return base_exe
+
+    @property
     def exe(self) -> pathlib.Path:
         """Get the Python executable."""
         directory = "Scripts" if self.IS_WINDOWS else "bin"
@@ -116,7 +130,7 @@ class CSToolsVirtualEnvironment:
         errors_as_bytes = "\n".join(errors).encode()
         return sp.CompletedProcess(proc.args, proc.returncode, stdout=output_as_bytes, stderr=errors_as_bytes)
 
-    def is_package_installed(self, package: "cs_tools.sync.base.PipRequirement") -> bool:  # noqa: F821
+    def is_package_installed(self, package: cs_tools.sync.base.PipRequirement) -> bool:  # noqa: F821
         """Check if a package is installed. This should be called only within CS Tools."""
         cp = self.pip("list", "--format", "json", visible_output=False)
 
@@ -130,7 +144,11 @@ class CSToolsVirtualEnvironment:
         """Run a command in the virtual environment."""
         return self.run(self.exe.as_posix(), *args, **kwargs)
 
-    def pip(self, command: str, *args, **kwargs) -> sp.CompletedProcess:
+    def system_python(self, *args, **kwargs) -> sp.CompletedProcess:
+        """Run a command in the global python environment."""
+        return self.run(self.system_exe.as_posix(), *args, **kwargs)
+
+    def pip(self, command: str, *args, with_system_python: bool = False, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment's pip."""
         # fmt: off
         required_general_args = (
@@ -155,7 +173,9 @@ class CSToolsVirtualEnvironment:
         if command == "install" and self.find_links is not None:
             args = (*args, "--progress-bar", "off", "--no-index", "--find-links", self.find_links.as_posix())
 
-        return self.python("-m", "pip", command, *required_general_args, *args, **kwargs)
+        python = self.system_python if with_system_python else self.python
+
+        return python("-m", "pip", command, *required_general_args, *args, **kwargs)
 
     def with_offline_mode(self, find_links: pathlib.Path) -> None:
         """Set CS Tools into offline mode, fetching requirements from path."""
