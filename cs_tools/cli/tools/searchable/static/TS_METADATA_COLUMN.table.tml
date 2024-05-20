@@ -135,7 +135,7 @@ table:
     properties:
       column_type: ATTRIBUTE
     db_column_properties:
-      data_type: VARCHAR
+      data_type: BOOLEAN
   - name: Default Calendar
     description: The default calendar to align to when using date keywords.
     db_column_name: CALENDAR_TYPE
