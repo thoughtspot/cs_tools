@@ -14,6 +14,7 @@ from cs_tools.cli import _analytics
 from cs_tools.cli.types import Directory
 from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
 from cs_tools.settings import _meta_config as meta
+from cs_tools.sync import base
 from cs_tools.updater import cs_tools_venv
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 import rich
@@ -140,10 +141,11 @@ def analytics():
 def download(
     directory: pathlib.Path = typer.Option(help="location to download the python binaries to", click_type=Directory()),
     platform: str = typer.Option(help="tag describing the OS and CPU architecture of the target environment"),
-    python_version: str = typer.Option(
+    python_version: AwesomeVersion = typer.Option(
         metavar="X.Y", help="major and minor version of your python install", parser=AwesomeVersion
     ),
     beta: bool = typer.Option(False, "--beta", help="if included, download the latest pre-release binary"),
+    syncer_dialect: str = typer.Option(None, help="the name of the dialect to fetch dependencies for"),
 ):
     """
     Generate an offline binary.
@@ -156,14 +158,35 @@ def download(
        [b yellow]python -m sysconfig[/]
 
     """
+    # DEV NOTE: @boonhapus, 2024/05/21
+    #
+    # The idea behind the offline installer is to simulate `pip install` by downloading
+    # all the necessary packages to build our environment.
+    #
     requirements = directory.joinpath("requirements")
+
+    log.info("Fetching latest CS Tools release from GitHub")
     release_info = get_latest_cs_tools_release(allow_beta=beta)
     release_tag = release_info["tag_name"]
 
-    venv = cs_tools_venv
+    if syncer_dialect is not None:
+        syncer_dir = utils.get_package_directory("cs_tools") / "sync" / syncer_dialect
+
+        if not syncer_dir.exists():
+            log.error(f"Syncer dialect {syncer_dialect} not found")
+            raise typer.Exit(1)
+
+        log.info(f"Fetching {syncer_dialect} syncer dependencies..")
+        manifest = base.SyncerManifest.model_validate_json(syncer_dir.joinpath("MANIFEST.json").read_text())
+        manifest.__ensure_pip_requirements__()
 
     # freeze our own environment, which has all the dependencies needed to build
-    frozen = {req for req in venv.pip("freeze", "--quiet").stdout.decode().split("\n") if "cs_tools" not in req}
+    log.info("Freezing existing virtual environment..")
+    frozen = {
+        r
+        for r in cs_tools_venv.pip("freeze", "--quiet", visible_output=False).stdout.decode().split("\n")
+        if "cs_tools" not in r
+    }
 
     # add in the latest release
     frozen.add(f"cs_tools @ https://github.com/thoughtspot/cs_tools/archive/{release_tag}.zip")
@@ -183,7 +206,8 @@ def download(
     if "win" in platform:
         frozen.add("pyreadline3 == 3.4.1")        # from cs_tools
 
-    venv.pip(
+    log.info("Downloading dependent packages..")
+    cs_tools_venv.pip(
         "download", *frozen,
         "--no-deps",  # we shouldn't need transitive dependencies, since we've build all the dependencies above
         "--dest", requirements.as_posix(),
@@ -199,6 +223,8 @@ def download(
     from cs_tools.updater import _bootstrapper, _updater
 
     zip_fp = directory.joinpath(f"cs-tools_{__version__}_{platform}_{python_version}")
+
+    log.info(f"Preparing your download at {zip_fp}..")
     shutil.copy(_bootstrapper.__file__, requirements.joinpath("_bootstrapper.py"))
     shutil.copy(_updater.__file__, requirements.joinpath("_updater.py"))
     shutil.make_archive(zip_fp.as_posix(), "zip", requirements)

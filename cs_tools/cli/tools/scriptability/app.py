@@ -232,6 +232,7 @@ def scriptability_export(
             "worksheet"
         ),
     ),
+    include_system_content: bool = typer.Option(False, help="include System User content in export"),
     export_associated: bool = typer.Option(
         False, "--export-associated", help="if specified, also export related content (does not export connections)"
     ),
@@ -261,6 +262,7 @@ def scriptability_export(
         pattern=pattern,
         include_types=include_types,
         exclude_types=exclude_types,
+        exclude_system_content=not include_system_content,
         export_associated=export_associated,
         org=org_override,
     )
