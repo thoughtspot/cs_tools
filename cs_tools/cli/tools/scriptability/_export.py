@@ -14,7 +14,7 @@ from thoughtspot_tml.exceptions import TMLError
 from thoughtspot_tml.utils import determine_tml_type, disambiguate
 
 from cs_tools.cli.ux import rich_console
-from cs_tools.errors import CSToolsError, CSToolsCLIError
+from cs_tools.errors import CSToolsCLIError
 from cs_tools.types import GUID, TMLSupportedContent, TMLSupportedContentSubtype
 
 from .tmlfs import ExportTMLFS
@@ -44,7 +44,9 @@ class TMLExportResponse:
         return self.status_code == "OK"
 
 
-def export(ts, path, guids, tags, author, include_types, exclude_types, pattern, export_associated, org):
+def export(
+    ts, path, guids, tags, author, include_types, exclude_types, exclude_system_content, pattern, export_associated, org
+):
     if guids and (tags or author or include_types or exclude_types or pattern):
         raise CSToolsCLIError(
             title="GUID cannot be used with other filters.",
@@ -110,6 +112,7 @@ def export(ts, path, guids, tags, author, include_types, exclude_types, pattern,
             pattern=pattern,
             include_types=include_types,
             include_subtypes=include_subtypes,
+            exclude_system_content=exclude_system_content,
             exclude_types=exclude_types,
             exclude_subtypes=exclude_subtypes,
         )
