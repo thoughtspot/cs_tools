@@ -140,7 +140,7 @@ class MetadataObject(ValidatedSQLModel, table=True):
     cluster_guid: str = Field(primary_key=True)
     org_id: int = Field(primary_key=True)
     object_guid: str = Field(primary_key=True)
-    name: str
+    name: str = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     author_guid: str
     created: dt.datetime
@@ -218,7 +218,7 @@ class DependentObject(ValidatedSQLModel, table=True):
     cluster_guid: str = Field(primary_key=True)
     dependent_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
-    name: str
+    name: str = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     author_guid: str
     created: dt.datetime
