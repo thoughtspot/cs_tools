@@ -191,6 +191,8 @@ def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -
         export_fqn=True,
     )
 
+    r.raise_for_status()
+
     results: list[TMLExportResponse] = []
     tml_objects = []
 
