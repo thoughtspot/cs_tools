@@ -8,7 +8,7 @@ import pydantic
 import sqlmodel
 import toml
 
-from cs_tools import utils
+from cs_tools import errors, utils
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.sync import base
 
@@ -40,7 +40,16 @@ class DSyncer(Dependency):
         SyncerClass = manifest.import_syncer_class(fp=syncer_dir / "syncer.py")
 
         if self.definition_fp:
-            conf = toml.load(self.definition_fp)
+            try:
+                conf = toml.load(self.definition_fp)
+            except toml.TomlDecodeError as e:
+                text = self.definition_fp.read_text()
+                line = text.splitlines()[e.lineno - 1]
+                trim = line if len(line) < 5 else f"{line[:5]}..."
+                raise errors.CSToolsError(
+                    f"Could not parse syncer definition syntax, error on line {e.lineno} beginning with '{trim}'"
+                    f"\nSyncer definition path:  {self.definition_fp}"
+                ) from None
         else:
             conf = {"configuration": self.definition_kw}
 
