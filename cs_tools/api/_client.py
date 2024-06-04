@@ -64,12 +64,18 @@ class RESTAPIClient:
         now = dt.datetime.now(tz=dt.timezone.utc)
         request.headers["cs-tools-request-start-utc-timestamp"] = now.isoformat()
 
-        log.debug(
-            f">>> [{now:%H:%M:%S}] {request.method} -> {request.url.path}"
+        log_msg = (
+            f">>> [{now:%H:%M:%S}] HTTP {request.method} -> {request.url.path}"
             f"\n\t=== HEADERS ===\n{request.headers}"
-            f"\n\t===  DATA   ===\n{_utils.obfuscate_sensitive_data(request.url.params)}"
-            f"\n",
         )
+
+        if request.url.params:
+            log_msg += f"\n\t===  PARAMS ===\n{_utils.obfuscate_sensitive_data(request.url.params)}"
+
+        if content := request.content.decode():
+            log_msg += f"\n\t===    DATA ===\n{_utils.obfuscate_sensitive_data(httpx.QueryParams(content))}"
+
+        log.debug(f"{log_msg}\n")
 
     def request(self, method: Literal["POST", "GET", "PUT", "DELETE"], url: str, **kwargs) -> httpx.Response:
         """Proxy httpx.Session base method on our client."""
