@@ -7,11 +7,10 @@ import logging
 import random
 import sys
 
-from cs_tools import __project__, __version__, datastructures, utils
+from cs_tools import __project__, __version__, datastructures, errors, utils
 from cs_tools.cli import _analytics
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.errors import CSToolsError
 from cs_tools.settings import _meta_config as meta
 from cs_tools.updater import cs_tools_venv
 from rich.align import Align
@@ -110,13 +109,17 @@ def run() -> int:
         this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
         log.error(e)
 
-    except CSToolsError as e:
+    except errors.CSToolsError as e:
         return_code = 1
         this_run_data["is_known_error"] = True
         this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
 
         log.debug(e, exc_info=True)
-        rich_console.print(Align.center(e))
+
+        if isinstance(e, errors.CSToolsCLIError):
+            rich_console.print(Align.center(e))
+        else:
+            log.error(e)
 
     except Exception as e:
         return_code = 1
