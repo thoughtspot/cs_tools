@@ -103,14 +103,16 @@ def create(
 
     else:
         ts.logout()
-        conf.save()
-        log.info(f"Saving as {conf.name}!")
 
         if default:
             meta.default_config_name = config
             meta.save()
 
         _analytics.prompt_for_opt_in()
+
+    finally:
+        conf.save()
+        log.info(f"Saving as {conf.name}!")
 
 
 @app.command()
@@ -195,6 +197,8 @@ def modify(
 
     else:
         ts.logout()
+
+    finally:
         conf.save()
         log.info(f"Saving as {conf.name}!")
 

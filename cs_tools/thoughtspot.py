@@ -94,7 +94,7 @@ class ThoughtSpot:
                 reason = "Outdated Python default certificate detected."
                 # fmt: off
                 mitigation = (
-                    f"Quick fix: run [b blue]cs_tools config modify --config {self.config.name} --disable_ssl[/] and "
+                    f"Quick fix: run [b blue]cs_tools config modify --config {self.config.name} --disable-ssl[/] and "
                     f"try again."
                 )
                 # fmt: on
