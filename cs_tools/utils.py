@@ -25,9 +25,7 @@ log = logging.getLogger(__name__)
 
 
 def batched(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, None]:
-    """
-    Yield successive n-sized chunks from list.
-    """
+    """Yield successive n-sized chunks from list."""
     # batched('ABCDEFG', 3) --> ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")

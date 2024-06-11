@@ -122,7 +122,7 @@ class Falcon(DatabaseSyncer):
                         "machine is unable to connect directly to the ThoughtSpot node "
                         "which is accepting files."
                         "\n\n"
-                        "You can try using `[b blue]ignore_load_balancer_redirect[/]` "
+                        "You can try using [b blue]ignore_load_balancer_redirect[/] "
                         "in your Falcon syncer definition as well."
                     )
 
