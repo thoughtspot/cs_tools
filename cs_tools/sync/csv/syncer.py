@@ -112,8 +112,16 @@ class CSV(Syncer):
         with path.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f, **self.dialect_and_format_parameters())
 
-            for rows in utils.batched(reader, n=batch):
-                yield self.maybe_replace_empty_with_null(rows)
+            try:
+                for rows in utils.batched(reader, n=batch):
+                    yield self.maybe_replace_empty_with_null(rows)
+            except csv.Error as e:
+                log.warning(f"Could not read from {path} ({e}), see logs for details...")
+                log.debug(
+                    f"File: {path}" f"\nMask: {utils.permission_mask_info(path)}" f"\nSize: {path.stat().st_size}b",
+                    exc_info=True,
+                )
+                yield []
 
     # MANDATORY PROTOCOL MEMBERS
 
