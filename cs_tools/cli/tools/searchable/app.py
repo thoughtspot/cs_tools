@@ -183,6 +183,12 @@ def bi_server(
     """
     ts = ctx.obj.thoughtspot
 
+    if syncer.protocol == "falcon":
+        log.error("Falcon Syncer is not supported for TS: BI Server reflection.")
+        models.BIServer.__table__.drop(syncer.engine)
+        rich_console.print()
+        raise typer.Abort()
+
     # DEV NOTE: @boonhapus
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
     if ts.session_context.thoughtspot.is_orgs_enabled:
