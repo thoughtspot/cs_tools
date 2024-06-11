@@ -64,17 +64,11 @@ def obfuscate_sensitive_data(request_query: httpx.QueryParams) -> dict[str, Any]
     # don't modify the actual keywords we want to build into the request
     secure = copy.deepcopy({k: v for k, v in request_query.items() if k not in ("file", "files")})
 
-    for keyword in ("params", "data", "json"):
-        # .params on GET, POST, PUT
-        # .data, .json on POST, PUT
-        if secure.get(keyword, None) is None:
-            continue
-
-        for safe_word in SAFEWORDS:
-            try:
-                secure[keyword][safe_word] = "[secure]"
-            except KeyError:
-                pass
+    for safe_word in SAFEWORDS:
+        try:
+            secure[safe_word] = "[secure]"
+        except KeyError:
+            pass
 
     return secure
 
