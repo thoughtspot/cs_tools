@@ -177,7 +177,7 @@ class RESTAPIv1:
         remove_deleted: bool = True,
         password: str = _utils.UNDEFINED,
     ) -> httpx.Response:
-        fp = pathlib.Path(tempfile.gettempdir()) / f"user-sync-{dt.datetime.now(tz=dt.timezone.UTC).timestamp()}.json"
+        fp = pathlib.Path(tempfile.gettempdir()) / f"user-sync-{dt.datetime.now(tz=dt.timezone.utc).timestamp()}.json"
         fp.write_text(json.dumps(principals, indent=4))
 
         f = {"principals": ("principals.json", fp.open("rb"), "application/json")}
