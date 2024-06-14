@@ -97,7 +97,22 @@ class CSV(Syncer):
         return parameters
 
     def maybe_replace_empty_with_null(self, rows: TableRows) -> TableRows:
-        return [{k: None if v == "" else v for k, v in row.items()} for row in rows]
+        """Quick sanitization effort."""
+        out = []
+
+        for row in rows:
+            for k, v in row.items():
+                # Remove NUL bytes
+                if "\x00" in v:
+                    row[k] = v.replace("\x00", "")
+
+                # Replace empty strings with NULL
+                if v == "":
+                    row[k] = None
+
+            out.append(row)
+
+        return out
 
     def __repr__(self):
         return f"<CSVSyncer path='{self.directory}' in '{self.save_strategy}' mode>"
@@ -112,16 +127,8 @@ class CSV(Syncer):
         with path.open(mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f, **self.dialect_and_format_parameters())
 
-            try:
-                for rows in utils.batched(reader, n=batch):
-                    yield self.maybe_replace_empty_with_null(rows)
-            except csv.Error as e:
-                log.warning(f"Could not read from {path} ({e}), see logs for details...")
-                log.debug(
-                    f"File: {path}" f"\nMask: {utils.permission_mask_info(path)}" f"\nSize: {path.stat().st_size}b",
-                    exc_info=True,
-                )
-                yield []
+            for rows in utils.batched(reader, n=batch):
+                yield self.maybe_replace_empty_with_null(rows)
 
     # MANDATORY PROTOCOL MEMBERS
 
