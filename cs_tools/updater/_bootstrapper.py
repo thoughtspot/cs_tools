@@ -152,6 +152,9 @@ def cli():
                 log.info("Creating the CS Tools virtual environment.")
                 venv.make()
 
+            log.info("Determining if CS Tools is globally installed.")
+            venv.check_if_globally_installed(remove=True)
+
             if args.reinstall:
                 log.info("Resetting the CS Tools virtual environment.")
                 path.unset()

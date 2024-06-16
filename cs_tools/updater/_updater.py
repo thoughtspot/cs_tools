@@ -117,7 +117,7 @@ class CSToolsVirtualEnvironment:
                 else:
                     logger = log.info
 
-                if visible_output:
+                if visible_output and line:
                     logger(line)
 
                 output.append(line) if logger == log.info else errors.append(line)
@@ -130,15 +130,42 @@ class CSToolsVirtualEnvironment:
         errors_as_bytes = "\n".join(errors).encode()
         return sp.CompletedProcess(proc.args, proc.returncode, stdout=output_as_bytes, stderr=errors_as_bytes)
 
-    def is_package_installed(self, package: cs_tools.sync.base.PipRequirement) -> bool:  # noqa: F821
+    def is_package_installed(self, package_name: str, with_system_python: bool = False) -> bool:
         """Check if a package is installed. This should be called only within CS Tools."""
-        cp = self.pip("list", "--format", "json", visible_output=False)
+        cp = self.pip("list", "--format", "json", visible_output=False, with_system_python=with_system_python)
 
         for installed in json.loads(cp.stdout.decode()):
-            if installed["name"] == package.requirement.name:
+            if installed["name"] == package_name:
                 return True
 
         return False
+
+    def check_if_globally_installed(self, *, remove: bool = False) -> bool:
+        """Check if self is installed in global python, which would PATH-shadow the VENV binary."""
+        is_globally_installed = self.is_package_installed("cs_tools", with_system_python=True)
+
+        if is_globally_installed:
+            # fmt: off
+            log.warning(
+                f"CS Tools and many other dependencies were found to be globally installed at {self.system_exe} !!"
+                f"\nRemoving CS Tools now.."
+                f"\n"
+                f"\nIf you did not intend to install the CS Tools globally, it is advisable to run the following "
+                f"commands to clean up your environment. "
+                f"\nThis will reset the python environment to default."
+                f"\n"
+                f"\n  1.  python -m pip freeze > global-env-requirements.txt"
+                f"\n  2.  python -m pip uninstall -r global-env-requirements.txt --yes"
+                f"\n  3.  rm global-env-requirements.txt"
+                f"\n"
+            )
+            # fmt: on
+
+            if remove:
+                self.pip("uninstall", "cs_tools", "--yes", with_system_python=True)
+                is_globally_installed = False
+
+        return is_globally_installed
 
     def python(self, *args, **kwargs) -> sp.CompletedProcess:
         """Run a command in the virtual environment."""
