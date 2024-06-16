@@ -41,6 +41,7 @@ def _cast(data: list[TableRowsFormat], headers_to_types: dict[str, str]) -> list
     """
     TS_TO_PY_TYPES = {
         "VARCHAR": str,
+        "CHAR": str,
         "DOUBLE": float,
         "FLOAT": float,
         "BOOL": bool,
@@ -110,6 +111,8 @@ class SearchMiddleware:
         table: Optional[str] = None,
         view: Optional[str] = None,
         sample: bool = -1,
+        use_logical_column_names: bool = False,
+        include_dtype_mapping: bool = False,
     ) -> TableRowsFormat:
         """
         Search a data source.
@@ -193,24 +196,34 @@ class SearchMiddleware:
             guid = d[0]["id"]
 
         log.debug(f"executing search on guid {guid}\n\n{query}\n")
-        offset = 0
+        data_types = {}
         data = []
+        offset = 0
 
         while True:
             r = self.ts.api.v1.search_data(
-                query_string=query, data_source_guid=guid, format_type="COMPACT", batchsize=sample, offset=offset
+                query_string=query,
+                data_source_guid=guid,
+                format_type="COMPACT",
+                batchsize=sample,
+                offset=offset,
             )
 
             d = r.json()
+
+            # Add the rows to our dataset
             data.extend(d.pop("data"))
+
+            # Increment the row offset for the next batch
             offset += d["rowCount"]
 
-            if d["rowCount"] < d["pageSize"]:
+            is_last_batch = d["rowCount"] < d["pageSize"]
+            is_exceed_sample_threshold = sample >= 0 and d["rowCount"] == d["pageSize"]
+
+            if is_last_batch or is_exceed_sample_threshold:
                 break
 
-            if sample >= 0 and d["rowCount"] == d["pageSize"]:
-                break
-
+            # Warn the user if the returned data exceeds the 1M row threshold
             if offset % 500_000 == 0:
                 log.warning(
                     f"using the Data API to extract {offset / 1_000_000: >4,.1f}M+ "
@@ -219,10 +232,14 @@ class SearchMiddleware:
                 )
 
         # Get the data types
-        r = self.ts.api.v1.metadata_details(metadata_type="LOGICAL_TABLE", guids=[guid])
-        data_types = {c["header"]["name"]: c["dataType"] for c in r.json()["storables"][0]["columns"]}
+        column_name = "referenced_column_name" if use_logical_column_names else "name"
+        data_types = {column[column_name]: column["data_type"] for column in d["columnDetails"]}
+
+        # Remap column names based on the desired column state
+        d["columnNames"] = list(data_types.keys())
 
         # Cleanups
         data = _to_records(columns=d["columnNames"], rows=data)
         data = _cast(data, headers_to_types=data_types)
-        return data
+
+        return (data, data_types) if include_dtype_mapping else data  # type: ignore
