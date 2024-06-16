@@ -27,6 +27,10 @@ class DSyncer(Dependency):
     def metadata(self) -> sqlmodel.MetaData:
         return self._syncer.metadata
 
+    @property
+    def is_database_syncer(self) -> bool:
+        return isinstance(self._syncer, base.DatabaseSyncer)
+
     def __enter__(self):
         log.debug(f"Registering syncer: {self.protocol.lower()}")
 
@@ -60,7 +64,9 @@ class DSyncer(Dependency):
         self.__dict__["_syncer"] = SyncerClass(**conf["configuration"])
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if isinstance(self._syncer, base.DatabaseSyncer):
+        if self.is_database_syncer:
+            assert isinstance(self._syncer, base.DatabaseSyncer)
+
             if exc_type is not None:
                 self._syncer.session.rollback()
             else:

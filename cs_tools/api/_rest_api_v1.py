@@ -53,8 +53,8 @@ class RESTAPIv1:
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Pre-process the request to remove undefined parameters."""
         request_kw = _utils.scrub_undefined_sentinel(request_kw, null=_utils.UNDEFINED)
-        method = getattr(self._api_client, method.lower())
-        return method(endpoint, **request_kw)
+        request_method = getattr(self._api_client, method.lower())
+        return request_method(endpoint, **request_kw)
 
     # ==================================================================================================================
     # SESSION     ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_session_management
@@ -177,8 +177,20 @@ class RESTAPIv1:
         remove_deleted: bool = True,
         password: str = _utils.UNDEFINED,
     ) -> httpx.Response:
-        fp = pathlib.Path(tempfile.gettempdir()) / f"user-sync-{dt.datetime.now(tz=dt.timezone.utc).timestamp()}.json"
+        utc_now = dt.datetime.now(tz=dt.timezone.utc)
+        fp = pathlib.Path(tempfile.gettempdir()) / f"user-sync-utc-{utc_now:%Y_%m_%dT%H-%M-%S}.json"
         fp.write_text(json.dumps(principals, indent=4))
+
+        # fmt: off
+        log.debug(
+            f"BACKING UP USER PRINCIPALS TO THE PATH BELOW!!"
+            f"\n{fp}"
+            f"\n\nWhile this will preserve / snapshot the prior state of your Users, Groups, and Memberships, if any "
+            f"Users are deleted as part of the /sync operation, their content will be transferred to the system admin "
+            f"account TSADMIN. This can only be reversed by a ThoughtSpot Support team member."
+            f"\n"
+        )
+        # fmt: on
 
         f = {"principals": ("principals.json", fp.open("rb"), "application/json")}
         d = {"applyChanges": apply_changes, "removeDeleted": remove_deleted, "password": password}

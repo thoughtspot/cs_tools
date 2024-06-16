@@ -67,15 +67,15 @@ class SyncerManifest(_GlobalModel):
         if utils.determine_editable_install():
             return
 
-        for requirement in self.requirements:
-            log.debug(f"Processing requirement: {requirement}")
+        for pip_requirement in self.requirements:
+            log.debug(f"Processing requirement: {pip_requirement}")
 
-            if cs_tools_venv.is_package_installed(requirement):
+            if cs_tools_venv.is_package_installed(pip_requirement.requirement.name):
                 log.debug("Requirement satisfied, no install necessary")
                 continue
 
-            log.info(f"Installing package: {requirement}")
-            cs_tools_venv.pip("install", f"{requirement.requirement}", *requirement.pip_args)
+            log.info(f"Installing package: {pip_requirement}")
+            cs_tools_venv.pip("install", f"{pip_requirement.requirement}", *pip_requirement.pip_args)
 
 
 class Syncer(_GlobalSettings):
@@ -170,10 +170,7 @@ class DatabaseSyncer(Syncer, is_base_class=True):
     def __finalize__(self) -> None:
         # Metaclass-ish wizardry to determine if the DatabaseSyncer subclass defines the necessary properties.
         if self._engine is None:
-            raise NotImplementedError("DatabaseSyncers must implement attribute'_engine'. (sqlalchemy.engine.Engine)")
-
-        if not self.models:
-            return
+            raise NotImplementedError("DatabaseSyncers must implement attribute '_engine'. (sqlalchemy.engine.Engine)")
 
         with warnings.catch_warnings():
             warnings.filterwarnings(action="ignore", category=sa.exc.SAWarning)

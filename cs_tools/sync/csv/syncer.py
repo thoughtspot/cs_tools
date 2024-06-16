@@ -97,22 +97,7 @@ class CSV(Syncer):
         return parameters
 
     def maybe_replace_empty_with_null(self, rows: TableRows) -> TableRows:
-        """Quick sanitization effort."""
-        out = []
-
-        for row in rows:
-            for k, v in row.items():
-                # Remove NUL bytes
-                if "\x00" in v:
-                    row[k] = v.replace("\x00", "")
-
-                # Replace empty strings with NULL
-                if v == "":
-                    row[k] = None
-
-            out.append(row)
-
-        return out
+        return [{k: None if v == "" else v for k, v in row.items()} for row in rows]
 
     def __repr__(self):
         return f"<CSVSyncer path='{self.directory}' in '{self.save_strategy}' mode>"
