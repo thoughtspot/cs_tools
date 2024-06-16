@@ -72,8 +72,11 @@ class RESTAPIClient:
         if request.url.params:
             log_msg += f"\n\t===  PARAMS ===\n{_utils.obfuscate_sensitive_data(request.url.params)}"
 
-        if content := request.content.decode():
-            log_msg += f"\n\t===    DATA ===\n{_utils.obfuscate_sensitive_data(httpx.QueryParams(content))}"
+        is_sending_files_to_server = request.headers.get("Content-Type", "").startswith("multipart/form-data")
+
+        if not is_sending_files_to_server and request.content:
+            data: str = request.content.decode()
+            log_msg += f"\n\t===    DATA ===\n{_utils.obfuscate_sensitive_data(httpx.QueryParams(data))}"
 
         log.debug(f"{log_msg}\n")
 
