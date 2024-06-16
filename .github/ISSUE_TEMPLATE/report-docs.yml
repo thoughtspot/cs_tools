@@ -40,5 +40,6 @@ body:
         What is wrong with the docs?
 
         Write a short description telling us what the docs are missing, a link to where you found a typo, or if you thought something was generally confusing.
+
     validations:
       required: true
