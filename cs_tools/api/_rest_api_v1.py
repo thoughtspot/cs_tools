@@ -249,9 +249,12 @@ class RESTAPIv1:
             "batchsize": batchsize,
             "pagenumber": page_number,
             "offset": offset,
-            "formattpe": format_type,
+            "formattype": format_type,
         }
-        r = self.request("POST", "callosum/v1/tspublic/v1/searchdata", params=p)
+        d = {
+            "include_column_details": True,
+        }
+        r = self.request("POST", "callosum/v1/tspublic/v1/searchdata", params=p, data=d)
         return r
 
     # ==================================================================================================================
