@@ -106,7 +106,7 @@ def deploy(
 
                     for column in tml.table.columns:
                         column.db_column_name = (
-                            column.db_column_name.upper() if should_upper else column.db_column_name.upper()
+                            column.db_column_name.upper() if should_upper else column.db_column_name.lower()
                         )
 
                     if dialect != "FALCON":
