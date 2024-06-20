@@ -104,6 +104,11 @@ def deploy(
                     tml.table.db_table = tml.table.db_table.upper() if should_upper else tml.table.db_table.lower()
                     tml.table.name = tml.table.name.upper() if should_upper else tml.table.name.lower()
 
+                    for column in tml.table.columns:
+                        column.db_column_name = (
+                            column.db_column_name.upper() if should_upper else column.db_column_name.upper()
+                        )
+
                     if dialect != "FALCON":
                         tml.table.connection.name = connection_name
                         tml.table.connection.fqn = connection_guid
@@ -200,10 +205,8 @@ def bi_server(
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions] [timestamp] != 'today'"
-
         # FOR DATA QUALITY PURPOSES
         + " [incident id] != [incident id].{null}"
-
         # CONDITIONALS BASED ON CLI OPTIONS OR ENVIRONMENT
         + ("" if not compact else " [user action] != [user action].invalid [user action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
