@@ -108,7 +108,11 @@ class Falcon(DatabaseSyncer):
                 raise NotImplementedError("coming soon..")
 
             try:
-                self.thoughtspot.tsload.upload(file, **upload_options)
+                cycle_id = self.thoughtspot.tsload.upload(file, **upload_options)
+
+            except httpx.HTTPStatusError:
+                r = self.thoughtspot.api.v1.dataservice_dataload_bad_records(cycle_id=cycle_id)
+                log.info(r.text)
 
             except (httpx.ConnectError, httpx.ConnectTimeout):
                 i = f"could not connect at [b blue]{self.thoughtspot.api.v1.dataservice_url}[/]"
