@@ -467,6 +467,11 @@ def metadata(
         logger.setLevel("DEBUG")
 
         # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
+        is_syncer_db_truncate = isinstance(syncer, base.DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
+
         for model in models.METADATA_MODELS:
-            for rows in temp_sync.read_stream(filename=model.__tablename__, batch=1_000_000):
+            for idx, rows in enumerate(temp_sync.read_stream(filename=model.__tablename__, batch=1_000_000), start=1):
+                if is_syncer_db_truncate:
+                    syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
+
                 syncer.dump(model.__tablename__, data=[model.validated_init(**row).model_dump() for row in rows])
