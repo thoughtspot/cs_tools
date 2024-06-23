@@ -71,16 +71,18 @@ class Falcon(DatabaseSyncer):
     def load(self, tablename: str) -> TableRows:
         """SELECT rows from Falcon."""
         table = self.metadata.tables[tablename]
+
+        # Simulate the SELECT statement.
         query = self.compile_query(table.select())
         data = self.thoughtspot.tql.query(statement=query, database=self.database)
 
-        # Clean the incoming data
+        # Clean the outgoing data (as it's presented as simple types from the TQL API)
         model = next(model for model in self.models if model.__tablename__ == tablename)
         rows = [model.validated_init(**row) for row in data[0].get("data", [])]
         return [row.model_dump() for row in rows]
 
     def dump(self, tablename: str, *, data: TableRows) -> None:
-        """INSERT rows into SQLite."""
+        """INSERT rows into Falcon."""
         if not data:
             log.warning(f"no data to write to syncer {self}")
             return
@@ -97,7 +99,7 @@ class Falcon(DatabaseSyncer):
             }
 
             if self.load_strategy == "APPEND":
-                pass
+                upload_options["empty_target"] = False
 
             if self.load_strategy == "TRUNCATE":
                 upload_options["empty_target"] = True
@@ -109,7 +111,7 @@ class Falcon(DatabaseSyncer):
                 self.thoughtspot.tsload.upload(file, **upload_options)
 
             except (httpx.ConnectError, httpx.ConnectTimeout):
-                r = f"could not connect at [b blue]{self.thoughtspot.api.v1.dataservice_url}[/]"
+                i = f"could not connect at [b blue]{self.thoughtspot.api.v1.dataservice_url}[/]"
                 m = ""
 
                 if self.thoughtspot.api.v1.dataservice_url.host != self.thoughtspot.config.thoughtspot.url:
@@ -126,4 +128,4 @@ class Falcon(DatabaseSyncer):
                         "in your Falcon syncer definition as well."
                     )
 
-                raise errors.TSLoadServiceUnreachable(reason=r, mitigation=m) from None
+                raise errors.TSLoadServiceUnreachable(reason=i, mitigation=m) from None
