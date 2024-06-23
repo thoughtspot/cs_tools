@@ -68,6 +68,7 @@ class TQLMiddleware:
         }
 
         r = self.ts.api.v1.dataservice_query(data=data)
+        r.raise_for_status()
         i = [json.loads(_) for _ in r.iter_lines() if _]
 
         out = []

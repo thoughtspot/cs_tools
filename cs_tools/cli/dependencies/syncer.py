@@ -68,6 +68,7 @@ class DSyncer(Dependency):
             assert isinstance(self._syncer, base.DatabaseSyncer)
 
             if exc_type is not None:
+                log.warning(f"Caught Exception, rolling back transaction: {exc_type}: {exc_value}")
                 self._syncer.session.rollback()
             else:
                 self._syncer.session.commit()
