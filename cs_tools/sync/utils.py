@@ -22,9 +22,9 @@ DATETIME_FORMAT_TSLOAD = "%Y-%m-%d %H:%M:%S"
 @contextlib.contextmanager
 def temp_csv_for_upload(tmp: pathlib.Path, *, filename: str, data: TableRows, include_header: bool = False):
     """Temporarily create a file for HTTP multipart file uploads."""
-    file_opts = {"mode": "w+", "newline": "", "encoding": "utf-8"}
+    file_opts = {"newline": "", "encoding": "utf-8"}
 
-    with tempfile.NamedTemporaryFile(**file_opts, dir=tmp, suffix=f"_{filename}.csv", delete=False) as fd:
+    with tempfile.NamedTemporaryFile(**file_opts, mode="w+", dir=tmp, suffix=f"_{filename}.csv", delete=False) as fd:
         writer = csv.DictWriter(fd, fieldnames=data[0].keys(), delimiter="|")
 
         if include_header:
@@ -32,7 +32,6 @@ def temp_csv_for_upload(tmp: pathlib.Path, *, filename: str, data: TableRows, in
 
         writer.writerows(data)
         fd.seek(0)
-
         yield fd
 
     pathlib.Path(fd.name).unlink()

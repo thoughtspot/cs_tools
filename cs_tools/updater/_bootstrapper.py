@@ -152,6 +152,9 @@ def cli():
                 log.info("Creating the CS Tools virtual environment.")
                 venv.make()
 
+            log.info("Determining if CS Tools is globally installed.")
+            venv.check_if_globally_installed(remove=True)
+
             if args.reinstall:
                 log.info("Resetting the CS Tools virtual environment.")
                 path.unset()
@@ -632,11 +635,11 @@ if __name__ == "__main__":
         print(msg.format(**formatting))  # noqa: T201
         raise SystemExit(1)
     
-    elif "CONDA_ENV_PATH" in os.environ and "CS_TOOLS_IGNORE_CONDA_PATH" not in os.environ:
+    elif "CONDA_DEFAULT_ENV" in os.environ and "CS_TOOLS_IGNORE_CONDA_PATH" not in os.environ:
         msg = (
             "\n{y}It looks like you are running in an Anaconda environment!{x}"
             "\n"
-            "\n{r}Installation within conda is not tested and may lead to issues.{x}"
+            "\n{r}Installation and execution of CS Tools within conda is not well tested and may lead to issues.{x}"
             "\n"
             "\nPlease deactivate the environment and run again."
             "\n  {g}See{x} https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#deactivating-an-environment"

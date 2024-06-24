@@ -25,9 +25,7 @@ log = logging.getLogger(__name__)
 
 
 def batched(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, None]:
-    """
-    Yield successive n-sized chunks from list.
-    """
+    """Yield successive n-sized chunks from list."""
     # batched('ABCDEFG', 3) --> ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
@@ -209,9 +207,34 @@ def determine_editable_install() -> bool:
 
 def get_package_directory(package_name: str) -> Optional[pathlib.Path]:
     """Get the path to the package directory."""
+    # TODO: Consider using __spec__.parent instead of module.__file__
+    #       https://docs.python.org/3/reference/import.html#package__
     try:
         module = importlib.import_module(package_name)
         assert module.__file__ is not None
         return pathlib.Path(module.__file__).parent
     except ModuleNotFoundError:
         return None
+
+
+def permission_mask_info(file: pathlib.Path) -> str:
+    """
+    Show the permission mask for a given file.
+
+    eg. -rwxrwxr-x
+    """
+    assert isinstance(file, pathlib.Path), "file must be of type pathlib.Path"
+    assert file.exists(), "file must exist"
+    permissions = []
+
+    mode = file.stat().st_mode
+    mask = oct(mode)[-3:]
+
+    for digit in mask:
+        p = ""
+        p += "r" if int(digit) >= 4 else "-"
+        p += "w" if int(digit) % 4 >= 2 else "-"
+        p += "x" if int(digit) % 2 == 1 else "-"
+        permissions.append(p)
+
+    return "".join(permissions)

@@ -104,6 +104,11 @@ def deploy(
                     tml.table.db_table = tml.table.db_table.upper() if should_upper else tml.table.db_table.lower()
                     tml.table.name = tml.table.name.upper() if should_upper else tml.table.name.lower()
 
+                    for column in tml.table.columns:
+                        column.db_column_name = (
+                            column.db_column_name.upper() if should_upper else column.db_column_name.lower()
+                        )
+
                     if dialect != "FALCON":
                         tml.table.connection.name = connection_name
                         tml.table.connection.fqn = connection_guid
@@ -183,6 +188,12 @@ def bi_server(
     """
     ts = ctx.obj.thoughtspot
 
+    if syncer.protocol == "falcon":
+        log.error("Falcon Syncer is not supported for TS: BI Server reflection.")
+        models.BIServer.__table__.drop(syncer.engine)
+        rich_console.print()
+        raise typer.Abort()
+
     # DEV NOTE: @boonhapus
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
     if ts.session_context.thoughtspot.is_orgs_enabled:
@@ -194,10 +205,8 @@ def bi_server(
         "[browser type] [browser version] [client type] [client id] [answer book guid] "
         "[viz id] [user id] [user action] [query text] [response size] [latency (us)] "
         "[database latency (us)] [impressions] [timestamp] != 'today'"
-
         # FOR DATA QUALITY PURPOSES
         + " [incident id] != [incident id].{null}"
-
         # CONDITIONALS BASED ON CLI OPTIONS OR ENVIRONMENT
         + ("" if not compact else " [user action] != [user action].invalid [user action].{null}")
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
@@ -458,6 +467,11 @@ def metadata(
         logger.setLevel("DEBUG")
 
         # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
+        is_syncer_initialized_as_db_truncate = syncer.is_database_syncer and syncer.load_strategy == "TRUNCATE"
+
         for model in models.METADATA_MODELS:
-            for rows in temp_sync.read_stream(filename=model.__tablename__, batch=1_000_000):
+            for idx, rows in enumerate(temp_sync.read_stream(filename=model.__tablename__, batch=1_000_000), start=1):
+                if is_syncer_initialized_as_db_truncate:
+                    syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
+
                 syncer.dump(model.__tablename__, data=[model.validated_init(**row).model_dump() for row in rows])

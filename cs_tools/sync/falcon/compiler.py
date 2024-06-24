@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.schema import CreateColumn
-from sqlalchemy.types import Boolean, Float, Integer, String
+from sqlalchemy.types import Boolean, Float, Integer, String, Text
 
 
 @compiles(Boolean, "sqlite")
@@ -21,6 +21,7 @@ def compile_int(element, compiler, **kw):  # noqa: ARG001
 
 
 @compiles(String, "sqlite")
+@compiles(Text, "sqlite")
 def compile_varchar(element, compiler, **kw):  # noqa: ARG001
     if element.length is None:
         element.length = 0

@@ -16,7 +16,6 @@ from cs_tools.errors import InsufficientPrivileges, TSLoadServiceUnreachable
 from cs_tools.types import (
     GUID as CycleID,
     GroupPrivilege,
-    TableRowsFormat,
 )
 from cs_tools.updater import cs_tools_venv
 
@@ -147,7 +146,7 @@ class TSLoadMiddleware:
         self.ts = ts
         self._cache_fp = TSLoadNodeRedirectCache()
 
-    def _check_for_redirect_auth(self, cycle_id: CycleID) -> None:
+    def _check_for_redirect_auth(self, *, cycle_id: CycleID) -> None:
         """
         Attempt a login.
 
@@ -156,13 +155,18 @@ class TSLoadMiddleware:
         applicable) to submit file uploads to. If that node is not the main node, then
         we will be required to authorize again.
         """
+        # fmt: off
+        redirect_url  = self.ts.api.v1._redirected_url_due_to_tsload_load_balancer
         redirect_info = self._cache_fp.get_for(cycle_id)
+        # fmt: on
 
-        if redirect_info is not None:
+        is_currently_on_node = redirect_url is not None and redirect_url.host == redirect_info["host"]
+
+        if not is_currently_on_node:
             redirected = self.ts.api._session.base_url.copy_with(host=redirect_info["host"], port=redirect_info["port"])
             self.ts.api.v1._redirected_url_due_to_tsload_load_balancer = redirected
 
-            log.debug(f"redirecting to: {redirected}")
+            log.info(f"The tsload API is redirecting CS Tools to node ->  {redirected}")
             self.ts.login()
 
     def _check_privileges(self) -> None:
@@ -199,7 +203,7 @@ class TSLoadMiddleware:
         # not related to Remote TSLOAD API
         ignore_node_redirect: bool = False,
         http_timeout: float = 60.0,
-    ) -> TableRowsFormat:
+    ) -> CycleID:
         """
         Load a file via tsload on a remote server.
 
@@ -300,10 +304,22 @@ class TSLoadMiddleware:
             self._cache_fp.set_for(data["cycle_id"], redirect_info=data["node_address"])
 
         if not ignore_node_redirect:
-            self._check_for_redirect_auth(data["cycle_id"])
+            self._check_for_redirect_auth(cycle_id=data["cycle_id"])
 
-        self.ts.api.v1.dataservice_dataload_start(cycle_id=data["cycle_id"], fd=fd, timeout=http_timeout)
-        self.ts.api.v1.dataservice_dataload_commit(cycle_id=data["cycle_id"])
+        r = self.ts.api.v1.dataservice_dataload_start(cycle_id=data["cycle_id"], fd=fd, timeout=http_timeout)
+        log.info(f"{database}.{schema_}.{table} - {r.text}")
+        r.raise_for_status()
+
+        r = self.ts.api.v1.dataservice_dataload_bad_records(cycle_id=data["cycle_id"])
+
+        if r.text:
+            log.info(r.text)
+            r.raise_for_status()
+
+        r = self.ts.api.v1.dataservice_dataload_commit(cycle_id=data["cycle_id"])
+        log.info(r.text)
+        r.raise_for_status()
+
         return data["cycle_id"]
 
     def status(
@@ -326,7 +342,7 @@ class TSLoadMiddleware:
         self._check_privileges()
 
         if not ignore_node_redirect:
-            self._check_for_redirect_auth(cycle_id)
+            self._check_for_redirect_auth(cycle_id=cycle_id)
 
         while True:
             r = self.ts.api.v1.dataservice_dataload_status(cycle_id=cycle_id)
@@ -345,15 +361,3 @@ class TSLoadMiddleware:
             time.sleep(1)
 
         return data
-
-    # @validate_arguments
-    # def bad_records(self, cycle_id: str) -> TableRowsFormat:
-    #     """
-    #     """
-    #     r = self.ts.api.v1.ts_dataservice.load_params(cycle_id)
-    #     params = r.json()
-    #     print(params)
-    #     raise
-
-    #     r = self.ts.api.v1.ts_dataservice.bad_records(cycle_id)
-    #     r.text

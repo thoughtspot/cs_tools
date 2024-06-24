@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from typing import Any, Union
 import copy
+import enum
 import json
 import uuid
 
 import httpx
 
-UNDEFINED = object()
+UndefinedType = enum.Enum("_UndefinedTyped", "SENTINEL")
+UNDEFINED = UndefinedType.SENTINEL
 SYSTEM_USERS = {"system": "System User", "su": "Administrator Super-User", "tsadmin": "Administrator"}
 
 
@@ -34,7 +36,7 @@ def is_valid_guid(to_test: str) -> bool:
     return str(guid) == to_test
 
 
-def scrub_undefined_sentinel(inp: Any, *, null: Union[type[UNDEFINED], None]) -> Any:
+def scrub_undefined_sentinel(inp: Any, *, null: Union[UndefinedType, None]) -> Any:
     """
     Remove sentinel values from input parameters.
 
@@ -64,17 +66,11 @@ def obfuscate_sensitive_data(request_query: httpx.QueryParams) -> dict[str, Any]
     # don't modify the actual keywords we want to build into the request
     secure = copy.deepcopy({k: v for k, v in request_query.items() if k not in ("file", "files")})
 
-    for keyword in ("params", "data", "json"):
-        # .params on GET, POST, PUT
-        # .data, .json on POST, PUT
-        if secure.get(keyword, None) is None:
-            continue
-
-        for safe_word in SAFEWORDS:
-            try:
-                secure[keyword][safe_word] = "[secure]"
-            except KeyError:
-                pass
+    for safe_word in SAFEWORDS:
+        try:
+            secure[safe_word] = "[secure]"
+        except KeyError:
+            pass
 
     return secure
 

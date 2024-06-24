@@ -59,13 +59,16 @@ def update(
     """
     requires = "cs_tools[cli]"
 
+    log.info("Determining if CS Tools is globally installed.")
+    cs_tools_venv.check_if_globally_installed(remove=True)
+
     if offline is not None:
         log.info(f"Using the offline binary found at [b magenta]{offline}")
         cs_tools_venv.with_offline_mode(find_links=offline)
 
     elif dev is not None:
         log.info("Installing locally using the development environment.")
-        requires = f"-e {dev.as_posix()}"
+        requires = f" -e {dev.as_posix()}"
 
     else:
         log.info(f"Getting the latest CS Tools {'beta ' if beta else ''}release.")
@@ -78,7 +81,7 @@ def update(
             raise typer.Exit(0)
 
     log.info("Upgrading CS Tools and its dependencies.")
-    cs_tools_venv.pip("install", requires, "--upgrade", "--upgrade-strategy", "eager", with_system_python=True)
+    cs_tools_venv.pip("install", requires, "--upgrade", "--upgrade-strategy", "eager")
 
 
 @app.command(cls=CSToolsCommand)

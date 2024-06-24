@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 import datetime as dt
 import json
 import logging
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
         ShareModeAccessLevel,
         SharingVisibility,
         SortOrder,
+        TableRowsFormat,
         TMLImportPolicy,
         TMLObject,
         TMLType,
@@ -48,19 +49,21 @@ class RESTAPIv1:
 
     def __init__(self, api_client: RESTAPIClient):
         self._api_client = api_client
-        self._redirected_url_due_to_tsload_load_balancer: httpx.URL | None = None
+        self._redirected_url_due_to_tsload_load_balancer: Optional[httpx.URL] = None
 
     def request(self, method: str, endpoint: str, **request_kw) -> httpx.Response:
         """Pre-process the request to remove undefined parameters."""
         request_kw = _utils.scrub_undefined_sentinel(request_kw, null=_utils.UNDEFINED)
-        method = getattr(self._api_client, method.lower())
-        return method(endpoint, **request_kw)
+        request_method = getattr(self._api_client, method.lower())
+        return request_method(endpoint, **request_kw)
 
     # ==================================================================================================================
     # SESSION     ::  https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_session_management
     # ==================================================================================================================
 
-    def _trusted_auth(self, *, username: str, secret: GUID, org_id: int = _utils.UNDEFINED) -> httpx.Response:
+    def _trusted_auth(
+        self, *, username: str, secret: GUID, org_id: Union[int, _utils.UndefinedType] = _utils.UNDEFINED
+    ) -> httpx.Response:
         # get the login token for a given user
         d = {"secret_key": secret, "username": username, "access_level": "FULL", "orgid": org_id}
         r = self.request("POST", "callosum/v1/tspublic/v1/session/auth/token", data=d)
@@ -72,7 +75,9 @@ class RESTAPIv1:
 
         return r
 
-    def session_login(self, *, username: str, password: str, org_id: int = _utils.UNDEFINED) -> httpx.Response:
+    def session_login(
+        self, *, username: str, password: str, org_id: Union[int, _utils.UndefinedType] = _utils.UNDEFINED
+    ) -> httpx.Response:
         d = {"username": username, "password": password, "rememberme": True, "orgid": org_id}
         r = self.request("POST", "callosum/v1/tspublic/v1/session/login", data=d)
         return r
@@ -99,7 +104,12 @@ class RESTAPIv1:
     # ORG         ::  NOT YET SET
     # ==================================================================================================================
 
-    def org_read(self, *, org_id: int = _utils.UNDEFINED, org_name: str = _utils.UNDEFINED) -> httpx.Response:
+    def org_read(
+        self,
+        *,
+        org_id: Union[int, _utils.UndefinedType] = _utils.UNDEFINED,
+        org_name: Union[str, _utils.UndefinedType] = _utils.UNDEFINED,
+    ) -> httpx.Response:
         p = {"id": org_id, "name": org_name, "orgScope": "ALL"}
         r = self.request("GET", "callosum/v1/tspublic/v1/org", params=p)
         return r
@@ -107,8 +117,8 @@ class RESTAPIv1:
     def org_search(
         self,
         *,
-        org_id: int = _utils.UNDEFINED,
-        org_name: str = _utils.UNDEFINED,
+        org_id: Union[int, _utils.UndefinedType] = _utils.UNDEFINED,
+        org_name: Union[str, _utils.UndefinedType] = _utils.UNDEFINED,
         show_inactive: bool = False,
     ) -> httpx.Response:
         d = {"id": org_id, "name": org_name, "showinactive": show_inactive}
@@ -127,8 +137,8 @@ class RESTAPIv1:
         password: str,
         sharing_visibility: SharingVisibility = "DEFAULT",
         user_type: str = "LOCAL_USER",
-        user_properties: dict[str, Any] = _utils.UNDEFINED,
-        group_guids: list[GUID] = _utils.UNDEFINED,
+        user_properties: Union[dict[str, Any], _utils.UndefinedType] = _utils.UNDEFINED,
+        group_guids: Union[list[GUID], _utils.UndefinedType] = _utils.UNDEFINED,
         # org_id: int = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
@@ -144,12 +154,19 @@ class RESTAPIv1:
         r = self.request("POST", "callosum/v1/tspublic/v1/user", data=d)
         return r
 
-    def user_read(self, *, user_guid: GUID = _utils.UNDEFINED, username: str = _utils.UNDEFINED) -> httpx.Response:
+    def user_read(
+        self,
+        *,
+        user_guid: Union[GUID, _utils.UndefinedType] = _utils.UNDEFINED,
+        username: Union[str, _utils.UndefinedType] = _utils.UNDEFINED,
+    ) -> httpx.Response:
         p = {"userid": user_guid, "name": username}
         r = self.request("GET", "callosum/v1/tspublic/v1/user", params=p)
         return r
 
-    def user_update(self, *, user_guid: GUID, content: UserProfile, password: str = _utils.UNDEFINED) -> httpx.Response:
+    def user_update(
+        self, *, user_guid: GUID, content: UserProfile, password: Union[str, _utils.UndefinedType] = _utils.UNDEFINED
+    ) -> httpx.Response:
         d = {"userid": user_guid, "content": json.dumps(content), "password": password, "triggeredbyadmin": True}
         r = self.request("PUT", f"callosum/v1/tspublic/v1/user/{user_guid}", data=d)
         return r
@@ -163,7 +180,7 @@ class RESTAPIv1:
         *,
         from_username: str,
         to_username: str,
-        object_guids: list[GUID] = _utils.UNDEFINED,
+        object_guids: Union[list[GUID], _utils.UndefinedType] = _utils.UNDEFINED,
     ) -> httpx.Response:
         p = {"fromUserName": from_username, "toUserName": to_username, "objectsID": _utils.dumps(object_guids)}
         r = self.request("POST", "callosum/v1/tspublic/v1/user/transfer/ownership", params=p)
@@ -175,10 +192,22 @@ class RESTAPIv1:
         principals: list[SecurityPrincipal],
         apply_changes: bool = False,
         remove_deleted: bool = True,
-        password: str = _utils.UNDEFINED,
+        password: Union[str, _utils.UndefinedType] = _utils.UNDEFINED,
     ) -> httpx.Response:
-        fp = pathlib.Path(tempfile.gettempdir()) / f"user-sync-{dt.datetime.now(tz=dt.timezone.UTC).timestamp()}.json"
+        utc_now = dt.datetime.now(tz=dt.timezone.utc)
+        fp = pathlib.Path(tempfile.gettempdir()) / f"user-sync-utc-{utc_now:%Y_%m_%dT%H-%M-%S}.json"
         fp.write_text(json.dumps(principals, indent=4))
+
+        # fmt: off
+        log.debug(
+            f"BACKING UP USER PRINCIPALS TO THE PATH BELOW!!"
+            f"\n{fp}"
+            f"\n\nWhile this will preserve / snapshot the prior state of your Users, Groups, and Memberships, if any "
+            f"Users are deleted as part of the /sync operation, their content will be transferred to the system admin "
+            f"account TSADMIN. This can only be reversed by a ThoughtSpot Support team member."
+            f"\n"
+        )
+        # fmt: on
 
         f = {"principals": ("principals.json", fp.open("rb"), "application/json")}
         d = {"applyChanges": apply_changes, "removeDeleted": remove_deleted, "password": password}
@@ -210,7 +239,12 @@ class RESTAPIv1:
         r = self.request("POST", "callosum/v1/tspublic/v1/group", data=d)
         return r
 
-    def group_read(self, *, group_guid: GUID = _utils.UNDEFINED, group_name: str = _utils.UNDEFINED) -> httpx.Response:
+    def group_read(
+        self,
+        *,
+        group_guid: Union[GUID, _utils.UndefinedType] = _utils.UNDEFINED,
+        group_name: Union[str, _utils.UndefinedType] = _utils.UNDEFINED,
+    ) -> httpx.Response:
         p = {"groupid": group_guid, "name": group_name}
         r = self.request("GET", "callosum/v1/tspublic/v1/group", params=p)
         return r
@@ -249,9 +283,12 @@ class RESTAPIv1:
             "batchsize": batchsize,
             "pagenumber": page_number,
             "offset": offset,
-            "formattpe": format_type,
+            "formattype": format_type,
         }
-        r = self.request("POST", "callosum/v1/tspublic/v1/searchdata", params=p)
+        d = {
+            "include_column_details": True,
+        }
+        r = self.request("POST", "callosum/v1/tspublic/v1/searchdata", params=p, data=d)
         return r
 
     # ==================================================================================================================
@@ -263,8 +300,8 @@ class RESTAPIv1:
         *,
         metadata_guids: list[GUID],
         metadata_types: list[MetadataObjectType],
-        tag_guids: list[GUID] = _utils.UNDEFINED,
-        tag_names: list[str] = _utils.UNDEFINED,
+        tag_guids: Union[list[GUID], _utils.UndefinedType] = _utils.UNDEFINED,
+        tag_names: Union[list[str], _utils.UndefinedType] = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
             "id": _utils.dumps(metadata_guids),
@@ -280,8 +317,8 @@ class RESTAPIv1:
         *,
         metadata_guids: list[GUID],
         metadata_types: list[MetadataObjectType],
-        tag_guids: list[GUID] = _utils.UNDEFINED,
-        tag_names: list[str] = _utils.UNDEFINED,
+        tag_guids: Union[list[GUID], _utils.UndefinedType] = _utils.UNDEFINED,
+        tag_names: Union[list[str], _utils.UndefinedType] = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
             "id": _utils.dumps(metadata_guids),
@@ -296,20 +333,20 @@ class RESTAPIv1:
         self,
         *,
         metadata_type: MetadataObjectType = "QUESTION_ANSWER_BOOK",
-        subtypes: list[MetadataObjectSubtype] = _utils.UNDEFINED,
-        owner_types: list[MetadataObjectType] = _utils.UNDEFINED,
+        subtypes: Union[list[MetadataObjectSubtype], _utils.UndefinedType] = _utils.UNDEFINED,
+        owner_types: Union[list[MetadataObjectType], _utils.UndefinedType] = _utils.UNDEFINED,
         category: MetadataCategory = "ALL",
         sort: SortOrder = "DEFAULT",
-        sort_ascending: bool = _utils.UNDEFINED,
+        sort_ascending: Union[bool, _utils.UndefinedType] = _utils.UNDEFINED,
         offset: int = -1,
-        batchsize: int = _utils.UNDEFINED,
-        tag_names: list[str] = _utils.UNDEFINED,
-        pattern: str = _utils.UNDEFINED,
+        batchsize: Union[int, _utils.UndefinedType] = _utils.UNDEFINED,
+        tag_names: Union[list[str], _utils.UndefinedType] = _utils.UNDEFINED,
+        pattern: Union[str, _utils.UndefinedType] = _utils.UNDEFINED,
         show_hidden: bool = False,
-        skip_guids: list[GUID] = _utils.UNDEFINED,
-        fetch_guids: list[GUID] = _utils.UNDEFINED,
+        skip_guids: Union[list[GUID], _utils.UndefinedType] = _utils.UNDEFINED,
+        fetch_guids: Union[list[GUID], _utils.UndefinedType] = _utils.UNDEFINED,
         auto_created: bool = False,
-        author_guid: GUID = _utils.UNDEFINED,
+        author_guid: Union[GUID, _utils.UndefinedType] = _utils.UNDEFINED,
     ) -> httpx.Response:
         p = {
             "type": metadata_type,
@@ -389,7 +426,7 @@ class RESTAPIv1:
         *,
         guid: GUID,
         include_columns: bool = False,
-        config: ConnectionMetadata = _utils.UNDEFINED,
+        config: Union[ConnectionMetadata, _utils.UndefinedType] = _utils.UNDEFINED,
         authentication_type: str = "SERVICE_ACCOUNT",
     ) -> httpx.Response:
         d = {
@@ -406,8 +443,8 @@ class RESTAPIv1:
         self,
         *,
         guid: GUID,
-        tables: list[dict[str, Any]] = _utils.UNDEFINED,
-        config: ConnectionMetadata = _utils.UNDEFINED,
+        tables: Union[TableRowsFormat, _utils.UndefinedType] = _utils.UNDEFINED,
+        config: Union[ConnectionMetadata, _utils.UndefinedType] = _utils.UNDEFINED,
         authentication_type: str = "SERVICE_ACCOUNT",
     ) -> httpx.Response:
         d = {
@@ -426,7 +463,7 @@ class RESTAPIv1:
         description: str,
         external_database_type: ConnectionType,
         create_empty: bool = False,
-        metadata: ConnectionMetadata = _utils.UNDEFINED,
+        metadata: Union[ConnectionMetadata, _utils.UndefinedType] = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
             "name": name,
@@ -447,7 +484,7 @@ class RESTAPIv1:
         description: str,
         external_database_type: ConnectionType,
         create_empty: bool = False,
-        metadata: ConnectionMetadata = _utils.UNDEFINED,
+        metadata: Union[ConnectionMetadata, _utils.UndefinedType] = _utils.UNDEFINED,
     ) -> httpx.Response:
         d = {
             "name": name,
@@ -567,14 +604,18 @@ class RESTAPIv1:
         r = self.request("GET", "ts_dataservice/v1/public/tql/tokens/dynamic")
         return r
 
-    def dataservice_query(self, *, data: Any, timeout: float = _utils.UNDEFINED) -> httpx.Response:
+    def dataservice_query(
+        self, *, data: Any, timeout: Union[float, _utils.UndefinedType] = _utils.UNDEFINED
+    ) -> httpx.Response:
         # Further reading on what can be passed to `data`
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body
         r = self.request("POST", "ts_dataservice/v1/public/tql/query", timeout=timeout, json=data)
         return r
 
-    def dataservice_script(self, *, data: Any, timeout: float = _utils.UNDEFINED) -> httpx.Response:
+    def dataservice_script(
+        self, *, data: Any, timeout: Union[float, _utils.UndefinedType] = _utils.UNDEFINED
+    ) -> httpx.Response:
         # Further reading on what can be passed to `data`
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
         #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body_2
@@ -584,39 +625,41 @@ class RESTAPIv1:
     def dataservice_dataload_session(self, *, username: str, password: str) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path="/ts_dataservice/v1/public/session")
         d = {"username": username, "password": password}
-        r = self.request("POST", fullpath, data=d)
+        r = self.request("POST", str(fullpath), data=d)
         return r
 
-    def dataservice_dataload_initialize(self, *, data: Any, timeout: float = _utils.UNDEFINED) -> httpx.Response:
+    def dataservice_dataload_initialize(
+        self, *, data: Any, timeout: Union[float, _utils.UndefinedType] = _utils.UNDEFINED
+    ) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path="/ts_dataservice/v1/public/loads")
-        r = self.request("POST", fullpath, timeout=timeout, json=data)
+        r = self.request("POST", str(fullpath), timeout=timeout, json=data)
         return r
 
     def dataservice_dataload_start(
         self,
         *,
         cycle_id: GUID,
-        fd: BufferedIOBase | Any,
-        timeout: float = _utils.UNDEFINED,
+        fd: Union[BufferedIOBase, Any],
+        timeout: Union[float, _utils.UndefinedType] = _utils.UNDEFINED,
     ) -> httpx.Response:
         # This endpoint returns immediately once the file uploads to the remote host.
         # Processing of the dataload happens concurrently, and this function may be
         # called multiple times to paralellize the full data load across multiple files.
         fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
-        r = self.request("POST", fullpath, timeout=timeout, files={"upload-file": fd})
+        r = self.request("POST", str(fullpath), timeout=timeout, files={"upload-file": fd})
         return r
 
     def dataservice_dataload_commit(self, *, cycle_id: GUID) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/commit")
-        r = self.request("POST", fullpath)
+        r = self.request("POST", str(fullpath))
         return r
 
     def dataservice_dataload_status(self, *, cycle_id: GUID) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
-        r = self.request("GET", fullpath)
+        r = self.request("GET", str(fullpath))
         return r
 
     def dataservice_dataload_bad_records(self, *, cycle_id: GUID) -> httpx.Response:
         fullpath = self.dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")
-        r = self.request("GET", fullpath)
+        r = self.request("GET", str(fullpath))
         return r

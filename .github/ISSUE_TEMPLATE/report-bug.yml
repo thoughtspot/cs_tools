@@ -53,5 +53,18 @@ body:
         happen, and what is currently happening.
 
         If we can copy it, run it, and see it right away, there's a much higher chance we'll be able to help you.
+
     validations:
       required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Need to upload log files securely?
+      description: >-
+        Run the following command.
+
+        `cs_tools logs report --latest 5`
+        
+        Then use the secure file share link below, which routes to the CS Tools team directly.
+        https://thoughtspot.egnyte.com/ul/1bK0dz05L6

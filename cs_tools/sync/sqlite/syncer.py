@@ -39,6 +39,19 @@ class SQLite(DatabaseSyncer):
     def __repr__(self):
         return f"<SQLiteSyncer conn_string='{self.engine.url}'>"
 
+    # @contextlib.contextmanager
+    # def pragma_speedy_insert(self):
+    #     """ """
+    #     self.session.execute("PRAGMA journal_mode = OFF;")
+    #     self.session.execute("PRAGMA synchronous = 0;")
+    #     self.session.execute("PRAGMA locking_mode = EXCLUSIVE;")
+    #     self.session.execute("PRAGMA temp_store = MEMORY;")
+    #     yield
+    #     self.session.execute("PRAGMA journal_mode = ON;")
+    #     self.session.execute("PRAGMA synchronous = 0;")
+    #     self.session.execute("PRAGMA locking_mode = EXCLUSIVE;")
+    #     self.session.execute("PRAGMA temp_store = MEMORY;")
+
     # MANDATORY PROTOCOL MEMBERS
 
     def load(self, tablename: str) -> TableRows:

@@ -103,14 +103,16 @@ def create(
 
     else:
         ts.logout()
-        conf.save()
-        log.info(f"Saving as {conf.name}!")
 
         if default:
             meta.default_config_name = config
             meta.save()
 
         _analytics.prompt_for_opt_in()
+
+    finally:
+        conf.save()
+        log.info(f"Saving as {conf.name}!")
 
 
 @app.command()
@@ -195,6 +197,8 @@ def modify(
 
     else:
         ts.logout()
+
+    finally:
         conf.save()
         log.info(f"Saving as {conf.name}!")
 
@@ -205,7 +209,7 @@ def delete(config: str = typer.Option(..., help="config file identifier", show_d
     Delete a config file.
     """
     if not CSToolsConfig.exists(name=config):
-        rich_console.print(f'[b yellow]Configuration file "{config}" does not exist')
+        log.error(f'[b yellow]Configuration file "{config}" does not exist')
         return
 
     cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{config}.toml").unlink()
@@ -270,7 +274,11 @@ def show(
     anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
 ):
     """Display the currently saved config files."""
-    if config:
+    if config is not None and not CSToolsConfig.exists(name=config):
+        log.error(f'[b yellow]Configuration file "{config}" does not exist')
+        return
+
+    if config is not None:
         text = cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{config}.toml").read_text()
 
         if anonymous:

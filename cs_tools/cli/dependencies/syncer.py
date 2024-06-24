@@ -8,7 +8,7 @@ import pydantic
 import sqlmodel
 import toml
 
-from cs_tools import utils
+from cs_tools import errors, utils
 from cs_tools.cli.dependencies.base import Dependency
 from cs_tools.sync import base
 
@@ -27,6 +27,10 @@ class DSyncer(Dependency):
     def metadata(self) -> sqlmodel.MetaData:
         return self._syncer.metadata
 
+    @property
+    def is_database_syncer(self) -> bool:
+        return isinstance(self._syncer, base.DatabaseSyncer)
+
     def __enter__(self):
         log.debug(f"Registering syncer: {self.protocol.lower()}")
 
@@ -40,7 +44,16 @@ class DSyncer(Dependency):
         SyncerClass = manifest.import_syncer_class(fp=syncer_dir / "syncer.py")
 
         if self.definition_fp:
-            conf = toml.load(self.definition_fp)
+            try:
+                conf = toml.load(self.definition_fp)
+            except toml.TomlDecodeError as e:
+                text = self.definition_fp.read_text()
+                line = text.splitlines()[e.lineno - 1]
+                trim = line if len(line) < 5 else f"{line[:5]}..."
+                raise errors.CSToolsError(
+                    f"Could not parse syncer definition syntax, error on line {e.lineno} beginning with '{trim}'"
+                    f"\nSyncer definition path:  {self.definition_fp}"
+                ) from None
         else:
             conf = {"configuration": self.definition_kw}
 
@@ -51,8 +64,11 @@ class DSyncer(Dependency):
         self.__dict__["_syncer"] = SyncerClass(**conf["configuration"])
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if isinstance(self._syncer, base.DatabaseSyncer):
+        if self.is_database_syncer:
+            assert isinstance(self._syncer, base.DatabaseSyncer)
+
             if exc_type is not None:
+                log.warning(f"Caught Exception, rolling back transaction: {exc_type}: {exc_value}")
                 self._syncer.session.rollback()
             else:
                 self._syncer.session.commit()

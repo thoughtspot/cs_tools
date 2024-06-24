@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
+import functools as ft
 import logging
 
 from cs_tools import utils
@@ -27,6 +28,7 @@ class MetadataMiddleware:
     def __init__(self, ts: ThoughtSpot):
         self.ts = ts
         self._details_cache: dict[GUID, dict] = {}
+        self._error_cache: set[GUID] = set()
 
     def permissions(
         self,
@@ -227,21 +229,24 @@ class MetadataMiddleware:
         data = []
 
         for guid in guids:
-            try:
+            if guid in self._error_cache:
+                continue
+
+            if guid in self._details_cache:
                 data.append(self._details_cache[guid])
                 continue
-            except KeyError:
-                pass
 
             r = self.ts.api.v1.metadata_details(metadata_type=metadata_type, guids=[guid], show_hidden=True)
 
             if r.is_error:
+                self._error_cache.add(guid)
                 log.warning(f"Failed to fetch details for {guid} ({metadata_type})")
                 continue
 
             j = r.json()
 
             if not j["storables"]:
+                self._error_cache.add(guid)
                 log.warning(f"Failed to fetch details for {guid} ({metadata_type})")
                 continue
 
@@ -267,6 +272,7 @@ class MetadataMiddleware:
 
         return data
 
+    @ft.cache
     def find_data_source_of_logical_table(self, guid: GUID) -> GUID:
         """
         METADATA DETAILS is expensive. Here's our shortcut.

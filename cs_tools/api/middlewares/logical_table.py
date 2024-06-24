@@ -107,7 +107,16 @@ class LogicalTableMiddleware:
 
                 # BUGFIX: SCAL-199984 .. eta 10.0.0.cl
                 if not info or info[0]["type"] == "Default":
-                    continue
+                    info.append(
+                        {
+                            "type": "FALCON",
+                            "header": {
+                                "id": connection_guid,
+                                "name": "Default Data Source",
+                                "description": "This is the hidden, default data source for system content.",
+                            },
+                        }
+                    )
 
                 table["data_source"] = info[0]["header"]
                 table["data_source"]["type"] = info[0]["type"]
