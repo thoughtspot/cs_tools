@@ -97,7 +97,7 @@ class RESTAPIv2:
         *,
         username: str,
         access_token: str,
-        org_identifier: Identifier = None,
+        org_identifier: Optional[Identifier] = None,
         branch_names: Optional[list[str]] = None,
         commit_branch_name: Optional[str] = None,
         enable_guid_mapping: bool = False,
