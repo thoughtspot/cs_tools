@@ -31,12 +31,12 @@ class MetadataMiddleware:
         self._error_cache: set[GUID] = set()
 
     def permissions(
-        self,
-        guids: list[GUID],
-        *,
-        metadata_type: MetadataObjectType,
-        permission_type: PermissionType = PermissionType.explicit,
-        chunksize: int = 25,
+            self,
+            guids: list[GUID],
+            *,
+            metadata_type: MetadataObjectType,
+            permission_type: PermissionType = PermissionType.explicit,
+            chunksize: int = 25,
     ) -> TableRowsFormat:
         """
         Fetch permissions for a given object type.
@@ -67,7 +67,7 @@ class MetadataMiddleware:
         return sharing_access
 
     def dependents(
-        self, guids: list[GUID], *, for_columns: bool = False, include_columns: bool = False, chunksize: int = 50
+            self, guids: list[GUID], *, for_columns: bool = False, include_columns: bool = False, chunksize: int = 50
     ) -> TableRowsFormat:
         """
         Get all dependencies of content in ThoughtSpot.
@@ -139,16 +139,16 @@ class MetadataMiddleware:
         return content
 
     def find(
-        self,
-        *,
-        tags: Optional[list[str]] = None,
-        author: GUID = None,
-        pattern: Optional[str] = None,
-        include_types: Optional[list[str]] = None,
-        include_subtypes: Optional[list[str]] = None,
-        exclude_types: Optional[list[str]] = None,
-        exclude_subtypes: Optional[list[str]] = None,
-        exclude_system_content: bool = True,
+            self,
+            *,
+            tags: Optional[list[str]] = None,
+            author: GUID = None,
+            pattern: Optional[str] = None,
+            include_types: Optional[list[str]] = None,
+            include_subtypes: Optional[list[str]] = None,
+            exclude_types: Optional[list[str]] = None,
+            exclude_subtypes: Optional[list[str]] = None,
+            exclude_system_content: bool = True,
     ) -> TableRowsFormat:
         """
         Find all object which meet the predicates in the keyword args.
@@ -168,9 +168,9 @@ class MetadataMiddleware:
         for metadata_type in MetadataObjectType:
             # can't exclude logical tables because they have sub-types.  Logical tables will be checked on subtype.
             if (
-                exclude_types
-                and metadata_type is not MetadataObjectType.logical_table
-                and (metadata_type in exclude_types)
+                    exclude_types
+                    and metadata_type is not MetadataObjectType.logical_table
+                    and (metadata_type in exclude_types)
             ):
                 continue
 
@@ -198,7 +198,9 @@ class MetadataMiddleware:
 
                     # All subtypes will be retrieved, so need to filter the subtype appropriately.
                     # Mainly applies to LOGICAL_TABLE.
-                    if include_subtypes and subtype and (subtype not in include_subtypes):
+                    # Connections have subtypes that map to the data platform, so ignore subtypes for connections.
+                    if (metadata_type != TMLSupportedContent.connection) and include_subtypes and subtype and (
+                            subtype not in include_subtypes):
                         continue
                     elif exclude_subtypes and subtype and (subtype in exclude_subtypes):
                         continue
