@@ -254,8 +254,16 @@ class SharingAccess(ValidatedSQLModel, table=True):
     share_mode: str
 
 
-# class SecurityLogs(ValidatedSQLModel, table=True):
-#     __tablename__ = "ts_security_logs"
+class AuditLogs(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_audit_logs"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(0, primary_key=True)
+    sk_dummy: str = Field(primary_key=True)
+    timestamp: dt.datetime
+    log_type: str
+    user_guid: Optional[str]
+    description: str
+    details: str = Field(sa_column_kwargs={"comment": "JSON body of the Log Event"})
 
 
 class BIServer(ValidatedSQLModel, table=True):
