@@ -143,8 +143,9 @@ class CSToolsVirtualEnvironment:
     def check_if_globally_installed(self, *, remove: bool = False) -> bool:
         """Check if self is installed in global python, which would PATH-shadow the VENV binary."""
         is_globally_installed = self.is_package_installed("cs_tools", with_system_python=True)
+        is_system_is_venv_exe = self.exe.resolve() == self.system_exe.resolve()
 
-        if is_globally_installed:
+        if is_globally_installed and not is_system_is_venv_exe:
             # fmt: off
             log.warning(
                 f"CS Tools and many other dependencies were found to be globally installed at {self.system_exe} !!"

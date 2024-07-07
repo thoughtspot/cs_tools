@@ -57,7 +57,7 @@ def update(
     """
     Upgrade CS Tools.
     """
-    requires = "cs_tools[cli]"
+    requires = ["cs_tools[cli]"]
 
     log.info("Determining if CS Tools is globally installed.")
     cs_tools_venv.check_if_globally_installed(remove=True)
@@ -68,20 +68,20 @@ def update(
 
     elif dev is not None:
         log.info("Installing locally using the development environment.")
-        requires = f" -e {dev.as_posix()}"
+        requires.extend(f"-e {dev.as_posix()}".split(" "))
 
     else:
         log.info(f"Getting the latest CS Tools {'beta ' if beta else ''}release.")
         release = get_latest_cs_tools_release(allow_beta=beta)
         log.info(f"Found version: [b cyan]{release['tag_name']}")
-        requires += f" @ https://github.com/thoughtspot/cs_tools/archive/{release['tag_name']}.zip"
+        requires.extend(f" @ https://github.com/thoughtspot/cs_tools/archive/{release['tag_name']}.zip".split(" "))
 
         if AwesomeVersion(release["tag_name"]) <= AwesomeVersion(__version__):
             log.info(f"CS Tools is [b green]already up to date[/]! (your version: {__version__})")
             raise typer.Exit(0)
 
     log.info("Upgrading CS Tools and its dependencies.")
-    cs_tools_venv.pip("install", requires, "--upgrade", "--upgrade-strategy", "eager")
+    cs_tools_venv.pip("install", *requires, "--upgrade", "--upgrade-strategy", "eager")
 
 
 @app.command(cls=CSToolsCommand)
@@ -107,6 +107,7 @@ def info(
         f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"
         f"\n  Configs Directory: [b yellow]{cs_tools_venv.app_dir}[/]"
         f"\nActivate VirtualEnv: [b yellow]{source}[/]"
+        f"\n System Python Path: [b yellow]{cs_tools_venv.system_exe}[/]"
         f"\n      Platform Tags: [b yellow]{sysconfig.get_platform()}[/]"
         f"\n"
     )
@@ -199,6 +200,7 @@ def download(
     frozen.add("setuptools >= 42")
     frozen.add("setuptools_scm >= 6.2")
     frozen.add("wheel")
+    frozen.add("maturin >= 1, < 2")
 
     # fmt: off
     # add in version specific constraints (in case they don't get exported from the current environment)
