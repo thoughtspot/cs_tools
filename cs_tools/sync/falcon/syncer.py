@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 import logging
 import pathlib
+import time
 
 import httpx
 import pydantic
@@ -36,6 +37,7 @@ class Falcon(DatabaseSyncer):
     schema_: str = pydantic.Field("falcon_default_schema", alias="schema")
     thoughtspot: ThoughtSpot = pydantic.Field(default_factory=utils.maybe_fetch_from_context)
     ignore_load_balancer_redirect: bool = False
+    wait_for_dataload_completion: bool = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -111,8 +113,7 @@ class Falcon(DatabaseSyncer):
                 cycle_id = self.thoughtspot.tsload.upload(file, **upload_options)
 
             except httpx.HTTPStatusError:
-                r = self.thoughtspot.api.v1.dataservice_dataload_bad_records(cycle_id=cycle_id)
-                log.info(r.text)
+                return
 
             except (httpx.ConnectError, httpx.ConnectTimeout):
                 i = f"could not connect at [b blue]{self.thoughtspot.api.v1.dataservice_url}[/]"
@@ -133,3 +134,27 @@ class Falcon(DatabaseSyncer):
                     )
 
                 raise errors.TSLoadServiceUnreachable(reason=i, mitigation=m) from None
+
+            if self.wait_for_dataload_completion:
+                while True:
+                    log.info(f"Checking status of dataload {cycle_id}...")
+                    status_data = self.thoughtspot.tsload.status(cycle_id, wait_for_complete=True)
+
+                    if "code" in status_data["status"]:
+                        break
+
+                    log.debug(status_data)
+                    time.sleep(1)
+
+                log.info(
+                    f"Cycle ID: {status_data['cycle_id']} ({status_data['status']['code']})"
+                    f"\nStage: {status_data['internal_stage']}"
+                    f"\nRows written: {status_data['rows_written']}"
+                    f"\nIgnored rows: {status_data['ignored_row_count']}"
+                )
+
+                if status_data["status"]["code"] == "LOAD_FAILED":
+                    log.error(f"Failure reason\n[bold red]{status_data['status']['message']}[/]")
+
+                if status_data.get("parsing_errors", False):
+                    log.info(f"[red]{status_data['parsing_errors']}")
