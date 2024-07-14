@@ -84,17 +84,13 @@ class Snowflake(DatabaseSyncer):
         """
         assert self.private_key_path is not None
         pem_data = self.private_key_path.read_bytes()
-        log.debug("pem_data: %s", pem_data)
         passphrase = self.secret.encode() if self.secret is not None else self.secret
-        log.debug("passphrase: %s, self.secret: %s", passphrase, self.secret)
         private_key = serialization.load_pem_private_key(data=pem_data, password=passphrase, backend=default_backend())
-        log.debug("private_key: %s", private_key)
         pk_as_bytes = private_key.private_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
         )
-        log.debug("pk_as_bytes: %s", pk_as_bytes)
 
         return pk_as_bytes
 
@@ -121,7 +117,6 @@ class Snowflake(DatabaseSyncer):
         # SNOWFLAKE DOCS:
         # https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect#using-key-pair-authentication-key-pair-rotation
         if self.authentication == "key-pair":
-            url_kwargs["authenticator"] = "snowflake"
             url_kwargs["connect_args"]["private_key"] = self._fetch_private_key()
 
         # SNOWFLAKE DOCS:
