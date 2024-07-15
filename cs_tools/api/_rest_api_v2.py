@@ -71,7 +71,7 @@ class RESTAPIv2:
             "log_type": log_type,
             "start_epoch_time_in_millis": int(utc_start.timestamp() * 1000),
             "end_epoch_time_in_millis": int(utc_end.timestamp() * 1000),
-            "get_all_logs": False,
+            "get_all_logs": True,
         }
 
         r = self.request("POST", "/api/rest/2.0/logs/fetch", json=body)
