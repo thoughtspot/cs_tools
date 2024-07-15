@@ -192,6 +192,19 @@ class MetadataColumn(ValidatedSQLModel, table=True):
     def remove_leading_trailing_spaces(cls, value: Any) -> str:
         return None if value is None else value.strip()
 
+    @pydantic.field_validator("index_priority")
+    @classmethod
+    def clamp_1_to_10(cls, value: int, info: pydantic.ValidationInfo) -> int:
+        if 1 <= value <= 10:
+            return value
+
+        log.warning(
+            f"INDEX_PRIORITY is clamped between 1 and 10 in ThoughtSpot, though no validation occurs in the UI. The "
+            f"column '{info.data['olumn_name']}' has the value of {value}."
+        )
+
+        return max(1, min(10, value))
+
     @pydantic.field_validator("spotiq_preference", mode="before")
     @classmethod
     def cast_default_exclude_to_bool(cls, value: Any) -> bool:
