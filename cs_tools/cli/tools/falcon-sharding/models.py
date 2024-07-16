@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 import datetime as dt
 import logging
 
@@ -18,16 +18,16 @@ class FalconTableInfo(ValidatedSQLModel, table=True):
 
     table_guid: str = Field(primary_key=True)
     ip: str = Field(primary_key=True)
-    database_name: str
-    schema_name: str
-    table_name: str
+    database_name: Optional[str] = None
+    schema_name: Optional[str] = None
+    table_name: str = None
     state: str
     database_version: int
     serving_version: int
     building_version: int
     build_duration_s: int
     is_known: bool
-    database_status: str
+    database_status: Optional[str]
     last_uploaded_at: dt.datetime
     num_of_rows: int
     approx_bytes_size: int
