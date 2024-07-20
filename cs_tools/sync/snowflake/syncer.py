@@ -1,14 +1,10 @@
-from __future__ import annotations  # noqa: I001
-
-from . import _monkey  # noqa: F401
+from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, Optional
 import logging
 import pathlib
 import uuid
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 from pydantic_core import PydanticCustomError
 from snowflake.sqlalchemy import URL
 import pydantic
@@ -45,7 +41,17 @@ class Snowflake(DatabaseSyncer):
     log_level: Literal["debug", "info", "warning"] = "warning"
     temp_dir: Optional[pydantic.DirectoryPath] = pathlib.Path(".")
 
+    @pydantic.field_validator("account_name")
+    @classmethod
+    def check_regionless_privatelink(cls, value: str) -> str:
+        # FIXES: https://github.com/snowflakedb/snowflake-sqlalchemy/issues/489
+        if "privatelink" in value.lower() and len(value.split(".")) != 2:
+            raise ValueError("Privatelink identifiers must include the region, eg. 'thoughtspot.us-west-1.privatelink'")
+
+        return value
+
     @pydantic.field_validator("secret", mode="before")
+    @classmethod
     def ensure_auth_secret_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
         if info.data.get("authentication") == "sso" or value is not None:
             return value
@@ -57,6 +63,7 @@ class Snowflake(DatabaseSyncer):
             raise PydanticCustomError("missing", "Field required, you must provide an oauth token", {"secret": value})
 
     @pydantic.field_validator("private_key_path", mode="before")
+    @classmethod
     def ensure_pk_path_given(cls, value: Any, info: pydantic.ValidationInfo) -> Any:
         if info.data.get("authentication") != "key-pair" or value is not None:
             return value
@@ -82,6 +89,9 @@ class Snowflake(DatabaseSyncer):
 
         https://github.com/snowflakedb/snowflake-sqlalchemy/tree/main#key-pair-authentication-support
         """
+        from cryptography.hazmat.backends import default_backend  # type: ignore
+        from cryptography.hazmat.primitives import serialization  # type: ignore
+
         assert self.private_key_path is not None
         pem_data = self.private_key_path.read_bytes()
         passphrase = self.secret.encode() if self.secret is not None else self.secret
@@ -91,7 +101,6 @@ class Snowflake(DatabaseSyncer):
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
         )
-
         return pk_as_bytes
 
     def make_url(self) -> URL:
