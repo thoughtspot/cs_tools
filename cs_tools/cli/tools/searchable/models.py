@@ -200,7 +200,7 @@ class MetadataColumn(ValidatedSQLModel, table=True):
 
         log.warning(
             f"INDEX_PRIORITY is clamped between 1 and 10 in ThoughtSpot, though no validation occurs in the UI. The "
-            f"column '{info.data['olumn_name']}' has the value of {value}."
+            f"column '{info.data['column_name']}' has the value of {value}."
         )
 
         return max(1, min(10, value))
