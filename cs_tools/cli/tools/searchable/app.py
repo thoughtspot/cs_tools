@@ -123,6 +123,14 @@ def deploy(
                             column.db_column_name.upper() if should_upper else column.db_column_name.lower()
                         )
 
+                    # External database name in JOIN
+                    for join in tml.table.joins_with or []:
+                        source = tml.table.name.upper() if should_upper else tml.table.name.lower()
+                        destination = join.destination.name.upper() if should_upper else join.destination.name.lower()
+
+                        join.on = join.on.replace(tml.table.name, source).replace(join.destination.name, destination)
+                        join.destination.name = destination
+
                     tml.table.connection.name = connection_name if not is_falcon_db else None
                     tml.table.connection.fqn = connection_guid if not is_falcon_db else None
 
