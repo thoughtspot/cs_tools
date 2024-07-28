@@ -19,6 +19,11 @@ hide:
     - [ ] __encoding__{ .fc-blue }, _whether or not to accept double-byte characters, like japanese or cryillic_
     <br />__default__{ .fc-gray }: `None` ( __allowed__{ .fc-green }: `UTF-8` )
 
+    ---
+
+    - [ ] __indentation__{ .fc-blue }, _the number of spaces to indent when writing to a file, used for pretty-printing data_
+    <br />__default__{ .fc-gray }: `None` ( no pretty-printing will be formatted)
+
 
 ??? question "How do I use the JSON syncer in commands?"
 

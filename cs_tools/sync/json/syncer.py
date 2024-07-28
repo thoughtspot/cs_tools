@@ -38,7 +38,7 @@ class JSON(Syncer):
 
     directory: Union[pydantic.DirectoryPath, pydantic.NewPath]
     encoding: Optional[Literal["UTF-8"]] = None
-    indentation: int = 4
+    indentation: Optional[int] = None
 
     @pydantic.field_validator("directory", mode="after")
     @classmethod
@@ -51,6 +51,14 @@ class JSON(Syncer):
             value.mkdir(parents=True, exist_ok=True)
 
         return value
+
+    @pydantic.field_validator("indentation", mode="after")
+    @classmethod
+    def _ensure_clamped_1_to_10(cls, value: Optional[int]) -> Optional[int]:
+        if value is None or 1 <= value <= 10:
+            return value
+
+        raise ValueError("JSON indentation level must be within 1-10")
 
     def __repr__(self):
         return f"<JSONSyncer directory={self.directory.as_posix()}'>"
