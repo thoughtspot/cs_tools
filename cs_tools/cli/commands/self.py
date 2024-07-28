@@ -149,7 +149,7 @@ def download(
         metavar="X.Y", help="major and minor version of your python install", parser=AwesomeVersion
     ),
     beta: bool = typer.Option(False, "--beta", help="if included, download the latest pre-release binary"),
-    syncer_dialect: str = typer.Option(None, help="the name of the dialect to fetch dependencies for"),
+    syncer_dialect: str = typer.Option(None, "--syncer", help="the name of the dialect to fetch dependencies for"),
 ):
     """
     Generate an offline binary.
@@ -167,7 +167,15 @@ def download(
     # The idea behind the offline installer is to simulate `pip install` by downloading
     # all the necessary packages to build our environment.
     #
-    requirements = directory.joinpath("requirements")
+    dir_to_zip = directory.joinpath("TEMPORARY__DO_NOT_TOUCH")
+    # ZIPFILE STRUCTURE
+    # |- requirements.txt
+    # |  dependencies/
+    #    |- abc.whl
+    #    |- ...
+    #
+    dir_to_zip.joinpath("dependencies").mkdir(exist_ok=True, parents=True)
+    dir_to_zip.joinpath("requirements.txt").write_text("cs_tools[cli]\n")
 
     log.info("Fetching latest CS Tools release from GitHub")
     release_info = get_latest_cs_tools_release(allow_beta=beta)
@@ -180,12 +188,16 @@ def download(
             log.error(f"Syncer dialect {syncer_dialect} not found")
             raise typer.Exit(1)
 
-        log.info(f"Fetching {syncer_dialect} syncer dependencies..")
+        log.info(f"Fetching {syncer_dialect} syncer dependencies")
         manifest = base.SyncerManifest.model_validate_json(syncer_dir.joinpath("MANIFEST.json").read_text())
         manifest.__ensure_pip_requirements__()
 
+        with dir_to_zip.joinpath("requirements.txt").open(mode="a") as r:
+            for requirement in manifest.requirements:
+                r.write(f"{requirement}\n")
+
     # freeze our own environment, which has all the dependencies needed to build
-    log.info("Freezing existing virtual environment..")
+    log.info("Freezing existing virtual environment")
     frozen = {
         r
         for r in cs_tools_venv.pip("freeze", "--quiet", visible_output=False).stdout.decode().split("\n")
@@ -211,26 +223,26 @@ def download(
     if "win" in platform:
         frozen.add("pyreadline3 == 3.4.1")        # from cs_tools
 
-    log.info("Downloading dependent packages..")
+    log.info("Downloading dependent packages")
     cs_tools_venv.pip(
         "download", *frozen,
         "--no-deps",  # we shouldn't need transitive dependencies, since we've build all the dependencies above
-        "--dest", requirements.as_posix(),
+        "--dest", dir_to_zip.joinpath("dependencies").as_posix(),
         "--implementation", "cp",
         "--python-version", f"{python_version.major}{python_version.minor}",
         "--platform", platform.replace("-", "_"),
     )
     # fmt: on
 
-    # rename .zip files we author to their actual package names
-    requirements.joinpath(f"{release_tag}.zip").rename(requirements / f"cs_tools-{release_tag[1:]}.zip")
+    # rename the cs_tools .zip files to their actual package names
+    dir_to_zip.joinpath(f"dependencies/{release_tag}.zip").rename(dir_to_zip / f"dependencies/cs_tools-{release_tag[1:]}.zip")  # noqa: E501
 
     from cs_tools.updater import _bootstrapper, _updater
 
     zip_fp = directory.joinpath(f"cs-tools_{__version__}_{platform}_{python_version}")
 
-    log.info(f"Preparing your download at {zip_fp}..")
-    shutil.copy(_bootstrapper.__file__, requirements.joinpath("_bootstrapper.py"))
-    shutil.copy(_updater.__file__, requirements.joinpath("_updater.py"))
-    shutil.make_archive(zip_fp.as_posix(), "zip", requirements)
-    shutil.rmtree(requirements)
+    log.info(f"Preparing your download at {zip_fp}")
+    shutil.copy(_bootstrapper.__file__, dir_to_zip.joinpath("_bootstrapper.py"))
+    shutil.copy(_updater.__file__, dir_to_zip.joinpath("_updater.py"))
+    shutil.make_archive(zip_fp.as_posix(), "zip", dir_to_zip)
+    shutil.rmtree(dir_to_zip)

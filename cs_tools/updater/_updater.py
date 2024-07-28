@@ -27,7 +27,7 @@ class CSToolsVirtualEnvironment:
     def __init__(self):
         # instance variables
         self.venv_path = self.get_venv_path()
-        self.find_links = None
+        self.offline_directory = None
 
         # the parent application directory
         self.app_dir = self.venv_path.parent
@@ -198,8 +198,18 @@ class CSToolsVirtualEnvironment:
         # TODO: proxy = get from ENVVAR ?
         # required_general_args = (*required_general_args, "--proxy", "scheme://[user:passwd@]proxy.server:port")
 
-        if command == "install" and self.find_links is not None:
-            args = (*args, "--progress-bar", "off", "--no-index", "--find-links", self.find_links.as_posix())
+        if command == "install" and self.offline_directory is not None:
+            # override incoming args
+            # fmt: off
+            args = (
+                "--requirement", self.offline_directory.joinpath("requirements.txt").as_posix(),
+                "--upgrade",
+                "--upgrade-strategy", "eager",
+                "--progress-bar", "off",
+                "--find-links", self.offline_directory.joinpath("dependencies").as_posix(),
+                "--no-index",
+            )
+            # fmt: on
 
         python = self.system_python if with_system_python else self.python
 
@@ -207,7 +217,7 @@ class CSToolsVirtualEnvironment:
 
     def with_offline_mode(self, find_links: pathlib.Path) -> None:
         """Set CS Tools into offline mode, fetching requirements from path."""
-        self.find_links = find_links
+        self.offline_directory = find_links
 
     def ensure_directories(self) -> None:
         # ala venv.EnvBuilder.ensure_directories
