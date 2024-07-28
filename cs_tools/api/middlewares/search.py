@@ -14,25 +14,22 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def _fix_for_scal_101507(row: TableRowsFormat) -> TableRowsFormat:
+def _fix_for_scal_101507(rows: TableRowsFormat) -> TableRowsFormat:
     # BUG: SCAL-101507
     #
     # DATE_TIME formatted columns return data in the format below. This fixes that.
     #
     # "data": [ {"Timestamp": {"v":{"s":1625759921}} ]
     #
-    for i, value in enumerate(row):
-        if isinstance(value, dict) and value["v"]:
-            try:
-                row[i] = value["v"]["s"]
-            except Exception:
-                log.warning(f"unexpected value in search-data response: {value}")
+    for row in rows:
+        for column, cell in row.items():
+            if isinstance(cell, dict):
+                try:
+                    row[column] = cell["v"]["s"]
+                except Exception:
+                    log.warning(f"unexpected value in search-data response: {cell}")
 
-    return row
-
-
-def _to_records(columns: list[str], rows: list[TableRowsFormat]) -> list[TableRowsFormat]:
-    return [dict(zip(columns, _fix_for_scal_101507(row))) for row in rows]
+    return rows
 
 
 def _cast(data: list[TableRowsFormat], headers_to_types: dict[str, str]) -> list[TableRowsFormat]:
@@ -111,7 +108,6 @@ class SearchMiddleware:
         table: Optional[str] = None,
         view: Optional[str] = None,
         sample: bool = -1,
-        use_logical_column_names: bool = False,
         include_dtype_mapping: bool = False,
     ) -> TableRowsFormat:
         """
@@ -196,7 +192,6 @@ class SearchMiddleware:
             guid = d[0]["id"]
 
         log.debug(f"executing search on guid {guid}\n\n{query}\n")
-        data_types = {}
         data = []
         offset = 0
 
@@ -204,7 +199,7 @@ class SearchMiddleware:
             r = self.ts.api.v1.search_data(
                 query_string=query,
                 data_source_guid=guid,
-                format_type="COMPACT",
+                format_type="FULL",
                 batchsize=sample,
                 offset=offset,
             )
@@ -232,14 +227,17 @@ class SearchMiddleware:
                 )
 
         # Get the data types
-        column_name = "referenced_column_name" if use_logical_column_names else "name"
-        data_types = {column[column_name]: column["data_type"] for column in d["columnDetails"]}
+        if "columnDetails" in d:  # DEV NOTE: Not available until 9.10.0
+            data_types = {column["name"]: column["data_type"] for column in d["columnDetails"]}
+        else:
+            r = self.ts.api.v1.metadata_details(metadata_type="LOGICAL_TABLE", guids=[guid])
+            data_types = {c["header"]["name"]: c["dataType"] for c in r.json()["storables"][0]["columns"]}
 
         # Remap column names based on the desired column state
         d["columnNames"] = list(data_types.keys())
 
         # Cleanups
-        data = _to_records(columns=d["columnNames"], rows=data)
+        data = _fix_for_scal_101507(data)
         data = _cast(data, headers_to_types=data_types)
 
         return (data, data_types) if include_dtype_mapping else data  # type: ignore

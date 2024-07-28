@@ -136,7 +136,33 @@ def gather(
                 rich_console.error(f"could not get falcon table info {r}")
                 raise typer.Exit(1)
 
-            data = [models.FalconTableInfo.from_api_v1(_) for _ in r.json()["tables"]]
+            renamed = [
+                models.FalconTableInfo.validated_init(
+                    **{
+                        "table_guid": data["guid"],
+                        "ip": "all" if data.get("ip") == -1 else data.get("ip", "all"),
+                        "database_name": data.get("database"),
+                        "schema_name": data.get("schema"),
+                        "table_name": data.get("name"),
+                        "state": data.get("state"),
+                        "database_version": data.get("databaseVersion"),
+                        "serving_version": data.get("servingVersion"),
+                        "building_version": data.get("buildingVersion"),
+                        "build_duration_s": data.get("buildDuration"),
+                        "is_known": data.get("isKnown"),
+                        "database_status": data.get("databaseStatus"),
+                        "last_uploaded_at": data.get("lastUploadedAt", 0) / 1_000_000,
+                        "num_of_rows": data.get("numOfRows"),
+                        "approx_bytes_size": data.get("approxByteSize"),
+                        "uncompressed_bytes_size": data.get("uncompressedByteSize"),
+                        "row_skew": data.get("rowSkew"),
+                        "num_shards": data.get("numShards"),
+                        "csv_size_with_replication_mb": data.get("csvSizeWithReplicationMB"),
+                        "replicated": data.get("replicated"),
+                    }
+                ).model_dump()
+                for data in r.json()["tables"]
+            ]
 
         with tasks["dump_info"]:
-            syncer.dump("ts_falcon_table_info", data=data)
+            syncer.dump("ts_falcon_table_info", data=renamed)

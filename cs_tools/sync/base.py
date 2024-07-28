@@ -37,6 +37,9 @@ class PipRequirement(_GlobalModel):
         requirement, *args = data
         return {"requirement": Requirement(requirement), "pip_args": args}
 
+    def __str__(self) -> str:
+        return f"{self.requirement} {' '.join(self.pip_args)}"
+
 
 class SyncerManifest(_GlobalModel):
     name: str

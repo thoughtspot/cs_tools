@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+import datetime as dt
 import json
 import logging
 import pathlib
@@ -15,6 +16,20 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class SyncerEncoder(json.JSONEncoder):
+    """Allow encoding of time-like objects."""
+
+    def default(
+        self, obj: Any
+    ) -> Optional[Union[str, float, int]]:  # really, this is JSONType: https://stackoverflow.com/a/77361801
+        if isinstance(obj, (dt.datetime, dt.date)):
+            # ISO 8601 format
+            #       date = YYYY-MM-DD
+            #   datetime = YYYY-MM-DDTHH:MM:SS+HH:MM[:SS[.ffffff]]
+            return obj.isoformat()
+        return super().default(obj)
+
+
 class JSON(Syncer):
     """Interact with a JSON file."""
 
@@ -23,6 +38,7 @@ class JSON(Syncer):
 
     directory: Union[pydantic.DirectoryPath, pydantic.NewPath]
     encoding: Optional[Literal["UTF-8"]] = None
+    indentation: Optional[int] = None
 
     @pydantic.field_validator("directory", mode="after")
     @classmethod
@@ -35,6 +51,14 @@ class JSON(Syncer):
             value.mkdir(parents=True, exist_ok=True)
 
         return value
+
+    @pydantic.field_validator("indentation", mode="after")
+    @classmethod
+    def _ensure_clamped_1_to_10(cls, value: Optional[int]) -> Optional[int]:
+        if value is None or 1 <= value <= 10:
+            return value
+
+        raise ValueError("JSON indentation level must be within 1-10")
 
     def __repr__(self):
         return f"<JSONSyncer directory={self.directory.as_posix()}'>"
@@ -57,5 +81,11 @@ class JSON(Syncer):
             log.warning(f"no data to write to syncer {self}")
             return
 
-        text = json.dumps(data, ensure_ascii=True if self.encoding is None else False)
+        text = json.dumps(
+            data,
+            ensure_ascii=True if self.encoding is None else False,
+            cls=SyncerEncoder,
+            indent=self.indentation,
+        )
+
         self.make_filename(filename).write_text(text, encoding=self.encoding)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union
+import datetime as dt
 import logging
 
 from cs_tools.api import _utils
@@ -36,20 +37,44 @@ class RESTAPIv2:
     # AUTHENTICATION ::  https://developers.thoughtspot.com/docs/rest-api-getstarted#_authentication
     # ==================================================================================================================
 
-    def auth_session_login(
-        self, username: str, password: str, org_identifier: Optional[str] = None, remember_me: bool = False
-    ) -> httpx.Response:
-        body = {
-            "username": username,
-            "password": password,
-            "org_identifier": org_identifier,
-            "remember_me": remember_me,
-        }
-        r = self.request("POST", "api/rest/2.0/auth/session/login", json=body)
-        return r
+    # TO ENABLE + TRUSTED AUTH + BEARER TOKEN AUTH IN TS 10.0.0.cl
+    #
+    # def auth_session_login(
+    #     self, username: str, password: str, org_identifier: Optional[str] = None, remember_me: bool = False
+    # ) -> httpx.Response:
+    #     body = {
+    #         "username": username,
+    #         "password": password,
+    #         "org_identifier": org_identifier,
+    #         "remember_me": remember_me,
+    #     }
+    #     r = self.request("POST", "api/rest/2.0/auth/session/login", json=body)
+    #     return r
 
     def auth_session_user(self) -> httpx.Response:
         r = self.request("GET", "api/rest/2.0/auth/session/user")
+        return r
+
+    # ==================================================================================================================
+    # METADATA ::  https://developers.thoughtspot.com/docs/rest-apiv2-reference#_tags
+    # ==================================================================================================================
+
+    def logs_fetch(
+        self,
+        log_type: Literal["SECURITY_AUDIT"],
+        utc_start: dt.datetime,
+        utc_end: dt.datetime,
+    ) -> httpx.Response:
+        assert utc_start.tzinfo == dt.timezone.utc, f"'utc_start' must be a datetime in UTC, got {utc_start.tzinfo=}"
+        assert utc_end.tzinfo == dt.timezone.utc, f"'utc_end' must be a datetime in UTC, got {utc_end.tzinfo=}"
+        body = {
+            "log_type": log_type,
+            "start_epoch_time_in_millis": int(utc_start.timestamp() * 1000),
+            "end_epoch_time_in_millis": int(utc_end.timestamp() * 1000),
+            "get_all_logs": True,
+        }
+
+        r = self.request("POST", "/api/rest/2.0/logs/fetch", json=body)
         return r
 
     # ==================================================================================================================

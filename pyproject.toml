@@ -72,7 +72,7 @@ cli = [
     "pyreadline3 >= 3.4.1 ; sys_platform == 'win32'",
 
     # CLI
-    "promptique @ https://github.com/boonhapus/promptique/archive/v0.2.0.zip",
+    "prompt_toolkit >= 3.0.47",
     "typer >= 0.12.0",
 
     # WEB
@@ -126,6 +126,23 @@ strict_concatenate = true
 
 [tool.ruff]
 line-length = 120
+src = ["cs_tools", "tests"]
+exclude = [
+    "__pycache__",   # ignore compiled bytecode
+    ".venv*",        # ignore virtual environments
+    ".nox",          # ignore virtual environments
+
+    # project specific ignores
+    "__init__.py",       # ignore __init__.py
+    "__project__.py",    # ignore project metadata
+    "_compat.py",        # ignore compatibles
+    "const.py",          # ignore constants
+    "_bootstrapper.py",  # ignore bootstrapper
+    "noxfile.py",
+    "setup.py",
+]
+
+[tool.ruff.lint]
 select = [
     "A",     # flake8-builtins: https://pypi.org/project/flake8-builtins/
     "ARG",   # flake8-unused-arguments: https://pypi.org/project/flake8-unused-arguments/
@@ -149,22 +166,6 @@ ignore = [
     "TCH002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
     "TCH003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
 ]
-src = ["cs_tools", "tests"]
-exclude = [
-    "__pycache__",   # ignore compiled bytecode
-    ".venv*",        # ignore virtual environments
-    ".nox",          # ignore virtual environments
-
-    # project specific ignores
-    "__init__.py",       # ignore __init__.py
-    "__project__.py",    # ignore project metadata
-    "_compat.py",        # ignore compatibles
-    "const.py",          # ignore constants
-    "_bootstrapper.py",  # ignore bootstrapper
-    "noxfile.py",
-    "setup.py",
-]
-ignore-init-module-imports = true
 
 [tool.ruff.lint.flake8-import-conventions.aliases]
 # Declare the default aliases.

@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 import logging
 import pathlib
 
 from rich.live import Live
 from thoughtspot_tml import Table
 from thoughtspot_tml.utils import determine_tml_type
+import httpx
 import typer
 
+from cs_tools import _compat
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
@@ -23,6 +26,12 @@ log = logging.getLogger(__name__)
 
 
 app = CSToolsApp(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
+
+
+class FriendlyWindowEnd(_compat.StrEnum):
+    NOW = "NOW"
+    TODAY_START_UTC = "TODAY_START_UTC"
+    TODAY_START_LOCAL = "TODAY_START_LOCAL"
 
 
 @app.command(dependencies=[thoughtspot])
@@ -73,7 +82,7 @@ def deploy(
             connection_name: str = None
             dialect: str = None
 
-            if connection_guid == "falcon":
+            if connection_guid.lower() == "falcon":
                 dialect = "FALCON"
                 this_task.skip()
 
@@ -87,40 +96,44 @@ def deploy(
                 connection_name = info[0]["header"]["name"]
                 dialect = info[0]["type"]
 
-        # Care for UPPERCASE or lowercase identity convention in dialects
-        should_upper = "SNOWFLAKE" in dialect
-
         with tasks["customize_spotapp"]:
             here = pathlib.Path(__file__).parent
             tmls = []
+
+            # Care for UPPERCASE or lowercase identity convention in dialects
+            to_translate = str.upper if "SNOWFLAKE" in dialect else str.lower
+            is_falcon_db = "FALCON" in dialect
 
             for file in here.glob("**/*.tml"):
                 tml_cls = determine_tml_type(path=file)
                 tml = tml_cls.load(file)
 
                 if isinstance(tml, Table):
+                    # Enforce ThoughtSpot Metadata to be in UPPERCASE
+                    tml.table.name = tml.table.name.upper()
+
+                    # External database object name , this has to be specific.
                     tml.table.db = database
                     tml.table.schema = schema
-                    tml.table.db_table = tml.table.db_table.upper() if should_upper else tml.table.db_table.lower()
-                    tml.table.name = tml.table.name.upper() if should_upper else tml.table.name.lower()
+                    tml.table.db_table = to_translate(tml.table.db_table)
 
                     for column in tml.table.columns:
-                        column.db_column_name = (
-                            column.db_column_name.upper() if should_upper else column.db_column_name.lower()
-                        )
+                        column.db_column_name = to_translate(column.db_column_name)
 
-                    if dialect != "FALCON":
-                        tml.table.connection.name = connection_name
-                        tml.table.connection.fqn = connection_guid
+                    # Set the connection attribution if we're hitting an external database
+                    tml.table.connection.name = connection_name if not is_falcon_db else None
+                    tml.table.connection.fqn = connection_guid if not is_falcon_db else None
 
+                # fmt: off
                 # No need to replicate TS_BI_SERVER in Falcon, we'll use a Sage View instead.
-                falcon_and_table = dialect == "FALCON" and "TS_BI_SERVER.table.tml" in file.name
-                embrace_and_view = dialect != "FALCON" and "TS_BI_SERVER.view.tml" in file.name
+                falcon_and_table =     is_falcon_db and "TS_BI_SERVER.table.tml" in file.name
+                embrace_and_view = not is_falcon_db and "TS_BI_SERVER.view.tml"  in file.name
+                # fmt: on
 
                 if falcon_and_table or embrace_and_view:
                     continue
 
-                if dialect == "FALCON" and "TS_BI_SERVER.view.tml" in file.name:
+                if is_falcon_db and "TS_BI_SERVER.view.tml" in file.name:
                     tml.view.formulas[-1].expr = f"'{ts.session_context.thoughtspot.cluster_id}'"
 
                 tmls.append(tml)
@@ -147,6 +160,82 @@ def deploy(
                     info = f"import log..\n   {message}"
 
                 logger(f"{divider} [b blue]{r.name}[/] {divider} {info}")
+
+
+@app.command(dependencies=[thoughtspot], hidden=True)
+def audit_logs(
+    ctx: typer.Context,
+    syncer: DSyncer = typer.Option(
+        ...,
+        click_type=SyncerProtocolType(models=[models.AuditLogs]),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
+    last_k_days: int = typer.Option(1, help="how many days of audit logs to fetch", min=1, max=30),
+    window_end: FriendlyWindowEnd = typer.Option(FriendlyWindowEnd.NOW, help="how to track events through time"),
+):
+    """
+    Extract audit logs from your ThoughtSpot platform.
+
+    ThoughtSpot's retention policy for audit logs is 30 days.
+    """
+    ts = ctx.obj.thoughtspot
+
+    if window_end == "NOW":
+        utc_terminal_end = dt.datetime.now(tz=dt.timezone.utc)
+
+    if window_end == "TODAY_START_UTC":
+        utc_terminal_end = dt.datetime.now(tz=dt.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if window_end == "TODAY_START_LOCAL":
+        utc_terminal_end = (
+            dt.datetime.now(tz=dt.timezone.utc)
+            .astimezone(tz=ts.session_context.thoughtspot.tz)
+            .replace(hour=0, minute=0, second=0, microsecond=0)
+        )
+
+    renamed = []
+
+    for days_to_fetch in range(last_k_days):
+        utc_end = utc_terminal_end - dt.timedelta(days=days_to_fetch)
+        utc_start = utc_terminal_end - dt.timedelta(days=days_to_fetch + 1)
+
+        r = ts.api.v2.logs_fetch(log_type="SECURITY_AUDIT", utc_start=utc_start, utc_end=utc_end)
+
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            log.error(e.response.json())
+            continue
+
+        rows = r.json()
+
+        if not rows:
+            log.info(f"Found no data for NOW - {last_k_days} days ({utc_start} -> {utc_end})")
+            continue
+
+        for row in rows:
+            data = json.loads(row["log"])
+
+            renamed.append(
+                models.AuditLogs.validated_init(
+                    **{
+                        "cluster_guid": ts.session_context.thoughtspot.cluster_id,
+                        "org_id": data["orgId"],
+                        "sk_dummy": f"{ts.session_context.thoughtspot.cluster_id}-{data['id']}",
+                        "timestamp": row["date"],
+                        "log_type": data["type"],
+                        "user_guid": data["userGUID"],
+                        "description": data["desc"],
+                        "details": json.dumps(data["data"]),
+                    }
+                ).model_dump()
+            )
+
+    # CLUSTER BY --> TIMESTAMP .. everything else is irrelevant after TS.
+    renamed.sort(key=lambda r: (r["timestamp"], r["sk_dummy"]))
+
+    syncer.dump("ts_audit_logs", data=renamed)
 
 
 @app.command(dependencies=[thoughtspot])

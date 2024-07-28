@@ -30,5 +30,5 @@ def periscope_sage_combined_table_info(ts_client: httpx.Client) -> httpx.Respons
         # we override the callosum timeout to be 10mins in case we're on an unusually large cluster
         "callosumTimeout": MIN_WAIT_10,
     }
-    r = ts_client.get("periscope/sage/combinedtableinfo", params=p, timeout=MIN_WAIT_10)
+    r = ts_client.request(method="GET", endpoint="periscope/sage/combinedtableinfo", params=p, timeout=MIN_WAIT_10)
     return r

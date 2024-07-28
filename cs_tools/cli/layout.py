@@ -5,12 +5,13 @@ from typing import TYPE_CHECKING, Callable, NewType, Union
 import asyncio
 import datetime as dt
 
-from promptique import keys
-from promptique.keyboard import KeyboardListener, KeyPressContext
 from rich import box
 from rich.align import Align
 from rich.live import Live
 from rich.table import Table
+
+from cs_tools.cli.keyboard import keys
+from cs_tools.cli.keyboard.keyboard import KeyboardListener, KeyPressContext
 
 if TYPE_CHECKING:
     from rich.console import Console, RenderableType
@@ -199,12 +200,15 @@ class ConfirmationListener(KeyboardListener):
         else:
             await self.stop()
 
-    async def start(self) -> None:
+    async def start(self, **passthru) -> None:
         """Start a timer and kick off the background key loop."""
         self._timer_task = asyncio.create_task(self.timer())
-        await super().start()
+        await super().start(**passthru)
 
     async def stop(self, **passthru) -> None:
         """Ensure the timer gets cancelled."""
         self._timer_task.cancel()
         await super().stop(**passthru)
+
+        if self.response is None:
+            self.response = "N"

@@ -17,7 +17,12 @@ def compile_double(element, compiler, **kw):  # noqa: ARG001
 
 @compiles(Integer, "sqlite")
 def compile_int(element, compiler, **kw):  # noqa: ARG001
-    return "INT"
+    # DEV NOTE: @boonhapus, 2024/07/07
+    # We're going to be really lazy here.
+    #
+    # Could we dynamically route INT64 and INT32? Sure.
+    # Does it matter in practice for our data? No.
+    return "INT64"
 
 
 @compiles(String, "sqlite")

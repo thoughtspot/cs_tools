@@ -178,6 +178,13 @@ class ImportTMLFS(BaseTMLFileSystem):
     def __init__(self, path: pathlib.Path, logger: logging.Logger):
         super().__init__(path=path, log_for="import", logger=logger)
 
+        if not is_tmlfs(self.path):
+            raise CSToolsCLIError(
+                title=f"{self.path} is not a TML file system.",
+                reason="You can only import from a TML file system.",
+                mitigation="Verify the the directory is the root of a TML file system.",
+            )
+
     def load_tml(self, types: [TMLType] = None) -> list[TML]:
         """
         Returns TML that matches the types requested.  If no types are specified, then all TML will be returned.
