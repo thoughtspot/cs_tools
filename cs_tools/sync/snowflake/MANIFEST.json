@@ -2,10 +2,7 @@
     "name": "snowflake",
     "syncer_class": "Snowflake",
     "requirements": [
-        "setuptools",
-        "wheel",
         "cryptography",
-        "snowflake-connector-python < 4.0.0",
         "snowflake-sqlalchemy >= 1.6.1"
     ]
 }
