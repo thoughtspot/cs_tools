@@ -96,41 +96,31 @@ def deploy(
                 connection_name = info[0]["header"]["name"]
                 dialect = info[0]["type"]
 
-        # Care for UPPERCASE or lowercase identity convention in dialects
-        should_upper = "SNOWFLAKE" in dialect
-        is_falcon_db = "FALCON" in dialect
-
         with tasks["customize_spotapp"]:
             here = pathlib.Path(__file__).parent
             tmls = []
+
+            # Care for UPPERCASE or lowercase identity convention in dialects
+            to_translate = str.upper if "SNOWFLAKE" in dialect else str.lower
+            is_falcon_db = "FALCON" in dialect
 
             for file in here.glob("**/*.tml"):
                 tml_cls = determine_tml_type(path=file)
                 tml = tml_cls.load(file)
 
                 if isinstance(tml, Table):
-                    # Metadata name , this can be anything.
-                    tml.table.name = tml.table.name.upper() if should_upper or is_falcon_db else tml.table.name.lower()
+                    # Enforce ThoughtSpot Metadata to be in UPPERCASE
+                    tml.table.name = tml.table.name.upper()
 
                     # External database object name , this has to be specific.
                     tml.table.db = database
                     tml.table.schema = schema
-                    tml.table.db_table = tml.table.db_table.upper() if should_upper else tml.table.db_table.lower()
+                    tml.table.db_table = to_translate(tml.table.db_table)
 
-                    # External database.column name , this has to be specific.
                     for column in tml.table.columns:
-                        column.db_column_name = (
-                            column.db_column_name.upper() if should_upper else column.db_column_name.lower()
-                        )
+                        column.db_column_name = to_translate(column.db_column_name)
 
-                    # External database name in JOIN
-                    for join in tml.table.joins_with or []:
-                        source = tml.table.name.upper() if should_upper else tml.table.name.lower()
-                        destination = join.destination.name.upper() if should_upper else join.destination.name.lower()
-
-                        join.on = join.on.replace(tml.table.name, source).replace(join.destination.name, destination)
-                        join.destination.name = destination
-
+                    # Set the connection attribution if we're hitting an external database
                     tml.table.connection.name = connection_name if not is_falcon_db else None
                     tml.table.connection.fqn = connection_guid if not is_falcon_db else None
 
