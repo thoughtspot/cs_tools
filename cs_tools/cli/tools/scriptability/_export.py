@@ -49,7 +49,7 @@ def export(
 ):
     if guids and (tags or author or include_types or exclude_types or pattern):
         raise CSToolsCLIError(
-            title="GUID cannot be used with other filters.",
+            # title="GUID cannot be used with other filters.",
             reason="You can only specify GUIDs or a combination of other filters, such as author and tag.",
             mitigation=(
                 "Modify your parameters to have GUIDS or author/tag. Note that tags and author can be used together."

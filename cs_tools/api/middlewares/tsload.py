@@ -300,6 +300,8 @@ class TSLoadMiddleware:
 
         data = r.json()
 
+        log.info(f"Data load to Falcon initialization complete, cycle id: {data['cycle_id']}")
+
         if "node_address" in data:
             self._cache_fp.set_for(data["cycle_id"], redirect_info=data["node_address"])
 
@@ -310,21 +312,13 @@ class TSLoadMiddleware:
         log.info(f"{database}.{schema_}.{table} - {r.text}")
         r.raise_for_status()
 
-        r = self.ts.api.v1.dataservice_dataload_bad_records(cycle_id=data["cycle_id"])
-
-        if r.text:
-            log.info(r.text)
-            r.raise_for_status()
-
         r = self.ts.api.v1.dataservice_dataload_commit(cycle_id=data["cycle_id"])
         log.info(r.text)
         r.raise_for_status()
 
         return data["cycle_id"]
 
-    def status(
-        self, cycle_id: CycleID, *, ignore_node_redirect: bool = False, wait_for_complete: bool = False
-    ) -> dict[str, Any]:
+    def status(self, cycle_id: CycleID, *, wait_for_complete: bool = False) -> dict[str, Any]:
         """
         Get the status of a previously started data load.
 
@@ -340,9 +334,6 @@ class TSLoadMiddleware:
           poll the load server until it responds with OK or ERROR
         """
         self._check_privileges()
-
-        if not ignore_node_redirect:
-            self._check_for_redirect_auth(cycle_id=cycle_id)
 
         while True:
             r = self.ts.api.v1.dataservice_dataload_status(cycle_id=cycle_id)

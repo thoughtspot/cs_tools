@@ -81,11 +81,10 @@ def cli():
     )
     parser.add_argument(
         "--offline-mode",
-        metavar="DIRECTORY",
-        help="install cs_tools from a distributable directory instead of from remote",
+        help="install cs_tools from a local binary directory instead of from Github",
         dest="offline_mode",
-        type=cli_type_filepath,
-        default=None,
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
         "--proxy",
@@ -142,6 +141,10 @@ def cli():
 
     if args.proxy is not None:
         os.environ["HTTPS_PROXY"] = args.proxy
+    
+    if args.offline_mode:
+        import pathlib
+        args.offline_mode = pathlib.Path(__file__).parent
 
     try:
         venv = get_cs_tools_venv(find_links=args.offline_mode)
@@ -163,7 +166,7 @@ def cli():
             requires = "cs_tools[cli]"
 
             if args.offline_mode:
-                log.info("Using the offline binary found at {c}{fp}{x}".format(c=_PURPLE, fp=venv.find_links, x=_RESET))
+                log.info("Using the offline binary found at {c}{fp}{x}".format(c=_PURPLE, fp=venv.offline_directory, x=_RESET))
 
             elif args.dev:
                 log.info("Installing locally using the development environment.")
@@ -421,24 +424,6 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
         # feed the buffer into the file
         self.drain_buffer()
         super().emit(record)
-
-
-def cli_type_filepath(fp):
-    # type: (str) -> pathlib.Path
-    """
-    Converts a string to a pathlib.Path.
-    """
-    import pathlib
-
-    path = pathlib.Path(fp)
-
-    if not path.exists():
-        raise argparse.ArgumentTypeError("path '{fp}' does not exist".format(fp=path))
-
-    if path.is_file():
-        raise argparse.ArgumentTypeError("path must be a directory, got '{fp}'".format(fp=path))
-
-    return path
 
 
 def get_cs_tools_venv(find_links):

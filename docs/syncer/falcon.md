@@ -25,6 +25,11 @@ Falcon is __ThoughtSpot__'s proprietary in-memory database that exists as part o
 
     ---
 
+    - [ ] __wait_for_dataload_completion__{ .fc-blue }, _pause after loading data to check if it was successful_
+    <br />__default__{ .fc-gray }: `false` ( __allowed__{ .fc-green }: `true`, `false` )
+
+    ---
+
     - [ ] __ignore_load_balancer_redirect__{ .fc-blue }, _whether or not to redirect from the serving node_
     <br />__default__{ .fc-gray }: `false` ( __allowed__{ .fc-green }: `true`, `false` )
 

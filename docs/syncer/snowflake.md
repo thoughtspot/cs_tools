@@ -15,6 +15,8 @@ Instead of having a single, monolithic database, Snowflake separates the storage
     ---
 
     - [X] __account_name__{ .fc-red }, _your Snowflake [account identifier][snowflake-account-id]_
+    <br />___for most customers, this is your account name___{ .fc-green }
+    <br />___if you are using Privatelink, use the format `<account>.<region>.privatelink`___{ .fc-green }
 
     ---
 

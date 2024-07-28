@@ -192,6 +192,20 @@ class MetadataColumn(ValidatedSQLModel, table=True):
     def remove_leading_trailing_spaces(cls, value: Any) -> str:
         return None if value is None else value.strip()
 
+    @pydantic.field_validator("index_priority")
+    @classmethod
+    def clamp_1_to_10(cls, value: int, info: pydantic.ValidationInfo) -> int:
+        if 1 <= value <= 10:
+            return value
+
+        log.warning(
+            f"INDEX_PRIORITY is clamped between 1 and 10 in ThoughtSpot, though no validation occurs in the UI. The "
+            f"column '{info.data['column_name']}' has the value of {int(value):,}. "
+            f"[COLUMN {info.data['column_guid']} IN TABLE {info.data['object_guid']}]"
+        )
+
+        return max(1, min(10, value))
+
     @pydantic.field_validator("spotiq_preference", mode="before")
     @classmethod
     def cast_default_exclude_to_bool(cls, value: Any) -> bool:
@@ -254,8 +268,16 @@ class SharingAccess(ValidatedSQLModel, table=True):
     share_mode: str
 
 
-# class SecurityLogs(ValidatedSQLModel, table=True):
-#     __tablename__ = "ts_security_logs"
+class AuditLogs(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_audit_logs"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(0, primary_key=True)
+    sk_dummy: str = Field(primary_key=True)
+    timestamp: dt.datetime
+    log_type: str
+    user_guid: Optional[str]
+    description: str
+    details: str = Field(sa_column_kwargs={"comment": "JSON body of the Log Event"})
 
 
 class BIServer(ValidatedSQLModel, table=True):

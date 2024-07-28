@@ -191,16 +191,16 @@ def determine_editable_install() -> bool:
         try:
             site_directory = pathlib.Path(directory)
 
+            for path in site_directory.iterdir():
+                if not path.is_file():
+                    continue
+
+                if "__editable__.cs_tools" in path.as_posix():
+                    return True
+
         # not all distros will bundle python the same (eg. ubuntu-slim)
         except FileNotFoundError:
             continue
-
-        for path in site_directory.iterdir():
-            if not path.is_file():
-                continue
-
-            if "__editable__.cs_tools" in path.as_posix():
-                return True
 
     return False
 

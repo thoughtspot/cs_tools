@@ -4,6 +4,7 @@ from typing import Any
 import logging
 import pathlib
 
+import click
 import pydantic
 import sqlmodel
 import toml
@@ -67,12 +68,12 @@ class DSyncer(Dependency):
         if self.is_database_syncer:
             assert isinstance(self._syncer, base.DatabaseSyncer)
 
-            if exc_type is not None:
-                log.warning(f"Caught Exception, rolling back transaction: {exc_type}: {exc_value}")
-                self._syncer.session.rollback()
-            else:
+            if exc_type is None or isinstance(exc_value, (click.exceptions.Abort, click.exceptions.Exit)):
                 self._syncer.session.commit()
                 self._syncer.session.close()
+            else:
+                log.warning(f"Caught Exception, rolling back transaction: {exc_type}: {exc_value}")
+                self._syncer.session.rollback()
 
         return
 
