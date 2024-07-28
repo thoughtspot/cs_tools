@@ -126,6 +126,23 @@ strict_concatenate = true
 
 [tool.ruff]
 line-length = 120
+src = ["cs_tools", "tests"]
+exclude = [
+    "__pycache__",   # ignore compiled bytecode
+    ".venv*",        # ignore virtual environments
+    ".nox",          # ignore virtual environments
+
+    # project specific ignores
+    "__init__.py",       # ignore __init__.py
+    "__project__.py",    # ignore project metadata
+    "_compat.py",        # ignore compatibles
+    "const.py",          # ignore constants
+    "_bootstrapper.py",  # ignore bootstrapper
+    "noxfile.py",
+    "setup.py",
+]
+
+[tool.ruff.lint]
 select = [
     "A",     # flake8-builtins: https://pypi.org/project/flake8-builtins/
     "ARG",   # flake8-unused-arguments: https://pypi.org/project/flake8-unused-arguments/
@@ -148,21 +165,6 @@ ignore = [
     "TCH001",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
     "TCH002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
     "TCH003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
-]
-src = ["cs_tools", "tests"]
-exclude = [
-    "__pycache__",   # ignore compiled bytecode
-    ".venv*",        # ignore virtual environments
-    ".nox",          # ignore virtual environments
-
-    # project specific ignores
-    "__init__.py",       # ignore __init__.py
-    "__project__.py",    # ignore project metadata
-    "_compat.py",        # ignore compatibles
-    "const.py",          # ignore constants
-    "_bootstrapper.py",  # ignore bootstrapper
-    "noxfile.py",
-    "setup.py",
 ]
 ignore-init-module-imports = true
 
