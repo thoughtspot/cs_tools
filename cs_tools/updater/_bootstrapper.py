@@ -204,7 +204,7 @@ def cli():
             )
 
     except Exception:
-        pass
+        raise
 
     else:
         _cleanup()
@@ -255,7 +255,8 @@ def _setup_logging(verbose=True):
     import pathlib
     import tempfile
 
-    random_name = tempfile.NamedTemporaryFile().name
+    temp_fpname = tempfile.NamedTemporaryFile().name
+    random_name = pathlib.Path(temp_fpname).name
     random_path = pathlib.Path.cwd().joinpath("cs_tools-bootstrap-error-{n}.log".format(n=random_name))
 
     config = {
@@ -568,7 +569,7 @@ def main():
         log.debug("Error found: {err}".format(err=e), exc_info=True)
         log.warning(
             "Unexpected error in bootstrapper, see {b}{logfile}{x} for details..".format(
-                b=_BLUE, logfile=disk_handler.baseFilename, x=_RESET
+                b=_BLUE, logfile=disk_handler.baseFilename, x=_YELLOW
             )
         )
         return_code = 1

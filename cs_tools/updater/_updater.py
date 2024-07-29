@@ -198,7 +198,7 @@ class CSToolsVirtualEnvironment:
         # TODO: proxy = get from ENVVAR ?
         # required_general_args = (*required_general_args, "--proxy", "scheme://[user:passwd@]proxy.server:port")
 
-        if command == "install" and self.offline_directory is not None:
+        if command == "install" and self.offline_directory:
             # override incoming args
             # fmt: off
             args = (
