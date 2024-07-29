@@ -98,9 +98,10 @@ def run() -> int:
 
     try:
         return_code = app(standalone_mode=False)
+        return_code = 0 if return_code is None else return_code
 
-    except (click.Abort, typer.Abort):
-        return_code = 0
+    except (click.Abort, typer.Abort) as e:
+        return_code = getattr(e, "exit_code", 0)
         rich_console.print("[b yellow]Stopping -- cancelled by user..\n")
 
     except click.ClickException as e:
