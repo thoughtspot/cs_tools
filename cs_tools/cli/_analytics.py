@@ -3,12 +3,14 @@ Built-in Analytics to CS Tools.
 
 This file localizes all the analytics activities that CS Tools performs.
 """
+
 from __future__ import annotations
 
 from typing import Annotated, Any, Optional
 import datetime as dt
 import json
 import logging
+import os
 import platform
 import shutil
 import sysconfig
@@ -72,6 +74,10 @@ def prompt_for_opt_in() -> None:
     if meta.analytics.is_opted_in is not None:
         return
 
+    if meta.environment.is_ci:
+        log.info("Analytics is enabled for CI installs. Set CS_TOOLS_ANALYTICS_OPT_OUT to disable.")
+        return
+
     rich_console.print()
 
     prompt = Panel.fit(
@@ -102,6 +108,9 @@ def prompt_for_opt_in() -> None:
 
 def maybe_send_analytics_data() -> None:
     """If registered for analytics, regularly send information about the experience."""
+    if meta.environment.is_ci and meta.analytics.is_opted_in is None:
+        meta.analytics.is_opted_in = "CS_TOOLS_ANALYTICS_OPT_OUT" not in os.environ
+
     if not meta.analytics.is_opted_in or meta.environment.is_dev:
         return
 
