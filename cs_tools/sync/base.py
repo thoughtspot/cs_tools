@@ -72,12 +72,6 @@ class SyncerManifest(_GlobalModel):
 
         for pip_requirement in self.requirements:
             log.debug(f"Processing requirement: {pip_requirement}")
-
-            if cs_tools_venv.is_package_installed(pip_requirement.requirement.name):
-                log.debug("Requirement satisfied, no install necessary")
-                continue
-
-            log.info(f"Installing package: {pip_requirement}")
             cs_tools_venv.pip("install", f"{pip_requirement.requirement}", *pip_requirement.pip_args)
 
 
