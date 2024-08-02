@@ -207,11 +207,19 @@ def download(
     # add in the latest release
     frozen.add(f"cs_tools @ https://github.com/thoughtspot/cs_tools/archive/{release_tag}.zip")
 
+    # DESIRED OUTPUT
+    #
+    # Running command /usr/bin/python /tmp/pip-standalone-pip-ccumgmp2/__env_pip__.zip/pip install --ignore-installed --no-user --prefix /tmp/pip-build-env-dtapuowm/overlay --no-warn-script-location --no-binary :none: --only-binary :none: -i https://pypi.org/simple -- 'setuptools>=42' 'setuptools_scm[toml]>=6.2'
+    #
+
     # add packaging stuff since we'll use --no-deps
     frozen.add("pip >= 23.1")
     frozen.add("setuptools >= 42")
     frozen.add("setuptools_scm >= 6.2")
     frozen.add("wheel")
+    # rust-based build tools
+    frozen.add("semantic-version >= 2.10.0")
+    frozen.add("setuptools-rust >= 1.4.0")
     frozen.add("maturin >= 1, < 2")
 
     # fmt: off
