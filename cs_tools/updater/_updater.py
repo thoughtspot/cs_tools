@@ -250,6 +250,7 @@ class CSToolsVirtualEnvironment:
         self.run(python, "-m", "venv", self.venv_path.as_posix())
 
         # Ensure `pip` is at least V23.1 so that backjumping is available
+        self.python("-m", "ensurepip")
         self.pip("install", "pip >= 23.1", "--upgrade")
 
     def reset(self) -> None:
