@@ -57,24 +57,23 @@ def update(
     """
     Upgrade CS Tools.
     """
-    requires = ["cs_tools[cli]"]
-
     log.info("Determining if CS Tools is globally installed.")
     cs_tools_venv.check_if_globally_installed(remove=True)
 
     if offline is not None:
         log.info(f"Using the offline binary found at [b magenta]{offline}")
         cs_tools_venv.with_offline_mode(find_links=offline)
+        requires = ["cs_tools[cli]"]
 
     elif dev is not None:
         log.info("Installing locally using the development environment.")
-        requires.extend(f"-e {dev.as_posix()}".split(" "))
+        requires = [f"cs_tools[cli] -e {dev.as_posix()}"]
 
     else:
         log.info(f"Getting the latest CS Tools {'beta ' if beta else ''}release.")
         release = get_latest_cs_tools_release(allow_beta=beta)
         log.info(f"Found version: [b cyan]{release['tag_name']}")
-        requires.extend(f" @ https://github.com/thoughtspot/cs_tools/archive/{release['tag_name']}.zip".split(" "))
+        requires = [f"cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/{release['tag_name']}.zip"]
 
         if AwesomeVersion(release["tag_name"]) <= AwesomeVersion(__version__):
             log.info(f"CS Tools is [b green]already up to date[/]! (your version: {__version__})")
