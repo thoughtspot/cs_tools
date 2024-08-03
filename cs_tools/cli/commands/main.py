@@ -109,6 +109,7 @@ def run() -> int:
         this_run_data["is_known_error"] = True
         this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
         log.error(e)
+        log.debug("more info..", exc_info=True)
 
     except errors.CSToolsError as e:
         return_code = 1
