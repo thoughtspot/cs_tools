@@ -5,11 +5,14 @@ from rich.align import Align
 from rich.table import Table
 from typing import List
 import typer
+import logging
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import MultipleChoiceType
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.types import DeployPolicy, DeployType, GUID, MetadataIdentity
+
+log = logging.getLogger(__name__)
 
 app = CSToolsApp(
     name="branches",
@@ -18,20 +21,21 @@ app = CSToolsApp(
 )
 
 # consider moving to types.
-VALID_METADATA_COMMIT_TYPES = ["LOGICAL_TABLE", "PINBOARD_ANSWER_BOOK", "QUESTION_ANSWER_BOOK"]
+VALID_METADATA_COMMIT_TYPES = ["CONNECTION", "LOGICAL_TABLE", "PINBOARD_ANSWER_BOOK", "QUESTION_ANSWER_BOOK"]
 
 
 @app.command(dependencies=[thoughtspot], name="commit")
 def branches_commit(
-    ctx: typer.Context,
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    tag: str = typer.Option(None, help="the tag for metadata to commit"),
-    metadata_ids: str = typer.Option("", click_type=MultipleChoiceType(), help="the metadata GUIDs or names to commit"),
-    branch_name: str = typer.Option(
-        None, help="the branch name to use for the git repository (or use the default if not provided"
-    ),
-    comment: str = typer.Option(..., help="the comment to use for the commit"),
-    delete_aware: bool = typer.Option(False, help="deletes content that doesn't exist in TS from the repo"),
+        ctx: typer.Context,
+        org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+        tag: str = typer.Option(None, help="the tag for metadata to commit"),
+        metadata_ids: str = typer.Option([], click_type=MultipleChoiceType(),
+                                         help="the metadata GUIDs to commit"),
+        branch_name: str = typer.Option(
+            None, help="the branch name to use for the git repository (or use the default if not provided"
+        ),
+        comment: str = typer.Option(..., help="the comment to use for the commit"),
+        delete_aware: bool = typer.Option(False, help="deletes content that doesn't exist in TS from the repo"),
 ):
     """
     Commits from ThoughtSpot to a branch in a git repository.
@@ -60,24 +64,25 @@ def branches_commit(
             comment=comment,
             delete_aware=delete_aware,
         )
-    except HTTPStatusError as e:
-        rich_console.print(f"[b red]Error creating the configuration: {e.response}.")
-        rich_console.print(f"[b red]{e.response.content}.")
 
-    rich_console.print(r.json())
+        rich_console.print(r.json())
+    except HTTPStatusError as e:
+        log.error(f"[b red]Error creating the configuration: {e.response}.")
+        log.error(f"[b red]{e.response.content}.")
+        raise typer.Exit(1)
 
 
 @app.command(dependencies=[thoughtspot], name="search-commits")
 def commits_search(
-    ctx: typer.Context,
-    metadata_id: str = typer.Argument(..., help="the metadata GUID or name to search for"),
-    metadata_type: str = typer.Argument(
-        ..., help=f"the metadata type to search for: {', '.join(VALID_METADATA_COMMIT_TYPES)}"
-    ),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    branch_name: str = typer.Option(None, help="the branch name to use for the git repository or use the default"),
-    record_offset: int = typer.Option(0, help="the record offset to use"),
-    record_size: int = typer.Option(-1, help="the record size to use"),
+        ctx: typer.Context,
+        metadata_id: str = typer.Argument(..., help="the metadata GUID or name to search for"),
+        metadata_type: str = typer.Argument(
+            ..., help=f"the metadata type to search for: {', '.join(VALID_METADATA_COMMIT_TYPES)}"
+        ),
+        org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+        branch_name: str = typer.Option(None, help="the branch name to use for the git repository or use the default"),
+        record_offset: int = typer.Option(0, help="the record offset to use"),
+        record_size: int = typer.Option(-1, help="the record size to use"),
 ):
     """
     Searches for the commits for the given metadata ID.
@@ -95,23 +100,26 @@ def commits_search(
             record_offset=record_offset,
             record_size=record_size,
         )
-    except HTTPStatusError as e:
-        rich_console.print(f"[b red]Error finding commits for  {metadata_id}: {e}.")
-        rich_console.print(f"[b red]{e.response.content}.")
 
-    rich_console.print(r.json())
+        r.raise_for_status()
+        rich_console.print(r.json())
+    except HTTPStatusError as e:
+        log.error(f"[b red]Error finding commits for  {metadata_id}: {e}.")
+        log.error(f"[b red]{e.response.content}.")
+        typer.Exit(1)
 
 
 @app.command(dependencies=[thoughtspot], name="revert-commit")
 def commit_revert(
-    ctx: typer.Context,
-    commit_id: str = typer.Argument(..., help="the commit ID to revert (found on GitHub)"),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    metadata_ids: str = typer.Option(
-        None, click_type=MultipleChoiceType(), help="the metadata GUIDs or names to revert"
-    ),
-    revert_policy: str = typer.Option("ALL_OR_NONE", help="the revert policy to use, either PARTIAL or ALL_OR_NONE"),
-    branch_name: str = typer.Option(None, help="the branch name to use for the git repository or use the default"),
+        ctx: typer.Context,
+        commit_id: str = typer.Argument(..., help="the commit ID to revert (found on GitHub)"),
+        org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+        metadata_ids: str = typer.Option(
+            None, click_type=MultipleChoiceType(), help="the metadata GUIDs or names to revert"
+        ),
+        revert_policy: str = typer.Option("ALL_OR_NONE",
+                                          help="the revert policy to use, either PARTIAL or ALL_OR_NONE"),
+        branch_name: str = typer.Option(None, help="the branch name to use for the git repository or use the default"),
 ):
     """
     Reverts a commit in a git repository.
@@ -139,19 +147,20 @@ def commit_revert(
             branch_name=branch_name,
             revert_policy=revert_policy,
         )
-    except HTTPStatusError as e:
-        rich_console.print(f"[b red]Error reverting commit {commit_id}: {e.response}.")
-        rich_console.print(f"[b red]{e.response.content}.")
 
-    rich_console.print(r.json())
+        rich_console.print(r.json())
+    except HTTPStatusError as e:
+        log.error(f"[b red]Error reverting commit {commit_id}: {e.response}.")
+        log.error(f"[b red]{e.response.content}.")
+        typer.Exit(1)
 
 
 @app.command(dependencies=[thoughtspot], name="validate")
 def branches_validate(
-    ctx: typer.Context,
-    source_branch: str = typer.Argument(..., help="the source branch to use"),
-    target_branch: str = typer.Argument(..., help="the target branch to use"),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+        ctx: typer.Context,
+        source_branch: str = typer.Argument(..., help="the source branch to use"),
+        target_branch: str = typer.Argument(..., help="the target branch to use"),
+        org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
 ):
     """
     Validates a branch in a git repository before merging.
@@ -172,13 +181,14 @@ def branches_validate(
 
 @app.command(dependencies=[thoughtspot], name="deploy")
 def branches_deploy(
-    ctx: typer.Context,
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    commit_id: str = typer.Option(None, help="the commit ID to deploy or none for latest"),
-    branch_name: str = typer.Option(None, help="the branch name to use, or default"),
-    deploy_type: str = typer.Option("DELTA", help="the deploy type to use, either DELTA or FULL"),
-    deploy_policy: str = typer.Option("ALL_OR_NONE", help="the deploy policy to use, either PARTIAL or ALL_OR_NONE"),
-    tags: list[str] = typer.Option([], help="one or more tags to add to the imported content"),
+        ctx: typer.Context,
+        org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+        commit_id: str = typer.Option(None, help="the commit ID to deploy or none for latest"),
+        branch_name: str = typer.Option(None, help="the branch name to use, or default"),
+        deploy_type: str = typer.Option("DELTA", help="the deploy type to use, either DELTA or FULL"),
+        deploy_policy: str = typer.Option("ALL_OR_NONE",
+                                          help="the deploy policy to use, either PARTIAL or ALL_OR_NONE"),
+        tags: list[str] = typer.Option([], help="one or more tags to add to the imported content"),
 ):
     """
     Pulls from a branch in a git repository to ThoughtSpot.
@@ -195,29 +205,32 @@ def branches_deploy(
             deploy_type=DeployType.full if deploy_type == "FULL" else DeployType.delta,
             deploy_policy=DeployPolicy.all_or_none if deploy_policy == "ALL_OR_NONE" else DeployPolicy.partial,
         )
+
+        # An OK response doesn't mean the content was successful.
+        r.raise_for_status()
+        results = r.json()
+
+        table = Table(title="Deploy Results", width=135)
+        table.add_column("File Name", width=25)
+        table.add_column("Status", width=10)
+        table.add_column("Message", width=100)
+
+        guids = []
+        for _ in results:
+            try:
+                guids.append(_["file_name"].split(".")[0])
+            except Exception as e:
+                log.error(f"[b red]Error getting GUID for {_['file_name']}:  {e}")
+            table.add_row(_["file_name"], _["status_code"], _["status_message"])
+
+        rich_console.print(Align.center(table))
+
+        _add_tags(ts=ts, objects=guids, tags=tags)
+
     except HTTPStatusError as e:
-        rich_console.print(f"[b red]Error deploying: {e}.")
-        rich_console.print(f"[b red]{e.response.content}.")
-
-    # An OK response doesn't mean the content was successful.
-    results = r.json()
-
-    table = Table(title="Deploy Results", width=135)
-    table.add_column("File Name", width=25)
-    table.add_column("Status", width=10)
-    table.add_column("Message", width=100)
-
-    guids = []
-    for _ in results:
-        try:
-            guids.append(_["file_name"].split(".")[0])
-        except Exception as e:
-            rich_console.print(f"[b red]Error getting GUID for {_['file_name']}:  {e}")
-        table.add_row(_["file_name"], _["status_code"], _["status_message"])
-
-    rich_console.print(Align.center(table))
-
-    _add_tags(ts=ts, objects=guids, tags=tags)
+        log.error(f"[b red]Error deploying: {e}.")
+        log.error(f"[b red]{e.response.content}.")
+        typer.Exit(1)
 
 
 def _add_tags(ts: thoughtspot.ThoughtSpot, objects: list[GUID], tags: list[str]) -> None:
@@ -237,5 +250,5 @@ def _add_tags(ts: thoughtspot.ThoughtSpot, objects: list[GUID], tags: list[str])
             try:
                 ts.api.v2.tags_assign(metadata=metadata, tag_identifiers=tags)
             except HTTPStatusError as e:
-                rich_console.error(f"Error adding tags {tags} for metadata {objects}. Error: {e}")
-
+                log.error(f"Error adding tags {tags} for metadata {objects}. Error: {e}")
+                typer.Exit(1)

@@ -6,11 +6,14 @@ from httpx import HTTPStatusError
 from rich.align import Align
 from rich.table import Table
 import typer
+import logging
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import MultipleChoiceType
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.types import GUID
+
+log = logging.getLogger(__name__)
 
 Identifier = Union[GUID, int, str]
 
@@ -23,19 +26,19 @@ app = CSToolsApp(
 
 @app.command(dependencies=[thoughtspot], name="create")
 def config_create(
-    ctx: typer.Context,
-    repository_url: str = typer.Option(..., help="the git repository to use"),
-    username: str = typer.Option(..., help="the username to use for the git repository"),
-    access_token: str = typer.Option(..., help="the access token to use for the git repository"),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    branch_names: str = typer.Option(
-        None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
-    ),
-    commit_branch_name: str = typer.Option(None, help="the default branch name to use for the git repository"),
-    enable_guid_mapping: bool = typer.Option(False, help="the enable guid mapping to use for the git repository"),
-    configuration_branch_name: str = typer.Option(
-        None, help="the branch name to use for configuration and GUID mappings."
-    ),
+        ctx: typer.Context,
+        repository_url: str = typer.Option(..., help="the git repository to use"),
+        username: str = typer.Option(..., help="the username to use for the git repository"),
+        access_token: str = typer.Option(..., help="the access token to use for the git repository"),
+        org_override: str = typer.Option(None, "--org", help="the context org to use, if any"),
+        branch_names: str = typer.Option(
+            None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
+        ),
+        commit_branch_name: str = typer.Option(None, help="the default branch name to use for the git repository"),
+        enable_guid_mapping: bool = typer.Option(False, help="the enable guid mapping to use for the git repository"),
+        configuration_branch_name: str = typer.Option(
+            None, help="the branch name to use for configuration and GUID mappings."
+        ),
 ):
     """
     Creates a configuration for a cluster or org.  An org can only have a single configuration.
@@ -62,33 +65,35 @@ def config_create(
             configuration_branch_name=configuration_branch_name,
         )
 
+        r.raise_for_status()
         _show_configs_as_table([r.json()], title="New Configuration Details")
 
     except HTTPStatusError as e:
         if e.response.status_code == 400 and "Repository already configured" in str(e.response.content):
             rich_console.print(
                 f'[bold yellow]Warning: There is already an configuration for "{org_override}".  '
-                f"Either update or delete the existing config and create.[/]"
+                f"Either update or delete the existing config and recreate.[/]"
             )
         else:
-            rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
-            rich_console.print(f"[bold red]{e.response.content}.[/]")
+            log.error(f"[bold red]Error creating the configuration: {e.response}.[/]")
+            log.error(f"[bold red]{e.response.content}.[/]")
+            typer.Exit(1)
 
 
 @app.command(dependencies=[thoughtspot], name="update")
 def config_update(
-    ctx: typer.Context,
-    username: str = typer.Option(None, help="the username to use for the git repository"),
-    access_token: str = typer.Option(None, help="the access token to use for the git repository"),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    branch_names: str = typer.Option(
-        None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
-    ),
-    commit_branch_name: str = typer.Option(None, help="the default branch name to use for commits"),
-    enable_guid_mapping: bool = typer.Option(True, help="the enable guid mapping to use for the git repository"),
-    configuration_branch_name: str = typer.Option(
-        None, help="the branch name to use for configuration and GUID mappings."
-    ),
+        ctx: typer.Context,
+        username: str = typer.Option(None, help="the username to use for the git repository"),
+        access_token: str = typer.Option(None, help="the access token to use for the git repository"),
+        org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+        branch_names: str = typer.Option(
+            None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
+        ),
+        commit_branch_name: str = typer.Option(None, help="the default branch name to use for commits"),
+        enable_guid_mapping: bool = typer.Option(True, help="the enable guid mapping to use for the git repository"),
+        configuration_branch_name: str = typer.Option(
+            None, help="the branch name to use for configuration and GUID mappings."
+        ),
 ):
     """
     Updates a configuration for a cluster or org.
@@ -109,18 +114,21 @@ def config_update(
             configuration_branch_name=configuration_branch_name,
         )
 
+        r.raise_for_status()
         _show_configs_as_table([r.json()], title="Updated Configuration Details")
 
     except HTTPStatusError as e:
-        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
-        rich_console.print(f"[bold red]{e.response.content}.[/]")
+        log.error(f"[bold red]Error creating the configuration: {e.response}.[/]")
+        log.error(f"[bold red]{e.response.content}.[/]")
+        typer.Exit(1)
 
 
 @app.command(dependencies=[thoughtspot], name="search")
 def config_search(
-    ctx: typer.Context,
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    org_ids: str = typer.Option(None, click_type=MultipleChoiceType(), help="The org IDs to get the configuration for"),
+        ctx: typer.Context,
+        org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+        org_ids: str = typer.Option(None, click_type=MultipleChoiceType(),
+                                    help="The org IDs to get the configuration for (default is all)"),
 ):
     """
     Searches for configurations.
@@ -137,15 +145,16 @@ def config_search(
         _show_configs_as_table(configs)
 
     except HTTPStatusError as e:
-        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
-        rich_console.print(f"[bold red]{e.response.content}.[/]")
+        log.error(f"[bold red]Error creating the configuration: {e.response}.[/]")
+        log.error(f"[bold red]{e.response.content}.[/]")
+        typer.Exit(1)
 
 
 @app.command(dependencies=[thoughtspot], name="delete")
 def config_delete(
-    ctx: typer.Context,
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    cluster_level: bool = typer.Option(False, help="the cluster level to use for the git repository"),
+        ctx: typer.Context,
+        org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+        cluster_level: bool = typer.Option(False, help="the cluster level to use for the git repository"),
 ):
     """
     Deletes a configuration for a cluster or org.
@@ -166,20 +175,20 @@ def config_delete(
         rich_console.print(f"[green]Deleted the configuration: {r}.[/]")
 
     except HTTPStatusError as e:
-        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
-        rich_console.print(f"[bold red]{e.response.content}.[/]")
+        log.error(f"[bold red]Error creating the configuration: {e.response}.[/]")
+        log.error(f"[bold red]{e.response.content}.[/]")
+        typer.Exit(1)
 
 
 def _show_configs_as_table(configs: list[dict], title: str = "Configuration Details"):
     """
     Show the configurations as a table.
     """
-    use_cnt = len(configs) > 1
+    if not configs:
+        rich_console.print("No configurations found.")
 
     for count, config in enumerate(configs):
-        title = f"{title} {count}" if use_cnt else title
-
-        table = Table(title=f"Configuration Details {count}", width=100)
+        table = Table(title=f"{title} ({config['org']['name']})", width=100)
 
         table.add_column("Property", width=25)
         table.add_column("Value", width=75)
