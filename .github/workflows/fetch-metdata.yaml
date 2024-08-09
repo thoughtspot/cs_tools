@@ -31,6 +31,9 @@ jobs:
 
       - name: Install a specific version of CS Tools
         run: python -m pip install -e .[cli]
+      
+      - name: Install Snowflake Syncer requirements
+        run: python -m pip install snowflake-sqlalchemy>=1.6.1 cryptography
 
       # --config ENV:   tells CS Tools to pull the information from environment variables.
       - name: Refresh Metadata from ThoughtSpot
