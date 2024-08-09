@@ -17,17 +17,7 @@ jobs:
       CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
       # CS_TOOLS_TEMP_DIR: ...
 
-      # LOAD_STRATEGY = TRUNCATE because Metadata is a current-state snapshot, and we employ an SCD 1 pattern.
-      DECLARATIVE_SYNCER_SYNTAX: >-
-        account_name=${{ secrets.SNOWFLAKE_ACCOUNT }}
-        &username=${{ secrets.SNOWFLAKE_USERNAME }}
-        &secret=${{ secrets.SNOWFLAKE_PASSWORD }}
-        &warehouse=${{ secrets.SNOWFLAKE_WAREHOUSE }}
-        &role=${{ secrets.SNOWFLAKE_ROLE }}
-        &database=${{ secrets.SNOWFLAKE_DATABASE }}
-        &schema=${{ secrets.SNOWFLAKE_SCHEMA }}
-        &authentication=basic
-        &load_strategy=TRUNCATE
+      DECLARATIVE_SYNCER_SYNTAX: account_name=${{ secrets.SNOWFLAKE_ACCOUNT }}&username=${{ secrets.SNOWFLAKE_USERNAME }}&secret=${{ secrets.SNOWFLAKE_PASSWORD }}&warehouse=${{ secrets.SNOWFLAKE_WAREHOUSE }}&role=${{ secrets.SNOWFLAKE_ROLE }}&database=${{ secrets.SNOWFLAKE_DATABASE }}&schema=${{ secrets.SNOWFLAKE_SCHEMA }}&authentication=basic
 
     runs-on: ubuntu-latest
     steps:
@@ -41,7 +31,10 @@ jobs:
 
       - name: Install a specific version of CS Tools
         run: python -m pip install -e .[cli]
+      
+      - name: Install Snowflake Syncer requirements
+        run: python -m pip install snowflake-sqlalchemy>=1.6.1 cryptography
 
       # --config ENV:   tells CS Tools to pull the information from environment variables.
       - name: Refresh Metadata from ThoughtSpot
-        run: "cs_tools tools searchable metadata --syncer 'snowflake://${{ env.DECLARATIVE_SYNCER_SYNTAX }}' --config ENV:"
+        run: "cs_tools tools searchable metadata --syncer 'snowflake://${{ env.DECLARATIVE_SYNCER_SYNTAX }}&load_strategy=TRUNCATE' --config ENV:"
