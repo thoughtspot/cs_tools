@@ -13,6 +13,7 @@ import io
 import itertools as it
 import json
 import logging
+import os
 import pathlib
 import site
 import threading
@@ -187,6 +188,9 @@ class ExceptedThread(threading.Thread):
 
 def determine_editable_install() -> bool:
     """Determine if the current CS Tools context is an editable install."""
+    if "FAKE_EDITABLE" in os.environ:
+        return True
+
     for directory in site.getsitepackages():
         try:
             site_directory = pathlib.Path(directory)
