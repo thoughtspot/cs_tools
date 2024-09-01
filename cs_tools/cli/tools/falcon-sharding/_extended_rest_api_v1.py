@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from cs_tools.api._rest_api_v1 import RESTAPIv1
+
 if TYPE_CHECKING:
     import httpx
 
 
-def periscope_sage_combined_table_info(ts_client: httpx.Client) -> httpx.Response:
+def periscope_sage_combined_table_info(ts_client: RESTAPIv1) -> httpx.Response:
     """
     The API call powers the Falcon Table Usage info.
 
