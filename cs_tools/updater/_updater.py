@@ -104,7 +104,7 @@ class CSToolsVirtualEnvironment:
         output = []
         errors = []
 
-        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, close_fds=False, **kwargs) as proc:
+        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, close_fds=False, encoding="utf-8", **kwargs) as proc:
             assert proc.stdout is not None
 
             for line_as_bytes in proc.stdout.readlines():
