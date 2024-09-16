@@ -47,7 +47,7 @@ dependencies = [
     "sqlmodel >= 0.0.16",
     "toml",
     "packaging",
-    "betterproto[compile] < 2.0.0b7",
+    "betterproto[compiler] < 2.0.0b7",
 
     # version specific
     "strenum >= 0.4.9; python_version < '3.11.0'",
