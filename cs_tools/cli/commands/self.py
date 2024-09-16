@@ -199,7 +199,7 @@ def download(
     log.info("Freezing existing virtual environment")
     frozen = {
         r
-        for r in cs_tools_venv.pip("freeze", "--quiet", visible_output=False).stdout.decode().split("\n")
+        for r in cs_tools_venv.pip("freeze", "--quiet", should_stream_output=False).stdout.decode().split("\n")
         if "cs_tools" not in r
     }
 

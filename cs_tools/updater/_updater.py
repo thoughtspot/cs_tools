@@ -98,41 +98,47 @@ class CSToolsVirtualEnvironment:
         return cs_tools_venv_dir.resolve()
 
     @staticmethod
-    def run(*args, raise_on_failure: bool = True, visible_output: bool = True, **kwargs) -> sp.CompletedProcess:
+    def run(*args, raise_on_failure: bool = True, should_stream_output: bool = True, **kwargs) -> sp.CompletedProcess:
         """Run a SHELL command."""
-        levels = {"ERROR": log.error, "WARNING": log.warning}
-        output = []
-        errors = []
+        final_stdout: list[str] = []
+        final_stderr: list[str] = []
 
-        with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, close_fds=False, encoding="utf-8", **kwargs) as proc:
-            assert proc.stdout is not None
+        # DEV NOTE @boonhapus, 2024/02/15
+        #   We want to capture and stream the output of the subprocess as it comes in,
+        #   so that the user doesn't think it's frozen.
+        #
+        popen_streaming_options = {
+            "stdout": sp.PIPE,
+            "stderr": sp.STDOUT,
+            "text": True,
+            "bufsize": 1,
+        }
 
-            for line_as_bytes in proc.stdout.readlines():
-                line = line_as_bytes.decode().strip()
-
-                if line.startswith(tuple(levels)):
-                    log_level, _, line = line.partition(": ")
-                    logger = levels[log_level]
-
+        with sp.Popen(args, **popen_streaming_options, encoding="utf-8", **kwargs) as proc:  # type: ignore[call-overload]
+            for line in iter(proc.stdout.readline, ""):
+                if line.startswith(("ERROR", "WARNING")):
+                    level, _, line = line.partition(": ")
+                    buffer = final_stderr
                 else:
-                    logger = log.info
+                    level = "INFO"
+                    buffer = final_stdout
 
-                if visible_output and line:
-                    logger(line)
+                if should_stream_output and line:
+                    log.log(level=getattr(logging, level), msg=line.strip())
 
-                output.append(line) if logger == log.info else errors.append(line)
+                buffer.append(line)
 
         if raise_on_failure and proc.returncode != 0:
             cmd = " ".join(arg.replace(" ", "") for arg in args)
             raise RuntimeError(f"Failed with exit code: {proc.returncode}\n\nPIP COMMAND BELOW\n{cmd}")
 
-        output_as_bytes = "\n".join(output).encode()
-        errors_as_bytes = "\n".join(errors).encode()
+        output_as_bytes = "\n".join(final_stdout).encode()
+        errors_as_bytes = "\n".join(final_stderr).encode()
         return sp.CompletedProcess(proc.args, proc.returncode, stdout=output_as_bytes, stderr=errors_as_bytes)
 
     def is_package_installed(self, package_name: str, with_system_python: bool = False) -> bool:
         """Check if a package is installed. This should be called only within CS Tools."""
-        cp = self.pip("list", "--format", "json", visible_output=False, with_system_python=with_system_python)
+        cp = self.pip("list", "--format", "json", should_stream_output=False, with_system_python=with_system_python)
 
         for installed in json.loads(cp.stdout.decode()):
             if installed["name"] == package_name:
