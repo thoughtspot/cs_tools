@@ -57,24 +57,23 @@ def update(
     """
     Upgrade CS Tools.
     """
-    requires = ["cs_tools[cli]"]
-
     log.info("Determining if CS Tools is globally installed.")
     cs_tools_venv.check_if_globally_installed(remove=True)
 
     if offline is not None:
         log.info(f"Using the offline binary found at [b magenta]{offline}")
         cs_tools_venv.with_offline_mode(find_links=offline)
+        requires = ["cs_tools[cli]"]
 
     elif dev is not None:
         log.info("Installing locally using the development environment.")
-        requires.extend(f"-e {dev.as_posix()}".split(" "))
+        requires = [f"cs_tools[cli] -e {dev.as_posix()}"]
 
     else:
         log.info(f"Getting the latest CS Tools {'beta ' if beta else ''}release.")
         release = get_latest_cs_tools_release(allow_beta=beta)
         log.info(f"Found version: [b cyan]{release['tag_name']}")
-        requires.extend(f" @ https://github.com/thoughtspot/cs_tools/archive/{release['tag_name']}.zip".split(" "))
+        requires = [f"cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/{release['tag_name']}.zip"]
 
         if AwesomeVersion(release["tag_name"]) <= AwesomeVersion(__version__):
             log.info(f"CS Tools is [b green]already up to date[/]! (your version: {__version__})")
@@ -200,18 +199,26 @@ def download(
     log.info("Freezing existing virtual environment")
     frozen = {
         r
-        for r in cs_tools_venv.pip("freeze", "--quiet", visible_output=False).stdout.decode().split("\n")
+        for r in cs_tools_venv.pip("freeze", "--quiet", should_stream_output=False).stdout.decode().split("\n")
         if "cs_tools" not in r
     }
 
     # add in the latest release
     frozen.add(f"cs_tools @ https://github.com/thoughtspot/cs_tools/archive/{release_tag}.zip")
 
+    # DESIRED OUTPUT
+    #
+    # Running command /usr/bin/python /tmp/pip-standalone-pip-ccumgmp2/__env_pip__.zip/pip install --ignore-installed --no-user --prefix /tmp/pip-build-env-dtapuowm/overlay --no-warn-script-location --no-binary :none: --only-binary :none: -i https://pypi.org/simple -- 'setuptools>=42' 'setuptools_scm[toml]>=6.2'
+    #
+
     # add packaging stuff since we'll use --no-deps
     frozen.add("pip >= 23.1")
     frozen.add("setuptools >= 42")
     frozen.add("setuptools_scm >= 6.2")
     frozen.add("wheel")
+    # rust-based build tools
+    frozen.add("semantic-version >= 2.10.0")
+    frozen.add("setuptools-rust >= 1.4.0")
     frozen.add("maturin >= 1, < 2")
 
     # fmt: off

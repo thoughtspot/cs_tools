@@ -194,6 +194,9 @@ def audit_logs(
             .replace(hour=0, minute=0, second=0, microsecond=0)
         )
 
+    # THOUGHTSPOT API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
+    everseen = set()
+
     renamed = []
 
     for days_to_fetch in range(last_k_days):
@@ -211,11 +214,17 @@ def audit_logs(
         rows = r.json()
 
         if not rows:
-            log.info(f"Found no data for NOW - {last_k_days} days ({utc_start} -> {utc_end})")
+            log.info(f"Found no data for [NOW - {days_to_fetch} DAYS] ({utc_start.date()} -> {utc_end.date()})")
             continue
 
         for row in rows:
             data = json.loads(row["log"])
+
+            # THOUGHTSPOT API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
+            if f"{ts.session_context.thoughtspot.cluster_id}-{data['id']}" in everseen:
+                continue
+
+            everseen.add(f"{ts.session_context.thoughtspot.cluster_id}-{data['id']}")
 
             renamed.append(
                 models.AuditLogs.validated_init(
@@ -313,7 +322,7 @@ def bi_server(
         with tasks["gather_search"]:
             data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
 
-            # SEARCH DATA API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
+            # THOUGHTSPOT API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
             data = [dict(t) for t in {tuple(sorted(d.items())) for d in data}]
 
             # CLUSTER BY --> TIMESTAMP .. everything else is irrelevant after TS.

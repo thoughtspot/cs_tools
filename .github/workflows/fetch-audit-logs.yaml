@@ -1,0 +1,41 @@
+name:
+  Extract Audit Logs with CS Tools.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs every day at 5:10 AM UTC
+    - cron: "10 5 * * *"
+
+jobs:
+  extract_data_from_thoughtspot:
+
+    # Configure Environment Variables for CS Tools configuration
+    env:
+      CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
+      CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
+      CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
+      # CS_TOOLS_TEMP_DIR: ...
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository main branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install a specific version of CS Tools
+        run: python -m pip install -e .[cli]
+      
+      - name: Install Syncer dependencies for Snowflake
+        run: python -m pip install "snowflake-connector-python < 4.0.0"
+
+      - name: Install Syncer dependencies for Snowflake SQLAlchemy
+        run: python -m pip install "snowflake-sqlalchemy >= 1.5.1 , < 1.6.0" --no-deps
+
+      # --config ENV:   tells CS Tools to pull the information from environment variables.
+      - name: Grab N-7 days of Audit Logs Data
+        run: "cs_tools tools searchable audit-logs --last-k-days 7 --syncer '${{ secrets.SYNCER_DECLARATIVE_UPSERT }}' --config ENV:"

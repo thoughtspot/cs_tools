@@ -125,7 +125,7 @@ class Databricks(DatabaseSyncer):
 
         table = self.metadata.tables[f"{self.schema_}.{tablename}"]
 
-        if self.load_strategy == "APPEND"
+        if self.load_strategy == "APPEND":
             if self.use_experimental_dataload:
                 stage = self.stage_and_put(tablename=tablename, data=data)
                 self.copy_into(from_=stage, into=tablename)

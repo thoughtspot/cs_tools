@@ -3,6 +3,7 @@ Settings describe configurations that are submitted to system like ThoughtSpot.
 
 This is the supply-side of information which determines the runtime environment.
 """
+
 from __future__ import annotations
 
 from typing import Annotated, Any, Optional, Union
@@ -270,10 +271,10 @@ class ThoughtSpotConfiguration(_GlobalSettings):
         netloc = data.host
 
         if data.scheme == "http" and data.port != 80:
-            netloc += str(data.port)
+            netloc += f":{data.port}"
 
         if data.scheme == "https" and data.port != 443:
-            netloc += str(data.port)
+            netloc += f":{data.port}"
 
         return f"{data.scheme}://{netloc}"
 
