@@ -98,9 +98,10 @@ def run() -> int:
 
     try:
         return_code = app(standalone_mode=False)
+        return_code = 0 if return_code is None else return_code
 
-    except (click.Abort, typer.Abort):
-        return_code = 0
+    except (click.exceptions.Abort, click.exceptions.Exit, typer.Abort, typer.Exit) as e:
+        return_code = getattr(e, "exit_code", 0)
         rich_console.print("[b yellow]Stopping -- cancelled by user..\n")
 
     except click.ClickException as e:
@@ -108,6 +109,7 @@ def run() -> int:
         this_run_data["is_known_error"] = True
         this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
         log.error(e)
+        log.debug("more info..", exc_info=True)
 
     except errors.CSToolsError as e:
         return_code = 1
