@@ -429,7 +429,7 @@ def metadata(
         log.warning("Searchable is meant to be run from an Admin-level context, your results may vary..")
 
     table = layout.Table(data=[[str(org)] + [":popcorn:"] * 8 for org in orgs])
-    temp_sync = CSV(directory=ts.config.temp_dir, empty_as_null=True, save_strategy="APPEND")
+    temp_sync = CSV(directory=ts.config.temp_dir, empty_as_null=True, save_strategy="APPEND", quoting="ALL")
 
     # Orgs have the potential for having limited data, let's be less noisy.
     logger = logging.getLogger("cs_tools.sync.csv.syncer")
