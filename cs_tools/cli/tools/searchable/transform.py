@@ -214,9 +214,9 @@ def to_data_source(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
                 continue
 
             ever_seen.add((model.cluster_guid, str(model.org_id), model.data_source_guid))
-            out.append(model)
+            out.append(model.model_dump())
 
-    return [model.model_dump() for model in out]
+    return out
 
 
 def to_metadata_object(data: ArbitraryJsonFormat, cluster: str, ever_seen: set[tuple[str, ...]]) -> TableRowsFormat:
