@@ -46,12 +46,14 @@ class SyncerManifest(_GlobalModel):
     syncer_class: str
     requirements: list[PipRequirement] = []  # noqa: RUF012
 
+    __syncer_name__: Optional[str] = None
+
     def import_syncer_class(self, fp: pathlib.Path) -> type[Syncer]:
         __name__ = f"cs_tools_{fp.parent.stem}_syncer"  # noqa: A001
         __file__ = fp
         __path__ = [fp.parent.as_posix()]
 
-        self.__ensure_pip_requirements__()
+        self.__ensure_pip_requirements__(__syncer_name__=fp.parent.stem)
         spec = importlib.util.spec_from_file_location(__name__, __file__, submodule_search_locations=__path__)
 
         if spec is None or spec.loader is None:
@@ -65,14 +67,20 @@ class SyncerManifest(_GlobalModel):
         spec.loader.exec_module(module)
         return getattr(module, self.syncer_class)
 
-    def __ensure_pip_requirements__(self) -> None:
+    def __ensure_pip_requirements__(self, __syncer_name__: str) -> None:
         """Parse the SyncerManifest and install requirements."""
         if utils.determine_editable_install():
+            return
+
+        if __syncer_name__ in _registry:
             return
 
         for pip_requirement in self.requirements:
             log.debug(f"Processing requirement: {pip_requirement}")
             cs_tools_venv.pip("install", f"{pip_requirement.requirement}", *pip_requirement.pip_args)
+
+        # Registration is successful, we can add it to the global now.
+        _registry.add(__syncer_name__)
 
 
 class Syncer(_GlobalSettings):
@@ -95,14 +103,7 @@ class Syncer(_GlobalSettings):
         if cls.__manifest_path__ is None or cls.__syncer_name__ is None:
             raise NotImplementedError("Syncers must implement both '__syncer_name__' and '__manifest_path__'")
 
-        # Skip attempting to install packages if we've already seen this impl.
-        if cls.__syncer_name__ in _registry:
-            return
-
         cls.__init__ = ft.partialmethod(cls.__lifecycle_init__, __original_init__=cls.__init__)  # type: ignore
-
-        # Registration is successful, we can add it to the global now.
-        _registry.add(cls.__syncer_name__)
 
     def __lifecycle_init__(child_self, *a, __original_init__, **kw):
         """Hook into __init__ so we can call our own post-init function."""
