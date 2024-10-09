@@ -525,6 +525,7 @@ def http_request(url, to_json=True, timeout=None):
     
     if r.status >= 400:
         log.error("Something went wrong when requesting: {u}".format(u=url))
+        log.debug(data)
         raise urllib.error.HTTPError(url=url, code=r.status, msg="HTTP Error", hdrs=r.headers, fp=r)
 
     if not data:
