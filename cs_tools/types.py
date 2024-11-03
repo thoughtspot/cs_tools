@@ -51,7 +51,7 @@ class MetadataObjectSubtype(StrEnum):
 
 
 class MetadataCategory(StrEnum):
-    all = "ALL"  # noqa: A003
+    all = "ALL"
     my = "MY"
     favorite = "FAVORITE"
     requested = "REQUESTED"
@@ -116,6 +116,7 @@ class GroupPrivilege(StrEnum):
     can_administer_and_bypass_rls = "BYPASSRLS"
     cannot_create_or_delete_pinboards = "DISABLE_PINBOARD_CREATION"
     can_verify_liveboard = "LIVEBOARD_VERIFIER"
+    can_invoke_third_party_spotiq_analysis = "THIRDPARTY_ANALYSIS"
 
 
 class SharingVisibility(StrEnum):
@@ -172,6 +173,7 @@ class MetadataTypeV2(StrEnum):
 class MetadataIdentity(TypedDict):
     type: MetadataTypeV2
     identifier: MetadataIdentifier
+
 
 # ======================================================================================================================
 # CS Tools Middleware types
