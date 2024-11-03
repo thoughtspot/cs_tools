@@ -342,10 +342,13 @@ class TSLoadMiddleware:
             if not wait_for_complete:
                 break
 
+            if data["internal_stage"] in ("COMMITTING", "INGESTING"):
+                continue
+
             if data["internal_stage"] == "DONE":
                 break
 
-            if data["status"]["message"] != "OK":
+            if "code" in data["status"] and data["status"]["code"] != "OK":
                 break
 
             log.debug(f"data load status:\n{data}")

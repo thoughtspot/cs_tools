@@ -2,6 +2,7 @@
 This file contains code for the TML file system.  The TML file system is a structured file system for storing TML and
 related files.
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -33,6 +34,7 @@ class TMLType(StrEnum):
     sql_view = "sql_view"
     sqlview = "sqlview"
     worksheet = "worksheet"
+    model = "model"
     answer = "answer"
     liveboard = "liveboard"
     pinboard = "pinboard"
@@ -111,7 +113,9 @@ class BaseTMLFileSystem:
 
         # make sure the path already exists.
         if not self.path.exists():
-            raise CSToolsCLIError(title=f"Path {self.path} does not exist.", mitigation="Specify a valid path to the FS.")
+            raise CSToolsCLIError(
+                title=f"Path {self.path} does not exist.", mitigation="Specify a valid path to the FS."
+            )
 
         # create the log folder and file.
         log_name = f"{log_for}-{self.start_time.strftime('%Y.%m.%d-%H.%M.%S')}"

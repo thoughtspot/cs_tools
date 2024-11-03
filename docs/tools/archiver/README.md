@@ -31,23 +31,5 @@ holding references to all of these objects as well.
 === "archiver remove"
     ~cs~tools ../.. cs_tools tools archiver remove --help
 
----
-
-## Changelog
-
-!!! tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
-
-    === ":hammer_and_wrench: &nbsp; Added"
-        - `archiver.identify` can now ignore existing tags [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-    === ":wrench: &nbsp; Modified"
-        - input/output using syncers! [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-        - more sensible default parameters for identification
-
-??? info "Changes History"
-
-    ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-24"
-        === ":hammer_and_wrench: &nbsp; Added"
-            - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
 
 [contrib-boonhapus]: https://github.com/boonhapus

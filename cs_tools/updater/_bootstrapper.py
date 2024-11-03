@@ -506,6 +506,8 @@ def http_request(url, to_json=True, timeout=None):
     import json
     import ssl
     import urllib.request
+    import urllib.error
+    import urllib
 
     ctx = ssl.create_default_context()
 
@@ -520,12 +522,14 @@ def http_request(url, to_json=True, timeout=None):
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    with urllib.request.urlopen(url, timeout=timeout, context=ctx) as r:
-        data = r.read()
-    
-    if r.status >= 400:
+    try:
+        with urllib.request.urlopen(url, timeout=timeout, context=ctx) as r:
+            data = r.read()
+
+    except urllib.error.HTTPError:
         log.error("Something went wrong when requesting: {u}".format(u=url))
-        raise urllib.error.HTTPError(url=url, code=r.status, msg="HTTP Error", hdrs=r.headers, fp=r)
+        log.debug(data)
+        raise
 
     if not data:
         log.error("Something went wrong when requesting: {u}".format(u=url))

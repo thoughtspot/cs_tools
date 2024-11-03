@@ -36,26 +36,4 @@ with the returned cycle id and the `status` command.
 === "rtsload status"
     ~cs~tools ../.. cs_tools tools rtsload status --help
 
----
-
-## Changelog
-
-!!! tldr ":octicons-tag-16: v1.2.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
-
-    === ":wrench: &nbsp; Modified"
-        - input/output using syncers! [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-??? info "Changes History"
-
-    ??? tldr ":octicons-tag-16: v1.1.0 &nbsp; &nbsp; :material-calendar-text: 2021-11-08"
-        === ":hammer_and_wrench: &nbsp; Added"
-            - added many tsload flags [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-            - allow retrieval of bad records on failed data loads [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-    ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-22"
-        === ":hammer_and_wrench: &nbsp; Added"
-            - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
----
-
 [contrib-boonhapus]: https://github.com/boonhapus

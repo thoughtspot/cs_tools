@@ -10,10 +10,10 @@ import typer
 from cs_tools.api._utils import SYSTEM_USERS
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.layout import LiveTasks
+from cs_tools.cli.layout import ConfirmationListener, LiveTasks
 from cs_tools.cli.types import MetadataType, MultipleChoiceType, SyncerProtocolType
 from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.errors import CSToolsError, CSToolsCLIError
+from cs_tools.errors import CSToolsCLIError
 
 from . import layout, models, work
 
@@ -195,6 +195,63 @@ def rename(
 
     if failed:
         log.warning(f"[b yellow]Failed to update {len(failed)} Users\n" + "\n - ".join(failed))
+
+
+@app.command(dependencies=[thoughtspot])
+def delete(
+    ctx: typer.Context,
+    syncer: DSyncer = typer.Option(
+        ...,
+        click_type=SyncerProtocolType(models=models.USER_MODELS),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
+    deletion: str = typer.Option(..., help="directive to find usernames to sync at", rich_help_panel="Syncer Options"),
+):
+    """
+    Removes Users from ThoughtSpot.
+
+    Your syncer deletion directive (table name or filename, etc..) must follow at least the tabular format below.
+
+    \b
+        +----------------+
+        | username       |
+        +----------------+
+        | cs_tools       |
+        | namey.namerson |
+        | fake.user      |
+        +----------------+
+    """
+    ts = ctx.obj.thoughtspot
+
+    data = syncer.load(deletion)
+
+    if not data:
+        log.warning(f"No users found in {syncer.name} directive '{deletion}'")
+        raise typer.Exit(-1)
+
+    if not all(_.get("username") or _.get("user_guid") for _ in data):
+        log.warning(f"Users in {syncer.name} directive '{deletion}' must have an identifier (username or user_guid)")
+        raise typer.Exit(-1)
+
+    log.warning(f"Would you like to delete {len(data)} users? [b green]Y[/]es/[b red]N[/]o")
+    kb = ConfirmationListener(timeout=60)
+    kb.run()
+
+    if not kb.response.upper() == "Y":
+        log.info("Confirmation [b red]Denied[/] (no users will be deleted)")
+    else:
+        log.info("Confirmation [b green]Approved[/]")
+
+        for row in data:
+            user_identifier = row.get("username") or row.get("user_guid")
+            r = ts.api.v2.users_delete(user_identifier=user_identifier)
+
+            if r.status_code == httpx.codes.NO_CONTENT:
+                log.info(f"Deleted user '{user_identifier}'")
+            else:
+                log.warning(f"Could not delete user '{user_identifier}' (HTTP {r.status_code}), see logs for details..")
+                log.debug(r.text)
 
 
 @app.command(dependencies=[thoughtspot])

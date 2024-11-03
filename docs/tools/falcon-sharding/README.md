@@ -31,36 +31,4 @@ help guide you through the process.
 === "sharding-recommender deploy"
     ~cs~tools ../.. cs_tools tools falcon-sharding deploy --help
 
----
-
-## Changelog
-
-!!! tldr ":octicons-tag-16: v1.2.0 &nbsp; &nbsp; :material-calendar-text: 2022-04-28"
-
-    === ":hammer_and_wrench: &nbsp; Added"
-        - SpotApp parameters, customize the spot app to your specific ThoughtSpot instance
-
-    === ":wrench: &nbsp; Modified"
-        - input/output using syncers! [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-??? info "Changes History"
-
-    ??? tldr ":octicons-tag-16: v1.1.2 &nbsp; &nbsp; :material-calendar-text: 2021-11-09"
-        === ":wrench: &nbsp; Modified"
-            - `--save_path` is now `--export` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-            - `tml` is now `spotapp` [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-    ??? tldr ":octicons-tag-16: v1.1.1 &nbsp; &nbsp; :material-calendar-text: 2021-09-11"
-        === ":wrench: &nbsp; Modified"
-            - support for large clusters with API call batching [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-    ??? tldr ":octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-05-22"
-        === ":wrench: &nbsp; Modified"
-            - Migrated to new app structure [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-    ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2020-08-18"
-        === ":hammer_and_wrench: &nbsp; Added"
-            - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-[office-hours]: https://thoughtspotcs-officehours.youcanbook.me/
 [contrib-boonhapus]: https://github.com/boonhapus
