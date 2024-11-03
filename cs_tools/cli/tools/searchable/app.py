@@ -162,7 +162,7 @@ def deploy(
                 logger(f"{divider} [b blue]{r.name}[/] {divider} {info}")
 
 
-@app.command(dependencies=[thoughtspot], hidden=True)
+@app.command(dependencies=[thoughtspot])
 def audit_logs(
     ctx: typer.Context,
     syncer: DSyncer = typer.Option(
