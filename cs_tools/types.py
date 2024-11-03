@@ -51,7 +51,7 @@ class MetadataObjectSubtype(StrEnum):
 
 
 class MetadataCategory(StrEnum):
-    all = "ALL"  # noqa: A003
+    all = "ALL"
     my = "MY"
     favorite = "FAVORITE"
     requested = "REQUESTED"
@@ -116,6 +116,7 @@ class GroupPrivilege(StrEnum):
     can_administer_and_bypass_rls = "BYPASSRLS"
     cannot_create_or_delete_pinboards = "DISABLE_PINBOARD_CREATION"
     can_verify_liveboard = "LIVEBOARD_VERIFIER"
+    can_invoke_third_party_spotiq_analysis = "THIRDPARTY_ANALYSIS"
 
 
 class SharingVisibility(StrEnum):
@@ -173,6 +174,7 @@ class MetadataIdentity(TypedDict):
     type: MetadataTypeV2
     identifier: MetadataIdentifier
 
+
 # ======================================================================================================================
 # CS Tools Middleware types
 # ======================================================================================================================
@@ -185,6 +187,7 @@ class TMLSupportedContent(StrEnum):
     sql_view = "LOGICAL_TABLE"
     sqlview = "LOGICAL_TABLE"
     worksheet = "LOGICAL_TABLE"
+    model = "LOGICAL_TABLE"
     pinboard = "PINBOARD_ANSWER_BOOK"
     liveboard = "PINBOARD_ANSWER_BOOK"
     answer = "QUESTION_ANSWER_BOOK"
@@ -207,6 +210,7 @@ class TMLSupportedContent(StrEnum):
             ("LOGICAL_TABLE", "AGGR_WORKSHEET"): TMLSupportedContent.view,
             ("LOGICAL_TABLE", "SQL_VIEW"): TMLSupportedContent.sqlview,
             ("LOGICAL_TABLE", "WORKSHEET"): TMLSupportedContent.worksheet,
+            ("LOGICAL_TABLE", "MODEL"): TMLSupportedContent.model,
             ("PINBOARD_ANSWER_BOOK", ""): TMLSupportedContent.liveboard,
             ("QUESTION_ANSWER_BOOK", ""): TMLSupportedContent.answer,
         }
@@ -228,6 +232,7 @@ class TMLSupportedContentSubtype(StrEnum):
     sql_view = "SQL_VIEW"
     sqlview = "SQL_VIEW"
     worksheet = "WORKSHEET"
+    model = "MODEL"
     pinboard = ""
     liveboard = ""
     answer = ""

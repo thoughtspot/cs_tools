@@ -78,6 +78,15 @@ class RESTAPIv2:
         return r
 
     # ==================================================================================================================
+    # METADATA ::  https://developers.thoughtspot.com/docs/rest-apiv2-reference#_users
+    # ==================================================================================================================
+
+    def users_delete(self, user_identifier: Identifier) -> httpx.Response:
+        body = {"user_identifier": user_identifier}
+        r = self.request("POST", f"/api/rest/2.0/users/{user_identifier}/delete", json=body)
+        return r
+
+    # ==================================================================================================================
     # METADATA ::  https://developers.thoughtspot.com/docs/rest-apiv2-reference#_tags
     # ==================================================================================================================
 

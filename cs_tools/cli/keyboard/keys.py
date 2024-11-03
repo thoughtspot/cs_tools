@@ -53,7 +53,9 @@ class Key(pydantic.BaseModel, arbitrary_types_allowed=True, frozen=True):
         # Cache everything except paste key events, because the data will always be different.
         if self._is_pasted_characters:
             return self
-        return _known_keys_cache.setdefault(self.name, self)
+
+        _known_keys_cache.setdefault(self.name, self)
+        return self
 
     @classmethod
     def letter(cls, value: str) -> Key:

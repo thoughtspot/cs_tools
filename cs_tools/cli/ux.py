@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, Callable, Optional
 import contextlib
 import logging
@@ -16,6 +17,19 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 rich_console = Console()
+
+
+@contextlib.contextmanager
+def _pause_live_for_debugging() -> Generator[None, None, None]:
+    """Pause live updates for debugging."""
+    if rich_console._live is not None:
+        rich_console._live.stop()
+
+    yield
+
+    if rich_console._live is not None:
+        rich_console.clear()
+        rich_console._live.start(refresh=True)
 
 
 class CSToolsCommand(typer.core.TyperCommand):

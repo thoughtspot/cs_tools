@@ -204,7 +204,7 @@ liveboard:
       formulas:
       - id: Column Type (incl. DATE)
         name: Column Type (incl. DATE)
-        expr: "if ( [Data Type] in { 'date' , 'datetime' , 'timestamp' } ) then sql_string_op ( 'upper({0})' , 'date' ) else [Column Type]"
+        expr: "if ( [Data Type] in { 'date' , 'datetime', 'date_time' , 'timestamp' } ) then sql_string_op ( 'upper({0})' , 'date' ) else [Column Type]"
         was_auto_generated: false
       - id: Formulas
         name: Formulas
@@ -425,7 +425,7 @@ liveboard:
         was_auto_generated: false
       - id: Column Type (incl. DATE)
         name: Column Type (incl. DATE)
-        expr: "if ( [Data Type] in { 'date' , 'datetime' , 'timestamp' } ) then sql_string_op ( 'upper({0})' , 'date' ) else [Column Type]"
+        expr: "if ( [Data Type] in { 'date' , 'datetime' , 'date_time' , 'timestamp' } ) then sql_string_op ( 'upper({0})' , 'date' ) else [Column Type]"
         was_auto_generated: false
       search_query: "[Column] count [Column] [Dependent Interactions] [Is Formula (Pretty)] [Is Hidden (Pretty)] sort by [Column] [Answers] [Liveboards] [Is not Used] unique count [Dependent Author] [Column Type (incl. DATE)] [Worksheet].'(sample) retail - apparel' [Suggestions (Pretty)]"
       answer_columns:

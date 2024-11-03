@@ -39,23 +39,4 @@ are three command for remote TQL:
 === "rtql interactive"
     ~cs~tools ../.. cs_tools tools rtql interactive --help
 
----
-
-# Changelog
-
-!!! tldr ":octicons-tag-16: v1.0.2 &nbsp; &nbsp; :material-calendar-text: 2021-08-28"
-
-    === ":bug: &nbsp; Bugfix"
-        - tqlservice response uncaught error [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-??? info "Changes History"
-
-    ??? tldr ":octicons-tag-16: v1.0.1 &nbsp; &nbsp; :material-calendar-text: 2021-05-24"
-        === ":wrench: &nbsp; Modified"
-            - Handle `clear` in the Interactive TQL shell [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
-    ??? tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-05-22"
-        === ":hammer_and_wrench: &nbsp; Added"
-            - Initial release [@boonhapus][contrib-boonhapus]{ target='secondary' .external-link }.
-
 [contrib-boonhapus]: https://github.com/boonhapus

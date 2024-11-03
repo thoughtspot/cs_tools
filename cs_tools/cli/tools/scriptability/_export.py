@@ -148,6 +148,11 @@ def export(
                     )
                 )
 
+            except Exception as e:
+                log.error(f"Something went wrong went extracting {guid}, see logs for more details..")
+                log.debug(f"Full error: {e}", exc_info=True)
+                continue
+
     if results:
         _show_results_as_table(results=results)
     else:

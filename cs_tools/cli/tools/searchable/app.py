@@ -17,7 +17,7 @@ from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
 from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.sync.csv.syncer import CSV
+from cs_tools.sync.sqlite.syncer import SQLite
 from cs_tools.types import GUID, TMLImportPolicy
 
 from . import layout, models, transform
@@ -162,7 +162,7 @@ def deploy(
                 logger(f"{divider} [b blue]{r.name}[/] {divider} {info}")
 
 
-@app.command(dependencies=[thoughtspot], hidden=True)
+@app.command(dependencies=[thoughtspot])
 def audit_logs(
     ctx: typer.Context,
     syncer: DSyncer = typer.Option(
@@ -429,11 +429,12 @@ def metadata(
         log.warning("Searchable is meant to be run from an Admin-level context, your results may vary..")
 
     table = layout.Table(data=[[str(org)] + [":popcorn:"] * 8 for org in orgs])
-    temp_sync = CSV(directory=ts.config.temp_dir, empty_as_null=True, save_strategy="APPEND")
+    temp_sync = SQLite(
+        database_path=ts.config.temp_dir / "temp-data.db", models=models.METADATA_MODELS, load_strategy="UPSERT"
+    )
 
-    # Orgs have the potential for having limited data, let's be less noisy.
-    logger = logging.getLogger("cs_tools.sync.csv.syncer")
-    logger.setLevel("ERROR")
+    # Silence the intermediate logger.
+    logging.getLogger("cs_tools.sync.sqlite.syncer").setLevel(logging.CRITICAL)
 
     with Live(table, console=rich_console, auto_refresh=1):
         temp_sync.dump(models.Cluster.__tablename__, data=transform.to_cluster(ts.session_context))
@@ -505,8 +506,7 @@ def metadata(
                 for m in temp_sync.load(models.MetadataObject.__tablename__)
             }
             temp_sync.dump(
-                models.DataSource.__tablename__,
-                data=transform.to_data_source(content, cluster=cluster_uuid),
+                models.DataSource.__tablename__, data=transform.to_data_source(content, cluster=cluster_uuid)
             )
             temp_sync.dump(
                 models.MetadataObject.__tablename__,
@@ -561,14 +561,11 @@ def metadata(
 
             # GO TO NEXT ORG BATCH -->
 
-        # RESTORE CSV logger.level
-        logger.setLevel("DEBUG")
-
         # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
         is_syncer_initialized_as_db_truncate = syncer.is_database_syncer and syncer.load_strategy == "TRUNCATE"
 
         for model in models.METADATA_MODELS:
-            for idx, rows in enumerate(temp_sync.read_stream(filename=model.__tablename__, batch=1_000_000), start=1):
+            for idx, rows in enumerate(temp_sync.read_stream(tablename=model.__tablename__, batch=1_000_000), start=1):
                 if is_syncer_initialized_as_db_truncate:
                     syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
 

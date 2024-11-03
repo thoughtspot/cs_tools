@@ -5,7 +5,7 @@ import datetime as dt
 import logging
 
 from sqlalchemy.schema import Column
-from sqlalchemy.types import BigInteger, Text
+from sqlalchemy.types import TIMESTAMP, BigInteger, Text
 from sqlmodel import Field
 import pydantic
 
@@ -43,8 +43,8 @@ class User(ValidatedSQLModel, table=True):
     email: Optional[str]
     display_name: str
     sharing_visibility: str
-    created: dt.datetime
-    modified: dt.datetime
+    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     user_type: str
 
     @pydantic.field_validator("created", "modified", mode="before")
@@ -62,8 +62,8 @@ class Group(ValidatedSQLModel, table=True):
     description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     display_name: str
     sharing_visibility: str
-    created: dt.datetime
-    modified: dt.datetime
+    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     group_type: str
 
     @pydantic.field_validator("description", mode="before")
@@ -105,8 +105,8 @@ class Tag(ValidatedSQLModel, table=True):
     tag_guid: str = Field(primary_key=True)
     tag_name: str
     author_guid: str
-    created: dt.datetime
-    modified: dt.datetime
+    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     color: Optional[str]
 
     @pydantic.field_validator("created", "modified", mode="before")
@@ -143,8 +143,8 @@ class MetadataObject(ValidatedSQLModel, table=True):
     name: str = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     author_guid: str
-    created: dt.datetime
-    modified: dt.datetime
+    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     object_type: str
     object_subtype: Optional[str]
     data_source_guid: Optional[str]
@@ -236,8 +236,8 @@ class DependentObject(ValidatedSQLModel, table=True):
     name: str = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     author_guid: str
-    created: dt.datetime
-    modified: dt.datetime
+    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     object_type: str
     object_subtype: Optional[str]
     is_verified: Optional[bool]
@@ -273,7 +273,7 @@ class AuditLogs(ValidatedSQLModel, table=True):
     cluster_guid: str = Field(primary_key=True)
     org_id: int = Field(0, primary_key=True)
     sk_dummy: str = Field(primary_key=True)
-    timestamp: dt.datetime
+    timestamp: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     log_type: str
     user_guid: Optional[str]
     description: str
@@ -286,7 +286,7 @@ class BIServer(ValidatedSQLModel, table=True):
     sk_dummy: str = Field(primary_key=True)
     org_id: int = 0
     incident_id: str
-    timestamp: dt.datetime
+    timestamp: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     url: Optional[str]
     http_response_code: Optional[int]
     browser_type: Optional[str]

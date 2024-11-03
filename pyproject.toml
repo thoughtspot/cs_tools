@@ -47,7 +47,9 @@ dependencies = [
     "sqlmodel >= 0.0.16",
     "toml",
     "packaging",
-    "betterproto[compiler] >= 2.0.0b5 , < 2.0.0b7",
+
+    # TODO: https://github.com/thoughtspot/thoughtspot_tml/issues/24
+    "betterproto[compiler] == 2.0.0b6",
 
     # version specific
     "strenum >= 0.4.9; python_version < '3.11.0'",

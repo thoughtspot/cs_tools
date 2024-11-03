@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Union
 import logging
 import pathlib
@@ -52,18 +53,28 @@ class SQLite(DatabaseSyncer):
     #     self.session.execute("PRAGMA locking_mode = EXCLUSIVE;")
     #     self.session.execute("PRAGMA temp_store = MEMORY;")
 
+    def read_stream(self, tablename: str, *, batch: int = 100_000) -> Iterator[TableRows]:
+        """Read rows from a SQLite database."""
+        table = self.metadata.tables[tablename]
+
+        with self.session.execute(table.select()).yield_per(num=batch) as result:
+            for rows in result.partitions():
+                yield [row._asdict() for row in rows]
+
     # MANDATORY PROTOCOL MEMBERS
 
     def load(self, tablename: str) -> TableRows:
         """SELECT rows from SQLite."""
         table = self.metadata.tables[tablename]
-        rows = self.session.execute(table.select())
-        return [row.model_dump() for row in rows]
+        query = table.select()
+        result = self.session.execute(query)
+        rows = [row._asdict() for row in result.all()]
+        return rows
 
     def dump(self, tablename: str, *, data: TableRows) -> None:
         """INSERT rows into SQLite."""
         if not data:
-            log.warning(f"no data to write to syncer {self}")
+            log.warning(f"no '{tablename}' data to write to syncer {self}")
             return
 
         table = self.metadata.tables[tablename]

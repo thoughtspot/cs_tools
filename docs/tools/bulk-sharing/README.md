@@ -29,16 +29,4 @@ the appropriate security settings for those group-table combinations.
 === "bulk-sharing single"
     ~cs~tools ../.. cs_tools tools bulk-sharing single --help
 
----
-
-## Changelog
-
-
-!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2021-08-17"
-
-    === ":hammer_and_wrench: &nbsp; Added"
-        - Initial release from [@mishathoughtspot][contrib-misha]{ target='secondary' .external-link }.
-
----
-
 [contrib-misha]: https://github.com/MishaThoughtSpot
