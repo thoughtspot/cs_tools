@@ -8,6 +8,7 @@ This includes things that will change based on submitted user configuration.
 - Local Machine
 - User
 """
+
 from __future__ import annotations
 
 from typing import Annotated, Any, Optional, Union
@@ -37,6 +38,14 @@ class _GlobalModel(pydantic.BaseModel):
     """Global configuration."""
 
     model_config = pydantic.ConfigDict(**_COMMON_MODEL_CONFIG)
+
+    @pydantic.field_serializer("*", when_used="json")
+    @classmethod
+    def global_serialization_defaults(cls, v: Any):
+        # DATE[TIME]S AS ISO-8601 FORMATTED STRINGS.
+        if isinstance(v, (dt.datetime, dt.date)):
+            return v.isoformat()
+        return v
 
 
 class _GlobalSettings(pydantic_settings.BaseSettings):
