@@ -59,14 +59,6 @@ For more information see the
 === "git branches deploy --help"
     ~cs~tools ../.. cs_tools tools git branches deploy --help
 
-## Changelog
-
-!!! tldr ":octicons-tag-16: v1.0.0 &nbsp; &nbsp; :material-calendar-text: 2023-10-31 :jack_o_lantern:"
-    === ":hammer_and_wrench: &nbsp; Initial version"
-    - first release of the git tools with coverage for all calls.
-
----
-
 [keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new/choose
 [semver]: https://semver.org/spec/v2.0.0.html
