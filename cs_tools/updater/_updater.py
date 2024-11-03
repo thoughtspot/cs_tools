@@ -98,7 +98,9 @@ class CSToolsVirtualEnvironment:
         return cs_tools_venv_dir.resolve()
 
     @staticmethod
-    def run(*args, raise_on_failure: bool = True, should_stream_output: bool = True, **kwargs) -> sp.CompletedProcess:
+    def run(
+        *args, raise_on_failure: bool = True, should_stream_output: bool = True, base_log_level: str = "INFO", **kwargs
+    ) -> sp.CompletedProcess:
         """Run a SHELL command."""
         final_stdout: list[str] = []
         final_stderr: list[str] = []
@@ -120,7 +122,7 @@ class CSToolsVirtualEnvironment:
                     level, _, line = line.partition(": ")
                     buffer = final_stderr
                 else:
-                    level = "INFO"
+                    level = base_log_level
                     buffer = final_stdout
 
                 if should_stream_output and line:
