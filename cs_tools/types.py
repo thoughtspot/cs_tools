@@ -187,6 +187,7 @@ class TMLSupportedContent(StrEnum):
     sql_view = "LOGICAL_TABLE"
     sqlview = "LOGICAL_TABLE"
     worksheet = "LOGICAL_TABLE"
+    model = "LOGICAL_TABLE"
     pinboard = "PINBOARD_ANSWER_BOOK"
     liveboard = "PINBOARD_ANSWER_BOOK"
     answer = "QUESTION_ANSWER_BOOK"
@@ -209,6 +210,7 @@ class TMLSupportedContent(StrEnum):
             ("LOGICAL_TABLE", "AGGR_WORKSHEET"): TMLSupportedContent.view,
             ("LOGICAL_TABLE", "SQL_VIEW"): TMLSupportedContent.sqlview,
             ("LOGICAL_TABLE", "WORKSHEET"): TMLSupportedContent.worksheet,
+            ("LOGICAL_TABLE", "MODEL"): TMLSupportedContent.model,
             ("PINBOARD_ANSWER_BOOK", ""): TMLSupportedContent.liveboard,
             ("QUESTION_ANSWER_BOOK", ""): TMLSupportedContent.answer,
         }
@@ -230,6 +232,7 @@ class TMLSupportedContentSubtype(StrEnum):
     sql_view = "SQL_VIEW"
     sqlview = "SQL_VIEW"
     worksheet = "WORKSHEET"
+    model = "MODEL"
     pinboard = ""
     liveboard = ""
     answer = ""
