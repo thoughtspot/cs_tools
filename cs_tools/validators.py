@@ -1,6 +1,7 @@
 """
 Reusable validation logic.
 """
+
 from __future__ import annotations
 
 from typing import Annotated, Any
@@ -9,6 +10,8 @@ import uuid
 
 import awesomeversion
 import pydantic
+
+METHOD_CONFIG = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
 # =========================== VALIDATORS ======================================
 # - be decorated with PlainValidator or WrapValidator

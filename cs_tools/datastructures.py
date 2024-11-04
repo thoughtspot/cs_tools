@@ -109,33 +109,25 @@ class ThoughtSpotInfo(_GlobalModel):
     version: validators.CoerceVersion
     timezone: str
     is_cloud: bool
-    is_api_v2_enabled: bool = False
     is_roles_enabled: bool = False
     is_orgs_enabled: bool = False
-    notification_banner: Optional[types.ThoughtSpotNotificationBanner] = None
 
     @pydantic.model_validator(mode="before")
     @classmethod
     def check_if_from_session_info(cls, data: Any) -> Any:
-        if "__is_session_info__" in data:
-            config_info = data.get("configInfo")
+        returned = {
+            "url": data["__url__"],
+            "is_orgs_enabled": data["__is_orgs_enabled__"],
+            "is_roles_enabled": data.get("rolesEnabled", False),
+        }
 
-            data = {
-                "cluster_id": config_info["selfClusterId"],
-                "url": data["__url__"],
-                "version": data["releaseVersion"],
-                "timezone": data["timezone"],
-                "is_cloud": config_info.get("isSaas", False),
-                # DEV NOTE: @boonhapus, 2024/01/31
-                #   maybe we pick a ThoughtSpot version where V2 APIs are stable enough to switch to for the majority of
-                #   workflows instead?
-                "is_api_v2_enabled": config_info.get("tseRestApiV2PlaygroundEnabled", False),
-                "is_roles_enabled": config_info.get("rolesEnabled", False),
-                "is_orgs_enabled": data["__is_orgs_enabled__"],
-                "notification_banner": data.get("notificationBanner", None),
-            }
+        if "__system_info__" in data:
+            returned["cluster_id"] = data["__system_info__"]["id"]
+            returned["version"] = data["__system_info__"]["release_version"]
+            returned["timezone"] = data["__system_info__"]["timezone"]
+            returned["is_cloud"] = data["__system_info__"]["type"] == "SAAS"
 
-        return data
+        return returned
 
     @pydantic.field_validator("version", mode="before")
     @classmethod
