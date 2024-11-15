@@ -50,7 +50,7 @@ def format_datetime_values(row: dict[str, Any], *, dt_format: str = DATETIME_FOR
     return out
 
 
-def batched(prepared_statement, *, session: sa.orm.Session, data: TableRows, max_parameters: int = 999) -> None:
+def batched(prepared_statement, *, session: sa.orm.Session, data: TableRows, max_parameters: int = 999, **kw) -> None:
     """Split data across multiple transactions."""
     batchsize = min(5000, max_parameters // len(data[0]))
     rows = []
@@ -60,14 +60,14 @@ def batched(prepared_statement, *, session: sa.orm.Session, data: TableRows, max
 
         # Commit every so often.
         if row_number % batchsize == 0:
-            stmt = prepared_statement(rows)
+            stmt = prepared_statement(rows, **kw)
             session.execute(stmt)
             session.commit()
             rows = []
 
     # Final commit, grab the rest of the data rows.
     if rows:
-        stmt = prepared_statement(rows)
+        stmt = prepared_statement(rows, **kw)
         session.execute(stmt)
         session.commit()
 
