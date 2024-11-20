@@ -11,14 +11,15 @@ from thoughtspot_tml.utils import determine_tml_type
 import httpx
 import typer
 
-from cs_tools import _compat
+from cs_tools import _compat, utils
+from cs_tools.api import workflows
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.dependencies.syncer import DSyncer
 from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.sync.sqlite.syncer import SQLite
-from cs_tools.types import GUID, TMLImportPolicy
+from cs_tools.types import GUID
 
 from . import layout, models, transform
 
@@ -146,7 +147,7 @@ def deploy(
                 this_task.skip()
                 raise typer.Exit(0)
 
-            api_responses = ts.tml.to_import(tmls, policy=TMLImportPolicy.partial)
+            api_responses = ts.tml.to_import(tmls, policy="PARTIAL")
 
             for r in api_responses:
                 divider = "[dim bold white]>>[/]"
@@ -203,7 +204,8 @@ def audit_logs(
         utc_end = utc_terminal_end - dt.timedelta(days=days_to_fetch)
         utc_start = utc_terminal_end - dt.timedelta(days=days_to_fetch + 1)
 
-        r = ts.api.v2.logs_fetch(log_type="SECURITY_AUDIT", utc_start=utc_start, utc_end=utc_end)
+        c = ts.api.logs_fetch(utc_start=utc_start, utc_end=utc_end)
+        r = utils.run_sync(c)
 
         try:
             r.raise_for_status()
@@ -295,7 +297,8 @@ def bi_server(
     # DEV NOTE: @boonhapus
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
     if ts.session_context.thoughtspot.is_orgs_enabled:
-        ts.org.switch(org=0)
+        ts.config.thoughtspot.default_org = 0
+        ts.login()
 
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
@@ -320,7 +323,8 @@ def bi_server(
 
     with LiveTasks(tasks, console=rich_console) as tasks:
         with tasks["gather_search"]:
-            data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
+            coro = workflows.search(worksheet="TS: BI Server", query=SEARCH_TOKENS, http=ts.api)
+            data = utils.run_sync(coro)
 
             # THOUGHTSPOT API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
             data = [dict(t) for t in {tuple(sorted(d.items())) for d in data}]

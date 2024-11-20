@@ -11,12 +11,11 @@ This includes things that will change based on submitted user configuration.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional, Union
+from typing import Annotated, Any, Optional
 import datetime as dt
 import logging
 import platform
 import sys
-import uuid
 
 from awesomeversion import AwesomeVersion
 import pydantic
@@ -115,19 +114,18 @@ class ThoughtSpotInfo(_GlobalModel):
     @pydantic.model_validator(mode="before")
     @classmethod
     def check_if_from_session_info(cls, data: Any) -> Any:
-        returned = {
-            "url": data["__url__"],
-            "is_orgs_enabled": data["__is_orgs_enabled__"],
-            "is_roles_enabled": data.get("rolesEnabled", False),
-        }
-
         if "__system_info__" in data:
-            returned["cluster_id"] = data["__system_info__"]["id"]
-            returned["version"] = data["__system_info__"]["release_version"]
-            returned["timezone"] = data["__system_info__"]["timezone"]
-            returned["is_cloud"] = data["__system_info__"]["type"] == "SAAS"
+            data = {
+                "url": data["__url__"],
+                "is_orgs_enabled": data["__is_orgs_enabled__"],
+                "is_roles_enabled": data["__system_info__"].get("roles_enabled", False),
+                "cluster_id": data["__system_info__"]["id"],
+                "version": data["__system_info__"]["release_version"],
+                "timezone": data["__system_info__"]["time_zone"],
+                "is_cloud": data["__system_info__"]["type"] == "SAAS",
+            }
 
-        return returned
+        return data
 
     @pydantic.field_validator("version", mode="before")
     @classmethod
@@ -159,24 +157,24 @@ class LocalSystemInfo(_GlobalModel):
 class UserInfo(_GlobalModel):
     """Information about the logged in user."""
 
-    guid: uuid.UUID
+    guid: types.GUID
     username: str
     display_name: str
-    privileges: set[Union[types.GroupPrivilege, str]]
-    org_context: Optional[int]
-    email: Optional[pydantic.EmailStr] = None
+    privileges: set[types.GroupPrivilege | str]
+    org_context: int | None = None
+    email: pydantic.EmailStr | None = None
 
     @pydantic.model_validator(mode="before")
     @classmethod
     def check_if_from_session_info(cls, data: Any) -> Any:
-        if "__is_session_info__" in data:
+        if "__session_info__" in data:
             data = {
-                "guid": data["userGUID"],
-                "username": data["userName"],
-                "display_name": data["userDisplayName"],
-                "privileges": data["privileges"],
-                "org_context": data.get("currentOrgId", None),
-                "email": data.get("userEmail", None),
+                "guid": data["__session_info__"]["id"],
+                "username": data["__session_info__"]["name"],
+                "display_name": data["__session_info__"]["display_name"],
+                "privileges": data["__session_info__"]["privileges"],
+                "org_context": data["__session_info__"]["current_org"]["id"],
+                "email": data["__session_info__"]["email"],
             }
 
         return data

@@ -106,7 +106,7 @@ class CSToolsApp(typer.Typer):
 
         ctx_settings = passthru.pop("context_settings", None) or {}
         ctx_settings["help_option_names"] = ["--help", "-h"]
-        ctx_settings["obj"] = utils.State()
+        ctx_settings["obj"] = utils.GlobalState()
         ctx_settings["max_content_width"] = rich_console.width
         ctx_settings["token_normalize_func"] = lambda x: x.casefold()
         super().__init__(**passthru, context_settings=ctx_settings)

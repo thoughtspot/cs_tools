@@ -10,18 +10,31 @@ from cs_tools import _compat
 # ==========
 CSToolsStatusCode: TypeAlias = Literal[0, 1]
 
+# ==========
+# Data format types
+# ==========
+TableRowsFormat: TypeAlias = list[dict[str, str]]
 
 # ==========
 # ThoughtSpot common types
 # ==========
 GUID: TypeAlias = uuid.UUID
 Name: TypeAlias = str
+ObjectIdentifier = GUID | Name
 
 ImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY", "PARTIAL_OBJECTS_ONLY"]
 MetadataObject = Literal["LOGICAL_TABLE", "ANSWER", "LIVEBOARD"]
 SharingAccess = Literal["DEFINED", "EFFECTIVE"]
 
-ObjectIdentifier = GUID | Name
+# fmt: off
+InferredDataType = Literal[
+    "VARCHAR", "CHAR",
+    "DOUBLE", "FLOAT",
+    "BOOL",
+    "INT32", "INT64",
+    "DATE", "DATE_TIME", "TIMESTAMP",
+]
+# fmt: on
 
 
 class GroupPrivilege(_compat.StrEnum):

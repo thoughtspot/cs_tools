@@ -151,7 +151,7 @@ class ThoughtSpot:
 
         d = {
             "__url__": self.config.thoughtspot.url,
-            "__cluster_info__": __system_info__,
+            "__system_info__": __system_info__,
             "__session_info__": __session_info__,
             "__is_orgs_enabled__": utils.run_sync(self.api.get("callosum/v1/tspublic/v1/session/orgs")).is_success,
             **r.json(),

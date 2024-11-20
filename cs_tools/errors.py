@@ -133,18 +133,6 @@ class TSLoadServiceUnreachable(CSToolsCLIError):
     )
 
 
-class ContentDoesNotExist(CSToolsCLIError):
-    """Raised when ThoughtSpot can't find content by this name or guid."""
-
-    title = "No {type} found."
-
-
-class AmbiguousContentError(CSToolsCLIError):
-    """Raised when ThoughtSpot can't determine an exact content match."""
-
-    title = "Multiple {type}s found with the name [blue]{name}."
-
-
 class InsufficientPrivileges(CSToolsCLIError):
     """Raised when the User cannot perform an action."""
 

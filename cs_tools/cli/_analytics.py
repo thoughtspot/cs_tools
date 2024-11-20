@@ -191,7 +191,7 @@ class CommandExecution(ValidatedSQLModel, table=True):
     @pydantic.model_validator(mode="before")
     @classmethod
     def check_input_data_structure(cls, data: Any, info: pydantic.ValidationInfo) -> dict[str, Any]:
-        if info.context is utils.State:
+        if info.context is utils.GlobalState:
             _, _, tool_name_and_args = data["os_args"].partition(" tools ")
 
             if tool_name_and_args:

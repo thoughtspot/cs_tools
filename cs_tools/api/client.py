@@ -81,12 +81,12 @@ class RESTAPIClient(httpx.AsyncClient):
 
         while not self._heartbeat_task.done():
             try:
-                await self.request("GET", "callosum/v1/session/isActive")
+                await self.request("GET", "callosum/v1/session/isactive")
             except httpx.HTTPError as e:
                 extra = f"data:\n{e.response.text}" if isinstance(e, httpx.HTTPStatusError) else ""
                 log.debug(f"Heartbeat failed: {e} {extra}")
 
-            await asyncio.sleep(10)
+            await asyncio.sleep(30)
 
     async def __before_request__(self, request: httpx.Request) -> None:
         """
@@ -235,6 +235,20 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.get("api/rest/2.0/system", headers=options.pop("headers"))
 
     # ==================================================================================
+    # LOGS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_audit_logs
+    # ==================================================================================
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def logs_fetch(self, utc_start: dt.datetime, utc_end: dt.datetime, **options: Any) -> Awaitable[httpx.Response]:
+        """Gets security audit logs from the ThoughtSpot system."""
+        assert utc_start.tzinfo == dt.timezone.utc, "'utc_start' must be an aware datetime.datetime in UTC"
+        assert utc_end.tzinfo == dt.timezone.utc, "'utc_end' must be an aware datetime.datetime in UTC"
+        options["log_type"] = "SECURITY_AUDIT"
+        options["start_epoch_time_in_millis"] = int(utc_start.timestamp() * 1000)
+        options["end_epoch_time_in_millis"] = int(utc_end.timestamp() * 1000)
+        return self.post("api/rest/2.0/logs/fetch", json=options)
+
+    # ==================================================================================
     # METADATA :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_metadata
     # ==================================================================================
 
@@ -242,7 +256,9 @@ class RESTAPIClient(httpx.AsyncClient):
     @_transport.CachePolicy.mark_cacheable
     def metadata_search(self, guid: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot objects."""
-        options["metadata"] = [{"identifier": str(guid)}]
+        if "metadata" not in options:
+            options["metadata"] = [{"identifier": str(guid)}]
+
         options["include_headers"] = True
         return self.post("api/rest/2.0/metadata/search", headers=options.pop("headers"), json=options)
 
@@ -352,3 +368,16 @@ class RESTAPIClient(httpx.AsyncClient):
         """Get a list of Liveboard schedules."""
         options["metadata"] = [{"identifier": str(liveboard_guid)}]
         return self.post("api/rest/2.0/schedules/search", headers=options.pop("headers"), json=options)
+
+    # ==================================================================================
+    # DATA :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_data
+    # ==================================================================================
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def search_data(
+        self, logical_table_identifier: types.ObjectIdentifier, query_string: str, **options: Any
+    ) -> Awaitable[httpx.Response]:
+        """Generates an Answer from a given data source."""
+        options["query_string"] = query_string
+        options["logical_table_identifier"] = str(logical_table_identifier)
+        return self.post("api/rest/2.0/searchdata", json=options)
