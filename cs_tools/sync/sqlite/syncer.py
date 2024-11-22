@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Union
 import logging
 import pathlib
 
+from sqlalchemy.dialects.sqlite import insert
 import pydantic
 import sqlalchemy as sa
 
@@ -39,6 +40,21 @@ class SQLite(DatabaseSyncer):
 
     def __repr__(self):
         return f"<SQLiteSyncer conn_string='{self.engine.url}'>"
+
+    def insert_on_conflict(self, data: TableRows, *, table: sa.Table) -> Union[sa.Insert, sa.Update]:
+        """UPSERT."""
+        stmt = insert(table).values(data)
+
+        if table.columns == table.primary_key:
+            set_ = {c.key: getattr(stmt.excluded, c.key) for c in table.columns}
+        else:
+            set_ = {c.key: getattr(stmt.excluded, c.key) for c in table.columns if c.key not in table.primary_key}
+
+        stmt = stmt.on_conflict_do_update(
+            index_elements=table.primary_key,
+            set_=set_,
+        )
+        return stmt
 
     # @contextlib.contextmanager
     # def pragma_speedy_insert(self):
@@ -91,6 +107,12 @@ class SQLite(DatabaseSyncer):
             )
 
         if self.load_strategy == "UPSERT":
-            sync_utils.generic_upsert(table, session=self.session, data=data)
+            sync_utils.batched(
+                self.insert_on_conflict,
+                session=self.session,
+                data=data,
+                max_parameters=const.SQLITE_MAX_VARIABLES,
+                table=table,
+            )
 
         self.session.commit()
