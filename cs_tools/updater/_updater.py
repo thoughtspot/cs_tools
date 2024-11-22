@@ -195,7 +195,7 @@ class CSToolsVirtualEnvironment:
             # don't ping pypi for new versions of pip -- it doesn't matter and is noisy
             "--disable-pip-version-check",
             # trust installs from the official python package index and the thoughtspot github repos
-            "--trusted-host", "files.pythonhost.org",
+            "--trusted-host", "files.pythonhosted.org",
             "--trusted-host", "pypi.org",
             "--trusted-host", "pypi.python.org",
             "--trusted-host", "github.com",
