@@ -13,6 +13,7 @@ import pathlib
 import warnings
 
 from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 import httpx
 import sqlalchemy as sa
@@ -59,8 +60,8 @@ class CachePolicy:
 
     def __init__(self, directory: pathlib.Path):
         self._filepath = directory / "http.cache"
-        self._engine = sa.ext.asyncio.create_async_engine(f"sqlite+aiosqlite:///{self._filepath}", future=True)
-        self._cnxn: sa.ext.asyncio.AsyncConnection | None = None
+        self._engine = create_async_engine(f"sqlite+aiosqlite:///{self._filepath}", future=True)
+        self._cnxn: AsyncConnection | None = None
         self._setup_lock = asyncio.Lock()
         self._pending_cache_tasks: set[asyncio.Task] = set()
 
@@ -262,33 +263,40 @@ class CachedRetryTransport(httpx.AsyncBaseTransport):
         """Get the allowed maximum number of concurrent requests."""
         return self.rate_limit._value
 
+    async def _handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        """Ensure request is injected on exception."""
+        with httpx._exceptions.request_context(request=request):
+            r = await self._wrapper.handle_async_request(request=request)
+
+        return r
+
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         UTC_NOW = ft.partial(dt.datetime.now, tz=dt.timezone.utc)
 
         # SET THE REQUEST DISPATCH TIME
-        request.headers["x-metamigrate-request-dispatch-time-utc"] = UTC_NOW().isoformat()
+        request.headers["x-cs-tools-request-dispatch-time-utc"] = UTC_NOW().isoformat()
 
         # CACHE HITS SHOULD NOT AFFECT RATE LIMITS
         if self.cache is not None and (cached_response := await self.cache.check(request=request)):
             # SET THE EFFECTIVE RESPONSE TIME
-            cached_response.headers["x-metamigrate-response-receive-time-utc"] = UTC_NOW().isoformat()
+            cached_response.headers["x-cs-tools-response-receive-time-utc"] = UTC_NOW().isoformat()
 
             return cached_response
 
         # RATE LIMITING OUTSIDE OF RETRYING SO WE EFFECTIVELY IMPLEMENT BACKPRESSURE
         async with self.rate_limit:
             # OVERRIDE THE REQUEST DISPATCH TIME IN CASE WE'VE BEEN WAITING
-            request.headers["x-metamigrate-request-dispatch-time-utc"] = UTC_NOW().isoformat()
+            request.headers["x-cs-tools-request-dispatch-time-utc"] = UTC_NOW().isoformat()
 
             try:
-                response: httpx.Response = await self.retrier(self._wrapper.handle_async_request, request=request)
+                response: httpx.Response = await self.retrier(self._handle_async_request, request=request)
             except tenacity.RetryError as error:
                 raise error from None
             except Exception as error:
                 raise error from None
 
         # SET THE EFFECTIVE RESPONSE TIME
-        response.headers["x-metamigrate-response-receive-time-utc"] = UTC_NOW().isoformat()
+        response.headers["x-cs-tools-response-receive-time-utc"] = UTC_NOW().isoformat()
 
         # CHECK IF WE SHOULD CACHE THE RESPONSE
         if self.cache is not None and self.cache.should_cache(request=request, response=response):

@@ -58,6 +58,11 @@ class RESTAPIClient(httpx.AsyncClient):
         super().__init__(**client_opts)
         assert isinstance(self._transport, _transport.CachedRetryTransport), "Unexpected transport used for CS Tools"
         self._heartbeat_task: asyncio.Task | None = None
+    
+    @property
+    def cache(self) -> _transport.CachePolicy | None:
+        assert isinstance(self._transport, _transport.CachedRetryTransport), "Unexpected transport used for CS Tools"
+        return self._transport.cache
 
     @property
     def max_concurency(self) -> int:
@@ -107,7 +112,7 @@ class RESTAPIClient(httpx.AsyncClient):
         if not is_sending_files_to_server and request.content:
             log_msg += f"\n\t===    DATA ===\n{dict(httpx.QueryParams(request.content.decode()))}"
 
-        log.info(f"{log_msg}\n")
+        log.debug(f"{log_msg}\n")
 
     async def __after_response__(self, response: httpx.Response) -> None:
         """
@@ -139,14 +144,13 @@ class RESTAPIClient(httpx.AsyncClient):
             await response.aread()
             log_msg += f"\n{response.text}\n"
 
-        log.info(log_msg)
+        log.debug(log_msg)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     async def request(self, method: str, url: httpx.URL | str, **passthru: Any) -> httpx.Response:
         """Remove NULL from request data before sending/logging."""
         passthru = utils.scrub_undefined_sentinel(passthru, null=None)
         response = await super().request(method, url, **passthru)
-        log.info(response)
         return response
 
     # ==================================================================================
