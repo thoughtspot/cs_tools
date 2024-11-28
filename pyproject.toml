@@ -36,6 +36,7 @@ dependencies = [
     # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
     "pip >= 23.1",
 
+    "aiosqlite",
     "thoughtspot_tml",
     "awesomeversion",
     "httpx >= 0.27.0",
@@ -90,16 +91,16 @@ dev = [
     "cs_tools[cli]",
 
     # Code Quality
-    "pre-commit",
-    "taskipy",
-    "ruff",
     "mypy",
+    "pre-commit",
+    "ruff",
+    "taskipy",
     "vulture",
 
     # Testing
+    "coverage[toml]",
     "nox",
     "pytest",
-    "coverage[toml]",
 ]
 docs = [
     "cs_tools[cli]",
@@ -129,6 +130,7 @@ strict_equality = true
 strict_concatenate = true
 
 [tool.ruff]
+target-version = "py39"
 line-length = 120
 src = ["cs_tools", "tests"]
 exclude = [
