@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Awaitable
 from typing import TYPE_CHECKING, Optional
 import asyncio
-import json
 import logging
 
 import httpx
@@ -32,27 +31,11 @@ class ThoughtSpot:
         self._session_context: Optional[SessionContext] = None
         self.api = RESTAPIClient(
             base_url=str(config.thoughtspot.url),
+            concurrency=15,
+            # cache_directory=config.temp_dir,
             verify=not config.thoughtspot.disable_ssl,
             proxy=config.thoughtspot.proxy,
         )
-
-        # ==============================================================================================================
-        # API MIDDLEWARES: logically grouped API interactions within ThoughtSpot
-        # ==============================================================================================================
-        # self.org = OrgMiddleware(self)
-        # self.search = SearchMiddleware(self)
-        # self.user = UserMiddleware(self)
-        # self.group = GroupMiddleware(self)
-        # # self.tml
-        # self.metadata = MetadataMiddleware(self)
-        # self.pinboard = self.liveboard = PinboardMiddleware(self)
-        # self.answer = AnswerMiddleware(self)
-        # # self.connection
-        # self.logical_table = LogicalTableMiddleware(self)
-        # self.tag = TagMiddleware(self)
-        # self.tml = TMLMiddleware(self)
-        # self.tql = TQLMiddleware(self)
-        # self.tsload = TSLoadMiddleware(self)
 
         if auto_login:
             self.login()
@@ -156,9 +139,9 @@ class ThoughtSpot:
             "__is_orgs_enabled__": utils.run_sync(self.api.get("callosum/v1/tspublic/v1/session/orgs")).is_success,
             **r.json(),
         }
-        self._session_context = SessionContext(environment={}, thoughtspot=d, system={}, user=d)
+        self._session_context = ctx = SessionContext(environment={}, thoughtspot=d, system={}, user=d)
 
-        log.debug(f"SESSION CONTEXT\n{json.dumps(self.session_context.model_dump(mode='json'), indent=4)}")
+        log.debug(f"SESSION CONTEXT\n{ctx.model_dump_json(indent=4)}")
 
     def logout(self) -> None:
         """Log out of ThoughtSpot."""
