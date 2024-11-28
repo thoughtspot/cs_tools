@@ -58,7 +58,7 @@ class RESTAPIClient(httpx.AsyncClient):
         super().__init__(**client_opts)
         assert isinstance(self._transport, _transport.CachedRetryTransport), "Unexpected transport used for CS Tools"
         self._heartbeat_task: asyncio.Task | None = None
-    
+
     @property
     def cache(self) -> _transport.CachePolicy | None:
         assert isinstance(self._transport, _transport.CachedRetryTransport), "Unexpected transport used for CS Tools"
@@ -236,7 +236,17 @@ class RESTAPIClient(httpx.AsyncClient):
     @_transport.CachePolicy.mark_cacheable
     def system_info(self, **options: Any) -> Awaitable[httpx.Response]:
         """Get the system information."""
-        return self.get("api/rest/2.0/system", headers=options.pop("headers"))
+        return self.get("api/rest/2.0/system", headers=options.pop("headers", None))
+
+    # ==================================================================================
+    # ORGS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_orgs
+    # ==================================================================================
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    @_transport.CachePolicy.mark_cacheable
+    def orgs_search(self, **options: Any) -> Awaitable[httpx.Response]:
+        """Gets a list of Orgs configured on the ThoughtSpot system."""
+        return self.post("api/rest/2.0/orgs/search", headers=options.pop("headers", None), json=options)
 
     # ==================================================================================
     # LOGS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_audit_logs
@@ -250,6 +260,7 @@ class RESTAPIClient(httpx.AsyncClient):
         options["log_type"] = "SECURITY_AUDIT"
         options["start_epoch_time_in_millis"] = int(utc_start.timestamp() * 1000)
         options["end_epoch_time_in_millis"] = int(utc_end.timestamp() * 1000)
+        options["get_all_logs"] = True
         return self.post("api/rest/2.0/logs/fetch", json=options)
 
     # ==================================================================================
@@ -261,20 +272,55 @@ class RESTAPIClient(httpx.AsyncClient):
     def metadata_search(self, guid: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot objects."""
         if "metadata" not in options:
-            options["metadata"] = [{"identifier": str(guid)}]
+            options["metadata"] = [{"identifier": guid}]
 
         options["include_headers"] = True
-        return self.post("api/rest/2.0/metadata/search", headers=options.pop("headers"), json=options)
+        return self.post("api/rest/2.0/metadata/search", headers=options.pop("headers", None), json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def metadata_permissions(
-        self, guid: types.ObjectIdentifier, permission_type: types.SharingAccess, **options: Any
+        self, guid: types.ObjectIdentifier, permission_type: types.SharingAccess = "DEFINED", **options: Any
     ) -> Awaitable[httpx.Response]:
         """Get a list of Users and Groups who can access the ThoughtSpot object."""
-        options["metadata"] = [{"identifier": str(guid)}]
+        options["metadata"] = [{"identifier": guid}]
         options["permission_type"] = permission_type
-        return self.post("api/rest/2.0/security/metadata/fetch-permissions", json=options)
+
+        headers = options.pop("headers", None)
+        timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
+        return self.post(
+            "api/rest/2.0/security/metadata/fetch-permissions", headers=headers, timeout=timeout, json=options
+        )
+
+    # @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    # @_transport.CachePolicy.mark_cacheable
+    async def v1_metadata_permissions(
+        self,
+        guid: types.ObjectIdentifier,
+        api_object_type: types.APIObjectType,
+        permission_type: types.SharingAccess = "DEFINED",
+        **options: Any,
+    ) -> httpx.Response:
+        """Get a list of Users and Groups who can access the ThoughtSpot object."""
+        # TODO: REMOVE AFTER 10.3.0.sw IS n-2 PER OUR SUPPORT POLICY.
+        V2_TO_V1_TYPES = {
+            "CONNECTION": "DATA_SOURCE",
+            "LOGICAL_TABLE": "LOGICAL_TABLE",
+            "LIVEBOARD": "PINBOARD_ANSWER_BOOK",
+            "ANSWER": "QUESTION_ANSWER_BOOK",
+            "LOGICAL_COLUMN": "LOGICAL_COLUMN",
+        }
+
+        options["type"] = V2_TO_V1_TYPES.get(api_object_type)
+        options["id"] = guid
+        options["permissiontype"] = permission_type
+
+        headers = options.pop("headers", None)
+        r = await self.get(
+            f"callosum/v1/tspublic/v1/security/metadata/{guid}/permissions", headers=headers, params=options
+        )
+
+        return r
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
@@ -282,9 +328,9 @@ class RESTAPIClient(httpx.AsyncClient):
         self, guid: types.ObjectIdentifier, export_fqn: bool = True, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Get the EDOC of the ThoughtSpot object."""
-        options["metadata"] = [{"identifier": str(guid)}]
+        options["metadata"] = [{"identifier": guid}]
         options["export_fqn"] = export_fqn
-        return self.post("api/rest/2.0/metadata/tml/export", headers=options.pop("headers"), json=options)
+        return self.post("api/rest/2.0/metadata/tml/export", headers=options.pop("headers", None), json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
@@ -294,7 +340,7 @@ class RESTAPIClient(httpx.AsyncClient):
         """Push the EDOC of the object into ThoughtSpot."""
         options["metadata_tmls"] = tmls
         options["import_policy"] = policy
-        return self.post("api/rest/2.0/metadata/tml/import", headers=options.pop("headers"), json=options)
+        return self.post("api/rest/2.0/metadata/tml/import", headers=options.pop("headers", None), json=options)
 
     # ==================================================================================
     # CONNECTIONS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_connections
@@ -304,7 +350,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @_transport.CachePolicy.mark_cacheable
     def connection_search(self, guid: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Get a Connection and its Table objects."""
-        options["connections"] = [{"identifier": str(guid)}]
+        options["connections"] = [{"identifier": guid}]
         options["include_details"] = True
         return self.post("api/rest/2.0/connection/search", json=options)
 
@@ -319,11 +365,14 @@ class RESTAPIClient(httpx.AsyncClient):
     ) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot users."""
         if guid is not None:
-            options["user_identifier"] = str(guid)
+            options["user_identifier"] = guid
 
         options["record_offset"] = record_offset
         options["record_size"] = record_size
-        return self.post("api/rest/2.0/users/search", headers=options.pop("headers"), json=options)
+
+        headers = options.pop("headers", None)
+        timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
+        return self.post("api/rest/2.0/users/search", headers=headers, timeout=timeout, json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def users_create(self, **options: Any) -> Awaitable[httpx.Response]:
@@ -346,11 +395,14 @@ class RESTAPIClient(httpx.AsyncClient):
     ) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot groups."""
         if guid is not None:
-            options["group_identifier"] = str(guid)
+            options["group_identifier"] = guid
 
         options["record_offset"] = record_offset
         options["record_size"] = record_size
-        return self.post("api/rest/2.0/groups/search", headers=options.pop("headers"), json=options)
+
+        headers = options.pop("headers", None)
+        timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
+        return self.post("api/rest/2.0/groups/search", headers=headers, timeout=timeout, json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def groups_create(self, **options: Any) -> Awaitable[httpx.Response]:
@@ -363,6 +415,16 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post(f"api/rest/2.0/groups/{group_identifier}/update", json=options)
 
     # ==================================================================================
+    # TAGS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_tags
+    # ==================================================================================
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    @_transport.CachePolicy.mark_cacheable
+    def tags_search(self, **options: Any) -> Awaitable[httpx.Response]:
+        """Gets a list of tag objects available on the ThoughtSpot system."""
+        return self.post("api/rest/2.0/tags/search", headers=options.pop("headers", None), json=options)
+
+    # ==================================================================================
     # SCHEDULES :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_schedules
     # ==================================================================================
 
@@ -371,7 +433,7 @@ class RESTAPIClient(httpx.AsyncClient):
     def schedules_search(self, liveboard_guid: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Get a list of Liveboard schedules."""
         options["metadata"] = [{"identifier": str(liveboard_guid)}]
-        return self.post("api/rest/2.0/schedules/search", headers=options.pop("headers"), json=options)
+        return self.post("api/rest/2.0/schedules/search", headers=options.pop("headers", None), json=options)
 
     # ==================================================================================
     # DATA :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_data
