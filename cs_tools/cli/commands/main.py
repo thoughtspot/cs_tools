@@ -7,7 +7,7 @@ import logging
 import random
 import sys
 
-from cs_tools import __project__, __version__, datastructures, errors, utils
+from cs_tools import __project__, __version__, _compat, datastructures, errors, utils
 from cs_tools.cli import _analytics
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.cli.ux import CSToolsApp, rich_console
@@ -125,6 +125,13 @@ def run() -> int:
 
     except Exception as e:
         return_code = 1
+
+        if isinstance(e, _compat.ExceptionGroup):
+            log.error(f"Potentially many things broke. ({len(e.exceptions)} sub-exceptions)")
+
+            for exception in e.exceptions:
+                log.error("Something unexpected broke.", exc_info=exception)
+
         this_run_data["is_known_error"] = False
         this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
 
