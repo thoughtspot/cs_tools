@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Literal, TypeAlias
-import uuid
+from typing import Annotated, Any, Literal, TypeAlias
+import datetime as dt
+
+from thoughtspot_tml._tml import TML  # noqa: F401
 
 from cs_tools import _compat
 
@@ -13,18 +15,16 @@ CSToolsStatusCode: TypeAlias = Literal[0, 1]
 # ==========
 # Data format types
 # ==========
-TableRowsFormat: TypeAlias = list[dict[str, str]]
+TableRowsFormat: TypeAlias = list[dict[str, dt.datetime | dt.date | bool | str | int | float | None]]
+APIResult: TypeAlias = dict[str, Any]
 
 # ==========
 # ThoughtSpot common types
 # ==========
-GUID: TypeAlias = uuid.UUID
-Name: TypeAlias = str
+GUID: TypeAlias = Annotated[str, "represented as a UUID"]
+Name: TypeAlias = Annotated[str, "user-defined"]
 ObjectIdentifier = GUID | Name
 
-ImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY", "PARTIAL_OBJECTS_ONLY"]
-MetadataObject = Literal["LOGICAL_TABLE", "ANSWER", "LIVEBOARD"]
-SharingAccess = Literal["DEFINED", "EFFECTIVE"]
 
 # fmt: off
 InferredDataType = Literal[
@@ -35,6 +35,18 @@ InferredDataType = Literal[
     "DATE", "DATE_TIME", "TIMESTAMP",
 ]
 # fmt: on
+
+
+# ==========
+# ThoughtSpot API input types
+# ==========
+APIObjectType = Literal[
+    "LIVEBOARD", "ANSWER", "LOGICAL_TABLE", "LOGICAL_COLUMN", "CONNECTION", "TAG", "USER", "USER_GROUP",
+    "LOGICAL_RELATIONSHIP", "INSGIHT_SPEC"
+]
+ImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY", "PARTIAL_OBJECTS_ONLY"]
+MetadataObject = Literal["LOGICAL_TABLE", "ANSWER", "LIVEBOARD"]
+SharingAccess = Literal["DEFINED", "EFFECTIVE"]
 
 
 class GroupPrivilege(_compat.StrEnum):

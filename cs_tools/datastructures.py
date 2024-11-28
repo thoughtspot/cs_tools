@@ -133,6 +133,11 @@ class ThoughtSpotInfo(_GlobalModel):
         major, minor, micro, *rest = version_string.split(".")
         return AwesomeVersion(f"{major}.{minor}.{micro}")
 
+    @pydantic.field_serializer("url")
+    @classmethod
+    def serialize_as_str(cls, url: pydantic.AnUrl) -> str:
+        return str(url)
+
 
 class LocalSystemInfo(_GlobalModel):
     """Information about the machine running CS Tools."""
@@ -173,7 +178,7 @@ class UserInfo(_GlobalModel):
                 "username": data["__session_info__"]["name"],
                 "display_name": data["__session_info__"]["display_name"],
                 "privileges": data["__session_info__"]["privileges"],
-                "org_context": data["__session_info__"]["current_org"]["id"],
+                "org_context": (data["__session_info__"].get("current_org", None) or {}).get("id", None),
                 "email": data["__session_info__"]["email"],
             }
 
