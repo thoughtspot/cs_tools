@@ -107,7 +107,7 @@ async def search(
             logical_table_identifier=worksheet_guid,
             query_string=query,
             # DEV NOTE: @boonhapus, 2024/11/19
-            # WE USE `COMPACT` INSTEAD OF FULL BECAUSE IT'S FASTER AND NULL VALUES DO NOT GET DROPPED FROM RESPONSE.
+            # WE USE `COMPACT` INSTEAD OF FULL BECAUSE IT'S FASTER AND NULL VALUES DO NOT GET DROPPED FROM THE RESPONSE.
             data_format="COMPACT",
             record_offset=len(data),
             record_size=batch_size,
@@ -117,12 +117,12 @@ async def search(
 
         d = r.json()
 
-        # IF THERE ARE NO MORE ROWS TO RETRIEVE, WE'LL STOP HERE.
-        if not d["contents"][0]["data_rows"]:
-            break
-
         for data_row in d["contents"][0]["data_rows"]:
             data.append(_convert_compact_to_full(data_row, column_names=d["contents"][0]["column_names"]))
+
+        # IF THERE ARE NO MORE ROWS TO RETRIEVE, WE'LL STOP HERE.
+        if len(d["contents"][0]["data_rows"]) < batch_size:
+            break
 
         # Warn the user if the returned data exceeds the 1M row threshold
         if len(data) % 500_000 == 0:
