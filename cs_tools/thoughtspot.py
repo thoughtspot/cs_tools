@@ -113,6 +113,12 @@ class ThoughtSpot:
 
             raise errors.ThoughtSpotUnreachable(reason=reason, mitigation=fixing) from None
 
+        # PROCESS THE RESPONSE TO DETERMINE IF THE CLUSTER IS IN STANDBY
+        if "Site Maintenance" in r.text:
+            reason = "Cluster is in Maintenance Mode."
+            fixing = f"Visit [b blue]{self.config.thoughtspot.url}[/] to confirm or contact your Administrator."
+            raise errors.ThoughtSpotUnreachable(reason=reason, mitigation=fixing) from None
+
         #
         # PROCESS RESPONSE
         #
