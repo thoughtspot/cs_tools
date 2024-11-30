@@ -278,6 +278,14 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/metadata/search", headers=options.pop("headers", None), json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def metadata_delete(self, guid: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+        """Removes the specified metadata object from the ThoughtSpot system."""
+        if "metadata" not in options:
+            options["metadata"] = [{"identifier": guid}]
+
+        return self.post("api/rest/2.0/metadata/delete", json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def metadata_permissions(
         self, guid: types.ObjectIdentifier, permission_type: types.SharingAccess = "DEFINED", **options: Any
@@ -423,6 +431,23 @@ class RESTAPIClient(httpx.AsyncClient):
     def tags_search(self, **options: Any) -> Awaitable[httpx.Response]:
         """Gets a list of tag objects available on the ThoughtSpot system."""
         return self.post("api/rest/2.0/tags/search", headers=options.pop("headers", None), json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def tags_create(self, name: types.Name, **options: Any) -> Awaitable[httpx.Response]:
+        """Creates a tag object."""
+        options["name"] = name
+        return self.post("api/rest/2.0/tags/create", json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def tags_assign(
+        self, guid: types.ObjectIdentifier, tag: types.ObjectIdentifier, **options: Any
+    ) -> Awaitable[httpx.Response]:
+        """Assigns tags to Liveboards, Answers, Tables, and Worksheets."""
+        if "metadata" not in options:
+            options["metadata"] = [{"identifier": guid}]
+
+        options["tag_identifiers"] = [tag]
+        return self.post("api/rest/2.0/tags/assign", json=options)
 
     # ==================================================================================
     # SCHEDULES :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_schedules
