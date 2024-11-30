@@ -55,6 +55,9 @@ class WorkTask:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        if task_is_skipped := (self.start_time is None):
+            return
+
         self.stop()
 
     @property
@@ -102,6 +105,10 @@ class WorkTask:
         """Stop the task."""
         self.stop_time = self.get_time()
         self.total = -1 if self.total is None else self.total
+    
+    def skip(self) -> None:
+        """Skip the task."""
+        self.start_time = None
 
     def advance(self, step: float) -> None:
         """Advance the task by the step value."""
