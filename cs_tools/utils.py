@@ -4,7 +4,7 @@ from base64 import (
     urlsafe_b64decode as b64d,
     urlsafe_b64encode as b64e,
 )
-from collections.abc import Awaitable, Coroutine, Generator, Iterable
+from collections.abc import Awaitable, Coroutine, Generator, Iterable, Sequence
 from contextvars import Context
 from typing import Any, TypeVar
 import asyncio
@@ -68,6 +68,21 @@ class BoundedTaskGroup(asyncio.TaskGroup):
                 return await coro
 
         return super().create_task(coro=with_backpressure(), name=name, context=context)
+
+
+async def bounded_gather(
+    *aws: Awaitable,
+    max_concurrent: int,
+    return_exceptions: bool = False,
+) -> Sequence[Any]:
+    """An asyncio.gather that implements backpressure."""
+    semaphore = asyncio.Semaphore(value=max_concurrent)
+
+    async def with_backpressure(coro: Awaitable) -> Any:
+        async with semaphore:
+            return await coro
+
+    return await asyncio.gather(*(with_backpressure(coro) for coro in aws), return_exceptions=return_exceptions)
 
 
 def batched(iterable: Iterable[_T], *, n: int) -> Generator[Iterable[_T], None, None]:

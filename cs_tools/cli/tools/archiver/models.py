@@ -15,15 +15,15 @@ log = logging.getLogger(__name__)
 
 
 class LiteralOperation(StrEnum):
-    IDENTIFY = "identify"
-    REVERT = "revert"
-    REMOVE = "remove"
+    IDENTIFY = "IDENTIFY"
+    REVERT = "REVERT"
+    REMOVE = "REMOVE"
 
 
 class ArchiverReport(ValidatedSQLModel, table=True):
     __tablename__ = "archiver_report"
 
-    type: str = Field(primary_key=True)  # noqa: A003
+    type: str = Field(primary_key=True)
     guid: str = Field(primary_key=True)
     modified: dt.datetime = Field(primary_key=True)
     author_guid: str
