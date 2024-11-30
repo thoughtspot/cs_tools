@@ -3,13 +3,14 @@ from __future__ import annotations
 from collections.abc import Iterable
 import asyncio
 import logging
+import pathlib
 
 import awesomeversion
 import httpx
 
 from cs_tools import types, utils
 from cs_tools.api.client import RESTAPIClient
-from cs_tools.api.workflows.utils import batched
+from cs_tools.api.workflows.utils import paginator
 
 __all__ = ("fetch", "fetch_all", "permissions")
 
@@ -27,7 +28,7 @@ async def fetch_all(
         for object_type in object_types:
             search_options["guid"] = ""
             search_options["metadata"] = [{"type": object_type}]
-            coro = batched(http.metadata_search, record_size=record_size, **search_options)
+            coro = paginator(http.metadata_search, record_size=record_size, **search_options)
             task = g.create_task(coro, name=object_type)
             tasks.append(task)
 
@@ -61,7 +62,7 @@ async def fetch(
     async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
         for metadata_type, guids in typed_guids.items():
             for guid in guids:
-                # NOTE: WE DON'T NEED utils.batched BECAUSE WE ARE ONLY ASKING FOR A SINGLE OBJECT
+                # NOTE: WE DON'T NEED utils.paginator BECAUSE WE ARE ONLY ASKING FOR A SINGLE OBJECT
                 search_options["guid"] = ""
                 search_options["metadata"] = [{"type": metadata_type, "identifier": guid}]
                 coro = http.metadata_search(record_size=record_size, **search_options)
