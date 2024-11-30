@@ -133,3 +133,38 @@ async def permissions(
         results.append(d)
 
     return results
+
+
+async def tml_export(
+    guid: types.GUID,
+    *,
+    directory: pathlib.Path | None = None,
+    http: RESTAPIClient,
+    **tml_export_options,
+) -> types.APIResult:
+    """Export a metadata object, optionally to a directory."""
+    try:
+        r = await http.metadata_tml_export(guid=guid, **tml_export_options)
+        r.raise_for_status()
+
+        d = next(iter(r.json()))
+
+        if d["info"]["status"]["status_code"] == "ERROR":
+            raise ValueError(d["info"])
+
+    except (httpx.HTTPStatusError, StopIteration):
+        log.error(f"Unable to export {guid}, see log for details..")
+        log.debug(r.text)
+        return {"edoc": None, "info": {"id": guid}, "httpx_response": r.text}
+
+    except ValueError as e:
+        log.error(f"Unable to export {guid}, see log for details..")
+        log.debug(e.args[0])
+        return {"edoc": None, "info": e.args[0]}
+
+    if directory is not None:
+        i = d["info"]
+        directory.joinpath(i["type"]).mkdir(parents=True, exist_ok=True)
+        directory.joinpath(f"{i['type']}/{i['id']}.{i['type']}.tml").write_text(d["edoc"], encoding="utf-8")
+
+    return d
