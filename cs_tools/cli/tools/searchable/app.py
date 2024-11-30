@@ -80,7 +80,7 @@ def deploy(
         file_okay=False,
         show_default=False,
     ),
-):
+) -> types.ExitCode:
     """Deploy the Searchable SpotApp."""
     ts = ctx.obj.thoughtspot
 
@@ -188,6 +188,8 @@ def deploy(
                 if tml_import_info["response"]["status"]["status_code"] == "OK":
                     log.info(f"{tml_type} '{tml.name}' successfully imported")
 
+    return 0
+
 
 @app.command(dependencies=[thoughtspot])
 def audit_logs(
@@ -202,7 +204,7 @@ def audit_logs(
     window_end: Literal["NOW", "TODAY_START_UTC", "TODAY_START_LOCAL"] = typer.Option(
         "NOW", help="how to track events through time"
     ),
-):
+) -> types.ExitCode:
     """
     Extract audit logs from your ThoughtSpot platform.
 
@@ -246,6 +248,8 @@ def audit_logs(
         with tracker["DUMP_DATA"]:
             syncer.dump("ts_audit_logs", data=d)
 
+    return 0
+
 
 @app.command(dependencies=[thoughtspot])
 def bi_server(
@@ -270,7 +274,7 @@ def bi_server(
     ),
     org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
     compact: bool = typer.Option(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
-):
+) -> types.ExitCode:
     """
     Extract usage statistics from your ThoughtSpot platform.
 
@@ -289,7 +293,7 @@ def bi_server(
     if syncer.protocol == "falcon":
         log.error("Falcon Syncer is not supported for TS: BI Server reflection.")
         models.BIServer.__table__.drop(syncer.engine)
-        raise typer.Abort()
+        return 1
 
     if (to_date - from_date) > dt.timedelta(days=31):
         log.warning("Due to how the Search API is exposed, it's recommended to request no more than 1 month at a time.")
@@ -333,6 +337,8 @@ def bi_server(
         with tracker["DUMP_DATA"]:
             syncer.dump("ts_bi_server", data=d)
 
+    return 0
+
 
 @app.command(dependencies=[thoughtspot])
 def metadata(
@@ -350,7 +356,7 @@ def metadata(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-):
+) -> types.ExitCode:
     """
     Extract metadata from your ThoughtSpot platform.
 
@@ -543,12 +549,7 @@ def metadata(
                 _ = utils.run_sync(c)
 
                 # DUMP COLUMN_SYNONYM DATA
-                d = api_transformer.ts_metadata_permissions(
-                    data=_,
-                    compat_ts_version=COMPAT_TS_VERSION,
-                    compat_all_group_guids=COMPAT_GUIDS,
-                    cluster=CLUSTER_UUID,
-                )
+                d = api_transformer.ts_metadata_permissions(data=_, compat_ts_version=COMPAT_TS_VERSION, compat_all_group_guids=COMPAT_GUIDS, cluster=CLUSTER_UUID)  # noqa: E501
                 temp.dump(models.SharingAccess.__tablename__, data=d)
 
             # INCREASE THE PROGRESS BAR SINCE WE'RE DONE WITH THIS ORG
@@ -567,3 +568,5 @@ def metadata(
                         syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
 
                     syncer.dump(model.__tablename__, data=[model.validated_init(**row).model_dump() for row in rows])
+
+    return 0

@@ -10,7 +10,7 @@ from cs_tools import _compat
 # ==========
 # Meta types
 # ==========
-CSToolsStatusCode: TypeAlias = Literal[0, 1]
+ExitCode: TypeAlias = Literal[0, 1]
 
 # ==========
 # Data format types
