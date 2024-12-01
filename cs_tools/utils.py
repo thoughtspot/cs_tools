@@ -6,17 +6,24 @@ from base64 import (
 )
 from collections.abc import Awaitable, Coroutine, Generator, Iterable, Sequence
 from contextvars import Context
-from typing import Any, TypeVar
+from typing import Annotated, Any, TypeVar
 import asyncio
 import datetime as dt
 import getpass
 import importlib
 import itertools as it
+import logging
 import os
 import pathlib
 import site
 import zlib
 
+from sqlalchemy import types as sa_types
+from sqlalchemy.schema import Column
+from sqlmodel import Field, SQLModel
+import pydantic
+
+log = logging.getLogger(__name__)
 _T = TypeVar("_T")
 _EVENT_LOOP: asyncio.AbstractEventLoop | None = None
 
@@ -196,3 +203,38 @@ def timedelta_strftime(timedelta: dt.timedelta, *, sep: str = " ") -> str:
     H, r = divmod(total_seconds, 3600)
     M, S = divmod(r, 60)
     return f"{H: 3d}h{sep}{M:02d}m{sep}{S:02d}s"
+
+
+def create_dynamic_model(__tablename__: str, *, sample_row: dict[str, Any]) -> type[SQLModel]:
+    """Create a SQLModel from a sample data row."""
+    SQLA_DATA_TYPES = {
+        str: sa_types.Text,
+        bool: sa_types.Boolean,
+        int: sa_types.BigInteger,
+        float: sa_types.Float,
+        dt.date: sa_types.Date,
+        dt.datetime: sa_types.DateTime,
+    }
+
+    field_definitions = {
+        "cluster_guid": Annotated[str, Field(..., sa_column=Column(type_=sa_types.Text, primary_key=True))],
+        "sk_dummy": Annotated[str, Field(..., sa_column=Column(type_=sa_types.Text, primary_key=True))],
+    }
+
+    for column_name, value in sample_row.items():
+        if column_name in field_definitions:
+            continue
+
+        try:
+            py_type = type(value)
+            sa_type = SQLA_DATA_TYPES[py_type]
+        except KeyError:
+            log.warning(f"{__tablename__}.{column_name} found no data type for '{py_type}', faling back to VARCHAR..")
+            sa_type = sa_types.Text
+
+        field_definitions[column_name] = Annotated[py_type, Field(None, sa_column=Column(type_=sa_type))]
+
+    # CREATE THE DYNAMIC TABLE
+    Model = pydantic.create_model(__tablename__, __base__=SQLModel, __cls_kwargs__={"table": True}, **field_definitions)  # type: ignore[call-overload]
+
+    return Model
