@@ -54,7 +54,7 @@ async def fetch(
     **search_options,
 ) -> list[types.APIResult]:
     """Wraps metadata/search fetching specific objects and exhausts the pagination."""
-    CONCURRENCY_MAGIC_NUMBER = 15  # Why? No particular reason, but it's far less than RESTAPIClient.
+    CONCURRENCY_MAGIC_NUMBER = 15  # Why? In case **search_options contains 
 
     results: list[types.APIResult] = []
     tasks: list[asyncio.Task] = []
@@ -94,7 +94,7 @@ async def permissions(
     **permission_options,
 ) -> list[types.APIResult]:
     """Wraps security/metadata/fetch-permissions fetching specific objects and exhausts the pagination."""
-    CONCURRENCY_MAGIC_NUMBER = 5  # Why? No particular reason, but it's far less than RESTAPIClient.
+    CONCURRENCY_MAGIC_NUMBER = 5  # Why? Fetching permissions could potentially be very expensive for the server.
     FIFTEEN_MINUTES = 60 * 15
 
     results: list[types.APIResult] = []

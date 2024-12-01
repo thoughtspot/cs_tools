@@ -105,7 +105,7 @@ class WorkTask:
         """Stop the task."""
         self.stop_time = self.get_time()
         self.total = -1 if self.total is None else self.total
-    
+
     def skip(self) -> None:
         """Skip the task."""
         self.start_time = None
@@ -185,7 +185,7 @@ class WorkTracker(live.Live):
         It generally looks like the following..
 
             ────────────────────────────────────────────────────────────────────────────────────────────────────────────
-                                                                { self.title }                                         
+                                                                { self.title }
             ────────────────────────────────────────────────────────────────────────────────────────────────────────────
             Task name  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  0:00:00
             Task name  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  0:00:00
@@ -195,7 +195,7 @@ class WorkTracker(live.Live):
             Task name  --                                                                                        -:--:--
             Task name  --                                                                                        -:--:--
             ────────────────────────────────────────────────────────────────────────────────────────────────────────────
-            Elapsed   0h 00m 01s                                                                                        
+            Elapsed   0h 00m 01s                                                                   XYZ Background Tasks
             ────────────────────────────────────────────────────────────────────────────────────────────────────────────
         """
         NOWTIME = dt.datetime.now(tz=dt.timezone.utc)
@@ -224,7 +224,7 @@ class WorkTracker(live.Live):
 
         footer.add_row(
             f"[fg-primary]Elapsed[/] {utils.timedelta_strftime(ELAPSED)}",
-            "",
+            f"[fg-error]Control-C to Quit[/]",  # noqa: F541
             f"[bg-primary]{len(asyncio.all_tasks(loop=self._loop)):,} Background Tasks" if self.verbose else "",
         )
 

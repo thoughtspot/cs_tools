@@ -45,7 +45,6 @@ APIObjectType = Literal[
     "LOGICAL_RELATIONSHIP", "INSGIHT_SPEC"
 ]
 ImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY", "PARTIAL_OBJECTS_ONLY"]
-MetadataObject = Literal["LOGICAL_TABLE", "ANSWER", "LIVEBOARD"]
 SharingAccess = Literal["DEFINED", "EFFECTIVE"]
 
 
