@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Coroutine, Iterable
+from typing import cast
 import asyncio
+import datetime as dt
+import itertools as it
 import logging
 import pathlib
 
@@ -131,6 +134,78 @@ async def permissions(
         results.append(d)
 
     return results
+
+
+async def dependents(guid: types.GUID, *, http: RESTAPIClient) -> list[types.APIResult]:
+    """Fetch all dependents of a given object, regardless of its type."""
+    r = await http.metadata_search(
+        guid=guid, include_details=True, include_dependent_objects=True, dependent_objects_record_size=-1
+    )
+
+    r.raise_for_status()
+    _: types.APIResult = next(iter(r.json()), {})
+
+    # DEV NOTE: @boonhapus, 2024/11/30
+    # metadata/search?include_dependent_objects=True DOESN'T WORK FOR CONNECTIONS.
+    if _["metadata_type"] == "CONNECTION":
+        track_top_level_info = True
+        coros: list[Coroutine] = []
+
+        for logical_table in _["metadata_detail"]["logicalTableList"]:
+            guid = logical_table["header"]["id"]
+            c = http.metadata_search(guid=guid, include_dependent_objects=True, dependent_objects_record_size=-1)
+            coros.append(c)
+
+        _ = await asyncio.gather(*coros)  # type: ignore[assignment]
+        d = cast(Iterable[types.APIResult], it.chain.from_iterable(r.json() for r in _))  # type: ignore[attr-defined]
+    else:
+        track_top_level_info = False
+        d = cast(Iterable[types.APIResult], [_])
+
+    all_dependents: list[types.APIResult] = []
+    seen: set[types.GUID] = set()
+
+    for metadata_object in d:
+        if track_top_level_info and metadata_object["metadata_id"] not in seen:
+            all_dependents.append(
+                {
+                    "guid": metadata_object["metadata_id"],
+                    "name": metadata_object["metadata_name"],
+                    "type": types.lookup_api_type(metadata_object["metadata_type"]),
+                    "author_guid": metadata_object["metadata_header"]["author"],
+                    "author_name": metadata_object["metadata_header"]["authorName"],
+                    "tags": metadata_object["metadata_header"]["tags"],
+                    "last_modified": dt.datetime.fromtimestamp(
+                        metadata_object["metadata_header"]["modified"] / 1000, tz=dt.timezone.utc
+                    ),
+                }
+            )
+
+            seen.add(metadata_object["metadata_id"])
+
+        for dependent_info in metadata_object["dependent_objects"].values():
+            for dependent_type, dependents in dependent_info.items():
+                for dependent in dependents:
+                    if dependent["id"] in seen:
+                        continue
+
+                    all_dependents.append(
+                        {
+                            "guid": dependent["id"],
+                            "name": dependent["name"],
+                            "type": types.lookup_api_type(dependent_type),
+                            "author_guid": dependent["author"],
+                            "author_name": dependent.get("authorName", "UNKNOWN"),
+                            "tags": dependent["tags"],
+                            "last_modified": dt.datetime.fromtimestamp(
+                                dependent["modified"] / 1000, tz=dt.timezone.utc
+                            ),
+                        }
+                    )
+
+                    seen.add(dependent["id"])
+
+    return all_dependents
 
 
 async def tml_export(
