@@ -266,6 +266,7 @@ def identify(
                         type=metadata_object["type"],
                         guid=metadata_object["guid"],
                         modified=metadata_object["last_modified"],
+                        reported_at=TODAY,
                         author_guid=metadata_object["author_guid"],
                         author=metadata_object["author_name"],
                         name=metadata_object["name"],
@@ -277,7 +278,7 @@ def identify(
                 syncer.dump("archiver_report", data=d)
 
         with tracker["PREVIEW_DATA"]:
-            t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""))
+            t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""), width=165)
             t.add_column("TYPE", justify="center", width=10)  # LIVEBOARD, ANSWER
             t.add_column("NAME", no_wrap=True)
             t.add_column("AUTHOR", width=20)
@@ -326,7 +327,7 @@ def identify(
                 this_task.final()
 
                 if kb.response.upper() == "N":
-                    this_task.description = "[fg-error]Denied[/] (no tagging performed)"
+                    this_task.description = "[fg-error]Denied[/] (no tagging done)"
                     return 0
                 else:
                     this_task.description = f"[fg-success]Approved[/] (tagging {len(filtered):,})"
@@ -466,6 +467,7 @@ def remove(
                         type=metadata_object["type"],
                         guid=metadata_object["guid"],
                         modified=metadata_object["last_modified"],
+                        reported_at=TODAY,
                         author_guid=metadata_object["author_guid"],
                         author=metadata_object["author_name"],
                         name=metadata_object["name"],
@@ -477,11 +479,11 @@ def remove(
                 syncer.dump("archiver_report", data=d)
 
         with tracker["PREVIEW_DATA"]:
-            t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""))
+            t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""), width=165)
             t.add_column("TYPE", justify="center", width=10)  # LIVEBOARD, ANSWER
             t.add_column("NAME", no_wrap=True)
-            t.add_column("AUTHOR", width=20)
-            t.add_column("MODIFIED", justify="right", width=12)  # NNN days ago
+            t.add_column("AUTHOR", no_wrap=True, width=20)
+            t.add_column("MODIFIED", justify="right", no_wrap=True, width=13)  # NNNN days ago
 
             for idx, row in enumerate(sorted(filtered, key=lambda row: row["last_modified"], reverse=True)):  # type: ignore
                 if idx >= 15:
@@ -527,7 +529,7 @@ def remove(
                 this_task.final()
 
                 if kb.response.upper() == "N":
-                    this_task.description = f"[fg-error]Denied[/] (no {operation}ing performed)"
+                    this_task.description = f"[fg-error]Denied[/] (no {operation}ing done)"
                     return 0
                 else:
                     this_task.description = f"[fg-success]Approved[/] ({operation}ing {len(filtered):,})"
@@ -556,7 +558,7 @@ def remove(
             c = ts.api.metadata_delete(guid=TAG["id"])
             coros.append(c)
 
-            for metadata_object in filtered[:3]:
+            for metadata_object in filtered:
                 c = ts.api.metadata_delete(guid=metadata_object["guid"])
                 coros.append(c)
 
