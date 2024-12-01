@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias, cast
 import datetime as dt
 
 from thoughtspot_tml._tml import TML  # noqa: F401
@@ -66,3 +66,13 @@ class GroupPrivilege(_compat.StrEnum):
     cannot_create_or_delete_pinboards = "DISABLE_PINBOARD_CREATION"
     can_verify_liveboard = "LIVEBOARD_VERIFIER"
     can_invoke_third_party_spotiq_analysis = "THIRDPARTY_ANALYSIS"
+
+
+def lookup_api_type(metadata_type: str) -> APIObjectType:
+    """Determine the APIObjectType based on the V1 enum."""
+    ENUM_TO_TYPE_MAPPING = {
+        "PINBOARD_ANSWER_BOOK": "LIVEBOARD",
+        "QUESTION_ANSWER_BOOK": "ANSWER",
+    }
+
+    return cast(APIObjectType, ENUM_TO_TYPE_MAPPING.get(metadata_type, metadata_type))
