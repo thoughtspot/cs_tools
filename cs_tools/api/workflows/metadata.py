@@ -12,8 +12,6 @@ from cs_tools import types, utils
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.api.workflows.utils import paginator
 
-__all__ = ("fetch", "fetch_all", "permissions")
-
 log = logging.getLogger(__name__)
 
 
@@ -54,7 +52,7 @@ async def fetch(
     **search_options,
 ) -> list[types.APIResult]:
     """Wraps metadata/search fetching specific objects and exhausts the pagination."""
-    CONCURRENCY_MAGIC_NUMBER = 15  # Why? In case **search_options contains 
+    CONCURRENCY_MAGIC_NUMBER = 15  # Why? In case **search_options contains
 
     results: list[types.APIResult] = []
     tasks: list[asyncio.Task] = []
