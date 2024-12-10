@@ -63,10 +63,15 @@ async def fetch(
     async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
         for metadata_type, guids in typed_guids.items():
             for guid in guids:
-                # NOTE: WE DON'T NEED utils.paginator BECAUSE WE ARE ONLY ASKING FOR A SINGLE OBJECT
-                search_options["guid"] = ""
-                search_options["metadata"] = [{"type": metadata_type, "identifier": guid}]
-                coro = http.metadata_search(record_size=record_size, **search_options)
+                # A SINGLE OBJECT
+                if isinstance(guid, str):
+                    search_options["metadata"] = [{"type": metadata_type, "identifier": guid}]
+
+                # AN ARRAY OF OBJECTS
+                if isinstance(guid, list):
+                    search_options["metadata"] = [{"type": metadata_type, "identifier": _} for _ in guid]
+
+                coro = http.metadata_search(guid="", record_size=record_size, **search_options)
                 task = g.create_task(coro, name=guid)
                 tasks.append(task)
 
@@ -112,10 +117,27 @@ async def permissions(
                 # ONCE 10.3.0.SW IS N-2, WE CAN SWITCH FROM typed_guids -> guids .
                 #
                 if compat_ts_version < "10.3.0":
-                    c = http.v1_metadata_permissions(guid=guid, api_object_type=metadata_type, **permission_options)
+                    # A SINGLE OBJECT
+                    if isinstance(guid, str):
+                        permission_options["id"] = [guid]
+
+                    # AN ARRAY OF OBJECTS
+                    if isinstance(guid, list):
+                        permission_options["id"] = guid
+
+                    c = http.v1_security_metadata_permissions(guid="", api_object_type=metadata_type, **permission_options)
                 else:
                     permission_options["timeout"] = FIFTEEN_MINUTES
-                    c = http.metadata_permissions(guid=guid, record_size=record_size, **permission_options)
+
+                    # A SINGLE OBJECT
+                    if isinstance(guid, str):
+                        permission_options["metadata"] = [{"type": metadata_type, "identifier": guid}]
+
+                    # AN ARRAY OF OBJECTS
+                    if isinstance(guid, list):
+                        permission_options["metadata"] = [{"type": metadata_type, "identifier": _} for _ in guid]
+
+                    c = http.security_metadata_permissions(guid="", record_size=record_size, **permission_options)
 
                 t = g.create_task(c, name=guid)
                 tasks.append(t)

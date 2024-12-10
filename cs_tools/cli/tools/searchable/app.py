@@ -417,6 +417,7 @@ def metadata(
         for org in orgs:
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
             seen_guids: dict[types.APIObjectType, set[types.GUID]] = collections.defaultdict(set)
+            seen_columns: list[list[types.GUID]] = []
             seen_group_guids: set[types.GUID] = set()
 
             with tracker["TS_ORG"] as this_task:
@@ -512,7 +513,7 @@ def metadata(
                 for metadata in _:
                     if is_in_current_org(metadata, current_org=org["id"]):
                         seen_guids["CONNECTION"].add(metadata["metadata_detail"]["dataSourceId"])
-                        seen_guids["LOGICAL_COLUMN"].update(_["header"]["id"] for _ in metadata["metadata_detail"]["columns"])  # noqa: E501
+                        seen_columns.append([_["header"]["id"] for _ in metadata["metadata_detail"]["columns"]])
 
                 # DUMP METDATA_OBJECT DATA (UPSERT LOGICAL_TABLE with .data_source_guid)
                 d = api_transformer.ts_metadata_object(data=_, cluster=CLUSTER_UUID)
@@ -527,7 +528,7 @@ def metadata(
                 temp.dump(models.ColumnSynonym.__tablename__, data=d)
 
             with tracker["TS_DEPENDENT"] as this_task:
-                g = {"LOGICAL_TABLE": seen_guids["LOGICAL_COLUMN"]}
+                g = {"LOGICAL_COLUMN": seen_columns}
                 c = workflows.metadata.fetch(typed_guids=g, include_dependent_objects=True, dependent_objects_record_size=-1, http=ts.api)  # noqa: E501
                 _ = utils.run_sync(c)
 
@@ -540,10 +541,7 @@ def metadata(
                 COMPAT_GUIDS = seen_group_guids
 
                 if include_column_access:
-                    log.warning("Fetching column level security may take a long time, depending on your cluster size.")
-                    seen_guids.pop("LOGICAL_COLUMN")
-                else:
-                    pass
+                    seen_guids["LOGICAL_COLUMN"] = seen_columns
 
                 c = workflows.metadata.permissions(typed_guids=seen_guids, compat_ts_version=COMPAT_TS_VERSION, http=ts.api)  # noqa: E501
                 _ = utils.run_sync(c)
