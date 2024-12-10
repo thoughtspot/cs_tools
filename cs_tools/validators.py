@@ -22,36 +22,36 @@ METHOD_CONFIG = pydantic.ConfigDict(arbitrary_types_allowed=True)
 @pydantic.PlainValidator
 def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
     """Ensures the input value is a valid, aware, datetime."""
-
     # HAPPIEST CASE
-    if isinstance(value, dt.datetime) and value.tzinfo == dt.timezone.utc:
-        pass
+    if (value_is_a_datetime := isinstance(value, dt.datetime)) and value.tzinfo == dt.timezone.utc:
+        return value
 
-    # WRONG TIMEZONE
-    elif isinstance(value, dt.datetime) and value.tzinfo == dt.timezone.utc:
-        value = value.astimezone(tz=dt.timezone.utc)
-
-    # NAIVE DATETIME
-    elif isinstance(value, dt.datetime):
-        value = value.replace(tzinfo=dt.timezone.utc)
-
-    # DATE (NAIVE DATETIME)
-    elif isinstance(value, dt.date):
-        value = dt.datetime.combine(value, dt.datetime.min.time(), tzinfo=dt.timezone.utc)
-
-    # TIMESTAMP
+    # TIMESTAMP (most common case from api)
     elif isinstance(value, (int, float)):
         try:
-            value = dt.datetime.fromtimestamp(value, tz=dt.timezone.utc)
+            return dt.datetime.fromtimestamp(value, tz=dt.timezone.utc)
         except (OverflowError, OSError) as e:
             raise ValueError(f"value is too large to be a POSIX timestamp, got {value}") from e
 
-    # ISO-FORMATTED DATETIME
+    # ISO-FORMATTED DATETIME STRING
     elif isinstance(value, str):
         if value.endswith("Z"):
             value = value.removesuffix("Z")
 
-        value = ensure_datetime_is_utc.func(dt.datetime.fromisoformat(value))
+        value = dt.datetime.fromisoformat(value)
+        value_is_a_datetime = True
+
+    # NAIVE DATETIME
+    if value_is_a_datetime and value.tzinfo is None:
+        return value.replace(tzinfo=dt.timezone.utc)
+
+    # WRONG TIMEZONE
+    elif value_is_a_datetime and value.tzinfo != dt.timezone.utc:
+        return value.astimezone(tz=dt.timezone.utc)
+
+    # DATE (NAIVE DATETIME)
+    elif isinstance(value, dt.date):
+        return dt.datetime.combine(value, dt.datetime.min.time(), tzinfo=dt.timezone.utc)
 
     else:
         raise ValueError(f"value should be a valid datetime representation, got {value}")

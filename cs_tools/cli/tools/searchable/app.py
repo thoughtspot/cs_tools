@@ -369,7 +369,12 @@ def metadata(
     if not ts.session_context.user.is_admin:
         log.warning("Searchable is meant to be run from an Admin-level context, your results may vary..")
 
-    temp = SQLite(database_path=ts.config.temp_dir / "temp.db", models=models.METADATA_MODELS, load_strategy="UPSERT")
+    temp = SQLite(
+        database_path=ts.config.temp_dir / "temp.db",
+        pragma_speedy_inserts=True,
+        models=models.METADATA_MODELS,
+        load_strategy="UPSERT",
+    )
 
     # Silence the intermediate logger.
     logging.getLogger("cs_tools.sync.sqlite.syncer").setLevel(logging.CRITICAL)

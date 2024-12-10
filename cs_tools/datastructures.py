@@ -77,9 +77,7 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
     @classmethod
     def validated_init(cls, context: Any = None, **data):
         # defaults  = cls.read_from_environment()
-        # sanitized = cls.model_validate({**defaults, **data})
-        sanitized = cls.model_validate(data, context=context)
-        return cls(**sanitized.model_dump())
+        return cls.model_validate(data, context=context)
 
     @property
     def clustered_on(self) -> list[sa.Column]:

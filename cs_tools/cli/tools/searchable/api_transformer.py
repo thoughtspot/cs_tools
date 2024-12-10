@@ -359,20 +359,24 @@ def ts_metadata_dependent(data: list[types.APIResult], *, cluster: types.GUID) -
             for dependent_type, dependents in dependents_info.items():
                 for dependent in dependents:
                     reshaped.append(
-                        models.DependentObject.validated_init(
-                            cluster_guid=cluster,
-                            dependent_guid=dependent["id"],
-                            column_guid=result["metadata_id"],
-                            name=dependent["name"],
-                            description=dependent.get("description", None),
-                            author_guid=dependent["author"],
-                            created=dependent["created"] / 1000,
-                            modified=dependent["modified"] / 1000,
-                            object_type=dependent_type,
-                            object_subtype=dependent.get("type", None),
-                            is_verified=dependent["isVerified"],
-                            is_version_controlled=dependent["isVersioningEnabled"],
-                        ).model_dump()
+                        # DEV NOTE: @boonhapus, 2024/12/06
+                        # There are typically an order of magnitude MORE dependents than anything else in ThoughtSpot
+                        # so we'll trust most of the fields coming back from the ThoughtSpot API and only validate the
+                        # complex types.
+                        {
+                            "cluster_guid": cluster,
+                            "dependent_guid": dependent["id"],
+                            "column_guid": result["metadata_id"],
+                            "name": dependent["name"],
+                            "description": dependent.get("description", None),
+                            "author_guid": dependent["author"],
+                            "created": validators.ensure_datetime_is_utc.func(dependent["created"] / 1000),
+                            "modified": validators.ensure_datetime_is_utc.func(dependent["modified"] / 1000),
+                            "object_type": dependent_type,
+                            "object_subtype": dependent.get("type", None),
+                            "is_verified": dependent["isVerified"],
+                            "is_version_controlled": dependent["isVersioningEnabled"],
+                        }
                     )
 
     return reshaped
@@ -401,15 +405,16 @@ def ts_metadata_permissions(
                     is_user_share = not is_group_share
 
                     reshaped.append(
-                        models.SharingAccess.validated_init(
-                            cluster_guid=cluster,
-                            sk_dummy="-".join([metadata_guid, principal_id]),
-                            object_guid=metadata_guid,
-                            shared_to_user_guid=principal_id if is_user_share else None,
-                            shared_to_group_guid=principal_id if is_group_share else None,
-                            permission_type=permission_type,
-                            share_mode=access["shareMode"],
-                        ).model_dump()
+                        {
+                            "cluster_guid": cluster,
+                            "sk_dummy": "-".join([metadata_guid, principal_id]),
+                            "object_guid": metadata_guid,
+                            "shared_to_user_guid": principal_id if is_user_share else None,
+                            "shared_to_group_guid": principal_id if is_group_share else None,
+                            "permission_type": permission_type,
+                            "share_mode": access["shareMode"],
+                            "share_type": None,
+                        }
                     )
 
         else:
@@ -429,16 +434,16 @@ def ts_metadata_permissions(
                         is_user_share = access_info["principal_type"] == "USER"
 
                         reshaped.append(
-                            models.SharingAccess.validated_init(
-                                cluster_guid=cluster,
-                                sk_dummy="-".join([object_details["metadata_id"], access["principal_id"]]),
-                                object_guid=object_details["metadata_id"],
-                                shared_to_user_guid=access["principal_id"] if is_user_share else None,
-                                shared_to_group_guid=access["principal_id"] if is_group_share else None,
-                                permission_type=permission_type,
-                                share_mode=access["permission"],
-                                # share_type="COLUMN_LEVEL_SECURITY" if is_column_level_security else "OBJECT_LEVEL_SECURITY",
-                            ).model_dump()
+                            {
+                                "cluster_guid": cluster,
+                                "sk_dummy": "-".join([object_details["metadata_id"], access["principal_id"]]),
+                                "object_guid": object_details["metadata_id"],
+                                "shared_to_user_guid": access["principal_id"] if is_user_share else None,
+                                "shared_to_group_guid": access["principal_id"] if is_group_share else None,
+                                "permission_type": permission_type,
+                                "share_mode": access["permission"],
+                                "share_type": "COLUMN_LEVEL_SECURITY" if is_column_level_security else "OBJECT_LEVEL_SECURITY",
+                            }
                         )
 
     return reshaped
