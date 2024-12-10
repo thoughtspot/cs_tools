@@ -168,9 +168,9 @@ select = [
 ignore = [
     "B008",    # Checks for function calls in default function arguments.
     "COM812",  # Checks for the absence of trailing commas.
-    "TCH001",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
-    "TCH002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
-    "TCH003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TC001",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TC002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TC003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
 ]
 
 [tool.ruff.lint.flake8-import-conventions.aliases]
