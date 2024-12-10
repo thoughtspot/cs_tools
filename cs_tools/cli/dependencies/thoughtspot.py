@@ -143,7 +143,7 @@ class DThoughtSpot(Dependency):
 
         try:
             ctx.obj.thoughtspot.logout()
-        except httpx.HTTPStatusError:
+        except (RuntimeError, httpx.HTTPStatusError):
             pass
 
 
