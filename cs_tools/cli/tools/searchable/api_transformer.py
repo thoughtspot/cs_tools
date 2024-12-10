@@ -9,7 +9,7 @@ import operator
 
 import awesomeversion
 
-from cs_tools import types
+from cs_tools import types, validators
 from cs_tools.datastructures import SessionContext
 
 from . import models
@@ -148,6 +148,16 @@ def ts_group_membership(data: list[types.APIResult], *, cluster: types.GUID) -> 
     """Reshapes {groups|users}/search -> searchable.models.GroupMembership."""
     reshaped: types.TableRowsFormat = []
 
+    # DEV NOTE: @boonhapus, 2024/11/25
+    # Users are unique within a cluster.
+    #
+    # However clusters with high amounts of users can often batch incorrectly when
+    # asking for large RECORD_OFFSETs.
+    #
+    # We'll account for this 0.0001% bug onccurrence.
+    #
+    seen: set[str] = set()
+
     for result in data:
         result_is_group = result["parent_type"] == "GROUP"
 
@@ -162,6 +172,9 @@ def ts_group_membership(data: list[types.APIResult], *, cluster: types.GUID) -> 
             p_attr = group if result_is_group else result
             g_attr = result if result_is_group else group
 
+            if (unique := f"{cluster}-{p_attr['id']}-{g_attr['id']}") in seen:
+                continue
+
             reshaped.append(
                 models.GroupMembership.validated_init(
                     cluster_guid=cluster,
@@ -169,6 +182,8 @@ def ts_group_membership(data: list[types.APIResult], *, cluster: types.GUID) -> 
                     group_guid=g_attr["id"],
                 ).model_dump()
             )
+
+            seen.add(unique)
 
     return reshaped
 
@@ -388,7 +403,7 @@ def ts_metadata_permissions(
     compat_ts_version: awesomeversion.AwesomeVersion,
     compat_all_group_guids: set[types.GUID],
     cluster: types.GUID,
-    permission_type: types.SharingAccess = "DEFINED",
+    permission_type: types.ShareType = "DEFINED",
 ) -> types.TableRowsFormat:
     """Reshapes security/metadata/fetch-permissions -> searchable.models.SharingAccess."""
     reshaped: types.TableRowsFormat = []
@@ -460,7 +475,7 @@ def ts_bi_server(data: list[types.APIResult], *, cluster: types.GUID) -> types.T
     seen: set[str] = set()
 
     PARTITION_KEY = ft.partial(lambda r: r["Timestamp"].replace(tzinfo=dt.timezone.utc).date())
-    CLUSTER_KEY   = ("Timestamp", "Incident Id", "Viz Id")
+    CLUSTER_KEY = ("Timestamp", "Incident Id", "Viz Id")
 
     # SORT PRIOR TO GROUP BY SO WE MAINTAIN CLUSTERING KEY SEMANTICS
     data.sort(key=operator.itemgetter(*CLUSTER_KEY))

@@ -273,7 +273,8 @@ class SharingAccess(ValidatedSQLModel, table=True):
     shared_to_user_guid: Optional[str]
     shared_to_group_guid: Optional[str]
     permission_type: str
-    share_mode: str
+    share_mode: str  # READ_ONLY, MODIFY
+    share_type: Optional[str]  # OBJECT_LEVEL_SECURITY, COLUMN_LEVEL_SECURITY
 
 
 class AuditLogs(ValidatedSQLModel, table=True):
