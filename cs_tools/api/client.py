@@ -4,6 +4,7 @@ from collections.abc import Awaitable
 from typing import Any
 import asyncio
 import datetime as dt
+import json
 import logging
 import pathlib
 
@@ -11,9 +12,10 @@ import httpx
 import pydantic
 import tenacity
 
-from cs_tools import types, validators
+from cs_tools import types, utils, validators
 from cs_tools.__project__ import __version__
-from cs_tools.api import _retry, _transport, utils
+from cs_tools.api import _retry, _transport
+import cs_tools.api.utils as api_utils
 
 log = logging.getLogger(__name__)
 CALLOSUM_DEFAULT_TIMEOUT_SECONDS = 60 * 5
@@ -65,7 +67,7 @@ class RESTAPIClient(httpx.AsyncClient):
         return self._transport.cache
 
     @property
-    def max_concurency(self) -> int:
+    def max_concurrency(self) -> int:
         """Get the allowed maximum number of concurrent requests."""
         assert isinstance(self._transport, _transport.CachedRetryTransport), "Unexpected transport used for CS Tools"
         return self._transport.max_concurrency
@@ -149,7 +151,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     async def request(self, method: str, url: httpx.URL | str, **passthru: Any) -> httpx.Response:
         """Remove NULL from request data before sending/logging."""
-        passthru = utils.scrub_undefined_sentinel(passthru, null=None)
+        passthru = api_utils.scrub_undefined_sentinel(passthru, null=None)
         response = await super().request(method, url, **passthru)
         return response
 
@@ -284,51 +286,6 @@ class RESTAPIClient(httpx.AsyncClient):
             options["metadata"] = [{"identifier": guid}]
 
         return self.post("api/rest/2.0/metadata/delete", json=options)
-
-    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
-    @_transport.CachePolicy.mark_cacheable
-    def metadata_permissions(
-        self, guid: types.ObjectIdentifier, permission_type: types.SharingAccess = "DEFINED", **options: Any
-    ) -> Awaitable[httpx.Response]:
-        """Get a list of Users and Groups who can access the ThoughtSpot object."""
-        options["metadata"] = [{"identifier": guid}]
-        options["permission_type"] = permission_type
-
-        headers = options.pop("headers", None)
-        timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
-        return self.post(
-            "api/rest/2.0/security/metadata/fetch-permissions", headers=headers, timeout=timeout, json=options
-        )
-
-    # @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
-    # @_transport.CachePolicy.mark_cacheable
-    async def v1_metadata_permissions(
-        self,
-        guid: types.ObjectIdentifier,
-        api_object_type: types.APIObjectType,
-        permission_type: types.SharingAccess = "DEFINED",
-        **options: Any,
-    ) -> httpx.Response:
-        """Get a list of Users and Groups who can access the ThoughtSpot object."""
-        # TODO: REMOVE AFTER 10.3.0.sw IS n-2 PER OUR SUPPORT POLICY.
-        V2_TO_V1_TYPES = {
-            "CONNECTION": "DATA_SOURCE",
-            "LOGICAL_TABLE": "LOGICAL_TABLE",
-            "LIVEBOARD": "PINBOARD_ANSWER_BOOK",
-            "ANSWER": "QUESTION_ANSWER_BOOK",
-            "LOGICAL_COLUMN": "LOGICAL_COLUMN",
-        }
-
-        options["type"] = V2_TO_V1_TYPES.get(api_object_type)
-        options["id"] = guid
-        options["permissiontype"] = permission_type
-
-        headers = options.pop("headers", None)
-        r = await self.get(
-            f"callosum/v1/tspublic/v1/security/metadata/{guid}/permissions", headers=headers, params=options
-        )
-
-        return r
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
@@ -472,3 +429,110 @@ class RESTAPIClient(httpx.AsyncClient):
         options["query_string"] = query_string
         options["logical_table_identifier"] = str(logical_table_identifier)
         return self.post("api/rest/2.0/searchdata", json=options)
+
+    # ==================================================================================
+    # SECURITY :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_security
+    # ==================================================================================
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    @_transport.CachePolicy.mark_cacheable
+    def security_metadata_permissions(
+        self, guid: types.ObjectIdentifier, permission_type: types.ShareType = "DEFINED", **options: Any
+    ) -> Awaitable[httpx.Response]:
+        """Get a list of Users and Groups who can access the ThoughtSpot object."""
+        if "metadata" not in options:
+            options["metadata"] = [{"identifier": guid}]
+
+        options["permission_type"] = permission_type
+
+        headers = options.pop("headers", None)
+        timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
+        return self.post("api/rest/2.0/security/metadata/fetch-permissions", headers=headers, timeout=timeout, json=options)  # noqa: E501
+
+    # @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    # @_transport.CachePolicy.mark_cacheable
+    async def v1_security_metadata_permissions(
+        self,
+        guid: types.ObjectIdentifier,
+        api_object_type: types.APIObjectType,
+        permission_type: types.ShareType = "DEFINED",
+        **options: Any,
+    ) -> httpx.Response:
+        """Get a list of Users and Groups who can access the ThoughtSpot object."""
+        # TODO: REMOVE AFTER 10.3.0.sw IS n-2 PER OUR SUPPORT POLICY.
+        V2_TO_V1_TYPES = {
+            "CONNECTION": "DATA_SOURCE",
+            "LOGICAL_TABLE": "LOGICAL_TABLE",
+            "LIVEBOARD": "PINBOARD_ANSWER_BOOK",
+            "ANSWER": "QUESTION_ANSWER_BOOK",
+            "LOGICAL_COLUMN": "LOGICAL_COLUMN",
+        }
+
+        headers = options.pop("headers", None)
+        options["type"] = V2_TO_V1_TYPES.get(api_object_type)
+        options["permissiontype"] = permission_type
+
+        if "id" not in options:
+            options["id"] = [guid]
+
+        # DEV NOTE: @boonhapus, 2024/12/09
+        # TEHCNICALLY 👆 THIS SHOULD BE ALL WE NEED IN MOST CASES.. BUT WHEN THE
+        # REQUEST URL IS TOO LARGE, WE GOTTA TAKE SPECIAL CARE.
+
+        # THIS CAN BE UGLY SINCE WE'RE REMOVING IT AFTER 10.3 ANYWAY.
+        # HANDLE 414 Request-URI Too Large
+        tasks: list[asyncio.Task] = []
+
+        async with utils.BoundedTaskGroup(max_concurrent=max(self.max_concurrency - 1, 1)) as g:
+            # LET'S NOT BE RIDICULOUS, KEEP n TO A LOWISH NUMBER SO WE DON'T OVERLOAD THE SYSTEM.
+            for idx, batch in enumerate(utils.batched(options["id"], n=25)):
+                assert all(isinstance(x, str) for x in batch), "expected all ids to be strings"
+                options["id"] = json.dumps(list(batch))
+                c = self.get("callosum/v1/tspublic/v1/security/metadata/permissions", headers=headers, params=options)
+                t = g.create_task(c, name=f"v1/security/metadata/permissions REQUEST #{idx+1}")
+                tasks.append(t)
+
+        data: types.APIResult = {}
+
+        for task in tasks:
+            try:
+                r = await task
+                r.raise_for_status()
+            # IF ANY ONE TASK ERRORS, KICK IT BACK IMMEDIATELY.
+            except httpx.HTTPStatusError as e:
+                return e.response
+            else:
+                data.update(r.json())
+
+        # BUILD A NEW RESPONSE WITH THE COMBINED OUTPUT FROM ALL THE OTHER RESPONSES.
+        r = httpx.Response(
+            status_code=200,
+            headers=headers,
+            json=data,
+            extensions=r.extensions,
+            request=r.request,
+        )
+
+        return r
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def security_metadata_share(
+        self,
+        guid: types.ObjectIdentifier,
+        principals: list[types.PrincipalIdentifier],
+        permission: types.ShareMode,
+        notify_on_share: bool = False,
+        **options: Any,
+    ) -> Awaitable[httpx.Response]:
+        """Allows sharing metadata objects with users and groups in ThoughtSpot."""
+        options["metadata_identifiers"] = [guid]
+        options["permissions"] = [
+            {
+                "principal": {"identifier": principal},
+                "share_mode": permission,
+            }
+            for principal in principals
+        ]
+        options["notify_on_share"] = notify_on_share
+
+        return self.post("api/rest/2.0/security/metadata/share", json=options)

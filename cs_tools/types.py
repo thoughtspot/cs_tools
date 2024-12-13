@@ -24,6 +24,7 @@ APIResult: TypeAlias = dict[str, Any]
 GUID: TypeAlias = Annotated[str, "represented as a UUID"]
 Name: TypeAlias = Annotated[str, "user-defined"]
 ObjectIdentifier = GUID | Name
+PrincipalIdentifier = GUID | Name
 
 
 # fmt: off
@@ -45,7 +46,8 @@ APIObjectType = Literal[
     "LOGICAL_RELATIONSHIP", "INSGIHT_SPEC"
 ]
 ImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY", "PARTIAL_OBJECTS_ONLY"]
-SharingAccess = Literal["DEFINED", "EFFECTIVE"]
+ShareType = Literal["DEFINED", "EFFECTIVE"]
+ShareMode = Literal["NO_ACCESS", "READ_ONLY", "MODIFY"]
 
 
 class GroupPrivilege(_compat.StrEnum):
