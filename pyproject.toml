@@ -80,15 +80,16 @@ cli = [
     "prompt_toolkit >= 3.0.47",
     "typer >= 0.12.0",
 
-    # WEB
-    "litestar >= 2.7.0",
-    # TO REPLACE WITH LITESTAR
-    "uvicorn >= 0.29.0",
-    "fastapi >= 0.110.0",
+    # TUI & WEB
+    "textual == 1.0.0",
+    "textual-serve == 1.1.1",
 ]
 dev = [
     # CS Tools CLI
     "cs_tools[cli]",
+
+    # Development
+    "textual-dev >= 1.7.0",
 
     # Code Quality
     "mypy",
