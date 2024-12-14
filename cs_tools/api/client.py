@@ -33,7 +33,7 @@ class RESTAPIClient(httpx.AsyncClient):
     def __init__(
         self,
         base_url: pydantic.AnyHttpUrl,
-        concurrency: int = 1,
+        concurrency: int = 15,
         cache_directory: pathlib.Path | None = None,
         **client_opts: Any,
     ) -> None:
