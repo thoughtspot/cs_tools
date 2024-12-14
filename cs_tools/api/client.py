@@ -540,12 +540,7 @@ class RESTAPIClient(httpx.AsyncClient):
         options["id"] = json.dumps(guids)
 
         options["permission"] = {
-            "permissions": {
-                principal["identifier"]: {
-                    "share_mode": share_mode
-                }
-                for principal in principals
-            }
+            "permissions": {principal["identifier"]: {"share_mode": share_mode} for principal in principals}
         }
 
         options["notify"] = notify_on_share

@@ -139,9 +139,7 @@ def run() -> int:
 
         rich_traceback = rich.traceback.Traceback(
             width=150,
-            extra_lines=3,
-            word_wrap=False,
-            show_locals=False,
+            show_locals=True,
             suppress=[typer, click, contextlib],
             max_frames=25 if CURRENT_RUNTIME.is_ci or CURRENT_RUNTIME.is_dev else 10,
         )

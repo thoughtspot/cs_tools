@@ -107,7 +107,7 @@ def downstream(
                 syncer.dump("archiver_report", data=d)
 
         with tracker["PREVIEW_DATA"]:
-            t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""), width=165)
+            t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""), width=150)
             t.add_column("TYPE", justify="center", width=13)  # LOGICAL_TABLE, LIVEBOARD, ANSWER
             t.add_column("NAME", no_wrap=True)
             t.add_column("AUTHOR", no_wrap=True, width=20)
