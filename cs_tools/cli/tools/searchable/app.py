@@ -13,10 +13,13 @@ import typer
 
 from cs_tools import types, utils
 from cs_tools.api import workflows
-from cs_tools.cli import progress as px
+from cs_tools.cli import (
+    custom_types,
+    progress as px,
+)
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
+from cs_tools.cli.types import SyncerProtocolType
 from cs_tools.cli.ux import CSToolsApp
 from cs_tools.sync.sqlite.syncer import SQLite
 
@@ -260,18 +263,8 @@ def bi_server(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    from_date: dt.datetime = typer.Option(
-        ...,
-        click_type=TZAwareDateTimeType(),
-        metavar="YYYY-MM-DD",
-        help="inclusive lower bound of rows to select from TS: BI Server",
-    ),
-    to_date: dt.datetime = typer.Option(
-        ...,
-        click_type=TZAwareDateTimeType(),
-        metavar="YYYY-MM-DD",
-        help="inclusive upper bound of rows to select from TS: BI Server",
-    ),
+    from_date: custom_types.Date = typer.Option(..., help="inclusive lower bound of rows to select from TS: BI Server"),
+    to_date: custom_types.Date = typer.Option(..., help="inclusive upper bound of rows to select from TS: BI Server"),
     org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
     compact: bool = typer.Option(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
 ) -> types.ExitCode:
@@ -288,6 +281,8 @@ def bi_server(
         - response size         - latency (us)          - database latency (us)
         - impressions
     """
+    assert isinstance(from_date, dt.date), f"Could not coerce from_date '{from_date}' to a date."
+    assert isinstance(to_date, dt.date), f"Could not coerce to_date '{to_date}' to a date."
     ts = ctx.obj.thoughtspot
 
     if syncer.protocol == "falcon":
@@ -295,7 +290,7 @@ def bi_server(
         models.BIServer.__table__.drop(syncer.engine)
         return 1
 
-    if (to_date - from_date) > dt.timedelta(days=31):
+    if (to_date - from_date) > dt.timedelta(days=31):  # type: ignore[operator]
         log.warning("Due to how the Search API is exposed, it's recommended to request no more than 1 month at a time.")
 
     # DEV NOTE: @boonhapus
@@ -510,14 +505,23 @@ def metadata(
                 temp.dump(models.TaggedObject.__tablename__, data=d)
 
             with tracker["TS_COLUMN"] as this_task:
+                # WE USE include_hidden_objects=True BECAUSE HIDDEN COLUMNS ON A TABLE/MODEL ARE NOT ACCESSIBLE WITHOUT IT.
                 g = {"LOGICAL_TABLE": seen_guids["LOGICAL_TABLE"]}
-                c = workflows.metadata.fetch(typed_guids=g, include_details=True, http=ts.api)
+                c = workflows.metadata.fetch(typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api)
                 _ = utils.run_sync(c)
 
                 # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
                 for metadata in _:
                     if is_in_current_org(metadata, current_org=org["id"]):
                         seen_guids["CONNECTION"].add(metadata["metadata_detail"]["dataSourceId"])
+
+                        if not metadata["metadata_detail"]["columns"]:
+                            log.warning(
+                                f"LOGICAL_TABLE '{metadata['metadata_header']['name']}' ({metadata['metadata_id']}) "
+                                f"somehow has no columns, skipping.."
+                            )
+                            continue
+
                         seen_columns.append([_["header"]["id"] for _ in metadata["metadata_detail"]["columns"]])
 
                 # DUMP METDATA_OBJECT DATA (UPSERT LOGICAL_TABLE with .data_source_guid)

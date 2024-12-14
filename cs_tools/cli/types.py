@@ -8,7 +8,6 @@ import pathlib
 import urllib.parse
 
 import click
-import pendulum
 import pydantic
 import sqlalchemy
 
@@ -120,20 +119,6 @@ class CommaSeparatedValuesType(click.ParamType):
             values = [v.split(",") if isinstance(v, str) else v for v in value]
 
         return [self.return_type(v) for v in it.chain.from_iterable(values) if v != ""]
-
-
-class TZAwareDateTimeType(click.ParamType):
-    """
-    Convert argument to a timezone-aware date.
-    """
-
-    name = "datetime"
-
-    def convert(self, value, param, ctx):  # noqa: ARG002
-        if value is None:
-            return None
-
-        return pendulum.parse(value)
 
 
 class SyncerProtocolType(click.ParamType):
