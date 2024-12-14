@@ -100,15 +100,19 @@ async def permissions(
     **permission_options,
 ) -> list[types.APIResult]:
     """Wraps security/metadata/fetch-permissions fetching specific objects and exhausts the pagination."""
-    CONCURRENCY_MAGIC_NUMBER = 5  # Why? Fetching permissions could potentially be very expensive for the server.
     FIFTEEN_MINUTES = 60 * 15
+
+    if compat_ts_version < "10.3.0":
+        CONCURRENCY_MAGIC_NUMBER = 1  # Why? Fetching permissions could potentially be very expensive for the server.
+    else:
+        CONCURRENCY_MAGIC_NUMBER = 5  # Why? Fetching permissions could potentially be very expensive for the server.
 
     results: list[types.APIResult] = []
     tasks: list[asyncio.Task] = []
 
     async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
         for metadata_type, guids in typed_guids.items():
-            for guid in guids:
+            for _, guid in enumerate(guids):
                 # DEV NOTE: @boonhapus, 2024/11/25
                 # 10.3.0 IS WHEN WE RELEASED .permission_type={DEFINED|EFFECTIVE} FOR THE
                 # ENDPOINT security/metadata/fetch-permissions , PRIOR TO THIS, THE DEFAULT
@@ -126,6 +130,7 @@ async def permissions(
                         permission_options["id"] = guid
 
                     c = http.v1_security_metadata_permissions(guid="", api_object_type=metadata_type, **permission_options)
+                # //
                 else:
                     permission_options["timeout"] = FIFTEEN_MINUTES
 

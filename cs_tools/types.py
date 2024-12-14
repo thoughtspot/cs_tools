@@ -45,12 +45,15 @@ APIObjectType = Literal[
     "LIVEBOARD", "ANSWER", "LOGICAL_TABLE", "LOGICAL_COLUMN", "CONNECTION", "TAG", "USER", "USER_GROUP",
     "LOGICAL_RELATIONSHIP", "INSGIHT_SPEC"
 ]
+PrincipalType = Literal["USER", "USER_GROUP"]
 ImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY", "PARTIAL_OBJECTS_ONLY"]
 ShareType = Literal["DEFINED", "EFFECTIVE"]
 ShareMode = Literal["NO_ACCESS", "READ_ONLY", "MODIFY"]
 
 
 class GroupPrivilege(_compat.StrEnum):
+    """Represents privileges which can be assigned to Groups or Roles."""
+
     innate = "AUTHORING"
     can_administer_thoughtspot = "ADMINISTRATION"
     can_upload_user_data = "USERDATAUPLOADING"
@@ -68,6 +71,13 @@ class GroupPrivilege(_compat.StrEnum):
     cannot_create_or_delete_pinboards = "DISABLE_PINBOARD_CREATION"
     can_verify_liveboard = "LIVEBOARD_VERIFIER"
     can_invoke_third_party_spotiq_analysis = "THIRDPARTY_ANALYSIS"
+
+
+class Principal(_compat.TypedDict):
+    """Represents a User or Group."""
+
+    identifier: PrincipalIdentifier
+    type: PrincipalType | None
 
 
 def lookup_api_type(metadata_type: str) -> APIObjectType:

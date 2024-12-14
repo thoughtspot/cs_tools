@@ -459,7 +459,7 @@ class RESTAPIClient(httpx.AsyncClient):
         **options: Any,
     ) -> httpx.Response:
         """Get a list of Users and Groups who can access the ThoughtSpot object."""
-        # TODO: REMOVE AFTER 10.3.0.sw IS n-2 PER OUR SUPPORT POLICY.
+        # TODO: REMOVE THIS WHOLE METHOD AFTER 10.3.0.sw IS n-2 PER OUR SUPPORT POLICY.
         V2_TO_V1_TYPES = {
             "CONNECTION": "DATA_SOURCE",
             "LOGICAL_TABLE": "LOGICAL_TABLE",
@@ -515,24 +515,65 @@ class RESTAPIClient(httpx.AsyncClient):
 
         return r
 
+    # @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    # @_transport.CachePolicy.mark_cacheable
+    def v1_security_metadata_share(
+        self,
+        guids: list[types.GUID],
+        api_object_type: types.APIObjectType,
+        principals: list[types.Principal],
+        share_mode: types.ShareMode = "NO_ACCESS",
+        notify_on_share: bool = False,
+        **options: Any,
+    ) -> Awaitable[httpx.Response]:
+        """Share objects with users/groups in specified share modes."""
+        # TODO: REMOVE THIS WHOLE METHOD AFTER 10.6.0.sw IS n-2 PER OUR SUPPORT POLICY.
+        V2_TO_V1_TYPES = {
+            "CONNECTION": "DATA_SOURCE",
+            "LOGICAL_TABLE": "LOGICAL_TABLE",
+            "LIVEBOARD": "PINBOARD_ANSWER_BOOK",
+            "ANSWER": "QUESTION_ANSWER_BOOK",
+            "LOGICAL_COLUMN": "LOGICAL_COLUMN",
+        }
+
+        options["type"] = V2_TO_V1_TYPES.get(api_object_type)
+        options["id"] = json.dumps(guids)
+
+        options["permission"] = {
+            "permissions": {
+                principal["identifier"]: {
+                    "share_mode": share_mode
+                }
+                for principal in principals
+            }
+        }
+
+        options["notify"] = notify_on_share
+
+        return self.post("callosum/v1/tspublic/v1/security/share", data=options)
+
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def security_metadata_share(
         self,
-        guid: types.ObjectIdentifier,
-        principals: list[types.PrincipalIdentifier],
-        permission: types.ShareMode,
+        guids: list[types.GUID],
+        api_object_type: types.APIObjectType,
+        principals: list[types.Principal],
+        share_mode: types.ShareMode = "NO_ACCESS",
         notify_on_share: bool = False,
         **options: Any,
     ) -> Awaitable[httpx.Response]:
         """Allows sharing metadata objects with users and groups in ThoughtSpot."""
-        options["metadata_identifiers"] = [guid]
+        if "metadata" not in options:
+            options["metadata"] = [{"type": api_object_type, "identifier": _} for _ in guids]
+
         options["permissions"] = [
             {
                 "principal": {"identifier": principal},
-                "share_mode": permission,
+                "share_mode": share_mode,
             }
             for principal in principals
         ]
+
         options["notify_on_share"] = notify_on_share
 
         return self.post("api/rest/2.0/security/metadata/share", json=options)
