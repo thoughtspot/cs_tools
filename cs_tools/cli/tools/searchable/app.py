@@ -161,32 +161,17 @@ def deploy(
             if export is not None:
                 return 0
 
-            # DEV NOTE: @boonhapus, 2022/11/27
-            # INCLUDING THE array<TML>, THIS WHOLE BLOCK COULD BECOME AN api.workflow.
-            #
-            c = ts.api.metadata_tml_import(tmls=[t.dumps() for t in tmls], policy="ALL_OR_NONE", timeout=60 * 15)
-            r = utils.run_sync(c)
-
             try:
-                r.raise_for_status()
-
+                c = workflows.metadata.tml_import(tmls=tmls, policy="ALL_OR_NONE", timeout=60 * 15, http=ts.api)
+                d = utils.run_sync(c)
             except httpx.HTTPError as e:
                 log.error(f"Failed to call metadata/tml/import.. {e}")
                 return 1
 
-            for tml_import_info in r.json():
+            for tml_import_info in d:
                 idx = tml_import_info["request_index"]
                 tml = tmls[idx]
                 tml_type = tml.tml_type_name.upper()
-
-                if tml_import_info["response"]["status"]["status_code"] == "ERROR":
-                    errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
-                    log.error(f"{tml_type} '{tml.name}' failed to import, ThoughtSpot errors:\n[fg-error]{errors}")
-                    continue
-
-                if tml_import_info["response"]["status"]["status_code"] == "WARNING":
-                    errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
-                    log.warning(f"{tml_type} '{tml.name}' partially imported, ThoughtSpot errors:\n[fg-warn]{errors}")
 
                 if tml_import_info["response"]["status"]["status_code"] == "OK":
                     log.info(f"{tml_type} '{tml.name}' successfully imported")
