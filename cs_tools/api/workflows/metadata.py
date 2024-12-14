@@ -8,6 +8,7 @@ import itertools as it
 import logging
 import pathlib
 
+from thoughtspot_tml.types import TMLObject
 import awesomeversion
 import httpx
 
@@ -268,3 +269,34 @@ async def tml_export(
         directory.joinpath(f"{i['type']}/{i['id']}.{i['type']}.tml").write_text(d["edoc"], encoding="utf-8")
 
     return d
+
+
+async def tml_import(
+    tmls: list[TMLObject],
+    *,
+    policy: types.ImportPolicy = "ALL_OR_NONE",
+    http: RESTAPIClient,
+    **tml_import_options,
+) -> types.APIResult:
+    """Import a metadata object, alerting about warnings and errors."""
+    r = await http.metadata_tml_import(tmls=[t.dumps() for t in tmls], policy=policy, **tml_import_options)
+    r.raise_for_status()
+
+    for tml_import_info in r.json():
+        idx = tml_import_info["request_index"]
+        tml = tmls[idx]
+        tml_type = tml.tml_type_name.upper()
+
+        if tml_import_info["response"]["status"]["status_code"] == "ERROR":
+            errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
+            log.error(f"{tml_type} '{tml.name}' failed to import, ThoughtSpot errors:\n[fg-error]{errors}")
+            continue
+
+        if tml_import_info["response"]["status"]["status_code"] == "WARNING":
+            errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
+            log.warning(f"{tml_type} '{tml.name}' partially imported, ThoughtSpot errors:\n[fg-warn]{errors}")
+
+        if tml_import_info["response"]["status"]["status_code"] == "OK":
+            log.debug(f"{tml_type} '{tml.name}' successfully imported")
+
+    return r.json()

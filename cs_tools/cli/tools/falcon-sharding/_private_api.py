@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import httpx
 
-from cs_tools.api._rest_api_v1 import RESTAPIv1
-
-if TYPE_CHECKING:
-    import httpx
+from cs_tools.api.client import RESTAPIClient
 
 
-def periscope_sage_combined_table_info(ts_client: RESTAPIv1) -> httpx.Response:
+async def periscope_sage_combined_table_info(http: RESTAPIClient) -> httpx.Response:
     """
     The API call powers the Falcon Table Usage info.
 
@@ -32,5 +29,5 @@ def periscope_sage_combined_table_info(ts_client: RESTAPIv1) -> httpx.Response:
         # we override the callosum timeout to be 10mins in case we're on an unusually large cluster
         "callosumTimeout": MIN_WAIT_10,
     }
-    r = ts_client.request(method="GET", endpoint="periscope/sage/combinedtableinfo", params=p, timeout=MIN_WAIT_10)
+    r = await http.request(method="GET", endpoint="periscope/sage/combinedtableinfo", params=p, timeout=MIN_WAIT_10)
     return r
