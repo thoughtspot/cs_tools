@@ -10,10 +10,11 @@ import sys
 from cs_tools import __project__, __version__, _compat, datastructures, errors, utils
 from cs_tools.cli import _analytics
 from cs_tools.cli._logging import _setup_logging
-from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.cli.ux import RICH_CONSOLE, CSToolsApp
 from cs_tools.settings import _meta_config as meta
 from cs_tools.updater import cs_tools_venv
 from rich.align import Align
+from rich.console import ConsoleRenderable
 from rich.panel import Panel
 from rich.text import Text
 import click
@@ -56,7 +57,7 @@ app = CSToolsApp(
 @app.callback(invoke_without_command=True)
 def main(version: bool = typer.Option(False, "--version", help="Show the version and exit.")):
     if version:
-        rich_console.print(
+        RICH_CONSOLE.print(
             "\n", Panel.fit(Text(__version__, justify="center"), title="CS Tools", padding=(1, 0, 1, 0)), "\n"
         )
         raise typer.Exit(0)
@@ -102,7 +103,7 @@ def run() -> int:
 
     except (click.exceptions.Abort, click.exceptions.Exit, typer.Abort, typer.Exit) as e:
         return_code = getattr(e, "exit_code", 0)
-        rich_console.print("[b yellow]Stopping -- cancelled by user..\n")
+        RICH_CONSOLE.print("[b yellow]Stopping -- cancelled by user..\n")
 
     except click.ClickException as e:
         return_code = 1
@@ -118,8 +119,8 @@ def run() -> int:
 
         log.debug(e, exc_info=True)
 
-        if isinstance(e, errors.CSToolsCLIError):
-            rich_console.print(Align.center(e))
+        if _IS_CLI_PRINTABLE_ERROR := isinstance(e, ConsoleRenderable):
+            RICH_CONSOLE.print(Align.center(e))
         else:
             log.error(e)
 
@@ -170,7 +171,7 @@ def run() -> int:
             subtitle="Run [b blue]cs_tools logs report[/] to send us your last error.",
         )
 
-        rich_console.print(
+        RICH_CONSOLE.print(
             Align.center(rich_traceback),
             "\n",
             Align.center(text),

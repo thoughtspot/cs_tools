@@ -17,14 +17,23 @@ if TYPE_CHECKING:
     import click
 
 log = logging.getLogger(__name__)
+
+# fmt: off
+_TS_RED  = "#fe4870"
+_TS_BLUE = "#0567fa"
+_TS_PURPLE = "#8d63f5"
+_TS_GREEN = "#4ab565"
+_TS_YELLOW = "#fcc839"
+# fmt: on
+
 RICH_CONSOLE = rich_console = Console(
     theme=theme.Theme(
         {
             "fg-primary": "white",
-            "fg-secondary": "b purple",
-            "fg-success": "b green",
-            "fg-warn": "b yellow",
-            "fg-error": "b red",
+            "fg-secondary": _TS_PURPLE,
+            "fg-success": _TS_GREEN,
+            "fg-warn": _TS_YELLOW,
+            "fg-error": _TS_RED,
             "bg-primary": "b grey50",
         },
     ),
