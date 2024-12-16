@@ -71,16 +71,12 @@ cli = [
     #   need an extra process to grab the grandchild dependencies so our direct reliance
     #   doesn't break when a child updates.
     #
-
-    # platform-specific
-    "pyreadline3 >= 3.4.1 ; sys_platform == 'win32'",
-
     # CLI
     "prompt_toolkit >= 3.0.47",
     "typer >= 0.12.0",
 
     # TUI & WEB
-    "textual == 1.0.0",
+    "textual[syntax] == 1.0.0",
     "textual-serve == 1.1.1",
 ]
 dev = [

@@ -80,6 +80,16 @@ class Principal(_compat.TypedDict):
     type: PrincipalType | None
 
 
+class TQLQueryContext(_compat.TypedDict):
+    """Represents a database context for a TQL session."""
+
+    # NOTE: https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
+
+    database: str
+    schema: str
+    server_schema_version: int
+
+
 def lookup_api_type(metadata_type: str) -> APIObjectType:
     """Determine the APIObjectType based on the V1 enum."""
     ENUM_TO_TYPE_MAPPING = {
