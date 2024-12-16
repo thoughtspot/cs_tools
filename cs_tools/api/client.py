@@ -572,3 +572,17 @@ class RESTAPIClient(httpx.AsyncClient):
         options["notify_on_share"] = notify_on_share
 
         return self.post("api/rest/2.0/security/metadata/share", json=options)
+
+    # ==================================================================================
+    # REMOTE TQL :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_security
+    # ==================================================================================
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def v1_dataservice_query(self, **options: Any) -> Awaitable[httpx.Response]:
+        """Allows you to query the ThoughtSpot TQL cli from a remote machine."""
+        # Further reading on what can be passed to `data`
+        #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
+        #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_request_body
+        timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
+
+        return self.post("ts_dataservice/v1/public/tql/query", timeout=timeout, json=options)
