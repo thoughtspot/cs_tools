@@ -119,7 +119,7 @@ async def query(
         if _IS_INTERACTIVE := "interactive_question" in _["result"]:
             ...  # TODO ...
 
-        if _IS_DATA_RESULT := "table" in _["result"]:
+        if _IS_DATA_RESULT := ("table" in _["result"] and "rows" in _["result"]["table"]):
             d["data"] = _cast_to_records(_["result"]["table"]["rows"], column_info=_["result"]["table"]["headers"])
 
         if _IS_CTX_MESSAGE := "message" in _["result"]:
