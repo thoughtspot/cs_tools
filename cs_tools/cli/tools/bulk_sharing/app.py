@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Literal
-import logging
 
 from textual_serve.server import Server
 import typer
@@ -12,7 +11,6 @@ from cs_tools.cli.ux import CSToolsApp
 
 from . import tui
 
-log = logging.getLogger(__name__)
 app = CSToolsApp(
     name="bulk-sharing",
     help="""

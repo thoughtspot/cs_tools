@@ -43,7 +43,6 @@ dependencies = [
     "pydantic >= 2.6.4",
     "pydantic-settings",
     "email-validator",
-    "pendulum >= 3.0.0",
     "rich >= 13.7.1",
     "sqlmodel >= 0.0.16",
     "tenacity",
