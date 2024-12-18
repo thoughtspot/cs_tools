@@ -117,7 +117,8 @@ async def query(
         d["original"].append(_)
 
         if _IS_INTERACTIVE := "interactive_question" in _["result"]:
-            ...  # TODO ...
+            log.debug("Interactive question detected. Data payload below.\n\n{r.text}")
+            raise NotImplementedError("Interactive questions not yet implemented.")
 
         if _IS_DATA_RESULT := ("table" in _["result"] and "rows" in _["result"]["table"]):
             d["data"] = _cast_to_records(_["result"]["table"]["rows"], column_info=_["result"]["table"]["headers"])
