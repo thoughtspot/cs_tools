@@ -30,7 +30,7 @@ app = CSToolsApp(
 def interactive(
     ctx: typer.Context,
     mode: Literal["web", "terminal"] = typer.Option("terminal"),
-    admin_mode: bool = typer.Option(False, help="enable admin mode in remote TQL", hidden=True),
+    admin_mode: bool = typer.Option(False, "--admin", help="enable admin mode in remote TQL", hidden=True),
 ) -> types.ExitCode:
     """
     Run an interactive TQL session as if you were on the cluster.
