@@ -51,8 +51,8 @@ def depends_on(**resources: Any) -> Callable:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             ctx = click.get_current_context()
 
-            if not isinstance(ctx.obj, utils.State):
-                ctx.obj = utils.State()
+            if not isinstance(ctx.obj, utils.GlobalState):
+                ctx.obj = utils.GlobalState()
 
             # ENSURE DEPENDENCIES ARE SET UP ON THE FIRST COMMAND INVOCATION.
             for dependency_name, resource in resources.items():
