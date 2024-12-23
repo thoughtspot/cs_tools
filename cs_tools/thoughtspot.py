@@ -59,6 +59,7 @@ class ThoughtSpot:
 
         attempted: dict[str, httpx.Response] = {}
         active_session = False
+        __auth_ctx__ = "NONE"
 
         #
         # AUTHENTICATE
@@ -72,9 +73,10 @@ class ThoughtSpot:
                 r = utils.run_sync(c)
 
                 attempted["Bearer Token"] = r
-                active_session = r.is_success
 
-                if not r.is_success:
+                if active_session := r.is_success:
+                    __auth_ctx__ = "BEARER_TOKEN"
+                else:
                     self.api.headers.pop("Authorization")
 
             if not active_session and (secret_key := self.config.thoughtspot.secret_key) is not None:
@@ -82,14 +84,18 @@ class ThoughtSpot:
                 r = utils.run_sync(c)
 
                 attempted["V1 Trusted"] = r
-                active_session = r.is_success
+
+                if active_session := r.is_success:
+                    __auth_ctx__ = "TRUSTED_AUTH"
 
             if not active_session and self.config.thoughtspot.password is not None:
                 c = self.api.login(username=username, password=self.config.thoughtspot.decoded_password, org_id=org_id)
                 r = utils.run_sync(c)
 
                 attempted["Basic"] = r
-                active_session = r.is_success
+
+                if active_session := r.is_success:
+                    __auth_ctx__ = "BASIC"
 
         # REQUEST ERRORS DENOTE CONNECTIVITY ISSUES TO THE CLUSTER
         except httpx.RequestError as e:
@@ -97,14 +103,14 @@ class ThoughtSpot:
 
             if cannot_verify_local_ssl_cert and LocalSystemInfo().is_mac_osx:
                 reason = "Outdated Python default certificate detected."
-                fixing = "Double click the bundled certificates at [b blue]/Applications/Python x.y/Install Certificates.command"
+                fixing = "Double click the bundled certificates at [fg-secondary]/Applications/Python x.y/Install Certificates.command"  # noqa: E501
 
             elif cannot_verify_local_ssl_cert and LocalSystemInfo().is_windows:
                 reason = "Outdated Python default certificate detected."
-                fixing = f"Try running [b blue]cs_tools config modify --config {self.config.name} --disable-ssl"
+                fixing = f"Try running [fg-secondary]cs_tools config modify --config {self.config.name} --disable-ssl"
 
             else:
-                reason = f"Cannot connect to ThoughtSpot ([b blue]{self.config.thoughtspot.url}[/])"
+                reason = f"Cannot connect to ThoughtSpot ([fg-secondary]{self.config.thoughtspot.url}[/])"
                 fixing = f"Does your ThoughtSpot require a VPN to connect?\n\n[white]>>>[/] {e}"
 
             raise errors.ThoughtSpotUnreachable(reason=reason, mitigation=fixing) from None
@@ -112,7 +118,7 @@ class ThoughtSpot:
         # PROCESS THE RESPONSE TO DETERMINE IF THE CLUSTER IS IN STANDBY
         if "Site Maintenance" in r.text:
             reason = "Cluster is in Maintenance Mode."
-            fixing = f"Visit [b blue]{self.config.thoughtspot.url}[/] to confirm or contact your Administrator."
+            fixing = f"Visit [fg-secondary]{self.config.thoughtspot.url}[/] to confirm or contact your Administrator."
             raise errors.ThoughtSpotUnreachable(reason=reason, mitigation=fixing) from None
 
         #
@@ -132,16 +138,22 @@ class ThoughtSpot:
 
         c = self.api.system_info()
         r = utils.run_sync(c)
-        __system_info__ = r.json()
+        __system_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | SYSTEM_INFO_ADMINISTRATION
+
+        c = self.api.system_config_overrides()
+        r = utils.run_sync(c)
+        __overrides_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | APPLICATION_ADMINISTRATION
 
         d = {
             "__url__": self.config.thoughtspot.url,
             "__system_info__": __system_info__,
+            "__overrides_info__": __overrides_info__,
             "__session_info__": __session_info__,
             "__is_orgs_enabled__": utils.run_sync(self.api.get("callosum/v1/tspublic/v1/session/orgs")).is_success,
+            "__auth_context__": __auth_ctx__,
             **r.json(),
         }
-        self._session_context = ctx = SessionContext(environment={}, thoughtspot=d, system={}, user=d)
+        self._session_context = ctx = SessionContext(thoughtspot=d, user=d)
 
         log.debug(f"SESSION CONTEXT\n{ctx.model_dump_json(indent=4)}")
 

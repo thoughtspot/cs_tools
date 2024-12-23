@@ -166,18 +166,20 @@ class UserInfo(_GlobalModel):
     privileges: set[types.GroupPrivilege | str]
     org_context: int | None = None
     email: pydantic.EmailStr | None = None
+    auth_context: Literal["BASIC", "TRUSTED_AUTH", "BEARER_TOKEN"] | None = None
 
     @pydantic.model_validator(mode="before")
     @classmethod
     def check_if_from_session_info(cls, data: Any) -> Any:
-        if "__session_info__" in data:
+        if session_info := data.get("__session_info__", {}):
             data = {
-                "guid": data["__session_info__"]["id"],
-                "username": data["__session_info__"]["name"],
-                "display_name": data["__session_info__"]["display_name"],
-                "privileges": data["__session_info__"]["privileges"],
-                "org_context": (data["__session_info__"].get("current_org", None) or {}).get("id", None),
-                "email": data["__session_info__"]["email"],
+                "guid": session_info["id"],
+                "username": session_info["name"],
+                "display_name": session_info["display_name"],
+                "privileges": session_info["privileges"],
+                "org_context": (session_info.get("current_org", None) or {}).get("id", None),
+                "email": session_info["email"],
+                "auth_context": data["__auth_context__"],
             }
 
         return data
