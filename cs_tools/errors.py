@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import TypeAlias, cast
 import collections
 
 from rich._loop import loop_last
 import pydantic
 import rich
 
-from cs_tools import datastructures, types
+from cs_tools import datastructures, settings, types
 
 
 def _make_error_panel(*, header: str, reason: str | None = None, fixing: str | None = None) -> rich.panel.Panel:
@@ -38,6 +38,23 @@ class CSToolsError(Exception):
     """
 
 
+class ThoughtSpotUnreachable(CSToolsError):
+    """
+    Raised when ThoughtSpot can't be seen from the local machine.
+    """
+
+    def __init__(self, reason, fixing):
+        self.reason = reason
+        self.fixing = fixing
+
+    def __rich__(self) -> rich.panel.Panel:
+        header = "Can't connect to your ThoughtSpot cluster."
+        reason = self.reason
+        fixing = self.fixing
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)
+
+
+
 class NoSessionEstablished(CSToolsError):
     """
     Raised when attempting to access ThoughtSpot runtime information
@@ -64,10 +81,144 @@ class InsufficientPrivileges(CSToolsError):
         return _make_error_panel(header=header, reason=reason, fixing=fixing)
 
 
-#
-#
-#
+class AuthenticationFailed(CSToolsError):
+    """
+    Raised when authentication to ThoughtSpot fails.
+    """
 
+    def __init__(self, *, ts_config: settings.CSToolsConfig, desired_org_id: types.OrgIdentifier | None = 0):
+        self.ts_config = ts_config
+        self.desired_org_id = desired_org_id
+
+    def __rich__(self) -> rich.panel.Panel:
+        ts_info = self.ts_config.thoughtspot
+        header = f"Authentication failed for [fg-secondary]{self.ts_config.thoughtspot.username}"
+        reason = f"CS Tools config: [fg-secondary]{self.ts_config.name}[/] is not valid."
+        fixing = []
+
+        if ts_info.is_orgs_enabled and self.desired_org_id is not None:
+            fixing.append(f"Ensure your User has access to Org ID {self.desired_org_id}.")
+
+        if ts_info.bearer_token is not None:
+            fixing.append("Regenerate your Bearer Token in the V2.0 REST API auth/token/full in the Developer tab.")
+
+        if ts_info.secret_key is not None:
+            fixing.append(f"Check if your secret_key is still valid {ts_info.secret_key} in the Developer tab.")
+
+        if ts_info.password is not None:
+            fixing.append("Check if your username and password are correct from the ThoughtSpot website.")
+            fixing.append(f"You can try them by navigating to {ts_info.url}?disableSAMLAutoRedirect=true")
+
+        return _make_error_panel(header=header, reason=reason, fixing="\n".join(fixing))
+
+
+class SyncerInitError(CSToolsError):
+    """
+    Raised when a Syncer isn't defined correctly.
+
+     ╭──────── Your Starburst Syncer encountered an error. ────────╮
+     │                                                             │
+     │ 2 arguments have errors.                                    │
+     │                                                             │
+     │ catalog                                                     │
+     │ x Field required                                            │
+     │                                                             │
+     │ secret                                                      │
+     │ x Field required, you must provide a json web token         │
+     │                                                             │
+     │ Mitigation                                                  │
+     │ Check the Syncer's documentation page for more information. │
+     │ https://thoughtspot.github.io/cs_tools/syncer/starburst/    │
+     ╰─────────────────────────────────────────────────────────────╯
+    """
+
+    def __init__(self, protocol: str, pydantic_error: pydantic.ValidationError):
+        self.protocol = protocol
+        self.pydantic_error = pydantic_error
+    
+    @property
+    def human_friendly_reason(self) -> str:
+        """
+        Responsible for showing arguments and their errors.
+
+        │ 2 arguments have errors.                                    │
+        │                                                             │
+        │ catalog                                                     │
+        │ x Field required                                            │
+        │                                                             │
+        │ secret                                                      │
+        │ x Field required, you must provide a json web token         │
+        """
+        ErrorInfo = collections.namedtuple("ErrorInfo", ["user_input", "error_messages"])
+        # ErrorInfo(user_input: str, error_messages: list[str])
+
+        # SYNCER ARGS MAY HAVE MULTIPLE VALIDATION ERRORS EACH, SO WE SANITIZE THEM ALL.
+        errors: dict[str, ErrorInfo] = {}
+
+        # ==============================        
+        # CLEAN THE ERRORS FOR NON-TECHNICAL USERS.
+        # ==============================        
+        for error in self.pydantic_error.errors():
+            argument_name, *_ = error["loc"]
+            assert isinstance(argument_name, str)
+
+            existing_info = errors.get(argument_name, ErrorInfo(user_input="", error_messages=[]))
+            messages = existing_info.error_messages
+            usr_nput = existing_info.user_input
+
+            # CLEAN ERROR MESSAGE OF TECHNICAL JARGON.
+            JARGON = "Assertion failed, "
+            messages.append(error["msg"].replace(JARGON, ""))
+
+            # ADD THE USER'S INPUT, IF GIVEN.
+            if not usr_nput and error["type"] != "missing":
+                usr_nput = error["input"]
+
+            errors[argument_name] = ErrorInfo(user_input=usr_nput, error_messages=messages)
+
+        # ==============================        
+        # FORMAT THE ERRORS FOR DISPLAY.
+        # ==============================        
+        s = len(errors) > 1  # pluralize
+
+        RED_X = "[fg-error]x[/]"
+
+        details = ""
+
+        for is_last_line, (argument_name, error_info) in loop_last(errors.items()):
+            details += f"[fg-secondary]{argument_name}[/]"
+            details += f"\n[fg-warn]>[/] [fg-success]{error_info.user_input}[/]"
+
+            for error_message in error_info.error_messages:
+                details += f"\n{RED_X} {error_message}"
+
+            if not is_last_line:
+                details += "\n\n"
+
+        # fmt: off
+        phrase = (
+            f"\n{len(errors)} argument{'s' if s else ''} ha{'ve' if s else 's'} errors."
+            f"\n\n{details}"
+        )
+        # fmt: on
+
+        return phrase
+    
+    def __rich__(self) -> rich.panel.Panel:
+        header = f"Your {self.protocol} Syncer encountered an error."
+        reason = self.human_friendly_reason
+        fixing = (
+            # fmt: off
+            f"Check the Syncer's documentation page for more information."
+            f"\n[fg-secondary]https://thoughtspot.github.io/cs_tools/syncer/{self.protocol.lower()}/"
+            # fmt: on            
+        )
+
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)
+
+#
+#
+#
 
 class CSToolsCLIError(CSToolsError):
     """When raised, will present a pretty error to the CLI."""
@@ -132,38 +283,6 @@ class CSToolsCLIError(CSToolsError):
         return panel
 
 
-class ThoughtSpotUnreachable(CSToolsCLIError):
-    """Raised when ThoughtSpot can't be seen from the local machine."""
-
-    title = "Can't connect to your ThoughtSpot cluster."
-
-
-class ThoughtSpotUnavailable(CSToolsCLIError):
-    """Raised when a ThoughtSpot session can't be established."""
-
-    title = "Your ThoughtSpot cluster is currently unavailable."
-
-
-class AuthenticationError(CSToolsCLIError):
-    """Raised when incorrect authorization details are supplied."""
-
-    title = "Authentication failed for [b blue]{config.thoughtspot.username}"
-    reason = "\nCS Tools config: [b blue]{config.name}[/]"
-    # fmt: off
-    mitigation = (
-        "\n[b white]1/[/] Check if your username and password is correct from the ThoughtSpot website."
-        "\n[b white]2/[/] Determine if your usename ends with a whitelisted email domain."
-        "\n[b white]3/[/] If your password contains a [b green]$[/] or [b green]![/], run this command and type your "
-        "password in the hidden prompt."
-        "\n   [b green]cs_tools config modify --config {config.name} --password prompt[/]"
-        "\n[b white]4/[/] If your cluster is orgs-enabled, ensure you can access the specified org id."
-        "\n"
-        "\n   [b green]**[/] you may need to use this url to see the login page"
-        "\n   [b green]{config.thoughtspot.url}?disableAutoSAMLRedirect=true[/]"
-    )
-    # fmt: on
-
-
 class TSLoadServiceUnreachable(CSToolsCLIError):
     """Raised when the etl_http_server service cannot be reached."""
 
@@ -178,98 +297,9 @@ class TSLoadServiceUnreachable(CSToolsCLIError):
         "{tsload_command}"
     )
 
-
-#
-# Syncer
-#
-
-
-class SyncerInitError(CSToolsCLIError):
-    """Raised when a Syncer isn't defined correctly."""
-
-    """
-     ╭──────── Your Starburst Syncer encountered an error. ────────╮
-     │                                                             │
-     │ 2 arguments have errors.                                    │
-     │                                                             │
-     │ catalog                                                     │
-     │ x Field required                                            │
-     │                                                             │
-     │ secret                                                      │
-     │ x Field required, you must provide a json web token         │
-     │                                                             │
-     │ Mitigation                                                  │
-     │ Check the Syncer's documentation page for more information. │
-     │ https://thoughtspot.github.io/cs_tools/syncer/starburst/    │
-     ╰─────────────────────────────────────────────────────────────╯
-    """
-
-    title = "Your {proto} Syncer encountered an error."
-    mitigation = (
-        # fmt: off
-        "Check the Syncer's documentation page for more information."
-        "\n[b blue]https://thoughtspot.github.io/cs_tools/syncer/{proto_lower}/"
-        # fmt: on
-    )
-
-    def __init__(self, pydantic_error: pydantic.ValidationError, *, proto: str):
-        self.pydantic_error = pydantic_error
-        self.error_info = {"proto": proto, "proto_lower": proto.lower()}
-
-    @property
-    def reason(self) -> str:  # type: ignore[override]
-        """
-        Responsible for showing arguments and their errors.
-
-        │ 2 arguments have errors.                                    │
-        │                                                             │
-        │ catalog                                                     │
-        │ x Field required                                            │
-        │                                                             │
-        │ secret                                                      │
-        │ x Field required, you must provide a json web token         │
-        """
-        errors: dict[str, list[str]] = collections.defaultdict(list)
-
-        for error in self.pydantic_error.errors():
-            argument_name, *_ = error["loc"]
-            assert isinstance(argument_name, str)
-
-            # Clean error message of technical jargon.
-            message = error["msg"].replace("Assertion failed, ", "")
-
-            # Add the user's input, if given.
-            if error["type"] != "missing":
-                message += f" [b yellow](given: [b green]{error['input']}[/])[/]"
-
-            errors[argument_name].append(message)
-
-        summary = "1 argument has" if len(errors) == 1 else f"{len(errors)} arguments have"
-        details = ""
-
-        for is_last_error, (argument, lines) in loop_last(errors.items()):
-            details += f"[b blue]{argument}[/]"
-
-            for line in lines:
-                details += f"\n[b red]x[/] {line}"
-
-            if not is_last_error:
-                details += "\n\n"
-
-        # fmt: off
-        phrase = (
-            f"\n{summary} errors."
-            f"\n\n{details}"
-        )
-        # fmt: on
-
-        return phrase
-
-
 #
 # Cluster Configurations
 #
-
 
 class ConfigDoesNotExist(CSToolsCLIError):
     title = "Cluster configuration [b blue]{name}[/] does not exist."

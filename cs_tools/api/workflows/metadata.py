@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Coroutine, Iterable
-from typing import cast
+from typing import Any, Literal, cast
 import asyncio
 import datetime as dt
 import itertools as it
+import json
 import logging
 import pathlib
 
@@ -20,14 +21,18 @@ log = logging.getLogger(__name__)
 
 
 async def fetch_all(
-    object_types: Iterable[types.APIObjectType], *, http: RESTAPIClient, record_size: int = 5_000, **search_options
+    metadata_types: Iterable[types.APIObjectType],
+    *,
+    http: RESTAPIClient,
+    record_size: int = 5_000,
+    **search_options,
 ) -> list[types.APIResult]:
     """Wraps metadata/search fetching all objects of the given type and exhausts the pagination."""
     results: list[types.APIResult] = []
     tasks: list[asyncio.Task] = []
 
-    async with utils.BoundedTaskGroup(max_concurrent=len(list(object_types))) as g:
-        for object_type in object_types:
+    async with utils.BoundedTaskGroup(max_concurrent=len(list(metadata_types))) as g:
+        for object_type in metadata_types:
             search_options["guid"] = ""
             search_options["metadata"] = [{"type": object_type}]
             coro = paginator(http.metadata_search, record_size=record_size, **search_options)

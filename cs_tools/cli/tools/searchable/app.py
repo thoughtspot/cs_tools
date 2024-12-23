@@ -60,29 +60,24 @@ def deploy(
     cnxn_guid: types.GUID = typer.Option(
         ...,
         "--connection-guid",
-        help="if Falcon, use [b blue]falcon[/], otherwise find your guid in the Connection URL in the Data Workspace",
-        show_default=False,
+        help="If deploying to Falcon, use [fg-secondary]falcon[/], otherwise find your GUID in the Connection URL.",
     ),
     database: str = typer.Option(
         ...,
-        help="if Falcon, use [b blue]cs_tools[/], otherwise use the name of the database which holds Searchable data",
-        show_default=False,
+        help=(
+            "If deploying to Falcon, use [fg-secondary]cs_tools[/], otherwise use the database name holding Searchable "
+            "data."
+        )
     ),
     schema: str = typer.Option(
         ...,
         help=(
-            "if Falcon, use [b blue]falcon_default_schema[/], otherwise use the name of the schema which holds "
-            "Searchable data"
+            "If deploying to Falcon, use [fg-secondary]falcon_default_schema[/], otherwise use the name of the schema "
+            "holding Searchable data."
         ),
-        show_default=False,
     ),
-    org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
-    export: pathlib.Path = typer.Option(
-        None,
-        help="download the TML files of the SpotApp",
-        file_okay=False,
-        show_default=False,
-    ),
+    org_override: str = typer.Option(None, "--org", help="The Org identifier to deploy the SpotApp to."),
+    export: custom_types.Directory = typer.Option(None, help="Download the TML of the SpotApp instead of deploying."),
 ) -> types.ExitCode:
     """Deploy the Searchable SpotApp."""
     ts = ctx.obj.thoughtspot
@@ -120,7 +115,7 @@ def deploy(
 
         with tracker["CUSTOMIZE"]:
             HERE = pathlib.Path(__file__).parent
-            tmls: list[TML] = []
+            tmls: list[types.TML] = []
 
             connection_info = {
                 "dialect": db_dialect,
@@ -155,7 +150,7 @@ def deploy(
                 tmls.append(tml)
 
                 if export is not None:
-                    tml.dump(path=export.joinpath(path.name))
+                    tml.dump(path=export.joinpath(path.name))  # type: ignore[attr-defined]
 
         with tracker["DEPLOY"]:
             if export is not None:
@@ -182,9 +177,9 @@ def deploy(
 @app.command(dependencies=[thoughtspot])
 def audit_logs(
     ctx: typer.Context,
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=[models.AuditLogs]),
+        click_type=custom_types.Syncer(models=[models.AuditLogs]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -242,16 +237,16 @@ def audit_logs(
 @app.command(dependencies=[thoughtspot])
 def bi_server(
     ctx: typer.Context,
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=models.BISERVER_MODELS),
+        click_type=custom_types.Syncer(models=models.BISERVER_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
     from_date: custom_types.Date = typer.Option(..., help="inclusive lower bound of rows to select from TS: BI Server"),
     to_date: custom_types.Date = typer.Option(..., help="inclusive upper bound of rows to select from TS: BI Server"),
-    org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
-    compact: bool = typer.Option(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
+    org_override: str = typer.Option(None, "--org", help="The org to fetch history from"),
+    compact: bool = typer.Option(True, "--compact / --full", help="If compact, add  [User Action] != {null} 'invalid'"),
 ) -> types.ExitCode:
     """
     Extract usage statistics from your ThoughtSpot platform.
@@ -330,9 +325,9 @@ def metadata(
         help="if specified, include security controls for Column Level Security as well",
     ),
     org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=models.METADATA_MODELS),
+        click_type=custom_types.Syncer(models=models.METADATA_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -552,11 +547,11 @@ def metadata(
 
         with tracker["DUMP_DATA"]:
             # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
-            is_syncer_initialized_as_db_truncate = syncer.is_database_syncer and syncer.load_strategy == "TRUNCATE"
+            is_truncate_load_strategy = isinstance(syncer, DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
 
             for model in models.METADATA_MODELS:
                 for idx, rows in enumerate(temp.read_stream(tablename=model.__tablename__, batch=1_000_000), start=1):
-                    if is_syncer_initialized_as_db_truncate:
+                    if is_truncate_load_strategy:
                         syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
 
                     syncer.dump(model.__tablename__, data=[model.validated_init(**row).model_dump() for row in rows])

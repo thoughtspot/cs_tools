@@ -7,7 +7,6 @@ import rich
 import typer
 
 from cs_tools.cli import custom_types
-import cs_tools
 
 
 def is_literal_type(type_: type[Any]) -> bool:
@@ -57,7 +56,6 @@ class _MonkeyPatchedTyper:
     def argument_with_better_default(self, default=..., **passthru) -> typer.models.ArgumentInfo:
         """
         Patches:
-        - Allow custom type.
         - If required with no default, don't show_default..
         """
         passthru["show_default"] = passthru.get("show_default", default not in (..., None))
@@ -66,7 +64,6 @@ class _MonkeyPatchedTyper:
     def option_with_better_default(self, default=..., *param_decls, **passthru) -> typer.models.OptionInfo:
         """
         Patches:
-        - Allow custom type.
         - If required with no default, don't show_default..
         """
         passthru["show_default"] = passthru.get("show_default", default not in (..., None))
@@ -77,7 +74,11 @@ class _MonkeyPatchedTyper:
         Patches:
         - There's no formal interface for this, so inject our own console.
         """
-        return cs_tools.cli.ux.rich_console
+        from cs_tools.cli import ux
+
+        console = ux.RICH_CONSOLE
+        console.stderr = stderr
+        return console
 
 
 _MonkeyPatchedTyper()

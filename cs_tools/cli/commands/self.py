@@ -10,8 +10,7 @@ import sysconfig
 
 from awesomeversion import AwesomeVersion
 from cs_tools import __version__, utils
-from cs_tools.cli import _analytics
-from cs_tools.cli.types import Directory
+from cs_tools.cli import _analytics, custom_types
 from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
 from cs_tools.settings import _meta_config as meta
 from cs_tools.sync import base
@@ -48,11 +47,9 @@ def sync():
 @app.command(cls=CSToolsCommand, name="update")
 @app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
 def update(
-    beta: bool = typer.Option(False, "--beta", help="pin your install to a pre-release build"),
-    dev: pathlib.Path = typer.Option(None, help="pin your install to a local build", click_type=Directory()),
-    offline: pathlib.Path = typer.Option(
-        None, help="install cs_tools from a local directory instead of from github", click_type=Directory()
-    ),
+    beta: bool = typer.Option(False, "--beta", help="Pin your install to a pre-release build."),
+    dev: custom_types.Directory = typer.Option(None, help="Pin your install to a local build."),
+    offline: custom_types.Directory = typer.Option(None, help="Install cs_tools from a local directory."),
 ):
     """
     Upgrade CS Tools.
@@ -85,9 +82,7 @@ def update(
 
 @app.command(cls=CSToolsCommand)
 def info(
-    directory: pathlib.Path = typer.Option(
-        None, help="export an image to share with the CS Tools team", click_type=Directory()
-    ),
+    directory: custom_types.Directory = typer.Option(None, help="export an image to share with the CS Tools team"),
     anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
 ):
     """
@@ -142,7 +137,7 @@ def analytics():
 
 @app.command(cls=CSToolsCommand, hidden=True)
 def download(
-    directory: pathlib.Path = typer.Option(help="location to download the python binaries to", click_type=Directory()),
+    directory: custom_types.Directory = typer.Option(help="location to download the python binaries to"),
     platform: str = typer.Option(help="tag describing the OS and CPU architecture of the target environment"),
     python_version: AwesomeVersion = typer.Option(
         metavar="X.Y", help="major and minor version of your python install", parser=AwesomeVersion

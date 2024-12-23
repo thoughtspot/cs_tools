@@ -1,19 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable
-from typing import TYPE_CHECKING, Optional
 import asyncio
 import logging
 
 import httpx
 
-from cs_tools import errors, utils
+from cs_tools import errors, types, utils
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.datastructures import LocalSystemInfo, SessionContext
-from cs_tools.errors import AuthenticationError
-
-if TYPE_CHECKING:
-    from cs_tools.settings import CSToolsConfig
+from cs_tools.settings import CSToolsConfig
 
 log = logging.getLogger(__name__)
 
@@ -27,8 +23,8 @@ class ThoughtSpot:
 
     def __init__(self, config: CSToolsConfig, auto_login: bool = False):
         self._event_loop = utils.get_event_loop()
+        self._session_context: SessionContext | None = None
         self.config = config
-        self._session_context: Optional[SessionContext] = None
         self.api = RESTAPIClient(
             base_url=str(config.thoughtspot.url),
             concurrency=15,
@@ -49,7 +45,7 @@ class ThoughtSpot:
     def session_context(self) -> SessionContext:
         """Returns information about the ThoughtSpot session."""
         if self._session_context is None:
-            raise errors.NoSessionEstablished()
+            raise errors.NoSessionEstablished("SessionContext has not been established.")
 
         return self._session_context
 
@@ -127,7 +123,7 @@ class ThoughtSpot:
                 log.info(f"Attempted {method} Authentication (HTTP {r.status_code}), see logs for details..")
 
         if any(not _.is_success for _ in attempted.values()):
-            raise AuthenticationError(config=self.config) from None
+            raise errors.AuthenticationFailed(ts_config=self.config, desired_org_id=org_id) from None
 
         # GOOD TO GO , INTERACT WITH THE APIs
         c = self.api.session_info()

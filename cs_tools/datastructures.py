@@ -11,7 +11,7 @@ This includes things that will change based on submitted user configuration.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Literal
 import datetime as dt
 import logging
 import platform
@@ -68,7 +68,7 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
 
     model_config = sqlmodel._compat.SQLModelConfig(env_prefix="CS_TOOLS_SYNCER_", **_COMMON_MODEL_CONFIG)
 
-    _clustered_on: Optional[list[sa.Column]] = pydantic.PrivateAttr(None)
+    _clustered_on: list[sa.Column] | None = pydantic.PrivateAttr(None)
 
     @pydantic.model_serializer(mode="wrap")
     def _ignore_extras(self, handler) -> dict[str, Any]:
@@ -133,7 +133,7 @@ class ThoughtSpotInfo(_GlobalModel):
 
     @pydantic.field_serializer("url")
     @classmethod
-    def serialize_as_str(cls, url: pydantic.AnUrl) -> str:
+    def serialize_as_str(cls, url: pydantic.AnyUrl) -> str:
         return str(url)
 
 
@@ -213,7 +213,7 @@ class SessionContext(_GlobalModel):
     """Information about the current CS Tools session."""
 
     cs_tools_version: validators.CoerceVersion = AwesomeVersion(__version__)
-    environment: Optional[ExecutionEnvironment]
+    environment: ExecutionEnvironment = ExecutionEnvironment()
     thoughtspot: ThoughtSpotInfo
-    system: Optional[LocalSystemInfo]
+    system: LocalSystemInfo = LocalSystemInfo()
     user: UserInfo

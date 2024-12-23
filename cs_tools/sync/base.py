@@ -88,14 +88,10 @@ class SyncerManifest(_GlobalModel):
 class Syncer(_GlobalSettings):
     """A connection to a Data store."""
 
-    __manifest_path__: Optional[pathlib.Path] = None
-    __syncer_name__: Optional[str] = None
+    __manifest_path__: pathlib.Path | None = None
+    __syncer_name__: str | None = None
 
     def __init_subclass__(cls, is_base_class: bool = False):
-        # DEV NOTE: @boonhapus, 2023/12/18
-        # Should we swap this out with __pydantic_init_subclass__ to gain access to model-defined fields?
-        #
-        # https://github.com/pydantic/pydantic/blob/3d2ebef8f76625d6f82e6bf417682fd08ac66296/pydantic/main.py#L607
         super().__init_subclass__()
 
         if is_base_class:
@@ -114,15 +110,9 @@ class Syncer(_GlobalSettings):
 
         except pydantic.ValidationError as e:
             log.debug(e, exc_info=True)
-            raise errors.SyncerInitError(pydantic_error=e, proto=e.title) from None
+            raise errors.SyncerInitError(protocol=e.title, pydantic_error=e) from None
 
         child_self.__finalize__()
-
-    @property
-    def name(self) -> str:
-        """Name of the Syncer."""
-        assert self.__syncer_name__ is not None
-        return self.__syncer_name__
 
     def __finalize__(self) -> None:
         """Will be called after __init__()."""
@@ -132,6 +122,17 @@ class Syncer(_GlobalSettings):
         return f"<Syncer to '{self.name}'>"
 
     __str__ = __repr__
+
+    @property
+    def protocol(self) -> str:
+        """The type of the Syncer."""
+        assert self.__syncer_name__ is not None
+        return self.__syncer_name__
+
+    @property
+    def name(self) -> str:
+        """An alias for the protocol of the Syncer."""
+        return self.protocol
 
     def load(self, directive: str) -> TableRows:
         """Fetch data from the external data source."""
@@ -157,16 +158,6 @@ class DatabaseSyncer(Syncer, is_base_class=True):
     def case_insensitive(cls, value: str) -> str:
         return value.upper()
 
-    @property
-    def engine(self) -> sa.engine.Engine:
-        """The SQLALchemy engine which connects us to our Database."""
-        return self._engine
-
-    @property
-    def session(self) -> sa.orm.Session:
-        """The SQLALchemy session which represents an active connection to our Database."""
-        return self._session
-
     def __finalize__(self) -> None:
         # Metaclass-ish wizardry to determine if the DatabaseSyncer subclass defines the necessary properties.
         if self._engine is None:
@@ -191,3 +182,13 @@ class DatabaseSyncer(Syncer, is_base_class=True):
 
     def __repr__(self) -> str:
         return f"<DatabaseSyncer to '{self.name}'>"
+
+    @property
+    def engine(self) -> sa.engine.Engine:
+        """The SQLALchemy engine which connects us to our Database."""
+        return self._engine
+
+    @property
+    def session(self) -> sa.orm.Session:
+        """The SQLALchemy session which represents an active connection to our Database."""
+        return self._session

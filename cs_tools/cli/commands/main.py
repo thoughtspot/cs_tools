@@ -110,7 +110,7 @@ def run() -> int:
         this_run_data["is_known_error"] = True
         this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
         log.error(e)
-        log.debug("more info..", exc_info=True)
+        log.debug("More info..", exc_info=True)
 
     except errors.CSToolsError as e:
         return_code = 1
@@ -119,10 +119,12 @@ def run() -> int:
 
         log.debug(e, exc_info=True)
 
-        if _IS_CLI_PRINTABLE_ERROR := isinstance(e, ConsoleRenderable):
+        if _IS_CLI_PRINTABLE_ERROR := (hasattr(e, "__rich__") or isinstance(e, ConsoleRenderable)):
             RICH_CONSOLE.print(Align.center(e))
+            log.debug(e, exc_info=True)
         else:
             log.error(e)
+            log.debug("More info..", exc_info=True)
 
     except Exception as e:
         return_code = 1

@@ -25,7 +25,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 from cs_tools import __version__, datastructures, utils, validators
-from cs_tools.cli.ux import rich_console
+from cs_tools.cli.ux import RICH_CONSOLE
 from cs_tools.datastructures import ValidatedSQLModel
 from cs_tools.settings import _meta_config as meta
 from cs_tools.updater import cs_tools_venv
@@ -78,7 +78,7 @@ def prompt_for_opt_in() -> None:
         log.info("Analytics is enabled for CI installs. Set CS_TOOLS_ANALYTICS_OPT_OUT to disable.")
         return
 
-    rich_console.print()
+    RICH_CONSOLE.print()
 
     prompt = Panel.fit(
         (
@@ -92,16 +92,16 @@ def prompt_for_opt_in() -> None:
         title="[b blue]Would you like to send analytics to the CS Tools team?",
         border_style="bold blue",
     )
-    rich_console.print(Align.center(prompt))
+    RICH_CONSOLE.print(Align.center(prompt))
     choices = {"yes": True, "no": False, "prompt": None}
-    response = Prompt.ask("\n  Response", choices=choices.keys(), console=rich_console)
+    response = Prompt.ask("\n  Response", choices=choices.keys(), console=RICH_CONSOLE)
 
     if choices[response] is not False and meta.analytics.can_record_url is None:
         choices = {"yes": True, "no": False}
-        response = Prompt.ask("\n  Can we record your ThoughtSpot URL?", choices=choices.keys(), console=rich_console)
+        response = Prompt.ask("\n  Can we record your ThoughtSpot URL?", choices=choices.keys(), console=RICH_CONSOLE)
         meta.analytics.can_record_url = bool(response)
 
-    rich_console.print()
+    RICH_CONSOLE.print()
     meta.analytics.is_opted_in = choices[response]
     meta.save()
 

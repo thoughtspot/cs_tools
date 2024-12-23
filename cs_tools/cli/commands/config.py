@@ -4,8 +4,7 @@ import logging
 import pathlib
 
 from cs_tools import __version__, errors, utils
-from cs_tools.cli import _analytics
-from cs_tools.cli.types import Directory
+from cs_tools.cli import _analytics, custom_types
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.settings import (
     CSToolsConfig,
@@ -46,9 +45,7 @@ def create(
     secret: str = typer.Option(None, help="the trusted authentication secret key, found in the developer tab"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
     default_org: int = typer.Option(None, help="org ID to sign into by default"),
-    temp_dir: pathlib.Path = typer.Option(
-        None, help="the temporary directory to use for uploading files", click_type=Directory()
-    ),
+    temp_dir: custom_types.Directory = typer.Option(None, help="the temporary directory to use for uploading files"),
     disable_ssl: bool = typer.Option(
         False, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
@@ -97,7 +94,7 @@ def create(
         log.info("Checking supplied configuration..")
         ts.login()
 
-    except errors.AuthenticationError as e:
+    except errors.AuthenticationFailed as e:
         log.debug(e, exc_info=True)
         rich_console.print(Align.center(e))
 
@@ -126,9 +123,7 @@ def modify(
     ),
     secret: str = typer.Option(None, help="the trusted authentication secret key"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
-    temp_dir: pathlib.Path = typer.Option(
-        None, help="the temporary directory to use for uploading files", click_type=Directory()
-    ),
+    temp_dir: custom_types.Directory = typer.Option(None, help="the temporary directory to use for uploading files"),
     disable_ssl: bool = typer.Option(
         None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
@@ -191,7 +186,7 @@ def modify(
         log.info("Checking supplied configuration..")
         ts.login()
 
-    except errors.AuthenticationError as e:
+    except errors.AuthenticationFailed as e:
         log.debug(e, exc_info=True)
         rich_console.print(Align.center(e))
 
@@ -237,7 +232,7 @@ def check(
         log.info("Checking supplied configuration..")
         ts.login()
 
-    except errors.AuthenticationError as e:
+    except errors.AuthenticationFailed as e:
         log.debug(e, exc_info=True)
         rich_console.print(Align.center(e))
         return
