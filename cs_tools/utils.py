@@ -13,9 +13,9 @@ import getpass
 import importlib
 import itertools as it
 import logging
-import os
 import pathlib
-import site
+import sys
+import threading
 import zlib
 
 from sqlalchemy import types as sa_types
@@ -104,27 +104,22 @@ def batched(iterable: Iterable[_T], *, n: int) -> Generator[Iterable[_T], None, 
         yield batch
 
 
-def determine_editable_install() -> bool:
+def determine_editable_install(package_name: str = "cs_tools") -> bool:
     """Determine if the current CS Tools context is an editable install."""
-    if "FAKE_EDITABLE" in os.environ:
-        return True
+    return any(f"__editable__.{package_name}" in path for path in sys.path)
 
-    for directory in site.getsitepackages():
-        try:
-            site_directory = pathlib.Path(directory)
 
-            for path in site_directory.iterdir():
-                if not path.is_file():
-                    continue
+def get_package_directory(package_name: str) -> pathlib.Path | None:
+    """Get the path to the package directory."""
+    try:
+        module = importlib.import_module(package_name)
+        assert module.__spec__ is not None
+        assert module.__spec__.origin is not None
 
-                if "__editable__.cs_tools" in path.as_posix():
-                    return True
+    except (ModuleNotFoundError, AssertionError):
+        return None
 
-        # not all distros will bundle python the same (eg. ubuntu-slim)
-        except FileNotFoundError:
-            continue
-
-    return False
+    return pathlib.Path(module.__spec__.origin).parent
 
 
 def obscure(data: bytes) -> bytes:
@@ -160,7 +155,18 @@ def anonymize(text: str, *, anonymizer: str = " {anonymous} ") -> str:
 
 
 class GlobalState:
-    """An object that can be used to store arbitrary state."""
+    """
+    An object that can be used to store arbitrary state.
+
+    Access members with dotted access.
+
+    >>> global_state = GlobalState()
+    >>> global_state.foo = 'bar'
+    >>> print(global_state.foo)
+    bar
+    >>> global_state.abc
+    AttributeError: 'State' object has no attribute 'abc'
+    """
 
     _state: dict[str, Any]
 
@@ -182,19 +188,6 @@ class GlobalState:
 
     def __delattr__(self, key: Any) -> None:
         del self._state[key]
-
-
-def get_package_directory(package_name: str) -> pathlib.Path | None:
-    """Get the path to the package directory."""
-    try:
-        module = importlib.import_module(package_name)
-        assert module.__spec__ is not None
-        assert module.__spec__.origin is not None
-
-    except (ModuleNotFoundError, AssertionError):
-        return None
-
-    return pathlib.Path(module.__spec__.origin).parent
 
 
 def timedelta_strftime(timedelta: dt.timedelta, *, sep: str = " ") -> str:
@@ -238,3 +231,14 @@ def create_dynamic_model(__tablename__: str, *, sample_row: dict[str, Any]) -> t
     Model = pydantic.create_model(__tablename__, __base__=SQLModel, __cls_kwargs__={"table": True}, **field_definitions)  # type: ignore[call-overload]
 
     return Model
+
+
+class ExceptedThread(threading.Thread):
+    """For background threads: if errors, use log.debug instead of log.warning."""
+
+    def run(self) -> None:
+        try:
+            super().run()
+
+        except Exception:
+            log.debug(f"Something went wrong in {self}", exc_info=True)
