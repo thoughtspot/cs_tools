@@ -83,7 +83,7 @@ def deploy(
     ts = ctx.obj.thoughtspot
 
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
-        ts.org.switch(org=org_override)
+        ts.switch_org(org_id=org_override)
 
     TOOL_TASKS = [
         px.WorkTask(id="CONNECTION", description="Getting details for data source"),
@@ -276,8 +276,8 @@ def bi_server(
     # DEV NOTE: @boonhapus
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
     if ts.session_context.thoughtspot.is_orgs_enabled:
-        ts.config.thoughtspot.default_org = 0
-        ts.login()
+        ts.switch_org(org_id=0)
+    
     if org_override is not None:
         c = workflows.metadata.fetch_one(identifier=org_override, metadata_type="ORG", attr_path="id", http=ts.api)
         _ = utils.run_sync(c)
@@ -408,12 +408,7 @@ def metadata(
                 if not ts.session_context.thoughtspot.is_orgs_enabled:
                     _ = [{"id": 0, "name": "ThoughtSpot", "description": "Your cluster is not orgs enabled."}]
                 else:
-                    ts.config.thoughtspot.default_org = org["id"]
-                    ts.login()
-
-                    c = ts.api.orgs_search(org_id=org["id"])
-                    r = utils.run_sync(c)
-                    _ = r.json()
+                    ts.switch_org(org_id=org["id"])
 
                 # DUMP ORG DATA
                 d = api_transformer.ts_org(data=_, cluster=CLUSTER_UUID)

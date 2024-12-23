@@ -156,18 +156,24 @@ class ThoughtSpot:
         self._session_context = ctx = SessionContext(thoughtspot=d, user=d)
 
         log.debug(f"SESSION CONTEXT\n{ctx.model_dump_json(indent=4)}")
+    
+    def switch_org(self, org_id: types.OrgIdentifier) -> types.APIResult:
+        """Establish a new session in the target Org."""
+        c = self.api.orgs_search()
+        r = utils.run_sync(c)
+
+        try:
+            r.raise_for_status()
+            _ = next(iter(r.json()))
+        except httpx.HTTPStatusError:
+            raise errors.AuthenticationFailed(ts_config=self.config, desired_org_id=org_id) from None
+        except StopIteration:
+            raise errors.CSToolsError(f"Could not find the org '{org_id}'") from None
+
+        self.config.thoughtspot.default_org = _["id"]
+        self.login()
+        return _
 
     def logout(self) -> None:
         """Log out of ThoughtSpot."""
         utils.run_sync(self.api.logout())
-
-
-if __name__ == "__main__":
-    from cs_tools import thoughtspot
-    from cs_tools.settings import CSToolsConfig
-
-    logging.basicConfig(level=logging.INFO)
-
-    cfg = CSToolsConfig.from_name(name="champagne")
-    ts = thoughtspot.ThoughtSpot(config=cfg)
-    ts.login()
