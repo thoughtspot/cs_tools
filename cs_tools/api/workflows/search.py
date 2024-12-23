@@ -6,6 +6,7 @@ import logging
 
 from cs_tools import types
 from cs_tools.api.client import RESTAPIClient
+from cs_tools.api.workflows import metadata
 
 __all__ = ("search",)
 
@@ -83,22 +84,13 @@ async def search(
         https://developers.thoughtspot.com/docs/fetch-data-and-report-apis#_search_data_api
     """
     # FOR POST-PROCESSING DATA VALUES TO CONVERT TO THEIR APPROPRIATE DATA TYPES
-    r = await http.metadata_search(
-        guid="", metadata=[{"identifier": worksheet, "type": "LOGICAL_TABLE"}], include_details=True
-    )
-    r.raise_for_status()
-
-    try:
-        d = next(iter(r.json()))
-    except StopIteration:
-        raise ValueError(f"Worksheet '{worksheet}' not found.") from None
-
+    d = await metadata.fetch_one(identifier=worksheet, metadata_type="LOGICAL_TABLE", include_details=True, http=http)
     worksheet_guid = d["metadata_header"]["id"]
     worksheet_column_info = {column["header"]["name"]: column["dataType"] for column in d["metadata_detail"]["columns"]}
 
-    log.debug(f"Executing Search on '{worksheet}'\n\n{query}\n")
-
     data: types.TableRowsFormat = []
+
+    log.debug(f"Executing Search on '{worksheet}'\n\n{query}\n")
 
     # IT'S IMPOSSIBLE TO KNOW HOW MANY ROWS WILL BE RETURNED FROM A GIVEN SEARCH
     # BEFOREHAND SO WE MUST POLL THE API UNTIL ALL ROWS HAVE BEEN RETRIEVED.

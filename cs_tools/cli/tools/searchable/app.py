@@ -278,6 +278,10 @@ def bi_server(
     if ts.session_context.thoughtspot.is_orgs_enabled:
         ts.config.thoughtspot.default_org = 0
         ts.login()
+    if org_override is not None:
+        c = workflows.metadata.fetch_one(identifier=org_override, metadata_type="ORG", attr_path="id", http=ts.api)
+        _ = utils.run_sync(c)
+        org_override = _
 
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
