@@ -85,7 +85,7 @@ class SyncerManifest(_GlobalModel):
         _registry.add(__syncer_name__)
 
 
-class Syncer(_GlobalSettings):
+class Syncer(_GlobalSettings, extra="forbid"):
     """A connection to a Data store."""
 
     __manifest_path__: pathlib.Path | None = None

@@ -166,13 +166,17 @@ class SyncerInitError(CSToolsError):
             messages = existing_info.error_messages
             usr_nput = existing_info.user_input
 
+            # ADD THE USER'S INPUT, IF GIVEN.
+            if not usr_nput and error["type"] != "missing":
+                usr_nput = error["input"]
+
             # CLEAN ERROR MESSAGE OF TECHNICAL JARGON.
             JARGON = "Assertion failed, "
             messages.append(error["msg"].replace(JARGON, ""))
 
-            # ADD THE USER'S INPUT, IF GIVEN.
-            if not usr_nput and error["type"] != "missing":
-                usr_nput = error["input"]
+            # ADD A NOTE IF THE USER GAVE AN EXTRA ARG NAME.
+            if not usr_nput and error["type"] == "extra_forbidden":
+                messages[-1] += ". Did you make a typo?"
 
             errors[argument_name] = ErrorInfo(user_input=usr_nput, error_messages=messages)
 
