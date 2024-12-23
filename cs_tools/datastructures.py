@@ -108,20 +108,22 @@ class ThoughtSpotInfo(_GlobalModel):
     is_cloud: bool
     is_roles_enabled: bool = False
     is_orgs_enabled: bool = False
+    is_iam_v2_enabled: bool = False
 
     @pydantic.model_validator(mode="before")
     @classmethod
     def check_if_from_session_info(cls, data: Any) -> Any:
-        if "__system_info__" in data:
-            data = {
-                "url": data["__url__"],
-                "is_orgs_enabled": data["__is_orgs_enabled__"],
-                "is_roles_enabled": data["__system_info__"].get("roles_enabled", False),
-                "cluster_id": data["__system_info__"]["id"],
-                "version": data["__system_info__"]["release_version"],
-                "timezone": data["__system_info__"]["time_zone"],
-                "is_cloud": data["__system_info__"]["type"] == "SAAS",
-            }
+        if system_info := data.get("__system_info__", {}):
+            data["cluster_id"] = system_info["id"]
+            data["url"] = data["__url__"]
+            data["version"] = system_info["release_version"]
+            data["timezone"] = system_info["time_zone"]
+            data["is_cloud"] = system_info["type"] == "SAAS"
+            data["is_roles_enabled"] = system_info.get("roles_enabled", False)
+            data["is_orgs_enabled"] = data["__is_orgs_enabled__"]
+
+        if overrides_info := data.get("__overrides_info__", {}):
+            data["is_iam_v2_enabled"] = overrides_info.get("oidcConfiguration.iamV2OIDCEnabled", {}).get("current", False)
 
         return data
 
