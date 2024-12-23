@@ -42,7 +42,11 @@ class _MonkeyPatchedTyper:
             # Literal
             if is_literal_type(annotation):
                 return custom_types.Literal(choices=literal_values(annotation))
-            
+
+            # CS Tools Custom Types with some pre-requisite configuration
+            if isinstance(annotation, custom_types.CustomType):
+                return annotation
+
             # CS Tools Custom Types
             if issubclass(annotation, custom_types.CustomType):
                 return annotation()
