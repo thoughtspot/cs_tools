@@ -43,8 +43,12 @@ class SQLite(DatabaseSyncer):
         super().__finalize__()
 
         if self.pragma_speedy_inserts:
+            # WRITE-AHEAD-LOG MODE ALLOWS US TO "WRITE" TO THE DATABASE IN PARALLEL WITH READS.
+            self.session.execute(sa.text("PRAGMA journal_mode = WAL;"))
             # CONTINUES WITHOUT SYNCING ONCE DATA IS HANDED OFF TO THE OS, PROGRAM MAY CRASHES CORRUPT THE DATABASE.
             self.session.execute(sa.text("PRAGMA synchronous = OFF;"))
+            # SUGGESTED MAX NUMBER OF DATABASE DISK PAGES / KB (FOR NEGATIVE VALUES) HELD IN MEMORY AT ONCE.
+            self.session.execute(sa.text("PRAGMA cache_size = -500000;"))  # 512MB
             # MAINTAIN THE LOCK ON THE SQLITE DATABASE FILE. DON'T RELEASE/ACQUIRE IT.
             self.session.execute(sa.text("PRAGMA locking_mode = EXCLUSIVE;"))
             # STORE TEMPORARY TABLES AND VIEWS IN RAM.

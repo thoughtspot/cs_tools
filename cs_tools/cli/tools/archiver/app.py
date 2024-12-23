@@ -180,7 +180,7 @@ def identify(
                 ignore_groups = [group["guid"] for group in all_groups if group["name"] in ignore_groups]
 
             if ignore_tags:
-                c = workflows.metadata.fetch_all(object_types=["TAG"], http=ts.api)
+                c = workflows.metadata.fetch_all(metadata_types=["TAG"], http=ts.api)
                 d = utils.run_sync(c)
 
                 all_tags = [
@@ -194,7 +194,7 @@ def identify(
                 ignore_tags = [tag["guid"] for tag in all_tags if tag["name"] in ignore_tags]
 
             content = ["ANSWER", "LIVEBOARD"] if content == "ALL" else [content]  # type: ignore[assignment]
-            c = workflows.metadata.fetch_all(object_types=content, http=ts.api)  # type: ignore[arg-type]
+            c = workflows.metadata.fetch_all(metadata_types=content, http=ts.api)  # type: ignore[arg-type]
             d = utils.run_sync(c)
 
             all_metadata = [
@@ -425,7 +425,7 @@ def remove(
 
     with px.WorkTracker("Removing Stale Objects", tasks=TOOL_TASKS) as tracker:
         with tracker["GATHER_METADATA"]:
-            c = workflows.metadata.fetch_all(object_types=["ANSWER", "LIVEBOARD"], tag_identifiers=[tag_name], http=ts.api)  # noqa: E501
+            c = workflows.metadata.fetch_all(metadata_types=["ANSWER", "LIVEBOARD"], tag_identifiers=[tag_name], http=ts.api)  # noqa: E501
             d = utils.run_sync(c)
 
             filtered = [

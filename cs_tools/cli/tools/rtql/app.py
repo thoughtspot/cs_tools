@@ -6,12 +6,12 @@ from textual_serve.server import Server
 import typer
 
 from cs_tools import errors, types
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.ux import AsyncTyper
 
 from . import tui
 
-app = CSToolsApp(
+app = AsyncTyper(
     help="""
     Enable querying the ThoughtSpot TQL CLI from a remote machine.
 
@@ -26,11 +26,12 @@ app = CSToolsApp(
 )
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def interactive(
     ctx: typer.Context,
-    mode: Literal["web", "terminal"] = typer.Option("terminal"),
-    admin_mode: bool = typer.Option(False, "--admin", help="enable admin mode in remote TQL", hidden=True),
+    mode: Literal["web", "terminal"] = typer.Option("terminal", help="Where to run the Remote TQL UI."),
+    admin_mode: bool = typer.Option(False, "--admin", help="Enable --allow-unsafe in Remote TQL.", hidden=True),
 ) -> types.ExitCode:
     """
     Run an interactive TQL session as if you were on the cluster.

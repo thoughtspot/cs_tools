@@ -146,13 +146,15 @@ class SecurityConfig(Screen):
                 group = self.app.active_groups[col_idx]
 
                 access[cell.value]["guids"].append(column["header"]["id"])
-                access[cell.value]["principals"].append({"identifier": group["metadata_id"]})
+                access[cell.value]["principals"].append(group["metadata_id"])
 
         coros = []
 
         for share_mode, options in access.items():
+            if not options["guids"] or not options["principals"]:
+                continue
             coros.append(
-                self.app.http.v1_security_metadata_share(
+                self.app.http.security_metadata_share(
                     guids=options["guids"],
                     api_object_type="LOGICAL_COLUMN",
                     principals=options["principals"],

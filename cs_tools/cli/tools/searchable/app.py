@@ -17,16 +17,15 @@ from cs_tools.cli import (
     custom_types,
     progress as px,
 )
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.ux import AsyncTyper
+from cs_tools.sync.base import DatabaseSyncer, Syncer
 from cs_tools.sync.sqlite.syncer import SQLite
 
 from . import api_transformer, models
 
 log = logging.getLogger(__name__)
-app = CSToolsApp(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
+app = AsyncTyper(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 
 
 def _ensure_external_mapping(tml: types.TML, *, connection_info: dict[str, str]) -> types.TML:
@@ -54,7 +53,8 @@ def _ensure_external_mapping(tml: types.TML, *, connection_info: dict[str, str])
     return tml
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def deploy(
     ctx: typer.Context,
     cnxn_guid: types.GUID = typer.Option(
@@ -174,7 +174,8 @@ def deploy(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def audit_logs(
     ctx: typer.Context,
     syncer: Syncer = typer.Option(
@@ -234,7 +235,8 @@ def audit_logs(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def bi_server(
     ctx: typer.Context,
     syncer: Syncer = typer.Option(
@@ -319,7 +321,8 @@ def bi_server(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def metadata(
     ctx: typer.Context,
     # tables: List[str] = typer.Option(None, help="table names to collect data on, can be specified multiple times"),
@@ -463,7 +466,7 @@ def metadata(
                 temp.dump(models.Tag.__tablename__, data=d)
 
             with tracker["TS_METADATA"] as this_task:
-                c = workflows.metadata.fetch_all(object_types=["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"], http=ts.api)  # noqa: E501
+                c = workflows.metadata.fetch_all(metadata_types=["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"], http=ts.api)  # noqa: E501
                 _ = utils.run_sync(c)
 
                 # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
@@ -484,9 +487,9 @@ def metadata(
                 temp.dump(models.TaggedObject.__tablename__, data=d)
 
             with tracker["TS_COLUMN"] as this_task:
-                # WE USE include_hidden_objects=True BECAUSE HIDDEN COLUMNS ON A TABLE/MODEL ARE NOT ACCESSIBLE WITHOUT IT.
+                # USE include_hidden_objects=True BECAUSE HIDDEN COLUMNS ON A LOGICAL_TABLE AREN'T RETURNED WITHOUT IT.
                 g = {"LOGICAL_TABLE": seen_guids["LOGICAL_TABLE"]}
-                c = workflows.metadata.fetch(typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api)
+                c = workflows.metadata.fetch(typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api)  # noqa: E501
                 _ = utils.run_sync(c)
 
                 # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
