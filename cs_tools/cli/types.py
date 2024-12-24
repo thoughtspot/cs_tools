@@ -1,19 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 import collections.abc
 import itertools as it
 import logging
-import pathlib
-import urllib.parse
 
 import click
-import pydantic
-import sqlalchemy
 
 from cs_tools._compat import StrEnum
+
 # from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.errors import ConfigDoesNotExist
 
 log = logging.getLogger(__name__)
 

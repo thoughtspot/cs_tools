@@ -67,7 +67,7 @@ def deploy(
         help=(
             "If deploying to Falcon, use [fg-secondary]cs_tools[/], otherwise use the database name holding Searchable "
             "data."
-        )
+        ),
     ),
     schema: str = typer.Option(
         ...,
@@ -279,7 +279,7 @@ def bi_server(
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
     if ts.session_context.thoughtspot.is_orgs_enabled:
         ts.switch_org(org_id=0)
-    
+
     if org_override is not None:
         c = workflows.metadata.fetch_one(identifier=org_override, metadata_type="ORG", attr_path="id", http=ts.api)
         _ = utils.run_sync(c)

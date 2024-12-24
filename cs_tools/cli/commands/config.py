@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import pathlib
 
 from cs_tools import __version__, errors, utils
 from cs_tools.cli import _analytics, custom_types

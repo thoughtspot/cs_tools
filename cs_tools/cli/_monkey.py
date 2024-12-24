@@ -21,6 +21,7 @@ def literal_values(type_: type[Any]) -> tuple[Any, ...]:
 
 class _MonkeyPatchedTyper:
     """Add support for useful and interesting things."""
+
     og_get_click_type = typer.main.get_click_type
 
     def __init__(self):
@@ -33,11 +34,10 @@ class _MonkeyPatchedTyper:
     def get_click_type(self, *, annotation: Any, parameter_info: typer.models.ParameterInfo) -> click.ParamType:
         # Let Typer handle the basics
         try:
-            return _MonkeyPatchedTyper.og_get_click_type(annotation=annotation, parameter_info=parameter_info)        
+            return _MonkeyPatchedTyper.og_get_click_type(annotation=annotation, parameter_info=parameter_info)
 
         # Additional support added by us.
         except RuntimeError:
-
             # Literal
             if is_literal_type(annotation):
                 return custom_types.Literal(choices=literal_values(annotation))

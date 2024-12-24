@@ -87,7 +87,7 @@ class Directory(CustomType):
     def get_metavar(self, param: click.Parameter) -> str:  # noqa: ARG002
         """Example usage of the parameter to display on the CLI."""
         return "DIRECTORY"
-    
+
     def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> pathlib.Path:
         """Coerce string into a pathlib.Path.is_dir()."""
         try:
@@ -97,7 +97,7 @@ class Directory(CustomType):
 
         if self.exists and not path.exists():
             self.fail(message="Directory does not exist", param=param, ctx=ctx)
-        
+
         if self.make:
             path.mkdir(parents=True, exist_ok=True)
 
@@ -111,10 +111,7 @@ class Syncer(CustomType):
         self.models = models
 
     def _parse_syncer_configuration(
-        self,
-        definition_spec: str,
-        param: click.Parameter | None,
-        ctx: click.Context | None
+        self, definition_spec: str, param: click.Parameter | None, ctx: click.Context | None
     ) -> dict[str, Any]:
         try:
             assert ".toml" in definition_spec, "Syncer definition is not a TOML file, it's likely given as declarative."
@@ -160,7 +157,6 @@ class Syncer(CustomType):
 
         log.info(f"Initializing syncer: {SyncerClass}")
         return SyncerClass(**syncer_options)
-
 
         # if self.is_database_syncer:
         #     assert isinstance(self._syncer, base.DatabaseSyncer)

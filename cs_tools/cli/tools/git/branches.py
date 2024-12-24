@@ -3,13 +3,12 @@ from __future__ import annotations
 from httpx import HTTPStatusError
 from rich.align import Align
 from rich.table import Table
-from typing import List
 import typer
 
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.types import MultipleChoiceType
 from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.types import DeployPolicy, DeployType, GUID, MetadataIdentity
+from cs_tools.types import GUID, DeployPolicy, DeployType, MetadataIdentity
 
 app = CSToolsApp(
     name="branches",
@@ -228,7 +227,7 @@ def _add_tags(ts: thoughtspot.ThoughtSpot, objects: list[GUID], tags: list[str])
     :param tags: List of tags to create.
     """
     with rich_console.status(f"[bold green]adding tags: {tags}[/]"):
-        metadata: List[MetadataIdentity] = []
+        metadata: list[MetadataIdentity] = []
         for guid in objects:
             metadata.append({"identifier": guid})
 
@@ -238,4 +237,3 @@ def _add_tags(ts: thoughtspot.ThoughtSpot, objects: list[GUID], tags: list[str])
                 ts.api.v2.tags_assign(metadata=metadata, tag_identifiers=tags)
             except HTTPStatusError as e:
                 rich_console.error(f"Error adding tags {tags} for metadata {objects}. Error: {e}")
-

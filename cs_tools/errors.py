@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypeAlias, cast
+from typing import cast
 import collections
 
 from rich._loop import loop_last
@@ -52,7 +52,6 @@ class ThoughtSpotUnreachable(CSToolsError):
         reason = self.reason
         fixing = self.fixing
         return _make_error_panel(header=header, reason=reason, fixing=fixing)
-
 
 
 class NoSessionEstablished(CSToolsError):
@@ -135,7 +134,7 @@ class SyncerInitError(CSToolsError):
     def __init__(self, protocol: str, pydantic_error: pydantic.ValidationError):
         self.protocol = protocol
         self.pydantic_error = pydantic_error
-    
+
     @property
     def human_friendly_reason(self) -> str:
         """
@@ -155,9 +154,9 @@ class SyncerInitError(CSToolsError):
         # SYNCER ARGS MAY HAVE MULTIPLE VALIDATION ERRORS EACH, SO WE SANITIZE THEM ALL.
         errors: dict[str, ErrorInfo] = {}
 
-        # ==============================        
+        # ==============================
         # CLEAN THE ERRORS FOR NON-TECHNICAL USERS.
-        # ==============================        
+        # ==============================
         for error in self.pydantic_error.errors():
             argument_name, *_ = error["loc"]
             assert isinstance(argument_name, str)
@@ -180,9 +179,9 @@ class SyncerInitError(CSToolsError):
 
             errors[argument_name] = ErrorInfo(user_input=usr_nput, error_messages=messages)
 
-        # ==============================        
+        # ==============================
         # FORMAT THE ERRORS FOR DISPLAY.
-        # ==============================        
+        # ==============================
         s = len(errors) > 1  # pluralize
 
         RED_X = "[fg-error]x[/]"
@@ -207,7 +206,7 @@ class SyncerInitError(CSToolsError):
         # fmt: on
 
         return phrase
-    
+
     def __rich__(self) -> rich.panel.Panel:
         header = f"Your {self.protocol} Syncer encountered an error."
         reason = self.human_friendly_reason
@@ -215,14 +214,16 @@ class SyncerInitError(CSToolsError):
             # fmt: off
             f"Check the Syncer's documentation page for more information."
             f"\n[fg-secondary]https://thoughtspot.github.io/cs_tools/syncer/{self.protocol.lower()}/"
-            # fmt: on            
+            # fmt: on
         )
 
         return _make_error_panel(header=header, reason=reason, fixing=fixing)
 
+
 #
 #
 #
+
 
 class CSToolsCLIError(CSToolsError):
     """When raised, will present a pretty error to the CLI."""
@@ -301,9 +302,11 @@ class TSLoadServiceUnreachable(CSToolsCLIError):
         "{tsload_command}"
     )
 
+
 #
 # Cluster Configurations
 #
+
 
 class ConfigDoesNotExist(CSToolsCLIError):
     title = "Cluster configuration [b blue]{name}[/] does not exist."

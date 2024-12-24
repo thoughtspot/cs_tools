@@ -107,9 +107,9 @@ async def fetch_one(
 ) -> types.APIResult | Any:
     """
     Wraps */search APIs to fetch a single object and optionally return its attribute.
-    
+
     attr_path is a jq-like path to try on the returned object from the API, separated by double-underscores.
-    
+
     Example:
        attr_path = 'metadata_header__id'
 
@@ -130,10 +130,10 @@ async def fetch_one(
         raise ValueError(f"Could not find the {metadata_type} for the given identifier {identifier}") from None
     except StopIteration:
         raise ValueError(f"Could not find the {metadata_type} for the given identifier {identifier}") from None
-    
+
     if attr_path is None:
         return _
-    
+
     nested = _
 
     # SEARCH OBJECTS DEEPLY NESTED.

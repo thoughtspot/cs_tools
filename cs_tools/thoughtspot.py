@@ -156,7 +156,7 @@ class ThoughtSpot:
         self._session_context = ctx = SessionContext(thoughtspot=d, user=d)
 
         log.debug(f"SESSION CONTEXT\n{ctx.model_dump_json(indent=4)}")
-    
+
     def switch_org(self, org_id: types.OrgIdentifier) -> types.APIResult:
         """Establish a new session in the target Org."""
         c = self.api.orgs_search()

@@ -1,4 +1,5 @@
 """Contains useful classes and methods for scriptability."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
