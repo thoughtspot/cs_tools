@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from cs_tools import __version__, errors, utils
-from cs_tools.cli import _analytics, custom_types
+from cs_tools.cli import custom_types
 from cs_tools.cli.ux import CSToolsApp, rich_console
 from cs_tools.settings import (
     CSToolsConfig,
@@ -103,8 +103,6 @@ def create(
         if default:
             meta.default_config_name = config
             meta.save()
-
-        _analytics.prompt_for_opt_in()
 
     finally:
         conf.save()

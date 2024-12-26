@@ -8,7 +8,6 @@ import random
 import sys
 
 from cs_tools import __project__, __version__, _compat, datastructures, errors, utils
-from cs_tools.cli import _analytics
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.cli.ux import RICH_CONSOLE, CSToolsApp
 from cs_tools.settings import _meta_config as meta
@@ -83,16 +82,6 @@ def run() -> int:
     CURRENT_RUNTIME = datastructures.ExecutionEnvironment()
 
     # first thing we do is request the database, this allows us to perform a migration if necessary
-    db = _analytics.get_database()
-
-    this_run_data = {
-        "envt_uuid": meta.install_uuid,
-        "cs_tools_version": __version__,
-        "start_dt": dt.datetime.now(tz=dt.timezone.utc),
-        "os_args": " ".join(["cs_tools", *sys.argv[1:]]),
-    }
-
-    # first thing we do is request the database, this allows us to perform a migration if necessary
     cs_tools_venv.ensure_directories()
 
     _setup_logging()
@@ -107,15 +96,11 @@ def run() -> int:
 
     except click.ClickException as e:
         return_code = 1
-        this_run_data["is_known_error"] = True
-        this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
         log.error(e)
         log.debug("More info..", exc_info=True)
 
     except errors.CSToolsError as e:
         return_code = 1
-        this_run_data["is_known_error"] = True
-        this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
 
         log.debug(e, exc_info=True)
 
@@ -134,9 +119,6 @@ def run() -> int:
 
             for exception in e.exceptions:
                 log.error("Something unexpected broke.", exc_info=exception)
-
-        this_run_data["is_known_error"] = False
-        this_run_data["traceback"] = utils.anonymize("\n".join(format_exception(type(e), e, e.__traceback__, limit=5)))
 
         log.debug("whoopsie, something went wrong!", exc_info=True)
 
@@ -179,23 +161,5 @@ def run() -> int:
             Align.center(text),
             "\n",
         )
-
-    this_run_data["is_success"] = return_code in (0, None)
-    this_run_data["end_dt"] = dt.datetime.now(tz=dt.timezone.utc)
-    this_run = _analytics.CommandExecution.validated_init(**this_run_data, context=app.info.context_settings["obj"])
-
-    # Add the analytics to the local database
-    if not CURRENT_RUNTIME.is_dev:
-        try:
-            with db.begin() as transaction:
-                stmt = sa.insert(_analytics.CommandExecution).values([this_run.model_dump()])
-                transaction.execute(stmt)
-
-        except sa.exc.OperationalError:
-            log.debug("Error inserting data into the local analytics database", exc_info=True)
-
-    # On CI platforms, we're running an in-process sqlite database, so we need to send at the end of every run.
-    if CURRENT_RUNTIME.is_ci:
-        _analytics.maybe_send_analytics_data()
 
     return return_code

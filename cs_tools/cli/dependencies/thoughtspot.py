@@ -54,17 +54,6 @@ class ThoughtSpot:
         self.ts: _ThoughtSpot | None = None
         self.auto_login = auto_login
 
-    def _send_analytics_in_background(self) -> None:
-        """Send analyics in the background."""
-        if meta.analytics.is_opted_in or meta.environment.is_dev or meta.environment.is_ci:
-            return
-
-        # AVOID CIRCULAR IMPORTS WITH cli.ux
-        from cs_tools.cli import _analytics
-
-        background = utils.ExceptedThread(target=_analytics.maybe_send_analytics_data)
-        background.start()
-
     def __with_user_setup__(self, ctx: typer.Context, *a, name: str, **kw) -> None:
         config_overides = {}
 

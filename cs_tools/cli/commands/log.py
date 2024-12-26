@@ -4,7 +4,6 @@ import logging
 import pathlib
 import shutil
 
-from cs_tools.cli import _analytics
 from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
 from cs_tools.updater import cs_tools_venv
 import httpx
@@ -34,11 +33,6 @@ def report(
 
     save_path.mkdir(parents=True, exist_ok=True)
     rich_console.print(f"\nSaving logs to [b blue link={save_path.resolve().as_posix()}]{save_path.resolve()}[/]\n")
-
-    try:
-        _analytics.maybe_send_analytics_data()
-    except httpx.HTTPError:
-        log.debug("Could not send analytics data", exc_info=True)
 
     logs_dir = cs_tools_venv.app_dir.joinpath(".logs")
     sorted_newest = sorted(logs_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)

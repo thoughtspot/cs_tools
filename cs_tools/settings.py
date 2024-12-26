@@ -21,7 +21,6 @@ import zlib
 from awesomeversion import AwesomeVersion
 import pydantic
 import rich
-import sqlalchemy as sa
 import toml
 
 from cs_tools import __project__, __version__, types, utils, validators
@@ -32,23 +31,6 @@ from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 
 log = logging.getLogger(__name__)
 _FOUNDING_DAY = dt.datetime(year=2012, month=6, day=1, tzinfo=dt.timezone.utc)
-
-
-class AnalyticsOptIn(_GlobalModel):
-    """Information the User confirmed to us in order to check analytics."""
-
-    is_opted_in: Optional[bool] = None
-    last_checkpoint: Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat] = _FOUNDING_DAY
-    can_record_url: Optional[bool] = None
-
-    _active_database: Optional[sa.engine.Engine] = None
-
-    def set_database(self, db) -> None:
-        self._active_database = db
-
-    @property
-    def active_database(self):
-        return self._active_database
 
 
 class RemoteRepositoryInfo(_GlobalModel):
@@ -65,7 +47,6 @@ class MetaConfig(_GlobalModel):
     install_uuid: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
     default_config_name: Optional[str] = None
     remote: RemoteRepositoryInfo = RemoteRepositoryInfo()
-    analytics: AnalyticsOptIn = AnalyticsOptIn()
     environment: ExecutionEnvironment = ExecutionEnvironment()
     created_in_cs_tools_version: validators.CoerceVersion = __version__
 
@@ -99,6 +80,19 @@ class MetaConfig(_GlobalModel):
                     "can_record_url": bool(data.get("company_name")),
                 },
                 "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
+            }
+
+        # DEV NOTE: @boonhapus - upconvert the < 1.6.0 metaconfig
+        if data and "created_in_cs_tools_version" not in data:
+            data.pop("analytics", None)
+
+            data = {
+                "remote": {
+                    "last_checked": data.get("last_remote_check"),
+                    "version": data.get("latest_version"),
+                    "published_at": data.get("latest_release_date"),
+                },
+                "__cs_tools_context__": {"config_migration": {"from": "<1.6.0", "to": __version__}},
             }
 
         return data

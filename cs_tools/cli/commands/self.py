@@ -10,7 +10,7 @@ import sysconfig
 
 from awesomeversion import AwesomeVersion
 from cs_tools import __version__, utils
-from cs_tools.cli import _analytics, custom_types
+from cs_tools.cli import custom_types
 from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
 from cs_tools.settings import _meta_config as meta
 from cs_tools.sync import base
@@ -121,18 +121,6 @@ def info(
             width="fit",
             title="cs_tools self info",
         )
-
-
-@app.command(cls=CSToolsCommand, hidden=True)
-def analytics():
-    """Re-prompt for analytics."""
-    # RESET THE ASKS
-    assert meta.analytics is not None
-    meta.analytics.is_opted_in = None
-    meta.analytics.can_record_url = None
-
-    _analytics.prompt_for_opt_in()
-    _analytics.maybe_send_analytics_data()
 
 
 @app.command(cls=CSToolsCommand, hidden=True)
