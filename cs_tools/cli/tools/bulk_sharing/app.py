@@ -25,6 +25,11 @@ app = CSToolsApp(
 )
 
 
+@app.callback()
+def _noop(ctx: typer.Context) -> None:
+    """Just here so that no_args_is_help=True works on a single-command Typer app."""
+
+
 @app.command(dependencies=[thoughtspot])
 def cls_ui(ctx: typer.Context, mode: Literal["web", "terminal"] = typer.Option("terminal")) -> types.ExitCode:
     """Start the built-in webserver which runs the security management interface."""

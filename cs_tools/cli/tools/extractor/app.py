@@ -17,6 +17,11 @@ log = logging.getLogger(__name__)
 app = CSToolsApp(help="Extract data from a worksheet, view, or table in ThoughtSpot.")
 
 
+@app.callback()
+def _noop(ctx: typer.Context) -> None:
+    """Just here so that no_args_is_help=True works on a single-command Typer app."""
+
+
 @app.command(dependencies=[thoughtspot])
 def search(
     ctx: typer.Context,

@@ -61,7 +61,10 @@ class AsyncTyper(typer.Typer):
         ctx_settings["obj"] = utils.GlobalState()
         ctx_settings["max_content_width"] = RICH_CONSOLE.width
         ctx_settings["token_normalize_func"] = str.casefold
-        super().__init__(**passthru, no_args_is_help=True, rich_markup_mode="rich", context_settings=ctx_settings)
+
+        cmd_settings = {"context_settings": ctx_settings, "add_completion": False, "rich_markup_mode": "rich"}
+
+        super().__init__(**passthru, no_args_is_help=True, **cmd_settings)  # type: ignore
 
     @staticmethod
     def maybe_run_async(decorator: Callable[[CommandFnType], CommandFnType], fn: CommandFnType) -> CommandFnType:

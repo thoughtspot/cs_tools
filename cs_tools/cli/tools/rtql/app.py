@@ -26,6 +26,11 @@ app = AsyncTyper(
 )
 
 
+@app.callback()
+def _noop(ctx: typer.Context) -> None:
+    """Just here so that no_args_is_help=True works on a single-command Typer app."""
+
+
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
 def interactive(

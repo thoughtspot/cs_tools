@@ -263,7 +263,7 @@ def from_tabular(
                     this_task.advance(step=1)
 
                 c = utils.bounded_gather(*(_download_and_advance(guid=_["guid"]) for _ in all_metadata), max_concurrent=4)
-                d = utils.run_sync(c)
+                _ = utils.run_sync(c)
 
         if export_only:
             return 0
