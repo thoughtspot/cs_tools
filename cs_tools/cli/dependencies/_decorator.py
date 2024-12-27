@@ -51,13 +51,12 @@ def depends_on(**resources: Any) -> Callable:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             ctx = click.get_current_context()
 
-            if not isinstance(ctx.obj, utils.GlobalState):
-                ctx.obj = utils.GlobalState()
+            assert isinstance(ctx.obj, utils.GlobalState), "Global state is not available."
 
             # ENSURE DEPENDENCIES ARE SET UP ON THE FIRST COMMAND INVOCATION.
             for dependency_name, resource in resources.items():
                 if getattr(ctx.obj, dependency_name, None) is None:
-                    resource.__with_user_setup__(ctx, name=dependency_name)
+                    resource.__with_user_ctx__(ctx, name=dependency_name)
                     ctx.with_resource(resource)
 
             # DON'T PASS THE DEPENDECIES' PARAMETERS TO THE UNDERLYING FUNCTION.

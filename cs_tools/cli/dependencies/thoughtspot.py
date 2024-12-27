@@ -4,7 +4,6 @@ import logging
 
 import typer
 
-from cs_tools import utils
 from cs_tools.cli import custom_types
 from cs_tools.settings import (
     CSToolsConfig as _CSToolsConfig,
@@ -54,7 +53,7 @@ class ThoughtSpot:
         self.ts: _ThoughtSpot | None = None
         self.auto_login = auto_login
 
-    def __with_user_setup__(self, ctx: typer.Context, *a, name: str, **kw) -> None:
+    def __with_user_ctx__(self, ctx: typer.Context, *a, name: str, **kw) -> None:
         config_overides = {}
 
         if ctx.params["temp_dir"] is not None:
