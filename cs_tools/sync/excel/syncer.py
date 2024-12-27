@@ -61,7 +61,7 @@ class Excel(Syncer):
             log.warning(f"No data found in tab '{tab_name}'")
             return []
 
-        header = tab.iter_rows(min_row=1, max_row=1, values_only=True)
+        header = next(tab.iter_rows(min_row=1, max_row=1, values_only=True))
         data = [dict(zip(header, row)) for row in tab.iter_rows(min_row=2, values_only=True)]
 
         if not data:
