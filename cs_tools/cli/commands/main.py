@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from traceback import format_exception
 import contextlib
-import datetime as dt
 import logging
 import random
-import sys
 
-from cs_tools import __project__, __version__, _compat, datastructures, errors, utils
+from cs_tools import __project__, __version__, _compat, datastructures, errors
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.cli.ux import RICH_CONSOLE, CSToolsApp
 from cs_tools.settings import _meta_config as meta
@@ -18,7 +15,6 @@ from rich.panel import Panel
 from rich.text import Text
 import click
 import rich
-import sqlalchemy as sa
 import typer
 
 log = logging.getLogger(__name__)
@@ -38,7 +34,6 @@ app = CSToolsApp(
     :sparkles: [yellow]All tools are provided as-is[/] :sparkles:
     :floppy_disk: [red]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
     """,
-    add_completion=True,
     epilog=(
         f":bookmark: v{__version__} "
         f":scroll: [cyan][link={__project__.__docs__}]Documentation[/] "
@@ -68,16 +63,18 @@ def run() -> int:
     """
     from cs_tools.cli import _monkey  # noqa: F401
     from cs_tools.cli.commands import (
-        config as config_app,
-        log as log_app,
-        self as self_app,
-        tools as tools_app,
+        config as config_command,
+        log as log_command,
+        self as self_command,
+        tools as tools_command,
     )
 
-    app.add_typer(tools_app.app)
-    app.add_typer(config_app.app)
-    app.add_typer(self_app.app)
-    app.add_typer(log_app.app)
+    tools_command._discover_tools()
+
+    app.add_typer(tools_command.app)
+    app.add_typer(config_command.app)
+    app.add_typer(self_command.app)
+    app.add_typer(log_command.app)
 
     CURRENT_RUNTIME = datastructures.ExecutionEnvironment()
 
