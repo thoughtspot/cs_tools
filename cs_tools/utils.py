@@ -9,6 +9,7 @@ from contextvars import Context
 from typing import Annotated, Any, TypeVar
 import asyncio
 import datetime as dt
+import functools as ft
 import getpass
 import importlib
 import itertools as it
@@ -109,15 +110,17 @@ def determine_editable_install(package_name: str = "cs_tools") -> bool:
     return any(f"__editable__.{package_name}" in path for path in sys.path)
 
 
-def get_package_directory(package_name: str) -> pathlib.Path | None:
+@ft.cache
+def get_package_directory(package_name: str) -> pathlib.Path:
     """Get the path to the package directory."""
     try:
         module = importlib.import_module(package_name)
         assert module.__spec__ is not None
         assert module.__spec__.origin is not None
 
+    # COMBINE THESE ERROR SEMANTICS TOGETHER.
     except (ModuleNotFoundError, AssertionError):
-        return None
+        raise ModuleNotFoundError(f"Could not find module: {package_name}") from None
 
     return pathlib.Path(module.__spec__.origin).parent
 

@@ -139,8 +139,6 @@ class Syncer(CustomType):
         """Coerce string into a Syncer."""
         CS_TOOLS_PKG_DIR = utils.get_package_directory("cs_tools")
 
-        assert CS_TOOLS_PKG_DIR is not None, "cs_tools is not installed."
-
         protocol, _, definition_spec = value.partition("://")
 
         # fmt: off
