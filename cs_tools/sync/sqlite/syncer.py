@@ -27,6 +27,7 @@ class SQLite(DatabaseSyncer):
     __syncer_name__ = "sqlite"
 
     database_path: Union[pydantic.FilePath, pydantic.NewPath]
+    pragma_speedy_inserts: bool = False
 
     @pydantic.field_validator("database_path", mode="after")
     def ensure_endswith_db(cls, path: pathlib.Path) -> pathlib.Path:
@@ -38,36 +39,19 @@ class SQLite(DatabaseSyncer):
         super().__init__(**kwargs)
         self._engine = sa.create_engine(f"sqlite:///{self.database_path}", future=True)
 
+    def __finalize__(self):
+        super().__finalize__()
+
+        if self.pragma_speedy_inserts:
+            # CONTINUES WITHOUT SYNCING ONCE DATA IS HANDED OFF TO THE OS, PROGRAM MAY CRASHES CORRUPT THE DATABASE.
+            self.session.execute(sa.text("PRAGMA synchronous = OFF;"))
+            # MAINTAIN THE LOCK ON THE SQLITE DATABASE FILE. DON'T RELEASE/ACQUIRE IT.
+            self.session.execute(sa.text("PRAGMA locking_mode = EXCLUSIVE;"))
+            # STORE TEMPORARY TABLES AND VIEWS IN RAM.
+            self.session.execute(sa.text("PRAGMA temp_store = MEMORY;"))
+
     def __repr__(self):
         return f"<SQLiteSyncer conn_string='{self.engine.url}'>"
-
-    def insert_on_conflict(self, data: TableRows, *, table: sa.Table) -> Union[sa.Insert, sa.Update]:
-        """UPSERT."""
-        stmt = insert(table).values(data)
-
-        if table.columns == table.primary_key:
-            set_ = {c.key: getattr(stmt.excluded, c.key) for c in table.columns}
-        else:
-            set_ = {c.key: getattr(stmt.excluded, c.key) for c in table.columns if c.key not in table.primary_key}
-
-        stmt = stmt.on_conflict_do_update(
-            index_elements=table.primary_key,
-            set_=set_,
-        )
-        return stmt
-
-    # @contextlib.contextmanager
-    # def pragma_speedy_insert(self):
-    #     """ """
-    #     self.session.execute("PRAGMA journal_mode = OFF;")
-    #     self.session.execute("PRAGMA synchronous = 0;")
-    #     self.session.execute("PRAGMA locking_mode = EXCLUSIVE;")
-    #     self.session.execute("PRAGMA temp_store = MEMORY;")
-    #     yield
-    #     self.session.execute("PRAGMA journal_mode = ON;")
-    #     self.session.execute("PRAGMA synchronous = 0;")
-    #     self.session.execute("PRAGMA locking_mode = EXCLUSIVE;")
-    #     self.session.execute("PRAGMA temp_store = MEMORY;")
 
     def read_stream(self, tablename: str, *, batch: int = 100_000) -> Iterator[TableRows]:
         """Read rows from a SQLite database."""
@@ -108,11 +92,10 @@ class SQLite(DatabaseSyncer):
 
         if self.load_strategy == "UPSERT":
             sync_utils.batched(
-                self.insert_on_conflict,
+                insert(table).prefix_with("OR REPLACE").values,
                 session=self.session,
                 data=data,
                 max_parameters=const.SQLITE_MAX_VARIABLES,
-                table=table,
-            )
+           )
 
         self.session.commit()

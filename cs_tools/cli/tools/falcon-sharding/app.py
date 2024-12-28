@@ -5,18 +5,19 @@ import pathlib
 
 from thoughtspot_tml import Table, Worksheet
 from thoughtspot_tml.utils import determine_tml_type
+import httpx
 import typer
 
+from cs_tools import utils
+from cs_tools.api import workflows
+from cs_tools.cli import progress as px
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.layout import LiveTasks
 from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.types import TMLImportPolicy
+from cs_tools.cli.ux import CSToolsApp
 
-from . import _extended_rest_api_v1, layout, models
+from . import _private_api, models
 
-HERE = pathlib.Path(__file__).parent
 log = logging.getLogger(__name__)
 
 
@@ -58,13 +59,13 @@ def deploy(
     """
     ts = ctx.obj.thoughtspot
 
-    tasks = [
-        ("customize_spotapp", "Customizing [b blue]Falcon Table Sharding Worksheet[/] with your parameters"),
-        ("deploy_spotapp", "Deploying the SpotApp to ThoughtSpot"),
+    TOOL_TASKS = [
+        px.WorkTask(id="CUSTOMIZE", description="Customizing Sharding Model to your cluster"),
+        px.WorkTask(id="DEPLOY", description="Deploying TML to ThoughtSpot"),
     ]
 
-    with LiveTasks(tasks, console=rich_console) as tasks:
-        with tasks["customize_spotapp"]:
+    with px.WorkTracker("Deploying Sharding Recommender", tasks=TOOL_TASKS) as tracker:
+        with tracker["CUSTOMIZE"]:
             parameters = {
                 "parameter: CPU per Node": str(cpu_per_node),
                 "parameter: Ideal Rows per Shard": str(ideal_rows),
@@ -77,9 +78,9 @@ def deploy(
             here = pathlib.Path(__file__).parent
             tmls = []
 
-            for file in here.glob("**/*.tml"):
-                tml_cls = determine_tml_type(path=file)
-                tml = tml_cls.load(file)
+            for path in here.glob("**/*.tml"):
+                tml_cls = determine_tml_type(path=path)
+                tml = tml_cls.load(path)
                 tml.guid = None
 
                 if isinstance(tml, Table):
@@ -94,18 +95,23 @@ def deploy(
 
                 tmls.append(tml)
 
-        with tasks["deploy_spotapp"]:
-            response = ts.tml.to_import(tmls, policy=TMLImportPolicy.all_or_none)
+        with tracker["DEPLOY"]:
+            try:
+                c = workflows.metadata.tml_import(tmls=tmls, policy="ALL_OR_NONE", timeout=60 * 15, http=ts.api)
+                d = utils.run_sync(c)
+            except httpx.HTTPError as e:
+                log.error(f"Failed to call metadata/tml/import.. {e}")
+                return 1
 
-    status_emojis = {"OK": ":white_heavy_check_mark:", "WARNING": ":pinching_hand:", "ERROR": ":cross_mark:"}
-    centered_table = layout.build_table()
+            for tml_import_info in d:
+                idx = tml_import_info["request_index"]
+                tml = tmls[idx]
+                tml_type = tml.tml_type_name.upper()
 
-    for r in response:
-        status = status_emojis.get(r.status_code, ":cross_mark:")
-        guid = r.guid or "[gray]{null}"
-        centered_table.renderable.add_row(status, r.tml_type_name, guid, r.name)
+                if tml_import_info["response"]["status"]["status_code"] == "OK":
+                    log.info(f"{tml_type} '{tml.name}' successfully imported")
 
-    rich_console.print(centered_table)
+    return 0
 
 
 @app.command(dependencies=[thoughtspot])
@@ -123,19 +129,22 @@ def gather(
     """
     ts = ctx.obj.thoughtspot
 
-    tasks = [
-        ("gather_info", "Getting Falcon table information"),
-        ("dump_info", f"Writing table information to {syncer.name}"),
+    TOOL_TASKS = [
+        px.WorkTask(id="COLLECT", description="Fetching data from ThoughtSpot"),
+        px.WorkTask(id="CLEAN", description="Transforming API results"),
+        px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
     ]
 
-    with LiveTasks(tasks, console=rich_console) as tasks:
-        with tasks["gather_info"]:
-            r = _extended_rest_api_v1.periscope_sage_combined_table_info(ts.api.v1)
+    with px.WorkTracker("Deploying Searchable", tasks=TOOL_TASKS) as tracker:
+        with tracker["COLLECT"]:
+            c = _private_api.periscope_sage_combined_table_info(http=ts.api)
+            r = utils.run_sync(c)
 
             if not r.is_success:
-                rich_console.error(f"could not get falcon table info {r}")
-                raise typer.Exit(1)
+                log.error(f"could not get falcon table info {r}")
+                return 1
 
+        with tracker["CLEAN"]:
             renamed = [
                 models.FalconTableInfo.validated_init(
                     **{
@@ -164,5 +173,7 @@ def gather(
                 for data in r.json()["tables"]
             ]
 
-        with tasks["dump_info"]:
+        with tracker["DUMP_DATA"]:
             syncer.dump("ts_falcon_table_info", data=renamed)
+
+    return 0

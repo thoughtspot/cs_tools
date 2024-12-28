@@ -1,34 +1,41 @@
 from __future__ import annotations
 
-from typing import Optional
-import functools as ft
+from collections.abc import Coroutine
+from typing import Literal, Optional
+import datetime as dt
+import itertools as it
 import logging
 import pathlib
-import random
+import threading
+import time
 
-import pendulum
+from rich import box, console
+from rich.align import Align
+from rich.table import Table
 import typer
 
-from cs_tools import utils
-from cs_tools._compat import StrEnum
+from cs_tools import types, utils
+from cs_tools.api import workflows
+from cs_tools.cli import progress as px
 from cs_tools.cli.dependencies import thoughtspot
 from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.layout import ConfirmationListener, LiveTasks
+from cs_tools.cli.input import ConfirmationListener
 from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
-from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.errors import ContentDoesNotExist
-from cs_tools.types import MetadataObjectType
+from cs_tools.cli.ux import RICH_CONSOLE, CSToolsApp
 
-from . import _extended_rest_api_v1, layout, models
+from . import models
 
 log = logging.getLogger(__name__)
-ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE = 3650
+
+_DEFAULT_TAG_NAME = "INACTIVE"
+_ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE = 365 * 10
 
 
-class ContentType(StrEnum):
-    answer = "answer"
-    liveboard = "liveboard"
-    all_user_content = "all"
+def _tick_tock(task: px.WorkTask) -> None:
+    """I'm just a clock :~)"""
+    while not task.finished:
+        time.sleep(1)
+        task.advance(step=1)
 
 
 app = CSToolsApp(
@@ -46,19 +53,19 @@ app = CSToolsApp(
 @app.command(dependencies=[thoughtspot])
 def identify(
     ctx: typer.Context,
-    tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
+    tag_name: str = typer.Option(_DEFAULT_TAG_NAME, "--tag", help="case sensitive name to tag stale objects with"),
     dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    content: ContentType = typer.Option(
-        ContentType.all_user_content,
+    content: Literal["ANSWER", "LIVEBOARD", "ALL"] = typer.Option(
+        "ALL",
         help="type of content to mark for archival",
         rich_help_panel="Content Identification Criteria",
     ),
     recent_activity: int = typer.Option(
-        ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE,
+        _ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE,
         help=(
-            "content without recent views will be [b green]selected[/] (exceeds days threshold) "
-            # fake the default value in the CLI output
+            "content without recent query activity are [b green]selected[/] (exceeding K days) "
+            # FAKE THE DEFAULT VALUE IN THE CLI OUTPUT
             r"[dim]\[default: all TS: BI history][/]"
         ),
         show_default=False,
@@ -76,14 +83,14 @@ def identify(
         show_default=False,
         rich_help_panel="Content Identification Criteria",
     ),
-    ignore_groups: str = typer.Option(
+    ignore_groups: Optional[str] = typer.Option(
         None,
         click_type=MultipleChoiceType(),
         help="content authored by users in these groups will be [b red]filtered[/], comma separated",
         show_default=False,
         rich_help_panel="Content Identification Criteria",
     ),
-    ignore_tags: str = typer.Option(
+    ignore_tags: Optional[str] = typer.Option(
         None,
         click_type=MultipleChoiceType(),
         help="content with this tag (case sensitive) will be [b red]filtered[/], comma separated",
@@ -97,321 +104,286 @@ def identify(
         show_default=False,
         rich_help_panel="Syncer Options",
     ),
-):
-    # fmt: off
+) -> types.ExitCode:
     """
     Identify content which can be archived.
 
-    :police_car_light: [yellow]Content owned by system level accounts ([b blue]tsadmin[/], [b blue]system[/], [b blue]etc[/].) will be ignored.[/] :police_car_light:
-    """  # noqa: E501
-    # fmt: on
+    :police_car_light: [b yellow]Content owned by system level accounts ([b blue]tsadmin[/], [b blue]system[/],
+    [b blue]etc[/].) will be ignored.[/] :police_car_light:
+    """
     if None not in (only_groups, ignore_groups):
-        rich_console.log("[b red]Select either [b blue]--only-groups[/] or [b blue]--include-groups[/], but not both!")
-        raise typer.Exit(1)
+        RICH_CONSOLE.log("[b red]Select either [b blue]--only-groups[/] or [b blue]--include-groups[/], but not both!")
+        return 1
 
     ts = ctx.obj.thoughtspot
 
-    tasks = [
-        ("gather_ts_bi", "Getting content usage and activity statistics"),
-        ("gather_supporting_filter_criteria", "Getting supporting metadata for content identification"),
-        ("gather_metadata", "Getting existing content metadata"),
-        ("syncer_report", f"Writing Archiver syncer{f' to {syncer.name}' if syncer is not None else ''}"),
-        ("results_preview", f"Showing a sample of 25 items to tag with [b blue]{tag_name}"),
-        ("confirmation_prompt", "Confirmation prompt"),
-        ("tagging_content", "Tagging content in ThoughtSpot"),
+    TOOL_TASKS = [
+        px.WorkTask(id="GATHER_ACTIVITY", description="Fetching objects' Activity"),
+        px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Info"),
+        px.WorkTask(id="FILTER_METADATA", description="Filtering based on your criteria"),
+        px.WorkTask(id="DUMP_DATA", description=f"Sending data to {'nowhere' if syncer is None else syncer.name}"),
+        px.WorkTask(id="PREVIEW_DATA", description=f"Sample [b blue]{tag_name}[/] objects"),
+        px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
+        px.WorkTask(id="ARCHIVE_TAGGING", description=f"Applying [b blue]{tag_name}[/] to objects"),
     ]
 
-    with LiveTasks(tasks, console=rich_console) as tasks:
-        with tasks["gather_ts_bi"]:
-            ts_bi_rows = ts.search(
-                f"[user action] != [user action].answer_unsaved [user action].{{null}} "
-                f"[answer book guid] != [answer book guid].{{null}} "
-                f"[timestamp].'last {recent_activity} days' "
-                f"[timestamp].'today' "
-                f"[answer book guid]",
-                worksheet="TS: BI Server",
+    TODAY = dt.datetime.now(tz=dt.timezone.utc)
+
+    with px.WorkTracker("Identifying Stale Objects", tasks=TOOL_TASKS) as tracker:
+        with tracker["GATHER_ACTIVITY"]:
+            if recent_activity == _ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE:
+                c = workflows.search(worksheet="TS: BI Server", query="min [Timestamp]", http=ts.api)
+                _ = utils.run_sync(c)
+
+                ts_bi_lifetime = TODAY - _[0]["Minimum Timestamp"].replace(tzinfo=dt.timezone.utc)
+                recent_activity = ts_bi_lifetime.days + 1
+
+            ONE_WEEK = 7
+
+            SEARCH_TOKENS = (
+                # SELECT TS: BI ACTIVITY ON ANY ACTIVITY WITH A QUERY
+                "[query text] != '{null}' "
+                # FILTER OUT AD-HOC SEARCH
+                "[user action] != [user action].answer_unsaved "
+                # FILTER OUT POTENTIAL DATA QUALITY ISSUES ? (just here for safety~)
+                "[answer book guid] != '{null}' "
+                # RETURN COLUMN SHOULD BE THE METADATA_GUID
+                "[answer book guid]"
             )
-            ts_bi_data = {row["Answer Book GUID"] for row in ts_bi_rows}
 
-        with tasks["gather_supporting_filter_criteria"]:
-            only_user_guids = [
-                user["id"]
-                for group in (only_groups or [])
-                for user in ts.group.users_in(group, is_directly_assigned=True)
+            coros: list[Coroutine] = []
+
+            for window_beg, window_end in it.pairwise([*range(recent_activity, -1, -ONE_WEEK), 0]):
+                when = f" [timestamp] >= '{window_beg} days ago' [timestamp] < '{window_end} days ago'"
+                coros.append(workflows.search(worksheet="TS: BI Server", query=SEARCH_TOKENS + when, http=ts.api))
+
+            c = utils.bounded_gather(*coros, max_concurrent=4)  # type: ignore[assignment]
+            d = utils.run_sync(c)
+
+            active_guids = {row["Answer Book GUID"] for row in it.chain.from_iterable(d)}
+
+        with tracker["GATHER_METADATA"]:
+            if only_groups or ignore_groups:
+                c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
+                d = utils.run_sync(c)
+
+                all_groups = [
+                    {
+                        "guid": group["id"],
+                        "name": group["name"],
+                        "users": group["users"],
+                    }
+                    for group in d
+                ]
+
+                only_groups = [group["guid"] for group in all_groups if group["name"] in only_groups]
+                ignore_groups = [group["guid"] for group in all_groups if group["name"] in ignore_groups]
+
+            if ignore_tags:
+                c = workflows.metadata.fetch_all(object_types=["TAG"], http=ts.api)
+                d = utils.run_sync(c)
+
+                all_tags = [
+                    {
+                        "guid": metadata_object["metadata_id"],
+                        "name": metadata_object["metadata_name"],
+                    }
+                    for metadata_object in d
+                ]
+
+                ignore_tags = [tag["guid"] for tag in all_tags if tag["name"] in ignore_tags]
+
+            content = ["ANSWER", "LIVEBOARD"] if content == "ALL" else [content]  # type: ignore[assignment]
+            c = workflows.metadata.fetch_all(object_types=content, http=ts.api)  # type: ignore[arg-type]
+            d = utils.run_sync(c)
+
+            all_metadata = [
+                {
+                    "guid": metadata_object["metadata_id"],
+                    "name": metadata_object["metadata_name"],
+                    "type": metadata_object["metadata_type"],
+                    "author_guid": metadata_object["metadata_header"]["author"],
+                    "author_name": metadata_object["metadata_header"]["authorName"],
+                    "tags": metadata_object["metadata_header"]["tags"],
+                    "last_modified": dt.datetime.fromtimestamp(
+                        metadata_object["metadata_header"]["modified"] / 1000, tz=dt.timezone.utc
+                    ),
+                }
+                for metadata_object in d
             ]
-            ignore_user_guids = [
-                user["id"]
-                for group in (ignore_groups or [])
-                for user in ts.group.users_in(group, is_directly_assigned=True)
-            ]
 
-        with tasks["gather_metadata"]:
-            all_object = []
-            to_archive = []
-            n_content_in_ts = 0
+        with tracker["FILTER_METADATA"] as this_task:
+            this_task.total = len(all_metadata)
+            STALE_MODIFICATION_DAYS = dt.timedelta(days=recent_modified)
 
-            if content in (ContentType.all_user_content, ContentType.answer):
-                all_object.extend(ts.answer.all())
+            filtered: types.TableRowsFormat = []
 
-            if content in (ContentType.all_user_content, ContentType.liveboard):
-                all_object.extend(ts.liveboard.all())
-
-            for metadata_object in all_object:
-                n_content_in_ts += 1
-                checks = []
-
-                metadata_modified = pendulum.from_timestamp(
-                    metadata_object["modified"] / 1000, tz=ts.session_context.thoughtspot.timezone
-                )
+            for metadata_object in all_metadata:
+                # DEV NOTE: @boonhapus, 2024/11/25
+                # ALL CONDITIONS MUST PASS IN ORDER FOR AN OBJECT TO BE CONSIDERED
+                # STALE. IF ANY ONE CONDITION FAILS, THE OBJECT IS SKIPPED.
+                #
+                checks: list[bool] = []
 
                 # CHECK: NO TS: BI ACTIVITY WITHIN X DAYS
-                checks.append(metadata_object["id"] not in ts_bi_data)
+                checks.append(metadata_object["guid"] not in active_guids)
 
                 # CHECK: NO MODIFICATIONS WITHIN Y DAYS
-                checks.append(metadata_modified <= pendulum.now().subtract(days=recent_modified))
+                checks.append((TODAY - metadata_object["last_modified"]) >= STALE_MODIFICATION_DAYS)
 
-                # CHECK: AUTHOR IN APPROVED GROUPS
+                # CHECK: THE AUTHOR IS A MEMBER OF GROUPS WHOSE CONTENT SHOULD NEEDS TO INCLUDED.
                 if only_groups is not None:
-                    checks.append(metadata_object["author"] in only_user_guids)
+                    assert isinstance(only_groups, list), "Only Groups wasn't properly transformed to an array<GUID>."
+                    checks.append(metadata_object["author_guid"] in only_groups)
 
-                # CHECK: AUTHOR NOT IN IGNORED GROUPS
+                # CHECK: THE AUTHOR IS NOT A MEMBER OF GROUPS WHOSE CONTENT SHOULD BE IGNORED.
                 if ignore_groups is not None:
-                    checks.append(metadata_object["author"] not in ignore_user_guids)
+                    assert isinstance(
+                        ignore_groups, list
+                    ), "Ignore Groups wasn't properly transformed to an array<GUID>."
+                    checks.append(metadata_object["author_guid"] not in ignore_groups)
 
-                # CHECK: METADATA DOES NOT CONTAIN ANY IGNORED TAG
                 if ignore_tags is not None:
-                    checks.append(not {t["name"] for t in metadata_object["tags"]}.intersection(ignore_tags))
+                    assert isinstance(ignore_tags, list), "Ignore Tags wasn't properly transformed to an array<GUID>."
+                    checks.append(any(t["id"] not in ignore_tags for t in metadata_object["metadata_header"]["tags"]))
 
                 if all(checks):
-                    to_archive.append(
-                        models.ArchiverReport.validated_init(
-                            type=metadata_object["metadata_type"],
-                            guid=metadata_object["id"],
-                            modified=metadata_modified,
-                            author_guid=metadata_object["author"],
-                            author=metadata_object.get("authorDisplayName", None),
-                            name=metadata_object["name"],
-                            operation="identify",
-                        )
-                    )
+                    filtered.append(metadata_object)
 
-        if not to_archive:
-            rich_console.log("[b yellow]no stale content was found in your [white]ThoughtSpot[/] cluster")
-            raise typer.Exit(0)
+                this_task.advance(step=1)
 
-        with tasks["results_preview"] as this_task:
-            table = layout.build_table(
-                title=f"Content to tag with [b blue]{tag_name}",
-                caption=(
-                    f"25 latest items ({len(to_archive)} [b blue]{tag_name}[/] [dim]|[/] {n_content_in_ts} in "
-                    f"ThoughtSpot)"
-                ),
-            )
+        if not filtered:
+            log.info("[fg-warn]no stale content was found in your [fg-primary]ThoughtSpot[/] cluster")
+            return 0
 
-            # for row in random.sample(to_archive, k=min(25, len(to_archive))):
-            for row in sorted(to_archive, key=lambda model: model.modified, reverse=True)[:25]:
-                table.add_row(
-                    MetadataObjectType(row.type).name.title().replace("_", " "),
-                    row.guid,
-                    row.modified.strftime("%Y-%m-%d"),
-                    row.author,
-                    row.name,
+        with tracker["DUMP_DATA"] as this_task:
+            if syncer is None:
+                this_task.skip()
+
+            else:
+                d = [
+                    models.ArchiverReport.validated_init(
+                        type=metadata_object["type"],
+                        guid=metadata_object["guid"],
+                        modified=metadata_object["last_modified"],
+                        reported_at=TODAY,
+                        author_guid=metadata_object["author_guid"],
+                        author=metadata_object["author_name"],
+                        name=metadata_object["name"],
+                        operation="IDENTIFY",
+                    ).model_dump()
+                    for metadata_object in filtered
+                ]
+
+                syncer.dump("archiver_report", data=d)
+
+        with tracker["PREVIEW_DATA"]:
+            t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""), width=150)
+            t.add_column("TYPE", justify="center", width=10)  # LIVEBOARD, ANSWER
+            t.add_column("NAME", no_wrap=True)
+            t.add_column("AUTHOR", width=20)
+            t.add_column("MODIFIED", justify="right", width=12)  # NNN days ago
+
+            for idx, row in enumerate(sorted(filtered, key=lambda row: row["last_modified"], reverse=True)):  # type: ignore
+                if idx >= 15:
+                    break
+
+                t.add_row(
+                    str(row["type"]).strip(),
+                    str(row["name"]).strip(),
+                    str(row["author_name"]).strip(),
+                    f"{(TODAY - row['last_modified'].replace(tzinfo=dt.timezone.utc)).days} days ago",  # type: ignore
                 )
 
-            tasks.layout = layout.combined_layout(original_layout=tasks.layout, new_layout=table)
-
-        with tasks["syncer_report"] as this_task:
-            if syncer is not None:
-                syncer.dump("archiver_report", data=[m.dict() for m in to_archive])
-            else:
-                this_task.skip()
+            RICH_CONSOLE.print(Align.center(t))
 
         if dry_run:
-            raise typer.Exit(-1)
+            return 0
 
-        with tasks["confirmation_prompt"] as this_task:
+        with tracker["CONFIRM"] as this_task:
             if no_prompt:
                 this_task.skip()
-            else:
-                this_task.description = f":point_right: Continue tagging {len(to_archive):,} objects? [b magenta](y/N)"
 
-                kb = ConfirmationListener(timeout=60)
+            else:
+                this_task.description = "[fg-warn]Confirmation prompt"
+                this_task.total = ONE_MINUTE = 60
+
+                tracker.extra_renderable = lambda: Align.center(
+                    console.Group(
+                        Align.center(f"{len(filtered):,} '{tag_name}' objects found"),
+                        "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
+                    )
+                )
+
+                th = threading.Thread(target=_tick_tock, args=(this_task,))
+                th.start()
+
+                kb = ConfirmationListener(timeout=ONE_MINUTE)
                 kb.run()
 
-                if not kb.response.upper() == "Y":
-                    this_task.description = "Confirmation [b red]Denied[/] (no tagging performed)"
-                    raise typer.Exit(0)
+                assert kb.response is not None, "ConfirmationListener never got a response."
+
+                tracker.extra_renderable = None
+                this_task.final()
+
+                if kb.response.upper() == "N":
+                    this_task.description = "[fg-error]Denied[/] (no tagging done)"
+                    return 0
                 else:
-                    this_task.description = "Confirmation [b green]Approved[/]"
+                    this_task.description = f"[fg-success]Approved[/] (tagging {len(filtered):,})"
 
-        with tasks["tagging_content"]:
-            tag_guid = ts.tag.get(tag_name, create_if_not_exists=True)
-            to_tag_guids = []
-            to_tag_types = []
-            to_tag_names = []
+        with tracker["ARCHIVE_TAGGING"] as this_task:
+            c = ts.api.tags_create(name=tag_name, color="#A020F0")  # ThoughtSpot Purple :~)
+            _ = utils.run_sync(c)
 
-            for model in to_archive:
-                to_tag_guids.append(model.guid)
-                to_tag_types.append(model.type)
-                to_tag_names.append(tag_guid["id"])
+            coros = []
 
-            for start_index in range(0, len(to_tag_guids), 10):
-                stop_index = start_index + 10
+            for metadata_object in filtered:
+                c = ts.api.tags_assign(guid=metadata_object["guid"], tag=tag_name)
+                coros.append(c)
 
-                ts.api.v1.metadata_assign_tag(
-                    metadata_guids=to_tag_guids[start_index:stop_index],
-                    metadata_types=to_tag_types[start_index:stop_index],
-                    tag_guids=to_tag_names[start_index:stop_index],
-                )
+            c = utils.bounded_gather(*coros, max_concurrent=15)
+            d = utils.run_sync(c)
+
+    return 0
 
 
 @app.command(dependencies=[thoughtspot])
-def revert(
+def untag(
     ctx: typer.Context,
-    tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
-    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    delete_tag: bool = typer.Option(
-        False, "--delete-tag", help="after untagging identified content, remove the tag itself"
-    ),
-    syncer: DSyncer = typer.Option(
-        None,
-        click_type=SyncerProtocolType(models=[models.ArchiverReport]),
-        help="protocol and path for options to pass to the syncer",
-        rich_help_panel="Syncer Options",
-    ),
-):
-    """
-    Remove content with the identified --tag.
-    """
+    tag_name: str = typer.Option(_DEFAULT_TAG_NAME, "--tag", help="case sensitive name to tag stale objects with"),
+) -> types.ExitCode:
+    """Remove content with the identified --tag."""
     ts = ctx.obj.thoughtspot
 
-    tasks = [
-        ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver syncer{f' to {syncer.name}' if syncer is not None else ''}"),
-        ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
-        ("confirmation_prompt", "Confirmation prompt"),
-        ("untagging_content", f"Removing [b blue]{tag_name}[/] from content in ThoughtSpot"),
-        ("deleting_tag", f"Removing the [b blue]{tag_name}[/] tag from ThoughtSpot"),
-    ]
+    c = ts.api.tags_search()
+    r = utils.run_sync(c)
+    _ = r.json()
 
-    with LiveTasks(tasks, console=rich_console) as tasks:
-        with tasks["gather_metadata"]:
-            to_revert = []
+    try:
+        tag = next(iter([{"metadata_guid": t["id"]} for t in _ if t["name"].casefold() == tag_name.casefold()]))
+    except StopIteration:
+        log.error(f"No tag found with the name '{tag_name}'")
+        return 1
 
-            try:
-                to_revert.extend(
-                    models.ArchiverReport.validated_init(
-                        type=answer["metadata_type"],
-                        guid=answer["id"],
-                        modified=answer["modified"] / 1000,
-                        author_guid=answer["author"],
-                        author=answer.get("authorDisplayName", None),
-                        name=answer["name"],
-                        operation="revert",
-                    )
-                    for answer in ts.answer.all(tags=[tag_name])
-                )
-            except ContentDoesNotExist:
-                pass
+    c = ts.api.metadata_delete(guid=tag["metadata_guid"])
+    r = utils.run_sync(c)
 
-            try:
-                to_revert.extend(
-                    models.ArchiverReport.validated_init(
-                        type=liveboard["metadata_type"],
-                        guid=liveboard["id"],
-                        modified=liveboard["modified"] / 1000,
-                        author_guid=liveboard["author"],
-                        author=liveboard.get("authorDisplayName", None),
-                        name=liveboard["name"],
-                        operation="revert",
-                    )
-                    for liveboard in ts.liveboard.all(tags=[tag_name])
-                )
-            except ContentDoesNotExist:
-                pass
+    if r.is_success:
+        log.info(f"Removed tag '{tag_name}' from your objects.")
+    else:
+        log.error(f"Unable to remove tag '{tag_name}' from your objects.")
+        log.debug(r.text)
 
-        if not to_revert:
-            rich_console.log(f"[b yellow]no [b blue]{tag_name}[/] content was found in [white]ThoughtSpot[/]")
-            raise typer.Exit(0)
-
-        with tasks["results_preview"] as this_task:
-            table = layout.build_table(
-                title=f"Content to untag [b blue]{tag_name}",
-                caption=f"25 random items ({len(to_revert)} [b blue]{tag_name}[/] in ThoughtSpot)",
-            )
-
-            for row in random.sample(to_revert, k=min(25, len(to_revert))):
-                table.add_row(
-                    MetadataObjectType(row.type).name.title().replace("_", " "),
-                    row.guid,
-                    row.modified.strftime("%Y-%m-%d"),
-                    row.author,
-                    row.name,
-                )
-
-            tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
-
-        with tasks["syncer_report"] as this_task:
-            if syncer is not None:
-                syncer.dump("archiver_report", data=[m.dict() for m in to_revert])
-            else:
-                this_task.skip()
-
-        if dry_run:
-            raise typer.Exit(-1)
-
-        with tasks["confirmation_prompt"] as this_task:
-            if no_prompt:
-                this_task.skip()
-            else:
-                this_task.description = f":point_right: Continue untagging {len(to_revert):,} objects? [b magenta](y/N)"
-
-                kb = ConfirmationListener(timeout=60)
-                kb.run()
-
-                if not kb.response.upper() == "Y":
-                    this_task.description = "Confirmation [b red]Denied[/] (no untagging performed)"
-                    raise typer.Exit(0)
-                else:
-                    this_task.description = "Confirmation [b green]Approved[/]"
-
-        with tasks["untagging_content"]:
-            tag_guid = ts.tag.get(tag_name, create_if_not_exists=True)
-            to_revert_guids = []
-            to_revert_types = []
-            to_revert_names = []
-
-            for model in to_revert:
-                to_revert_guids.append(model.guid)
-                to_revert_types.append(model.type)
-                to_revert_names.append(tag_guid["id"])
-
-            for start_index in range(0, len(to_revert_guids), 10):
-                stop_index = start_index + 10
-
-                ts.api.v1.metadata_unassign_tag(
-                    metadata_guids=to_revert_guids[start_index:stop_index],
-                    metadata_types=to_revert_types[start_index:stop_index],
-                    tag_guids=to_revert_names[start_index:stop_index],
-                )
-
-        with tasks["deleting_tag"] as this_task:
-            if delete_tag:
-                ts.tag.delete(tag_name=tag_name)
-            else:
-                this_task.skip()
+    return 0
 
 
 @app.command(dependencies=[thoughtspot])
 def remove(
     ctx: typer.Context,
-    tag_name: str = typer.Option("INACTIVE", "--tag", help="case sensitive name to tag stale objects with"),
+    tag_name: str = typer.Option(_DEFAULT_TAG_NAME, "--tag", help="case sensitive name to tag stale objects with"),
     dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    delete_tag: bool = typer.Option(
-        False, "--delete-tag", help="after deleting identified content, remove the tag itself"
-    ),
     syncer: DSyncer = typer.Option(
         None,
         click_type=SyncerProtocolType(models=[models.ArchiverReport]),
@@ -428,10 +400,10 @@ def remove(
     export_only: bool = typer.Option(
         False,
         "--export-only",
-        help="export all tagged content, but don't remove it from",
+        help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
-):
+) -> types.ExitCode:
     """
     Remove objects from the ThoughtSpot platform.
 
@@ -440,123 +412,157 @@ def remove(
     """
     ts = ctx.obj.thoughtspot
 
-    tasks = [
-        ("gather_metadata", f"Getting metadata tagged with [b blue]{tag_name}[/]"),
-        ("syncer_report", f"Writing Archiver syncer{f' to {syncer.name}' if syncer is not None else ''}"),
-        ("results_preview", f"Showing a sample of 25 items tagged with [b blue]{tag_name}"),
-        ("confirmation_prompt", "Confirmation prompt"),
-        ("export_content", f"Exporting content as TML{f' to {directory}' if directory is not None else ''}"),
-        ("delete_content", f"Deleting [b blue]{tag_name}[/] content in ThoughtSpot"),
-        ("deleting_tag", f"Removing the [b blue]{tag_name}[/] tag from ThoughtSpot"),
+    TOOL_TASKS = [
+        px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Info"),
+        px.WorkTask(id="DUMP_DATA", description=f"Sending data to {'nowhere' if syncer is None else syncer.name}"),
+        px.WorkTask(id="PREVIEW_DATA", description=f"Sample [b blue]{tag_name}[/] objects"),
+        px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
+        px.WorkTask(id="ARCHIVE_EXPORTING", description=f"Exporting [b blue]{tag_name}[/] as TML"),
+        px.WorkTask(id="ARCHIVE_DELETING", description=f"Deleting [b blue]{tag_name}[/] objects"),
     ]
 
-    with LiveTasks(tasks, console=rich_console) as tasks:
-        with tasks["gather_metadata"]:
-            to_delete = []
+    TODAY = dt.datetime.now(tz=dt.timezone.utc)
 
-            try:
-                to_delete.extend(
-                    models.ArchiverReport.validated_init(
-                        type=answer["metadata_type"],
-                        guid=answer["id"],
-                        modified=answer["modified"] / 1000,
-                        author_guid=answer["author"],
-                        author=answer.get("authorDisplayName", "{null}"),
-                        name=answer["name"],
-                        operation="remove",
-                    )
-                    for answer in ts.answer.all(tags=[tag_name])
+    with px.WorkTracker("Removing Stale Objects", tasks=TOOL_TASKS) as tracker:
+        with tracker["GATHER_METADATA"]:
+            c = workflows.metadata.fetch_all(object_types=["ANSWER", "LIVEBOARD"], tag_identifiers=[tag_name], http=ts.api)  # noqa: E501
+            d = utils.run_sync(c)
+
+            filtered = [
+                {
+                    "guid": metadata_object["metadata_id"],
+                    "name": metadata_object["metadata_name"],
+                    "type": metadata_object["metadata_type"],
+                    "author_guid": metadata_object["metadata_header"]["author"],
+                    "author_name": metadata_object["metadata_header"]["authorName"],
+                    "tags": metadata_object["metadata_header"]["tags"],
+                    "last_modified": dt.datetime.fromtimestamp(
+                        metadata_object["metadata_header"]["modified"] / 1000, tz=dt.timezone.utc
+                    ),
+                }
+                for metadata_object in d
+                if tag_name in (_["name"] for _ in metadata_object["metadata_header"]["tags"])
+            ]
+
+            if not filtered:
+                log.info("[fg-warn]no stale content was found in your [fg-primary]ThoughtSpot[/] cluster")
+                return 0
+
+            TAG = next(
+                iter(
+                    _
+                    for metadata_object in d
+                    for _ in metadata_object["metadata_header"]["tags"]
+                    if _["name"] == tag_name
                 )
-            except ContentDoesNotExist:
-                pass
-
-            try:
-                to_delete.extend(
-                    models.ArchiverReport.validated_init(
-                        type=liveboard["metadata_type"],
-                        guid=liveboard["id"],
-                        modified=liveboard["modified"] / 1000,
-                        author_guid=liveboard["author"],
-                        author=liveboard.get("authorDisplayName", "{null}"),
-                        name=liveboard["name"],
-                        operation="remove",
-                    )
-                    for liveboard in ts.liveboard.all(tags=[tag_name])
-                )
-            except ContentDoesNotExist:
-                pass
-
-        if not to_delete:
-            rich_console.log(f"[b yellow]no [b blue]{tag_name}[/] content was found in [white]ThoughtSpot[/]")
-            raise typer.Exit(0)
-
-        with tasks["results_preview"] as this_task:
-            table = layout.build_table(
-                title=f"Content to remove [b blue]{tag_name}[/]",
-                caption=f"25 random items ({len(to_delete)} [b blue]{tag_name}[/] in ThoughtSpot)",
             )
 
-            for row in random.sample(to_delete, k=min(25, len(to_delete))):
-                table.add_row(
-                    MetadataObjectType(row.type).name.title().replace("_", " "),
-                    row.guid,
-                    row.modified.strftime("%Y-%m-%d"),
-                    row.author,
-                    row.name,
+        with tracker["DUMP_DATA"] as this_task:
+            if syncer is None:
+                this_task.skip()
+
+            else:
+                d = [
+                    models.ArchiverReport.validated_init(
+                        type=metadata_object["type"],
+                        guid=metadata_object["guid"],
+                        modified=metadata_object["last_modified"],
+                        reported_at=TODAY,
+                        author_guid=metadata_object["author_guid"],
+                        author=metadata_object["author_name"],
+                        name=metadata_object["name"],
+                        operation="REMOVE",
+                    ).model_dump()
+                    for metadata_object in filtered
+                ]
+
+                syncer.dump("archiver_report", data=d)
+
+        with tracker["PREVIEW_DATA"]:
+            t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""), width=150)
+            t.add_column("TYPE", justify="center", width=10)  # LIVEBOARD, ANSWER
+            t.add_column("NAME", no_wrap=True)
+            t.add_column("AUTHOR", no_wrap=True, width=20)
+            t.add_column("MODIFIED", justify="right", no_wrap=True, width=13)  # NNNN days ago
+
+            for idx, row in enumerate(sorted(filtered, key=lambda row: row["last_modified"], reverse=True)):  # type: ignore
+                if idx >= 15:
+                    break
+
+                t.add_row(
+                    str(row["type"]).strip(),
+                    str(row["name"]).strip(),
+                    str(row["author_name"]).strip(),
+                    f"{(TODAY - row['last_modified'].replace(tzinfo=dt.timezone.utc)).days} days ago",  # type: ignore
                 )
 
-            tasks.draw = ft.partial(layout.combined_layout, tasks, original_layout=tasks.layout, new_layout=table)
-
-        with tasks["syncer_report"] as this_task:
-            if syncer is not None:
-                syncer.dump("archiver_report", data=[m.dict() for m in to_delete])
-            else:
-                this_task.skip()
+            RICH_CONSOLE.print(Align.center(t))
 
         if dry_run:
-            raise typer.Exit(-1)
+            return 0
 
-        with tasks["confirmation_prompt"] as this_task:
+        with tracker["CONFIRM"] as this_task:
             if no_prompt:
                 this_task.skip()
-            else:
-                op = "exporting" if export_only else "removing"
-                this_task.description = f":point_right: Continue {op} {len(to_delete):,} objects? [b magenta](y/N)"
 
-                kb = ConfirmationListener(timeout=60)
+            else:
+                this_task.description = "[fg-warn]Confirmation prompt"
+                this_task.total = ONE_MINUTE = 60
+                operation = "export" if export_only else "remov"  # Yes, intentionally spelled wrong.
+
+                tracker.extra_renderable = lambda: Align.center(
+                    console.Group(
+                        Align.center(f"{len(filtered):,} '{tag_name}' objects will be {operation}ed"),
+                        "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
+                    )
+                )
+
+                th = threading.Thread(target=_tick_tock, args=(this_task,))
+                th.start()
+
+                kb = ConfirmationListener(timeout=ONE_MINUTE)
                 kb.run()
 
-                if not kb.response.upper() == "Y":
-                    this_task.description = f"Confirmation [b red]Denied[/] (no {op} performed)"
-                    raise typer.Exit(0)
-                else:
-                    this_task.description = "Confirmation [b green]Approved[/]"
+                assert kb.response is not None, "ConfirmationListener never got a response."
 
-        with tasks["export_content"] as this_task:
+                tracker.extra_renderable = None
+                this_task.final()
+
+                if kb.response.upper() == "N":
+                    this_task.description = f"[fg-error]Denied[/] (no {operation}ing done)"
+                    return 0
+                else:
+                    this_task.description = f"[fg-success]Approved[/] ({operation}ing {len(filtered):,})"
+
+        with tracker["ARCHIVE_EXPORTING"] as this_task:
             if directory is None:
                 this_task.skip()
-            else:
-                for tml in ts.tml.to_export(guids=[model.guid for model in to_delete], iterator=True):
-                    tml.dump(directory / f"{tml.guid}.{tml.tml_type_name}.tml")
 
-        with tasks["delete_content"] as this_task:
-            if export_only:
-                this_task.skip()
             else:
-                for unique_type in [model.type for model in to_delete]:
-                    content = [model.guid for model in to_delete if model.type == unique_type]
+                coros: list[Coroutine] = []
 
-                    for chunk in utils.batched(content, n=50):
-                        chunk = list(chunk)
-                        log.info(f"Attempting to delete {len(chunk)} {unique_type}s")
-                        _extended_rest_api_v1.metadata_delete(
-                            ts.api.v1,
-                            metadata_type=unique_type,
-                            guids=list(chunk),
-                        )
+                for metadata_object in filtered:
+                    c = workflows.metadata.tml_export(guid=metadata_object["guid"], edoc_format="YAML", directory=directory, http=ts.api)  # noqa: E501
+                    coros.append(c)
 
-        with tasks["deleting_tag"] as this_task:
-            if export_only or not delete_tag:
-                this_task.skip()
-            else:
-                ts.tag.delete(tag_name=tag_name)
+                c = utils.bounded_gather(*coros, max_concurrent=4)
+                d = utils.run_sync(c)
+
+        if export_only:
+            return 0
+
+        with tracker["ARCHIVE_DELETING"]:
+            coros: list[Coroutine] = []
+
+            # DELETE THE TAG
+            c = ts.api.metadata_delete(guid=TAG["id"])
+            coros.append(c)
+
+            for metadata_object in filtered:
+                c = ts.api.metadata_delete(guid=metadata_object["guid"])
+                coros.append(c)
+
+            c = utils.bounded_gather(*reversed(coros), max_concurrent=15)
+            d = utils.run_sync(c)
+
+    return 0

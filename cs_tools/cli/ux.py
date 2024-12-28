@@ -6,6 +6,7 @@ import contextlib
 import logging
 import sys
 
+from rich import theme
 from rich.console import Console
 import typer
 
@@ -16,20 +17,40 @@ if TYPE_CHECKING:
     import click
 
 log = logging.getLogger(__name__)
-rich_console = Console()
+
+# fmt: off
+_TS_RED  = "#fe4870"
+_TS_BLUE = "#0567fa"
+_TS_PURPLE = "#8d63f5"
+_TS_GREEN = "#4ab565"
+_TS_YELLOW = "#fcc839"
+# fmt: on
+
+RICH_CONSOLE = rich_console = Console(
+    theme=theme.Theme(
+        {
+            "fg-primary": "white",
+            "fg-secondary": _TS_PURPLE,
+            "fg-success": _TS_GREEN,
+            "fg-warn": _TS_YELLOW,
+            "fg-error": _TS_RED,
+            "bg-primary": "b grey50",
+        },
+    ),
+)
 
 
 @contextlib.contextmanager
 def _pause_live_for_debugging() -> Generator[None, None, None]:
     """Pause live updates for debugging."""
-    if rich_console._live is not None:
-        rich_console._live.stop()
+    if RICH_CONSOLE._live is not None:
+        RICH_CONSOLE._live.stop()
 
     yield
 
-    if rich_console._live is not None:
-        rich_console.clear()
-        rich_console._live.start(refresh=True)
+    if RICH_CONSOLE._live is not None:
+        RICH_CONSOLE.clear()
+        RICH_CONSOLE._live.start(refresh=True)
 
 
 class CSToolsCommand(typer.core.TyperCommand):
@@ -106,8 +127,8 @@ class CSToolsApp(typer.Typer):
 
         ctx_settings = passthru.pop("context_settings", None) or {}
         ctx_settings["help_option_names"] = ["--help", "-h"]
-        ctx_settings["obj"] = utils.State()
-        ctx_settings["max_content_width"] = rich_console.width
+        ctx_settings["obj"] = utils.GlobalState()
+        ctx_settings["max_content_width"] = RICH_CONSOLE.width
         ctx_settings["token_normalize_func"] = lambda x: x.casefold()
         super().__init__(**passthru, context_settings=ctx_settings)
 

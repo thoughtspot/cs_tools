@@ -122,7 +122,7 @@ class CSTool(_GlobalModel):
 
         from cs_tools import utils
 
-        self._lib.app.info.context_settings = {"obj": utils.State()}
+        self._lib.app.info.context_settings = {"obj": utils.GlobalState()}
 
         runner = CliRunner()
         result = runner.invoke(app=self._lib.app, args=[command, *shlex.split(arguments)], catch_exceptions=False)

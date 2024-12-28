@@ -31,8 +31,10 @@ class Org(ValidatedSQLModel, table=True):
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
 
 class User(ValidatedSQLModel, table=True):
@@ -68,8 +70,10 @@ class Group(ValidatedSQLModel, table=True):
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -126,8 +130,10 @@ class DataSource(ValidatedSQLModel, table=True):
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("dbms_type", mode="before")
     @classmethod
@@ -148,14 +154,16 @@ class MetadataObject(ValidatedSQLModel, table=True):
     object_type: str
     object_subtype: Optional[str]
     data_source_guid: Optional[str]
-    is_sage_enabled: bool
+    is_sage_enabled: Optional[bool]
     is_verified: Optional[bool]
     is_version_controlled: Optional[bool]
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def clean_empty_or_whitespace_description(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -185,12 +193,15 @@ class MetadataColumn(ValidatedSQLModel, table=True):
     spotiq_preference: bool
     calendar_type: Optional[str]
     # custom_sort: ... ???
+    # value_casing: ... ???
     is_formula: bool
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("index_priority")
     @classmethod
@@ -205,11 +216,6 @@ class MetadataColumn(ValidatedSQLModel, table=True):
         )
 
         return max(1, min(10, value))
-
-    @pydantic.field_validator("spotiq_preference", mode="before")
-    @classmethod
-    def cast_default_exclude_to_bool(cls, value: Any) -> bool:
-        return value == "DEFAULT"
 
 
 class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
@@ -245,8 +251,10 @@ class DependentObject(ValidatedSQLModel, table=True):
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -265,7 +273,8 @@ class SharingAccess(ValidatedSQLModel, table=True):
     shared_to_user_guid: Optional[str]
     shared_to_group_guid: Optional[str]
     permission_type: str
-    share_mode: str
+    share_mode: str  # READ_ONLY, MODIFY
+    share_type: Optional[str]  # OBJECT_LEVEL_SECURITY, COLUMN_LEVEL_SECURITY
 
 
 class AuditLogs(ValidatedSQLModel, table=True):

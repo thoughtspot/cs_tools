@@ -15,7 +15,7 @@ def count_parameters(func: Callable) -> int:
 
     if hasattr(func, "__self__"):
         # Bound method
-        func = func.__func__  # type: ignore
+        func = func.__func__  # type: ignore[attr-defined]
         return _count_parameters(func) - 1
 
     return _count_parameters(func)
@@ -25,7 +25,7 @@ def count_parameters(func: Callable) -> int:
 def _count_parameters(func: Callable) -> int:
     """Count the number of positional parameters in a callable."""
     parameters: Iterable[inspect.Parameter] = inspect.signature(func).parameters.values()
-    return sum(p.kind != inspect.Parameter.KEYWORD_ONLY for p in parameters)
+    return sum(p.kind not in (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.VAR_KEYWORD) for p in parameters)
 
 
 async def invoke(function: Callable[[Any], Any], *params) -> Any:

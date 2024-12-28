@@ -8,20 +8,13 @@ from sqlmodel import Field
 import pydantic
 
 from cs_tools import validators
-from cs_tools._compat import StrEnum
 from cs_tools.datastructures import ValidatedSQLModel
 
 log = logging.getLogger(__name__)
 
 
-class LiteralOperation(StrEnum):
-    IDENTIFY = "IDENTIFY"
-    REVERT = "REVERT"
-    REMOVE = "REMOVE"
-
-
-class ArchiverReport(ValidatedSQLModel, table=True):
-    __tablename__ = "archiver_report"
+class DeleterReport(ValidatedSQLModel, table=True):
+    __tablename__ = "deleter_report"
 
     type: str = Field(primary_key=True)
     guid: str = Field(primary_key=True)
@@ -30,7 +23,6 @@ class ArchiverReport(ValidatedSQLModel, table=True):
     author_guid: str
     author: str
     name: str
-    operation: LiteralOperation
 
     @pydantic.field_validator("modified", "reported_at", mode="before")
     @classmethod

@@ -231,7 +231,7 @@ class ThoughtSpotConfiguration(_GlobalSettings):
     username: str
     password: Optional[str] = pydantic.Field(default=None)
     secret_key: Optional[types.GUID] = pydantic.Field(default=None)
-    bearer_token: Optional[types.GUID] = pydantic.Field(default=None)
+    bearer_token: Optional[str] = pydantic.Field(default=None)
     default_org: Optional[int] = None
     disable_ssl: bool = False
     proxy: Optional[str] = None  # See: https://www.python-httpx.org/advanced/proxies/

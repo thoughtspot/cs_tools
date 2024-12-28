@@ -1,11 +1,33 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import cast
 import collections
 
 from rich._loop import loop_last
 import pydantic
 import rich
+
+from cs_tools import datastructures, types
+
+
+def _make_error_panel(*, header: str, reason: str | None = None, fixing: str | None = None) -> rich.panel.Panel:
+    """Creates a pretty dialogue for CLI output."""
+    content = ""
+
+    if reason is not None:
+        content += f"[fg-primary]{reason}[/]"
+
+    if fixing is not None:
+        content += f"\n\n[fg-success]Mitigation[/]\n[fg-warn]{fixing}[/]"
+
+    panel = rich.panel.Panel(
+        content,
+        border_style="fg-error",
+        title=header,
+        expand=False,
+    )
+
+    return panel
 
 
 class CSToolsError(Exception):
@@ -21,6 +43,30 @@ class NoSessionEstablished(CSToolsError):
     Raised when attempting to access ThoughtSpot runtime information
     without a valid session.
     """
+
+
+class InsufficientPrivileges(CSToolsError):
+    """
+    Raised when the User cannot perform an action in ThoughtSpot.
+    """
+
+    def __init__(self, *, user: datastructures.UserInfo, service: str, required_privileges: list[types.GroupPrivilege]):
+        self.user = user
+        self.service = service
+        self.required_privileges = required_privileges
+
+    def __rich__(self) -> rich.panel.Panel:
+        additional_privileges = set(self.required_privileges) - cast(set[types.GroupPrivilege], self.user.privileges)
+
+        header = f"User {self.user.display_name} cannot access {self.service}."
+        reason = f"{self.service} requires the following privileges: {', '.join(self.required_privileges)}"
+        fixing = f"Assign at least these privileges to {self.user.display_name}: {', '.join(additional_privileges)}"
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)
+
+
+#
+#
+#
 
 
 class CSToolsCLIError(CSToolsError):
@@ -41,7 +87,7 @@ class CSToolsCLIError(CSToolsError):
             raise RuntimeError("{cls} must supply atleast a .title !")
 
     def __init__(
-        self, title: Optional[str] = None, reason: Optional[str] = None, mitigation: Optional[str] = None, **error_info
+        self, title: str | None = None, reason: str | None = None, mitigation: str | None = None, **error_info
     ):
         self.title = title if title is not None else self.__class__.title
         self.reason = reason if reason is not None else getattr(self.__class__, "reason", None)
@@ -130,28 +176,6 @@ class TSLoadServiceUnreachable(CSToolsCLIError):
         "If you cannot enable it, here's the tsload command for the file you tried to load:"
         "\n\n"
         "{tsload_command}"
-    )
-
-
-class ContentDoesNotExist(CSToolsCLIError):
-    """Raised when ThoughtSpot can't find content by this name or guid."""
-
-    title = "No {type} found."
-
-
-class AmbiguousContentError(CSToolsCLIError):
-    """Raised when ThoughtSpot can't determine an exact content match."""
-
-    title = "Multiple {type}s found with the name [blue]{name}."
-
-
-class InsufficientPrivileges(CSToolsCLIError):
-    """Raised when the User cannot perform an action."""
-
-    title = "User [b blue]{user.display_name}[/] does not have enough privilege to access {service}."
-    reason = (
-        "{user.display_name} requires the {required_privileges} privilege(s)."
-        "\nPlease consult with your ThoughtSpot Administrator."
     )
 
 

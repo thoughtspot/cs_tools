@@ -36,14 +36,15 @@ dependencies = [
     # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
     "pip >= 23.1",
 
+    "aiosqlite",
     "thoughtspot_tml",
     "awesomeversion",
     "httpx >= 0.27.0",
     "pydantic-settings",
     "email-validator",
-    "pendulum >= 3.0.0",
     "rich >= 13.7.1",
     "sqlmodel >= 0.0.16",
+    "tenacity",
     "toml",
     "packaging",
 
@@ -72,35 +73,32 @@ cli = [
     #   need an extra process to grab the grandchild dependencies so our direct reliance
     #   doesn't break when a child updates.
     #
-
-    # platform-specific
-    "pyreadline3 >= 3.4.1 ; sys_platform == 'win32'",
-
     # CLI
     "prompt_toolkit >= 3.0.47",
     "typer >= 0.12.0",
 
-    # WEB
-    "litestar >= 2.7.0",
-    # TO REPLACE WITH LITESTAR
-    "uvicorn >= 0.29.0",
-    "fastapi >= 0.110.0",
+    # TUI & WEB
+    "textual[syntax] == 1.0.0",
+    "textual-serve == 1.1.1",
 ]
 dev = [
     # CS Tools CLI
     "cs_tools[cli]",
 
+    # Development
+    "textual-dev >= 1.7.0",
+
     # Code Quality
-    "pre-commit",
-    "taskipy",
-    "ruff",
     "mypy",
+    "pre-commit",
+    "ruff",
+    "taskipy",
     "vulture",
 
     # Testing
+    "coverage[toml]",
     "nox",
     "pytest",
-    "coverage[toml]",
 ]
 docs = [
     "cs_tools[cli]",
@@ -130,6 +128,7 @@ strict_equality = true
 strict_concatenate = true
 
 [tool.ruff]
+target-version = "py39"
 line-length = 120
 src = ["cs_tools", "tests"]
 exclude = [
@@ -167,9 +166,9 @@ select = [
 ignore = [
     "B008",    # Checks for function calls in default function arguments.
     "COM812",  # Checks for the absence of trailing commas.
-    "TCH001",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
-    "TCH002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
-    "TCH003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TC001",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TC002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TC003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
 ]
 
 [tool.ruff.lint.flake8-import-conventions.aliases]
