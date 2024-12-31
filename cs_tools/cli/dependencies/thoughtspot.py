@@ -44,7 +44,7 @@ _OPT_VERBOSE: bool = typer.Option(
 class ThoughtSpot:
     """Injects the cs_tools.thoughtspot.ThoughtSpot object into the CLI context."""
 
-    config: str | None = _OPT_CONFIG
+    config: str = _OPT_CONFIG
     temp_dir: custom_types.Directory = _OPT_TEMP_DIR
     verbose: bool = _OPT_VERBOSE
 
