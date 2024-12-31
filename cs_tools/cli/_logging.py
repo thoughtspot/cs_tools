@@ -43,8 +43,6 @@ class LimitedFileHistoryHandler(logging.FileHandler):
 
 def _setup_logging() -> None:
     """Setup CLI / application logging."""
-    logs_dir = cs_tools_venv.app_dir.joinpath(".logs")
-    logs_dir.mkdir(parents=True, exist_ok=True)
     now = dt.datetime.now(tz=dt.timezone.utc).strftime("%Y-%m-%dT%H_%M_%S")
 
     config = {
@@ -73,7 +71,7 @@ def _setup_logging() -> None:
                 "()": "cs_tools.cli._logging.LimitedFileHistoryHandler",
                 "level": "DEBUG",
                 "formatter": "detail",
-                "filename": f"{logs_dir}/{now}.log",
+                "filename": f"{cs_tools_venv.subdir('.logs')}/{now}.log",
                 "mode": "w",
                 "max_files_to_keep": 25,
                 "encoding": "utf-8",

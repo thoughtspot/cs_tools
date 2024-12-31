@@ -4,16 +4,15 @@ import logging
 import pathlib
 import shutil
 
-from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
+from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 from cs_tools.updater import cs_tools_venv
-import httpx
 import typer
 
 log = logging.getLogger(__name__)
-app = typer.Typer(cls=CSToolsGroup, name="logs", hidden=True)
+app = AsyncTyper(name="logs", hidden=True)
 
 
-@app.command(cls=CSToolsCommand)
+@app.command()
 def report(
     save_path: pathlib.Path = typer.Argument(
         None,
@@ -32,12 +31,12 @@ def report(
         save_path = pathlib.Path(save_fp)
 
     save_path.mkdir(parents=True, exist_ok=True)
-    rich_console.print(f"\nSaving logs to [b blue link={save_path.resolve().as_posix()}]{save_path.resolve()}[/]\n")
+    RICH_CONSOLE.print(f"\nSaving logs to [b blue link={save_path.resolve().as_posix()}]{save_path.resolve()}[/]\n")
 
-    logs_dir = cs_tools_venv.app_dir.joinpath(".logs")
+    logs_dir = cs_tools_venv.subdir(".logs")
     sorted_newest = sorted(logs_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
 
     for i, logfile in enumerate(sorted_newest, start=1):
         if i <= latest:
-            rich_console.print(f"  [b blue]{logfile.name}")
+            RICH_CONSOLE.print(f"  [b blue]{logfile.name}")
             shutil.copy(logfile, save_path)

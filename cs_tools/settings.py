@@ -100,7 +100,7 @@ class MetaConfig(_GlobalModel):
     @classmethod
     def load(cls) -> Self:
         """Read the meta-config."""
-        app_dir = cs_tools_venv.app_dir
+        app_dir = cs_tools_venv.base_dir
 
         OLD_FORMAT = app_dir / ".meta-config.toml"
         NEW_FORMAT = app_dir / ".meta-config.json"
@@ -137,7 +137,7 @@ class MetaConfig(_GlobalModel):
         if self.environment.is_ci:
             return
 
-        full_path = cs_tools_venv.app_dir / ".meta-config.json"
+        full_path = cs_tools_venv.base_dir / ".meta-config.json"
 
         # Don't save extra data.
         self.__pydantic_extra__ = {}
@@ -162,8 +162,8 @@ class MetaConfig(_GlobalModel):
             return
 
         try:
-            data = get_latest_cs_tools_release(allow_beta=venv_version.beta, timeout=TIMEOUT_AFTER)
-            info = {"last_checked": current_time, "version": data["name"], "published_at": data["published_at"]}
+            data = get_latest_cs_tools_release(timeout=TIMEOUT_AFTER)
+            info = {"last_checked": current_time, "version": data["tag_name"], "published_at": data["published_at"]}
             self.remote = RemoteRepositoryInfo.model_validate(info)
             self.save()
 
@@ -288,7 +288,7 @@ class CSToolsConfig(_GlobalSettings):
     name: str
     thoughtspot: ThoughtSpotConfiguration
     verbose: bool = False
-    temp_dir: pydantic.DirectoryPath = cs_tools_venv.tmp_dir
+    temp_dir: pydantic.DirectoryPath = cs_tools_venv.subdir(".tmp")
     created_in_cs_tools_version: validators.CoerceVersion = __version__
 
     @pydantic.model_validator(mode="before")
@@ -306,8 +306,8 @@ class CSToolsConfig(_GlobalSettings):
                 },
                 "verbose": data["verbose"],
                 "temp_dir": (
-                    cs_tools_venv.tmp_dir
-                    if pathlib.Path(data["temp_dir"]) == cs_tools_venv.app_dir
+                    cs_tools_venv.subdir(".tmp")
+                    if pathlib.Path(data["temp_dir"]) == cs_tools_venv.base_dir
                     else data["temp_dir"]
                 ),
                 "created_in_cs_tools_version": __version__,
@@ -330,7 +330,7 @@ class CSToolsConfig(_GlobalSettings):
     @classmethod
     def exists(cls, name: str) -> bool:
         """Check if a config exists by this name already."""
-        return cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{name}.toml").exists()
+        return cs_tools_venv.base_dir.joinpath(f"cluster-cfg_{name}.toml").exists()
 
     @classmethod
     def from_name(cls, name: str, automigrate: bool = False, **overrides) -> CSToolsConfig:
@@ -339,7 +339,7 @@ class CSToolsConfig(_GlobalSettings):
             name, _, dotfile = name.partition(":")
             return cls.from_environment(name=name, dotfile=dotfile or None)
 
-        conf = cls.from_toml(cs_tools_venv.app_dir / f"cluster-cfg_{name}.toml", automigrate=automigrate)
+        conf = cls.from_toml(cs_tools_venv.base_dir / f"cluster-cfg_{name}.toml", automigrate=automigrate)
 
         if (verbose := overrides.pop("verbose", None)) is not None:
             conf.verbose = verbose
@@ -387,7 +387,7 @@ class CSToolsConfig(_GlobalSettings):
 
         return instance
 
-    def save(self, directory: pathlib.Path = cs_tools_venv.app_dir) -> None:
+    def save(self, directory: pathlib.Path = cs_tools_venv.base_dir) -> None:
         """Save a cluster-config.toml file."""
         full_path = directory / f"cluster-cfg_{self.name}.toml"
 

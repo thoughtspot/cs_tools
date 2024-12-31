@@ -9,8 +9,6 @@ import logging
 import pathlib
 import time
 
-import httpx
-
 from cs_tools._compat import TypedDict
 from cs_tools.errors import InsufficientPrivileges, TSLoadServiceUnreachable
 from cs_tools.types import (
@@ -18,6 +16,7 @@ from cs_tools.types import (
     GroupPrivilege,
 )
 from cs_tools.updater import cs_tools_venv
+import httpx
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
@@ -48,7 +47,7 @@ class TSLoadNodeRedirectCache:
     #   for (potentially very heavy) file loading. The cache will help manage
     #   redirection across CS Tools sessions.
     #
-    cache_fp: pathlib.Path = cs_tools_venv.app_dir / ".cache/tsload-node-redirect-by-cycle-id.json"
+    cache_fp: pathlib.Path = cs_tools_venv.subdir(".cache") / "tsload-node-redirect-by-cycle-id.json"
 
     def __post_init__(self):
         self.cache_fp.parent.mkdir(parents=True, exist_ok=True)

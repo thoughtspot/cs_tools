@@ -97,5 +97,5 @@ def _form_principals(
 def _backup_security(data) -> None:
     filename = f"user-sync-{dt.datetime.now(tz=dt.timezone.utc):%Y%m%dT%H%M%S}"
 
-    with pathlib.Path(cs_tools_venv.app_dir / ".cache" / f"{filename}.json").open("w") as f:
+    with pathlib.Path(cs_tools_venv.subdir(".cache") / f"{filename}.json").open("w") as f:
         json.dump(data, f, indent=4)

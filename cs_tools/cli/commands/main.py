@@ -6,9 +6,8 @@ import random
 
 from cs_tools import __project__, __version__, _compat, datastructures, errors
 from cs_tools.cli._logging import _setup_logging
-from cs_tools.cli.ux import RICH_CONSOLE, CSToolsApp
+from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 from cs_tools.settings import _meta_config as meta
-from cs_tools.updater import cs_tools_venv
 from rich.align import Align
 from rich.console import ConsoleRenderable
 from rich.panel import Panel
@@ -18,21 +17,21 @@ import rich
 import typer
 
 log = logging.getLogger(__name__)
-app = CSToolsApp(
+app = AsyncTyper(
     name="cs_tools",
     help=f"""
-    :wave: [green]Welcome[/] to [b]CS Tools[/]!
+    :wave: [fg-success]Welcome[/] to CS Tools!
 
     \b
     These are scripts and utilities used to assist in the development, implementation,
     and administration of your ThoughtSpot platform.
 
-    Lost already? Check out our [cyan][link={__project__.__docs__}/tutorial/config/]Tutorial[/][/]!
+    Lost already? Check out the :link: [cyan][link={__project__.__docs__}/tutorial/config/]Tutorial[/][/]!
 
     {meta.newer_version_string()}
 
-    :sparkles: [yellow]All tools are provided as-is[/] :sparkles:
-    :floppy_disk: [red]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
+    :sparkles: [fg-warn]All tools are provided as-is[/] :sparkles:
+    :floppy_disk: [fg-error]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
     """,
     epilog=(
         f":bookmark: v{__version__} "
@@ -77,9 +76,6 @@ def run() -> int:
     app.add_typer(log_command.app)
 
     CURRENT_RUNTIME = datastructures.ExecutionEnvironment()
-
-    # first thing we do is request the database, this allows us to perform a migration if necessary
-    cs_tools_venv.ensure_directories()
 
     _setup_logging()
 
