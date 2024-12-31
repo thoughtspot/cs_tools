@@ -19,6 +19,7 @@ class CSToolInfo(_GlobalModel):
     """Represents all the relevant information about a CS Tool."""
 
     directory: pathlib.Path
+    """The directory location of the CS Tool, which should have an __init__.py"""
 
     @pydantic.computed_field
     @property
@@ -101,6 +102,10 @@ class CSToolInfo(_GlobalModel):
 
         # EXECUTE THE MODULE CODE.
         spec.loader.exec_module(module)
+
+        # REQUIRED VARIABLES TO BE CONSIDERED A VALID CS TOOL.
+        for var in ("app", "__version__"):
+            assert hasattr(module, var), f"CS Tool '{self.directory}' must export the variable '{var}' in __init__.py"
 
         # ADD IT TO sys.path (aka IMPORT IT).
         sys.modules[module_name] = module
