@@ -7,6 +7,7 @@ import logging
 import pathlib
 import urllib
 
+from awesomeversion import AwesomeVersion, AwesomeVersionStrategy, AwesomeVersionStrategyException
 import click
 import pydantic
 import toml
@@ -24,7 +25,7 @@ class CustomType(click.ParamType):
     Is used as a click_type, but without the explicit instance creation.
     """
 
-    name = "CustomType"
+    name = "CUSTOM_TYPE"
 
     def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> Any:
         """Take raw input string and converts it to the desired type."""
@@ -58,6 +59,24 @@ class Literal(CustomType):
             )
 
         return original_value
+
+
+class Version(CustomType):
+    """Convert STR to AwesomeVersion."""
+
+    name = "VERSION"
+
+    def __init__(self, strategy: AwesomeVersionStrategy = AwesomeVersionStrategy.SIMPLEVER) -> None:
+        self.strategy = strategy
+
+    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> AwesomeVersion:
+        """Coerce strings into a awesomeversion.AwesomeVersion."""
+        try:
+            version = AwesomeVersion(value, ensure_strategy=self.strategy)
+        except AwesomeVersionStrategyException:
+            self.fail(message=f"Invalid format, '{value}' is not a valid {self.strategy.name}.", param=param, ctx=ctx)
+
+        return version
 
 
 class Date(CustomType):
