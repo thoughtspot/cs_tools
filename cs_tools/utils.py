@@ -17,6 +17,7 @@ import logging
 import pathlib
 import sys
 import threading
+import zipfile
 import zlib
 
 from sqlalchemy import types as sa_types
@@ -245,3 +246,19 @@ class ExceptedThread(threading.Thread):
 
         except Exception:
             log.debug(f"Something went wrong in {self}", exc_info=True)
+
+
+def make_zip_archive(directory: pathlib.Path, zipfile_path: pathlib.Path, **zipfile_options) -> None:
+    """Zip a directory up."""
+
+    if "compression" not in zipfile_options:
+        zipfile_options["compression"] = zipfile.ZIP_DEFLATED
+
+    with zipfile.ZipFile(file=zipfile_path, mode="w", **zipfile_options) as zf:
+        for path in directory.rglob("*"):
+            # IN CASE directory AND zipfile_path.parent ARE THE SAME.
+            if path == zipfile_path:
+                continue
+
+            archive_path = path.relative_to(directory)
+            zf.write(path, archive_path)
