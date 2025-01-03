@@ -184,5 +184,31 @@ class Syncer(CustomType):
         #     else:
         #         log.warning(f"Caught Exception, rolling back transaction: {exc_type}: {exc_value}")
         #         self._syncer.session.rollback()
+class MultipleInput(CustomType):
+    """Expand a single input into a list of inputs."""
 
-        # return
+    name = "TEXT"
+
+    def __init__(self, sep: str = ",", *, type_caster: type = str):
+        self.sep = sep
+        self.type_caster = type_caster
+    
+    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> list[Any]:
+        """Coerce string into an iterable of <type_caster>."""
+        if isinstance(value, str):
+            values = value.split(self.sep)
+
+        elif isinstance(value, collections.abc.Iterable):
+            values = [v.split(",") if isinstance(v, str) else v for v in value]
+
+        try:
+            values = [self.type_caster(v) for v in values]
+        except Exception:
+            log.debug(f"Could not coerce all values to '{self.type_caster}', {values}", exc_info=True)
+            self.fail(message=f"Could not coerce all values to '{self.type_caster}', {values}", param=param, ctx=ctx)
+
+        return values
+    
+    def __contains__(self, value: Any) -> bool:
+        """Only here to make the typer checker happy."""
+        raise NotImplementedError("MultipleInput is not meant to be instantiated directly, use .convert() instead.")

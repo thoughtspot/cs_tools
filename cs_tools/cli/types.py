@@ -14,23 +14,6 @@ from cs_tools._compat import StrEnum
 log = logging.getLogger(__name__)
 
 
-class MultipleChoiceType(click.ParamType):
-    name = "TEXT"
-
-    def __init__(self, return_type: type = str, separator: str = ","):
-        self.return_type = return_type
-        self.separator = separator
-
-    def convert(self, value, param, ctx):  # noqa: ARG002
-        if isinstance(value, str):
-            values = [value.split(self.separator)]
-
-        elif isinstance(value, collections.abc.Iterable):
-            values = [v.split(",") if isinstance(v, str) else v for v in value]
-
-        return [self.return_type(v) for v in it.chain.from_iterable(values) if v != ""]
-
-
 class MetadataType(click.ParamType):
     def __init__(self, to_system_types: bool = False, include_subtype: bool = False):
         self.to_system_types = to_system_types
