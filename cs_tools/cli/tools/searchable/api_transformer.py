@@ -258,6 +258,7 @@ def ts_metadata_object(data: list[types.APIResult], *, cluster: types.GUID) -> t
             continue
 
         can_be_sage_enabled = result["metadata_type"] == "LOGICAL_TABLE"
+        is_worksheetv2 = result["metadata_header"].get("worksheetVersion") == "V2"
 
         for org_id in result["metadata_header"].get("orgIds", None) or [0]:
             reshaped.append(
@@ -271,7 +272,7 @@ def ts_metadata_object(data: list[types.APIResult], *, cluster: types.GUID) -> t
                     created=result["metadata_header"]["created"] / 1000,
                     modified=result["metadata_header"]["modified"] / 1000,
                     object_type=result["metadata_type"],
-                    object_subtype=result["metadata_header"].get("type", None),
+                    object_subtype="MODEL" if is_worksheetv2 else result["metadata_header"].get("type", None),
                     data_source_guid=(result["metadata_detail"] or {}).get("dataSourceId", None),
                     is_sage_enabled=(
                         not result["metadata_header"]["aiAnswerGenerationDisabled"] if can_be_sage_enabled else None
@@ -280,6 +281,45 @@ def ts_metadata_object(data: list[types.APIResult], *, cluster: types.GUID) -> t
                     is_version_controlled=result["metadata_header"]["isVersioningEnabled"],
                 ).model_dump()
             )
+
+    return reshaped
+
+
+def ts_metadata_tml(
+    metadata_info: list[types.APIResult],
+    tml_info: list[types.APIResult],
+    edoc_format: str,
+    *,
+    cluster: types.GUID,
+    org_id: int,
+) -> types.TableRowsFormat:
+    """Reshapes metadata/search and metadata/tml/export -> searchable.models.MetadataTML."""
+    reshaped: types.TableRowsFormat = []
+
+    for result in tml_info:
+        # IGNORE ERRORS (which we already alerted about).
+        if result["edoc"] is None:
+            continue
+
+        # THIS __SHOULD__ BE SAFE , CONSIDERING OUR INPUT TO metadata/tml/export WERE THESE OBJECTS.
+        metadata = next(m for m in metadata_info if m["object_guid"] == result["info"]["id"])
+
+        reshaped.append(
+            models.MetadataTML.validated_init(
+                cluster_guid=cluster,
+                org_id=org_id,
+                snapshot_date=dt.datetime.now(tz=dt.timezone.utc).date(),
+                object_guid=result["info"]["id"],
+                name=result["info"]["name"],
+                object_type=metadata["object_type"],
+                object_subtype=metadata["object_subtype"],
+                author_guid=metadata["author_guid"],
+                created=metadata["created"],
+                modified=metadata["modified"],
+                tml_blob=result["edoc"],
+                tml_format=edoc_format,
+            ).model_dump()
+        )
 
     return reshaped
 

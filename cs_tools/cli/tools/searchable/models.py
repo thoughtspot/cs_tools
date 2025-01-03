@@ -227,6 +227,22 @@ class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
     synonym: str = Field(primary_key=True)
 
 
+class MetadataTML(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_metadata_tml"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(0, primary_key=True)
+    snapshot_date: dt.date = Field(primary_key=True)
+    object_guid: str = Field(primary_key=True)
+    name: str
+    object_type: str | None = None
+    object_subtype: str | None = None
+    author_guid: str | None = None
+    created: dt.datetime | None = Field(None, sa_column=Column(TIMESTAMP))
+    modified: dt.datetime | None = Field(None, sa_column=Column(TIMESTAMP))
+    tml_blob: str
+    tml_format: str  # JSON, YAML
+
+
 class TaggedObject(ValidatedSQLModel, table=True):
     __tablename__ = "ts_tagged_object"
     cluster_guid: str = Field(primary_key=True)
@@ -359,4 +375,3 @@ METADATA_MODELS = [
     DependentObject,
     SharingAccess,
 ]
-BISERVER_MODELS = [BIServer]
