@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import Any
+import collections
 import datetime as dt
 import logging
 import pathlib
@@ -33,14 +34,23 @@ class CustomType(click.ParamType):
 
 
 class Literal(CustomType):
-    """Only accept one of a few choices."""
+    """
+    Only accept one of a few choices.
+
+    If a value should be hidden from documentation, wrap it in double underscores.
+    """
 
     def __init__(self, choices: Sequence[str]) -> None:
-        self.choices = choices
+        self.raw_choices = choices
+        self.choices = [c.strip("_") if self.is_private_choice_value(c) else c for c in choices]
+
+    def is_private_choice_value(self, value: str) -> bool:
+        """Determine if this value should be displayed in the CLI."""
+        return value.startswith("__") and value.endswith("__")
 
     def get_metavar(self, param: click.Parameter) -> str:  # noqa: ARG002
         """Example usage of the parameter to display on the CLI."""
-        return "|".join(self.choices)
+        return "|".join(c for c in self.raw_choices if not self.is_private_choice_value(c))
 
     def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> str:
         """Validate that the CLI input is one of the accepted values."""
@@ -173,17 +183,15 @@ class Syncer(CustomType):
             syncer_options["models"] = self.models
 
         log.info(f"Initializing syncer: {SyncerClass}")
-        return SyncerClass(**syncer_options)
+        syncer = SyncerClass(**syncer_options)
 
-        # if self.is_database_syncer:
-        #     assert isinstance(self._syncer, base.DatabaseSyncer)
+        # CLEAN UP DATABASE RESOURCES.
+        if ctx is not None:
+            ctx.call_on_close(syncer.__teardown__)
 
-        #     if exc_type is None or isinstance(exc_value, (click.exceptions.Abort, click.exceptions.Exit)):
-        #         self._syncer.session.commit()
-        #         self._syncer.session.close()
-        #     else:
-        #         log.warning(f"Caught Exception, rolling back transaction: {exc_type}: {exc_value}")
-        #         self._syncer.session.rollback()
+        return syncer
+
+
 class MultipleInput(CustomType):
     """Expand a single input into a list of inputs."""
 
@@ -192,7 +200,7 @@ class MultipleInput(CustomType):
     def __init__(self, sep: str = ",", *, type_caster: type = str):
         self.sep = sep
         self.type_caster = type_caster
-    
+
     def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> list[Any]:
         """Coerce string into an iterable of <type_caster>."""
         if isinstance(value, str):
@@ -208,7 +216,7 @@ class MultipleInput(CustomType):
             self.fail(message=f"Could not coerce all values to '{self.type_caster}', {values}", param=param, ctx=ctx)
 
         return values
-    
+
     def __contains__(self, value: Any) -> bool:
         """Only here to make the typer checker happy."""
         raise NotImplementedError("MultipleInput is not meant to be instantiated directly, use .convert() instead.")
