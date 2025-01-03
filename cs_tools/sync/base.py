@@ -116,6 +116,10 @@ class Syncer(_GlobalSettings, extra="forbid"):
         """Will be called after __init__()."""
         pass
 
+    def __teardown__(self) -> None:
+        """Can be called by external code to clean up Syncer resources."""
+        pass
+
     def __repr__(self) -> str:
         return f"<Syncer to '{self.name}'>"
 
@@ -177,6 +181,10 @@ class DatabaseSyncer(Syncer, is_base_class=True):
         self.metadata.create_all(self._engine, tables=list(self.metadata.sorted_tables))
         self._session = sa.orm.Session(self._engine)
         self._session.begin()
+
+    def __teardown__(self) -> None:
+        """Be responsible with database resources."""
+        self._session.close()
 
     def __repr__(self) -> str:
         return f"<DatabaseSyncer to '{self.name}'>"
