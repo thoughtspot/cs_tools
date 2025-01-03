@@ -6,12 +6,12 @@ from textual_serve.server import Server
 import typer
 
 from cs_tools import types
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.ux import AsyncTyper
 
 from . import tui
 
-app = CSToolsApp(
+app = AsyncTyper(
     name="bulk-sharing",
     help="""
     Scalably manage your table- and column-level security right in the browser.
@@ -30,7 +30,8 @@ def _noop(ctx: typer.Context) -> None:
     """Just here so that no_args_is_help=True works on a single-command Typer app."""
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def cls_ui(ctx: typer.Context, mode: Literal["web", "terminal"] = typer.Option("terminal")) -> types.ExitCode:
     """Start the built-in webserver which runs the security management interface."""
     ts = ctx.obj.thoughtspot

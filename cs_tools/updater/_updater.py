@@ -260,7 +260,6 @@ class CSToolsVenv(venv.EnvBuilder):
         *,
         platform: str | None = None,
         python_version: str | None = None,
-        zipped: bool = True,
     ) -> None:
         """
         Create an offline distribution of this CS Tools environment.

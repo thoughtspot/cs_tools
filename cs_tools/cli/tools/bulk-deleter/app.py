@@ -13,18 +13,20 @@ import typer
 
 from cs_tools import types, utils
 from cs_tools.api import workflows
-from cs_tools.cli import progress as px
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.dependencies.syncer import DSyncer
+from cs_tools.cli import (
+    custom_types,
+    progress as px,
+)
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
 from cs_tools.cli.input import ConfirmationListener
-from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import RICH_CONSOLE, CSToolsApp
+from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
+from cs_tools.sync.base import Syncer
 
 from . import models
 
 log = logging.getLogger(__name__)
 
-app = CSToolsApp(help="""Bulk delete metadata objects from your ThoughtSpot platform.""")
+app = AsyncTyper(help="""Bulk delete metadata objects from your ThoughtSpot platform.""")
 
 
 def _tick_tock(task: px.WorkTask) -> None:
@@ -34,13 +36,14 @@ def _tick_tock(task: px.WorkTask) -> None:
         task.advance(step=1)
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def downstream(
     ctx: typer.Context,
     guid: types.GUID = typer.Option(..., help="guid of the object to delete dependents of"),
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         None,
-        click_type=SyncerProtocolType(models=[models.DeleterReport]),
+        click_type=custom_types.Syncer(models=[models.DeleterReport]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -194,12 +197,13 @@ def downstream(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def from_tabular(
     ctx: typer.Context,
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(),
+        click_type=custom_types.Syncer(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),

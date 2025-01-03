@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Coroutine
-from typing import Literal, Optional
+from typing import Literal
 import datetime as dt
 import itertools as it
 import logging
@@ -16,12 +16,14 @@ import typer
 
 from cs_tools import types, utils
 from cs_tools.api import workflows
-from cs_tools.cli import progress as px
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.dependencies.syncer import DSyncer
+from cs_tools.cli import (
+    custom_types,
+    progress as px,
+)
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
 from cs_tools.cli.input import ConfirmationListener
-from cs_tools.cli.types import MultipleChoiceType, SyncerProtocolType
-from cs_tools.cli.ux import RICH_CONSOLE, CSToolsApp
+from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
+from cs_tools.sync.base import Syncer
 
 from . import models
 
@@ -38,7 +40,7 @@ def _tick_tock(task: px.WorkTask) -> None:
         task.advance(step=1)
 
 
-app = CSToolsApp(
+app = AsyncTyper(
     help="""
     Manage stale answers and liveboards within your platform.
 
@@ -50,7 +52,8 @@ app = CSToolsApp(
 )
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def identify(
     ctx: typer.Context,
     tag_name: str = typer.Option(_DEFAULT_TAG_NAME, "--tag", help="case sensitive name to tag stale objects with"),
@@ -64,7 +67,7 @@ def identify(
     recent_activity: int = typer.Option(
         _ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE,
         help=(
-            "content without recent query activity are [b green]selected[/] (exceeding K days) "
+            "content without recent query activity are [fg-success]selected[/] (exceeding K days) "
             # FAKE THE DEFAULT VALUE IN THE CLI OUTPUT
             r"[dim]\[default: all TS: BI history][/]"
         ),
@@ -73,33 +76,33 @@ def identify(
     ),
     recent_modified: int = typer.Option(
         100,
-        help="content without recent edits will be [b green]selected[/] (exceeds days threshold)",
+        help="content without recent edits will be [fg-success]selected[/] (exceeds days threshold)",
         rich_help_panel="Content Identification Criteria",
     ),
-    only_groups: Optional[str] = typer.Option(
+    only_groups: custom_types.MultipleInput = typer.Option(
         None,
-        click_type=MultipleChoiceType(),
-        help="content not authored by users in these groups will be [b red]filtered[/], comma separated",
+        click_type=custom_types.MultipleInput(sep=","),
+        help="content not authored by users in these groups will be [fg-error]filtered[/], comma separated",
         show_default=False,
         rich_help_panel="Content Identification Criteria",
     ),
-    ignore_groups: Optional[str] = typer.Option(
+    ignore_groups: custom_types.MultipleInput = typer.Option(
         None,
-        click_type=MultipleChoiceType(),
-        help="content authored by users in these groups will be [b red]filtered[/], comma separated",
+        click_type=custom_types.MultipleInput(sep=","),
+        help="content authored by users in these groups will be [fg-error]filtered[/], comma separated",
         show_default=False,
         rich_help_panel="Content Identification Criteria",
     ),
-    ignore_tags: Optional[str] = typer.Option(
+    ignore_tags: custom_types.MultipleInput = typer.Option(
         None,
-        click_type=MultipleChoiceType(),
-        help="content with this tag (case sensitive) will be [b red]filtered[/], comma separated",
+        click_type=custom_types.MultipleInput(sep=","),
+        help="content with this tag (case sensitive) will be [fg-error]filtered[/], comma separated",
         show_default=False,
         rich_help_panel="Content Identification Criteria",
     ),
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         None,
-        click_type=SyncerProtocolType(models=[models.ArchiverReport]),
+        click_type=custom_types.Syncer(models=[models.ArchiverReport]),
         help="protocol and path for options to pass to the syncer",
         show_default=False,
         rich_help_panel="Syncer Options",
@@ -108,11 +111,11 @@ def identify(
     """
     Identify content which can be archived.
 
-    :police_car_light: [b yellow]Content owned by system level accounts ([b blue]tsadmin[/], [b blue]system[/],
-    [b blue]etc[/].) will be ignored.[/] :police_car_light:
+    \b
+    :police_car_light: [fg-warn]Content owned by system level accounts ([fg-primary]tsadmin[/], [fg-primary]system[/], [fg-primary]etc[/].) will be ignored.[/] :police_car_light:
     """
     if None not in (only_groups, ignore_groups):
-        RICH_CONSOLE.log("[b red]Select either [b blue]--only-groups[/] or [b blue]--include-groups[/], but not both!")
+        RICH_CONSOLE.log("[fg-error]Select either [fg-secondary]--only-groups[/] or [fg-secondary]--include-groups[/], but not both!")
         return 1
 
     ts = ctx.obj.thoughtspot
@@ -122,9 +125,9 @@ def identify(
         px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Info"),
         px.WorkTask(id="FILTER_METADATA", description="Filtering based on your criteria"),
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {'nowhere' if syncer is None else syncer.name}"),
-        px.WorkTask(id="PREVIEW_DATA", description=f"Sample [b blue]{tag_name}[/] objects"),
+        px.WorkTask(id="PREVIEW_DATA", description=f"Sample [fg-secondary]{tag_name}[/] objects"),
         px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
-        px.WorkTask(id="ARCHIVE_TAGGING", description=f"Applying [b blue]{tag_name}[/] to objects"),
+        px.WorkTask(id="ARCHIVE_TAGGING", description=f"Applying [fg-secondary]{tag_name}[/] to objects"),
     ]
 
     TODAY = dt.datetime.now(tz=dt.timezone.utc)
@@ -176,8 +179,8 @@ def identify(
                     for group in d
                 ]
 
-                only_groups = [group["guid"] for group in all_groups if group["name"] in only_groups]
-                ignore_groups = [group["guid"] for group in all_groups if group["name"] in ignore_groups]
+                only_groups = [group["guid"] for group in all_groups if group["name"] in (only_groups or [])]  # type: ignore[assignment]
+                ignore_groups = [group["guid"] for group in all_groups if group["name"] in (ignore_groups or [])]  # type: ignore[assignment]
 
             if ignore_tags:
                 c = workflows.metadata.fetch_all(metadata_types=["TAG"], http=ts.api)
@@ -191,7 +194,7 @@ def identify(
                     for metadata_object in d
                 ]
 
-                ignore_tags = [tag["guid"] for tag in all_tags if tag["name"] in ignore_tags]
+                ignore_tags = [tag["guid"] for tag in all_tags if tag["name"] in ignore_tags]  # type: ignore[assignment]
 
             content = ["ANSWER", "LIVEBOARD"] if content == "ALL" else [content]  # type: ignore[assignment]
             c = workflows.metadata.fetch_all(metadata_types=content, http=ts.api)  # type: ignore[arg-type]
@@ -348,7 +351,8 @@ def identify(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def untag(
     ctx: typer.Context,
     tag_name: str = typer.Option(_DEFAULT_TAG_NAME, "--tag", help="case sensitive name to tag stale objects with"),
@@ -378,15 +382,16 @@ def untag(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def remove(
     ctx: typer.Context,
     tag_name: str = typer.Option(_DEFAULT_TAG_NAME, "--tag", help="case sensitive name to tag stale objects with"),
     dry_run: bool = typer.Option(False, "--dry-run", help="test your selection criteria (doesn't apply the tag)"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         None,
-        click_type=SyncerProtocolType(models=[models.ArchiverReport]),
+        click_type=custom_types.Syncer(models=[models.ArchiverReport]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -415,10 +420,10 @@ def remove(
     TOOL_TASKS = [
         px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Info"),
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {'nowhere' if syncer is None else syncer.name}"),
-        px.WorkTask(id="PREVIEW_DATA", description=f"Sample [b blue]{tag_name}[/] objects"),
+        px.WorkTask(id="PREVIEW_DATA", description=f"Sample [fg-secondary]{tag_name}[/] objects"),
         px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
-        px.WorkTask(id="ARCHIVE_EXPORTING", description=f"Exporting [b blue]{tag_name}[/] as TML"),
-        px.WorkTask(id="ARCHIVE_DELETING", description=f"Deleting [b blue]{tag_name}[/] objects"),
+        px.WorkTask(id="ARCHIVE_EXPORTING", description=f"Exporting [fg-secondary]{tag_name}[/] as TML"),
+        px.WorkTask(id="ARCHIVE_DELETING", description=f"Deleting [fg-secondary]{tag_name}[/] objects"),
     ]
 
     TODAY = dt.datetime.now(tz=dt.timezone.utc)
@@ -485,7 +490,7 @@ def remove(
             t.add_column("AUTHOR", no_wrap=True, width=20)
             t.add_column("MODIFIED", justify="right", no_wrap=True, width=13)  # NNNN days ago
 
-            for idx, row in enumerate(sorted(filtered, key=lambda row: row["last_modified"], reverse=True)):  # type: ignore
+            for idx, row in enumerate(sorted(filtered, key=lambda row: row["last_modified"], reverse=True)):
                 if idx >= 15:
                     break
 
@@ -493,7 +498,7 @@ def remove(
                     str(row["type"]).strip(),
                     str(row["name"]).strip(),
                     str(row["author_name"]).strip(),
-                    f"{(TODAY - row['last_modified'].replace(tzinfo=dt.timezone.utc)).days} days ago",  # type: ignore
+                    f"{(TODAY - row['last_modified'].replace(tzinfo=dt.timezone.utc)).days} days ago",
                 )
 
             RICH_CONSOLE.print(Align.center(t))
