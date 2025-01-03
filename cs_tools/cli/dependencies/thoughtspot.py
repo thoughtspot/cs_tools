@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 
 import typer
 
@@ -11,7 +12,7 @@ from cs_tools.settings import (
 )
 from cs_tools.thoughtspot import ThoughtSpot as _ThoughtSpot
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 _HELP_PANEL_GROUP = "[ThoughtSpot Config Overrides]"
@@ -69,6 +70,15 @@ class ThoughtSpot:
         setattr(ctx.obj, name, self.ts)
 
     def __enter__(self):
+        assert self.ts_config is not None, "The ThoughtSpot dependency has not been initialized yet."
+
+        # CLEAN UP THE TEMPORARY DIRECTORY.
+        for path in self.ts_config.temp_dir.iterdir():
+            try:
+                path.unlink(missing_ok=True) if path.is_file() else shutil.rmtree(path, ignore_errors=True)
+            except PermissionError:
+                _LOG.warning(f"{path} appears to be in use and can't be cleaned up.. do you have it open somewhere?")
+
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
