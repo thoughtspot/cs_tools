@@ -7,7 +7,7 @@ from rich._loop import loop_last
 import pydantic
 import rich
 
-from cs_tools import datastructures, settings, _types
+from cs_tools import _types, datastructures, settings
 
 
 def _make_error_panel(*, header: str, reason: str | None = None, fixing: str | None = None) -> rich.panel.Panel:

@@ -14,7 +14,7 @@ from textual.screen import Screen
 from textual.widget import Widget
 from textual.widgets import Button, DataTable, Footer, Pretty, Static, TextArea
 
-from cs_tools import datastructures, _types
+from cs_tools import _types, datastructures
 from cs_tools.api import workflows
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.cli import ux
