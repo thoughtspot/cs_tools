@@ -25,7 +25,7 @@ repository, run the following command from the root of the repository to setup y
 ```bash
 cd cs_tools/
 uv pip install -e ".[dev]"
-uv run hatch dev:setup
+uv run hatch run dev:setup
 ```
 
 Now you can install the latest version of __CS Tools__ locally using `pip`. The `-e` flag indicates that your local
@@ -85,7 +85,7 @@ released so your contribution might not show up for a while.
 To build the documentation locally, you can use the following commands:
 
 ```bash
-uv run hatch run docs:serve
+uv run hatch run run docs:serve
 ```
 
 To view the documentation, open your browser and go to `http://localhost:8000`. To stop the server, use `^C` 
