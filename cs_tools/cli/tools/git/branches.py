@@ -119,7 +119,9 @@ def commit_revert(
 
     valid_policies = ["PARTIAL", "ALL_OR_NONE"]
     if revert_policy not in valid_policies:
-        rich_console.log(f"[fg-error]Invalid revert policy: {revert_policy}.  Must be one of {', '.join(valid_policies)}")
+        rich_console.log(
+            f"[fg-error]Invalid revert policy: {revert_policy}.  Must be one of {', '.join(valid_policies)}"
+        )
         raise typer.Exit(1)
 
     if org_override is not None:

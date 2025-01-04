@@ -227,7 +227,9 @@ def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -
                 tml_objects.append(tml)
 
             except TMLError as tml_error:
-                log.warning(f"[fg-error]Unable to parse '[fg-secondary]{r.name}.{r.tml_type_name}.tml[/]' to a TML object.")
+                log.warning(
+                    f"[fg-error]Unable to parse '[fg-secondary]{r.name}.{r.tml_type_name}.tml[/]' to a TML object."
+                )
                 log.error(tml_error, exc_info=True)
                 log.debug(f"decode error for edoc:\n{content['edoc']}")
                 r.status_code = "WARNING"
