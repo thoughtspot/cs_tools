@@ -76,7 +76,7 @@ class MetadataColumn:
         )
         return row
 
-    def dict(self) -> dict[str, str]:  # noqa: A003
+    def dict(self) -> dict[str, str]:
         row = {
             "database": self.database,
             "schema": self.schema,

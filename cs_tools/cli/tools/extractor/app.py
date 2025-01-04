@@ -7,24 +7,32 @@ import typer
 
 from cs_tools import types, utils
 from cs_tools.api import workflows
-from cs_tools.cli import progress as px
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli import (
+    custom_types,
+    progress as px,
+)
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.ux import AsyncTyper
+from cs_tools.sync.base import DatabaseSyncer, Syncer
 
 log = logging.getLogger(__name__)
-app = CSToolsApp(help="Extract data from a worksheet, view, or table in ThoughtSpot.")
+app = AsyncTyper(help="Extract data from a worksheet, view, or table in ThoughtSpot.")
 
 
-@app.command(dependencies=[thoughtspot])
+@app.callback()
+def _noop(ctx: typer.Context) -> None:
+    """Just here so that no_args_is_help=True works on a single-command Typer app."""
+
+
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def search(
     ctx: typer.Context,
     identifier: types.ObjectIdentifier = typer.Option(..., help="name or guid of the dataset to extract data from"),
     search_tokens: str = typer.Option(..., help="search terms to issue against the dataset"),
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=[]),
+        click_type=custom_types.Syncer(),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -71,7 +79,7 @@ def search(
                 FX_SANITIZE = ft.partial(lambda s: s.replace(" ", "_").casefold())
                 reshaped = [{FX_SANITIZE(k): v for k, v in row.items()} for row in reshaped]
 
-            if syncer.is_database_syncer:
+            if isinstance(syncer, DatabaseSyncer):
                 Model = utils.create_dynamic_model(target, sample_row=reshaped[0])
                 Model.__table__.to_metadata(syncer.metadata, schema=None)
                 syncer.metadata.create_all(syncer.engine, tables=[Model.__table__])

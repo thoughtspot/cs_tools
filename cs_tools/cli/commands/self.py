@@ -7,92 +7,35 @@ import platform
 import shutil
 import sys
 import sysconfig
+import zipfile
 
-from awesomeversion import AwesomeVersion
-from cs_tools import __version__, utils
-from cs_tools.cli import _analytics
-from cs_tools.cli.types import Directory
-from cs_tools.cli.ux import CSToolsCommand, CSToolsGroup, rich_console
+from cs_tools import __version__, updater, utils
+from cs_tools.cli import custom_types
+from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 from cs_tools.settings import _meta_config as meta
 from cs_tools.sync import base
-from cs_tools.updater import cs_tools_venv
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
+from cs_tools.updater._updater import cs_tools_venv
 import rich
 import typer
 
-log = logging.getLogger(__name__)
-app = typer.Typer(
-    cls=CSToolsGroup,
+_LOG = logging.getLogger(__name__)
+app = AsyncTyper(
     name="self",
     help=f"""
     Perform actions on CS Tools.
 
     {meta.newer_version_string()}
     """,
-    no_args_is_help=True,
-    invoke_without_command=True,
 )
 
 
-@app.command(cls=CSToolsCommand)
-def sync():
-    """
-    Sync your local environment with the most up-to-date dependencies.
-    """
-    # RIGHT NOW, we limit to these packages only.
-    # - thoughtspot_tml
-    #
-    cs_tools_venv.pip("install", "thoughtspot_tml", "--upgrade", "--upgrade-strategy", "eager")
-
-
-@app.command(cls=CSToolsCommand, name="update")
-@app.command(cls=CSToolsCommand, name="upgrade", hidden=True)
-def update(
-    beta: bool = typer.Option(False, "--beta", help="pin your install to a pre-release build"),
-    dev: pathlib.Path = typer.Option(None, help="pin your install to a local build", click_type=Directory()),
-    offline: pathlib.Path = typer.Option(
-        None, help="install cs_tools from a local directory instead of from github", click_type=Directory()
-    ),
-):
-    """
-    Upgrade CS Tools.
-    """
-    log.info("Determining if CS Tools is globally installed.")
-    cs_tools_venv.check_if_globally_installed(remove=True)
-
-    if offline is not None:
-        log.info(f"Using the offline binary found at [b magenta]{offline}")
-        cs_tools_venv.with_offline_mode(find_links=offline)
-        requires = ["cs_tools[cli]"]
-
-    elif dev is not None:
-        log.info("Installing locally using the development environment.")
-        requires = [f"cs_tools[cli] -e {dev.as_posix()}"]
-
-    else:
-        log.info(f"Getting the latest CS Tools {'beta ' if beta else ''}release.")
-        release = get_latest_cs_tools_release(allow_beta=beta)
-        log.info(f"Found version: [b cyan]{release['tag_name']}")
-        requires = [f"cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/{release['tag_name']}.zip"]
-
-        if AwesomeVersion(release["tag_name"]) <= AwesomeVersion(__version__):
-            log.info(f"CS Tools is [b green]already up to date[/]! (your version: {__version__})")
-            raise typer.Exit(0)
-
-    log.info("Upgrading CS Tools and its dependencies.")
-    cs_tools_venv.pip("install", *requires, "--upgrade", "--upgrade-strategy", "eager", raise_on_failure=False)
-
-
-@app.command(cls=CSToolsCommand)
+@app.command()
 def info(
-    directory: pathlib.Path = typer.Option(
-        None, help="export an image to share with the CS Tools team", click_type=Directory()
-    ),
+    directory: custom_types.Directory = typer.Option(None, help="export an image to share with the CS Tools team"),
     anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
 ):
-    """
-    Get information on your install.
-    """
+    """Get information on your install."""
     if platform.system() == "Windows":
         source = f"{pathlib.Path(sys.executable).parent.joinpath('Activate.ps1')}"
     else:
@@ -104,9 +47,8 @@ def info(
         f"\n           CS Tools: [b yellow]{__version__}[/]"
         f"\n     Python Version: [b yellow]Python {sys.version}[/]"
         f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"
-        f"\n  Configs Directory: [b yellow]{cs_tools_venv.app_dir}[/]"
+        f"\n  Configs Directory: [b yellow]{cs_tools_venv.base_dir}[/]"
         f"\nActivate VirtualEnv: [b yellow]{source}[/]"
-        f"\n System Python Path: [b yellow]{cs_tools_venv.system_exe}[/]"
         f"\n      Platform Tags: [b yellow]{sysconfig.get_platform()}[/]"
         f"\n"
     )
@@ -115,141 +57,126 @@ def info(
         text = utils.anonymize(text, anonymizer=" [dim]{anonymous}[/] ")
 
     renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
-    rich_console.print(renderable)
+    RICH_CONSOLE.print(rich.align.Align.center(renderable))
 
     if directory is not None:
         utils.svg_screenshot(
             renderable,
             path=directory / f"cs-tools-info-{dt.datetime.now(tz=dt.timezone.utc):%Y-%m-%d}.svg",
-            console=rich_console,
+            console=RICH_CONSOLE,
             centered=True,
             width="fit",
             title="cs_tools self info",
         )
 
 
-@app.command(cls=CSToolsCommand, hidden=True)
-def analytics():
-    """Re-prompt for analytics."""
-    # RESET THE ASKS
-    assert meta.analytics is not None
-    meta.analytics.is_opted_in = None
-    meta.analytics.can_record_url = None
+@app.command()
+def sync():
+    """Sync your local environment with the most up-to-date dependencies."""
+    # CURRENTLY, THIS ONLY AFFECTS thoughtspot_tml WHICH CAN OFTEN CHANGE BETWEEN CS TOOL RELEASES.
+    PACKAGES_TO_SYNC = ("thoughtspot_tml",)
 
-    _analytics.prompt_for_opt_in()
-    _analytics.maybe_send_analytics_data()
+    for package in PACKAGES_TO_SYNC:
+        cs_tools_venv.install(package, "--upgrade")
 
 
-@app.command(cls=CSToolsCommand, hidden=True)
-def download(
-    directory: pathlib.Path = typer.Option(help="location to download the python binaries to", click_type=Directory()),
-    platform: str = typer.Option(help="tag describing the OS and CPU architecture of the target environment"),
-    python_version: AwesomeVersion = typer.Option(
-        metavar="X.Y", help="major and minor version of your python install", parser=AwesomeVersion
+@app.command(name="update")
+@app.command(name="upgrade", hidden=True)
+def update(
+    beta: custom_types.Version = typer.Option(None, "--beta", help="The specific beta version to fetch from Github."),
+    offline: custom_types.Directory = typer.Option(None, help="Install cs_tools from a local directory."),
+):
+    """Upgrade CS Tools."""
+    assert isinstance(offline, pathlib.Path), "offline directory must be a pathlib.Path"
+
+    if offline is not None:
+        cs_tools_venv.offline_index = offline
+        where = offline.as_posix()
+    else:
+        # FETCH THE VERSION TO INSTALL.
+        ref = beta if beta is not None else get_latest_cs_tools_release().get("tag_name", f"v{__version__}")
+        where = f"https://github.com/thoughtspot/cs_tools/archive/{ref}.zip"
+
+    cs_tools_venv.install(f"cs_tools[cli] @ {where}", raise_if_stderr=False)
+
+
+@app.command(name="export", hidden=True)
+@app.command(name="download", hidden=True)
+def _make_offline_distributable(
+    directory: custom_types.Directory = typer.Option(help="Location to export the python distributable to."),
+    platform: str = typer.Option(help="A tag describing the target environment architecture, see --help for details."),
+    python_version: custom_types.Version = typer.Option(
+        metavar="X.Y", help="The major and minor version of the target Python environment, see --help for details"
     ),
-    beta: bool = typer.Option(False, "--beta", help="if included, download the latest pre-release binary"),
-    syncer_dialect: str = typer.Option(None, "--syncer", help="the name of the dialect to fetch dependencies for"),
+    beta: custom_types.Version = typer.Option(
+        None, metavar="X.Y.Z", help="The specific beta version to fetch from Github."
+    ),
+    syncer: str = typer.Option(None, metavar="DIALECT", help="Name of the dialect to fetch dependencies for."),
 ):
     """
-    Generate an offline binary.
+    Create an offline distribution of this CS Tools environment.
 
-    Customers without outside access to the internet will need to install from a local
-    directory instead. This commanad will download the necessary files in order to do
-    so. Have the customer execute the below command so you have the necessary
-    information to generate this binary.
+    \b
+    Q. How can I find my platform?
+    >>> [fg-warn]python -c "from pip._vendor.packaging.tags import platform_tags; print(next(iter(platform_tags())))"[/]
 
-       [b yellow]python -m sysconfig[/]
-
+    Q. How can I find my python version?
+    >>> [fg-warn]python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"[/]
     """
-    # DEV NOTE: @boonhapus, 2024/05/21
-    #
-    # The idea behind the offline installer is to simulate `pip install` by downloading
-    # all the necessary packages to build our environment.
-    #
-    dir_to_zip = directory.joinpath("TEMPORARY__DO_NOT_TOUCH")
-    # ZIPFILE STRUCTURE
-    # |- requirements.txt
-    # |  dependencies/
-    #    |- abc.whl
-    #    |- ...
-    #
-    dir_to_zip.joinpath("dependencies").mkdir(exist_ok=True, parents=True)
-    dir_to_zip.joinpath("requirements.txt").write_text("cs_tools[cli]\n")
+    assert isinstance(directory, pathlib.Path), "directory must be a pathlib.Path"
 
-    log.info("Fetching latest CS Tools release from GitHub")
-    release_info = get_latest_cs_tools_release(allow_beta=beta)
-    release_tag = release_info["tag_name"]
+    # JUST IN CASE SOMEONE FORGETS THE `v` PREFIX :~)
+    if beta is not None and "v" not in beta:
+        beta = custom_types.Version().convert(f"v{beta}", None, None)
 
-    if syncer_dialect is not None:
-        syncer_dir = utils.get_package_directory("cs_tools") / "sync" / syncer_dialect
+    # ENSURE WE HAVE THE DESIRED SYNCER INSTALLED.
+    if syncer is not None:
+        syncer_base_dir = utils.get_package_directory("cs_tools") / "sync" / syncer.lower()
+        assert syncer_base_dir.exists(), f"Syncer dialect '{syncer}' not found, did you mistype it?"
+        syncer_manifest = base.SyncerManifest.model_validate_json(syncer_base_dir.joinpath("MANIFEST.json").read_text())
 
-        if not syncer_dir.exists():
-            log.error(f"Syncer dialect {syncer_dialect} not found")
-            raise typer.Exit(1)
+        for requirement_info in syncer_manifest.requirements:
+            cs_tools_venv.install(str(requirement_info.requirement), *requirement_info.pip_args)
 
-        log.info(f"Fetching {syncer_dialect} syncer dependencies")
-        manifest = base.SyncerManifest.model_validate_json(syncer_dir.joinpath("MANIFEST.json").read_text())
-        manifest.__ensure_pip_requirements__()
+    # FETCH THE VERSION TO INSTALL.
+    ref = beta if beta is not None else get_latest_cs_tools_release().get("tag_name", f"v{__version__}")
+    where = f"https://github.com/thoughtspot/cs_tools/archive/{ref}.zip"
 
-        with dir_to_zip.joinpath("requirements.txt").open(mode="a") as r:
-            for requirement in manifest.requirements:
-                r.write(f"{requirement}\n")
+    # ENSURE WE HAVE THE BUILD PACKAGES INSTALLED.
+    cs_tools_venv.install(f"cs_tools[offline] @ {where}", raise_if_stderr=False)
 
-    # freeze our own environment, which has all the dependencies needed to build
-    log.info("Freezing existing virtual environment")
-    frozen = {
-        r
-        for r in cs_tools_venv.pip("freeze", "--quiet", should_stream_output=False).stdout.decode().split("\n")
-        if "cs_tools" not in r
-    }
+    # GENERATE THE DIRECTORY OF DEPENDENCIES.
+    cs_tools_venv.make_offline_distribution(output_dir=directory, platform=platform, python_version=python_version)
 
-    # add in the latest release
-    frozen.add(f"cs_tools @ https://github.com/thoughtspot/cs_tools/archive/{release_tag}.zip")
+    # COPY THE BOOTSTRAPPER AND UPDATER SCRIPTS
+    shutil.copyfile(updater._updater.__file__, directory / "_updater.py")
+    shutil.copyfile(updater._bootstrapper.__file__, directory / "_bootstrapper.py")
 
-    # DESIRED OUTPUT
-    #
-    # Running command /usr/bin/python /tmp/pip-standalone-pip-ccumgmp2/__env_pip__.zip/pip install --ignore-installed --no-user --prefix /tmp/pip-build-env-dtapuowm/overlay --no-warn-script-location --no-binary :none: --only-binary :none: -i https://pypi.org/simple -- 'setuptools>=42' 'setuptools_scm[toml]>=6.2'
-    #
+    # ZIP IT UP
+    zipfile_name = directory / f"cs-tools-{__version__}-{platform}-{python_version}.zip"
+    _LOG.info(f"Zipping CS Tools venv > {zipfile_name}")
+    utils.make_zip_archive(directory=directory, zipfile_path=zipfile_name, compression=zipfile.ZIP_DEFLATED)
 
-    # add packaging stuff since we'll use --no-deps
-    frozen.add("pip >= 23.1")
-    frozen.add("setuptools >= 42")
-    frozen.add("setuptools_scm >= 6.2")
-    frozen.add("wheel")
-    # rust-based build tools
-    frozen.add("semantic-version >= 2.10.0")
-    frozen.add("setuptools-rust >= 1.4.0")
-    frozen.add("maturin >= 1, < 2")
+    # DELETE THE EXTRA FILES.
+    for path in directory.iterdir():
+        if path == zipfile_name:
+            continue
 
-    # fmt: off
-    # add in version specific constraints (in case they don't get exported from the current environment)
-    if python_version < "3.11.0":
-        frozen.add("strenum >= 0.4.9")            # from cs_tools
-        frozen.add("tomli >= 1.1.0")              # from ...
+        if path.is_dir():
+            shutil.rmtree(path, ignore_errors=True)
 
-    if "win" in platform:
-        frozen.add("pyreadline3 == 3.4.1")        # from cs_tools
+        if path.is_file():
+            path.unlink(missing_ok=True)
 
-    log.info("Downloading dependent packages")
-    cs_tools_venv.pip(
-        "download", *frozen,
-        "--no-deps",  # we shouldn't need transitive dependencies, since we've build all the dependencies above
-        "--dest", dir_to_zip.joinpath("dependencies").as_posix(),
-        "--implementation", "cp",
-        "--python-version", f"{python_version.major}{python_version.minor}",
-        "--platform", platform.replace("-", "_"),
+    # PRINT A NOTE ON HOW TO INSTALL.
+    RICH_CONSOLE.print(
+        f"""
+        [fg-warn]INSTALL INSTRUCTIONS[/]
+        1. Extract the zip file.
+        2. Move into the directory with all the python dependencies.
+        3. Run [fg-secondary]python[/] against the _bootstrapper.py file with [fg-secondary]--offline-mode[/] specified
+
+        [fg-warn]cd[/] [fg-secondary]{zipfile_name.stem}[/]
+        [fg-warn]python[/] [fg-secondary]_bootstrapper.py --install --offline-mode --no-clean[/]
+        """
     )
-    # fmt: on
-
-    # rename the cs_tools .zip files to their actual package names
-    dir_to_zip.joinpath(f"dependencies/{release_tag}.zip").rename(dir_to_zip / f"dependencies/cs_tools-{release_tag[1:]}.zip")  # noqa: E501
-
-    from cs_tools.updater import _bootstrapper, _updater
-
-    zip_fp = directory.joinpath(f"cs-tools_{__version__}_{platform}_{python_version}")
-
-    log.info(f"Preparing your download at {zip_fp}")
-    shutil.copy(_bootstrapper.__file__, dir_to_zip.joinpath("_bootstrapper.py"))
-    shutil.copy(_updater.__file__, dir_to_zip.joinpath("_updater.py"))
-    shutil.make_archive(zip_fp.as_posix(), "zip", dir_to_zip)
-    shutil.rmtree(dir_to_zip)

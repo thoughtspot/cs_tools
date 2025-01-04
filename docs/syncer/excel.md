@@ -16,9 +16,14 @@ An Excel file is a type of spreadsheet document that's created using Microsoft E
 
     ---
 
+    - [ ] __filepath_suffix__{ .fc-blue }, _an optional suffix to add to the Excel file, based on CURRENT DATETIME._
+    <br />__default__{ .fc-gray }: `None` ( use the [strftime.org](https://strftime.org) cheatsheet as a guide )
+
+    ---
+
     - [ ] __date_time_format__{ .fc-blue }, _the string representation of date times_
     <br />__default__{ .fc-gray }: `%Y-%m-%dT%H:%M:%S.%f` ( use the [strftime.org](https://strftime.org) cheatsheet as a guide )
-    
+
     ---
 
     - [ ] __save_strategy__{ .fc-blue }, _how to save new data into an existing directory_

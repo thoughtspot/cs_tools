@@ -199,7 +199,7 @@ class Editor(Screen):
 
         text = result.data
 
-        if result.widget_type == "table":
+        if result.widget_type != "static":
             text = json.dumps(result.data, indent=4, default=str)
 
         self.app.copy_to_clipboard(text)

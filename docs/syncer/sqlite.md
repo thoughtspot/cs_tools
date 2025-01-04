@@ -19,6 +19,11 @@ Unlike traditional database management systems that require a separate server pr
 
     ---
 
+    - [ ] __pragma_speedy_inserts__{ .fc-blue }, _whether or not to set PRAGMAs to improve insert performance_
+    <br />__default__{ .fc-gray }: `False` ( __allowed__{ .fc-green }: `True`, `False` )
+
+    ---
+
     - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
     <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
 

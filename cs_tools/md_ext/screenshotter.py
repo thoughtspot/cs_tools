@@ -35,7 +35,7 @@ def _setup_cli():
 class CSToolsScreenshotProcesser(BlockProcessor):
     """CSToolsScreenshot block processors."""
 
-    BASE_FILEPATH = cs_tools.utils.get_package_directory("cs_tools").parent / "docs" / "terminal-screenshots"
+    CS_TOOLS_PKG_DIR = cs_tools.utils.get_package_directory("cs_tools").parent / "docs" / "terminal-screenshots"
     BLOCK_IDENTITY = "~cs~tools"
     CLASS_NAME = "screenshotter"
 
@@ -49,7 +49,7 @@ class CSToolsScreenshotProcesser(BlockProcessor):
 
     def make_svg_screenshot(self, command: list[str]) -> None:
         """Save a screenshot for a given command."""
-        if (fp := self.BASE_FILEPATH.joinpath(f"{self._path_safe_command(command)}.svg")).exists():
+        if (fp := self.CS_TOOLS_PKG_DIR.joinpath(f"{self._path_safe_command(command)}.svg")).exists():
             now = dt.datetime.now(tz=dt.timezone.utc)
             last_file_audit = dt.datetime.fromtimestamp(fp.stat().st_mtime, tz=dt.timezone.utc)  # type: ignore
 
@@ -116,7 +116,7 @@ class CSToolsScreenshotExtension(Extension):
         MAGIC_NUMBER = 100  # no idea, it's supposed to be a priority ???
 
         screenshotter = CSToolsScreenshotProcesser(md.parser)
-        screenshotter.BASE_FILEPATH.mkdir(exist_ok=True)
+        screenshotter.CS_TOOLS_PKG_DIR.mkdir(exist_ok=True)
 
         md.registerExtension(self)
         md.parser.blockprocessors.register(screenshotter, "cs_tools_screenshot", MAGIC_NUMBER)

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Coroutine, Iterable
-from typing import cast
+from typing import Any, Literal, cast
 import asyncio
 import datetime as dt
 import itertools as it
+import json
 import logging
 import pathlib
 
@@ -20,14 +21,18 @@ log = logging.getLogger(__name__)
 
 
 async def fetch_all(
-    object_types: Iterable[types.APIObjectType], *, http: RESTAPIClient, record_size: int = 5_000, **search_options
+    metadata_types: Iterable[types.APIObjectType],
+    *,
+    http: RESTAPIClient,
+    record_size: int = 5_000,
+    **search_options,
 ) -> list[types.APIResult]:
     """Wraps metadata/search fetching all objects of the given type and exhausts the pagination."""
     results: list[types.APIResult] = []
     tasks: list[asyncio.Task] = []
 
-    async with utils.BoundedTaskGroup(max_concurrent=len(list(object_types))) as g:
-        for object_type in object_types:
+    async with utils.BoundedTaskGroup(max_concurrent=len(list(metadata_types))) as g:
+        for object_type in metadata_types:
             search_options["guid"] = ""
             search_options["metadata"] = [{"type": object_type}]
             coro = paginator(http.metadata_search, record_size=record_size, **search_options)
@@ -90,6 +95,58 @@ async def fetch(
         results.extend(d)
 
     return results
+
+
+async def fetch_one(
+    identifier: types.ObjectIdentifier | types.PrincipalIdentifier | types.OrgIdentifier,
+    metadata_type: types.APIObjectType | Literal["ORG"],
+    *,
+    attr_path: str | None = None,
+    http: RESTAPIClient,
+    **search_options,
+) -> types.APIResult | Any:
+    """
+    Wraps */search APIs to fetch a single object and optionally return its attribute.
+
+    attr_path is a jq-like path to try on the returned object from the API, separated by double-underscores.
+
+    Example:
+       attr_path = 'metadata_header__id'
+
+       d = r.json()
+       d["metadata_header"]["id"]
+    """
+    if metadata_type == "ORG":
+        r = await http.orgs_search(org_identifier=identifier, **search_options)
+    else:
+        search_options["metadata"] = [{"type": metadata_type, "identifier": identifier}]
+        r = await http.metadata_search(guid="", **search_options)
+
+    try:
+        r.raise_for_status()
+        _ = next(iter(r.json()))
+    except httpx.HTTPError as e:
+        log.debug(f"Full error: {e}", exc_info=True)
+        raise ValueError(f"Could not find the {metadata_type} for the given identifier {identifier}") from None
+    except StopIteration:
+        raise ValueError(f"Could not find the {metadata_type} for the given identifier {identifier}") from None
+
+    if attr_path is None:
+        return _
+
+    nested = _
+
+    # SEARCH OBJECTS DEEPLY NESTED.
+    for path in attr_path.split("__"):
+        try:
+            nested = nested[int(path) if path.isdigit() else path]
+        except (KeyError, IndexError) as e:
+            log.debug(f"Full object: {json.dumps(_, indent=4)}\n")
+            log.debug(f" Sub object: {json.dumps(_, indent=4)}\n")
+            log.debug(f"Error: {e}", exc_info=True)
+            raise ValueError(f"Could not fetch sub-object at path '{path}', see logs for details..") from None
+
+    return nested
 
 
 async def permissions(

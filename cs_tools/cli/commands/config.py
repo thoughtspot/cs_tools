@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import logging
-import pathlib
 
 from cs_tools import __version__, errors, utils
-from cs_tools.cli import _analytics
-from cs_tools.cli.types import Directory
-from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools.cli import custom_types
+from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 from cs_tools.settings import (
     CSToolsConfig,
     _meta_config as meta,
@@ -16,12 +14,11 @@ from cs_tools.updater import cs_tools_venv
 from rich.align import Align
 from rich.prompt import Confirm
 from rich.syntax import Syntax
-from rich.table import Table
 from rich.text import Text
 import typer
 
 log = logging.getLogger(__name__)
-app = CSToolsApp(
+app = AsyncTyper(
     name="config",
     help="""
     Work with dedicated config files.
@@ -46,9 +43,7 @@ def create(
     secret: str = typer.Option(None, help="the trusted authentication secret key, found in the developer tab"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
     default_org: int = typer.Option(None, help="org ID to sign into by default"),
-    temp_dir: pathlib.Path = typer.Option(
-        None, help="the temporary directory to use for uploading files", click_type=Directory()
-    ),
+    temp_dir: custom_types.Directory = typer.Option(None, help="the temporary directory to use for uploading files"),
     disable_ssl: bool = typer.Option(
         False, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
@@ -56,9 +51,7 @@ def create(
     default: bool = typer.Option(False, "--default", help="whether or not to make this the default configuration"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="enable verbose logging"),
 ):
-    """
-    Create a new config file.
-    """
+    """Create a new config file."""
 
     if not any((password, secret, token)):
         log.error("You must specify at least one authentication method (--password, --secret, or --token)")
@@ -67,11 +60,11 @@ def create(
     if CSToolsConfig.exists(name=config):
         log.warning(f'[b yellow]Configuration file "{config}" already exists.')
 
-        if not Confirm.ask("\nDo you want to overwrite it?", console=rich_console):
+        if not Confirm.ask("\nDo you want to overwrite it?", console=RICH_CONSOLE):
             raise typer.Abort()
 
     if password == "prompt":
-        password = rich_console.input("\nType your password [b yellow](your input is hidden)\n", password=True)
+        password = RICH_CONSOLE.input("\nType your password [b yellow](your input is hidden)\n", password=True)
 
     data = {
         "name": config,
@@ -86,7 +79,7 @@ def create(
             "proxy": proxy,
         },
         "verbose": verbose,
-        "temp_dir": temp_dir or cs_tools_venv.tmp_dir,
+        "temp_dir": temp_dir or cs_tools_venv.subdir(".tmp"),
     }
 
     data["created_in_cs_tools_version"] = __version__
@@ -97,9 +90,9 @@ def create(
         log.info("Checking supplied configuration..")
         ts.login()
 
-    except errors.AuthenticationError as e:
+    except errors.AuthenticationFailed as e:
         log.debug(e, exc_info=True)
-        rich_console.print(Align.center(e))
+        RICH_CONSOLE.print(Align.center(e))
 
     else:
         ts.logout()
@@ -108,8 +101,6 @@ def create(
             meta.default_config_name = config
             meta.save()
 
-        _analytics.prompt_for_opt_in()
-
     finally:
         conf.save()
         log.info(f"Saving as {conf.name}!")
@@ -117,7 +108,7 @@ def create(
 
 @app.command()
 def modify(
-    ctx: typer.Context,
+    ctx: typer.Context,  # noqa: ARG001
     config: str = typer.Option(None, help="config file identifier", metavar="NAME"),
     url: str = typer.Option(None, help="your thoughtspot server"),
     username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
@@ -126,9 +117,7 @@ def modify(
     ),
     secret: str = typer.Option(None, help="the trusted authentication secret key"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
-    temp_dir: pathlib.Path = typer.Option(
-        None, help="the temporary directory to use for uploading files", click_type=Directory()
-    ),
+    temp_dir: custom_types.Directory = typer.Option(None, help="the temporary directory to use for uploading files"),
     disable_ssl: bool = typer.Option(
         None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
     ),
@@ -140,9 +129,7 @@ def modify(
         help="whether or not to make this the default configuration",
     ),
 ):
-    """
-    Modify an existing config file.
-    """
+    """Modify an existing config file."""
     data = CSToolsConfig.from_name(config, automigrate=True).dict()
 
     if url is not None:
@@ -155,7 +142,7 @@ def modify(
         data["thoughtspot"]["default_org"] = default_org
 
     if password == "prompt":
-        password = rich_console.input("\nType your password [b yellow](your input is hidden)\n", password=True)
+        password = RICH_CONSOLE.input("\nType your password [b yellow](your input is hidden)\n", password=True)
 
     if password is not None:
         data["thoughtspot"]["password"] = password
@@ -182,18 +169,13 @@ def modify(
     conf = CSToolsConfig.model_validate(data)
     ts = ThoughtSpot(conf)
 
-    # Set the context all the way up the stack, for proper error reporting.
-    while ctx.parent:
-        ctx.parent.obj.thoughtspot = ts
-        ctx = ctx.parent
-
     try:
         log.info("Checking supplied configuration..")
         ts.login()
 
-    except errors.AuthenticationError as e:
+    except errors.AuthenticationFailed as e:
         log.debug(e, exc_info=True)
-        rich_console.print(Align.center(e))
+        RICH_CONSOLE.print(Align.center(e))
 
     else:
         ts.logout()
@@ -205,64 +187,32 @@ def modify(
 
 @app.command()
 def delete(config: str = typer.Option(..., help="config file identifier", show_default=False, metavar="NAME")):
-    """
-    Delete a config file.
-    """
+    """Delete a config file."""
     if not CSToolsConfig.exists(name=config):
         log.error(f'[b yellow]Configuration file "{config}" does not exist')
         return
 
-    cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{config}.toml").unlink()
-    rich_console.print(f'removed cluster configuration file "{config}"')
+    cs_tools_venv.base_dir.joinpath(f"cluster-cfg_{config}.toml").unlink()
+    RICH_CONSOLE.print(f'removed cluster configuration file "{config}"')
 
 
 @app.command()
 def check(
-    ctx: typer.Context,
+    ctx: typer.Context,  # noqa: ARG001
     config: str = typer.Option(..., help="config file identifier", show_default=False, metavar="NAME"),
-    orgs: bool = typer.Option(False, "--orgs", help="if specified, show a table of all the org IDs"),
 ):
-    """
-    Check your config file.
-    """
+    """Check your config file."""
     conf = CSToolsConfig.from_name(name=config, automigrate=True)
     ts = ThoughtSpot(conf)
-
-    # Set the context all the way up the stack, for proper error reporting.
-    while ctx.parent:
-        ctx.parent.obj.thoughtspot = ts
-        ctx = ctx.parent
 
     try:
         log.info("Checking supplied configuration..")
         ts.login()
 
-    except errors.AuthenticationError as e:
+    except errors.AuthenticationFailed as e:
         log.debug(e, exc_info=True)
-        rich_console.print(Align.center(e))
+        RICH_CONSOLE.print(Align.center(e))
         return
-
-    if orgs:
-        if not ts.session_context.thoughtspot.is_orgs_enabled:
-            log.warning(f"--orgs specified, but orgs has not yet been enabled on {ts.session_context.thoughtspot.url}")
-
-        else:
-            r = ts.api.v1.session_orgs_read()
-            d = r.json()
-
-            table = Table(
-                title=f"Orgs in [b green]{conf.thoughtspot.url}[/]",
-                title_style="bold white",
-                caption=f"Current org id {d['currentOrgId']}",
-            )
-            table.add_column("ID", justify="right")
-            table.add_column("NAME")
-            table.add_column("DESCRIPTION", max_width=75, no_wrap=True)
-
-            for row in sorted(d.get("orgs", []), key=lambda r: r["orgName"]):
-                table.add_row(str(row["orgId"]), row["orgName"], row["description"])
-
-            rich_console.print("\n", Align.center(table), "\n")
 
     ts.logout()
     log.info("[b green]Success[/]!")
@@ -279,18 +229,18 @@ def show(
         return
 
     if config is not None:
-        text = cs_tools_venv.app_dir.joinpath(f"cluster-cfg_{config}.toml").read_text()
+        text = cs_tools_venv.base_dir.joinpath(f"cluster-cfg_{config}.toml").read_text()
 
         if anonymous:
             text = utils.anonymize(text)
 
-        rich_console.print(Syntax(text, "toml", line_numbers=True))
+        RICH_CONSOLE.print(Syntax(text, "toml", line_numbers=True))
         return 0
 
     # SHOW A TABLE OF ALL CONFIGURATIONS
     configs = []
 
-    for file in cs_tools_venv.app_dir.iterdir():
+    for file in cs_tools_venv.base_dir.iterdir():
         if file.name.startswith("cluster-cfg_"):
             config_name = file.stem.removeprefix("cluster-cfg_")
             is_default = meta.default_config_name == config_name
@@ -303,9 +253,9 @@ def show(
 
     listed = Text("\n").join(configs)
 
-    rich_console.print(
+    RICH_CONSOLE.print(
         f"\n[b]ThoughtSpot[/] cluster configurations are located at"
-        f"\n  [b blue][link={cs_tools_venv.app_dir}]{cs_tools_venv.app_dir}[/][/]"
+        f"\n  [b blue][link={cs_tools_venv.base_dir}]{cs_tools_venv.base_dir}[/][/]"
         f"\n"
         f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
         f"\n{listed}"

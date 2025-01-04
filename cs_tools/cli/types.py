@@ -1,57 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 import collections.abc
 import itertools as it
 import logging
-import pathlib
-import urllib.parse
 
 import click
-import pydantic
-import sqlalchemy
 
 from cs_tools._compat import StrEnum
-from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.errors import ConfigDoesNotExist
+
+# from cs_tools.cli.dependencies.syncer import DSyncer
 
 log = logging.getLogger(__name__)
-
-
-class Directory(click.ParamType):
-    name = "directory"
-
-    @pydantic.validate_call
-    def validate(self, value: pydantic.DirectoryPath) -> pathlib.Path:
-        return value
-
-    def convert(self, value, param, ctx):  # noqa: ARG002
-        try:
-            return self.validate(value)
-        except pydantic.ValidationError as e:
-            error_string = []
-
-            for error in e.errors():
-                error_string.append(f"{error['msg']}, got [b red]{error['input']}[/]")
-
-            self.fail("\n".join(error_string))
-
-
-class MultipleChoiceType(click.ParamType):
-    name = "TEXT"
-
-    def __init__(self, return_type: type = str, separator: str = ","):
-        self.return_type = return_type
-        self.separator = separator
-
-    def convert(self, value, param, ctx):  # noqa: ARG002
-        if isinstance(value, str):
-            values = [value.split(self.separator)]
-
-        elif isinstance(value, collections.abc.Iterable):
-            values = [v.split(",") if isinstance(v, str) else v for v in value]
-
-        return [self.return_type(v) for v in it.chain.from_iterable(values) if v != ""]
 
 
 class MetadataType(click.ParamType):
@@ -119,42 +79,3 @@ class CommaSeparatedValuesType(click.ParamType):
             values = [v.split(",") if isinstance(v, str) else v for v in value]
 
         return [self.return_type(v) for v in it.chain.from_iterable(values) if v != ""]
-
-
-class SyncerProtocolType(click.ParamType):
-    """
-    Convert a path string to a syncer and defintion file.
-    """
-
-    name = "path"
-
-    def __init__(self, models: Optional[list[sqlalchemy.Table]] = None):
-        self.models = models
-
-    def get_metavar(self, _param) -> str:
-        return "protocol://DEFINITION.toml"
-
-    def _sanitize_definition(self, definition):
-        if definition.endswith("toml"):
-            definition_fp = pathlib.Path(definition)
-
-            if not definition_fp.exists():
-                raise ConfigDoesNotExist(
-                    title="Syncer definition [b blue]{name}[/] does not exist.", name=definition_fp.as_posix()
-                )
-
-            return {"definition_fp": definition_fp}
-
-        query_string = urllib.parse.urlparse(f"proto://?{definition}").query
-        definition_kw = {k: vs[0] for k, vs in urllib.parse.parse_qs(query_string).items()}
-        return {"definition_kw": definition_kw}
-
-    def convert(self, value, param, ctx):  # noqa: ARG002
-        if value is None:
-            return value
-
-        proto, definition_str = value.split("://")
-        definition = self._sanitize_definition(definition_str)
-        syncer_dependency = DSyncer(protocol=proto, parameters=[], **definition, models=self.models)
-        ctx.command.dependencies.append(syncer_dependency)
-        return syncer_dependency

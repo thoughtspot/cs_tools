@@ -17,32 +17,46 @@ import platform
 import shutil
 import sys
 import sysconfig
+import textwrap
+import typing
 
-log = logging.getLogger("cs_tools.bootstrapper")
-__version__ = "1.0.1"
+_LOG = logging.getLogger("cs_tools.bootstrapper")
+__version__ = "1.0.2"
 __minimum_python_version__ = (3, 9)
 
 
 def cli():
+    """Command line interface for setting up the CS Tools environment."""
+    import pathlib
+
     parser = argparse.ArgumentParser(
         prog="CS Tools Bootstrapper",
         formatter_class=RawTextHelpFormatter,
-        description=(
-            "Installs, removes, or updates to the latest version of cs_tools"
-            "\n "
-            "\nFeeling lost? Try our tutorial!"
-            "\n{c}https://thoughtspot.github.io/cs_tools/tutorial/{x}".format(c=_BLUE, x=_RESET)
+        description=textwrap.dedent(
+            """
+            Installs, removes, or updates to the latest version of cs_tools
+
+            Feeling lost? Try our tutorial!
+            {c}https://thoughtspot.github.io/cs_tools/tutorial/{x}
+            """
+            .format(c=_BLUE, x=_RESET)
         ),
     )
     parser.add_argument(
         "--beta",
-        help=argparse.SUPPRESS,  # "install a remote pre-release version of CS Tools"
+        help=argparse.SUPPRESS,
+        # Install a remote pre-release version of CS Tools (can be any Github REF).
+        # python -m _bootstrapper.py --beta v1.6.0
+        # python -m _bootstrapper.py --beta dev
+        # python -m _bootstrapper.py --beta 011c470e14fc780d3cdeb78553ef3e28de591a5e
         dest="beta",
-        action="store_true",
+        default=None,
     )
     parser.add_argument(
         "--dev",
-        help=argparse.SUPPRESS,  # "install a local pre-release version of CS Tools"
+        help=argparse.SUPPRESS,
+        # Links your global cs_tools environment to the editable project.
+        # For Developers: uv run python ./cs_tools/updater/_bootstrapper.py --dev --reinstall
         dest="dev",
         action="store_true",
     )
@@ -50,7 +64,7 @@ def cli():
     operation.add_argument(
         "-i",
         "--install",
-        help="install cs_tools to your system {c}(default option){x}".format(c=_GREEN, x=_RESET),
+        help="Install cs_tools to your system {g}(default option){x}.".format(g=_GREEN, x=_RESET),
         dest="install",
         action="store_true",
         default=False,
@@ -58,7 +72,7 @@ def cli():
     operation.add_argument(
         "-r",
         "--reinstall",
-        help="install on top of existing version",
+        help="Destroy the existing virtual environment before installing CS Tools.",
         dest="reinstall",
         action="store_true",
         default=False,
@@ -66,7 +80,7 @@ def cli():
     operation.add_argument(
         "-u",
         "--uninstall",
-        help="remove cs_tools from your system",
+        help="Remove cs_tools from your system, including your existing config files.",
         dest="uninstall",
         action="store_true",
         default=False,
@@ -74,134 +88,134 @@ def cli():
     parser.add_argument(
         "-v",
         "--verbose",
-        help="increase terminal output level",
+        help="Increase log verbosity level.",
         dest="verbose",
         action="store_true",
         default=False,
     )
     parser.add_argument(
         "--offline-mode",
-        help="install cs_tools from a local binary directory instead of from Github",
+        help="Install cs_tools from a local distributable instead of from Github.",
         dest="offline_mode",
         action="store_true",
         default=False,
     )
     parser.add_argument(
         "--proxy",
-        help="url to route through {c}fmt{x} http://[user:password@]proxy.server:port".format(c=_PURPLE, x=_RESET),
+        help="URL to route through {p}fmt{x} http://[user:password@]proxy.server:port".format(p=_PURPLE, x=_RESET),
         dest="proxy",
         default=None,
     )
     parser.add_argument(
         "--no-clean",
-        help="don't remove existing BOOTSTRAPPER files",
+        help="Don't attempt to clean up the temporary BOOTSTRAPPER files.",
         dest="pre_clean",
         action="store_false",
         default=True,
     )
 
     args = parser.parse_args()
+
     _setup_logging(args.verbose)
 
-    # remove any pre-existing work from a historical install
+    # REMOVE ANY PRE-EXISTING WORK FROM A HISTORICAL INSTALL
     if args.pre_clean:
         _cleanup()
 
-    log.info(
-        "{g}Welcome to the CS Tools Bootstrapper!{x}"
-        "\n"
-        "Ideally, you will only need to run this one time, and then your environment can be fully managed by CS Tools "
-        "itself."
-        "\n{y}If you run into any issues, please reach out to us on GitHub Discussions below.{x}"
-        "\n"
-        "\n          GitHub: {b}{github_issues}{x}"
-        "\n".format(
-            b=_BLUE,
-            g=_GREEN,
-            y=_YELLOW,
-            x=_RESET,
-            github_issues="https://github.com/thoughtspot/cs_tools/issues/new/choose",
+    _LOG.info(
+        textwrap.dedent(
+            """
+            {g}Welcome to the CS Tools Bootstrapper!{x}
+
+            {y}If you run into any issues, please reach out to us on GitHub Discussions below.{x}
+
+                    GitHub: {b}{github_issues}{x}
+            """
+            .format(
+                b=_BLUE,
+                g=_GREEN,
+                y=_YELLOW,
+                x=_RESET,
+                github_issues="https://github.com/thoughtspot/cs_tools/issues/new/choose",    
+            )
         )
     )
 
-    log.debug(
-        "\n    [PLATFORM DETAILS]"
-        "\n    Python Version: {py_version}"
-        "\n       System Info: {system} (detail: {detail})"
-        "\n     Platform Tags: {platform_tag}"
-        "\n            Ran at: {now}"
-        "\n".format(
-            system=platform.system(),
-            detail=platform.platform(),
-            platform_tag=sysconfig.get_platform(),
-            py_version=platform.python_version(),
-            now=dt.datetime.now(tz=dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %z"),
-        ),
+    _LOG.debug(
+        textwrap.dedent(
+            """
+            [PLATFORM DETAILS]
+            Python Version: {py_version}
+               System Info: {system} (detail: {detail})
+             Platform Tags: {platform_tag}
+                    Ran at: {now}
+            
+            """
+            .format(
+                system=platform.system(),
+                detail=platform.platform(),
+                platform_tag=sysconfig.get_platform(),
+                py_version=platform.python_version(),
+                now=dt.datetime.now(tz=dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %z"),
+            )
+        )
     )
-
-    if args.proxy is not None:
-        os.environ["HTTPS_PROXY"] = args.proxy
     
     if args.offline_mode:
-        import pathlib
         args.offline_mode = pathlib.Path(__file__).parent
 
     try:
-        venv = get_cs_tools_venv(find_links=args.offline_mode)
-        path = get_path_manipulator(venv)
-
-        if args.install or args.reinstall:
-            if not venv.exists:
-                log.info("Creating the CS Tools virtual environment.")
-                venv.make()
-
-            log.info("Determining if CS Tools is globally installed.")
-            venv.check_if_globally_installed(remove=True)
-
-            if args.reinstall:
-                log.info("Resetting the CS Tools virtual environment.")
-                path.unset()
-                venv.reset()
-
-            requires = "cs_tools[cli]"
-
-            if args.offline_mode:
-                log.info("Using the offline binary found at {c}{fp}{x}".format(c=_PURPLE, fp=venv.offline_directory, x=_RESET))
-
-            elif args.dev:
-                log.info("Installing locally using the development environment.")
-                here = os.path.realpath(__file__)
-                dir_updater = os.path.dirname(here)
-                dir_library = os.path.dirname(dir_updater)
-                dir_package = os.path.dirname(dir_library)
-                requires = "{pdir}[cli]".format(pdir=dir_package)
-
-            else:
-                log.info("Getting the latest CS Tools {beta}release.".format(beta="beta " if args.beta else ""))
-                release = get_latest_cs_tools_release(allow_beta=args.beta)
-                log.info("Found version: {p}{tag}{x}".format(p=_PURPLE, x=_RESET, tag=release["tag_name"]))
-                requires += " @ https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(
-                    tag=release["tag_name"]
-                )
-
-            log.info("Installing CS Tools and its dependencies.")
-            venv.pip("install", requires, "--upgrade")
-            path.add()
+        CSToolsVenv = ensure_import_cs_tools_venv(ref=args.beta)
 
         if args.uninstall:
-            log.info("Uninstalling CS Tools and its dependencies.")
-            shutil.rmtree(venv.venv_path, ignore_errors=True)
-            path.unset()
+            _LOG.info("Uninstalling CS Tools, all its dependencies, and deleting your existing config files.")
 
-        log.info("{c}Done!{x} Thank you for trying CS Tools.".format(c=_GREEN, x=_RESET))
+            # REMOVE THE PATH MODIFICATIONS
+            CSToolsVenv(base_dir=CSToolsVenv.default_base_path()).path_manipulator.uninstall()
 
-        if args.install or args.reinstall:
-            log.info(
-                "{y}You're almost there! Please {g}restart your shell{x} {y}and then execute the command below.{x}"
-                "\n"
-                "\n{b}cs_tools --version{x}"
-                "\n".format(b=_BLUE, g=_GREEN, y=_YELLOW, x=_RESET)
+            # REMOVE THE WHOLE ENVIRONMENT.
+            shutil.rmtree(CSToolsVenv.default_base_path(), ignore_errors=True)
+
+            _LOG.info("{c}Done!{x} Thank you for trying CS Tools.".format(c=_GREEN, x=_RESET))
+            return 0
+
+        # MAKE THE CS Tools ENVIRONMENT
+        venv = CSToolsVenv.make(
+            venv_directory=CSToolsVenv.default_base_path(),
+            reset_venv=args.reinstall,
+            offline_index=pathlib.Path(__file__).parent if args.offline_mode else None,
+            proxy=args.proxy,
+            register_venv_path=True,
+        )
+
+        if args.dev:
+            _LOG.info("Installing locally using the development environment.")
+            where = pathlib.Path(__file__).parent.parent.parent.as_posix()
+        elif args.beta:
+            _LOG.info("Installing CS Tools from ref {p}{tag}{x}.".format(p=_PURPLE, tag=args.beta, x=_RESET))
+            where = "https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(tag=args.beta)
+        else:
+            _LOG.info("Fetching the latest CS Tools release.")
+            latest = get_latest_cs_tools_release()
+            _LOG.info("Installing CS Tools from ref {p}{tag}{x}.".format(p=_PURPLE, tag=latest["tag_name"], x=_RESET))
+            where = "https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(tag=latest["tag_name"])
+
+        # INSTALL CS Tools ITSELF.
+        venv.install(package_spec="cs_tools[cli] @ {location}".format(location=where), editable=args.dev)
+
+        # ADD THE PATH MODIFICATIONS.
+        venv.path_manipulator.install()
+
+        _LOG.info(
+            textwrap.dedent(
+                """
+                {y}You're almost there! Please {g}restart your shell{x} {y}and then execute the command below.{x}
+                
+                {b}cs_tools --version{x}
+                """
+                .format(b=_BLUE, g=_GREEN, y=_YELLOW, x=_RESET)
             )
+        )
 
     except Exception:
         raise
@@ -243,6 +257,8 @@ def _create_color_code(color, bold=False):
     return escape_sequence + str(to_bold) + ";" + str(to_color) + end_sequence
 
 
+_WHITE = _create_color_code("white")
+_BLACK = _create_color_code("black", bold=True)
 _BLUE = _create_color_code("blue", bold=True)
 _GREEN = _create_color_code("green", bold=True)
 _RED = _create_color_code("red", bold=True)
@@ -252,6 +268,7 @@ _RESET = _create_color_code("reset")
 
 
 def _setup_logging(verbose=True):
+    # types: (bool) -> None
     import pathlib
     import tempfile
 
@@ -325,15 +342,15 @@ class ColorSupportedFormatter(logging.Formatter):
     """
 
     COLOR_CODES = {  # noqa: RUF012
-        logging.CRITICAL: _create_color_code("magenta", bold=True),
-        logging.ERROR: _create_color_code("red", bold=True),
-        logging.WARNING: _create_color_code("yellow", bold=True),
-        logging.INFO: _create_color_code("white"),
-        logging.DEBUG: _create_color_code("black", bold=True),
+        logging.CRITICAL: _PURPLE,
+        logging.ERROR: _RED,
+        logging.WARNING: _YELLOW,
+        logging.INFO: _WHITE,
+        logging.DEBUG: _BLACK,
     }
 
     def __init__(self, skip_common_time=True, **passthru):
-        # types: (bool) ->  None
+        # types: (bool, **passthru) ->  None
         passthru["fmt"] = "%(asctime)s %(color_code)s| %(indent)s%(message)s%(color_reset)s"
         super().__init__(**passthru)
         self._skip_common_time = skip_common_time
@@ -401,18 +418,21 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
     """
 
     def __init__(self, filename, **passthru):
-        # types: (pathlib.Path, str) -> None
+        # types: (pathlib.Path, **passthru) -> None
         super().__init__(filename, delay=True, **passthru)
         self._buffer = []
         self._found_error = False
 
     def drain_buffer(self):
+        # types: () -> None
+        """Emit all the existing log lines."""
         self._found_error = True
 
         for prior_record in self._buffer:
             super().emit(prior_record)
 
     def emit(self, record):
+        """Conditionally emit/store a line based on presence of any errors."""
         # types: (logging.LogRecord) -> None
         if self._found_error:
             super().emit(record)
@@ -427,55 +447,20 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
         super().emit(record)
 
 
-def get_cs_tools_venv(find_links):
-    # type: (bool) -> _updater.CSToolsVirtualEnvironment
-    """Get the CS Tools Virtual Environment."""
-    import pathlib
-
-    here = pathlib.Path(__file__).parent
-    updater_py = here / "_updater.py"
-
-    if not updater_py.exists():
-        log.info("Missing '{py}', downloading from GitHub".format(py=updater_py))
-        url = "https://api.github.com/repos/thoughtspot/cs_tools/contents/cs_tools/updater/_updater.py"
-        data = http_request(url, to_json=True)
-        assert isinstance(data, dict)
-        data = http_request(data["download_url"], to_json=False)
-        assert isinstance(data, bytes)
-        updater_py.write_text(data.decode())
-        log.info("Downloaded as '{py}'".format(py=updater_py))
-
-    # Hack the PATH var so we can import from _updater
-    sys.path.insert(0, here.as_posix())
-
-    try:
-        from _updater import cs_tools_venv
-    except ModuleNotFoundError:
-        log.info(
-            "Unable to find the CS Tools _updater.py, try getting at "
-            "{b}https://github.com/thoughtspot/cs_tools/releases/latest{x}".format(b=_BLUE, x=_RESET)
-        )
-        raise SystemExit(1)  # noqa: B904
-
-    if find_links is not None:
-        cs_tools_venv.with_offline_mode(find_links=find_links)
-
-    return cs_tools_venv
-
-
 def _cleanup():
     # type: () -> None
     """Remove temporary files for bootstrapping the CS Tools environment."""
     import pathlib
 
-    here = pathlib.Path(__file__).parent
+    HERE = pathlib.Path(__file__).parent
+    FILES_TO_CLEAN = ("__pycache__", "_updater.py", "_bootstrapper.py")
 
-    # don't run the cleanup step within the development environment
-    if "updater" in here.as_posix():
+    # DON'T RUN THE CLEANUP STEP WITHIN THE DEVELOPMENT ENVIRONMENT
+    if "updater" in HERE.as_posix():
         return
 
-    for pathname in ("__pycache__", "_updater.py", "_bootstrapper.py"):
-        path = here.joinpath(pathname)
+    for stem in FILES_TO_CLEAN:
+        path = HERE / stem
 
         if path.is_dir():
             shutil.rmtree(path, ignore_errors=True)
@@ -484,25 +469,70 @@ def _cleanup():
             path.unlink(missing_ok=True)
 
 
-def get_path_manipulator(venv):
-    # type: (_bootstrapper.CSToolsVirtualEnvironment) -> _updater.ShellProfilePath
-    """Get the system's ShellProfile. This is a CS Tools abstraction."""
-    import _updater
+def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
+    # type: (str | None) -> cs_tools.updater._updater.CSToolsVenv
+    """Get the CS Tools Virtual Environment."""
+    import pathlib
 
-    if "fish" in os.environ.get("SHELL", ""):
-        return _updater.FishPath(venv)
+    HERE = pathlib.Path(__file__).parent
+    REPO_BASE = HERE.parent.parent
+    UPDATER_PY = HERE / "_updater.py"
 
-    if sys.platform == "win32":
-        return _updater.WindowsPath(venv)
+    # DOWNLOAD IT FROM GITHUB.
+    if not UPDATER_PY.exists():
+        _LOG.info("Missing '{py}', downloading from GitHub".format(py=UPDATER_PY))
 
-    return _updater.UnixPath(venv)
+        base = "https://api.github.com/repos/{owner}/{repo}/contents/{path}"
+        endp = base.format(owner="thoughtspot", repo="cs_tools", path=UPDATER_PY.relative_to(REPO_BASE))
+
+        if ref is not None:
+            endp += "?ref={ref}".format(ref=ref)
+
+        # FETCH FILE METADATA.
+        meta = http_request(endp, to_json=True)
+        assert isinstance(meta, dict), "Github API returned invalid data for file metadata:\n{d!r}".format(d=meta)
+
+        # FETCH THE FILE ITSELF.
+        data = http_request(meta["download_url"], to_json=False)
+        assert isinstance(data, bytes), "Github API returned invalid data for file download:\n{d!r}".format(d=data)
+
+        # FETCH THE FILE ITSELF.
+        UPDATER_PY.write_text(data.decode())
+        _LOG.info("Downloaded as '{py}'".format(py=UPDATER_PY))
+
+    try:
+        # Hack the PATH var so we can import from _updater
+        sys.path.insert(0, HERE.as_posix())
+
+        from _updater import CSToolsVenv  # type: ignore[import-not-found]
+    except ModuleNotFoundError:
+        _LOG.error(
+            textwrap.dedent(
+                """
+                Unable to find the CS Tools _updater.py, try downloading it from GitHub:
+    
+                    {b}{file_location}{x}
+                
+                ..and place it in this directory:
+
+                    {b}{here}{x}
+                
+                ..then re-run the bootstrapper with the {p}--no-clean{x} option.
+                """
+                .format(b=_BLUE, file_location=meta["download_url"], here=HERE, p=_PURPLE, x=_RESET)
+            )
+        )
+        
+        raise
+    finally:
+        sys.path.insert(0, pathlib.Path(__file__).parent.as_posix())
+
+    return CSToolsVenv
 
 
 def http_request(url, to_json=True, timeout=None):
-    # type: (str, bool, typing.Optional[float]) -> dict[str, typing.Any] | bytes
-    """
-    Makes a GET request to <url>.
-    """
+    # type: (str, bool, float | None) -> dict[str, typing.Any] | bytes
+    """Makes a GET request to <url>."""
     import json
     import ssl
     import urllib.request
@@ -511,67 +541,148 @@ def http_request(url, to_json=True, timeout=None):
 
     ctx = ssl.create_default_context()
 
-    # OP_LEGACY_SERVER_CONNECT is missing until py3.12
+    # ssl.OP_LEGACY_SERVER_CONNECT is missing until py3.12
     #
     # Further Reading:
     #   https://bugs.python.org/issue44888
-    ssl.OP_LEGACY_SERVER_CONNECT = 0x4
-    ctx.options |= ssl.OP_LEGACY_SERVER_CONNECT
+    OP_LEGACY_SERVER_CONNECT = 0x4
+    ctx.options |= OP_LEGACY_SERVER_CONNECT
 
-    # Disable SSL verfication checks.
+    # DISABLE SSL VERFICATION CHECKS.
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
     try:
+        _LOG.debug("Making HTTP GET {u}".format(u=url))
+
         with urllib.request.urlopen(url, timeout=timeout, context=ctx) as r:
             data = r.read()
 
+        if to_json:
+            data = json.loads(data)
+
     except urllib.error.HTTPError:
-        log.error("Something went wrong when requesting: {u}".format(u=url))
-        log.debug(data)
+        _LOG.error("Something went wrong when requesting: {u}".format(u=url))
+        _LOG.debug("urllib.error.HTTPError stack", exc_info=True)
         raise
 
-    if not data:
-        log.error("Something went wrong when requesting: {u}".format(u=url))
-        raise urllib.error.HTTPError(url=url, code=r.status, msg="HTTP Error", hdrs=r.headers, fp=r)
-
-    if to_json:
-        data = json.loads(data)
+    except json.JSONDecodeError:
+        _LOG.error("Something went wrong when parsing response data: {u}".format(u=url))
+        _LOG.debug("Data\n%s", data, exc_info=True)
+        raise
 
     return data
 
 
-def get_latest_cs_tools_release(allow_beta=False, timeout=None):
-    # type: (bool, typing.Optional[float]) -> dict[str, typing.Any]
-    """
-    Get the latest CS Tools release.
-    """
-    releases = http_request("https://api.github.com/repos/thoughtspot/cs_tools/releases", timeout=timeout)
-    assert isinstance(releases, list)
+def get_latest_cs_tools_release(timeout=None):
+    # type: (float | None) -> dict[str, typing.Any]
+    """Gets the latest CS Tools release."""
+    base = "https://api.github.com/repos/{owner}/{repo}/releases/latest"
+    endp = base.format(owner="thoughtspot", repo="cs_tools")
 
-    for release in releases:
-        if release["prerelease"] and not allow_beta:
-            continue
-        break
+    data = http_request(endp, timeout=timeout)
+    assert isinstance(data, dict), "http_request didn't return valid JSON, got '{!r}".format(data)
 
-    return release
+    return data
 
 
 # ======================================================================================================================
 # MAIN PROGRAM
 # ======================================================================================================================
 
-
 def main():
     # type: () -> int
+    """The main entrypoint for the CS Tools bootstrapper."""
+    return_code = 0  # SUCCESS
+
+    # =================================================
+    # MINIMUM PYTHON VERSION CHECK FAILED.
+    # =================================================
+    if sys.version_info < __minimum_python_version__:
+        return_code = 1
+
+        message = textwrap.dedent(
+            """
+            {y}It looks like you are running {r}Python v{version}{y}!{x}
+            
+            CS Tools supports {b}python version {minimum_support}{x} or greater.
+            """
+        )
+
+        if sys.platform != "win32":
+            message += textwrap.dedent(
+                """
+                {b}Please re-run the following command..{x}
+
+                python3 {args}
+                """
+            )
+        else:
+            message += textwrap.dedent(
+                """
+                {y}Python installers are available for download for all versions at..{x}
+                {b}https://www.python.org/downloads/{x}
+                """
+            )
+
+        print(
+            textwrap.dedent(
+                message.format(
+                    b=_BLUE,
+                    r=_RED,
+                    y=_YELLOW,
+                    x=_RESET,
+                    version=".".join(map(str, sys.version_info[:2])),
+                    minimum_support=".".join(map(str, __minimum_python_version__)),
+                    args=" ".join(map(str, sys.argv)),
+                )
+            )
+        )
+
+        return return_code
+    
+    # =================================================
+    # ANACONDA ENVIRONMENTS ARE ALREADY ISOLATED.
+    # =================================================
+    elif "CONDA_DEFAULT_ENV" in os.environ and "CS_TOOLS_IGNORE_CONDA_PATH" not in os.environ:
+        return_code = 1
+
+        print(
+            textwrap.dedent(
+                """
+                {y}It looks like you are running in an Anaconda environment!{x}
+                
+                {r}Installation and execution of CS Tools within conda is not well tested and may lead to issues.{x}
+                
+                Please deactivate the environment and run again.
+                  {g}See{x} https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#deactivating-an-environment
+                
+                To ignore this warning, set the environment variable {b}CS_TOOLS_IGNORE_CONDA_PATH{x} to any value.
+                """
+                .format(
+                    b=_BLUE,
+                    g=_GREEN,
+                    r=_RED,
+                    y=_YELLOW,
+                    x=_RESET,
+                )
+            )
+        )
+
+        return return_code
+
+    # =================================================
+    # BASIC CHECKS PASSED, ATTEMPT CREATION AND INSTALL
+    # =================================================
+
     try:
         return_code = cli()
 
     except Exception as e:
-        disk_handler = next(h for h in log.root.handlers if isinstance(h, InMemoryUntilErrorHandler))
+        disk_handler = next(h for h in _LOG.root.handlers if isinstance(h, InMemoryUntilErrorHandler))
         disk_handler.drain_buffer()
-        log.debug("Error found: {err}".format(err=e), exc_info=True)
-        log.warning(
+        _LOG.debug("Error found: {err}".format(err=e), exc_info=True)
+        _LOG.warning(
             "Unexpected error in bootstrapper, see {b}{logfile}{x} for details..".format(
                 b=_BLUE, logfile=disk_handler.baseFilename, x=_YELLOW
             )
@@ -582,72 +693,4 @@ def main():
 
 
 if __name__ == "__main__":
-
-    # =====================
-    # VERSION CHECK FAILED
-    # =====================
-    if sys.version_info <= __minimum_python_version__:
-        args = " ".join(map(str, sys.argv))
-        py_vers = ".".join(map(str, sys.version_info[:2]))
-
-        msg = (
-            "\n{y}It looks like you are running {r}Python v{version}{y}!{x}"
-            "\n"
-            "\nCS Tools supports {b}python version {minimum_support}{x} or greater."
-        )
-
-        if sys.platform != "win32":
-            msg += (
-                "\n"
-                "{b}Please re-run the following command..{x}"
-                "\n"
-                "\npython3 {args}"
-                "\n"
-            )
-        else:
-            msg += (
-                "\n"
-                "\n{y}Python installers are available for download for all versions at..{x}"
-                "\n{b}https://www.python.org/downloads/{x}"
-                "\n"
-            )
-
-        formatting = {
-            "b": _BLUE,
-            "r": _RED,
-            "y": _YELLOW,
-            "x": _RESET,
-            "version": py_vers,
-            "minimum_support": ".".join(map(str, __minimum_python_version__)),
-            "args": args,
-        }
-
-        print(msg.format(**formatting))  # noqa: T201
-        raise SystemExit(1)
-    
-    elif "CONDA_DEFAULT_ENV" in os.environ and "CS_TOOLS_IGNORE_CONDA_PATH" not in os.environ:
-        msg = (
-            "\n{y}It looks like you are running in an Anaconda environment!{x}"
-            "\n"
-            "\n{r}Installation and execution of CS Tools within conda is not well tested and may lead to issues.{x}"
-            "\n"
-            "\nPlease deactivate the environment and run again."
-            "\n  {g}See{x} https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#deactivating-an-environment"
-            "\n"
-            "\nTo ignore this warning, set the environment variable {b}CS_TOOLS_IGNORE_CONDA_PATH{x} to any value."
-            "\n"
-        )
-
-        formatting = {
-            "b": _BLUE,
-            "g": _GREEN,
-            "r": _RED,
-            "y": _YELLOW,
-            "x": _RESET,
-        }
-
-        print(msg.format(**formatting))  # noqa: T201
-        raise SystemExit(1)
-
-    else:
-        raise SystemExit(main())
+    raise SystemExit(main())

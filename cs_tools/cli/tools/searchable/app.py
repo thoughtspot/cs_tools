@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Coroutine
 from typing import Literal
 import collections
 import datetime as dt
@@ -9,6 +10,7 @@ import pathlib
 from thoughtspot_tml import Table
 from thoughtspot_tml.utils import determine_tml_type
 import httpx
+import sqlalchemy as sa
 import typer
 
 from cs_tools import types, utils
@@ -17,16 +19,15 @@ from cs_tools.cli import (
     custom_types,
     progress as px,
 )
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.ux import AsyncTyper
+from cs_tools.sync.base import DatabaseSyncer, Syncer
 from cs_tools.sync.sqlite.syncer import SQLite
 
 from . import api_transformer, models
 
 log = logging.getLogger(__name__)
-app = CSToolsApp(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
+app = AsyncTyper(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 
 
 def _ensure_external_mapping(tml: types.TML, *, connection_info: dict[str, str]) -> types.TML:
@@ -54,41 +55,42 @@ def _ensure_external_mapping(tml: types.TML, *, connection_info: dict[str, str])
     return tml
 
 
-@app.command(dependencies=[thoughtspot])
+def _is_in_current_org(metadata_object, *, current_org: int) -> bool:
+    """Determine if this object belongs in this org."""
+    return current_org in (metadata_object["metadata_header"].get("orgIds", None) or [0])
+
+
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def deploy(
     ctx: typer.Context,
     cnxn_guid: types.GUID = typer.Option(
         ...,
         "--connection-guid",
-        help="if Falcon, use [b blue]falcon[/], otherwise find your guid in the Connection URL in the Data Workspace",
-        show_default=False,
+        help="If deploying to Falcon, use [fg-secondary]falcon[/], otherwise find your GUID in the Connection URL.",
     ),
     database: str = typer.Option(
         ...,
-        help="if Falcon, use [b blue]cs_tools[/], otherwise use the name of the database which holds Searchable data",
-        show_default=False,
+        help=(
+            "If deploying to Falcon, use [fg-secondary]cs_tools[/], otherwise use the database name holding Searchable "
+            "data."
+        ),
     ),
     schema: str = typer.Option(
         ...,
         help=(
-            "if Falcon, use [b blue]falcon_default_schema[/], otherwise use the name of the schema which holds "
-            "Searchable data"
+            "If deploying to Falcon, use [fg-secondary]falcon_default_schema[/], otherwise use the name of the schema "
+            "holding Searchable data."
         ),
-        show_default=False,
     ),
-    org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
-    export: pathlib.Path = typer.Option(
-        None,
-        help="download the TML files of the SpotApp",
-        file_okay=False,
-        show_default=False,
-    ),
+    org_override: str = typer.Option(None, "--org", help="The Org identifier to deploy the SpotApp to."),
+    export: custom_types.Directory = typer.Option(None, help="Download the TML of the SpotApp instead of deploying."),
 ) -> types.ExitCode:
     """Deploy the Searchable SpotApp."""
     ts = ctx.obj.thoughtspot
 
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
-        ts.org.switch(org=org_override)
+        ts.switch_org(org_id=org_override)
 
     TOOL_TASKS = [
         px.WorkTask(id="CONNECTION", description="Getting details for data source"),
@@ -120,7 +122,7 @@ def deploy(
 
         with tracker["CUSTOMIZE"]:
             HERE = pathlib.Path(__file__).parent
-            tmls: list[TML] = []
+            tmls: list[types.TML] = []
 
             connection_info = {
                 "dialect": db_dialect,
@@ -155,7 +157,7 @@ def deploy(
                 tmls.append(tml)
 
                 if export is not None:
-                    tml.dump(path=export.joinpath(path.name))
+                    tml.dump(path=export.joinpath(path.name))  # type: ignore[attr-defined]
 
         with tracker["DEPLOY"]:
             if export is not None:
@@ -179,12 +181,13 @@ def deploy(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def audit_logs(
     ctx: typer.Context,
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=[models.AuditLogs]),
+        click_type=custom_types.Syncer(models=[models.AuditLogs]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -239,19 +242,20 @@ def audit_logs(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def bi_server(
     ctx: typer.Context,
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=models.BISERVER_MODELS),
+        click_type=custom_types.Syncer(models=[models.BIServer]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
     from_date: custom_types.Date = typer.Option(..., help="inclusive lower bound of rows to select from TS: BI Server"),
     to_date: custom_types.Date = typer.Option(..., help="inclusive upper bound of rows to select from TS: BI Server"),
-    org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
-    compact: bool = typer.Option(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
+    org_override: str = typer.Option(None, "--org", help="The org to fetch history from"),
+    compact: bool = typer.Option(True, "--compact / --full", help="If compact, add  [User Action] != {null} 'invalid'"),
 ) -> types.ExitCode:
     """
     Extract usage statistics from your ThoughtSpot platform.
@@ -281,8 +285,12 @@ def bi_server(
     # DEV NOTE: @boonhapus
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
     if ts.session_context.thoughtspot.is_orgs_enabled:
-        ts.config.thoughtspot.default_org = 0
-        ts.login()
+        ts.switch_org(org_id=0)
+
+    if org_override is not None:
+        c = workflows.metadata.fetch_one(identifier=org_override, metadata_type="ORG", attr_path="id", http=ts.api)
+        _ = utils.run_sync(c)
+        org_override = _
 
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
@@ -320,7 +328,8 @@ def bi_server(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def metadata(
     ctx: typer.Context,
     # tables: List[str] = typer.Option(None, help="table names to collect data on, can be specified multiple times"),
@@ -330,9 +339,9 @@ def metadata(
         help="if specified, include security controls for Column Level Security as well",
     ),
     org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=models.METADATA_MODELS),
+        click_type=custom_types.Syncer(models=models.METADATA_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
@@ -374,27 +383,27 @@ def metadata(
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
     ]
 
-    def is_in_current_org(metadata_object, *, current_org: int) -> bool:
-        """Determine if this object belongs in this org."""
-        return current_org in (metadata_object["metadata_header"].get("orgIds", None) or [0])
-
     with px.WorkTracker("", tasks=TOOL_TASKS) as tracker:
         with tracker["PREPARING"] as this_task:
             CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
 
+            # FETCH ALL ORG IDs WE'LL NEED TO COLLECT FROM
             if ts.session_context.thoughtspot.is_orgs_enabled:
                 c = ts.api.orgs_search()
                 r = utils.run_sync(c)
-                orgs = [_ for _ in r.json() if org_override is None or _["id"] == org_override]
+                orgs = [_ for _ in r.json() if org_override is None or _["name"].casefold() == org_override.casefold()]
             else:
                 orgs = [{"id": 0, "name": "ThoughtSpot"}]
+
+            if not orgs:
+                log.error(f"Could not find any orgs with name '{org_override}' to collect data from.")
+                return 1
 
             tracker["ORGS_COUNT"].total = len(orgs)
 
             # DUMP CLUSTER DATA
             d = api_transformer.ts_cluster(data=ts.session_context)
             temp.dump(models.Cluster.__tablename__, data=d)
-            this_task.final()
 
         tracker["ORGS_COUNT"].start()
 
@@ -409,10 +418,8 @@ def metadata(
                 if not ts.session_context.thoughtspot.is_orgs_enabled:
                     _ = [{"id": 0, "name": "ThoughtSpot", "description": "Your cluster is not orgs enabled."}]
                 else:
-                    ts.config.thoughtspot.default_org = org["id"]
-                    ts.login()
-
-                    c = ts.api.orgs_search(org_id=org["id"])
+                    ts.switch_org(org_id=org["id"])
+                    c = ts.api.orgs_search()
                     r = utils.run_sync(c)
                     _ = r.json()
 
@@ -469,12 +476,12 @@ def metadata(
                 temp.dump(models.Tag.__tablename__, data=d)
 
             with tracker["TS_METADATA"] as this_task:
-                c = workflows.metadata.fetch_all(object_types=["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"], http=ts.api)  # noqa: E501
+                c = workflows.metadata.fetch_all(metadata_types=["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"], http=ts.api)  # noqa: E501
                 _ = utils.run_sync(c)
 
                 # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
                 for metadata in _:
-                    if is_in_current_org(metadata, current_org=org["id"]):
+                    if _is_in_current_org(metadata, current_org=org["id"]):
                         seen_guids[metadata["metadata_type"]].add(metadata["metadata_id"])
 
                 # DUMP DATA_SOURCE DATA
@@ -490,14 +497,14 @@ def metadata(
                 temp.dump(models.TaggedObject.__tablename__, data=d)
 
             with tracker["TS_COLUMN"] as this_task:
-                # WE USE include_hidden_objects=True BECAUSE HIDDEN COLUMNS ON A TABLE/MODEL ARE NOT ACCESSIBLE WITHOUT IT.
+                # USE include_hidden_objects=True BECAUSE HIDDEN COLUMNS ON A LOGICAL_TABLE AREN'T RETURNED WITHOUT IT.
                 g = {"LOGICAL_TABLE": seen_guids["LOGICAL_TABLE"]}
-                c = workflows.metadata.fetch(typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api)
+                c = workflows.metadata.fetch(typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api)  # noqa: E501
                 _ = utils.run_sync(c)
 
                 # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
                 for metadata in _:
-                    if is_in_current_org(metadata, current_org=org["id"]):
+                    if _is_in_current_org(metadata, current_org=org["id"]):
                         seen_guids["CONNECTION"].add(metadata["metadata_detail"]["dataSourceId"])
 
                         if not metadata["metadata_detail"]["columns"]:
@@ -546,19 +553,138 @@ def metadata(
 
             # INCREASE THE PROGRESS BAR SINCE WE'RE DONE WITH THIS ORG
             tracker["ORGS_COUNT"].advance(step=1)
-            # utils.run_sync(ts.api.cache.clear())
 
         tracker["ORGS_COUNT"].stop()
 
         with tracker["DUMP_DATA"]:
             # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
-            is_syncer_initialized_as_db_truncate = syncer.is_database_syncer and syncer.load_strategy == "TRUNCATE"
+            is_truncate_load_strategy = isinstance(syncer, DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
 
             for model in models.METADATA_MODELS:
                 for idx, rows in enumerate(temp.read_stream(tablename=model.__tablename__, batch=1_000_000), start=1):
-                    if is_syncer_initialized_as_db_truncate:
+                    if is_truncate_load_strategy:
                         syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
 
                     syncer.dump(model.__tablename__, data=[model.validated_init(**row).model_dump() for row in rows])
+
+    return 0
+
+
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
+def tml(
+    ctx: typer.Context,
+    org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
+    metadata_types: Literal["CONNECTION", "MODEL", "LIVEBOARD", "__ALL__"] = typer.Option(
+        ...,
+        help="The type of TML to export, if not provided, then fetch all of the supported types.",
+    ),
+    strategy: Literal["DELTA", "SNAPSHOT"] = typer.Option(
+        "DELTA",
+        help=(
+            "SNAPSHOT fetches all objects, DELTA only fetches modified object since the last snapshot (this option only works with Database Syncers)"
+        ),
+    ),
+    tml_format: Literal["JSON", "YAML"] = typer.Option("YAML", help="The data format to save the TML data in."),
+    directory: custom_types.Directory = typer.Option(None, help="The directory to additionally save TMLs to."),
+    syncer: Syncer = typer.Option(
+        ...,
+        click_type=custom_types.Syncer(models=[models.MetadataTML]),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
+) -> types.ExitCode:
+    """..."""
+    ts = ctx.obj.thoughtspot
+
+    metadata_types = ["LOGICAL_TABLE", "LIVEBOARD", "ANSWER"]
+
+    temp = SQLite(
+        database_path=ts.config.temp_dir / "temp.db",
+        pragma_speedy_inserts=True,
+        models=models.METADATA_MODELS,
+        load_strategy="UPSERT",
+    )
+
+    # Silence the intermediate logger.
+    logging.getLogger("cs_tools.sync.sqlite.syncer").setLevel(logging.CRITICAL)
+
+    TOOL_TASKS = [
+        px.WorkTask(id="PREPARING", description="Preparing for data collection"),
+        px.WorkTask(id="ORGS_COUNT", description="Collecting data from ThoughtSpot"),
+        px.WorkTask(id="TS_METADATA", description="  Fetching metadata"),
+        px.WorkTask(id="EXPORT", description="  Exporting TML data"),
+        px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
+    ]
+
+    with px.WorkTracker("", tasks=TOOL_TASKS) as tracker:
+        with tracker["PREPARING"] as this_task:
+            CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
+
+            # FETCH ALL ORG IDs WE'LL NEED TO COLLECT FROM
+            if ts.session_context.thoughtspot.is_orgs_enabled:
+                c = ts.api.orgs_search()
+                r = utils.run_sync(c)
+                orgs = [_ for _ in r.json() if org_override is None or _["name"].casefold() == org_override.casefold()]
+            else:
+                orgs = [{"id": 0, "name": "ThoughtSpot"}]
+
+            if not orgs:
+                log.error(f"Could not find any orgs with name '{org_override}' to collect data from.")
+                return 1
+
+            tracker["ORGS_COUNT"].total = len(orgs)
+
+        tracker["ORGS_COUNT"].start()
+
+        # LOOP THROUGH EACH ORG COLLECTING DATA
+        for org in orgs:
+            tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
+
+            with tracker["TS_METADATA"]:
+                c = workflows.metadata.fetch_all(metadata_types=metadata_types, http=ts.api)
+                _ = utils.run_sync(c)
+
+                d = api_transformer.ts_metadata_object(data=_, cluster=CLUSTER_UUID)
+
+                if strategy == "DELTA" and isinstance(syncer, DatabaseSyncer):
+                    q = sa.text(f"""SELECT MAX(modified) AS latest_dt FROM {models.MetadataTML.__tablename__}""")
+
+                    if r := syncer.session.execute(q).scalar():
+                        latest_dt = dt.datetime.fromisoformat(r).astimezone(tz=dt.timezone.utc)
+                        d = [_ for _ in d if _["modified"] > latest_dt]
+
+            with tracker["EXPORT"]:
+                coros: list[Coroutine] = []
+
+                for metadata_object in d:
+                    opts = {
+                        "directory": directory,
+                        "export_schema_version": "V2" if metadata_object["object_subtype"] == "MODEL" else "V1",
+                        "edoc_format": tml_format,
+                    }
+                    c = workflows.metadata.tml_export(guid=metadata_object["object_guid"], **opts, http=ts.api)
+                    coros.append(c)
+
+                c = utils.bounded_gather(*coros, max_concurrent=4)
+                _ = utils.run_sync(c)
+
+                d = api_transformer.ts_metadata_tml(metadata_info=d, tml_info=_, edoc_format=tml_format, cluster=CLUSTER_UUID, org_id=org["id"])  # noqa: E501
+                temp.dump(models.MetadataTML.__tablename__, data=d)
+
+            # INCREASE THE PROGRESS BAR SINCE WE'RE DONE WITH THIS ORG
+            tracker["ORGS_COUNT"].advance(step=1)
+
+        tracker["ORGS_COUNT"].stop()
+
+        with tracker["DUMP_DATA"]:
+            # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
+            is_truncate_load_strategy = isinstance(syncer, DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
+
+            for idx, rows in enumerate(temp.read_stream(tablename=models.MetadataTML.__tablename__, batch=1_000_000), start=1):
+                if is_truncate_load_strategy:
+                    syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
+
+                syncer.dump(models.MetadataTML.__tablename__, data=[models.MetadataTML.validated_init(**row).model_dump() for row in rows])
 
     return 0

@@ -2,6 +2,9 @@
 requires = ["setuptools>=42", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
+# [build-system]
+# requires = ["hatchling"]
+# build-backend = "hatchling.build"
 
 [project]
 name = "cs_tools"
@@ -34,8 +37,6 @@ classifiers = [
 
 dependencies = [
     # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
-    "pip >= 23.1",
-
     "aiosqlite",
     "thoughtspot_tml",
     "awesomeversion",
@@ -66,20 +67,27 @@ documentation = "https://thoughtspot.github.io/cs_tools/"
 
 [project.optional-dependencies]
 cli = [
-    # pin these dependencies explicitly so we can ensure they work across environments
-    # 
-    # DEV NOTE @boonhapus 2023/01/14
-    #   these are only the direct dependencies, NOT the transitive dependencies.. so we
-    #   need an extra process to grab the grandchild dependencies so our direct reliance
-    #   doesn't break when a child updates.
-    #
+    # PIN THESE DEPENDENCIES EXPLICITLY SO WE CAN ENSURE THEY WORK ACROSS ENVIRONMENTS
+
     # CLI
-    "prompt_toolkit >= 3.0.47",
-    "typer >= 0.12.0",
+    "prompt_toolkit == 3.0.47",
+    "typer == 0.12.0",
+    "uv == 0.5.13",
 
     # TUI & WEB
     "textual[syntax] == 1.0.0",
     "textual-serve == 1.1.1",
+]
+offline = [
+    # THIS IS A WORKAROUND BECAUSE PIP, UV DON'T YET SUPPORT IDENTIFYING BUILD DEPENDENCIES.
+    # ANY MODERN VERSION IS FINE.
+    "wheel",
+    "setuptools",
+    "setuptools_scm[toml]",
+    "maturin",
+
+    # CS Tools Build Dependencies
+    "cs_tools[cli]",
 ]
 dev = [
     # CS Tools CLI
@@ -89,21 +97,23 @@ dev = [
     "textual-dev >= 1.7.0",
 
     # Code Quality
-    "mypy",
     "pre-commit",
+    "mypy",
     "ruff",
-    "taskipy",
     "vulture",
 
     # Testing
     "coverage[toml]",
-    "nox",
     "pytest",
 ]
 docs = [
+    # CS Tools CLI
     "cs_tools[cli]",
+
+    # Markdown to Static Site Generator
     "mkdocs-material",
-    # Plugins..
+
+    # Plugins for Mkdocs
     "mkdocs-redirects",
     "mkdocs-glightbox",
     "mkdocs-open-in-new-tab",
@@ -115,6 +125,31 @@ cstools = "cs_tools.cli.commands.main:run"
 
 [tool.setuptools.dynamic]
 version = {attr = "cs_tools.__project__.__version__"}
+
+# [tool.hatch.envs.default.scripts]
+# https://hatch.pypa.io/latest/how-to/environment/select-installer/#enabling-uv
+# installer = "uv"
+# cs_tools = "cs_tools.cli.commands.main:run"
+# cstools = "cs_tools.cli.commands.main:run"
+
+# [tool.hatch.envs.dev.scripts]
+# setup = [
+#     "pre-commit install",
+#     "mypy --install-types --non-interactive",
+# ]
+# test = "pytest"
+# clean = "vulture --min-confidence 100"
+# lint = [
+#     "ruff check --config pyproject.toml",
+#     "ruff format --config pyproject.toml",
+# ]
+
+# [tool.hatch.envs.docs.scripts]
+# serve = "mkdocs serve"
+
+# [tool.hatch.version]
+# path = "src/cs_tools/__project__.py"
+
 
 [tool.mypy]
 plugins = [
@@ -195,31 +230,5 @@ force-wrap-aliases = true
 from-first = true
 required-imports = ["from __future__ import annotations"]
 
-[tool.taskipy.tasks]
-develop = "python -m pip install -e .[dev,docs]"
-
-lint = "task lint_dead && lint_check && task lint_format"
-lint_dead = "vulture --min-confidence 100"
-lint_check = "ruff check --config pyproject.toml"
-lint_format = "ruff format --config pyproject.toml"
-
-docs_local = "mkdocs serve"
-
 [tool.vulture]
 paths = ["cs_tools"]
-
-# [tool.coverage.run]
-# branch = true
-# include = [
-#     "cs_tools/**.py",
-# ]
-
-# [tool.coverage.report]
-# exclude_lines = [
-#     "# pragma: no cover",
-#     "# pragma: peephole optimzer",
-#     "raise NotImplementedError",
-#     "if __name__ == .__main__.:",
-#     "if TYPE_CHECKING:",
-#     "if typing.TYPE_CHECKING:",
-# ]

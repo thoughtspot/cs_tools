@@ -23,6 +23,7 @@ APIResult: TypeAlias = dict[str, Any]
 # ==========
 GUID: TypeAlias = Annotated[str, "represented as a UUID"]
 Name: TypeAlias = Annotated[str, "user-defined"]
+OrgIdentifier = int | Name
 ObjectIdentifier = GUID | Name
 PrincipalIdentifier = GUID | Name
 
