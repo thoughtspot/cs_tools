@@ -245,8 +245,8 @@ def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -
 
             if more_than_one:
                 log.warning(
-                    f"multiple objects found with names: [fg-secondary]{', '.join(more_than_one.keys())}[/], disambiguation "
-                    f"will be incomplete"
+                    f"multiple objects found with names: [fg-secondary]{', '.join(more_than_one.keys())}[/], "
+                    f"disambiguation will be incomplete"
                 )
 
             disambiguate(tml, guid_mapping=guid_name_map)
