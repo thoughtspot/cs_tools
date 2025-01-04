@@ -13,12 +13,10 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import errors, utils
+from cs_tools import _types, errors, utils
 from cs_tools.datastructures import ValidatedSQLModel, _GlobalModel, _GlobalSettings
 from cs_tools.updater._updater import cs_tools_venv
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
 _registry: set[str] = set()
@@ -86,8 +84,8 @@ class SyncerManifest(_GlobalModel):
 class Syncer(_GlobalSettings, extra="forbid"):
     """A connection to a Data store."""
 
-    __manifest_path__: pathlib.Path | None = None
-    __syncer_name__: str | None = None
+    __manifest_path__: Optional[pathlib.Path] = None
+    __syncer_name__: Optional[str] = None
 
     def __init_subclass__(cls, is_base_class: bool = False):
         super().__init_subclass__()
@@ -136,11 +134,11 @@ class Syncer(_GlobalSettings, extra="forbid"):
         """An alias for the protocol of the Syncer."""
         return self.protocol
 
-    def load(self, directive: str) -> TableRows:
+    def load(self, directive: str) -> _types.TableRowsFormat:
         """Fetch data from the external data source."""
         raise NotImplementedError(f"There is no default implementation for {self.__class__.__name__}.load")
 
-    def dump(self, directive: str, *, data: TableRows) -> None:
+    def dump(self, directive: str, *, data: _types.TableRowsFormat) -> None:
         """Send data to the external data source."""
         raise NotImplementedError(f"There is no default implementation for {self.__class__.__name__}.dump")
 

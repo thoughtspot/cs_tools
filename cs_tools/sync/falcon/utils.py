@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 import datetime as dt
 import json
 
 import sqlmodel
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
-    from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools import _types
+from cs_tools.thoughtspot import ThoughtSpot
 
 FMT_TSLOAD_DATETIME = "%Y-%m-%d %H:%M:%S"
 
@@ -41,7 +40,7 @@ def clean_datetime(object_: Any) -> str:
     return json.dumps(object_)
 
 
-def roundtrip_json_for_falcon(data: TableRows) -> TableRows:
+def roundtrip_json_for_falcon(data: _types.TableRowsFormat) -> _types.TableRowsFormat:
     """
     Round-trip from JSON to sanitize.
 

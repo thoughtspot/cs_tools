@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from collections.abc import Awaitable
 import asyncio
 import logging
@@ -23,7 +25,7 @@ class ThoughtSpot:
 
     def __init__(self, config: CSToolsConfig, auto_login: bool = False):
         self._event_loop = utils.get_event_loop()
-        self._session_context: SessionContext | None = None
+        self._session_context: Optional[SessionContext] = None
         self.config = config
         self.api = RESTAPIClient(
             base_url=str(config.thoughtspot.url),

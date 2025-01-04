@@ -8,7 +8,7 @@ import sqlalchemy as sa
 
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
-from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 from . import compiler  # noqa: F401
 
@@ -44,13 +44,13 @@ class Redshift(DatabaseSyncer):
     def __repr__(self):
         return f"<RedshiftSyncer to {self.host}/{self.database}>"
 
-    def load(self, tablename: str) -> TableRows:
+    def load(self, tablename: str) -> _types.TableRowsFormat:
         """SELECT rows from Redshift."""
         table = self.metadata.tables[tablename]
         rows = self.session.execute(table.select())
         return [row.model_dump() for row in rows]
 
-    def dump(self, tablename: str, *, data: TableRows) -> None:
+    def dump(self, tablename: str, *, data: _types.TableRowsFormat) -> None:
         """INSERT rows into Redshift."""
         if not data:
             log.warning(f"No data to write to syncer {self}")

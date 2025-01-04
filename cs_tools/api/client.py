@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable
-from typing import Any
+from typing import Any, Optional, Union
 import asyncio
 import datetime as dt
 import json
@@ -32,9 +32,9 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=False, config=validators.METHOD_CONFIG)
     def __init__(
         self,
-        base_url: httpx.URL | str,
+        base_url: Union[httpx.URL, str],
         concurrency: int = 15,
-        cache_directory: pathlib.Path | None = None,
+        cache_directory: Optional[pathlib.Path] = None,
         **client_opts: Any,
     ) -> None:
         client_opts["base_url"] = str(base_url)
@@ -59,10 +59,10 @@ class RESTAPIClient(httpx.AsyncClient):
 
         super().__init__(**client_opts)
         assert isinstance(self._transport, _transport.CachedRetryTransport), "Unexpected transport used for CS Tools"
-        self._heartbeat_task: asyncio.Task | None = None
+        self._heartbeat_task: Optional[asyncio.Task] = None
 
     @property
-    def cache(self) -> _transport.CachePolicy | None:
+    def cache(self) -> Optional[_transport.CachePolicy]:
         assert isinstance(self._transport, _transport.CachedRetryTransport), "Unexpected transport used for CS Tools"
         return self._transport.cache
 
@@ -149,7 +149,7 @@ class RESTAPIClient(httpx.AsyncClient):
         log.debug(log_msg)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
-    async def request(self, method: str, url: httpx.URL | str, **passthru: Any) -> httpx.Response:
+    async def request(self, method: str, url: Union[httpx.URL, str], **passthru: Any) -> httpx.Response:
         """Remove NULL from request data before sending/logging."""
         passthru = api_utils.scrub_undefined_sentinel(passthru, null=None)
         response = await super().request(method, url, **passthru)
@@ -161,7 +161,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def login(
-        self, username: str, password: str, org_id: int | None = None, **options: Any
+        self, username: str, password: str, org_id: Optional[int] = None, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Login to ThoughtSpot."""
         options["username"] = username
@@ -172,7 +172,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     async def full_access_token(
-        self, username: str, token_validity: int = 300, org_id: int | None = None, **options: Any
+        self, username: str, token_validity: int = 300, org_id: Optional[int] = None, **options: Any
     ) -> httpx.Response:
         """Login to ThoughtSpot."""
         if options.get("password", None) is None and options.get("secret_key", None) is None:
@@ -196,7 +196,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     async def v1_trusted_authentication(
-        self, username: _types.Name, secret_key: _types.GUID, org_id: int | None = None
+        self, username: _types.Name, secret_key: _types.GUID, org_id: Optional[int] = None
     ) -> httpx.Response:
         """Login to ThoughtSpot using V1 Trusted Authentication."""
         d = {"secret_key": str(secret_key), "orgid": org_id, "username": username, "access_level": "FULL"}
@@ -332,7 +332,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def users_search(
-        self, guid: _types.ObjectIdentifier | None = None, record_offset: int = 0, record_size: int = 10, **options: Any
+        self, guid: Optional[_types.ObjectIdentifier] = None, record_offset: int = 0, record_size: int = 10, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot users."""
         if guid is not None:
@@ -362,7 +362,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def groups_search(
-        self, guid: _types.ObjectIdentifier | None = None, record_offset: int = 0, record_size: int = 10, **options: Any
+        self, guid: Optional[_types.ObjectIdentifier] = None, record_offset: int = 0, record_size: int = 10, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot groups."""
         if guid is not None:

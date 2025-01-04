@@ -1,7 +1,7 @@
 # ruff: noqa: RUF012
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 import asyncio
 import logging
 
@@ -75,7 +75,7 @@ class SecurityConfig(Screen):
 
         return "NO_ACCESS"
 
-    def update_access_buttons(self, grid: button_grid.ButtonGrid | None = None) -> None:
+    def update_access_buttons(self, grid: Optional[button_grid.ButtonGrid] = None) -> None:
         """Update the AccessButtonCell values."""
         if grid is None:
             grid = self.query_one("#button_grid")

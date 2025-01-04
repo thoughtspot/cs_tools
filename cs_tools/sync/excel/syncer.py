@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional, Union
 import datetime as dt
 import logging
 import pathlib
@@ -10,7 +10,7 @@ import pydantic
 
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import Syncer
-from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
@@ -21,8 +21,8 @@ class Excel(Syncer):
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
     __syncer_name__ = "excel"
 
-    filepath: pydantic.FilePath | pydantic.NewPath
-    filepath_suffix: str | None = None
+    filepath: Union[pydantic.FilePath, pydantic.NewPath]
+    filepath_suffix: Optional[str] = None
     date_time_format: str = sync_utils.DATETIME_FORMAT_ISO_8601
     save_strategy: Literal["APPEND", "OVERWRITE"] = "OVERWRITE"
 
@@ -33,7 +33,7 @@ class Excel(Syncer):
         return path.resolve()
 
     @pydantic.field_validator("filepath_suffix", mode="after")
-    def ensure_valid_datetime_format(cls, value: str | None) -> str | None:
+    def ensure_valid_datetime_format(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
 
@@ -81,7 +81,7 @@ class Excel(Syncer):
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, tab_name: str) -> TableRows:
+    def load(self, tab_name: str) -> _types.TableRowsFormat:
         """Read rows from a tab in the Workbook."""
         tab = self.tab(tab_name)
 
@@ -97,7 +97,7 @@ class Excel(Syncer):
 
         return data
 
-    def dump(self, tab_name: str, *, data: TableRows) -> None:
+    def dump(self, tab_name: str, *, data: _types.TableRowsFormat) -> None:
         """Write rows to a tab in the Workbook."""
         if not data:
             log.warning(f"No data to write to syncer {self}")

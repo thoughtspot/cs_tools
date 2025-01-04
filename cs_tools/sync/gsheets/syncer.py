@@ -10,8 +10,7 @@ import pydantic
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import Syncer
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +50,7 @@ class GoogleSheets(Syncer):
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, tab_name: str) -> TableRows:
+    def load(self, tab_name: str) -> _types.TableRowsFormat:
         """Read rows from a tab in the Workbook."""
         tab = self.tab(tab_name)
 
@@ -60,7 +59,7 @@ class GoogleSheets(Syncer):
 
         return data
 
-    def dump(self, tab_name: str, *, data: TableRows) -> None:
+    def dump(self, tab_name: str, *, data: _types.TableRowsFormat) -> None:
         """Write rows to a tab in the Workbook."""
         if not data:
             log.warning(f"No data to write to syncer {self}")

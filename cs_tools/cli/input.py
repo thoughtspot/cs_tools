@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 import asyncio
 
 from cs_tools.cli.keyboard import keys
@@ -12,8 +14,8 @@ class ConfirmationListener(KeyboardListener):
     def __init__(self, timeout: float):
         super().__init__()
         self.timeout = timeout
-        self._timer_task: asyncio.Task | None = None
-        self.response: str | None = None
+        self._timer_task: Optional[asyncio.Task] = None
+        self.response: Optional[str] = None
 
         for character in "YyNn":
             self.bind(keys.Key.letter(character), fn=self.set_result)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Coroutine, MutableMapping
-from typing import cast
+from typing import Optional, cast
 import asyncio
 import base64 as b64
 import contextlib
@@ -61,7 +61,7 @@ class CachePolicy:
     def __init__(self, directory: pathlib.Path):
         self._filepath = directory / "http.cache"
         self._engine = create_async_engine(f"sqlite+aiosqlite:///{self._filepath}", future=True)
-        self._cnxn: AsyncConnection | None = None
+        self._cnxn: Optional[AsyncConnection] = None
         self._setup_lock = asyncio.Lock()
         self._pending_cache_tasks: set[asyncio.Task] = set()
 
@@ -249,9 +249,9 @@ class CachedRetryTransport(httpx.AsyncBaseTransport):
 
     def __init__(
         self,
-        cache_policy: CachePolicy | None = None,
+        cache_policy: Optional[CachePolicy] = None,
         max_concurrent_requests: int = 1,
-        retry_policy: tenacity.AsyncRetrying | None = None,
+        retry_policy: Optional[tenacity.AsyncRetrying] = None,
     ):
         self._wrapper = httpx.AsyncHTTPTransport()
         self.cache = cache_policy

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Optional, cast
 import collections
 
 from rich._loop import loop_last
@@ -245,7 +245,7 @@ class CSToolsCLIError(CSToolsError):
             raise RuntimeError("{cls} must supply atleast a .title !")
 
     def __init__(
-        self, title: str | None = None, reason: str | None = None, mitigation: str | None = None, **error_info
+        self, title: Optional[str] = None, reason: Optional[str] = None, mitigation: Optional[str] = None, **error_info
     ):
         self.title = title if title is not None else self.__class__.title
         self.reason = reason if reason is not None else getattr(self.__class__, "reason", None)

@@ -8,8 +8,7 @@ import sqlalchemy as sa
 
 from cs_tools.sync.base import DatabaseSyncer
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
@@ -46,5 +45,5 @@ class Mock(DatabaseSyncer):
     def load(self, tablename: str):
         pass
 
-    def dump(self, tablename: str, *, data: TableRows):
+    def dump(self, tablename: str, *, data: _types.TableRowsFormat)::
         pass

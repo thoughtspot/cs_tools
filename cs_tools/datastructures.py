@@ -11,7 +11,7 @@ This includes things that will change based on submitted user configuration.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Optional, Union
 import datetime as dt
 import logging
 import platform
@@ -68,7 +68,7 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
 
     model_config = sqlmodel._compat.SQLModelConfig(env_prefix="CS_TOOLS_SYNCER_", **_COMMON_MODEL_CONFIG)
 
-    _clustered_on: list[sa.Column] | None = pydantic.PrivateAttr(None)
+    _clustered_on: Optional[list[sa.Column]] = pydantic.PrivateAttr(None)
 
     @pydantic.model_serializer(mode="wrap")
     def _ignore_extras(self, handler) -> dict[str, Any]:
@@ -76,7 +76,6 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
 
     @classmethod
     def validated_init(cls, context: Any = None, **data):
-        # defaults  = cls.read_from_environment()
         return cls.model_validate(data, context=context)
 
     @property
@@ -167,10 +166,10 @@ class UserInfo(_GlobalModel):
     guid: _types.GUID
     username: str
     display_name: str
-    privileges: set[_types.GroupPrivilege | str]
-    org_context: int | None = None
-    email: pydantic.EmailStr | None = None
-    auth_context: Literal["BASIC", "TRUSTED_AUTH", "BEARER_TOKEN"] | None = None
+    privileges: set[Union[_types.GroupPrivilege, str]]
+    org_context: Optional[int] = None
+    email: Optional[pydantic.EmailStr] = None
+    auth_context: Optional[Literal["BASIC", "TRUSTED_AUTH", "BEARER_TOKEN"]] = None
 
     @pydantic.model_validator(mode="before")
     @classmethod

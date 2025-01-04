@@ -4,6 +4,8 @@
 # ///
 from __future__ import annotations
 
+from typing import Union
+
 import contextlib
 import logging
 import os
@@ -164,7 +166,7 @@ class CSToolsVenv(venv.EnvBuilder):
     @classmethod
     def make(
         cls,
-        venv_directory: str | pathlib.Path | None = None,
+        venv_directory: Union[str, pathlib.Path, None] = None,
         *,
         reset_venv: bool = False,
         **venv_options,
@@ -256,7 +258,7 @@ class CSToolsVenv(venv.EnvBuilder):
 
     def make_offline_distribution(
         self,
-        output_dir: str | pathlib.Path,
+        output_dir: Union[str, pathlib.Path],
         *,
         platform: str | None = None,
         python_version: str | None = None,

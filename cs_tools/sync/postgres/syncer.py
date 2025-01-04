@@ -6,7 +6,7 @@ import pathlib
 
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
-from cs_tools.sync.types import TableRows
+from cs_tools import _types
 import pydantic
 import sqlalchemy as sa
 import sqlmodel
@@ -40,13 +40,13 @@ class Postgres(DatabaseSyncer):
         auth = f"{self.username}:{self.secret}" if self.secret is not None else self.username
         return f"postgresql+psycopg2://{auth}@{self.host}:{self.port}/{self.database}"
 
-    def load(self, tablename: str) -> TableRows:
+    def load(self, tablename: str) -> _types.TableRowsFormat:
         """SELECT rows from PostgreSQL."""
         table = self.metadata.tables[f"{self.schema_}.{tablename}"]
         rows = self.session.execute(table.select())
         return [row.model_dump() for row in rows]
 
-    def dump(self, tablename: str, *, data: TableRows) -> None:
+    def dump(self, tablename: str, *, data: _types.TableRowsFormat) -> None:
         """INSERT rows into PostgreSQL."""
         if not data:
             log.warning(f"no data to write to syncer {self}")

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 import logging
 import shutil
 
@@ -50,8 +52,8 @@ class ThoughtSpot:
     verbose: bool = _OPT_VERBOSE
 
     def __init__(self, auto_login=True):
-        self.ts_config: _CSToolsConfig | None = None
-        self.ts: _ThoughtSpot | None = None
+        self.ts_config: Optional[_CSToolsConfig] = None
+        self.ts: Optional[_ThoughtSpot] = None
         self.auto_login = auto_login
 
     def __with_user_ctx__(self, ctx: typer.Context, *a, name: str, **kw) -> None:

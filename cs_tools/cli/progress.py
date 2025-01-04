@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import inf as INFINITY
-from typing import Callable, cast
+from typing import Callable, Optional, cast
 import asyncio
 import datetime as dt
 import logging
@@ -34,7 +34,7 @@ class WorkTask:
     #
 
     def __init__(
-        self, id: str, description: str, total: float | None = None, completed: float = 0, visible: bool = True
+        self, id: str, description: str, total: Optional[float] = None, completed: float = 0, visible: bool = True
     ):
         self.id = id
         self.description = description
@@ -42,9 +42,9 @@ class WorkTask:
         self.completed = completed
         self.visible = visible
         self.get_time = time.perf_counter
-        self.start_time: float | None = None
-        self.stop_time: float | None = None
-        self.finished_time: float | None = None
+        self.start_time: Optional[float] = None
+        self.stop_time: Optional[float] = None
+        self.finished_time: Optional[float] = None
 
         self._previously_elapsed: float = 0
         self._prog_bar = BarColumn()
@@ -66,7 +66,7 @@ class WorkTask:
         return self.start_time is not None
 
     @property
-    def elapsed(self) -> float | None:
+    def elapsed(self) -> Optional[float]:
         """Time elapsed since task was started, or ``None`` if the task hasn't started."""
         if self.start_time is None:
             return None
@@ -88,7 +88,7 @@ class WorkTask:
         completed = min(100.0, max(0.0, completed))
         return completed
 
-    def start(self, total: float | None = INFINITY) -> None:
+    def start(self, total: Optional[float] = INFINITY) -> None:
         """Start the task."""
         if self.started:
             assert self.start_time is not None, "Task has not yet been started."
@@ -168,7 +168,7 @@ class WorkTracker(live.Live):
         self.tasks = tasks
         self.verbose = verbose
         self._loop = utils.get_event_loop()
-        self._started_at: dt.datetime | None = None
+        self._started_at: Optional[dt.datetime] = None
         self.max_width = 125
         self.extra_renderable = extra_renderable
         super().__init__(console=console, refresh_per_second=3, get_renderable=self.generate_tracker)

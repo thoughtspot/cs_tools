@@ -1,6 +1,8 @@
 # ruff: noqa: RUF012
 from __future__ import annotations
 
+from typing import Optional
+
 import logging
 
 from textual.app import App
@@ -25,9 +27,9 @@ class ThoughtSpotSecurityApp(App):
         super().__init__()
         self.http = http
         self.compat_ts_version = ts_version
-        self.active_table: _types.APIResult | None = None
-        self.active_groups: list[_types.APIResult] | None = None
-        self.active_table_security: list[_types.APIResult] | None = None
+        self.active_table: Optional[_types.APIResult] = None
+        self.active_groups: Optional[list[_types.APIResult]] = None
+        self.active_table_security: Optional[list[_types.APIResult]] = None
 
     def on_mount(self) -> None:
         self.switch_mode("splash")

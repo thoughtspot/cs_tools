@@ -234,11 +234,11 @@ class MetadataTML(ValidatedSQLModel, table=True):
     snapshot_date: dt.date = Field(primary_key=True)
     object_guid: str = Field(primary_key=True)
     name: str
-    object_type: str | None = None
-    object_subtype: str | None = None
-    author_guid: str | None = None
-    created: dt.datetime | None = Field(None, sa_column=Column(TIMESTAMP))
-    modified: dt.datetime | None = Field(None, sa_column=Column(TIMESTAMP))
+    object_type: Optional[str] = None
+    object_subtype: Optional[str] = None
+    author_guid: Optional[str] = None
+    created: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    modified: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
     tml_blob: str
     tml_format: str  # JSON, YAML
 

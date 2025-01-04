@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Optional
 import collections
 import datetime as dt
 import logging
@@ -28,7 +28,7 @@ class CustomType(click.ParamType):
 
     name = "CUSTOM_TYPE"
 
-    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> Any:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> Any:
         """Take raw input string and converts it to the desired type."""
         raise NotImplementedError
 
@@ -52,7 +52,7 @@ class Literal(CustomType):
         """Example usage of the parameter to display on the CLI."""
         return "|".join(c for c in self.raw_choices if not self.is_private_choice_value(c))
 
-    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> str:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> str:
         """Validate that the CLI input is one of the accepted values."""
         original_value = value
         choices = self.choices
@@ -79,7 +79,7 @@ class Version(CustomType):
     def __init__(self, strategy: AwesomeVersionStrategy = AwesomeVersionStrategy.SIMPLEVER) -> None:
         self.strategy = strategy
 
-    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> AwesomeVersion:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> AwesomeVersion:
         """Coerce strings into a awesomeversion.AwesomeVersion."""
         try:
             version = AwesomeVersion(value, ensure_strategy=self.strategy)
@@ -96,7 +96,7 @@ class Date(CustomType):
         """Example usage of the parameter to display on the CLI."""
         return "YYYY-MM-DD"
 
-    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> dt.date:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> dt.date:
         """Coerce ISO-8601 date strings into a datetime.datetime.date."""
         try:
             date = dt.date.fromisoformat(value)
@@ -117,7 +117,7 @@ class Directory(CustomType):
         """Example usage of the parameter to display on the CLI."""
         return "DIRECTORY"
 
-    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> pathlib.Path:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> pathlib.Path:
         """Coerce string into a pathlib.Path.is_dir()."""
         try:
             path = pydantic.TypeAdapter(pydantic.DirectoryPath).validate_python(value)
@@ -136,11 +136,11 @@ class Directory(CustomType):
 class Syncer(CustomType):
     """Convert STR to Syncer."""
 
-    def __init__(self, models: list[datastructures.ValidatedSQLModel] | None = None):
+    def __init__(self, models: Optional[list[datastructures.ValidatedSQLModel]] = None):
         self.models = models
 
     def _parse_syncer_configuration(
-        self, definition_spec: str, param: click.Parameter | None, ctx: click.Context | None
+        self, definition_spec: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> dict[str, Any]:
         try:
             assert ".toml" in definition_spec, "Syncer definition is not a TOML file, it's likely given as declarative."
@@ -164,7 +164,7 @@ class Syncer(CustomType):
         """Example usage of the parameter to display on the CLI."""
         return "protocol://DEFINITION.toml"
 
-    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> base.Syncer:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> base.Syncer:
         """Coerce string into a Syncer."""
         CS_TOOLS_PKG_DIR = utils.get_package_directory("cs_tools")
 
@@ -201,7 +201,7 @@ class MultipleInput(CustomType):
         self.sep = sep
         self.type_caster = type_caster
 
-    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> list[Any]:
+    def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> list[Any]:
         """Coerce string into an iterable of <type_caster>."""
         if isinstance(value, str):
             values = value.split(self.sep)

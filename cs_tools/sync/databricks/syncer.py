@@ -13,7 +13,7 @@ import sqlmodel
 
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
-from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class Databricks(DatabaseSyncer):
         query = f"http_path={self.http_path}&catalog={self.catalog}&schema={self.schema_}"
         return f"databricks://{username}:{password}@{host}:{port}?{query}"
 
-    def stage_and_put(self, tablename: str, *, data: TableRows) -> str:
+    def stage_and_put(self, tablename: str, *, data: _types.TableRowsFormat) -> str:
         """Add a local file to Databrick's internal temporary stage."""
         assert self.temp_dir is not None
         stage_name = f"TMP_STAGE_{tablename}_{uuid.uuid4().hex[:5]}.csv"
@@ -111,13 +111,13 @@ class Databricks(DatabaseSyncer):
         r = self.session.execute(SQL_COPY_INTO)
         log.debug("Databricks response >> COPY INTO\n%s", r.scalar())
 
-    def load(self, tablename: str) -> TableRows:
+    def load(self, tablename: str) -> _types.TableRowsFormat:
         """SELECT rows from Databricks"""
         table = self.metadata.tables[f"{self.schema_}.{tablename}"]
         rows = self.session.execute(table.select())
         return [row.model_dump() for row in rows]
 
-    def dump(self, tablename: str, *, data: TableRows) -> None:
+    def dump(self, tablename: str, *, data: _types.TableRowsFormat) -> None:
         """INSERT rows into Databricks."""
         if not data:
             log.warning(f"no data to write to syncer {self}")

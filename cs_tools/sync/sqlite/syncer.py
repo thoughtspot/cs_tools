@@ -14,8 +14,7 @@ from cs_tools.sync.base import DatabaseSyncer
 
 from . import const
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +66,7 @@ class SQLite(DatabaseSyncer):
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, tablename: str) -> TableRows:
+    def load(self, tablename: str) -> _types.TableRowsFormat:
         """SELECT rows from SQLite."""
         table = self.metadata.tables[tablename]
         query = table.select()
@@ -75,7 +74,7 @@ class SQLite(DatabaseSyncer):
         rows = [row._asdict() for row in result.all()]
         return rows
 
-    def dump(self, tablename: str, *, data: TableRows) -> None:
+    def dump(self, tablename: str, *, data: _types.TableRowsFormat) -> None:
         """INSERT rows into SQLite."""
         if not data:
             log.warning(f"no '{tablename}' data to write to syncer {self}")

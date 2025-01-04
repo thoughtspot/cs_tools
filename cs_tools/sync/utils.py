@@ -12,7 +12,7 @@ import tempfile
 import sqlalchemy as sa
 
 from cs_tools import utils
-from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 log = logging.getLogger(__name__)
 DATETIME_FORMAT_ISO_8601 = "%Y-%m-%dT%H:%M:%S.%f"
@@ -20,7 +20,7 @@ DATETIME_FORMAT_TSLOAD = "%Y-%m-%d %H:%M:%S"
 
 
 @contextlib.contextmanager
-def temp_csv_for_upload(tmp: pathlib.Path, *, filename: str, data: TableRows, include_header: bool = False):
+def temp_csv_for_upload(tmp: pathlib.Path, *, filename: str, data: _types.TableRowsFormat, include_header: bool = False):
     """Temporarily create a file for HTTP multipart file uploads."""
     file_opts = {"newline": "", "encoding": "utf-8"}
 
@@ -50,7 +50,7 @@ def format_datetime_values(row: dict[str, Any], *, dt_format: str = DATETIME_FOR
     return out
 
 
-def batched(prepared_statement, *, session: sa.orm.Session, data: TableRows, max_parameters: int = 999, **kw) -> None:
+def batched(prepared_statement, *, session: sa.orm.Session, data: _types.TableRowsFormat, max_parameters: int = 999, **kw) -> None:
     """Split data across multiple transactions."""
     batchsize = min(5000, max_parameters // len(data[0]))
     rows = []
@@ -76,7 +76,7 @@ def generic_upsert(
     target: sa.Table,
     *,
     session: sa.orm.Session,
-    data: TableRows,
+    data: _types.TableRowsFormat,
     unique_key: Optional[list[sa.Column]] = None,
     max_params: int = 999,
 ) -> None:

@@ -10,8 +10,7 @@ import pydantic
 
 from cs_tools.sync.base import Syncer
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
@@ -42,13 +41,13 @@ class Parquet(Syncer):
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, filename: str) -> TableRows:
+    def load(self, filename: str) -> _types.TableRowsFormat:
         """Read rows from a parquet file."""
         fp = self.directory.joinpath(f"{filename}.parquet")
         table = pq.read_table(fp)
         return table.to_pylist()
 
-    def dump(self, filename: str, *, data: TableRows) -> None:
+    def dump(self, filename: str, *, data: _types.TableRowsFormat) -> None:
         """Write rows to a parquet file."""
         if not data:
             log.warning(f"No data to write to syncer {self}")

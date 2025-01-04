@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import Any, Callable, cast
+from typing import Any, Callable, Optional, cast
 import asyncio
 import contextlib
 import functools as ft
@@ -96,7 +96,7 @@ class AsyncTyper(typer.Typer):
         decorator = super().callback(**typer_options)
         return lambda f: self.maybe_run_async(decorator, f)
 
-    def command(self, name: str | None = None, **typer_options: Any) -> Callable[[CommandFnType], CommandFnType]:
+    def command(self, name: Optional[str] = None, **typer_options: Any) -> Callable[[CommandFnType], CommandFnType]:
         """See: https://typer.tiangolo.com/tutorial/commands/"""
         decorator = super().command(name=name, **typer_options)
         return lambda f: self.maybe_run_async(decorator, f)

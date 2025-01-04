@@ -10,8 +10,7 @@ import pydantic
 
 from cs_tools.sync.base import Syncer
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
@@ -69,13 +68,13 @@ class JSON(Syncer):
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, filename: str) -> TableRows:
+    def load(self, filename: str) -> _types.TableRowsFormat:
         """Fetch rows from a JSON file."""
         text = self.make_filename(filename).read_text(encoding=self.encoding)
         data = json.loads(text) if text else []
         return data
 
-    def dump(self, filename: str, *, data: TableRows) -> None:
+    def dump(self, filename: str, *, data: _types.TableRowsFormat) -> None:
         """Write rows to a JSON file."""
         if not data:
             log.warning(f"no data to write to syncer {self}")

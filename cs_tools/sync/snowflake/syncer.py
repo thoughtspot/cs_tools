@@ -15,8 +15,7 @@ from cs_tools import __version__
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
+from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
@@ -141,7 +140,7 @@ class Snowflake(DatabaseSyncer):
 
         return URL(**url_kwargs)
 
-    def stage_and_put(self, tablename: str, *, data: TableRows) -> str:
+    def stage_and_put(self, tablename: str, *, data: _types.TableRowsFormat) -> str:
         """Add a local file to Snowflake's internal temporary stage."""
         assert self.temp_dir is not None
         # ==============================================================================================================
@@ -227,13 +226,13 @@ class Snowflake(DatabaseSyncer):
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, tablename: str) -> TableRows:
+    def load(self, tablename: str) -> _types.TableRowsFormat:
         """SELECT rows from Snowflake."""
         table = self.metadata.tables[f"{self.schema_}.{tablename}"]
         rows = self.session.execute(table.select())
         return [row.model_dump() for row in rows]
 
-    def dump(self, tablename: str, *, data: TableRows) -> None:
+    def dump(self, tablename: str, *, data: _types.TableRowsFormat) -> None:
         """INSERT rows into Snowflake."""
         if not data:
             log.warning(f"no data to write to syncer {self}")
