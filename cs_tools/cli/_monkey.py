@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Literal, get_args, get_origin
+import sys
 
 import click
 import rich
@@ -19,6 +20,24 @@ def literal_values(type_: type[Any]) -> tuple[Any, ...]:
     return get_args(type_)
 
 
+def _safe_eval_of_annotation(annotation: Any) -> Any:
+    """Python 3.9 doesn't fully evaluate all types, it's a py310+ feature."""
+    from typing import ForwardRef, _eval_type  # type: ignore[attr-defined]
+
+    # CREATE A FORWARDREF AND EVALUATE IT WITH THE PROVIDED NAMESPACES
+    if isinstance(annotation, str) and "custom_types" in annotation:
+        # DEV NOTE: @boonhapus, 2025/01/04
+        # IF OTHER MODULES ARE IMPORTED AND NEED THEIR TYPES RUNTIME-EVALUATED, ADD THEIR NAMES TO THE GLOBAL NAMESPACE
+        global_namespace = {"custom_types": custom_types}
+        return ForwardRef(annotation)._evaluate(globalns=global_namespace, localns={}, recursive_guard=frozenset())
+
+    # CREATE A FORWARDREF AND EVALUATE IT WITH THE PROVIDED NAMESPACES
+    if isinstance(annotation, str):
+        return _eval_type(annotation, None, None)
+
+    return annotation
+
+
 class _MonkeyPatchedTyper:
     """Add support for useful and interesting things."""
 
@@ -32,11 +51,15 @@ class _MonkeyPatchedTyper:
         typer.main.get_click_type = self.get_click_type
 
     def get_click_type(self, *, annotation: Any, parameter_info: typer.models.ParameterInfo) -> click.ParamType:
-        # Let Typer handle the basics
+        # PERFORM RUNTIME ANNOTATION EVALUATION ON PYTHON 3.9
+        if sys.version_info < (3, 10):
+            annotation = _safe_eval_of_annotation(annotation)
+
+        # LET TYPER HANDLE THE BASICS
         try:
             return _MonkeyPatchedTyper.og_get_click_type(annotation=annotation, parameter_info=parameter_info)
 
-        # Additional support added by us.
+        # ADDITIONAL SUPPORT ADDED BY US.
         except RuntimeError:
             # Literal
             if is_literal_type(annotation):

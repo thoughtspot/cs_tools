@@ -10,6 +10,32 @@ import typer
 from cs_tools import utils
 
 
+def _compat_py39_get_annotations(obj: Any, *, eval_str: bool = True) -> dict[str, Any] | Any:
+    """Get annotations for an object similar to inspect.get_annotations in Python 3.10+"""
+    annotations = getattr(obj, "__annotations__", {})
+
+    if not eval_str:
+        return dict(annotations)
+
+    # CREATE A COPY TO AVOID MODIFYING THE ORIGINAL ANNOTATIONS
+    evaluated_annotations = {}
+
+    # GET THE GLOBALS FOR EVALUATION CONTEXT
+    globals_namespace = getattr(obj, "__globals__", {})
+
+    for key, value in annotations.items():
+        if isinstance(value, str):
+            try:
+                evaluated_annotations[key] = eval(value, globals_namespace)
+            except (NameError, SyntaxError, ValueError):
+                # IF EVALUATION FAILS, KEEP THE STRING VALUE
+                evaluated_annotations[key] = value
+        else:
+            evaluated_annotations[key] = value
+
+    return evaluated_annotations
+
+
 def _inject_signature_with_dependencies(original_signature: inspect.Signature, dependencies: Any) -> inspect.Signature:
     """Inject the original signature with dependencies' parameters."""
     IS_TYPER_OPTION = ft.partial(lambda _: isinstance(_, typer.models.OptionInfo))
@@ -18,7 +44,8 @@ def _inject_signature_with_dependencies(original_signature: inspect.Signature, d
 
     # ENSURE DEPENDENCIES HAVE THEIR OPTIONS REGISTERED.
     for resource in dependencies.values():
-        annotations = inspect.get_annotations(type(resource), eval_str=True)
+        _compat_get_annotations = getattr(inspect, "get_annotations", _compat_py39_get_annotations)
+        annotations = _compat_get_annotations(type(resource), eval_str=True)
 
         for option_name, option_info in inspect.getmembers(resource, predicate=IS_TYPER_OPTION):
             injected_parameters.append(
