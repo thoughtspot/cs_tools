@@ -14,7 +14,7 @@ from textual.screen import Screen
 from textual.widget import Widget
 from textual.widgets import Button, DataTable, Footer, Pretty, Static, TextArea
 
-from cs_tools import datastructures, types
+from cs_tools import datastructures, _types
 from cs_tools.api import workflows
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.cli import ux
@@ -306,7 +306,7 @@ if __name__ == "__main__":
         raise errors.InsufficientPrivileges(
             user=tse.session_context.user,
             service="Remote TQL",
-            required_privileges=[types.GroupPrivilege.can_manage_data],
+            required_privileges=[_types.GroupPrivilege.can_manage_data],
         )
 
     app = RemoteTQLApp(sess_ctx=tse.session_context, admin_mode=option.admin, http=tse.api)

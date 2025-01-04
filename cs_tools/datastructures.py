@@ -23,7 +23,7 @@ import pydantic_settings
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import __project__, __version__, types, utils, validators
+from cs_tools import __project__, __version__, _types, utils, validators
 
 log = logging.getLogger(__name__)
 _COMMON_MODEL_CONFIG = {
@@ -162,10 +162,10 @@ class LocalSystemInfo(_GlobalModel):
 class UserInfo(_GlobalModel):
     """Information about the logged in user."""
 
-    guid: types.GUID
+    guid: _types.GUID
     username: str
     display_name: str
-    privileges: set[types.GroupPrivilege | str]
+    privileges: set[_types.GroupPrivilege | str]
     org_context: int | None = None
     email: pydantic.EmailStr | None = None
     auth_context: Literal["BASIC", "TRUSTED_AUTH", "BEARER_TOKEN"] | None = None
@@ -191,7 +191,7 @@ class UserInfo(_GlobalModel):
     def check_for_new_or_extra_privileges(cls, data):
         for privilege in data:
             try:
-                types.GroupPrivilege(privilege)
+                _types.GroupPrivilege(privilege)
             except ValueError:
                 log.debug(
                     f"Missing privilege '{privilege}' from CS Tools, please contact us to update it"
@@ -203,13 +203,13 @@ class UserInfo(_GlobalModel):
     @property
     def is_admin(self) -> bool:
         """Whether or not we're an Admin."""
-        allowed = {types.GroupPrivilege.can_administer_thoughtspot}
+        allowed = {_types.GroupPrivilege.can_administer_thoughtspot}
         return bool(allowed.intersection(self.privileges))
 
     @property
     def is_data_manager(self) -> bool:
         """Whether or not we're able to create objects under the Data tab."""
-        allowed = {types.GroupPrivilege.can_administer_thoughtspot, types.GroupPrivilege.can_manage_data}
+        allowed = {_types.GroupPrivilege.can_administer_thoughtspot, _types.GroupPrivilege.can_manage_data}
         return bool(allowed.intersection(self.privileges))
 
 

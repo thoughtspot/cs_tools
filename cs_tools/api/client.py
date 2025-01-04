@@ -12,7 +12,7 @@ import httpx
 import pydantic
 import tenacity
 
-from cs_tools import types, utils, validators
+from cs_tools import _types, utils, validators
 from cs_tools.__project__ import __version__
 from cs_tools.api import _retry, _transport
 import cs_tools.api.utils as api_utils

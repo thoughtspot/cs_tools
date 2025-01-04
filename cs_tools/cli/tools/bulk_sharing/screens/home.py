@@ -11,7 +11,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Input, Label, RadioButton, RadioSet, SelectionList
 import httpx
 
-from cs_tools import types
+from cs_tools import _types
 from cs_tools.api import workflows
 from cs_tools.cli.tools.bulk_sharing import widgets
 

@@ -4,7 +4,7 @@ from typing import Any
 import datetime as dt
 import logging
 
-from cs_tools import types
+from cs_tools import _types
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.api.workflows import metadata
 

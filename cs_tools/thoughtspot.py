@@ -6,7 +6,7 @@ import logging
 
 import httpx
 
-from cs_tools import errors, types, utils
+from cs_tools import _types, errors, utils
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.datastructures import LocalSystemInfo, SessionContext
 from cs_tools.settings import CSToolsConfig
@@ -113,13 +113,13 @@ class ThoughtSpot:
                 reason = f"Cannot connect to ThoughtSpot ([fg-secondary]{self.config.thoughtspot.url}[/])"
                 fixing = f"Does your ThoughtSpot require a VPN to connect?\n\n[white]>>>[/] {e}"
 
-            raise errors.ThoughtSpotUnreachable(reason=reason, mitigation=fixing) from None
+            raise errors.ThoughtSpotUnreachable(reason=reason, fixing=fixing) from None
 
         # PROCESS THE RESPONSE TO DETERMINE IF THE CLUSTER IS IN STANDBY
         if "Site Maintenance" in r.text:
             reason = "Cluster is in Maintenance Mode."
             fixing = f"Visit [fg-secondary]{self.config.thoughtspot.url}[/] to confirm or contact your Administrator."
-            raise errors.ThoughtSpotUnreachable(reason=reason, mitigation=fixing) from None
+            raise errors.ThoughtSpotUnreachable(reason=reason, fixing=fixing) from None
 
         #
         # PROCESS RESPONSE
@@ -157,7 +157,7 @@ class ThoughtSpot:
 
         log.debug(f"SESSION CONTEXT\n{ctx.model_dump_json(indent=4)}")
 
-    def switch_org(self, org_id: types.OrgIdentifier) -> types.APIResult:
+    def switch_org(self, org_id: _types.OrgIdentifier) -> _types.APIResult:
         """Establish a new session in the target Org."""
         c = self.api.orgs_search()
         r = utils.run_sync(c)

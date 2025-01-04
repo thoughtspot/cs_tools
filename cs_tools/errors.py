@@ -7,7 +7,7 @@ from rich._loop import loop_last
 import pydantic
 import rich
 
-from cs_tools import datastructures, settings, types
+from cs_tools import datastructures, settings, _types
 
 
 def _make_error_panel(*, header: str, reason: str | None = None, fixing: str | None = None) -> rich.panel.Panel:
@@ -66,13 +66,13 @@ class InsufficientPrivileges(CSToolsError):
     Raised when the User cannot perform an action in ThoughtSpot.
     """
 
-    def __init__(self, *, user: datastructures.UserInfo, service: str, required_privileges: list[types.GroupPrivilege]):
+    def __init__(self, *, user: datastructures.UserInfo, service: str, required_privileges: list[_types.GroupPrivilege]):
         self.user = user
         self.service = service
         self.required_privileges = required_privileges
 
     def __rich__(self) -> rich.panel.Panel:
-        additional_privileges = set(self.required_privileges) - cast(set[types.GroupPrivilege], self.user.privileges)
+        additional_privileges = set(self.required_privileges) - cast(set[_types.GroupPrivilege], self.user.privileges)
 
         header = f"User {self.user.display_name} cannot access {self.service}."
         reason = f"{self.service} requires the following privileges: {', '.join(self.required_privileges)}"
@@ -85,7 +85,7 @@ class AuthenticationFailed(CSToolsError):
     Raised when authentication to ThoughtSpot fails.
     """
 
-    def __init__(self, *, ts_config: settings.CSToolsConfig, desired_org_id: types.OrgIdentifier | None = 0):
+    def __init__(self, *, ts_config: settings.CSToolsConfig, desired_org_id: _types.OrgIdentifier | None = 0):
         self.ts_config = ts_config
         self.desired_org_id = desired_org_id
 

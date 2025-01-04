@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal, TypeAlias, cast
+from typing import Annotated, Any, Literal, Optional, Union, cast
 import datetime as dt
 
 from thoughtspot_tml._tml import TML  # noqa: F401
@@ -10,22 +10,22 @@ from cs_tools import _compat
 # ==========
 # Meta types
 # ==========
-ExitCode: TypeAlias = Literal[0, 1]
+ExitCode: _compat.TypeAlias = Literal[0, 1]
 
 # ==========
 # Data format types
 # ==========
-TableRowsFormat: TypeAlias = list[dict[str, dt.datetime | dt.date | bool | str | int | float | None]]
-APIResult: TypeAlias = dict[str, Any]
+TableRowsFormat: _compat.TypeAlias = list[dict[str, Union[dt.datetime, dt.date, bool, str, int, float, None]]]
+APIResult: _compat.TypeAlias = dict[str, Any]
 
 # ==========
 # ThoughtSpot common types
 # ==========
-GUID: TypeAlias = Annotated[str, "represented as a UUID"]
-Name: TypeAlias = Annotated[str, "user-defined"]
-OrgIdentifier = int | Name
-ObjectIdentifier = GUID | Name
-PrincipalIdentifier = GUID | Name
+GUID: _compat.TypeAlias = Annotated[str, "represented as a UUID"]
+Name: _compat.TypeAlias = Annotated[str, "user-defined"]
+OrgIdentifier = Union[int, Name]
+ObjectIdentifier = Union[GUID, Name]
+PrincipalIdentifier = Union[GUID, Name]
 
 
 # fmt: off
@@ -78,7 +78,7 @@ class Principal(_compat.TypedDict):
     """Represents a User or Group."""
 
     identifier: PrincipalIdentifier
-    type: PrincipalType | None
+    type: Optional[PrincipalType]
 
 
 class TQLQueryContext(_compat.TypedDict):

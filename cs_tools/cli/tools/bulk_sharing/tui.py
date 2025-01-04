@@ -5,7 +5,7 @@ import logging
 
 from textual.app import App
 
-from cs_tools import types
+from cs_tools import _types
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.cli.tools.bulk_sharing import screens
 

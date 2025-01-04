@@ -23,7 +23,7 @@ import pydantic
 import rich
 import toml
 
-from cs_tools import __project__, __version__, types, utils, validators
+from cs_tools import __project__, __version__, _types, utils, validators
 from cs_tools._compat import Self
 from cs_tools.datastructures import ExecutionEnvironment, _GlobalModel, _GlobalSettings
 from cs_tools.updater import cs_tools_venv
@@ -223,7 +223,7 @@ class ThoughtSpotConfiguration(_GlobalSettings):
     url: Union[pydantic.AnyHttpUrl, ipaddress.IPv4Address]
     username: str
     password: Optional[str] = pydantic.Field(default=None)
-    secret_key: Optional[types.GUID] = pydantic.Field(default=None)
+    secret_key: Optional[_types.GUID] = pydantic.Field(default=None)
     bearer_token: Optional[str] = pydantic.Field(default=None)
     default_org: Optional[int] = None
     disable_ssl: bool = False

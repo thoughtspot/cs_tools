@@ -6,7 +6,7 @@ from base64 import (
 )
 from collections.abc import Awaitable, Coroutine, Generator, Iterable, Sequence
 from contextvars import Context
-from typing import Annotated, Any, TypeVar
+from typing import Annotated, Any, Optional, TypeVar
 import asyncio
 import datetime as dt
 import functools as ft
@@ -25,9 +25,11 @@ from sqlalchemy.schema import Column
 from sqlmodel import Field, SQLModel
 import pydantic
 
+from cs_tools import _compat
+
 log = logging.getLogger(__name__)
 _T = TypeVar("_T")
-_EVENT_LOOP: asyncio.AbstractEventLoop | None = None
+_EVENT_LOOP: Optional[asyncio.AbstractEventLoop] = None
 
 
 def get_event_loop() -> asyncio.AbstractEventLoop:
@@ -61,7 +63,7 @@ def run_sync(coro: Awaitable) -> Any:
     return get_event_loop().run_until_complete(coro)
 
 
-class BoundedTaskGroup(asyncio.TaskGroup):
+class BoundedTaskGroup(_compat.TaskGroup):
     """An asyncio.TaskGroup that implements backpressure."""
 
     def __init__(self, max_concurrent: int, *args, **kwargs):
@@ -69,7 +71,7 @@ class BoundedTaskGroup(asyncio.TaskGroup):
         self._max_concurrent = max_concurrent
         self._semaphore = asyncio.Semaphore(value=max_concurrent)
 
-    def create_task(self, coro: Coroutine, *, name: str | None = None, context: Context | None = None) -> asyncio.Task:
+    def create_task(self, coro: Coroutine, *, name: Optional[str] = None, context: Optional[Context] = None) -> asyncio.Task:  # noqa: E501
         """See: https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup.create_task"""
 
         async def with_backpressure() -> Any:
@@ -174,7 +176,7 @@ class GlobalState:
 
     _state: dict[str, Any]
 
-    def __init__(self, state: dict[str, Any] | None = None):
+    def __init__(self, state: Optional[dict[str, Any]] = None):
         if state is None:
             state = {}
 

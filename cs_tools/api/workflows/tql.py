@@ -5,7 +5,7 @@ import datetime as dt
 import json
 import logging
 
-from cs_tools import types
+from cs_tools import _types
 from cs_tools.api.client import RESTAPIClient
 
 log = logging.getLogger(__name__)

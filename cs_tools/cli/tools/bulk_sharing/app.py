@@ -5,7 +5,7 @@ from typing import Literal
 from textual_serve.server import Server
 import typer
 
-from cs_tools import types
+from cs_tools import _types
 from cs_tools.cli.dependencies import ThoughtSpot, depends_on
 from cs_tools.cli.ux import AsyncTyper
 

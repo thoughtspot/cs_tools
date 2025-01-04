@@ -13,7 +13,7 @@ from thoughtspot_tml.types import TMLObject
 import awesomeversion
 import httpx
 
-from cs_tools import types, utils
+from cs_tools import _types, utils
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.api.workflows.utils import paginator
 
