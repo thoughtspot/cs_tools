@@ -62,8 +62,10 @@ class Literal(CustomType):
             choices = [ctx.token_normalize_func(choice) for choice in self.choices]
 
         if value not in choices:
+            public_choices = [c for c in self.raw_choices if not self.is_private_choice_value(c)]
+
             self.fail(
-                message=f"Invalid value, should be one of {self.choices}, got '{original_value}'",
+                message=f"Invalid value, should be one of {public_choices}, got '{original_value}'",
                 param=param,
                 ctx=ctx,
             )
