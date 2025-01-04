@@ -11,13 +11,13 @@ from cs_tools.api.client import RESTAPIClient
 log = logging.getLogger(__name__)
 
 
-def _cast_to_records(row_values: list[Any], *, column_info: list[dict]) -> list[types.APIResult]:
+def _cast_to_records(row_values: list[Any], *, column_info: list[dict]) -> list[_types.APIResult]:
     """Pair up column values to their names, and clean up the TIMESTAMP representation."""
-    TS_TO_PY_TYPE_MAPPING: dict[types.InferredDataType, type] = {
+    TS_TO_PY_TYPE_MAPPING: dict[_types.InferredDataType, type] = {
         "VARCHAR": str,
         "DOUBLE": float,
         "FLOAT": float,
-        "BOOL": bool,  # type: ignore[dict-item]
+        "BOOL": bool,
         "INT": int,  # type: ignore[dict-item]
         "BIGINT": int,  # type: ignore[dict-item]
         "DATE": dt.date.fromtimestamp,  # type: ignore[dict-item]
@@ -25,7 +25,7 @@ def _cast_to_records(row_values: list[Any], *, column_info: list[dict]) -> list[
         "TIMESTAMP": float,
     }
 
-    full: list[types.APIResult] = []
+    full: list[_types.APIResult] = []
 
     for row in row_values:
         for idx, value in enumerate(row.pop("v")):
@@ -48,7 +48,7 @@ def _cast_to_records(row_values: list[Any], *, column_info: list[dict]) -> list[
 async def query(
     statement: str,
     *,
-    falcon_context: types.TQLQueryContext | None = None,
+    falcon_context: _types.TQLQueryContext | None = None,
     record_offset: int = 0,
     record_size: int = 5_000_000,
     field_delimiter: str = "|",
@@ -59,7 +59,7 @@ async def query(
     query_options: dict | None = None,
     advanced_options: dict | None = None,
     http: RESTAPIClient,
-) -> types.APIResult:
+) -> _types.APIResult:
     """Wraps ts_dataservice/query in a V2.0-like interface."""
     # Further reading on what can be passed to `data`
     #   https://docs.thoughtspot.com/software/latest/tql-service-api-ref.html#_inputoutput_structure
@@ -101,7 +101,7 @@ async def query(
     r = await http.v1_dataservice_query(**data)
     r.raise_for_status()
 
-    d: types.APIResult = {
+    d: _types.APIResult = {
         "prev_falcon_context": falcon_context,
         "curr_falcon_context": None,
         "data": [],

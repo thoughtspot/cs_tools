@@ -107,7 +107,7 @@ def identify(
         show_default=False,
         rich_help_panel="Syncer Options",
     ),
-) -> types.ExitCode:
+) ->_types.ExitCode:
     """
     Identify content which can be archived.
 
@@ -219,7 +219,7 @@ def identify(
             this_task.total = len(all_metadata)
             STALE_MODIFICATION_DAYS = dt.timedelta(days=recent_modified)
 
-            filtered: types.TableRowsFormat = []
+            filtered:_types.TableRowsFormat = []
 
             for metadata_object in all_metadata:
                 # DEV NOTE: @boonhapus, 2024/11/25
@@ -356,7 +356,7 @@ def identify(
 def untag(
     ctx: typer.Context,
     tag_name: str = typer.Option(_DEFAULT_TAG_NAME, "--tag", help="case sensitive name to tag stale objects with"),
-) -> types.ExitCode:
+) ->_types.ExitCode:
     """Remove content with the identified --tag."""
     ts = ctx.obj.thoughtspot
 
@@ -408,7 +408,7 @@ def remove(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
-) -> types.ExitCode:
+) ->_types.ExitCode:
     """
     Remove objects from the ThoughtSpot platform.
 

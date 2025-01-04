@@ -13,9 +13,9 @@ __all__ = ("search",)
 log = logging.getLogger(__name__)
 
 
-def _convert_compact_to_full(compact: list[Any], *, column_names: list[str]) -> dict[str, Any]:
+def _convert_compact_to_full(compact: list[Any], *, column_names: list[str]) -> _types.APIResult:
     """Pair up column values to their names, and clean up the TIMESTAMP representation."""
-    full: dict[str, Any] = {}
+    full: _types.APIResult = {}
 
     for idx, value in enumerate(compact):
         # FETCH THE COLUMN NAME
@@ -30,9 +30,9 @@ def _convert_compact_to_full(compact: list[Any], *, column_names: list[str]) -> 
     return full
 
 
-def _cast(data_rows: types.TableRowsFormat, *, column_info: dict[str, types.InferredDataType]) -> types.TableRowsFormat:
-    """Cast data coming back from Search API to their intended column types."""
-    TS_TO_PY_TYPE_MAPPING: dict[types.InferredDataType, type] = {
+def _cast(data_rows: _types.TableRowsFormat, *, column_info: dict[str, _types.InferredDataType]) -> _types.TableRowsFormat:  # noqa: E501
+    """Cast data coming back from Search API to their intended column _types."""
+    TS_TO_PY_TYPE_MAPPING: dict[_types.InferredDataType, type] = {
         "VARCHAR": str,
         "CHAR": str,
         "DOUBLE": float,
@@ -75,8 +75,8 @@ def _cast(data_rows: types.TableRowsFormat, *, column_info: dict[str, types.Infe
 
 
 async def search(
-    worksheet: types.ObjectIdentifier, *, query: str, batch_size: int = 100_000, http: RESTAPIClient
-) -> types.TableRowsFormat:
+    worksheet: _types.ObjectIdentifier, *, query: str, batch_size: int = 100_000, http: RESTAPIClient
+) -> _types.TableRowsFormat:
     """
     Perform a Search against a specific Worksheet.
 
@@ -88,7 +88,7 @@ async def search(
     worksheet_guid = d["metadata_header"]["id"]
     worksheet_column_info = {column["header"]["name"]: column["dataType"] for column in d["metadata_detail"]["columns"]}
 
-    data: types.TableRowsFormat = []
+    data: _types.TableRowsFormat = []
 
     log.debug(f"Executing Search on '{worksheet}'\n\n{query}\n")
 

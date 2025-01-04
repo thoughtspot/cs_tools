@@ -21,14 +21,14 @@ log = logging.getLogger(__name__)
 
 
 async def fetch_all(
-    metadata_types: Iterable[types.APIObjectType],
+    metadata_types: Iterable[_types.APIObjectType],
     *,
     http: RESTAPIClient,
     record_size: int = 5_000,
     **search_options,
-) -> list[types.APIResult]:
+) -> list[_types.APIResult]:
     """Wraps metadata/search fetching all objects of the given type and exhausts the pagination."""
-    results: list[types.APIResult] = []
+    results: list[_types.APIResult] = []
     tasks: list[asyncio.Task] = []
 
     async with utils.BoundedTaskGroup(max_concurrent=len(list(metadata_types))) as g:
@@ -54,16 +54,16 @@ async def fetch_all(
 
 
 async def fetch(
-    typed_guids: dict[types.APIObjectType, Iterable[types.GUID]],
+    typed_guids: dict[_types.APIObjectType, Iterable[_types.GUID]],
     *,
     http: RESTAPIClient,
     record_size: int = 5_000,
     **search_options,
-) -> list[types.APIResult]:
+) -> list[_types.APIResult]:
     """Wraps metadata/search fetching specific objects and exhausts the pagination."""
     CONCURRENCY_MAGIC_NUMBER = 15  # Why? In case **search_options contains
 
-    results: list[types.APIResult] = []
+    results: list[_types.APIResult] = []
     tasks: list[asyncio.Task] = []
 
     async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
@@ -98,13 +98,13 @@ async def fetch(
 
 
 async def fetch_one(
-    identifier: types.ObjectIdentifier | types.PrincipalIdentifier | types.OrgIdentifier,
-    metadata_type: types.APIObjectType | Literal["ORG"],
+    identifier: _types.ObjectIdentifier | _types.PrincipalIdentifier | _types.OrgIdentifier,
+    metadata_type: _types.APIObjectType | Literal["ORG"],
     *,
     attr_path: str | None = None,
     http: RESTAPIClient,
     **search_options,
-) -> types.APIResult | Any:
+) -> _types.APIResult | Any:
     """
     Wraps */search APIs to fetch a single object and optionally return its attribute.
 
@@ -150,13 +150,13 @@ async def fetch_one(
 
 
 async def permissions(
-    typed_guids: dict[types.APIObjectType, Iterable[types.GUID]],
+    typed_guids: dict[_types.APIObjectType, Iterable[_types.GUID]],
     *,
     compat_ts_version: awesomeversion.AwesomeVersion,
     record_size: int = -1,
     http: RESTAPIClient,
     **permission_options,
-) -> list[types.APIResult]:
+) -> list[_types.APIResult]:
     """Wraps security/metadata/fetch-permissions fetching specific objects and exhausts the pagination."""
     FIFTEEN_MINUTES = 60 * 15
 
@@ -165,7 +165,7 @@ async def permissions(
     else:
         CONCURRENCY_MAGIC_NUMBER = 5  # Why? Fetching permissions could potentially be very expensive for the server.
 
-    results: list[types.APIResult] = []
+    results: list[_types.APIResult] = []
     tasks: list[asyncio.Task] = []
 
     async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
@@ -221,14 +221,14 @@ async def permissions(
     return results
 
 
-async def dependents(guid: types.GUID, *, http: RESTAPIClient) -> list[types.APIResult]:
+async def dependents(guid: _types.GUID, *, http: RESTAPIClient) -> list[_types.APIResult]:
     """Fetch all dependents of a given object, regardless of its type."""
     r = await http.metadata_search(
         guid=guid, include_details=True, include_dependent_objects=True, dependent_objects_record_size=-1
     )
 
     r.raise_for_status()
-    _: types.APIResult = next(iter(r.json()), {})
+    _: _types.APIResult = next(iter(r.json()), {})
 
     # DEV NOTE: @boonhapus, 2024/11/30
     # metadata/search?include_dependent_objects=True DOESN'T WORK FOR CONNECTIONS.
@@ -242,13 +242,13 @@ async def dependents(guid: types.GUID, *, http: RESTAPIClient) -> list[types.API
             coros.append(c)
 
         _ = await asyncio.gather(*coros)  # type: ignore[assignment]
-        d = cast(Iterable[types.APIResult], it.chain.from_iterable(r.json() for r in _))  # type: ignore[attr-defined]
+        d = cast(Iterable[_types.APIResult], it.chain.from_iterable(r.json() for r in _))  # type: ignore[attr-defined]
     else:
         track_top_level_info = False
-        d = cast(Iterable[types.APIResult], [_])
+        d = cast(Iterable[_types.APIResult], [_])
 
-    all_dependents: list[types.APIResult] = []
-    seen: set[types.GUID] = set()
+    all_dependents: list[_types.APIResult] = []
+    seen: set[_types.GUID] = set()
 
     for metadata_object in d:
         if track_top_level_info and metadata_object["metadata_id"] not in seen:
@@ -256,7 +256,7 @@ async def dependents(guid: types.GUID, *, http: RESTAPIClient) -> list[types.API
                 {
                     "guid": metadata_object["metadata_id"],
                     "name": metadata_object["metadata_name"],
-                    "type": types.lookup_api_type(metadata_object["metadata_type"]),
+                    "type": _types.lookup_api_type(metadata_object["metadata_type"]),
                     "author_guid": metadata_object["metadata_header"]["author"],
                     "author_name": metadata_object["metadata_header"]["authorName"],
                     "tags": metadata_object["metadata_header"]["tags"],
@@ -278,7 +278,7 @@ async def dependents(guid: types.GUID, *, http: RESTAPIClient) -> list[types.API
                         {
                             "guid": dependent["id"],
                             "name": dependent["name"],
-                            "type": types.lookup_api_type(dependent_type),
+                            "type": _types.lookup_api_type(dependent_type),
                             "author_guid": dependent["author"],
                             "author_name": dependent.get("authorName", "UNKNOWN"),
                             "tags": dependent["tags"],
@@ -294,12 +294,12 @@ async def dependents(guid: types.GUID, *, http: RESTAPIClient) -> list[types.API
 
 
 async def tml_export(
-    guid: types.GUID,
+    guid: _types.GUID,
     *,
     directory: pathlib.Path | None = None,
     http: RESTAPIClient,
     **tml_export_options,
-) -> types.APIResult:
+) -> _types.APIResult:
     """Export a metadata object, optionally to a directory."""
     try:
         r = await http.metadata_tml_export(guid=guid, **tml_export_options)
@@ -331,10 +331,10 @@ async def tml_export(
 async def tml_import(
     tmls: list[TMLObject],
     *,
-    policy: types.ImportPolicy = "ALL_OR_NONE",
+    policy: _types.ImportPolicy = "ALL_OR_NONE",
     http: RESTAPIClient,
     **tml_import_options,
-) -> types.APIResult:
+) -> _types.APIResult:
     """Import a metadata object, alerting about warnings and errors."""
     r = await http.metadata_tml_import(tmls=[t.dumps() for t in tmls], policy=policy, **tml_import_options)
     r.raise_for_status()

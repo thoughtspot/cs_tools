@@ -32,7 +32,7 @@ def _noop(ctx: typer.Context) -> None:
 
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
-def cls_ui(ctx: typer.Context, mode: Literal["web", "terminal"] = typer.Option("terminal")) -> types.ExitCode:
+def cls_ui(ctx: typer.Context, mode: Literal["web", "terminal"] = typer.Option("terminal")) ->_types.ExitCode:
     """Start the built-in webserver which runs the security management interface."""
     ts = ctx.obj.thoughtspot
 

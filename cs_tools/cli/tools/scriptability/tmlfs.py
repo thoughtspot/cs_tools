@@ -26,7 +26,7 @@ TMLFS_FILENAME = ".tmlfs"
 
 
 class TMLType(StrEnum):
-    """TML types.  These must map to what thoughtspot_tml.util.determine_tml_type returns."""
+    """TML_types.  These must map to what thoughtspot_tml.util.determine_tml_type returns."""
 
     connection = "connection"
     table = "table"

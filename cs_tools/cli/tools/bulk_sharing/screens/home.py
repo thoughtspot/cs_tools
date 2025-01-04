@@ -71,10 +71,10 @@ class SecurityHome(Screen):
 
     TITLE = "Bulk Sharing Configuration"
 
-    tables: reactive[list[types.APIResult]] = reactive(list, recompose=True)
-    groups: reactive[list[types.APIResult]] = reactive(list, recompose=True)
+    tables: reactive[list_types.APIResult]] = reactive(list, recompose=True)
+    groups: reactive[list_types.APIResult]] = reactive(list, recompose=True)
 
-    def _make_table_selection_text(self, table_info: types.APIResult) -> str:
+    def _make_table_selection_text(self, table_info:_types.APIResult) -> str:
         type_mapping = {
             "WORKSHEET": "[b yellow]W[/]",
             "MODEL": "[b yellow]M[/]",
@@ -87,7 +87,7 @@ class SecurityHome(Screen):
         type = type_mapping.get(table_info["metadata_header"]["type"])
         return f"{type} [dim]|[/] {name}"
 
-    def _make_group_selection_text(self, group_info: types.APIResult) -> str:
+    def _make_group_selection_text(self, group_info:_types.APIResult) -> str:
         name = group_info["metadata_header"]["displayName"]
         style = "[b yellow dim]" if group_info["metadata_detail"]["visibility"] == "NON_SHARABLE" else ""
         return f"{style}{name}"

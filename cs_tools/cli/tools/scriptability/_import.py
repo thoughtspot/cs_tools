@@ -193,7 +193,7 @@ def _check_parameters(
     if guid and (include_types or exclude_types):
         raise CSToolsCLIError(
             title="A guid and include/exclude specified.",
-            reason="Cannot specify both a file and include/exclude types.",
+            reason="Cannot specify both a file and include/exclude_types.",
             mitigation="Specify either a file or include/exclude types, but not both.",
         )
 
@@ -721,7 +721,7 @@ def _add_tags(ts: ThoughtSpot, objects: list[TMLImportResponse], tags: list[str]
         types = []
         for _ in objects:
             ids.append(_.guid)
-            types.append(_.metadata_object_type)
+           _types.append(_.metadata_object_type)
         if ids:  # might all be errors
             log.info(f"Adding tags {tags} to {ids}")
             try:

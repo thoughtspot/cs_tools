@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 app = AsyncTyper(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 
 
-def _ensure_external_mapping(tml: types.TML, *, connection_info: dict[str, str]) -> types.TML:
+def _ensure_external_mapping(tml:_types.TML, *, connection_info: dict[str, str]) ->_types.TML:
     """Remap TML object to match the external database."""
     if not isinstance(tml, Table):
         return tml
@@ -64,7 +64,7 @@ def _is_in_current_org(metadata_object, *, current_org: int) -> bool:
 @depends_on(thoughtspot=ThoughtSpot())
 def deploy(
     ctx: typer.Context,
-    cnxn_guid: types.GUID = typer.Option(
+    cnxn_guid:_types.GUID = typer.Option(
         ...,
         "--connection-guid",
         help="If deploying to Falcon, use [fg-secondary]falcon[/], otherwise find your GUID in the Connection URL.",
@@ -85,7 +85,7 @@ def deploy(
     ),
     org_override: str = typer.Option(None, "--org", help="The Org identifier to deploy the SpotApp to."),
     export: custom_types.Directory = typer.Option(None, help="Download the TML of the SpotApp instead of deploying."),
-) -> types.ExitCode:
+) ->_types.ExitCode:
     """Deploy the Searchable SpotApp."""
     ts = ctx.obj.thoughtspot
 
@@ -122,7 +122,7 @@ def deploy(
 
         with tracker["CUSTOMIZE"]:
             HERE = pathlib.Path(__file__).parent
-            tmls: list[types.TML] = []
+            tmls: list_types.TML] = []
 
             connection_info = {
                 "dialect": db_dialect,
@@ -195,7 +195,7 @@ def audit_logs(
     window_end: Literal["NOW", "TODAY_START_UTC", "TODAY_START_LOCAL"] = typer.Option(
         "NOW", help="how to track events through time"
     ),
-) -> types.ExitCode:
+) ->_types.ExitCode:
     """
     Extract audit logs from your ThoughtSpot platform.
 
@@ -224,7 +224,7 @@ def audit_logs(
 
     with px.WorkTracker("Fetching Audit Logs Data", tasks=TOOL_TASKS) as tracker:
         with tracker["COLLECT"]:
-            _: list[types.APIResult] = []
+            _: list_types.APIResult] = []
 
             for days in range(last_k_days):
                 beg = utc_terminal_end - dt.timedelta(days=days + 1)
@@ -256,7 +256,7 @@ def bi_server(
     to_date: custom_types.Date = typer.Option(..., help="inclusive upper bound of rows to select from TS: BI Server"),
     org_override: str = typer.Option(None, "--org", help="The org to fetch history from"),
     compact: bool = typer.Option(True, "--compact / --full", help="If compact, add  [User Action] != {null} 'invalid'"),
-) -> types.ExitCode:
+) ->_types.ExitCode:
     """
     Extract usage statistics from your ThoughtSpot platform.
 
@@ -345,7 +345,7 @@ def metadata(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-) -> types.ExitCode:
+) ->_types.ExitCode:
     """
     Extract metadata from your ThoughtSpot platform.
 
@@ -410,9 +410,9 @@ def metadata(
         # LOOP THROUGH EACH ORG COLLECTING DATA
         for org in orgs:
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
-            seen_guids: dict[types.APIObjectType, set[types.GUID]] = collections.defaultdict(set)
-            seen_columns: list[list[types.GUID]] = []
-            seen_group_guids: set[types.GUID] = set()
+            seen_guids: dict_types.APIObjectType, set_types.GUID]] = collections.defaultdict(set)
+            seen_columns: list[list_types.GUID]] = []
+            seen_group_guids: set_types.GUID] = set()
 
             with tracker["TS_ORG"] as this_task:
                 if not ts.session_context.thoughtspot.is_orgs_enabled:
@@ -577,7 +577,7 @@ def tml(
     org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
     metadata_types: Literal["CONNECTION", "MODEL", "LIVEBOARD", "__ALL__"] = typer.Option(
         ...,
-        help="The type of TML to export, if not provided, then fetch all of the supported types.",
+        help="The type of TML to export, if not provided, then fetch all of the supported_types.",
     ),
     strategy: Literal["DELTA", "SNAPSHOT"] = typer.Option(
         "DELTA",
@@ -593,7 +593,7 @@ def tml(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-) -> types.ExitCode:
+) ->_types.ExitCode:
     """..."""
     ts = ctx.obj.thoughtspot
 

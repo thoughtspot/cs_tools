@@ -16,7 +16,7 @@ app = CSToolsApp(
     invoke_without_command=True,
 )
 
-# consider moving to types.
+# consider moving to_types.
 VALID_METADATA_COMMIT_TYPES = ["LOGICAL_TABLE", "PINBOARD_ANSWER_BOOK", "QUESTION_ANSWER_BOOK"]
 
 
@@ -40,7 +40,7 @@ def branches_commit(
     if org_override is not None:
         ts.org.switch(org_override)
 
-    # TODO consider a check of metadata to make sure there are only the supported types.
+    # TODO consider a check of metadata to make sure there are only the supported_types.
 
     if tag:
         metadata_list = ts.metadata.find(tags=[tag], include_types=VALID_METADATA_COMMIT_TYPES)

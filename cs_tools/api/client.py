@@ -196,7 +196,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     async def v1_trusted_authentication(
-        self, username: types.Name, secret_key: types.GUID, org_id: int | None = None
+        self, username: _types.Name, secret_key: _types.GUID, org_id: int | None = None
     ) -> httpx.Response:
         """Login to ThoughtSpot using V1 Trusted Authentication."""
         d = {"secret_key": str(secret_key), "orgid": org_id, "username": username, "access_level": "FULL"}
@@ -277,7 +277,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
-    def metadata_search(self, guid: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+    def metadata_search(self, guid: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot objects."""
         if "metadata" not in options:
             options["metadata"] = [{"identifier": guid}]
@@ -286,7 +286,7 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/metadata/search", headers=options.pop("headers", None), json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
-    def metadata_delete(self, guid: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+    def metadata_delete(self, guid: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Removes the specified metadata object from the ThoughtSpot system."""
         if "metadata" not in options:
             options["metadata"] = [{"identifier": guid}]
@@ -296,7 +296,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def metadata_tml_export(
-        self, guid: types.ObjectIdentifier, export_fqn: bool = True, **options: Any
+        self, guid: _types.ObjectIdentifier, export_fqn: bool = True, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Get the EDOC of the ThoughtSpot object."""
         options["metadata"] = [{"identifier": guid}]
@@ -306,7 +306,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def metadata_tml_import(
-        self, tmls: list[str], policy: types.ImportPolicy, **options: Any
+        self, tmls: list[str], policy: _types.ImportPolicy, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Push the EDOC of the object into ThoughtSpot."""
         options["metadata_tmls"] = tmls
@@ -319,7 +319,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
-    def connection_search(self, guid: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+    def connection_search(self, guid: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Get a Connection and its Table objects."""
         options["connections"] = [{"identifier": guid}]
         options["include_details"] = True
@@ -332,7 +332,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def users_search(
-        self, guid: types.ObjectIdentifier | None = None, record_offset: int = 0, record_size: int = 10, **options: Any
+        self, guid: _types.ObjectIdentifier | None = None, record_offset: int = 0, record_size: int = 10, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot users."""
         if guid is not None:
@@ -351,7 +351,7 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/users/create", json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
-    def users_update(self, user_identifier: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+    def users_update(self, user_identifier: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Updates a ThoughtSpot user."""
         return self.post(f"api/rest/2.0/users/{user_identifier}/update", json=options)
 
@@ -362,7 +362,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def groups_search(
-        self, guid: types.ObjectIdentifier | None = None, record_offset: int = 0, record_size: int = 10, **options: Any
+        self, guid: _types.ObjectIdentifier | None = None, record_offset: int = 0, record_size: int = 10, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot groups."""
         if guid is not None:
@@ -381,7 +381,7 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/groups/create", json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
-    def groups_update(self, group_identifier: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+    def groups_update(self, group_identifier: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Updates a ThoughtSpot group."""
         return self.post(f"api/rest/2.0/groups/{group_identifier}/update", json=options)
 
@@ -396,14 +396,14 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/tags/search", headers=options.pop("headers", None), json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
-    def tags_create(self, name: types.Name, **options: Any) -> Awaitable[httpx.Response]:
+    def tags_create(self, name: _types.Name, **options: Any) -> Awaitable[httpx.Response]:
         """Creates a tag object."""
         options["name"] = name
         return self.post("api/rest/2.0/tags/create", json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def tags_assign(
-        self, guid: types.ObjectIdentifier, tag: types.ObjectIdentifier, **options: Any
+        self, guid: _types.ObjectIdentifier, tag: _types.ObjectIdentifier, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Assigns tags to Liveboards, Answers, Tables, and Worksheets."""
         if "metadata" not in options:
@@ -418,7 +418,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
-    def schedules_search(self, liveboard_guid: types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+    def schedules_search(self, liveboard_guid: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
         """Get a list of Liveboard schedules."""
         options["metadata"] = [{"identifier": str(liveboard_guid)}]
         return self.post("api/rest/2.0/schedules/search", headers=options.pop("headers", None), json=options)
@@ -429,7 +429,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def search_data(
-        self, logical_table_identifier: types.ObjectIdentifier, query_string: str, **options: Any
+        self, logical_table_identifier: _types.ObjectIdentifier, query_string: str, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Generates an Answer from a given data source."""
         options["query_string"] = query_string
@@ -443,7 +443,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def security_metadata_permissions(
-        self, guid: types.ObjectIdentifier, permission_type: types.ShareType = "DEFINED", **options: Any
+        self, guid: _types.ObjectIdentifier, permission_type: _types.ShareType = "DEFINED", **options: Any
     ) -> Awaitable[httpx.Response]:
         """Get a list of Users and Groups who can access the ThoughtSpot object."""
         if "metadata" not in options:
@@ -459,9 +459,9 @@ class RESTAPIClient(httpx.AsyncClient):
     # @_transport.CachePolicy.mark_cacheable
     async def v1_security_metadata_permissions(
         self,
-        guid: types.ObjectIdentifier,
-        api_object_type: types.APIObjectType,
-        permission_type: types.ShareType = "DEFINED",
+        guid: _types.ObjectIdentifier,
+        api_object_type: _types.APIObjectType,
+        permission_type: _types.ShareType = "DEFINED",
         **options: Any,
     ) -> httpx.Response:
         """Get a list of Users and Groups who can access the ThoughtSpot object."""
@@ -475,7 +475,7 @@ class RESTAPIClient(httpx.AsyncClient):
         }
 
         headers = options.pop("headers", None)
-        options["type"] = V2_TO_V1_TYPES.get(api_object_type)
+        options["type"] = V2_TO_V1__types.get(api_object_type)
         options["permissiontype"] = permission_type
 
         if "id" not in options:
@@ -498,7 +498,7 @@ class RESTAPIClient(httpx.AsyncClient):
                 t = g.create_task(c, name=f"v1/security/metadata/permissions REQUEST #{idx+1}")
                 tasks.append(t)
 
-        data: types.APIResult = {}
+        data: _types.APIResult = {}
 
         for task in tasks:
             try:
@@ -524,10 +524,10 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def security_metadata_share(
         self,
-        guids: list[types.GUID],
-        api_object_type: types.APIObjectType,
-        principals: list[types.PrincipalIdentifier],
-        share_mode: types.ShareMode = "NO_ACCESS",
+        guids: list[_types.GUID],
+        api_object_type: _types.APIObjectType,
+        principals: list[_types.PrincipalIdentifier],
+        share_mode: _types.ShareMode = "NO_ACCESS",
         notify_on_share: bool = False,
         **options: Any,
     ) -> Awaitable[httpx.Response]:

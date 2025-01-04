@@ -42,7 +42,7 @@ def _compare_tml(file1: str, tml1: TMLObject, file2: str, tml2: TMLObject) -> bo
 def _compare_dict(f1: str, d1: dict, f2: str, d2: dict) -> bool:
     """Compares two dictionaries, logging any changes."""
     if not (isinstance(d1, dict) and isinstance(d2, dict)):
-        rich_console.log(f"[bold red]{d1} and {d2} are different types.")
+        rich_console.log(f"[bold red]{d1} and {d2} are different_types.")
         return False
 
     same = True
@@ -81,7 +81,7 @@ def _compare_list(f1: str, l1: list, f2: str, l2: list) -> bool:
     same = True
 
     if not (isinstance(l1, list) and isinstance(l2, list)):
-        rich_console.log(f"[bold red]{l1} and {l2} are different types.")
+        rich_console.log(f"[bold red]{l1} and {l2} are different_types.")
         return False
 
     if len(l1) != len(l2):
