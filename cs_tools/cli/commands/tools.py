@@ -19,7 +19,7 @@ app = AsyncTyper(
         f":bug: [link={__project__.__bugs__}]Found a bug?[/] "
         f":megaphone: [link={__project__.__help__}]Feedback[/][/] "
         + (
-            f":computer_disk: [green]{meta.default_config_name}[/] (default)"
+            f":computer_disk: [fg-success]{meta.default_config_name}[/] (default)"
             if meta.default_config_name is not None
             else ""
         )

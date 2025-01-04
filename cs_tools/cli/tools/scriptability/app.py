@@ -131,7 +131,7 @@ def connection_check(
     )
 
     if r.is_error:
-        log.error(f"encountered an error fetching columns from [b blue]{tml.name}[/]\n{r.json()}")
+        log.error(f"encountered an error fetching columns from [fg-secondary]{tml.name}[/]\n{r.json()}")
         raise typer.Exit(1)
 
     live_external_data = r.json()
@@ -176,14 +176,14 @@ def connection_check(
             tables_sync.append(metadata.fully_qualified_name)
 
     if not column_sync:
-        log.info("[b green]No columns[/] are out of sync with the external database!")
+        log.info("[fg-success]No columns[/] are out of sync with the external database!")
         raise typer.Exit(0)
 
     bye_column = sum(1 for c in column_sync if c.is_missing_external)
     oos_table = len({c.fully_qualified_name for c in column_sync})
     log.warning(
-        f"[b yellow]{len(column_sync) - bye_column} columns out of sync and {bye_column} missing across {oos_table} "
-        f"tables in [b blue]{tml.name} ({tml.guid})"
+        f"[fg-warn]{len(column_sync) - bye_column} columns out of sync and {bye_column} missing across {oos_table} "
+        f"tables in [fg-secondary]{tml.name} ({tml.guid})"
     )
 
     if syncer is None:

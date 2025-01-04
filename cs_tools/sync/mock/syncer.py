@@ -27,7 +27,7 @@ class Mock(DatabaseSyncer):
         self._engine = sa.engine.create_mock_engine("sqlite://", self.sql_query_to_log)  # type: ignore[assignment]
 
     def __finalize__(self) -> None:
-        log.warning("[b yellow]THESE DDL ARE APPROXIMATE, YOU WILL NEED TO CUSTOMIZE TO YOUR DIALECT.")
+        log.warning("[fg-warn]THESE DDL ARE APPROXIMATE, YOU WILL NEED TO CUSTOMIZE TO YOUR DIALECT.")
         super().__finalize__()
         log.info("ALL SCOPED TABLES HAVE BEEN PRINTED, EXITING..")
         raise SystemExit(-1)

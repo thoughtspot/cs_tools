@@ -203,7 +203,7 @@ class MetaConfig(_GlobalModel):
                         (
                             f"\nOut now, CS Tools version {self.remote.version}!"
                             f"\n\nCheck out the changes in the [b cyan][link={url}]Release Notes[/][/]"
-                            f"\n\nUpgrade with [b yellow]cs_tools self update[/]"
+                            f"\n\nUpgrade with [fg-warn]cs_tools self update[/]"
                         ),
                         title="An update has been released! :tada:",
                         title_align="left",
@@ -211,7 +211,7 @@ class MetaConfig(_GlobalModel):
                     )
                 )
 
-        return f"A [b green]new[/] CS Tools version is available! :tada: [b cyan link={url}]{self.remote.version}[/]"
+        return f"A [fg-success]new[/] CS Tools version is available! :tada: [b cyan link={url}]{self.remote.version}[/]"
 
 
 # GLOBAL SCOPE

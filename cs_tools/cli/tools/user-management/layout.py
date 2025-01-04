@@ -18,7 +18,7 @@ def build_table() -> Table:
         show_footer=True,
     )
 
-    table.add_column("[b green]Added", justify="center", width=50)
-    table.add_column("[b yellow]Modified", justify="center", width=50)
-    table.add_column("[b red]Removed", justify="center", width=50)
+    table.add_column("[fg-success]Added", justify="center", width=50)
+    table.add_column("[fg-warn]Modified", justify="center", width=50)
+    table.add_column("[fg-error]Removed", justify="center", width=50)
     return Align.center(table)

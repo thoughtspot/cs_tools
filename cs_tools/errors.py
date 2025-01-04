@@ -274,8 +274,8 @@ class CSToolsCLIError(CSToolsError):
             # fmt: off
             error_panel_content += (
                 "\n"
-                "\n[b green]Mitigation[/]"
-                "\n[b yellow]{self.mitigation}[/]"
+                "\n[fg-success]Mitigation[/]"
+                "\n[fg-warn]{self.mitigation}[/]"
             )
             # fmt: on
 
@@ -311,4 +311,4 @@ class TSLoadServiceUnreachable(CSToolsCLIError):
 
 
 class ConfigDoesNotExist(CSToolsCLIError):
-    title = "Cluster configuration [b blue]{name}[/] does not exist."
+    title = "Cluster configuration [fg-secondary]{name}[/] does not exist."

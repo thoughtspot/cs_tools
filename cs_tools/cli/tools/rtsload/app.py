@@ -52,16 +52,16 @@ def status(
     #     now = dt.datetime.now(tz=dt.timezone.utc).strftime('%Y-%m-%dT%H_%M_%S')
     #     fp = f'BAD_RECORDS_{now}_{cycle_id}'
     #     console.print(
-    #         f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
+    #         f'[fg-error]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
     #     )
     #     data = ts.tsload.bad_records(cycle_id)
     #     bad_records.dump(fp, data=data)
 
     if data["status"]["code"] == "LOAD_FAILED":
-        rich_console.print(f"\nFailure reason:\n  [red]{data['status']['message']}[/]")
+        rich_console.print(f"\nFailure reason:\n  [fg-error]{data['status']['message']}[/]")
 
     if data.get("parsing_errors", False):
-        rich_console.print(f"[red]{data['parsing_errors']}")
+        rich_console.print(f"[fg-error]{data['parsing_errors']}")
 
 
 @app.command(dependencies=[thoughtspot])
@@ -176,7 +176,7 @@ def file(
         "enclosing_character": enclosing_character,
     }
 
-    with rich_console.status(f"[bold green]Loading [yellow]{file}[/] to ThoughtSpot.."):
+    with rich_console.status(f"[bold green]Loading [fg-warn]{file}[/] to ThoughtSpot.."):
         with file.open("r", encoding="utf-8", newline="") as fd:
             cycle_id = ts.tsload.upload(fd, **opts, http_timeout=http_timeout)
 
@@ -192,7 +192,7 @@ def file(
     #     now = dt.datetime.now(tz=dt.timezone.utc).strftime('%Y-%m-%dT%H_%M_%S')
     #     fp = f'BAD_RECORDS_{now}_{cycle_id}'
     #     console.print(
-    #         f'[red]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
+    #         f'[fg-error]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
     #     )
     #     data = ts.tsload.bad_records(cycle_id)
     #     bad_records.dump(fp, data=data)

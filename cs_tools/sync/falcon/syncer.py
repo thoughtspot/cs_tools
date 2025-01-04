@@ -116,7 +116,7 @@ class Falcon(DatabaseSyncer):
                 return
 
             except (httpx.ConnectError, httpx.ConnectTimeout):
-                i = f"could not connect at [b blue]{self.thoughtspot.api.v1.dataservice_url}[/]"
+                i = f"could not connect at [fg-secondary]{self.thoughtspot.api.v1.dataservice_url}[/]"
                 m = ""
 
                 if self.thoughtspot.api.v1.dataservice_url.host != self.thoughtspot.config.thoughtspot.url:
@@ -129,7 +129,7 @@ class Falcon(DatabaseSyncer):
                         "machine is unable to connect directly to the ThoughtSpot node "
                         "which is accepting files."
                         "\n\n"
-                        "You can try using [b blue]ignore_load_balancer_redirect[/] "
+                        "You can try using [fg-secondary]ignore_load_balancer_redirect[/] "
                         "in your Falcon syncer definition as well."
                     )
 
@@ -157,4 +157,4 @@ class Falcon(DatabaseSyncer):
                     log.error(f"Failure reason\n[bold red]{status_data['status']['message']}[/]")
 
                 if status_data.get("parsing_errors", False):
-                    log.info(f"[red]{status_data['parsing_errors']}")
+                    log.info(f"[fg-error]{status_data['parsing_errors']}")

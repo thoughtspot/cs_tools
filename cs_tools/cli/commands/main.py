@@ -39,7 +39,7 @@ app = AsyncTyper(
         f":bug: [link={__project__.__bugs__}]Found a bug?[/] "
         f":megaphone: [link={__project__.__help__}]Feedback[/][/] "
         + (
-            f":computer_disk: [green]{meta.default_config_name}[/] (default)"
+            f":computer_disk: [fg-success]{meta.default_config_name}[/] (default)"
             if meta.default_config_name is not None
             else ""
         )
@@ -85,7 +85,7 @@ def run() -> int:
 
     except (click.exceptions.Abort, click.exceptions.Exit, typer.Abort, typer.Exit) as e:
         return_code = getattr(e, "exit_code", 0)
-        RICH_CONSOLE.print("[b yellow]Stopping -- cancelled by user..\n")
+        RICH_CONSOLE.print("[fg-warn]Stopping -- cancelled by user..\n")
 
     except click.ClickException as e:
         return_code = 1
@@ -140,12 +140,12 @@ def run() -> int:
             Text.from_markup(
                 f"\nIf you encounter this message more than once, please help by letting us know!"
                 f"\n"
-                f"\n          GitHub: [b blue][link={github_issue}]{github_issue}[/link][/]"
+                f"\n          GitHub: [fg-secondary][link={github_issue}]{github_issue}[/link][/]"
                 f"\n",
             ),
             border_style="yellow",
             title=f"{suprised_emoji}  This is an unhandled error!  {suprised_emoji}",
-            subtitle="Run [b blue]cs_tools logs report[/] to send us your last error.",
+            subtitle="Run [fg-secondary]cs_tools logs report[/] to send us your last error.",
         )
 
         RICH_CONSOLE.print(

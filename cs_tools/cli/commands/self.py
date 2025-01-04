@@ -42,14 +42,14 @@ def info(
         source = f'source "{pathlib.Path(sys.executable).parent.joinpath("activate")}"'
 
     text = (
-        f"\n       [b blue]Info snapshot[/] taken on [b green]{dt.datetime.now(tz=dt.timezone.utc).date()}[/]"
+        f"\n       [fg-secondary]Info snapshot[/] taken on [fg-success]{dt.datetime.now(tz=dt.timezone.utc).date()}[/]"
         f"\n"
-        f"\n           CS Tools: [b yellow]{__version__}[/]"
-        f"\n     Python Version: [b yellow]Python {sys.version}[/]"
-        f"\n        System Info: [b yellow]{platform.system()}[/] (detail: [b yellow]{platform.platform()}[/])"
-        f"\n  Configs Directory: [b yellow]{cs_tools_venv.base_dir}[/]"
-        f"\nActivate VirtualEnv: [b yellow]{source}[/]"
-        f"\n      Platform Tags: [b yellow]{sysconfig.get_platform()}[/]"
+        f"\n           CS Tools: [fg-warn]{__version__}[/]"
+        f"\n     Python Version: [fg-warn]Python {sys.version}[/]"
+        f"\n        System Info: [fg-warn]{platform.system()}[/] (detail: [fg-warn]{platform.platform()}[/])"
+        f"\n  Configs Directory: [fg-warn]{cs_tools_venv.base_dir}[/]"
+        f"\nActivate VirtualEnv: [fg-warn]{source}[/]"
+        f"\n      Platform Tags: [fg-warn]{sysconfig.get_platform()}[/]"
         f"\n"
     )
 

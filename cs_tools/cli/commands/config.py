@@ -26,7 +26,7 @@ app = AsyncTyper(
     Configuration files can be set and saved on a machine in order to eliminate
     passing cluster details and credentials to every tool.
     """,
-    epilog=f":computer_disk: [green]{meta.default_config_name}[/] (default)"
+    epilog=f":computer_disk: [fg-success]{meta.default_config_name}[/] (default)"
     if meta.default_config_name is not None
     else "",
 )
@@ -58,13 +58,13 @@ def create(
         raise typer.Exit()
 
     if CSToolsConfig.exists(name=config):
-        log.warning(f'[b yellow]Configuration file "{config}" already exists.')
+        log.warning(f'[fg-warn]Configuration file "{config}" already exists.')
 
         if not Confirm.ask("\nDo you want to overwrite it?", console=RICH_CONSOLE):
             raise typer.Abort()
 
     if password == "prompt":
-        password = RICH_CONSOLE.input("\nType your password [b yellow](your input is hidden)\n", password=True)
+        password = RICH_CONSOLE.input("\nType your password [fg-warn](your input is hidden)\n", password=True)
 
     data = {
         "name": config,
@@ -142,7 +142,7 @@ def modify(
         data["thoughtspot"]["default_org"] = default_org
 
     if password == "prompt":
-        password = RICH_CONSOLE.input("\nType your password [b yellow](your input is hidden)\n", password=True)
+        password = RICH_CONSOLE.input("\nType your password [fg-warn](your input is hidden)\n", password=True)
 
     if password is not None:
         data["thoughtspot"]["password"] = password
@@ -189,7 +189,7 @@ def modify(
 def delete(config: str = typer.Option(..., help="config file identifier", show_default=False, metavar="NAME")):
     """Delete a config file."""
     if not CSToolsConfig.exists(name=config):
-        log.error(f'[b yellow]Configuration file "{config}" does not exist')
+        log.error(f'[fg-warn]Configuration file "{config}" does not exist')
         return
 
     cs_tools_venv.base_dir.joinpath(f"cluster-cfg_{config}.toml").unlink()
@@ -215,7 +215,7 @@ def check(
         return
 
     ts.logout()
-    log.info("[b green]Success[/]!")
+    log.info("[fg-success]Success[/]!")
 
 
 @app.command(no_args_is_help=False)
@@ -225,7 +225,7 @@ def show(
 ):
     """Display the currently saved config files."""
     if config is not None and not CSToolsConfig.exists(name=config):
-        log.error(f'[b yellow]Configuration file "{config}" does not exist')
+        log.error(f'[fg-warn]Configuration file "{config}" does not exist')
         return
 
     if config is not None:
@@ -246,7 +246,7 @@ def show(
             is_default = meta.default_config_name == config_name
 
             if is_default:
-                config_name += " [b green]<--- default[/]"
+                config_name += " [fg-success]<--- default[/]"
 
             text = Text.from_markup(f"- {config_name}")
             configs.append(text)
@@ -255,9 +255,9 @@ def show(
 
     RICH_CONSOLE.print(
         f"\n[b]ThoughtSpot[/] cluster configurations are located at"
-        f"\n  [b blue][link={cs_tools_venv.base_dir}]{cs_tools_venv.base_dir}[/][/]"
+        f"\n  [fg-secondary][link={cs_tools_venv.base_dir}]{cs_tools_venv.base_dir}[/][/]"
         f"\n"
-        f"\n:computer_disk: {len(configs)} cluster [yellow]--config[/]urations"
+        f"\n:computer_disk: {len(configs)} cluster [fg-warn]--config[/]urations"
         f"\n{listed}"
     )
     return 0

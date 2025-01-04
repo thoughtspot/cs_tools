@@ -38,5 +38,5 @@ def report(
 
     for i, logfile in enumerate(sorted_newest, start=1):
         if i <= latest:
-            RICH_CONSOLE.print(f"  [b blue]{logfile.name}")
+            RICH_CONSOLE.print(f"  [fg-secondary]{logfile.name}")
             shutil.copy(logfile, save_path)

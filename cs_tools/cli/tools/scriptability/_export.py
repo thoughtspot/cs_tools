@@ -124,7 +124,7 @@ def export(
         metadata_type = content["metadata_type"]
         with_ = "with" if export_associated else "without"
 
-        with rich_console.status(f"[b green]exporting {guid} ({metadata_type}) {with_} associated content.[/]"):
+        with rich_console.status(f"[fg-success]exporting {guid} ({metadata_type}) {with_} associated content.[/]"):
             try:
                 if metadata_type == TMLSupportedContent.connection:
                     r = _download_connection(ts=ts, tmlfs=tmlfs, guid=guid)
@@ -135,7 +135,7 @@ def export(
 
             # Sometimes we get a 400 error on the content. Need to just log an error and continue.
             except HTTPStatusError as e:
-                log.error(f"error exporting TML for GUID '[b blue]{guid}[/]'. check logs for more details..")
+                log.error(f"error exporting TML for GUID '[fg-secondary]{guid}[/]'. check logs for more details..")
                 log.debug(e, exc_info=True)
                 results.append(
                     TMLExportResponse(
@@ -216,7 +216,7 @@ def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -
         results.append(r)
 
         if not r.is_success:
-            log.warning(f"[b red]unable to get {r.name}: {r.status_code}")
+            log.warning(f"[fg-error]unable to get {r.name}: {r.status_code}")
 
         else:
             log.info(f"{content['info']['filename']} (Downloaded)")
@@ -227,7 +227,7 @@ def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -
                 tml_objects.append(tml)
 
             except TMLError as tml_error:
-                log.warning(f"[b red]Unable to parse '[b blue]{r.name}.{r.tml_type_name}.tml[/]' to a TML object.")
+                log.warning(f"[fg-error]Unable to parse '[fg-secondary]{r.name}.{r.tml_type_name}.tml[/]' to a TML object.")
                 log.error(tml_error, exc_info=True)
                 log.debug(f"decode error for edoc:\n{content['edoc']}")
                 r.status_code = "WARNING"
@@ -243,7 +243,7 @@ def _download_tml(ts, tmlfs: ExportTMLFS, guid: GUID, export_associated: bool) -
 
             if more_than_one:
                 log.warning(
-                    f"multiple objects found with names: [b blue]{', '.join(more_than_one.keys())}[/], disambiguation "
+                    f"multiple objects found with names: [fg-secondary]{', '.join(more_than_one.keys())}[/], disambiguation "
                     f"will be incomplete"
                 )
 

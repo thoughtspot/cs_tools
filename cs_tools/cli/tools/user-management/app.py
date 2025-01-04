@@ -50,8 +50,8 @@ def transfer(
     ts = ctx.obj.thoughtspot
 
     tasks = [
-        ("gather_content", f"Getting content for [b blue]{from_username}[/]"),
-        ("transfer_ownership", f"Setting [b blue]{to_username}[/] as the content Author"),
+        ("gather_content", f"Getting content for [fg-secondary]{from_username}[/]"),
+        ("transfer_ownership", f"Setting [fg-secondary]{to_username}[/] as the content Author"),
     ]
 
     with LiveTasks(tasks, console=rich_console) as tasks:
@@ -79,7 +79,7 @@ def transfer(
             if tags or guids or metadata_types:
                 if not guids_to_transfer:
                     rich_console.log(
-                        f"No content found for [b blue]{from_username}[/] with [b blue]--tags[/] or [b blue]--guids[/]"
+                        f"No content found for [fg-secondary]{from_username}[/] with [fg-secondary]--tags[/] or [fg-secondary]--guids[/]"
                     )
                     raise typer.Exit(1)
 
@@ -95,8 +95,8 @@ def transfer(
                 ) from None
 
             rich_console.log(
-                f"Transferred {len(guids_to_transfer) or 'all'} objects from [b blue]{from_username}[/] to "
-                f"[b blue]{to_username}[/]"
+                f"Transferred {len(guids_to_transfer) or 'all'} objects from [fg-secondary]{from_username}[/] to "
+                f"[fg-secondary]{to_username}[/]"
             )
 
 
@@ -132,8 +132,8 @@ def rename(
     """
     if syncer is None and None in (from_username, to_username):
         log.warning(
-            f"You must supply both [b blue]--from[/] and [b blue]--to[/], got [b blue]--from[/] "
-            f"[dim]{from_username or '{empty}'}[/] [b blue]--to[/] [dim]{to_username or '{empty}'}[/]",
+            f"You must supply both [fg-secondary]--from[/] and [fg-secondary]--to[/], got [fg-secondary]--from[/] "
+            f"[dim]{from_username or '{empty}'}[/] [fg-secondary]--to[/] [dim]{to_username or '{empty}'}[/]",
         )
         raise typer.Exit(-1)
 
@@ -144,7 +144,7 @@ def rename(
         users_map[from_username] = to_username
 
     elif remapping is None:
-        rich_console.print("[red]you must provide a syncer directive to --remapping")
+        rich_console.print("[fg-error]you must provide a syncer directive to --remapping")
         raise typer.Exit(-1)
 
     else:
@@ -164,13 +164,13 @@ def rename(
 
             for from_username in users_map:
                 if from_username in SYSTEM_USERS:
-                    log.info(f"[b yellow]renaming [b blue]{from_username}[/] is [b red]not allowed")
+                    log.info(f"[fg-warn]renaming [fg-secondary]{from_username}[/] is [fg-error]not allowed")
                     continue
 
                 try:
                     r = ts.api.v1.user_read(username=from_username)
                 except httpx.HTTPStatusError:
-                    log.error(f"failed to find user [b blue]{from_username}[/]")
+                    log.error(f"failed to find user [fg-secondary]{from_username}[/]")
                     log.debug("detailed info", exc_info=True)
                     continue
 
@@ -188,12 +188,12 @@ def rename(
                     ts.api.v1.user_update(user_guid=user_info["header"]["id"], content=user_info)
                 except httpx.HTTPStatusError:
                     header = user_info["header"]
-                    user = f"{header['id']} [b blue]{header['displayName']}[/] ({from_username})"
+                    user = f"{header['id']} [fg-secondary]{header['displayName']}[/] ({from_username})"
                     log.error(f"failed to update user {user}", exc_info=True)
                     failed.append(from_username)
 
     if failed:
-        log.warning(f"[b yellow]Failed to update {len(failed)} Users\n" + "\n - ".join(failed))
+        log.warning(f"[fg-warn]Failed to update {len(failed)} Users\n" + "\n - ".join(failed))
 
 
 @app.command(dependencies=[thoughtspot])
@@ -233,14 +233,14 @@ def delete(
         log.warning(f"Users in {syncer.name} directive '{deletion}' must have an identifier (username or user_guid)")
         raise typer.Exit(-1)
 
-    log.warning(f"Would you like to delete {len(data)} users? [b green]Y[/]es/[b red]N[/]o")
+    log.warning(f"Would you like to delete {len(data)} users? [fg-success]Y[/]es/[fg-error]N[/]o")
     kb = ConfirmationListener(timeout=60)
     kb.run()
 
     if not kb.response.upper() == "Y":
-        log.info("Confirmation [b red]Denied[/] (no users will be deleted)")
+        log.info("Confirmation [fg-error]Denied[/] (no users will be deleted)")
     else:
-        log.info("Confirmation [b green]Approved[/]")
+        log.info("Confirmation [fg-success]Approved[/]")
 
         for row in data:
             user_identifier = row.get("username") or row.get("user_guid")
@@ -299,18 +299,18 @@ def sync(
         +-------------+--------------+----------+-----------------------------+
         |  Principal  |  in Syncer?  |  in TS?  |  Result                     |
         +-------------+--------------+----------+-----------------------------+
-        |    USER     |     TRUE     |   FALSE  |  [green]CREATE[/]  in  ThoughtSpot    |
-        |    USER     |     TRUE     |   TRUE   |  [yellow]UPDATE[/]  in  ThoughtSpot    |
+        |    USER     |     TRUE     |   FALSE  |  [fg-success]CREATE[/]  in  ThoughtSpot    |
+        |    USER     |     TRUE     |   TRUE   |  [fg-warn]UPDATE[/]  in  ThoughtSpot    |
         |    USER     |     FALSE    |   FALSE  |    { no action taken }      |
-        |    USER     |     FALSE    |   TRUE   |  [red]REMOVE[/] from ThoughtSpot**  |
+        |    USER     |     FALSE    |   TRUE   |  [fg-error]REMOVE[/] from ThoughtSpot**  |
         |---------------------------------------------------------------------|
-        |    GROUP    |     TRUE     |   FALSE  |  [green]CREATE[/]  in  ThoughtSpot    |
-        |    GROUP    |     TRUE     |   TRUE   |  [yellow]UPDATE[/]  in  ThoughtSpot    |
+        |    GROUP    |     TRUE     |   FALSE  |  [fg-success]CREATE[/]  in  ThoughtSpot    |
+        |    GROUP    |     TRUE     |   TRUE   |  [fg-warn]UPDATE[/]  in  ThoughtSpot    |
         |    GROUP    |     FALSE    |   FALSE  |    { no action taken }      |
-        |    GROUP    |     FALSE    |   TRUE   |  [red]REMOVE[/] from ThoughtSpot**  |
+        |    GROUP    |     FALSE    |   TRUE   |  [fg-error]REMOVE[/] from ThoughtSpot**  |
         +-------------+--------------+----------+-----------------------------+
 
-         * [yellow]UPDATE[/] includes GROUP reassignment, if applicable
+         * [fg-warn]UPDATE[/] includes GROUP reassignment, if applicable
         ** if --remove-deleted is not specified, default to { no action taken }
     """
     ts = ctx.obj.thoughtspot

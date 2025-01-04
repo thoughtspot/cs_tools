@@ -163,7 +163,7 @@ def config_delete(
     try:
         r = ts.api.v2.vcs_git_config_delete(cluster_level=cluster_level)
 
-        rich_console.print(f"[green]Deleted the configuration: {r}.[/]")
+        rich_console.print(f"[fg-success]Deleted the configuration: {r}.[/]")
 
     except HTTPStatusError as e:
         rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")

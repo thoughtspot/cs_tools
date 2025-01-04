@@ -60,8 +60,8 @@ def branches_commit(
             delete_aware=delete_aware,
         )
     except HTTPStatusError as e:
-        rich_console.print(f"[b red]Error creating the configuration: {e.response}.")
-        rich_console.print(f"[b red]{e.response.content}.")
+        rich_console.print(f"[fg-error]Error creating the configuration: {e.response}.")
+        rich_console.print(f"[fg-error]{e.response.content}.")
 
     rich_console.print(r.json())
 
@@ -95,8 +95,8 @@ def commits_search(
             record_size=record_size,
         )
     except HTTPStatusError as e:
-        rich_console.print(f"[b red]Error finding commits for  {metadata_id}: {e}.")
-        rich_console.print(f"[b red]{e.response.content}.")
+        rich_console.print(f"[fg-error]Error finding commits for  {metadata_id}: {e}.")
+        rich_console.print(f"[fg-error]{e.response.content}.")
 
     rich_console.print(r.json())
 
@@ -119,7 +119,7 @@ def commit_revert(
 
     valid_policies = ["PARTIAL", "ALL_OR_NONE"]
     if revert_policy not in valid_policies:
-        rich_console.log(f"[b red]Invalid revert policy: {revert_policy}.  Must be one of {', '.join(valid_policies)}")
+        rich_console.log(f"[fg-error]Invalid revert policy: {revert_policy}.  Must be one of {', '.join(valid_policies)}")
         raise typer.Exit(1)
 
     if org_override is not None:
@@ -139,8 +139,8 @@ def commit_revert(
             revert_policy=revert_policy,
         )
     except HTTPStatusError as e:
-        rich_console.print(f"[b red]Error reverting commit {commit_id}: {e.response}.")
-        rich_console.print(f"[b red]{e.response.content}.")
+        rich_console.print(f"[fg-error]Error reverting commit {commit_id}: {e.response}.")
+        rich_console.print(f"[fg-error]{e.response.content}.")
 
     rich_console.print(r.json())
 
@@ -163,8 +163,8 @@ def branches_validate(
     try:
         ts.api.v2.vcs_git_branches_validate(source_branch_name=source_branch, target_branch_name=target_branch)
     except HTTPStatusError as e:
-        rich_console.print(f"[b red]Error validating {source_branch} to {target_branch}: {e}.")
-        rich_console.print(f"[b red]{e.response.content}.")
+        rich_console.print(f"[fg-error]Error validating {source_branch} to {target_branch}: {e}.")
+        rich_console.print(f"[fg-error]{e.response.content}.")
 
     rich_console.print("[bold green]Validation successful.  Ok to deploy.")
 
@@ -195,8 +195,8 @@ def branches_deploy(
             deploy_policy=DeployPolicy.all_or_none if deploy_policy == "ALL_OR_NONE" else DeployPolicy.partial,
         )
     except HTTPStatusError as e:
-        rich_console.print(f"[b red]Error deploying: {e}.")
-        rich_console.print(f"[b red]{e.response.content}.")
+        rich_console.print(f"[fg-error]Error deploying: {e}.")
+        rich_console.print(f"[fg-error]{e.response.content}.")
 
     # An OK response doesn't mean the content was successful.
     results = r.json()
@@ -211,7 +211,7 @@ def branches_deploy(
         try:
             guids.append(_["file_name"].split(".")[0])
         except Exception as e:
-            rich_console.print(f"[b red]Error getting GUID for {_['file_name']}:  {e}")
+            rich_console.print(f"[fg-error]Error getting GUID for {_['file_name']}:  {e}")
         table.add_row(_["file_name"], _["status_code"], _["status_message"])
 
     rich_console.print(Align.center(table))
