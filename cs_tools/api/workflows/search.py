@@ -30,7 +30,9 @@ def _convert_compact_to_full(compact: list[Any], *, column_names: list[str]) -> 
     return full
 
 
-def _cast(data_rows: _types.TableRowsFormat, *, column_info: dict[str, _types.InferredDataType]) -> _types.TableRowsFormat:  # noqa: E501
+def _cast(
+    data_rows: _types.TableRowsFormat, *, column_info: dict[str, _types.InferredDataType]
+) -> _types.TableRowsFormat:
     """Cast data coming back from Search API to their intended column _types."""
     TS_TO_PY_TYPE_MAPPING: dict[_types.InferredDataType, type] = {
         "VARCHAR": str,

@@ -104,7 +104,7 @@ class RESTAPIClient(httpx.AsyncClient):
         Further reading:
             https://www.python-httpx.org/advanced/#event-hooks
         """
-        log_msg = f">>> HTTP {request.method} -> {request.url.path}" f"\n\t=== HEADERS ===\n{dict(request.headers)}"
+        log_msg = f">>> HTTP {request.method} -> {request.url.path}\n\t=== HEADERS ===\n{dict(request.headers)}"
 
         if request.url.params:
             log_msg += f"\n\t===  PARAMS ===\n{request.url.params}"
@@ -453,7 +453,9 @@ class RESTAPIClient(httpx.AsyncClient):
 
         headers = options.pop("headers", None)
         timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
-        return self.post("api/rest/2.0/security/metadata/fetch-permissions", headers=headers, timeout=timeout, json=options)  # noqa: E501
+        return self.post(
+            "api/rest/2.0/security/metadata/fetch-permissions", headers=headers, timeout=timeout, json=options
+        )
 
     # @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     # @_transport.CachePolicy.mark_cacheable
@@ -475,7 +477,7 @@ class RESTAPIClient(httpx.AsyncClient):
         }
 
         headers = options.pop("headers", None)
-        options["type"] = V2_TO_V1__types.get(api_object_type)
+        options["type"] = V2_TO_V1_TYPES.get(api_object_type)
         options["permissiontype"] = permission_type
 
         if "id" not in options:
@@ -495,7 +497,7 @@ class RESTAPIClient(httpx.AsyncClient):
                 assert all(isinstance(x, str) for x in batch), "expected all ids to be strings"
                 options["id"] = json.dumps(list(batch))
                 c = self.get("callosum/v1/tspublic/v1/security/metadata/permissions", headers=headers, params=options)
-                t = g.create_task(c, name=f"v1/security/metadata/permissions REQUEST #{idx+1}")
+                t = g.create_task(c, name=f"v1/security/metadata/permissions REQUEST #{idx + 1}")
                 tasks.append(t)
 
         data: _types.APIResult = {}

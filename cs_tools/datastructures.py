@@ -123,7 +123,9 @@ class ThoughtSpotInfo(_GlobalModel):
             data["is_orgs_enabled"] = data["__is_orgs_enabled__"]
 
         if overrides_info := data.get("__overrides_info__", {}):
-            data["is_iam_v2_enabled"] = overrides_info.get("oidcConfiguration.iamV2OIDCEnabled", {}).get("current", False)
+            data["is_iam_v2_enabled"] = overrides_info.get("oidcConfiguration.iamV2OIDCEnabled", {}).get(
+                "current", False
+            )
 
         return data
 

@@ -42,10 +42,12 @@ InferredDataType = Literal[
 # ==========
 # ThoughtSpot API input types
 # ==========
+# fmt: off
 APIObjectType = Literal[
     "LIVEBOARD", "ANSWER", "LOGICAL_TABLE", "LOGICAL_COLUMN", "CONNECTION", "TAG", "USER", "USER_GROUP",
     "LOGICAL_RELATIONSHIP", "INSGIHT_SPEC"
 ]
+# fmt: on
 PrincipalType = Literal["USER", "USER_GROUP"]
 ImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY", "PARTIAL_OBJECTS_ONLY"]
 ShareType = Literal["DEFINED", "EFFECTIVE"]

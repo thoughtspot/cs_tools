@@ -25,9 +25,9 @@ class ThoughtSpotSecurityApp(App):
         super().__init__()
         self.http = http
         self.compat_ts_version = ts_version
-        self.active_table:_types.APIResult | None = None
-        self.active_groups: list_types.APIResult] | None = None
-        self.active_table_security: list_types.APIResult] | None = None
+        self.active_table: _types.APIResult | None = None
+        self.active_groups: list[_types.APIResult] | None = None
+        self.active_table_security: list[_types.APIResult] | None = None
 
     def on_mount(self) -> None:
         self.switch_mode("splash")

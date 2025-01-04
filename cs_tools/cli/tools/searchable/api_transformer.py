@@ -17,9 +17,9 @@ from . import models
 log = logging.getLogger(__name__)
 
 
-def ts_cluster(data: SessionContext) ->_types.TableRowsFormat:
+def ts_cluster(data: SessionContext) -> _types.TableRowsFormat:
     """Rehsapes cs_tools.datastructures.SessionContext -> searchable.models.Cluster."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     reshaped = [
         models.Cluster.validated_init(
@@ -32,9 +32,9 @@ def ts_cluster(data: SessionContext) ->_types.TableRowsFormat:
     return reshaped
 
 
-def ts_org(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_org(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes orgs/search -> searchable.models.Org."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         reshaped.append(
@@ -49,9 +49,9 @@ def ts_org(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRo
     return reshaped
 
 
-def ts_user(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_user(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes users/search -> searchable.models.User."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     # DEV NOTE: @boonhapus, 2024/11/25
     # Users are unique within a cluster.
@@ -87,9 +87,9 @@ def ts_user(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableR
     return reshaped
 
 
-def ts_group(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_group(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes groups/search -> searchable.models.Group."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         for org in result.get("orgs", None) or [{"id": 0}]:
@@ -111,9 +111,9 @@ def ts_group(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.Table
     return reshaped
 
 
-def ts_org_membership(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_org_membership(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes users/search -> searchable.models.OrgMembership."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     # DEV NOTE: @boonhapus, 2024/11/25
     # Users are unique within a cluster and cannot be assigned multiple times.
@@ -144,9 +144,9 @@ def ts_org_membership(data: list_types.APIResult], *, cluster:_types.GUID) ->_ty
     return reshaped
 
 
-def ts_group_membership(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_group_membership(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes {groups|users}/search -> searchable.models.GroupMembership."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     # DEV NOTE: @boonhapus, 2024/11/25
     # Users are unique within a cluster.
@@ -188,9 +188,9 @@ def ts_group_membership(data: list_types.APIResult], *, cluster:_types.GUID) ->_
     return reshaped
 
 
-def ts_group_privilege(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_group_privilege(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes {groups|users}/search -> searchable.models.GroupPrivilege."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         for privilege in result["privileges"]:
@@ -205,9 +205,9 @@ def ts_group_privilege(data: list_types.APIResult], *, cluster:_types.GUID) ->_t
     return reshaped
 
 
-def ts_tag(data: list_types.APIResult], *, cluster:_types.GUID, current_org: int) ->_types.TableRowsFormat:
+def ts_tag(data: list[_types.APIResult], *, cluster: _types.GUID, current_org: int) -> _types.TableRowsFormat:
     """Reshapes {groups|users}/search -> searchable.models.Tag."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         reshaped.append(
@@ -226,9 +226,9 @@ def ts_tag(data: list_types.APIResult], *, cluster:_types.GUID, current_org: int
     return reshaped
 
 
-def ts_data_source(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_data_source(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes metadata/search?type=DATA_SOURCE -> searchable.models.DataSource."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         if result["metadata_type"] != "CONNECTION":
@@ -249,9 +249,9 @@ def ts_data_source(data: list_types.APIResult], *, cluster:_types.GUID) ->_types
     return reshaped
 
 
-def ts_metadata_object(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_metadata_object(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes metadata/search?type={LOGICAL_TABLE|ANSWER|LIVEBOARD} -> searchable.models.MetadataObject."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         if result["metadata_type"] not in ("LOGICAL_TABLE", "ANSWER", "LIVEBOARD"):
@@ -286,15 +286,15 @@ def ts_metadata_object(data: list_types.APIResult], *, cluster:_types.GUID) ->_t
 
 
 def ts_metadata_tml(
-    metadata_info: list_types.APIResult],
-    tml_info: list_types.APIResult],
+    metadata_info: list[_types.APIResult],
+    tml_info: list[_types.APIResult],
     edoc_format: str,
     *,
-    cluster:_types.GUID,
+    cluster: _types.GUID,
     org_id: int,
-) ->_types.TableRowsFormat:
+) -> _types.TableRowsFormat:
     """Reshapes metadata/search and metadata/tml/export -> searchable.models.MetadataTML."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in tml_info:
         # IGNORE ERRORS (which we already alerted about).
@@ -324,9 +324,9 @@ def ts_metadata_tml(
     return reshaped
 
 
-def ts_tagged_object(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_tagged_object(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes metadata/search?type={CONNECTION|LOGICAL_TABLE|ANSWER|LIVEBOARD} -> searchable.models.TaggedObject."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         for tag in result["metadata_header"]["tags"]:
@@ -341,9 +341,9 @@ def ts_tagged_object(data: list_types.APIResult], *, cluster:_types.GUID) ->_typ
     return reshaped
 
 
-def ts_metadata_column(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_metadata_column(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes metadata/search?type=LOGICAL_TABLE&include_details=True -> searchable.models.MetadataColumn."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         for column in result["metadata_detail"]["columns"]:
@@ -374,9 +374,9 @@ def ts_metadata_column(data: list_types.APIResult], *, cluster:_types.GUID) ->_t
     return reshaped
 
 
-def ts_column_synonym(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_column_synonym(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes metadata/search?type=LOGICAL_TABLE&include_details=True -> searchable.models.ColumnSynonym."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     # DEV NOTE: @boonhapus, 2024/11/25
     # The ThoughtSpot column settings UI exposes a freeform field for synonyms.
@@ -405,9 +405,9 @@ def ts_column_synonym(data: list_types.APIResult], *, cluster:_types.GUID) ->_ty
     return reshaped
 
 
-def ts_metadata_dependent(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
-    """Reshapes metadata/search?type=LOGICAL_COLUMN&include_dependent_objects=True -> searchable.models.MetadataObject."""
-    reshaped:_types.TableRowsFormat = []
+def ts_metadata_dependent(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
+    """Reshapes metadata/search?type=LOGICAL_COLUMN&include_dependent_objects=True -> searchable.models.MetadataObject."""  # noqa: E501
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         for dependents_info in result["dependent_objects"].values():
@@ -438,15 +438,15 @@ def ts_metadata_dependent(data: list_types.APIResult], *, cluster:_types.GUID) -
 
 
 def ts_metadata_permissions(
-    data: list_types.APIResult],
+    data: list[_types.APIResult],
     *,
     compat_ts_version: awesomeversion.AwesomeVersion,
-    compat_all_group_guids: set_types.GUID],
-    cluster:_types.GUID,
-    permission_type:_types.ShareType = "DEFINED",
-) ->_types.TableRowsFormat:
+    compat_all_group_guids: set[_types.GUID],
+    cluster: _types.GUID,
+    permission_type: _types.ShareType = "DEFINED",
+) -> _types.TableRowsFormat:
     """Reshapes security/metadata/fetch-permissions -> searchable.models.SharingAccess."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     for result in data:
         if compat_ts_version < "10.3.0":
@@ -497,16 +497,18 @@ def ts_metadata_permissions(
                                 "shared_to_group_guid": access["principal_id"] if is_group_share else None,
                                 "permission_type": permission_type,
                                 "share_mode": access["permission"],
-                                "share_type": "COLUMN_LEVEL_SECURITY" if is_column_level_security else "OBJECT_LEVEL_SECURITY",
+                                "share_type": "COLUMN_LEVEL_SECURITY"
+                                if is_column_level_security
+                                else "OBJECT_LEVEL_SECURITY",
                             }
                         )
 
     return reshaped
 
 
-def ts_bi_server(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_bi_server(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes /searchdata -> searchable.models.BIServer."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     # DEV NOTE: @boonhapus, 2024/11/25
     # THOUGHTSPOT SEARCH DATA API SEEMS TO HAVE ISSUES WITH TIMEZONES AND THAT
@@ -561,9 +563,9 @@ def ts_bi_server(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.T
     return reshaped
 
 
-def ts_audit_logs(data: list_types.APIResult], *, cluster:_types.GUID) ->_types.TableRowsFormat:
+def ts_audit_logs(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes logs/fetch -> searchable.models.AuditLogs."""
-    reshaped:_types.TableRowsFormat = []
+    reshaped: _types.TableRowsFormat = []
 
     # DEV NOTE: @boonhapus, 2024/11/25
     # THOUGHTSPOT SEARCH DATA API SEEMS TO HAVE ISSUES WITH TIMEZONES AND THAT

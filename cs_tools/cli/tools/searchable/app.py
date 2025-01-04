@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 app = AsyncTyper(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 
 
-def _ensure_external_mapping(tml:_types.TML, *, connection_info: dict[str, str]) ->_types.TML:
+def _ensure_external_mapping(tml: _types.TML, *, connection_info: dict[str, str]) -> _types.TML:
     """Remap TML object to match the external database."""
     if not isinstance(tml, Table):
         return tml
@@ -64,7 +64,7 @@ def _is_in_current_org(metadata_object, *, current_org: int) -> bool:
 @depends_on(thoughtspot=ThoughtSpot())
 def deploy(
     ctx: typer.Context,
-    cnxn_guid:_types.GUID = typer.Option(
+    cnxn_guid: _types.GUID = typer.Option(
         ...,
         "--connection-guid",
         help="If deploying to Falcon, use [fg-secondary]falcon[/], otherwise find your GUID in the Connection URL.",
@@ -85,7 +85,7 @@ def deploy(
     ),
     org_override: str = typer.Option(None, "--org", help="The Org identifier to deploy the SpotApp to."),
     export: custom_types.Directory = typer.Option(None, help="Download the TML of the SpotApp instead of deploying."),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """Deploy the Searchable SpotApp."""
     ts = ctx.obj.thoughtspot
 
@@ -122,7 +122,7 @@ def deploy(
 
         with tracker["CUSTOMIZE"]:
             HERE = pathlib.Path(__file__).parent
-            tmls: list_types.TML] = []
+            tmls: list[_types.TML] = []
 
             connection_info = {
                 "dialect": db_dialect,
@@ -195,7 +195,7 @@ def audit_logs(
     window_end: Literal["NOW", "TODAY_START_UTC", "TODAY_START_LOCAL"] = typer.Option(
         "NOW", help="how to track events through time"
     ),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """
     Extract audit logs from your ThoughtSpot platform.
 
@@ -224,7 +224,7 @@ def audit_logs(
 
     with px.WorkTracker("Fetching Audit Logs Data", tasks=TOOL_TASKS) as tracker:
         with tracker["COLLECT"]:
-            _: list_types.APIResult] = []
+            _: list[_types.APIResult] = []
 
             for days in range(last_k_days):
                 beg = utc_terminal_end - dt.timedelta(days=days + 1)
@@ -256,7 +256,7 @@ def bi_server(
     to_date: custom_types.Date = typer.Option(..., help="inclusive upper bound of rows to select from TS: BI Server"),
     org_override: str = typer.Option(None, "--org", help="The org to fetch history from"),
     compact: bool = typer.Option(True, "--compact / --full", help="If compact, add  [User Action] != {null} 'invalid'"),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """
     Extract usage statistics from your ThoughtSpot platform.
 
@@ -345,7 +345,7 @@ def metadata(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """
     Extract metadata from your ThoughtSpot platform.
 
@@ -384,7 +384,7 @@ def metadata(
     ]
 
     with px.WorkTracker("", tasks=TOOL_TASKS) as tracker:
-        with tracker["PREPARING"] as this_task:
+        with tracker["PREPARING"]:
             CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
 
             # FETCH ALL ORG IDs WE'LL NEED TO COLLECT FROM
@@ -410,11 +410,11 @@ def metadata(
         # LOOP THROUGH EACH ORG COLLECTING DATA
         for org in orgs:
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
-            seen_guids: dict_types.APIObjectType, set_types.GUID]] = collections.defaultdict(set)
-            seen_columns: list[list_types.GUID]] = []
-            seen_group_guids: set_types.GUID] = set()
+            seen_guids: dict[_types.APIObjectType, set[_types.GUID]] = collections.defaultdict(set)
+            seen_columns: list[list[_types.GUID]] = []
+            seen_group_guids: set[_types.GUID] = set()
 
-            with tracker["TS_ORG"] as this_task:
+            with tracker["TS_ORG"]:
                 if not ts.session_context.thoughtspot.is_orgs_enabled:
                     _ = [{"id": 0, "name": "ThoughtSpot", "description": "Your cluster is not orgs enabled."}]
                 else:
@@ -427,7 +427,7 @@ def metadata(
                 d = api_transformer.ts_org(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.Org.__tablename__, data=d)
 
-            with tracker["TS_USER"] as this_task:
+            with tracker["TS_USER"]:
                 c = workflows.paginator(ts.api.users_search, record_size=150_000, timeout=60 * 15)
                 _ = utils.run_sync(c)
 
@@ -443,7 +443,7 @@ def metadata(
                 d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.GroupMembership.__tablename__, data=d)
 
-            with tracker["TS_GROUP"] as this_task:
+            with tracker["TS_GROUP"]:
                 c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
                 _ = utils.run_sync(c)
 
@@ -458,7 +458,7 @@ def metadata(
                 d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.GroupMembership.__tablename__, data=d)
 
-            with tracker["TS_PRIVILEGE"] as this_task:
+            with tracker["TS_PRIVILEGE"]:
                 # TODO: ROLE->PRIVILEGE DATA.
                 # TODO: GROUP->ROLE DATA.
 
@@ -466,7 +466,7 @@ def metadata(
                 d = api_transformer.ts_group_privilege(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.GroupPrivilege.__tablename__, data=d)
 
-            with tracker["TS_TAG"] as this_task:
+            with tracker["TS_TAG"]:
                 c = ts.api.tags_search()
                 r = utils.run_sync(c)
                 _ = r.json()
@@ -475,8 +475,10 @@ def metadata(
                 d = api_transformer.ts_tag(data=_, cluster=CLUSTER_UUID, current_org=org["id"])
                 temp.dump(models.Tag.__tablename__, data=d)
 
-            with tracker["TS_METADATA"] as this_task:
-                c = workflows.metadata.fetch_all(metadata_types=["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"], http=ts.api)  # noqa: E501
+            with tracker["TS_METADATA"]:
+                c = workflows.metadata.fetch_all(
+                    metadata_types=["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"], http=ts.api
+                )
                 _ = utils.run_sync(c)
 
                 # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
@@ -496,10 +498,12 @@ def metadata(
                 d = api_transformer.ts_tagged_object(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.TaggedObject.__tablename__, data=d)
 
-            with tracker["TS_COLUMN"] as this_task:
+            with tracker["TS_COLUMN"]:
                 # USE include_hidden_objects=True BECAUSE HIDDEN COLUMNS ON A LOGICAL_TABLE AREN'T RETURNED WITHOUT IT.
                 g = {"LOGICAL_TABLE": seen_guids["LOGICAL_TABLE"]}
-                c = workflows.metadata.fetch(typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api)  # noqa: E501
+                c = workflows.metadata.fetch(
+                    typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api
+                )
                 _ = utils.run_sync(c)
 
                 # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
@@ -528,27 +532,36 @@ def metadata(
                 d = api_transformer.ts_column_synonym(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.ColumnSynonym.__tablename__, data=d)
 
-            with tracker["TS_DEPENDENT"] as this_task:
+            with tracker["TS_DEPENDENT"]:
                 g = {"LOGICAL_COLUMN": seen_columns}
-                c = workflows.metadata.fetch(typed_guids=g, include_dependent_objects=True, dependent_objects_record_size=-1, http=ts.api)  # noqa: E501
+                c = workflows.metadata.fetch(
+                    typed_guids=g, include_dependent_objects=True, dependent_objects_record_size=-1, http=ts.api
+                )
                 _ = utils.run_sync(c)
 
                 # DUMP DEPENDENT_OBJECT DATA
                 d = api_transformer.ts_metadata_dependent(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.DependentObject.__tablename__, data=d)
 
-            with tracker["TS_ACCESS"] as this_task:
+            with tracker["TS_ACCESS"]:
                 COMPAT_TS_VERSION = ts.session_context.thoughtspot.version
                 COMPAT_GUIDS = seen_group_guids
 
                 if include_column_access:
                     seen_guids["LOGICAL_COLUMN"] = seen_columns
 
-                c = workflows.metadata.permissions(typed_guids=seen_guids, compat_ts_version=COMPAT_TS_VERSION, http=ts.api)  # noqa: E501
+                c = workflows.metadata.permissions(
+                    typed_guids=seen_guids, compat_ts_version=COMPAT_TS_VERSION, http=ts.api
+                )
                 _ = utils.run_sync(c)
 
                 # DUMP COLUMN_SYNONYM DATA
-                d = api_transformer.ts_metadata_permissions(data=_, compat_ts_version=COMPAT_TS_VERSION, compat_all_group_guids=COMPAT_GUIDS, cluster=CLUSTER_UUID)  # noqa: E501
+                d = api_transformer.ts_metadata_permissions(
+                    data=_,
+                    compat_ts_version=COMPAT_TS_VERSION,
+                    compat_all_group_guids=COMPAT_GUIDS,
+                    cluster=CLUSTER_UUID,
+                )
                 temp.dump(models.SharingAccess.__tablename__, data=d)
 
             # INCREASE THE PROGRESS BAR SINCE WE'RE DONE WITH THIS ORG
@@ -561,11 +574,13 @@ def metadata(
             is_truncate_load_strategy = isinstance(syncer, DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
 
             for model in models.METADATA_MODELS:
-                for idx, rows in enumerate(temp.read_stream(tablename=model.__tablename__, batch=1_000_000), start=1):
+                streamer = temp.read_stream(tablename=model.__tablename__, batch=1_000_000)
+
+                for idx, rows in enumerate(streamer, start=1):
                     if is_truncate_load_strategy:
                         syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
 
-                    syncer.dump(model.__tablename__, data=[model.validated_init(**row).model_dump() for row in rows])
+                    syncer.dump(model.__tablename__, data=rows)
 
     return 0
 
@@ -582,7 +597,8 @@ def tml(
     strategy: Literal["DELTA", "SNAPSHOT"] = typer.Option(
         "DELTA",
         help=(
-            "SNAPSHOT fetches all objects, DELTA only fetches modified object since the last snapshot (this option only works with Database Syncers)"
+            "SNAPSHOT fetches all objects, DELTA only fetches modified object since the last snapshot (this option "
+            "only works with Database Syncers)"
         ),
     ),
     tml_format: Literal["JSON", "YAML"] = typer.Option("YAML", help="The data format to save the TML data in."),
@@ -593,7 +609,7 @@ def tml(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """..."""
     ts = ctx.obj.thoughtspot
 
@@ -618,7 +634,7 @@ def tml(
     ]
 
     with px.WorkTracker("", tasks=TOOL_TASKS) as tracker:
-        with tracker["PREPARING"] as this_task:
+        with tracker["PREPARING"]:
             CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
 
             # FETCH ALL ORG IDs WE'LL NEED TO COLLECT FROM
@@ -669,7 +685,9 @@ def tml(
                 c = utils.bounded_gather(*coros, max_concurrent=4)
                 _ = utils.run_sync(c)
 
-                d = api_transformer.ts_metadata_tml(metadata_info=d, tml_info=_, edoc_format=tml_format, cluster=CLUSTER_UUID, org_id=org["id"])  # noqa: E501
+                d = api_transformer.ts_metadata_tml(
+                    metadata_info=d, tml_info=_, edoc_format=tml_format, cluster=CLUSTER_UUID, org_id=org["id"]
+                )
                 temp.dump(models.MetadataTML.__tablename__, data=d)
 
             # INCREASE THE PROGRESS BAR SINCE WE'RE DONE WITH THIS ORG
@@ -680,11 +698,12 @@ def tml(
         with tracker["DUMP_DATA"]:
             # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
             is_truncate_load_strategy = isinstance(syncer, DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
+            streamer = temp.read_stream(tablename=models.MetadataTML.__tablename__, batch=1_000_000)
 
-            for idx, rows in enumerate(temp.read_stream(tablename=models.MetadataTML.__tablename__, batch=1_000_000), start=1):
+            for idx, rows in enumerate(streamer, start=1):
                 if is_truncate_load_strategy:
                     syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
 
-                syncer.dump(models.MetadataTML.__tablename__, data=[models.MetadataTML.validated_init(**row).model_dump() for row in rows])
+                syncer.dump(models.MetadataTML.__tablename__, data=rows)
 
     return 0

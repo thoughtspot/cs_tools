@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import inf as INFINITY
-from typing import Callable, Self, cast
+from typing import Callable, cast
 import asyncio
 import datetime as dt
 import logging
@@ -13,7 +13,7 @@ from rich.console import Console, Group, RenderableType
 from rich.progress import BarColumn, Task, TimeElapsedColumn
 from rich.table import Column, Table
 
-from cs_tools import utils
+from cs_tools import _compat, utils
 from cs_tools.cli.ux import RICH_CONSOLE
 
 log = logging.getLogger(__name__)
@@ -50,12 +50,12 @@ class WorkTask:
         self._prog_bar = BarColumn()
         self._prog_elasped = TimeElapsedColumn()
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> _compat.Self:
         self.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if task_is_skipped := (self.start_time is None):
+        if _TASK_IS_SKIPPED := (self.start_time is None):
             return
 
         self.stop()
@@ -91,6 +91,7 @@ class WorkTask:
     def start(self, total: float | None = INFINITY) -> None:
         """Start the task."""
         if self.started:
+            assert self.start_time is not None, "Task has not yet been started."
             self._previously_elapsed += (self.stop_time or self.get_time()) - self.start_time
             self.total = None if self.total == -1 else self.total
             self.stop_time = None

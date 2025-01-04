@@ -32,7 +32,7 @@ app = AsyncTyper(
 
     :sparkles: [fg-warn]All tools are provided as-is[/] :sparkles:
     :floppy_disk: [fg-error]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
-    """,
+    """,  # noqa: E501
     epilog=(
         f":bookmark: v{__version__} "
         f":scroll: [cyan][link={__project__.__docs__}]Documentation[/] "

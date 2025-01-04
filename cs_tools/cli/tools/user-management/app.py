@@ -79,8 +79,7 @@ def transfer(
             if tags or guids or metadata_types:
                 if not guids_to_transfer:
                     rich_console.log(
-                        f"No content found for [b blue]{from_username}[/] with [b blue]--tags[/] or "
-                        f"[b blue]--guids[/]"
+                        f"No content found for [b blue]{from_username}[/] with [b blue]--tags[/] or [b blue]--guids[/]"
                     )
                     raise typer.Exit(1)
 

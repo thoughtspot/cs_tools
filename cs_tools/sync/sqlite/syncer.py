@@ -100,6 +100,6 @@ class SQLite(DatabaseSyncer):
                 session=self.session,
                 data=data,
                 max_parameters=const.SQLITE_MAX_VARIABLES,
-           )
+            )
 
         self.session.commit()

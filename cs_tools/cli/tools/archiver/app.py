@@ -107,15 +107,17 @@ def identify(
         show_default=False,
         rich_help_panel="Syncer Options",
     ),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """
     Identify content which can be archived.
 
     \b
     :police_car_light: [fg-warn]Content owned by system level accounts ([fg-primary]tsadmin[/], [fg-primary]system[/], [fg-primary]etc[/].) will be ignored.[/] :police_car_light:
-    """
+    """  # noqa: E501
     if None not in (only_groups, ignore_groups):
-        RICH_CONSOLE.log("[fg-error]Select either [fg-secondary]--only-groups[/] or [fg-secondary]--include-groups[/], but not both!")
+        RICH_CONSOLE.log(
+            "[fg-error]Select either [fg-secondary]--only-groups[/] or [fg-secondary]--include-groups[/], but not both!"
+        )
         return 1
 
     ts = ctx.obj.thoughtspot
@@ -219,7 +221,7 @@ def identify(
             this_task.total = len(all_metadata)
             STALE_MODIFICATION_DAYS = dt.timedelta(days=recent_modified)
 
-            filtered:_types.TableRowsFormat = []
+            filtered: _types.TableRowsFormat = []
 
             for metadata_object in all_metadata:
                 # DEV NOTE: @boonhapus, 2024/11/25
@@ -356,7 +358,7 @@ def identify(
 def untag(
     ctx: typer.Context,
     tag_name: str = typer.Option(_DEFAULT_TAG_NAME, "--tag", help="case sensitive name to tag stale objects with"),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """Remove content with the identified --tag."""
     ts = ctx.obj.thoughtspot
 
@@ -408,7 +410,7 @@ def remove(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """
     Remove objects from the ThoughtSpot platform.
 
@@ -430,7 +432,9 @@ def remove(
 
     with px.WorkTracker("Removing Stale Objects", tasks=TOOL_TASKS) as tracker:
         with tracker["GATHER_METADATA"]:
-            c = workflows.metadata.fetch_all(metadata_types=["ANSWER", "LIVEBOARD"], tag_identifiers=[tag_name], http=ts.api)  # noqa: E501
+            c = workflows.metadata.fetch_all(
+                metadata_types=["ANSWER", "LIVEBOARD"], tag_identifiers=[tag_name], http=ts.api
+            )
             d = utils.run_sync(c)
 
             filtered = [
@@ -547,7 +551,9 @@ def remove(
                 coros: list[Coroutine] = []
 
                 for metadata_object in filtered:
-                    c = workflows.metadata.tml_export(guid=metadata_object["guid"], edoc_format="YAML", directory=directory, http=ts.api)  # noqa: E501
+                    c = workflows.metadata.tml_export(
+                        guid=metadata_object["guid"], edoc_format="YAML", directory=directory, http=ts.api
+                    )
                     coros.append(c)
 
                 c = utils.bounded_gather(*coros, max_concurrent=4)

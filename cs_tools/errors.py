@@ -66,7 +66,9 @@ class InsufficientPrivileges(CSToolsError):
     Raised when the User cannot perform an action in ThoughtSpot.
     """
 
-    def __init__(self, *, user: datastructures.UserInfo, service: str, required_privileges: list[_types.GroupPrivilege]):
+    def __init__(
+        self, *, user: datastructures.UserInfo, service: str, required_privileges: list[_types.GroupPrivilege]
+    ):
         self.user = user
         self.service = service
         self.required_privileges = required_privileges

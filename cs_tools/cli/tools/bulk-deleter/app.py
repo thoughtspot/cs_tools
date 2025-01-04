@@ -40,7 +40,7 @@ def _tick_tock(task: px.WorkTask) -> None:
 @depends_on(thoughtspot=ThoughtSpot())
 def downstream(
     ctx: typer.Context,
-    guid:_types.GUID = typer.Option(..., help="guid of the object to delete dependents of"),
+    guid: _types.GUID = typer.Option(..., help="guid of the object to delete dependents of"),
     syncer: Syncer = typer.Option(
         None,
         click_type=custom_types.Syncer(models=[models.DeleterReport]),
@@ -60,7 +60,7 @@ def downstream(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """
     Delete all downstream dependencies of an object.
 
@@ -165,11 +165,13 @@ def downstream(
             else:
                 this_task.total = len(all_metadata)
 
-                async def _download_and_advance(guid:_types.GUID) -> None:
+                async def _download_and_advance(guid: _types.GUID) -> None:
                     await workflows.metadata.tml_export(guid=guid, edoc_format="YAML", directory=directory, http=ts.api)
                     this_task.advance(step=1)
 
-                c = utils.bounded_gather(*(_download_and_advance(guid=_["guid"]) for _ in all_metadata), max_concurrent=4)
+                c = utils.bounded_gather(
+                    *(_download_and_advance(guid=_["guid"]) for _ in all_metadata), max_concurrent=4
+                )
                 d = utils.run_sync(c)
 
         if export_only:
@@ -178,9 +180,9 @@ def downstream(
         with tracker["DELETING"] as this_task:
             this_task.total = len(all_metadata)
 
-            guids_to_delete: set_types.GUID] = {metadata_object["guid"] for metadata_object in all_metadata}
+            guids_to_delete: set[_types.GUID] = {metadata_object["guid"] for metadata_object in all_metadata}
 
-            async def _delete_and_advance(guid:_types.GUID) -> None:
+            async def _delete_and_advance(guid: _types.GUID) -> None:
                 try:
                     r = await ts.api.metadata_delete(guid=guid)
                     r.raise_for_status()
@@ -221,7 +223,7 @@ def from_tabular(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
-) ->_types.ExitCode:
+) -> _types.ExitCode:
     """
     Remove metadata from ThoughtSpot.
 
@@ -262,11 +264,13 @@ def from_tabular(
             else:
                 this_task.total = len(all_metadata)
 
-                async def _download_and_advance(guid:_types.GUID) -> None:
+                async def _download_and_advance(guid: _types.GUID) -> None:
                     await workflows.metadata.tml_export(guid=guid, edoc_format="YAML", directory=directory, http=ts.api)
                     this_task.advance(step=1)
 
-                c = utils.bounded_gather(*(_download_and_advance(guid=_["guid"]) for _ in all_metadata), max_concurrent=4)
+                c = utils.bounded_gather(
+                    *(_download_and_advance(guid=_["guid"]) for _ in all_metadata), max_concurrent=4
+                )
                 _ = utils.run_sync(c)
 
         if export_only:
@@ -275,9 +279,9 @@ def from_tabular(
         with tracker["DELETING"] as this_task:
             this_task.total = len(all_metadata)
 
-            guids_to_delete: set_types.GUID] = {metadata_object["guid"] for metadata_object in all_metadata}
+            guids_to_delete: set[_types.GUID] = {metadata_object["guid"] for metadata_object in all_metadata}
 
-            async def _delete_and_advance(guid:_types.GUID) -> None:
+            async def _delete_and_advance(guid: _types.GUID) -> None:
                 try:
                     r = await ts.api.metadata_delete(guid=guid)
                     r.raise_for_status()

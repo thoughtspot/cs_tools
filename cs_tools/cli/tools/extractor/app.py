@@ -28,7 +28,7 @@ def _noop(ctx: typer.Context) -> None:
 @depends_on(thoughtspot=ThoughtSpot())
 def search(
     ctx: typer.Context,
-    identifier:_types.ObjectIdentifier = typer.Option(..., help="name or guid of the dataset to extract data from"),
+    identifier: _types.ObjectIdentifier = typer.Option(..., help="name or guid of the dataset to extract data from"),
     search_tokens: str = typer.Option(..., help="search terms to issue against the dataset"),
     syncer: Syncer = typer.Option(
         ...,

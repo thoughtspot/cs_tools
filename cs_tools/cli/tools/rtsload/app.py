@@ -42,10 +42,10 @@ def status(
     with rich_console.status("[bold green]Waiting for data load to complete.."):
         data = ts.tsload.status(cycle_id, wait_for_complete=True)
         rich_console.print(
-            f'\nCycle ID: {data["cycle_id"]} ({data["status"]["code"]})'
-            f'\nStage: {data["internal_stage"]}'
-            f'\nRows written: {data["rows_written"]}'
-            f'\nIgnored rows: {data["ignored_row_count"]}'
+            f"\nCycle ID: {data['cycle_id']} ({data['status']['code']})"
+            f"\nStage: {data['internal_stage']}"
+            f"\nRows written: {data['rows_written']}"
+            f"\nIgnored rows: {data['ignored_row_count']}"
         )
 
     # if int(data['ignored_row_count']) > 0:
@@ -58,10 +58,10 @@ def status(
     #     bad_records.dump(fp, data=data)
 
     if data["status"]["code"] == "LOAD_FAILED":
-        rich_console.print(f'\nFailure reason:\n  [red]{data["status"]["message"]}[/]')
+        rich_console.print(f"\nFailure reason:\n  [red]{data['status']['message']}[/]")
 
     if data.get("parsing_errors", False):
-        rich_console.print(f'[red]{data["parsing_errors"]}')
+        rich_console.print(f"[red]{data['parsing_errors']}")
 
 
 @app.command(dependencies=[thoughtspot])

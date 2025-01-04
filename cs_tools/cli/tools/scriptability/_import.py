@@ -721,7 +721,7 @@ def _add_tags(ts: ThoughtSpot, objects: list[TMLImportResponse], tags: list[str]
         types = []
         for _ in objects:
             ids.append(_.guid)
-           _types.append(_.metadata_object_type)
+            types.append(_.metadata_object_type)
         if ids:  # might all be errors
             log.info(f"Adding tags {tags} to {ids}")
             try:

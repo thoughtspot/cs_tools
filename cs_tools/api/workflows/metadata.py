@@ -187,7 +187,9 @@ async def permissions(
                     if isinstance(guid, list):
                         permission_options["id"] = guid
 
-                    c = http.v1_security_metadata_permissions(guid="", api_object_type=metadata_type, **permission_options)
+                    c = http.v1_security_metadata_permissions(
+                        guid="", api_object_type=metadata_type, **permission_options
+                    )
                 # //
                 else:
                     permission_options["timeout"] = FIFTEEN_MINUTES

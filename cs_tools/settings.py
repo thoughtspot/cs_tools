@@ -23,8 +23,7 @@ import pydantic
 import rich
 import toml
 
-from cs_tools import __project__, __version__, _types, utils, validators
-from cs_tools._compat import Self
+from cs_tools import __project__, __version__, _compat, _types, utils, validators
 from cs_tools.datastructures import ExecutionEnvironment, _GlobalModel, _GlobalSettings
 from cs_tools.updater import cs_tools_venv
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
@@ -98,7 +97,7 @@ class MetaConfig(_GlobalModel):
         return data
 
     @classmethod
-    def load(cls) -> Self:
+    def load(cls) -> _compat.Self:
         """Read the meta-config."""
         app_dir = cs_tools_venv.base_dir
 

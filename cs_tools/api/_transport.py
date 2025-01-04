@@ -137,7 +137,7 @@ class CachePolicy:
         assert self._cnxn is not None, "Caching database is not setup."
 
         s = r.status_code
-        h = json.dumps([(k, v) for k, v in r.headers.raw], default=str).encode("utf-8")  # noqa: C416
+        h = json.dumps([(k, v) for k, v in r.headers.raw], default=str).encode("utf-8")
         d = b64.b64encode(r.content).decode("ascii")
 
         # INSERT ... VALUES

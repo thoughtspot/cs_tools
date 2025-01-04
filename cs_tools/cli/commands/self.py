@@ -39,7 +39,7 @@ def info(
     if platform.system() == "Windows":
         source = f"{pathlib.Path(sys.executable).parent.joinpath('Activate.ps1')}"
     else:
-        source = f"source \"{pathlib.Path(sys.executable).parent.joinpath('activate')}\""
+        source = f'source "{pathlib.Path(sys.executable).parent.joinpath("activate")}"'
 
     text = (
         f"\n       [b blue]Info snapshot[/] taken on [b green]{dt.datetime.now(tz=dt.timezone.utc).date()}[/]"
