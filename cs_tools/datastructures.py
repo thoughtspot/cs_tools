@@ -38,6 +38,10 @@ class _GlobalModel(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(**_COMMON_MODEL_CONFIG)
 
+    @pydantic.model_serializer(mode="wrap")
+    def _ignore_extras(self, handler, **kw) -> dict[str, Any]:
+        return {k: v for k, v in handler(self).items() if k in self.model_fields}
+
     @pydantic.field_serializer("*", when_used="json")
     @classmethod
     def global_serialization_defaults(cls, v: Any):
