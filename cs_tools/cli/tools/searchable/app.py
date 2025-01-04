@@ -590,7 +590,7 @@ def metadata(
 def tml(
     ctx: typer.Context,
     org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
-    metadata_types: Literal["CONNECTION", "MODEL", "LIVEBOARD", "__ALL__"] = typer.Option(
+    metadata_type: Literal["MODEL", "LIVEBOARD", "__ALL__"] = typer.Option(
         ...,
         help="The type of TML to export, if not provided, then fetch all of the supported_types.",
     ),
@@ -613,12 +613,10 @@ def tml(
     """..."""
     ts = ctx.obj.thoughtspot
 
-    metadata_types = ["LOGICAL_TABLE", "LIVEBOARD", "ANSWER"]
-
     temp = SQLite(
         database_path=ts.config.temp_dir / "temp.db",
         pragma_speedy_inserts=True,
-        models=models.METADATA_MODELS,
+        models=[models.MetadataTML],
         load_strategy="UPSERT",
     )
 
@@ -658,10 +656,23 @@ def tml(
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
 
             with tracker["TS_METADATA"]:
-                c = workflows.metadata.fetch_all(metadata_types=metadata_types, http=ts.api)
+                CLI_TYPES_TO_API_TYPES = {
+                    "ALL": ["LOGICAL_TABLE", "LIVEBOARD"],
+                    "MODEL": ["LOGICAL_TABLE"],
+                    "LIVEBOARD": ["LIVEBOARD"],
+                }
+
+                api_types = CLI_TYPES_TO_API_TYPES.get(metadata_type.upper(), [metadata_type.upper()])
+                c = workflows.metadata.fetch_all(metadata_types=api_types, http=ts.api)
                 _ = utils.run_sync(c)
 
-                d = api_transformer.ts_metadata_object(data=_, cluster=CLUSTER_UUID)
+                # DISCARD OBJECTS WHICH ARE NOT MODELS/WORKSHEETS.
+                d = [
+                    metadata_object
+                    for metadata_object in api_transformer.ts_metadata_object(data=_, cluster=CLUSTER_UUID)
+                    if metadata_object["object_type"] == "LIVEBOARD"
+                    or metadata_object["object_subtype"] in ("MODEL", "WORKSHEET")
+                ]
 
                 if strategy == "DELTA" and isinstance(syncer, DatabaseSyncer):
                     q = sa.text(f"""SELECT MAX(modified) AS latest_dt FROM {models.MetadataTML.__tablename__}""")
