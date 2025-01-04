@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Union
+from typing import Literal, Union
 import logging
 import pathlib
 
@@ -8,9 +8,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pydantic
 
-from cs_tools.sync.base import Syncer
-
 from cs_tools import _types
+from cs_tools.sync.base import Syncer
 
 log = logging.getLogger(__name__)
 

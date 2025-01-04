@@ -6,9 +6,9 @@ import pathlib
 
 import sqlalchemy as sa
 
+from cs_tools import _types
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
-from cs_tools import _types
 
 from . import compiler  # noqa: F401
 

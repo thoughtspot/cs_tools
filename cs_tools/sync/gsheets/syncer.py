@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 import logging
 import pathlib
 
 import gspread
 import pydantic
 
+from cs_tools import _types
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import Syncer
-
-from cs_tools import _types
 
 log = logging.getLogger(__name__)
 

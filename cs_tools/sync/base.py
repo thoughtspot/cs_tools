@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import Any, Literal, Optional
 import functools as ft
 import importlib.util
 import logging
@@ -16,7 +16,6 @@ import sqlmodel
 from cs_tools import _types, errors, utils
 from cs_tools.datastructures import ValidatedSQLModel, _GlobalModel, _GlobalSettings
 from cs_tools.updater._updater import cs_tools_venv
-
 
 log = logging.getLogger(__name__)
 _registry: set[str] = set()

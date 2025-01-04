@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 import logging
 import pathlib
 import time
@@ -9,7 +9,7 @@ import httpx
 import pydantic
 import sqlalchemy as sa
 
-from cs_tools import errors
+from cs_tools import _types, errors
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 from cs_tools.thoughtspot import ThoughtSpot
@@ -18,8 +18,6 @@ from . import (
     compiler,  # noqa: F401
     utils,
 )
-
-from cs_tools import _types
 
 log = logging.getLogger(__name__)
 

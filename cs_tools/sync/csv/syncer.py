@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import Any, Literal, Union
 import csv
 import logging
 import pathlib
 
 import pydantic
 
-from cs_tools import utils
+from cs_tools import _types, utils
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import Syncer
-
-from cs_tools import _types
 
 log = logging.getLogger(__name__)
 

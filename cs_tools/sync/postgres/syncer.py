@@ -4,9 +4,9 @@ from typing import Optional
 import logging
 import pathlib
 
+from cs_tools import _types
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
-from cs_tools import _types
 import pydantic
 import sqlalchemy as sa
 import sqlmodel

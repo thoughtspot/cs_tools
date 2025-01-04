@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import logging
 import pathlib
 
 import sqlalchemy as sa
 
-from cs_tools.sync.base import DatabaseSyncer
-
 from cs_tools import _types
+from cs_tools.sync.base import DatabaseSyncer
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +31,7 @@ class Mock(DatabaseSyncer):
 
     def sql_query_to_log(self, query: sa.schema.ExecutableDDLElement, *_multiparams, **_params):
         """Convert a SQL query into a string."""
-        compiled = query.compile(dialect=self.engine.dialect)  # type: ignore[attr-defined]
+        compiled = query.compile(dialect=self.engine.dialect)
         log.info(f"\n{compiled.string.strip()}\n")
 
     def __repr__(self):
@@ -45,5 +43,5 @@ class Mock(DatabaseSyncer):
     def load(self, tablename: str):
         pass
 
-    def dump(self, tablename: str, *, data: _types.TableRowsFormat)::
+    def dump(self, tablename: str, *, data: _types.TableRowsFormat):
         pass

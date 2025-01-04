@@ -332,7 +332,11 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def users_search(
-        self, guid: Optional[_types.ObjectIdentifier] = None, record_offset: int = 0, record_size: int = 10, **options: Any
+        self,
+        guid: Optional[_types.ObjectIdentifier] = None,
+        record_offset: int = 0,
+        record_size: int = 10,
+        **options: Any,
     ) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot users."""
         if guid is not None:
@@ -362,7 +366,11 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def groups_search(
-        self, guid: Optional[_types.ObjectIdentifier] = None, record_offset: int = 0, record_size: int = 10, **options: Any
+        self,
+        guid: Optional[_types.ObjectIdentifier] = None,
+        record_offset: int = 0,
+        record_size: int = 10,
+        **options: Any,
     ) -> Awaitable[httpx.Response]:
         """Get a list of ThoughtSpot groups."""
         if guid is not None:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Union
+from typing import Union
 import logging
 import pathlib
 
@@ -9,12 +9,11 @@ from sqlalchemy.dialects.sqlite import insert
 import pydantic
 import sqlalchemy as sa
 
+from cs_tools import _types
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 
 from . import const
-
-from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +55,7 @@ class SQLite(DatabaseSyncer):
     def __repr__(self):
         return f"<SQLiteSyncer conn_string='{self.engine.url}'>"
 
-    def read_stream(self, tablename: str, *, batch: int = 100_000) -> Iterator[TableRows]:
+    def read_stream(self, tablename: str, *, batch: int = 100_000) -> Iterator[_types.TableRowsFormat]:
         """Read rows from a SQLite database."""
         table = self.metadata.tables[tablename]
 

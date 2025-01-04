@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import Any, Literal, Optional
 import logging
 import pathlib
 import uuid
@@ -11,11 +11,9 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import __version__
+from cs_tools import __version__, _types
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
-
-from cs_tools import _types
 
 log = logging.getLogger(__name__)
 

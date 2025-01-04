@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 import datetime as dt
 import json
 import logging
@@ -8,9 +8,8 @@ import pathlib
 
 import pydantic
 
-from cs_tools.sync.base import Syncer
-
 from cs_tools import _types
+from cs_tools.sync.base import Syncer
 
 log = logging.getLogger(__name__)
 

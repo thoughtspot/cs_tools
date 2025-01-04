@@ -11,9 +11,9 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
+from cs_tools import _types
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
-from cs_tools import _types
 
 log = logging.getLogger(__name__)
 
