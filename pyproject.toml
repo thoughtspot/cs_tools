@@ -90,7 +90,7 @@ offline = [
     "maturin",
 
     # CS Tools Build Dependencies
-    "cs_tools[cli]",
+    # "cs_tools[cli]",
 ]
 dev = [
     # CS Tools CLI
@@ -134,6 +134,7 @@ path = "cs_tools/__project__.py"
 setup = [
     "pre-commit install",
     "mypy --install-types --non-interactive",
+    "uv run python {root:}/cs_tools/updater/_bootstrapper.py --dev --reinstall"
 ]
 test = "pytest"
 clean = "vulture --min-confidence 100"
