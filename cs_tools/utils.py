@@ -16,7 +16,6 @@ import itertools as it
 import logging
 import pathlib
 import sys
-import threading
 import zipfile
 import zlib
 
@@ -239,17 +238,6 @@ def create_dynamic_model(__tablename__: str, *, sample_row: dict[str, Any]) -> t
     Model = pydantic.create_model(__tablename__, __base__=SQLModel, __cls_kwargs__={"table": True}, **field_definitions)  # type: ignore[call-overload]
 
     return Model
-
-
-class ExceptedThread(threading.Thread):
-    """For background threads: if errors, use log.debug instead of log.warning."""
-
-    def run(self) -> None:
-        try:
-            super().run()
-
-        except Exception:
-            log.debug(f"Something went wrong in {self}", exc_info=True)
 
 
 def make_zip_archive(directory: pathlib.Path, zipfile_path: pathlib.Path, **zipfile_options) -> None:
