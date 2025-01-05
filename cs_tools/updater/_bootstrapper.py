@@ -190,7 +190,7 @@ def cli():
             assert (_PROJ_ROOT / "pyproject.toml").exists(), "This should only be run within a Development Environment."
             where = _PROJ_ROOT.as_posix()
         elif args.offline_mode:
-            wheel = next(pathlib.Path(__file__).parent.glob("cs_tools-*.whl"))
+            wheel = next(p for p in pathlib.Path(__file__).parent.glob("cs_tools-*") if p.suffix in (".whl", ".zip"))
             where = wheel.as_posix()
         elif args.beta:
             _LOG.info("Installing CS Tools from ref {p}{tag}{x}.".format(p=_PURPLE, tag=args.beta, x=_RESET))
