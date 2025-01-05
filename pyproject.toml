@@ -62,6 +62,10 @@ repository = "https://github.com/thoughtspot/cs_tools"
 bug_tracker = "https://github.com/thoughtspot/cs_tools/issues"
 documentation = "https://thoughtspot.github.io/cs_tools/"
 
+[project.scripts]
+cs_tools = "cs_tools.__main__:run"
+cstools = "cs_tools.__main__:run"
+
 [project.optional-dependencies]
 cli = [
     # PIN THESE DEPENDENCIES EXPLICITLY SO WE CAN ENSURE THEY WORK ACROSS ENVIRONMENTS
@@ -121,8 +125,6 @@ docs = [
 [tool.hatch.envs.default.scripts]
 # https://hatch.pypa.io/latest/how-to/environment/select-installer/#enabling-uv
 installer = "uv"
-cs_tools = "cs_tools.cli.commands.main:run"
-cstools = "cs_tools.cli.commands.main:run"
 
 [tool.hatch.version]
 path = "cs_tools/__project__.py"
