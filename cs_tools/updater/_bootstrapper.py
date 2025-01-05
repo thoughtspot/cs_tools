@@ -186,8 +186,12 @@ def cli():
 
         if args.dev:
             _LOG.info("Installing locally using the development environment.")
-            where = __project_root__ = pathlib.Path(__file__).parent.parent.parent
-            assert (where / "pyproject.toml").exists(), "This should only be run within a Development Environment."
+            _PROJ_ROOT = pathlib.Path(__file__).parent.parent.parent
+            assert (_PROJ_ROOT / "pyproject.toml").exists(), "This should only be run within a Development Environment."
+            where = _PROJ_ROOT.as_posix()
+        elif args.offline_mode:
+            wheel = next(pathlib.Path(__file__).parent.glob("cs_tools-*.whl"))
+            where = wheel.as_posix()
         elif args.beta:
             _LOG.info("Installing CS Tools from ref {p}{tag}{x}.".format(p=_PURPLE, tag=args.beta, x=_RESET))
             where = "https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(tag=args.beta)
