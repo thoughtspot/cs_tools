@@ -160,9 +160,6 @@ def cli():
             )
         )
     )
-    
-    if args.offline_mode:
-        args.offline_mode = pathlib.Path(__file__).parent
 
     try:
         CSToolsVenv = ensure_import_cs_tools_venv(ref=args.beta)
@@ -185,12 +182,12 @@ def cli():
             reset_venv=args.reinstall,
             offline_index=pathlib.Path(__file__).parent if args.offline_mode else None,
             proxy=args.proxy,
-            register_venv_path=True,
         )
 
         if args.dev:
             _LOG.info("Installing locally using the development environment.")
-            where = pathlib.Path(__file__).parent.parent.parent.as_posix()
+            where = __project_root__ = pathlib.Path(__file__).parent.parent.parent
+            assert (where / "pyproject.toml").exists(), "This should only be run within a Development Environment."
         elif args.beta:
             _LOG.info("Installing CS Tools from ref {p}{tag}{x}.".format(p=_PURPLE, tag=args.beta, x=_RESET))
             where = "https://github.com/thoughtspot/cs_tools/archive/{tag}.zip".format(tag=args.beta)
@@ -334,9 +331,6 @@ class ColorSupportedFormatter(logging.Formatter):
     skip_common_time: bool  [default: True]
       whether or not to repeat the same time format for each line
 
-    indent_amount: int  [default: 2]
-      number of spaces to indent child messages by
-
     **passthru
       keywords to send to logging.Formatter
     """
@@ -407,11 +401,8 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
 
     Parameters
     ----------
-    directory: pathlib.Path
-      base directory to write the logfile to
-
-    prefix: str
-      filename identifier, this will have a random suffix attached
+    filename: pathlib.Path
+      name of the file to write logs to
 
     **passthru
       keywords to send to logging.FileHandler
@@ -430,6 +421,8 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
 
         for prior_record in self._buffer:
             super().emit(prior_record)
+        
+        self._buffer.clear()
 
     def emit(self, record):
         """Conditionally emit/store a line based on presence of any errors."""
@@ -475,7 +468,6 @@ def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
     import pathlib
 
     HERE = pathlib.Path(__file__).parent
-    REPO_BASE = HERE.parent.parent
     UPDATER_PY = HERE / "_updater.py"
 
     # DOWNLOAD IT FROM GITHUB.
@@ -483,7 +475,7 @@ def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
         _LOG.info("Missing '{py}', downloading from GitHub".format(py=UPDATER_PY))
 
         base = "https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        endp = base.format(owner="thoughtspot", repo="cs_tools", path=UPDATER_PY.relative_to(REPO_BASE))
+        endp = base.format(owner="thoughtspot", repo="cs_tools", path="cs_tools/updater/_updater.py")
 
         if ref is not None:
             endp += "?ref={ref}".format(ref=ref)
@@ -497,7 +489,7 @@ def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
         assert isinstance(data, bytes), "Github API returned invalid data for file download:\n{d!r}".format(d=data)
 
         # FETCH THE FILE ITSELF.
-        UPDATER_PY.write_text(data.decode())
+        UPDATER_PY.write_bytes(data)
         _LOG.info("Downloaded as '{py}'".format(py=UPDATER_PY))
 
     try:
@@ -525,7 +517,7 @@ def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
         
         raise
     finally:
-        sys.path.insert(0, pathlib.Path(__file__).parent.as_posix())
+        sys.path.remove(HERE.as_posix())
 
     return CSToolsVenv
 
@@ -680,7 +672,6 @@ def main():
 
     except Exception as e:
         disk_handler = next(h for h in _LOG.root.handlers if isinstance(h, InMemoryUntilErrorHandler))
-        disk_handler.drain_buffer()
         _LOG.debug("Error found: {err}".format(err=e), exc_info=True)
         _LOG.warning(
             "Unexpected error in bootstrapper, see {b}{logfile}{x} for details..".format(

@@ -279,9 +279,15 @@ class CSToolsVenv(venv.EnvBuilder):
         _LOG.debug("Freezing CS Tools venv > requirements-freeze.txt")
         reqs_txt = output_dir.joinpath("requirements-freeze.txt")
         rc = self.run(self.python.as_posix(), "-m", "uv", "pip", "freeze", "--exclude-editable")
-        # SPLIT OFF THE FIRST LINE BECAUSE WE ARE EXECUTING `uv` FROM OUTSIDE OF THE VIRTUAL ENVIRONMENT, WHICH
-        # GENERATES A HEADER ... Using Python 3.12.3 environment at: <PATH>
-        reqs_txt.write_bytes(b"\n".join(line for line in rc.stdout.split(b"\n\n")[1:]))
+        reqs_txt.write_bytes(
+            b"\n".join(
+                line
+                for line in rc.stdout.split(b"\n\n")
+                # IGNORE THE FIRST LINE WHEN WE ARE EXECUTING `uv` FROM OUTSIDE OF THE VIRTUAL ENVIRONMENT, WHICH
+                # GENERATES A HEADER ... Using Python 3.12.3 environment at: <PATH>
+                if not line.startswith("Using Python ")
+            )
+        )
 
         # fmt: off
         # NOW USE PIP (NOT UV) TO DOWNLOAD THE PACKAGES
