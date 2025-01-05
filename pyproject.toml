@@ -63,8 +63,8 @@ bug_tracker = "https://github.com/thoughtspot/cs_tools/issues"
 documentation = "https://thoughtspot.github.io/cs_tools/"
 
 [project.scripts]
-cs_tools = "cs_tools.__main__:run"
-cstools = "cs_tools.__main__:run"
+cs_tools = "cs_tools.cli.commands.main:run"
+cstools = "cs_tools.cli.commands.main:run"
 
 [project.optional-dependencies]
 cli = [
