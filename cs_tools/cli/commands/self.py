@@ -140,18 +140,21 @@ def _make_offline_distributable(
 
     # FETCH THE VERSION TO INSTALL.
     ref = beta if beta is not None else get_latest_cs_tools_release().get("tag_name", f"v{__version__}")
-    where = f"https://github.com/thoughtspot/cs_tools/archive/{ref}.zip"
 
-    # ENSURE WE HAVE THE BUILD PACKAGES INSTALLED.
-    cs_tools_venv.install(f"cs_tools[offline] @ {where}", "--no-cache", raise_if_stderr=True)
+    # fmt: off
+    cs_tools_venv.run(
+        cs_tools_venv.python.as_posix(), "-m", "pip", "download",
+        f"cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/{ref}.zip",
+        "--dest", directory.as_posix(),
+        raise_if_stderr=True,
+    )
+    # fmt: on
+
+    # CREATE A ZIP / WHEEL OF OURSELVES.
+    next(directory.glob(f"{ref}*.zip")).rename(directory / f"cs_tools-{ref}.zip")
 
     # GENERATE THE DIRECTORY OF DEPENDENCIES.
     cs_tools_venv.make_offline_distribution(output_dir=directory, platform=platform, python_version=python_version)
-
-    # CREATE A WHEEL OF OURSELVES.
-    cs_tools_venv.run(
-        cs_tools_venv.python.as_posix(), "-m", "hatch", "build", "--target", "wheel", directory.as_posix()
-    )
 
     # COPY THE BOOTSTRAPPER AND UPDATER SCRIPTS
     shutil.copyfile(updater._updater.__file__, directory / "_updater.py")

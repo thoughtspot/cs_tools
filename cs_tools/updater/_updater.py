@@ -30,6 +30,10 @@ class CSToolsVenv(venv.EnvBuilder):
     """
 
     VENV_NAME = ".cs_tools"
+    """Default name of the VirtualEnvironment."""
+
+    TYPICAL_BUILD_DEPENDENCIES = ("wheel >= 0.45", "setuptools >= 75", "hatch", "maturin")
+    """uv and pip do not discover these automatically."""
 
     def __init__(
         self,
@@ -224,7 +228,6 @@ class CSToolsVenv(venv.EnvBuilder):
         extra_arguments = list(extra_arguments)  # type: ignore[assignment]
         assert isinstance(extra_arguments, list), "Extra arguments have been reassigned for typing purposes."
 
-        # fmt: on
         TRUSTED_INSTALL_LOCATIONS = (
             "files.pythonhosted.org",
             "pypi.org",
@@ -232,14 +235,13 @@ class CSToolsVenv(venv.EnvBuilder):
             "github.com",
             "codeload.github.com",
         )
-        # fmt: off
 
         if self.has_internet_access:
             for location in TRUSTED_INSTALL_LOCATIONS:
                 option_name = "--trusted-host" if with_pip else "--allow-insecure-host"
                 extra_arguments.extend([option_name, location])
         else:
-            extra_arguments.extend(["--offline"]) if not with_pip else None
+            # extra_arguments.extend(["--offline"]) if not with_pip else None
             extra_arguments.extend(["--no-index", "--find-links", self.offline_index.as_posix()])
 
         _LOG.debug(f"Attempting to install '{package_spec}' into the virtual environment.")
@@ -275,6 +277,9 @@ class CSToolsVenv(venv.EnvBuilder):
         output_dir = pathlib.Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # ENSURE WE HAVE THE BUILD DEPENDENCIES VENDORED AS WELL.
+        self.install(*CSToolsVenv.TYPICAL_BUILD_DEPENDENCIES)
+
         # GET LIST OF INSTALLED PACKAGES
         _LOG.debug("Freezing CS Tools venv > requirements-freeze.txt")
         reqs_txt = output_dir.joinpath("requirements-freeze.txt")
@@ -285,7 +290,7 @@ class CSToolsVenv(venv.EnvBuilder):
                 for line in rc.stdout.split(b"\n\n")
                 # IGNORE THE FIRST LINE WHEN WE ARE EXECUTING `uv` FROM OUTSIDE OF THE VIRTUAL ENVIRONMENT, WHICH
                 # GENERATES A HEADER ... Using Python 3.12.3 environment at: <PATH>
-                if not line.startswith("Using Python ")
+                if not line.startswith(b"Using Python ")
             )
         )
 

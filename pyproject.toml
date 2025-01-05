@@ -79,19 +79,6 @@ cli = [
     "textual[syntax] == 1.0.0",
     "textual-serve == 1.1.1",
 ]
-offline = [
-    # THIS IS A WORKAROUND BECAUSE PIP, UV DON'T YET SUPPORT IDENTIFYING BUILD DEPENDENCIES.
-    # ANY MODERN VERSION IS FINE.
-    "pip",
-    # "wheel",
-    "hatchling",
-    # "setuptools",
-    # "setuptools_scm[toml]",
-    "maturin",
-
-    # CS Tools Build Dependencies
-    # "cs_tools[cli]",
-]
 dev = [
     # CS Tools CLI
     "cs_tools[cli]",
