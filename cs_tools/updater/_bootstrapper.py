@@ -421,7 +421,7 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
 
         for prior_record in self._buffer:
             super().emit(prior_record)
-        
+
         self._buffer.clear()
 
     def emit(self, record):
@@ -435,7 +435,6 @@ class InMemoryUntilErrorHandler(logging.FileHandler):
             self._buffer.append(record)
             return
 
-        # feed the buffer into the file
         self.drain_buffer()
         super().emit(record)
 
@@ -673,7 +672,7 @@ def main():
     except Exception as e:
         disk_handler = next(h for h in _LOG.root.handlers if isinstance(h, InMemoryUntilErrorHandler))
         _LOG.debug("Error found: {err}".format(err=e), exc_info=True)
-        _LOG.warning(
+        _LOG.error(
             "Unexpected error in bootstrapper, see {b}{logfile}{x} for details..".format(
                 b=_BLUE, logfile=disk_handler.baseFilename, x=_YELLOW
             )
