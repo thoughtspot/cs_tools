@@ -82,6 +82,7 @@ cli = [
 offline = [
     # THIS IS A WORKAROUND BECAUSE PIP, UV DON'T YET SUPPORT IDENTIFYING BUILD DEPENDENCIES.
     # ANY MODERN VERSION IS FINE.
+    "pip",
     # "wheel",
     "hatchling",
     # "setuptools",
