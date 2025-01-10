@@ -19,6 +19,11 @@ TableRowsFormat: _compat.TypeAlias = list[dict[str, Union[dt.datetime, dt.date, 
 APIResult: _compat.TypeAlias = dict[str, Any]
 
 # ==========
+# CS Tools types
+# ==========
+AuthContext = Literal["BEARER_TOKEN", "TRUSTED_AUTH", "BASIC", "NONE"]
+
+# ==========
 # ThoughtSpot common types
 # ==========
 GUID: _compat.TypeAlias = Annotated[str, "represented as a UUID"]
