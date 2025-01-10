@@ -129,7 +129,7 @@ class ThoughtSpotInfo(_GlobalModel):
             data["is_iam_v2_enabled"] = overrides_info.get("oidcConfiguration.iamV2OIDCEnabled", {}).get(
                 "current", False
             )
-
+        
         return data
 
     @pydantic.field_validator("version", mode="before")
@@ -173,7 +173,7 @@ class UserInfo(_GlobalModel):
     privileges: set[Union[_types.GroupPrivilege, str]]
     org_context: Optional[int] = None
     email: Optional[pydantic.EmailStr] = None
-    auth_context: Optional[Literal["BASIC", "TRUSTED_AUTH", "BEARER_TOKEN"]] = None
+    auth_context: Optional[_types.AuthContext] = None
 
     @pydantic.model_validator(mode="before")
     @classmethod

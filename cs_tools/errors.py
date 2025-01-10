@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Literal, Optional, cast
 import collections
 
 from rich._loop import loop_last
+import httpx
 import pydantic
 import rich
 
 from cs_tools import _types, datastructures, settings
 
 
-def _make_error_panel(*, header: str, reason: str | None = None, fixing: str | None = None) -> rich.panel.Panel:
+def _make_error_panel(*, header: str, reason: Optional[str] = None, fixing: Optional[str] = None) -> rich.panel.Panel:
     """Creates a pretty dialogue for CLI output."""
     content = ""
 
@@ -87,28 +88,39 @@ class AuthenticationFailed(CSToolsError):
     Raised when authentication to ThoughtSpot fails.
     """
 
-    def __init__(self, *, ts_config: settings.CSToolsConfig, desired_org_id: _types.OrgIdentifier | None = 0):
+    def __init__(
+        self,
+        *,
+        ts_config: settings.CSToolsConfig,
+        ctx: _types.AuthContext,
+        desired_org_id: _types.OrgIdentifier | None = 0,
+    ):
         self.ts_config = ts_config
+        self.auth_context = ctx
         self.desired_org_id = desired_org_id
 
     def __rich__(self) -> rich.panel.Panel:
         ts_info = self.ts_config.thoughtspot
         header = f"Authentication failed for [fg-secondary]{self.ts_config.thoughtspot.username}"
-        reason = f"CS Tools config: [fg-secondary]{self.ts_config.name}[/] is not valid."
+        reason = f"Config [fg-secondary]{self.ts_config.name}[/] [fg-warn]{self.auth_context} AUTH[/] is not valid."
         fixing = []
 
+        if self.auth_context == "BEARER_TOKEN":
+            fixing.append("- Regenerate your Bearer Token in the V2.0 REST API auth/token/full in the Developer tab.")
+            fixing.append(f"- Determine if your token is scoped to Org ID {self.desired_org_id}.")
+
+        if self.auth_context == "TRUSTED_AUTH":
+            fixing.append(f"- Check if your secret_key is still valid {ts_info.secret_key} in the Developer tab.")
+            fixing.append(f"- Determine if your secret_key is scoped to Org ID {self.desired_org_id}.")
+
+        if self.auth_context == "BASIC":
+            fixing.append(
+                f"- Check if your username and password are correct from the ThoughtSpot website. You can try them by "
+                f"navigating to {ts_info.url}?disableSAMLAutoRedirect=true"
+            )
+
         if ts_info.is_orgs_enabled and self.desired_org_id is not None:
-            fixing.append(f"Ensure your User has access to Org ID {self.desired_org_id}.")
-
-        if ts_info.bearer_token is not None:
-            fixing.append("Regenerate your Bearer Token in the V2.0 REST API auth/token/full in the Developer tab.")
-
-        if ts_info.secret_key is not None:
-            fixing.append(f"Check if your secret_key is still valid {ts_info.secret_key} in the Developer tab.")
-
-        if ts_info.password is not None:
-            fixing.append("Check if your username and password are correct from the ThoughtSpot website.")
-            fixing.append(f"You can try them by navigating to {ts_info.url}?disableSAMLAutoRedirect=true")
+            fixing.append(f"- Ensure your User has access to Org ID {self.desired_org_id}.")
 
         return _make_error_panel(header=header, reason=reason, fixing="\n".join(fixing))
 
@@ -222,93 +234,62 @@ class SyncerInitError(CSToolsError):
         return _make_error_panel(header=header, reason=reason, fixing=fixing)
 
 
-#
-#
-#
+class ConfigDoesNotExist(CSToolsError):
+    """Raised when a CS Tools config can't be found."""
 
-
-class CSToolsCLIError(CSToolsError):
-    """When raised, will present a pretty error to the CLI."""
-
-    # DEV NOTE: @boonhapus, 2023/12/18
-    #
-    # This can be refactored so that subclasses require only to
-    # implement the __rich__ protocol. It will allow us to have CLI
-    # errors and Library errors. CLI errors must implement __rich__ and
-    # have their return type be a rich.panel.Panel
-    #
-
-    def __init_subclass__(cls):
-        super().__init_subclass__()
-
-        if not hasattr(cls, "title"):
-            raise RuntimeError("{cls} must supply atleast a .title !")
-
-    def __init__(
-        self, title: Optional[str] = None, reason: Optional[str] = None, mitigation: Optional[str] = None, **error_info
-    ):
-        self.title = title if title is not None else self.__class__.title
-        self.reason = reason if reason is not None else getattr(self.__class__, "reason", None)
-        self.mitigation = mitigation if mitigation is not None else getattr(self.__class__, "mitigation", None)
-        self.error_info = error_info
-
-    def __str__(self) -> str:
-        message = "{self.__class__.__name__}: {self.title}"
-
-        if self.reason is not None:
-            message += " - {self.reason}"
-
-        if self.mitigation is not None:
-            message += " - {self.mitigation}"
-
-        return message.format(self=self, **self.error_info)
+    def __init__(self, config_name: str):
+        self.config_name = config_name
 
     def __rich__(self) -> rich.panel.Panel:
-        error_panel_content = ""
-        extra_info = {"self": self, **self.error_info}
+        header = f"Cluster configuration [fg-secondary]{self.config_name}[/] does not exist."
+        reason = None
+        fixing = None
 
-        if self.reason is not None:
-            error_panel_content += "[b white]{self.reason}[/]".format(**extra_info)
-
-        if self.mitigation is not None:
-            # fmt: off
-            error_panel_content += (
-                "\n"
-                "\n[fg-success]Mitigation[/]"
-                "\n[fg-warn]{self.mitigation}[/]"
-            )
-            # fmt: on
-
-        panel = rich.panel.Panel(
-            # Double .format() because f-string replacement is not recursive until 3.12
-            error_panel_content.format(**extra_info).format(**extra_info),
-            border_style="b red",
-            title=self.title.format(**extra_info),
-            expand=False,
-        )
-
-        return panel
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)
 
 
-class TSLoadServiceUnreachable(CSToolsCLIError):
+class TSLoadServiceUnreachable(CSToolsError):
     """Raised when the etl_http_server service cannot be reached."""
 
-    title = "The tsload service is unreachable."
-    reason = "HTTP Error: {http_error.response.status_code} {http_error.response.reason_phrase}"
-    mitigation = (
-        "Ensure your cluster is set up for allow remote data loads"
-        "\n  https://docs.thoughtspot.com/software/latest/tsload-connector#_setting_up_your_cluster"
-        "\n\n"
-        "If you cannot enable it, here's the tsload command for the file you tried to load:"
-        "\n\n"
-        "{tsload_command}"
-    )
+    def __init__(self, httpx_error: httpx.HTTPError, tsload_options):
+        self.httpx_error = httpx_error
+        self.tsload_options = tsload_options
+    
+    def simulate_tsload_command(self) -> str:
+        """..."""
+        command = (
+            # these all on the same line in the error messag
+            f"tsload "
+            f"--source_file {fd.name} "
+            f"--target_database {database} "
+            f"--target_schema {schema_} "
+            f"--target_table {table} "
+            f"--max_ignored_rows {max_ignored_rows} "
+            f'--date_format "{FMT_TSLOAD_DATE}" '
+            f'--time_format "{FMT_TSLOAD_TIME}" '
+            f'--date_time_format "{FMT_TSLOAD_DATETIME}" '
+            f'--field_separator "{field_separator}" '
+            f'--null_value "{null_value}" '
+            f"--boolean_representation {boolean_representation} "
+            f'--escape_character "{escape_character}" '
+            f'--enclosing_character "{enclosing_character}" '
+            + ("--empty_target " if empty_target else "--noempty_target ")
+            + ("--has_header_row " if has_header_row else "")
+            + ("--skip_second_fraction " if skip_second_fraction else "")
+            + ("--flexible" if flexible else ""),
+        )
+        return command
 
+    def __rich__(self) -> rich.panel.Panel:
+        header = "The tsload service is unreachable."
+        reason = f"HTTP Error: {self.httpx_error}"
+        fixing = (
+           "Ensure your cluster is set up for allow remote data loads"
+            "\n  https://docs.thoughtspot.com/software/latest/tsload-connector#_setting_up_your_cluster"
+            "\n\n"
+            "If you cannot enable it, here's the tsload command for the file you tried to load:"
+            "\n\n"
+            "{tsload_command}"
+        )
 
-#
-# Cluster Configurations
-#
-
-
-class ConfigDoesNotExist(CSToolsCLIError):
-    title = "Cluster configuration [fg-secondary]{name}[/] does not exist."
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)
