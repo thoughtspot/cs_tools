@@ -51,8 +51,8 @@ class ThoughtSpot:
             raise errors.NoSessionEstablished("SessionContext has not been established.")
 
         return self._session_context
-    
-    def _attempt_build_context(self, desired_org_id: int | None = None) -> Any | None:
+
+    def _attempt_build_context(self, desired_org_id: Optional[int] = None) -> Any | None:
         c = self.api.session_info()
         r = utils.run_sync(c)
         __session_info__ = r.json()
@@ -62,7 +62,7 @@ class ThoughtSpot:
 
         return None
 
-    def login(self, org_id: int | None = None) -> None:
+    def login(self, org_id: Optional[int] = None) -> None:
         """Log in to ThoughtSpot."""
         # RESET SESSION_CONTEXT IN CASE WE ATTEMPT TO CALL .login MULTIPLE TIMES
         self._session_context = None
@@ -71,7 +71,7 @@ class ThoughtSpot:
         org_id = self.config.thoughtspot.default_org if org_id is None else org_id
 
         attempted: dict[str, httpx.Response] = {}
-        __session_info__: dict | None = None
+        __session_info__: Optional[dict] = None
         __auth_ctx__: _types.AuthContext = "NONE"
 
         #
@@ -135,7 +135,7 @@ class ThoughtSpot:
                 fixing = f"Does your ThoughtSpot require a VPN to connect?\n\n[white]>>>[/] {e}"
 
             raise errors.ThoughtSpotUnreachable(reason=reason, fixing=fixing) from None
-        
+
         # PROCESS THE RESPONSE TO DETERMINE WHY THE CLUSTER IS IN STANDBY
         except AssertionError:
             reason = "Cluster is in Maintenance Mode."
@@ -185,7 +185,7 @@ class ThoughtSpot:
             }
 
             self._session_context = ctx = SessionContext(thoughtspot=t, user=d)
-        
+
         if org_id is not None and ctx.user.org_context != org_id:
             raise errors.AuthenticationFailed(ts_config=self.config, ctx=__auth_ctx__, desired_org_id=org_id) from None
 
@@ -202,7 +202,11 @@ class ThoughtSpot:
         except StopIteration:
             raise errors.CSToolsError(f"Could not find the org '{org_id}'") from None
 
+        # DEV NOTE: @boonhapus, 2025/01/11
+        # This is exactly how ThoughtSpot performs the org/switch operation.. instead,
+        # establish a new session in the target org.
         self.login(org_id=_["id"])
+
         return _
 
     def logout(self) -> None:
