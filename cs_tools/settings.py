@@ -23,7 +23,7 @@ import pydantic
 import rich
 import toml
 
-from cs_tools import __project__, __version__, _compat, _types, utils, validators
+from cs_tools import __project__, __version__, _compat, _types, errors, utils, validators
 from cs_tools.datastructures import ExecutionEnvironment, _GlobalModel, _GlobalSettings
 from cs_tools.updater import cs_tools_venv
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
@@ -364,12 +364,11 @@ class CSToolsConfig(_GlobalSettings):
     @classmethod
     def from_toml(cls, path: pathlib.Path, automigrate: bool = False) -> CSToolsConfig:
         """Read in a cluster-config.toml file."""
-        from cs_tools.errors import ConfigDoesNotExist
 
         try:
             data = toml.load(path)
         except FileNotFoundError:
-            raise ConfigDoesNotExist(name=path.stem.replace("cluster-cfg_", "")) from None
+            raise errors.ConfigDoesNotExist(config_name=path.stem.replace("cluster-cfg_", "")) from None
 
         instance = cls.model_validate(data)
 
