@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional, cast
+from typing import Any, Optional, TextIO, cast
 import collections
 
 from rich._loop import loop_last
@@ -251,18 +251,19 @@ class ConfigDoesNotExist(CSToolsError):
 class TSLoadServiceUnreachable(CSToolsError):
     """Raised when the etl_http_server service cannot be reached."""
 
-    def __init__(self, httpx_error: httpx.HTTPError, tsload_options):
+    def __init__(self, *, httpx_error: httpx.HTTPError, file_descriptor: TextIO, tsload_options: dict[str, Any]):
         self.httpx_error = httpx_error
-        self.tsload_options = tsload_options
-    
+        self.file_descriptor = file_descriptor
+        self.options = tsload_options
+
     def simulate_tsload_command(self) -> str:
-        """..."""
+        """Simulate the command that would be run by tsload."""
         command = (
             # these all on the same line in the error messag
             f"tsload "
-            f"--source_file {fd.name} "
+            f"--source_file {self.file_descriptor.name} "
             f"--target_database {database} "
-            f"--target_schema {schema_} "
+            f"--target_schema {schema} "
             f"--target_table {table} "
             f"--max_ignored_rows {max_ignored_rows} "
             f'--date_format "{FMT_TSLOAD_DATE}" '
@@ -284,12 +285,12 @@ class TSLoadServiceUnreachable(CSToolsError):
         header = "The tsload service is unreachable."
         reason = f"HTTP Error: {self.httpx_error}"
         fixing = (
-           "Ensure your cluster is set up for allow remote data loads"
+            "Ensure your cluster is set up for allow remote data loads"
             "\n  https://docs.thoughtspot.com/software/latest/tsload-connector#_setting_up_your_cluster"
             "\n\n"
             "If you cannot enable it, here's the tsload command for the file you tried to load:"
             "\n\n"
-            "{tsload_command}"
+            f"{self.simulate_tsload_command()}"
         )
 
         return _make_error_panel(header=header, reason=reason, fixing=fixing)

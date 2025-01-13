@@ -11,6 +11,7 @@ from cs_tools.settings import (
     CSToolsConfig as _CSToolsConfig,
     _meta_config as meta,
 )
+from cs_tools.sync.base import DatabaseSyncer
 from cs_tools.thoughtspot import ThoughtSpot as _ThoughtSpot
 
 _LOG = logging.getLogger(__name__)
@@ -69,6 +70,12 @@ class ThoughtSpot:
 
         # Make `ThoughtSpot` available as on the ctx.obj namespace.
         setattr(ctx.obj, name, self.ts)
+
+        # If we have a registered Falcon syncer, set the ThoughtSpot object on it.
+        for _, parameter in ctx.params.items():
+            if isinstance(parameter, DatabaseSyncer) and parameter.protocol == "falcon":
+                parameter.thoughtspot = self.ts  # type: ignore[attr-defined]
+                parameter.__finalize__()
 
     def __enter__(self):
         assert self.ts_config is not None, "The ThoughtSpot dependency has not been initialized yet."

@@ -571,3 +571,77 @@ class RESTAPIClient(httpx.AsyncClient):
         timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
 
         return self.post("ts_dataservice/v1/public/tql/query", timeout=timeout, json=options)
+
+    # ==================================================================================
+    # REMOTE TSLOAD :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_security
+    # ==================================================================================
+
+    @property
+    def v1_dataservice_url(self) -> httpx.URL:
+        """Override the URL if the ThoughtSpot serving node redirects us to another."""
+        if hasattr(self, "_redirected_url_due_to_tsload_load_balancer"):
+            url = self._redirected_url_due_to_tsload_load_balancer
+        else:
+            url = self.base_url.copy_with(port=8442)
+
+        return url
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def v1_dataservice_dataload_initialize(
+        self, *, data: Any, timeout: Optional[float] = None
+    ) -> Awaitable[httpx.Response]:
+        """Initialize the data load operation."""
+        # Further reading on what can be passed to `data`
+        #   https://docs.thoughtspot.com/software/latest/tsload-api#start-load
+        fullpath = self.v1_dataservice_url.copy_with(path="/ts_dataservice/v1/public/loads")
+
+        return self.post(str(fullpath), timeout=timeout, json=data)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def v1_dataservice_dataload_start(
+        self,
+        *,
+        cycle_id: _types.GUID,
+        fd: Any,
+        **options: Any,
+    ) -> Awaitable[httpx.Response]:
+        """Load a chunk of data to Falcon."""
+        # Further reading:
+        #   https://docs.thoughtspot.com/software/latest/tsload-api#load
+        fullpath = self.v1_dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
+
+        # DEV NOTE: @boonhapus
+        # This endpoint returns immediately once the file uploads to the remote host.
+        # Processing of the dataload happens concurrently, and this function may be
+        # called multiple times to paralellize the full data load across multiple files.
+        timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
+
+        return self.post(str(fullpath), timeout=timeout, files={"upload-file": fd})
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def v1_dataservice_dataload_commit(self, *, cycle_id: _types.GUID) -> Awaitable[httpx.Response]:
+        """Commit the data load to Falcon."""
+        # Further reading:
+        #   https://docs.thoughtspot.com/software/latest/tsload-api#commit-load
+        fullpath = self.v1_dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/commit")
+
+        return self.post(str(fullpath))
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def v1_dataservice_dataload_status(self, *, cycle_id: _types.GUID) -> Awaitable[httpx.Response]:
+        """Get the current status of a data load."""
+        # Further reading:
+        #   https://docs.thoughtspot.com/software/latest/tsload-api#_status_of_load
+        fullpath = self.v1_dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}")
+
+        return self.get(str(fullpath))
+
+    def v1_dataservice_dataload_bad_records(self, *, cycle_id: _types.GUID) -> Awaitable[httpx.Response]:
+        """View the bad records file data."""
+        # Further reading:
+        #   https://docs.thoughtspot.com/software/latest/tsload-api#_status_of_load
+        # fmt: off
+        fullpath = self.v1_dataservice_url.copy_with(path=f"/ts_dataservice/v1/public/loads/{cycle_id}/bad_records_file")  # noqa: E501
+        # fmt: on
+
+        return self.get(str(fullpath))

@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 from typing import Any
+import json
 import logging
 import pathlib
-import time
 
-import httpx
 import pydantic
 import sqlalchemy as sa
 
-from cs_tools import _types, errors
+from cs_tools import (
+    _types,
+    errors,
+    utils as cs_tools_utils,
+)
+from cs_tools.api import workflows
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 from cs_tools.thoughtspot import ThoughtSpot
@@ -19,28 +23,34 @@ from . import (
     utils,
 )
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class Falcon(DatabaseSyncer):
-    """
-    Interact with a Falcon database.
-    """
+    """Interact with a Falcon database."""
 
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
     __syncer_name__ = "falcon"
 
     database: str = "cs_tools"
     schema_: str = pydantic.Field("falcon_default_schema", alias="schema")
-    thoughtspot: ThoughtSpot = pydantic.Field(default_factory=utils.maybe_fetch_from_context)
+    thoughtspot: ThoughtSpot = pydantic.Field(default_factory=utils.check_if_keyword_needed, validate_default=False)
     ignore_load_balancer_redirect: bool = False
     wait_for_dataload_completion: bool = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._engine = sa.engine.create_mock_engine("sqlite://", self.sql_query_to_api_call)  # type: ignore[assignment]
+        self._falcon_ctx: _types.TQLQueryContext = {
+            "database": self.database,
+            "schema": self.schema_,
+            "server_schema_version": -1,
+        }
 
     def __finalize__(self):
+        if self.thoughtspot is None:
+            return
+
         try:
             _ = self.thoughtspot.session_context
 
@@ -48,22 +58,33 @@ class Falcon(DatabaseSyncer):
             self.thoughtspot.login()
 
         # Create the database and schema if they doesn't exist; idempotent
-        self.thoughtspot.tql.command(command=f"CREATE DATABASE {self.database};")
-        self.thoughtspot.tql.command(command=f"CREATE SCHEMA {self.database}.{self.schema};")
+        self.sql_query_to_api_call(sql=sa.text(f"CREATE DATABASE {self.database}"))
+        self.sql_query_to_api_call(sql=sa.text(f"CREATE SCHEMA {self.database}.{self.schema_}"))
         super().__finalize__()
 
     def __repr__(self):
-        return f"<FalconSyncer cluster='{self.thoughtspot.config.thoughtspot.url}'>"
+        return f"<FalconSyncer cluster='{self.thoughtspot.config.thoughtspot.url}' @ {self.database}.{self.schema_}>"
 
-    def compile_query(self, query: sa.sql.expression.Executable) -> str:
+    def compile_query(self, query: sa.sql.ClauseElement) -> str:
         """Convert a SQL query into a string."""
-        compiled = query.compile(dialect=self.engine.dialect)  # type: ignore[attr-defined]
+        compiled = query.compile(dialect=self.engine.dialect)
         return compiled.string.strip() + ";"
 
-    def sql_query_to_api_call(self, sql: sa.schema.ExecutableDDLElement, *_multiparams, **_params):
+    def sql_query_to_api_call(self, sql: sa.sql.ClauseElement, *_multiparams, **_params):
         """Convert SQL queries into ThoughtSpot remote TQL commands."""
         query = self.compile_query(sql)
-        self.thoughtspot.tql.command(command=query, database=self.database)
+
+        # ISSUE A QUERY VIA THE REMOTE TQL SERVICE.
+        coro = workflows.tql.query(query, falcon_context=self._falcon_ctx, http=self.thoughtspot.api)
+        data = cs_tools_utils.run_sync(coro)
+
+        _LOG.debug(f">>> QUERY\n{query}")
+        _LOG.debug(f"<<< DATA\n{json.dumps(data, indent=4)}")
+
+        # SET THE NEW FALCON CONTEXT.
+        self._falcon_ctx = data["curr_falcon_context"]
+
+        return data
 
     # MANDATORY PROTOCOL MEMBERS
 
@@ -71,30 +92,28 @@ class Falcon(DatabaseSyncer):
         """SELECT rows from Falcon."""
         table = self.metadata.tables[tablename]
 
-        # Simulate the SELECT statement.
-        query = self.compile_query(table.select())
-        data = self.thoughtspot.tql.query(statement=query, database=self.database)
+        raw_data = self.sql_query_to_api_call(sql=table.select())
 
-        # Clean the outgoing data (as it's presented as simple types from the TQL API)
-        model = next(model for model in self.models if model.__tablename__ == tablename)
-        rows = [model.validated_init(**row) for row in data[0].get("data", [])]
-        return [row.model_dump() for row in rows]
+        # SEE cs_tools.api.workflows.tql.query FOR PAYLOAD.
+        assert isinstance(raw_data["data"], list), "Raw Data returned from the cs_tools TQL workflow is malformed."
+
+        return raw_data["data"]
 
     def dump(self, tablename: str, *, data: _types.TableRowsFormat) -> None:
         """INSERT rows into Falcon."""
         if not data:
-            log.warning(f"no data to write to syncer {self}")
+            _LOG.warning(f"no data to write to syncer {self}")
             return
 
         data = utils.roundtrip_json_for_falcon(data)
         name = f"{self.database}_{self.schema_}_{tablename}"
 
-        with sync_utils.temp_csv_for_upload(tmp=self.thoughtspot.config.temp_dir, filename=name, data=data) as file:
+        with sync_utils.temp_csv_for_upload(tmp=self.thoughtspot.config.temp_dir, filename=name, data=data) as fd:
             upload_options: dict[str, Any] = {
-                "ignore_node_redirect": self.ignore_load_balancer_redirect,
                 "database": self.database,
-                "schema_": self.schema_,
+                "schema": self.schema_,
                 "table": tablename,
+                "ignore_node_redirect": self.ignore_load_balancer_redirect,
             }
 
             if self.load_strategy == "APPEND":
@@ -104,54 +123,11 @@ class Falcon(DatabaseSyncer):
                 upload_options["empty_target"] = True
 
             if self.load_strategy == "UPSERT":
-                raise NotImplementedError("coming soon..")
+                raise NotImplementedError("Falcon does not offer UPSERT / MERGE support.")
 
-            try:
-                cycle_id = self.thoughtspot.tsload.upload(file, **upload_options)
+            c = workflows.tsload.upload_data(fd, **upload_options, http=self.thoughtspot.api)
+            cycle_id = cs_tools_utils.run_sync(c)
 
-            except httpx.HTTPStatusError:
-                return
-
-            except (httpx.ConnectError, httpx.ConnectTimeout):
-                i = f"could not connect at [fg-secondary]{self.thoughtspot.api.v1.dataservice_url}[/]"
-                m = ""
-
-                if self.thoughtspot.api.v1.dataservice_url.host != self.thoughtspot.config.thoughtspot.url:
-                    m = (
-                        "Is your VPN connected?"
-                        "\n\n"
-                        "If that isn't the URL of your ThoughtSpot cluster, then your "
-                        "ThoughtSpot admin likely has configured the Remote TSLoad "
-                        "Connector Service to use a load balancer and your local "
-                        "machine is unable to connect directly to the ThoughtSpot node "
-                        "which is accepting files."
-                        "\n\n"
-                        "You can try using [fg-secondary]ignore_load_balancer_redirect[/] "
-                        "in your Falcon syncer definition as well."
-                    )
-
-                raise errors.TSLoadServiceUnreachable(reason=i, mitigation=m) from None
-
-            if self.wait_for_dataload_completion:
-                while True:
-                    log.info(f"Checking status of dataload {cycle_id}...")
-                    status_data = self.thoughtspot.tsload.status(cycle_id, wait_for_complete=True)
-
-                    if "code" in status_data["status"]:
-                        break
-
-                    log.debug(status_data)
-                    time.sleep(1)
-
-                log.info(
-                    f"Cycle ID: {status_data['cycle_id']} ({status_data['status']['code']})"
-                    f"\nStage: {status_data['internal_stage']}"
-                    f"\nRows written: {status_data['rows_written']}"
-                    f"\nIgnored rows: {status_data['ignored_row_count']}"
-                )
-
-                if status_data["status"]["code"] == "LOAD_FAILED":
-                    log.error(f"Failure reason\n[bold red]{status_data['status']['message']}[/]")
-
-                if status_data.get("parsing_errors", False):
-                    log.info(f"[fg-error]{status_data['parsing_errors']}")
+        if self.wait_for_dataload_completion:
+            c = workflows.tsload.wait_for_dataload_completion(cycle_id=cycle_id, http=self.thoughtspot.api)  # type: ignore[assignment]
+            _ = cs_tools_utils.run_sync(c)
