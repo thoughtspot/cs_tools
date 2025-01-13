@@ -55,6 +55,10 @@ class ThoughtSpot:
     def _attempt_build_context(self, desired_org_id: Optional[int] = None) -> Any | None:
         c = self.api.session_info()
         r = utils.run_sync(c)
+
+        if not r.is_success:
+            return None
+
         __session_info__ = r.json()
 
         if UserInfo(__session_info__=__session_info__, __auth_context__="NONE").org_context == desired_org_id:
@@ -134,6 +138,7 @@ class ThoughtSpot:
                 reason = f"Cannot connect to ThoughtSpot ([fg-secondary]{self.config.thoughtspot.url}[/])"
                 fixing = f"Does your ThoughtSpot require a VPN to connect?\n\n[white]>>>[/] {e}"
 
+            _LOG.debug(f"Raw error: {e}", exc_info=True)
             raise errors.ThoughtSpotUnreachable(reason=reason, fixing=fixing) from None
 
         # PROCESS THE RESPONSE TO DETERMINE WHY THE CLUSTER IS IN STANDBY
@@ -162,6 +167,15 @@ class ThoughtSpot:
         r = utils.run_sync(c)
         __overrides_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | APPLICATION_ADMINISTRATION
 
+        if not __system_info__:
+            _LOG.warning("CS Tools is meant to be run from an Administrator level context.")
+            __system_info__ = {
+                "id": "UNKNOWN",
+                "release_version": "v0.0.0",
+                "time_zone": "UNKNOWN",
+                "type": "UNKNOWN",
+            }
+
         d = {
             "__url__": self.config.thoughtspot.url,
             "__system_info__": __system_info__,
@@ -171,20 +185,7 @@ class ThoughtSpot:
             "__auth_context__": __auth_ctx__,
         }
 
-        try:
-            self._session_context = ctx = SessionContext(thoughtspot=d, user=d)
-        except pydantic.ValidationError:
-            _LOG.warning("CS Tools is meant to be run from an Administrator level context.")
-
-            t = {
-                "cluster_id": "UNKNOWN",
-                "url": d["__url__"],
-                "version": "v0.0.0",
-                "timezone": "UNKNOWN",
-                "is_cloud": False,
-            }
-
-            self._session_context = ctx = SessionContext(thoughtspot=t, user=d)
+        self._session_context = ctx = SessionContext(thoughtspot=d, user=d)
 
         if org_id is not None and ctx.user.org_context != org_id:
             raise errors.AuthenticationFailed(ts_config=self.config, ctx=__auth_ctx__, desired_org_id=org_id) from None
