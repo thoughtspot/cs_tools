@@ -39,6 +39,13 @@ class RemoteRepositoryInfo(_GlobalModel):
     version: Optional[validators.CoerceVersion] = None
     published_at: Optional[Annotated[validators.DateTimeInUTC, validators.as_datetime_isoformat]] = None
 
+    @pydantic.field_validator("last_checked", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+        if value is None:
+            return _FOUNDING_DAY
+        return value
+
 
 class MetaConfig(_GlobalModel):
     """Store information about this environment."""
