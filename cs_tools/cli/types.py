@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-import collections.abc
-import itertools as it
 import logging
 
 import click
@@ -55,27 +52,3 @@ class MetadataType(click.ParamType):
             "answer": ("QUESTION_ANSWER_BOOK", None),
         }
         return mapping[value]
-
-
-class CommaSeparatedValuesType(click.ParamType):
-    """
-    Convert arguments to a list of strings.
-    """
-
-    name = "string"
-
-    def __init__(self, *args_passthru, return_type: Any = str, **kwargs_passthru):
-        super().__init__(*args_passthru, **kwargs_passthru)
-        self.return_type = return_type
-
-    def convert(self, value, param, ctx):  # noqa: ARG002
-        if value is None:
-            return None
-
-        if isinstance(value, str):
-            values = value.split(",")
-
-        elif isinstance(value, collections.abc.Iterable):
-            values = [v.split(",") if isinstance(v, str) else v for v in value]
-
-        return [self.return_type(v) for v in it.chain.from_iterable(values) if v != ""]
