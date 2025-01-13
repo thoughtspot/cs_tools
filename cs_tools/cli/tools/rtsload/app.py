@@ -1,15 +1,19 @@
 from __future__ import annotations
 
-import pathlib
+import logging
 
 import typer
 
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools import _types, utils
+from cs_tools.api import workflows
+from cs_tools.cli import custom_types
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
+from cs_tools.sync.base import Syncer
+from cs_tools.sync.falcon.syncer import Falcon
 
-from .const import FMT_TSLOAD_DATE, FMT_TSLOAD_DATETIME, FMT_TSLOAD_TIME, FMT_TSLOAD_TRUE_FALSE
-
-app = CSToolsApp(
+_LOG = logging.getLogger(__name__)
+app = AsyncTyper(
     help="""
     Enable loading files to ThoughtSpot from a remote machine.
 
@@ -22,177 +26,62 @@ app = CSToolsApp(
 )
 
 
-@app.command(dependencies=[thoughtspot])
-def status(
-    ctx: typer.Context,
-    cycle_id: str = typer.Argument(..., help="data load cycle id"),
-    # bad_records: str = typer.Option(
-    #     None,
-    #     '--bad_records_file',
-    #     help='file to use for storing rows that failed to load',
-    #     metavar='protocol://DEFINITION.toml',
-    #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    # )
-):
-    """
-    Get the status of a data load.
-    """
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
+def status(ctx: typer.Context, cycle_id: str = typer.Argument(..., help="The dataload cycle id.")) -> _types.ExitCode:
+    """Get the status of a data load."""
     ts = ctx.obj.thoughtspot
 
-    with rich_console.status("[bold green]Waiting for data load to complete.."):
-        data = ts.tsload.status(cycle_id, wait_for_complete=True)
-        rich_console.print(
-            f"\nCycle ID: {data['cycle_id']} ({data['status']['code']})"
-            f"\nStage: {data['internal_stage']}"
-            f"\nRows written: {data['rows_written']}"
-            f"\nIgnored rows: {data['ignored_row_count']}"
-        )
+    with RICH_CONSOLE.status("[fg-success]Waiting for data load to complete.."):
+        c = workflows.tsload.wait_for_dataload_completion(cycle_id=cycle_id, http=ts.api)
 
-    # if int(data['ignored_row_count']) > 0:
-    #     now = dt.datetime.now(tz=dt.timezone.utc).strftime('%Y-%m-%dT%H_%M_%S')
-    #     fp = f'BAD_RECORDS_{now}_{cycle_id}'
-    #     console.print(
-    #         f'[fg-error]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
-    #     )
-    #     data = ts.tsload.bad_records(cycle_id)
-    #     bad_records.dump(fp, data=data)
+        status_data = utils.run_sync(c)
 
-    if data["status"]["code"] == "LOAD_FAILED":
-        rich_console.print(f"\nFailure reason:\n  [fg-error]{data['status']['message']}[/]")
-
-    if data.get("parsing_errors", False):
-        rich_console.print(f"[fg-error]{data['parsing_errors']}")
+    return int(status_data["status"]["code"] == "SUCCESS")  # type: ignore[return-value]
 
 
-@app.command(dependencies=[thoughtspot])
-def file(
+@app.command(name="file", hidden=True)
+@app.command(name="load-file")
+@depends_on(thoughtspot=ThoughtSpot())
+def load_file(
     ctx: typer.Context,
-    file: pathlib.Path = typer.Argument(
-        ..., help="path to file to execute", metavar="FILE.csv", dir_okay=False, resolve_path=True
+    input_syncer: Syncer = typer.Option(
+        ...,
+        click_type=custom_types.Syncer(),
+        help="protocol and path for options to pass to the syncer",
     ),
-    target_database: str = typer.Option(
-        ..., "--target_database", help="specifies the target database into which tsload should load the data"
+    source_table: str = typer.Option(
+        ...,
+        help="Specifies the target table in Falcon.",
     ),
-    target_table: str = typer.Option(..., "--target_table", help="specifies the target database"),
-    target_schema: str = typer.Option("falcon_default_schema", "--target_schema", help="specifies the target schema"),
-    empty_target: bool = typer.Option(
-        False,
-        "--empty_target/--noempty_target",
-        show_default=False,
-        help="data in the target table is to be removed before the new data is loaded (default: --noempty_target)",
+    falcon_syncer: Falcon = typer.Option(
+        None,
+        click_type=custom_types.Syncer(),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
     ),
-    max_ignored_rows: int = typer.Option(
-        0,
-        "--max_ignored_rows",
-        help=(
-            "maximum number of rows that can be ignored for successful load. If number of ignored rows exceeds this "
-            "limit, the load is aborted"
-        ),
+    target_table: str = typer.Option(
+        ..., help="Specifies the target table in Falcon.", rich_help_panel="Syncer Options"
     ),
-    date_format: str = typer.Option(
-        FMT_TSLOAD_DATE,
-        "--date_format",
-        help="format string for date values, accepts format spec by the strptime datetime library",
-    ),
-    date_time_format: str = typer.Option(
-        FMT_TSLOAD_DATETIME,
-        "--date_time_format",
-        help="format string for datetime values, accepts format spec by the strptime datetime library",
-    ),
-    time_format: str = typer.Option(
-        FMT_TSLOAD_TIME,
-        "--time_format",
-        help="format string for time values, accepts format spec by the strptime datetime library",
-    ),
-    skip_second_fraction: bool = typer.Option(
-        False,
-        "--skip_second_fraction",
-        show_default=False,
-        help=(
-            "when true, skip fractional part of seconds: milliseconds, microseconds, or nanoseconds from either "
-            "datetime or time values if that level of granularity is present in the source data"
-        ),
-    ),
-    field_separator: str = typer.Option("|", "--field_separator", help="field delimiter used in the input file"),
-    null_value: str = typer.Option("", "--null_value", help="escape character in source data"),
-    boolean_representation: str = typer.Option(
-        FMT_TSLOAD_TRUE_FALSE, "--boolean_representation", help="format in which boolean values are represented"
-    ),
-    has_header_row: bool = typer.Option(
-        False, "--has_header_row", show_default=False, help="indicates that the input file contains a header row"
-    ),
-    escape_character: str = typer.Option(
-        '"', "--escape_character", help="specifies the escape character used in the input file"
-    ),
-    enclosing_character: str = typer.Option(
-        '"', "--enclosing_character", help="enclosing character in csv source format"
-    ),
-    # bad_records: str = typer.Option(
-    #     None,
-    #     '--bad_records_file',
-    #     help='file to use for storing rows that failed to load',
-    #     metavar='protocol://DEFINITION.toml',
-    #     callback=lambda ctx, to: SyncerProtocolType().convert(to, ctx=ctx)
-    # ),
-    flexible: bool = typer.Option(
-        False,
-        "--flexible",
-        show_default=False,
-        help="whether input data file exactly matches target schema",
-        hidden=True,
-    ),
-    http_timeout: int = typer.Option(False, "--timeout", help="network call timeout threshold"),
-):
-    """
-    Load a file using the remote tsload service.
-    """
+) -> _types.ExitCode:
+    """Load data to the remote tsload service."""
     ts = ctx.obj.thoughtspot
 
-    # TODO: this loads files in a single chunk over to the server, there is no
-    #       parallelization. We can optimize this in the future if it's desired
-    #       and flag for parallel loads or not.
-    #
-    # DEV NOTE:
-    # Data loads can be called for multiple chunks of data for the same cycle ID. All of
-    # this data is uploaded to the ThoughtSpot cluster unless a commit load is issued.
-    #
+    if falcon_syncer is None:
+        falcon_syncer = Falcon(database="cs_tools", thoughtspot=ts, wait_for_dataload_completion=True)
+        _LOG.warning(f"No falcon_syncer provided, using default syncer.\n{falcon_syncer}")
 
-    opts = {
-        "database": target_database,
-        "table": target_table,
-        "schema_": target_schema,
-        "empty_target": empty_target,
-        "max_ignored_rows": max_ignored_rows,
-        "date_format": date_format,
-        "date_time_format": date_time_format,
-        "time_format": time_format,
-        "skip_second_fraction": skip_second_fraction,
-        "field_separator": field_separator,
-        "null_value": null_value,
-        "boolean_representation": boolean_representation,
-        "has_header_row": has_header_row,
-        "flexible": flexible,
-        "escape_character": escape_character,
-        "enclosing_character": enclosing_character,
-    }
+    with RICH_CONSOLE.status(f"[fg-success]Loading [fg-warn]{input_syncer}[/] to ThoughtSpot.."):
+        # LOAD THE DATA FROM THE INPUT SYNCER.
+        data = input_syncer.load(source_table)
 
-    with rich_console.status(f"[bold green]Loading [fg-warn]{file}[/] to ThoughtSpot.."):
-        with file.open("r", encoding="utf-8", newline="") as fd:
-            cycle_id = ts.tsload.upload(fd, **opts, http_timeout=http_timeout)
+        # CREATE THE TABLE IN FALCON.
+        Model = utils.create_dynamic_model(target_table, sample_row=data[0])
+        assert hasattr(Model, "__table__"), "Dynamic model is not a proper SQLModel."
+        Model.__table__.to_metadata(falcon_syncer.metadata, schema=None)
+        falcon_syncer.metadata.create_all(falcon_syncer.engine, tables=[Model.__table__])
 
-    rich_console.log(f"Data load cycle_id: [cyan]{cycle_id}")
+        # DUMP THE DATA TO FALCON.
+        falcon_syncer.dump(target_table, data=data)
 
-    # if bad_records is None:
-    #     return
-
-    # with console.status('[bold green]Waiting for data load to complete..'):
-    #     data = ts.tsload.status(cycle_id, wait_for_complete=True)
-
-    # if data['ignored_row_count'] > 0:
-    #     now = dt.datetime.now(tz=dt.timezone.utc).strftime('%Y-%m-%dT%H_%M_%S')
-    #     fp = f'BAD_RECORDS_{now}_{cycle_id}'
-    #     console.print(
-    #         f'[fg-error]\n\nBad records found...\n\twriting to {bad_records.directory / fp}'
-    #     )
-    #     data = ts.tsload.bad_records(cycle_id)
-    #     bad_records.dump(fp, data=data)
+    return 0
