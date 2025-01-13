@@ -10,18 +10,18 @@ import typer
 
 from cs_tools import utils
 from cs_tools.api import workflows
-from cs_tools.cli import progress as px
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.types import SyncerProtocolType
-from cs_tools.cli.ux import CSToolsApp
+from cs_tools.cli import (
+    custom_types,
+    progress as px,
+)
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.ux import AsyncTyper
+from cs_tools.sync.base import Syncer
 
 from . import _private_api, models
 
 log = logging.getLogger(__name__)
-
-
-app = CSToolsApp(
+app = AsyncTyper(
     help="""
     Gather data on your existing Falcon tables for sharding.
 
@@ -41,7 +41,8 @@ app = CSToolsApp(
 )
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def deploy(
     ctx: typer.Context,
     falcon_database: str = typer.Option("cs_tools", help="name of the database where data is gathered to"),
@@ -114,14 +115,16 @@ def deploy(
     return 0
 
 
-@app.command(dependencies=[thoughtspot])
-def gather(
+@app.command(name="metadata")
+@app.command(name="gather")
+@depends_on(thoughtspot=ThoughtSpot())
+def metadata(
     ctx: typer.Context,
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
+        click_type=custom_types.Syncer(models=[models.FalconTableInfo]),
         help="protocol and path for options to pass to the syncer",
         metavar="protocol://DEFINITION.toml",
-        click_type=SyncerProtocolType(models=[models.FalconTableInfo]),
     ),
 ):
     """
