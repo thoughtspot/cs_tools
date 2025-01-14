@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, TextIO, Union
+from typing import Annotated, Any, Optional, TextIO
 import asyncio
 import datetime as dt
 import json
@@ -8,11 +8,17 @@ import logging
 
 import httpx
 
-from cs_tools import _types, errors
+from cs_tools import _compat, _types, errors
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.updater import cs_tools_venv
 
 _LOG = logging.getLogger(__name__)
+
+
+class DataloadNodeInfo(_compat.TypedDict):
+    host: str
+    port: int
+    began_at_utc: Annotated[str, _types.DateTimeInUTC]
 
 
 class DataloadCache:
@@ -21,22 +27,38 @@ class DataloadCache:
     CACHE_LOC = cs_tools_venv.subdir(".cache") / "tsload_dataloads.json"
 
     @staticmethod
-    def load_cycles() -> dict[_types.GUID, dict[str, Union[str, dt.datetime]]]:
+    def load_cycles() -> dict[_types.GUID, DataloadNodeInfo]:
         """Load dataloads from cache."""
+        if not DataloadCache.CACHE_LOC.exists():
+            return {}
+
         text = DataloadCache.CACHE_LOC.read_text()
         data = json.loads(text)
         return data
 
     @staticmethod
-    def update(cycle_id: _types.GUID, ip_address: str) -> None:
+    def update(cycle_id: _types.GUID, node_info: dict[str, Any]) -> None:
         """Set a dataload IP Address redirect."""
+        LOOPBACK = "127.0.0.1"
+
+        if node_info.get("host", LOOPBACK) == LOOPBACK:
+            return None
+
         data = DataloadCache.load_cycles()
-        data[cycle_id] = {"node": ip_address, "began_at_utc": dt.datetime.now(tz=dt.timezone.utc)}
+
+        data[cycle_id] = {
+            "host": node_info["host"],
+            "port": node_info["port"],
+            "began_at_utc": dt.datetime.now(tz=dt.timezone.utc).isoformat(),
+        }
+
         text = json.dumps(data, indent=4)
+
         DataloadCache.CACHE_LOC.write_text(text)
+        return None
 
     @staticmethod
-    def fetch(cycle_id: Optional[_types.GUID]) -> Optional[str]:
+    def fetch(cycle_id: Optional[_types.GUID]) -> Optional[DataloadNodeInfo]:
         """Fetch possible IP Address redirect for a given dataload."""
         if cycle_id is None:
             return None
@@ -44,7 +66,7 @@ class DataloadCache:
         data = DataloadCache.load_cycles()
 
         if node_info := data.get(cycle_id, None):
-            return node_info["node"]  # type: ignore[return-value]
+            return node_info
 
         return None
 
@@ -132,10 +154,10 @@ async def upload_data(
     _LOG.info(f"Data load to Falcon initialization complete, cycle id: {data['cycle_id']}")
 
     if "node_address" in data:
-        DataloadCache.update(cycle_id=data["cycle_id"], ip_address=data["node_address"])
+        DataloadCache.update(cycle_id=data["cycle_id"], node_info=data["node_address"])
 
     if not ignore_node_redirect and (redirect := DataloadCache.fetch(cycle_id=data.get("cycle_id", None))):
-        http._redirected_url_due_to_tsload_load_balancer = redirect  # type: ignore[attr-defined]
+        http._redirected_url_due_to_tsload_load_balancer = httpx.URL(host=redirect["host"], port=redirect["port"])  # type: ignore[attr-defined]
 
     r = await http.v1_dataservice_dataload_start(cycle_id=data["cycle_id"], fd=fd, timeout=http_timeout)
     _LOG.info(f"{database}.{schema}.{table} - {r.text}")
