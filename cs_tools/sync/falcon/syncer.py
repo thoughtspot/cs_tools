@@ -113,6 +113,7 @@ class Falcon(DatabaseSyncer):
                 "database": self.database,
                 "schema": self.schema_,
                 "table": tablename,
+                "has_header_row": False,
                 "ignore_node_redirect": self.ignore_load_balancer_redirect,
             }
 
