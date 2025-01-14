@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Coroutine, MutableMapping
-from typing import Optional, cast
+from typing import Any, Optional, cast
 import asyncio
 import base64 as b64
 import contextlib
@@ -252,8 +252,9 @@ class CachedRetryTransport(httpx.AsyncBaseTransport):
         cache_policy: Optional[CachePolicy] = None,
         max_concurrent_requests: int = 1,
         retry_policy: Optional[tenacity.AsyncRetrying] = None,
+        **transport_options: Any,
     ):
-        self._wrapper = httpx.AsyncHTTPTransport()
+        self._wrapper = httpx.AsyncHTTPTransport(**transport_options)
         self.cache = cache_policy
         self.rate_limit = asyncio.Semaphore(value=max_concurrent_requests)
         self.retrier = retry_policy or tenacity.AsyncRetrying(stop=tenacity.stop_after_attempt(1))

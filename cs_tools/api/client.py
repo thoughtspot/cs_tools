@@ -35,6 +35,7 @@ class RESTAPIClient(httpx.AsyncClient):
         base_url: Union[httpx.URL, str],
         concurrency: int = 15,
         cache_directory: Optional[pathlib.Path] = None,
+        verify: bool = True,
         **client_opts: Any,
     ) -> None:
         client_opts["base_url"] = str(base_url)
@@ -55,6 +56,7 @@ class RESTAPIClient(httpx.AsyncClient):
                 before_sleep=_retry.log_on_any_retry,
                 reraise=True,
             ),
+            verify=verify,
         )
 
         super().__init__(**client_opts)
