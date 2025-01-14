@@ -259,25 +259,25 @@ class TSLoadServiceUnreachable(CSToolsError):
     def simulate_tsload_command(self) -> str:
         """Simulate the command that would be run by tsload."""
         command = (
-            # these all on the same line in the error messag
+            # THESE ALL ON THE SAME LINE IN THE ERROR MESSAGE
             f"tsload "
             f"--source_file {self.file_descriptor.name} "
-            f"--target_database {database} "
-            f"--target_schema {schema} "
-            f"--target_table {table} "
-            f"--max_ignored_rows {max_ignored_rows} "
-            f'--date_format "{FMT_TSLOAD_DATE}" '
-            f'--time_format "{FMT_TSLOAD_TIME}" '
-            f'--date_time_format "{FMT_TSLOAD_DATETIME}" '
-            f'--field_separator "{field_separator}" '
-            f'--null_value "{null_value}" '
-            f"--boolean_representation {boolean_representation} "
-            f'--escape_character "{escape_character}" '
-            f'--enclosing_character "{enclosing_character}" '
-            + ("--empty_target " if empty_target else "--noempty_target ")
-            + ("--has_header_row " if has_header_row else "")
-            + ("--skip_second_fraction " if skip_second_fraction else "")
-            + ("--flexible" if flexible else ""),
+            f"--target_database {self.options['target']['database']} "
+            f"--target_schema {self.options['target']['schema']} "
+            f"--target_table {self.options['target']['table']} "
+            f"--max_ignored_rows {self.options['load_options']['max_ignored_rows']} "
+            f'--date_format "{self.options["format"]["date_time"]["date_format"]}" '
+            f'--time_format "{self.options["format"]["date_time"]["time_format"]}" '
+            f'--date_time_format "{self.options["format"]["date_time"]["date_time_format"]}" '
+            f'--field_separator "{self.options["format"]["field_separator"]}" '
+            f'--null_value "{self.options["format"]["null_value"]}" '
+            f"--boolean_representation {self.options['format']['boolean']['true_format']}_{self.options['format']['boolean']['false_format']} "  # noqa: E501
+            f'--escape_character "{self.options["format"]["escape_character"]}" '
+            f'--enclosing_character "{self.options["format"]["enclosing_character"]}" '
+            + ("--skip_second_fraction " if self.options["date_time"].get("skip_second_fraction", False) else "")
+            + ("--empty_target " if self.options["load_options"].get("empty_target", False) else "--noempty_target ")
+            + ("--has_header_row " if self.options.get("has_header_row", False) else "")
+            + ("--flexible" if self.options.get("flexible", False) else "")
         )
         return command
 
