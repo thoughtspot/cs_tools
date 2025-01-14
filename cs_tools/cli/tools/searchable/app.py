@@ -231,6 +231,12 @@ def audit_logs(
                 end = utc_terminal_end - dt.timedelta(days=days)
                 c = ts.api.logs_fetch(utc_start=beg, utc_end=end)
                 r = utils.run_sync(c)
+
+                if r.is_error:
+                    log.error("Failed to call the Audit Logs API, see logs for details..")
+                    log.debug(f"API Response:\n{r.text}")
+                    return 1
+
                 _.append(r.json())
 
         with tracker["CLEAN"]:
