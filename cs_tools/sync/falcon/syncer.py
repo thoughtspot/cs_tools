@@ -36,7 +36,7 @@ class Falcon(DatabaseSyncer):
     schema_: str = pydantic.Field("falcon_default_schema", alias="schema")
     thoughtspot: ThoughtSpot = pydantic.Field(default_factory=utils.check_if_keyword_needed, validate_default=False)
     ignore_load_balancer_redirect: bool = False
-    wait_for_dataload_completion: bool = False
+    wait_for_dataload_completion: bool = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
