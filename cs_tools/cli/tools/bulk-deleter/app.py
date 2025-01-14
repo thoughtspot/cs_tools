@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import collections
 import datetime as dt
 import logging
 import pathlib
@@ -41,6 +42,7 @@ def _tick_tock(task: px.WorkTask) -> None:
 def downstream(
     ctx: typer.Context,
     guid: _types.GUID = typer.Option(..., help="guid of the object to delete dependents of"),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
     syncer: Syncer = typer.Option(
         None,
         click_type=custom_types.Syncer(models=[models.DeleterReport]),
@@ -72,8 +74,8 @@ def downstream(
         px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Dependents"),
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {'nowhere' if syncer is None else syncer.name}"),
         px.WorkTask(id="PREVIEW_DATA", description="Sample dependent objects"),
-        px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
         px.WorkTask(id="EXPORTING", description="Exporting dependents as TML"),
+        px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
         px.WorkTask(id="DELETING", description="Deleting dependent objects"),
     ]
 
@@ -129,35 +131,6 @@ def downstream(
 
             RICH_CONSOLE.print(Align.center(t))
 
-        with tracker["CONFIRM"] as this_task:
-            this_task.description = "[fg-warn]Confirmation prompt"
-            this_task.total = ONE_MINUTE = 60
-            operation = "export" if export_only else "remov"  # Yes, intentionally spelled wrong.
-
-            tracker.extra_renderable = lambda: Align.center(
-                console.Group(
-                    Align.center(f"{len(all_metadata):,} objects will be {operation}ed"),
-                    "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
-                )
-            )
-
-            th = threading.Thread(target=_tick_tock, args=(this_task,))
-            th.start()
-
-            kb = ConfirmationListener(timeout=ONE_MINUTE)
-            kb.run()
-
-            assert kb.response is not None, "ConfirmationListener never got a response."
-
-            tracker.extra_renderable = None
-            this_task.final()
-
-            if kb.response.upper() == "N":
-                this_task.description = f"[fg-error]Denied[/] (no {operation}ing done)"
-                return 0
-            else:
-                this_task.description = f"[fg-success]Approved[/] ({operation}ing {len(all_metadata):,})"
-
         with tracker["EXPORTING"] as this_task:
             if directory is None:
                 this_task.skip()
@@ -177,18 +150,48 @@ def downstream(
         if export_only:
             return 0
 
+        with tracker["CONFIRM"] as this_task:
+            if no_prompt:
+                this_task.skip()
+            else:
+                this_task.description = "[fg-warn]Confirmation prompt"
+                this_task.total = ONE_MINUTE = 60
+
+                tracker.extra_renderable = lambda: Align.center(
+                    console.Group(
+                        Align.center(f"{len(all_metadata):,} objects will be deleted"),
+                        "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
+                    )
+                )
+
+                th = threading.Thread(target=_tick_tock, args=(this_task,))
+                th.start()
+
+                kb = ConfirmationListener(timeout=ONE_MINUTE)
+                kb.run()
+
+                assert kb.response is not None, "ConfirmationListener never got a response."
+
+                tracker.extra_renderable = None
+                this_task.final()
+
+                if kb.response.upper() == "N":
+                    this_task.description = "[fg-error]Denied[/] (no deleting done)"
+                    return 0
+                else:
+                    this_task.description = f"[fg-success]Approved[/] (deleting {len(all_metadata):,})"
+
         with tracker["DELETING"] as this_task:
             this_task.total = len(all_metadata)
 
             guids_to_delete: set[_types.GUID] = {metadata_object["guid"] for metadata_object in all_metadata}
+            delete_attempts = collections.defaultdict(int)
 
             async def _delete_and_advance(guid: _types.GUID) -> None:
-                try:
-                    r = await ts.api.metadata_delete(guid=guid)
-                    r.raise_for_status()
-                except Exception:
-                    pass
-                else:
+                delete_attempts[guid] += 1
+                r = await ts.api.metadata_delete(guid=guid)
+
+                if r.is_success or delete_attempts[guid] > 10:
                     guids_to_delete.discard(guid)
                     this_task.advance(step=1)
 
@@ -210,6 +213,7 @@ def from_tabular(
         rich_help_panel="Syncer Options",
     ),
     deletion: str = typer.Option(..., help="directive to find content to delete", rich_help_panel="Syncer Options"),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
     directory: pathlib.Path = typer.Option(
         None,
         metavar="DIRECTORY",
@@ -250,6 +254,7 @@ def from_tabular(
     TOOL_TASKS = [
         px.WorkTask(id="LOAD_DATA", description=f"Sending data to {'nowhere' if syncer is None else syncer.name}"),
         px.WorkTask(id="EXPORTING", description="Exporting dependents as TML"),
+        px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
         px.WorkTask(id="DELETING", description="Deleting dependent objects"),
     ]
 
@@ -276,18 +281,48 @@ def from_tabular(
         if export_only:
             return 0
 
+        with tracker["CONFIRM"] as this_task:
+            if no_prompt:
+                this_task.skip()
+            else:
+                this_task.description = "[fg-warn]Confirmation prompt"
+                this_task.total = ONE_MINUTE = 60
+
+                tracker.extra_renderable = lambda: Align.center(
+                    console.Group(
+                        Align.center(f"{len(all_metadata):,} objects will be deleted"),
+                        "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
+                    )
+                )
+
+                th = threading.Thread(target=_tick_tock, args=(this_task,))
+                th.start()
+
+                kb = ConfirmationListener(timeout=ONE_MINUTE)
+                kb.run()
+
+                assert kb.response is not None, "ConfirmationListener never got a response."
+
+                tracker.extra_renderable = None
+                this_task.final()
+
+                if kb.response.upper() == "N":
+                    this_task.description = "[fg-error]Denied[/] (no deleting done)"
+                    return 0
+                else:
+                    this_task.description = f"[fg-success]Approved[/] (deleting {len(all_metadata):,})"
+
         with tracker["DELETING"] as this_task:
             this_task.total = len(all_metadata)
 
             guids_to_delete: set[_types.GUID] = {metadata_object["guid"] for metadata_object in all_metadata}
+            delete_attempts = collections.defaultdict(int)
 
             async def _delete_and_advance(guid: _types.GUID) -> None:
-                try:
-                    r = await ts.api.metadata_delete(guid=guid)
-                    r.raise_for_status()
-                except Exception:
-                    pass
-                else:
+                delete_attempts[guid] += 1
+                r = await ts.api.metadata_delete(guid=guid)
+
+                if r.is_success or delete_attempts[guid] > 10:
                     guids_to_delete.discard(guid)
                     this_task.advance(step=1)
 
