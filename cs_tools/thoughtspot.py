@@ -7,7 +7,6 @@ import json
 import logging
 
 import httpx
-import pydantic
 
 from cs_tools import _types, errors, utils
 from cs_tools.api.client import RESTAPIClient
@@ -56,7 +55,7 @@ class ThoughtSpot:
         c = self.api.session_info()
         r = utils.run_sync(c)
 
-        if not r.is_success:
+        if httpx.codes.is_client_error(r.status_code):
             return None
 
         __session_info__ = r.json()
@@ -97,6 +96,8 @@ class ThoughtSpot:
                     __auth_ctx__ = "BEARER_TOKEN"
                 else:
                     self.api.headers.pop("Authorization")
+
+                    # WE'LL FAKE THE STATUS CODE TO GIVE MORE INFO IN THE ERROR.
                     r.status_code = httpx.codes.EARLY_HINTS
                     r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, **r.json()}).encode()
 
