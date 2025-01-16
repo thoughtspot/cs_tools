@@ -109,7 +109,7 @@ def downstream(
                     for metadata_object in all_metadata
                 ]
 
-                syncer.dump("archiver_report", data=d)
+                syncer.dump("deleter_report", data=d)
 
         with tracker["PREVIEW_DATA"]:
             t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""), width=150)
