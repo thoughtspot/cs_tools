@@ -37,6 +37,8 @@ class Literal(CustomType):
     """
     Only accept one of a few choices.
 
+    This is a more advanced version of using typing.Literal for the typer annotation.
+
     If a value should be hidden from documentation, wrap it in double underscores.
     """
 
