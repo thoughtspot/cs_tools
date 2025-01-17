@@ -99,7 +99,7 @@ class ThoughtSpot:
 
                     # WE'LL FAKE THE STATUS CODE TO GIVE MORE INFO IN THE ERROR.
                     r.status_code = httpx.codes.EARLY_HINTS
-                    r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, **r.json()}).encode()
+                    r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, "error": r.text}).encode()
 
             if not __session_info__ and (secret_key := self.config.thoughtspot.secret_key) is not None:
                 c = self.api.v1_trusted_authentication(username=username, secret_key=secret_key, org_id=org_id)
