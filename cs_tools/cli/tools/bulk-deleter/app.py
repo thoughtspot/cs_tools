@@ -231,19 +231,19 @@ def from_tabular(
     """
     Remove metadata from ThoughtSpot.
 
-    Objects to delete are limited to Answers and Liveboards.
+    Any valid object guid will be deleted.
 
     \b
-        +------------------------+----------------------------------------+
-        |           type         |                  guid                  |
-        +------------------------+----------------------------------------+
-        |          answer        |  01234567-FAKE-GUID-FAKE-012345678900  |
-        |        liveboard       |  01234567-FAKE-GUID-FAKE-012345678900  |
-        |           ...          |  01234567-FAKE-GUID-FAKE-012345678900  |
-        |  QUESTION_ANSWER_BOOK  |  01234567-FAKE-GUID-FAKE-012345678900  |
-        |  PINBOARD_ANSWER_BOOK  |  01234567-FAKE-GUID-FAKE-012345678900  |
-        |           ...          |  01234567-FAKE-GUID-FAKE-012345678900  |
-        +------------------------+----------------------------------------+
+        +----------------------------------------+
+        |                  guid                  |
+        +----------------------------------------+
+        |  01234567-FAKE-GUID-FAKE-012345678900  |
+        |  01234567-FAKE-GUID-FAKE-012345678900  |
+        |  01234567-FAKE-GUID-FAKE-012345678900  |
+        |  01234567-FAKE-GUID-FAKE-012345678900  |
+        |  01234567-FAKE-GUID-FAKE-012345678900  |
+        |  01234567-FAKE-GUID-FAKE-012345678900  |
+        +----------------------------------------+
     """
     if syncer is not None and deletion is None:
         RICH_CONSOLE.print("[fg-error]you must provide a syncer directive to --deletion")
@@ -252,7 +252,7 @@ def from_tabular(
     ts = ctx.obj.thoughtspot
 
     TOOL_TASKS = [
-        px.WorkTask(id="LOAD_DATA", description=f"Sending data to {'nowhere' if syncer is None else syncer.name}"),
+        px.WorkTask(id="LOAD_DATA", description=f"Loading data to {'nowhere' if syncer is None else syncer.name}"),
         px.WorkTask(id="EXPORTING", description="Exporting dependents as TML"),
         px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
         px.WorkTask(id="DELETING", description="Deleting dependent objects"),
