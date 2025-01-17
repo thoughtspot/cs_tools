@@ -49,8 +49,18 @@ InferredDataType = Literal[
 # ==========
 # fmt: off
 APIObjectType = Literal[
-    "LIVEBOARD", "ANSWER", "LOGICAL_TABLE", "LOGICAL_COLUMN", "CONNECTION", "TAG", "USER", "USER_GROUP",
-    "LOGICAL_RELATIONSHIP", "INSGIHT_SPEC"
+    "CONNECTION",
+    "LOGICAL_TABLE",
+    "LIVEBOARD", "ANSWER",
+    "LOGICAL_COLUMN",
+    "TAG",
+    "USER", "USER_GROUP",
+    "LOGICAL_RELATIONSHIP", "INSGIHT_SPEC",
+]
+UserFriendlyObjectType = Literal[
+    "CONNECTION",
+    "TABLE", "VIEW", "SQL_VIEW", "MODEL",
+    "LIVEBOARD", "ANSWER",
 ]
 # fmt: on
 PrincipalType = Literal["USER", "USER_GROUP"]
@@ -98,11 +108,34 @@ class TQLQueryContext(_compat.TypedDict):
     server_schema_version: int
 
 
-def lookup_api_type(metadata_type: str) -> APIObjectType:
-    """Determine the APIObjectType based on the V1 enum."""
-    ENUM_TO_TYPE_MAPPING = {
+def lookup_api_type(
+    metadata_type: str, *, mode: Literal["V1", "FRIENDLY"] = "V1", strict: bool = False
+) -> APIObjectType:
+    """
+    Determine the APIObjectType based on a standard metadata type.
+
+    If strict is True, raise a KeyError if the metadata type is unknown.
+    """
+    FRIENDLY_TO_API_TYPE_MAPPING = {
+        "CONNECTION": "CONNECTION",
+        "TABLE": "LOGICAL_TABLE",
+        "VIEW": "LOGICAL_TABLE",
+        "SQL_VIEW": "LOGICAL_TABLE",
+        "MODEL": "LOGICAL_TABLE",
+        "LIVEBOARD": "LIVEBOARD",
+        "ANSWER": "ANSWER",
+    }
+    V1_ENUM_TO_API_TYPE_MAPPING = {
         "PINBOARD_ANSWER_BOOK": "LIVEBOARD",
         "QUESTION_ANSWER_BOOK": "ANSWER",
     }
 
-    return cast(APIObjectType, ENUM_TO_TYPE_MAPPING.get(metadata_type, metadata_type))
+    mapping = FRIENDLY_TO_API_TYPE_MAPPING if mode == "FRIENDLY" else V1_ENUM_TO_API_TYPE_MAPPING
+    api_type = mapping.get(metadata_type.upper(), None)
+
+    if api_type is None:
+        if strict:
+            raise KeyError(f"Unknown metadata type: {metadata_type}")
+        api_type = metadata_type
+
+    return cast(APIObjectType, api_type)
