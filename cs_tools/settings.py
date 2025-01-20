@@ -28,7 +28,7 @@ from cs_tools.datastructures import ExecutionEnvironment, _GlobalModel, _GlobalS
 from cs_tools.updater import cs_tools_venv
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 _FOUNDING_DAY = dt.datetime(year=2012, month=6, day=1, tzinfo=dt.timezone.utc)
 
 
@@ -129,7 +129,7 @@ class MetaConfig(_GlobalModel):
             context = instance.__pydantic_extra__["__cs_tools_context__"]  # type: ignore[index]
 
             if "config_migration" in context:
-                log.info(
+                _LOG.info(
                     f"Migrating the meta Configuration file from '{context['config_migration']['from']}' to "
                     f"{context['config_migration']['to']}"
                 )
@@ -174,13 +174,13 @@ class MetaConfig(_GlobalModel):
             self.save()
 
         except urllib.error.URLError:
-            log.warning(f"Fetching latest CS Tools release version timed out after {TIMEOUT_AFTER}s")
+            _LOG.warning(f"Fetching latest CS Tools release version timed out after {TIMEOUT_AFTER}s")
 
         except FileNotFoundError:
-            log.debug("Could not save to .meta-config.json")
+            _LOG.debug("Could not save to .meta-config.json")
 
         except Exception as e:
-            log.debug(f"Could not fetch release url: {e}", exc_info=True)
+            _LOG.debug(f"Could not fetch release url: {e}", exc_info=True)
 
     def newer_version_string(self) -> str:
         """Return the CLI new version media string."""
@@ -300,26 +300,9 @@ class CSToolsConfig(_GlobalSettings):
     @pydantic.model_validator(mode="before")
     @classmethod
     def _enforce_compatability(cls, data: Any) -> Any:
-        # DEV NOTE: @boonhapus - upconvert the < 1.5.0 config
-        if "auth" in data:
-            data = {
-                "name": data["name"],
-                "thoughtspot": {
-                    "url": data["thoughtspot"]["host"],
-                    "username": data["auth"]["frontend"]["username"],
-                    "password": data["auth"]["frontend"]["password"],
-                    "disable_ssl": data["thoughtspot"]["disable_ssl"],
-                },
-                "verbose": data["verbose"],
-                "temp_dir": (
-                    cs_tools_venv.subdir(".tmp")
-                    if pathlib.Path(data["temp_dir"]) == cs_tools_venv.base_dir
-                    else data["temp_dir"]
-                ),
-                "created_in_cs_tools_version": __version__,
-                "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
-            }
-
+        """Perform config file migrations."""
+        data = cls._migrate_from_pre_150(data)
+        data = cls._migrate_from_pre_160(data)
         return data
 
     @pydantic.field_serializer("temp_dir")
@@ -329,6 +312,82 @@ class CSToolsConfig(_GlobalSettings):
             return None
         return temp_dir.as_posix()
 
+    @classmethod
+    def _migrate_from_pre_150(cls, data: Any) -> None:
+        """Migrate from historical configs."""
+        # ATTR MARKER FOR 1.5.0+
+        if "created_in_cs_tools_version" in data:
+            return data
+
+        # NEW DATA FORMAT: v1.5.x
+        # https://github.com/thoughtspot/cs_tools/blob/21109a43e7e6580b29537978114bbb9a51e5e519/cs_tools/settings.py#L286-L293
+
+        # OLD DATA FORMAT: v1.4.x
+        # https://github.com/thoughtspot/cs_tools/blob/0d43bdeb4f84d1d9bbafafb6c93d0074ce24fdf3/cs_tools/settings.py#L201-L207
+
+        # MAJOR CHANGELOG:
+        # - remove .syncer
+        #   :: this used to describe the default syncer to be used in case no syncer was specified, we removed it in
+        #   :: favor of standardizing --syncer as an option name on commands which required it and making a required
+        #   :: option instead.
+        #
+        # - remove .auth in favor of grouping attributes on .thoughtspot
+        # - added .created_in_cs_tools_version to help later config migrations
+        #
+
+        data = {
+            "name": data["name"],
+            "thoughtspot": {
+                "url": data["thoughtspot"]["host"],
+                "username": data["auth"]["frontend"]["username"],
+                "password": data["auth"]["frontend"]["password"],
+                "disable_ssl": data["thoughtspot"]["disable_ssl"],
+            },
+            "verbose": data["verbose"],
+            "temp_dir": (
+                cs_tools_venv.subdir(".tmp")
+                if pathlib.Path(data["temp_dir"]).is_relative_to(cs_tools_venv.base_dir)
+                else data["temp_dir"]
+            ),
+            "created_in_cs_tools_version": __version__,
+            "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
+        }
+
+        return data
+
+    @classmethod
+    def _migrate_from_pre_160(cls, data: Any) -> None:
+        """Migrate from 1.5.x configs."""
+        if AwesomeVersion(data["created_in_cs_tools_version"]) >= AwesomeVersion("1.6.0"):
+            return data
+
+        # NEW DATA FORMAT: v1.6.x
+        # ...
+
+        # OLD DATA FORMAT: v1.5.x
+        # https://github.com/thoughtspot/cs_tools/blob/0d43bdeb4f84d1d9bbafafb6c93d0074ce24fdf3/cs_tools/settings.py#L201-L207
+
+        # MAJOR CHANGELOG:
+        # - unified all the internal directories to be hidden
+
+        data = {
+            **data,
+            "temp_dir": (
+                cs_tools_venv.subdir(".tmp")
+                if pathlib.Path(data["temp_dir"]).is_relative_to(cs_tools_venv.base_dir)
+                else data["temp_dir"]
+            ),
+            "created_in_cs_tools_version": __version__,
+            "__cs_tools_context__": {
+                "config_migration": {
+                    "from": data["created_in_cs_tools_version"],
+                    "to": __version__,
+                },
+            },
+        }
+
+        return data
+
     # ====================
     # NORMAL CLASS MEMBERS
     # ====================
@@ -337,6 +396,29 @@ class CSToolsConfig(_GlobalSettings):
     def exists(cls, name: str) -> bool:
         """Check if a config exists by this name already."""
         return cs_tools_venv.base_dir.joinpath(f"cluster-cfg_{name}.toml").exists()
+
+    @classmethod
+    def from_toml(cls, path: pathlib.Path, automigrate: bool = False) -> CSToolsConfig:
+        """Read in a cluster-config.toml file."""
+        try:
+            data = toml.load(path)
+        except FileNotFoundError:
+            raise errors.ConfigDoesNotExist(config_name=path.stem.replace("cluster-cfg_", "")) from None
+
+        instance = cls.model_validate(data)
+
+        # Can't get the type hints to work here, so will just ignore them for now~
+        if "__cs_tools_context__" in instance.__pydantic_extra__:  # type: ignore[operator]
+            context = instance.__pydantic_extra__["__cs_tools_context__"]  # type: ignore[index]
+
+            if "config_migration" in context and automigrate:
+                _LOG.info(
+                    f"Migrating CS Tools configuration file '{instance.name}' from "
+                    f"{context['config_migration']['from']} to {context['config_migration']['to']}"
+                )
+                instance.save()
+
+        return instance
 
     @classmethod
     def from_name(cls, name: str, automigrate: bool = False, **overrides) -> CSToolsConfig:
@@ -359,7 +441,7 @@ class CSToolsConfig(_GlobalSettings):
         return conf
 
     @classmethod
-    def from_environment(cls, name: str = "ENV", *, dotfile: Optional[pathlib.Path] = None) -> CSToolsConfig:
+    def from_environment(cls, name: str = "ENV", *, dotfile: Optional[_types.PathLike] = None) -> CSToolsConfig:
         """Read in a config from environment variables."""
         config = {"name": name}
 
@@ -367,30 +449,6 @@ class CSToolsConfig(_GlobalSettings):
             config["_env_file"] = pathlib.Path(dotfile).as_posix()
 
         return cls.model_validate(config)
-
-    @classmethod
-    def from_toml(cls, path: pathlib.Path, automigrate: bool = False) -> CSToolsConfig:
-        """Read in a cluster-config.toml file."""
-
-        try:
-            data = toml.load(path)
-        except FileNotFoundError:
-            raise errors.ConfigDoesNotExist(config_name=path.stem.replace("cluster-cfg_", "")) from None
-
-        instance = cls.model_validate(data)
-
-        # Can't get the type hints to work here, so will just ignore them for now~
-        if "__cs_tools_context__" in instance.__pydantic_extra__:  # type: ignore[operator]
-            context = instance.__pydantic_extra__["__cs_tools_context__"]  # type: ignore[index]
-
-            if "config_migration" in context and automigrate:
-                log.info(
-                    f"Migrating CS Tools configuration file '{instance.name}' from "
-                    f"{context['config_migration']['from']} to {context['config_migration']['to']}"
-                )
-                instance.save()
-
-        return instance
 
     def save(self, directory: pathlib.Path = cs_tools_venv.base_dir) -> None:
         """Save a cluster-config.toml file."""
