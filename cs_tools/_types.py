@@ -67,6 +67,7 @@ PrincipalType = Literal["USER", "USER_GROUP"]
 ImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY", "PARTIAL_OBJECTS_ONLY"]
 ShareType = Literal["DEFINED", "EFFECTIVE"]
 ShareMode = Literal["NO_ACCESS", "READ_ONLY", "MODIFY"]
+SharingVisibility = Literal["SHARABLE", "NON_SHARABLE"]
 
 
 class GroupPrivilege(_compat.StrEnum):
