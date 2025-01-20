@@ -395,9 +395,9 @@ def metadata(
 
             # FETCH ALL ORG IDs WE'LL NEED TO COLLECT FROM
             if ts.session_context.thoughtspot.is_orgs_enabled:
-                c = ts.api.orgs_search()
-                r = utils.run_sync(c)
-                orgs = [_ for _ in r.json() if org_override is None or _["name"].casefold() == org_override.casefold()]
+                c = workflows.metadata.fetch_one(identifier=org_override, metadata_type="ORG", http=ts.api)
+                _ = utils.run_sync(c)
+                orgs = [_]
             else:
                 orgs = [{"id": 0, "name": "ThoughtSpot"}]
 
