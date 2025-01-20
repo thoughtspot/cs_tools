@@ -204,10 +204,11 @@ class ThoughtSpot:
         except StopIteration:
             raise errors.CSToolsError(f"Could not find the org '{org_id}'") from None
 
-        # DEV NOTE: @boonhapus, 2025/01/11
-        # This is exactly how ThoughtSpot performs the org/switch operation.. instead,
-        # establish a new session in the target org.
-        self.login(org_id=_["id"])
+        if _["id"] != self.session_context.user.org_context:
+            # DEV NOTE: @boonhapus, 2025/01/11
+            # This is exactly how ThoughtSpot performs the org/switch operation..
+            # instead, establish a new session in the target org.
+            self.login(org_id=_["id"])
 
         return _
 
