@@ -18,7 +18,7 @@ from cs_tools.cli.tools import searchable
 from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 from cs_tools.sync.base import Syncer
 
-from ._utils import User, determine_changes
+from ._utils import Group, User, determine_what_changed
 
 log = logging.getLogger(__name__)
 app = AsyncTyper(help="""Manage Users and Groups in bulk.""")
@@ -147,6 +147,52 @@ def transfer(
 
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
+def delete(
+    ctx: typer.Context,
+    syncer: Syncer = typer.Option(
+        ...,
+        click_type=custom_types.Syncer(),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+) -> _types.ExitCode:
+    """
+    Remove Users (only) from ThoughtSpot.
+
+    This command will perform an equivalent operation to a "sync --delete-mode REMOVE" command.
+
+    Your syncer should contain at least one of the following fields.
+
+    \b
+        +--------------------------------------+----------------+
+        |              user_guid               |    username    |
+        +--------------------------------------+----------------+
+        | 00000841-3bd9-f6bb-d7c9-7fb4322d08ad | cs_tools       |
+        | c209661c-fba2-4a64-8a24-2d70a50a0b2c | namey.namerson |
+        | 00000841-3bd9-c107-4236-eeb790882a55 | fake.user      |
+        +--------------------------------------+----------------+
+    """
+    ts = ctx.obj.thoughtspot
+
+    if not ts.session_context.user.is_admin:
+        raise errors.InsufficientPrivileges(
+            user=ts.session_context.user,
+            service="the users/create API",
+            required_privileges=[_types.GroupPrivilege.can_administer_thoughtspot],
+        )
+
+    TOOL_TASKS = [
+        px.WorkTask(id="LOAD_DATA", description=f"Loading data from {syncer.name}"),
+        px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
+        px.WorkTask(id="DELETE", description="Syncing Principals to ThoughtSpot"),
+    ]
+
+    return 0
+
+
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def sync(
     ctx: typer.Context,
     syncer: Syncer = typer.Option(
@@ -159,18 +205,22 @@ def sync(
     delete_mode: Literal["HIDE", "REMOVE", "IGNORE"] = typer.Option(
         "IGNORE", help="How to handle a principal if it does not exist in the syncer, but does in ThoughtSpot."
     ),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", help="Don't make any changes, just log what actions would happen."
-    ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Test your Sync without making any changes."),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="Disable the confirmation prompt."),
     org_override: str = typer.Option(0, "--org", help="The org to sync principals in."),
 ):
     """
     Sync your principals (Users, Groups, Memberships) from an external data source.
 
     \b
-      delete-mode = "HIDE" .... the principal will be set to NON_SHAREABLE and moved to a group called "HIDDEN".
-      delete-mode = "REMOVE" .. the principal will be deleted from the system.
-      delete-mode = "IGNORE" .. the principal will not be deleted if they do not exist in the syncer
+    Uses the [fg-warn]cs_tools tools searchable metadata[/] data model (or use [fg-warn]--export-only[/] flag to fetch).
+
+      --delete-mode HIDE .... the principal will be set to NON_SHAREABLE and moved to a group called "HIDDEN".
+      --delete-mode REMOVE .. the principal will be deleted from the system.
+      --delete-mode IGNORE .. the principal will not be deleted if they do not exist in the syncer
+
+      [fg-warn]:mage: Important!
+      [fg-primary]ts_xref_principal[/] represents the relationship of [fg-primary]Principal K is a member of Group X[/].
     """
     ts = ctx.obj.thoughtspot
 
@@ -193,6 +243,7 @@ def sync(
         px.WorkTask(id="TS_PRIVILEGE", description="  Fetching [fg-secondary]PRIVILEGE[/] data"),
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
         px.WorkTask(id="LOAD_DATA", description=f"Loading data from {syncer.name}"),
+        px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
         px.WorkTask(id="SYNC", description="Syncing Principals to ThoughtSpot"),
     ]
 
@@ -266,29 +317,71 @@ def sync(
                 for tablename, _ in existing.items():
                     incoming[tablename] = syncer.load(tablename)
 
-        existing["user"] = [User.from_syncer_info(u, org=org_override, info=existing) for u in existing["ts_user"]]
-        incoming["user"] = [User.from_syncer_info(u, org=org_override, info=incoming) for u in incoming["ts_user"]]
+        # CALCULATE THE DIFF ON GROUPS.
+        existing["group"] = [Group.from_syncer_info(g, org=org_override, info=existing) for g in existing["ts_group"]]
+        incoming["group"] = [Group.from_syncer_info(g, org=org_override, info=incoming) for g in incoming["ts_group"]]
+        g_create, g_update, g_delete = determine_what_changed(existing["group"], incoming["group"], key="group_guid")
 
-        create, update, delete = determine_changes(existing["user"], incoming["user"], key="user_guid")
+        # fmt: off
+        # CALCULATE THE DIFF ON USERS.
+        existing["user"] = [User.from_syncer_info(u, deleted_groups=g_delete, org=org_override, info=existing) for u in existing["ts_user"]]  # noqa: E501
+        incoming["user"] = [User.from_syncer_info(u, deleted_groups=g_delete, org=org_override, info=incoming) for u in incoming["ts_user"]]  # noqa: E501
+        u_create, u_update, u_delete = determine_what_changed(existing["user"], incoming["user"], key="user_guid")
+        # fmt: on
 
-        RICH_CONSOLE.print(
-            f"{len(create)=}",
-            f"{len(update)=}",
-            f"{len(delete)=}",
-        )
-
-        for guid in update:
-            RICH_CONSOLE.print(
-                "\n",
-                next(u for u in existing["user"] if u.user_guid == guid),
-                next(u for u in incoming["user"] if u.user_guid == guid),
-                "\n",
-            )
-
-        return 0
+        for group_guid in g_update:
+            group = next(g for g in existing["group"] if g.group_guid == group_guid)
+            RICH_CONSOLE.print(group)
 
         if delete_mode == "HIDE":
             # CREATE A GROUP CALLED HIDDEN.
             ...
+
+        if dry_run:
+            RICH_CONSOLE.print("DRY RUN MODE ENABLED, NO CHANGES MADE.")
+
+            RICH_CONSOLE.print(
+                f"Created Groups: {len(g_create)=:,}",
+                f"Updated Groups: {len(g_update)=:,}",
+                f"Deleted Groups: {len(g_delete)=:,}",
+            )
+
+            RICH_CONSOLE.print(
+                f"Created Users: {len(u_create)=:,}",
+                f"Updated Users: {len(u_update)=:,}",
+                f"Deleted Users: {len(u_delete)=:,}",
+            )
+            return 0
+
+        with tracker["CONFIRM"] as this_task:
+            if no_prompt:
+                this_task.skip()
+            else:
+                this_task.description = "[fg-warn]Confirmation prompt"
+                this_task.total = ONE_MINUTE = 60
+
+                tracker.extra_renderable = lambda: Align.center(
+                    console.Group(
+                        Align.center(f"{len(all_metadata):,} objects will be deleted"),
+                        "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
+                    )
+                )
+
+                th = threading.Thread(target=_tick_tock, args=(this_task,))
+                th.start()
+
+                kb = ConfirmationListener(timeout=ONE_MINUTE)
+                kb.run()
+
+                assert kb.response is not None, "ConfirmationListener never got a response."
+
+                tracker.extra_renderable = None
+                this_task.final()
+
+                if kb.response.upper() == "N":
+                    this_task.description = "[fg-error]Denied[/] (no deleting done)"
+                    return 0
+                else:
+                    this_task.description = f"[fg-success]Approved[/] (deleting {len(all_metadata):,})"
 
     return 0
