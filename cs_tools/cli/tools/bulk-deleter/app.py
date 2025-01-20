@@ -204,6 +204,126 @@ def downstream(
 
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
+def from_tag(
+    ctx: typer.Context,
+    tag_name: str = typer.Option(..., "--tag", help="case sensitive name to tag stale objects with"),
+    tag_only: bool = typer.Option(False, "--tag-only", help="delete only the tag itself, not the objects"),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+    directory: pathlib.Path = typer.Option(
+        None,
+        metavar="DIRECTORY",
+        help="folder/directory to export TML objects to",
+        file_okay=False,
+        rich_help_panel="TML Export Options",
+    ),
+    export_only: bool = typer.Option(
+        False,
+        "--export-only",
+        help="export all tagged content, but don't remove it from ThoughtSpot",
+        rich_help_panel="TML Export Options",
+    ),
+) -> _types.ExitCode:
+    """Delete content with the identified --tag."""
+    if export_only and directory is None:
+        raise typer.BadParameter("You must provide a directory to export to when using --export-only.")
+
+    ts = ctx.obj.thoughtspot
+
+    try:
+        c = workflows.metadata.fetch_one(tag_name, "TAG", http=ts.api)
+        _ = utils.run_sync(c)
+    except ValueError:
+        raise typer.BadParameter(f"No tag found with the name '{tag_name}'") from None
+    else:
+        tag = _
+
+    TOOL_TASKS = [
+        px.WorkTask(id="PREPARE", description=f"Fetching objects with '{tag_name}' tag"),
+        px.WorkTask(id="EXPORTING", description="Exporting objects as TML"),
+        px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
+        px.WorkTask(id="DELETING", description="Deleting objects"),
+    ]
+
+    with px.WorkTracker("Deleting objects", tasks=TOOL_TASKS) as tracker:
+        guids_to_delete: set[_types.GUID] = {tag["metadata_id"]}
+
+        with tracker["PREPARE"] as this_task:
+            if not tag_only:
+                t = ["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"]
+                c = workflows.metadata.fetch_all(metadata_types=t, tag_identifiers=[tag["metadata_id"]], http=ts.api)
+                d = utils.run_sync(c)
+
+                guids_to_delete.update(_["metadata_id"] for _ in d)
+
+        with tracker["EXPORTING"] as this_task:
+            if directory is None:
+                this_task.skip()
+
+            else:
+                this_task.total = len(guids_to_delete)
+
+                async def _download_and_advance(guid: _types.GUID) -> None:
+                    await workflows.metadata.tml_export(guid=guid, edoc_format="YAML", directory=directory, http=ts.api)
+                    this_task.advance(step=1)
+
+                c = utils.bounded_gather(*(_download_and_advance(guid=_) for _ in guids_to_delete), max_concurrent=4)
+                _ = utils.run_sync(c)
+
+        if export_only:
+            return 0
+
+        with tracker["CONFIRM"] as this_task:
+            if no_prompt:
+                this_task.skip()
+            else:
+                this_task.description = "[fg-warn]Confirmation prompt"
+                this_task.total = ONE_MINUTE = 60
+
+                tracker.extra_renderable = lambda: Align.center(
+                    console.Group(
+                        Align.center(f"{len(guids_to_delete):,} objects will be deleted"),
+                        "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
+                    )
+                )
+
+                th = threading.Thread(target=_tick_tock, args=(this_task,))
+                th.start()
+
+                kb = ConfirmationListener(timeout=ONE_MINUTE)
+                kb.run()
+
+                assert kb.response is not None, "ConfirmationListener never got a response."
+
+                tracker.extra_renderable = None
+                this_task.final()
+
+                if kb.response.upper() == "N":
+                    this_task.description = "[fg-error]Denied[/] (no deleting done)"
+                    return 0
+                else:
+                    this_task.description = f"[fg-success]Approved[/] (deleting {len(guids_to_delete):,})"
+
+        with tracker["DELETING"] as this_task:
+            this_task.total = len(guids_to_delete)
+            delete_attempts = collections.defaultdict(int)
+
+            async def _delete_and_advance(guid: _types.GUID) -> None:
+                delete_attempts[guid] += 1
+                r = await ts.api.metadata_delete(guid=guid)
+
+                if r.is_success or delete_attempts[guid] > 10:
+                    guids_to_delete.discard(guid)
+                    this_task.advance(step=1)
+
+            while guids_to_delete:
+                c = utils.bounded_gather(*(_delete_and_advance(guid=_) for _ in guids_to_delete), max_concurrent=15)
+                _ = utils.run_sync(c)
+
+    return 0
+
+
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def from_tabular(
     ctx: typer.Context,
     syncer: Syncer = typer.Option(
@@ -246,19 +366,21 @@ def from_tabular(
         +----------------------------------------+
     """
     if syncer is not None and deletion is None:
-        RICH_CONSOLE.print("[fg-error]you must provide a syncer directive to --deletion")
-        return 1
+        raise typer.BadParameter("You must provide a syncer directive to --deletion.")
+
+    if export_only and directory is None:
+        raise typer.BadParameter("You must provide a directory to export to when using --export-only.")
 
     ts = ctx.obj.thoughtspot
 
     TOOL_TASKS = [
         px.WorkTask(id="LOAD_DATA", description=f"Loading data to {'nowhere' if syncer is None else syncer.name}"),
-        px.WorkTask(id="EXPORTING", description="Exporting dependents as TML"),
+        px.WorkTask(id="EXPORTING", description="Exporting objects as TML"),
         px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
         px.WorkTask(id="DELETING", description="Deleting dependent objects"),
     ]
 
-    with px.WorkTracker("Removing downstream dependents", tasks=TOOL_TASKS) as tracker:
+    with px.WorkTracker("Deleting objects", tasks=TOOL_TASKS) as tracker:
         with tracker["LOAD_DATA"]:
             all_metadata = syncer.load(deletion)
 
