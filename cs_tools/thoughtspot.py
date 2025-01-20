@@ -55,13 +55,14 @@ class ThoughtSpot:
         c = self.api.session_info()
         r = utils.run_sync(c)
 
-        if httpx.codes.is_client_error(r.status_code):
+        if _IS_SESSION_ERROR := httpx.codes.is_client_error(r.status_code):
             return None
 
-        __session_info__ = r.json()
+        if _ORG_IS_IRRELEVANT := desired_org_id is None:
+            return r.json()
 
-        if UserInfo(__session_info__=__session_info__, __auth_context__="NONE").org_context == desired_org_id:
-            return __session_info__
+        if _CTX_IS_ORG := UserInfo(__session_info__=r.json(), __auth_context__="NONE").org_context == desired_org_id:  # type: ignore[call-arg]
+            return r.json()
 
         return None
 
