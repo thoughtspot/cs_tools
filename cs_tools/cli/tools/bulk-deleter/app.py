@@ -3,7 +3,6 @@ from __future__ import annotations
 import collections
 import datetime as dt
 import logging
-import pathlib
 import threading
 import time
 
@@ -49,11 +48,9 @@ def downstream(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    directory: pathlib.Path = typer.Option(
+    directory: custom_types.Directory = typer.Option(
         None,
-        metavar="DIRECTORY",
         help="folder/directory to export TML objects to",
-        file_okay=False,
         rich_help_panel="TML Export Options",
     ),
     export_only: bool = typer.Option(
@@ -209,11 +206,9 @@ def from_tag(
     tag_name: str = typer.Option(..., "--tag", help="case sensitive name to tag stale objects with"),
     tag_only: bool = typer.Option(False, "--tag-only", help="delete only the tag itself, not the objects"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    directory: pathlib.Path = typer.Option(
+    directory: custom_types.Directory = typer.Option(
         None,
-        metavar="DIRECTORY",
         help="folder/directory to export TML objects to",
-        file_okay=False,
         rich_help_panel="TML Export Options",
     ),
     export_only: bool = typer.Option(
@@ -334,11 +329,9 @@ def from_tabular(
     ),
     deletion: str = typer.Option(..., help="directive to find content to delete", rich_help_panel="Syncer Options"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    directory: pathlib.Path = typer.Option(
+    directory: custom_types.Directory = typer.Option(
         None,
-        metavar="DIRECTORY",
         help="folder/directory to export TML objects to",
-        file_okay=False,
         rich_help_panel="TML Export Options",
     ),
     export_only: bool = typer.Option(
@@ -374,7 +367,7 @@ def from_tabular(
     ts = ctx.obj.thoughtspot
 
     TOOL_TASKS = [
-        px.WorkTask(id="LOAD_DATA", description=f"Loading data to {'nowhere' if syncer is None else syncer.name}"),
+        px.WorkTask(id="LOAD_DATA", description=f"Loading data from {syncer.name}"),
         px.WorkTask(id="EXPORTING", description="Exporting objects as TML"),
         px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
         px.WorkTask(id="DELETING", description="Deleting dependent objects"),
