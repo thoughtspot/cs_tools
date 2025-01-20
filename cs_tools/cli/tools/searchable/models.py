@@ -375,3 +375,12 @@ METADATA_MODELS = [
     DependentObject,
     SharingAccess,
 ]
+
+PRINCIPAL_MODELS = [
+    Org,
+    User,
+    OrgMembership,
+    Group,
+    GroupPrivilege,
+    GroupMembership,
+]
