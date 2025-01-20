@@ -361,6 +361,11 @@ class RESTAPIClient(httpx.AsyncClient):
         """Updates a ThoughtSpot user."""
         return self.post(f"api/rest/2.0/users/{user_identifier}/update", json=options)
 
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def users_delete(self, user_identifier: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+        """Deletes a ThoughtSpot user."""
+        return self.post(f"api/rest/2.0/users/{user_identifier}/delete", json=options)
+
     # ==================================================================================
     # GROUPS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_groups
     # ==================================================================================
@@ -449,6 +454,17 @@ class RESTAPIClient(httpx.AsyncClient):
     # ==================================================================================
     # SECURITY :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_security
     # ==================================================================================
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def security_metadata_assign(
+        self, guid: _types.ObjectIdentifier, user_identifier: _types.PrincipalIdentifier, **options: Any
+    ) -> Awaitable[httpx.Response]:
+        """Transfers the ownership of one or several objects from one user to another."""
+        if "metadata" not in options:
+            options["metadata"] = [{"identifier": guid}]
+
+        options["user_identifier"] = user_identifier
+        return self.post("api/rest/2.0/security/metadata/assign", json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
