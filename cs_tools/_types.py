@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal, Optional, Union, cast
 import datetime as dt
+import os
+import pathlib
 
 from thoughtspot_tml._tml import TML  # noqa: F401
 
@@ -11,6 +13,7 @@ from cs_tools import _compat
 # Meta types
 # ==========
 ExitCode: _compat.TypeAlias = Literal[0, 1]
+PathLike: _compat.TypeAlias = Union[str, os.PathLike, pathlib.Path]
 
 # ==========
 # Data format types
