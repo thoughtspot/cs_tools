@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Union
 import logging
 
+import httpx
+
 from cs_tools import errors
 
 if TYPE_CHECKING:
@@ -59,9 +61,11 @@ class OrgMiddleware:
 
         try:
             self.ts.config.thoughtspot.default_org = org_id
+            r = self.ts.api.put("callosum/v1/tspublic/v1/session/orgs", data={"orgid": org_id})
+            r.raise_for_status()
             self.ts.login()
 
-        except errors.AuthenticationError:
+        except (errors.AuthenticationError, httpx.HTTPError):
             raise errors.CSToolsCLIError(
                 title=f"Error setting org context for org {org}.",
                 reason=f"Invalid org specified, got '{org}'",
