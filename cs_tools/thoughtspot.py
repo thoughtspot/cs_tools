@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable
-from typing import Any, Optional
+from typing import Optional
 import asyncio
 import json
 import logging
@@ -10,7 +10,7 @@ import httpx
 
 from cs_tools import _types, errors, utils
 from cs_tools.api.client import RESTAPIClient
-from cs_tools.datastructures import LocalSystemInfo, SessionContext, UserInfo
+from cs_tools.datastructures import LocalSystemInfo, SessionContext
 from cs_tools.settings import CSToolsConfig
 
 _LOG = logging.getLogger(__name__)
@@ -51,20 +51,61 @@ class ThoughtSpot:
 
         return self._session_context
 
-    def _attempt_build_context(self, desired_org_id: Optional[int] = None) -> Any | None:
+    def _attempt_build_context(
+        self, auth_type: _types.AuthContext, desired_org_id: Optional[int] = None
+    ) -> _types.AuthContext:
         c = self.api.session_info()
         r = utils.run_sync(c)
 
         if _IS_SESSION_ERROR := httpx.codes.is_client_error(r.status_code):
-            return None
+            return "NONE"
 
-        if _ORG_IS_IRRELEVANT := desired_org_id is None:
-            return r.json()
+        # GOOD TO GO , INTERACT WITH THE APIs
+        __session_info__ = r.json()
 
-        if _CTX_IS_ORG := UserInfo(__session_info__=r.json(), __auth_context__="NONE").org_context == desired_org_id:  # type: ignore[call-arg]
-            return r.json()
+        c = self.api.system_info()
+        r = utils.run_sync(c)
+        __system_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | SYSTEM_INFO_ADMINISTRATION
 
-        return None
+        c = self.api.system_config_overrides()
+        r = utils.run_sync(c)
+        __overrides_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | APPLICATION_ADMINISTRATION
+
+        if not __system_info__:
+            _LOG.warning("CS Tools is meant to be run from an Administrator level context.")
+            __system_info__ = {
+                "id": "UNKNOWN",
+                "release_version": "v0.0.0",
+                "time_zone": "UNKNOWN",
+                "type": "UNKNOWN",
+            }
+
+        d = {
+            "__url__": self.config.thoughtspot.url,
+            "__system_info__": __system_info__,
+            "__overrides_info__": __overrides_info__,
+            "__session_info__": __session_info__,
+            "__is_orgs_enabled__": utils.run_sync(self.api.get("callosum/v1/tspublic/v1/session/orgs")).is_success,
+            "__auth_context__": auth_type,
+        }
+
+        self._session_context = ctx = SessionContext(thoughtspot=d, user=d)
+
+        if _NOT_IN_DESIRED_ORG := (desired_org_id is not None and ctx.user.org_context != desired_org_id):
+            # DEV NOTE: @boonhapus, 2025/01/21
+            #
+            # SCAL-239189 ... FALL BACK TO V1 SWITCH ORGS API
+            #
+            if ctx.thoughtspot.is_iam_v2_enabled:
+                c = self.api.put("callosum/v1/tspublic/v1/session/orgs", data={"orgid": desired_org_id})
+                _ = utils.run_sync(c)
+
+                if _.is_success:
+                    return self._attempt_build_context(auth_type=auth_type, desired_org_id=desired_org_id)
+            # == /
+            return "NONE"
+
+        return ctx.user.auth_context
 
     def login(self, org_id: Optional[int] = None) -> None:
         """Log in to ThoughtSpot."""
@@ -75,7 +116,6 @@ class ThoughtSpot:
         org_id = self.config.thoughtspot.default_org if org_id is None else org_id
 
         attempted: dict[str, httpx.Response] = {}
-        __session_info__: Optional[dict] = None
         __auth_ctx__: _types.AuthContext = "NONE"
 
         #
@@ -84,7 +124,7 @@ class ThoughtSpot:
         try:
             c: Awaitable[httpx.Response]  # Coroutine from RESTAPIClient
 
-            if not __session_info__ and (bearer_token := self.config.thoughtspot.bearer_token) is not None:
+            if __auth_ctx__ == "NONE" and (bearer_token := self.config.thoughtspot.bearer_token) is not None:
                 self.api.headers["Authorization"] = f"Bearer {bearer_token}"
                 c = self.api.request("GET", "api/rest/2.0/auth/session/token")
                 r = utils.run_sync(c)
@@ -93,16 +133,16 @@ class ThoughtSpot:
 
                 attempted["Bearer Token"] = r
 
-                if __session_info__ := self._attempt_build_context(desired_org_id=org_id):
-                    __auth_ctx__ = "BEARER_TOKEN"
-                else:
+                __auth_ctx__ = self._attempt_build_context(auth_type="BEARER_TOKEN", desired_org_id=org_id)
+
+                if __auth_ctx__ == "NONE":
                     self.api.headers.pop("Authorization")
 
                     # WE'LL FAKE THE STATUS CODE TO GIVE MORE INFO IN THE ERROR.
-                    r.status_code = httpx.codes.EARLY_HINTS
-                    r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, "error": r.text}).encode()
+                    r.status_code = httpx.codes.BAD_REQUEST
+                    r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, "og_resp": r.text}).encode()
 
-            if not __session_info__ and (secret_key := self.config.thoughtspot.secret_key) is not None:
+            if __auth_ctx__ == "NONE" and (secret_key := self.config.thoughtspot.secret_key) is not None:
                 c = self.api.v1_trusted_authentication(username=username, secret_key=secret_key, org_id=org_id)
                 r = utils.run_sync(c)
 
@@ -110,10 +150,14 @@ class ThoughtSpot:
 
                 attempted["V1 Trusted"] = r
 
-                if __session_info__ := self._attempt_build_context(desired_org_id=org_id):
-                    __auth_ctx__ = "TRUSTED_AUTH"
+                __auth_ctx__ = self._attempt_build_context(auth_type="TRUSTED_AUTH", desired_org_id=org_id)
 
-            if not __session_info__ and self.config.thoughtspot.password is not None:
+                if __auth_ctx__ == "NONE":
+                    # WE'LL FAKE THE STATUS CODE TO GIVE MORE INFO IN THE ERROR.
+                    r.status_code = httpx.codes.BAD_REQUEST
+                    r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, "og_resp": r.text}).encode()
+
+            if __auth_ctx__ == "NONE" and self.config.thoughtspot.password is not None:
                 c = self.api.login(username=username, password=self.config.thoughtspot.decoded_password, org_id=org_id)
                 r = utils.run_sync(c)
 
@@ -121,8 +165,12 @@ class ThoughtSpot:
 
                 attempted["Basic"] = r
 
-                if __session_info__ := self._attempt_build_context(desired_org_id=org_id):
-                    __auth_ctx__ = "BASIC"
+                __auth_ctx__ = self._attempt_build_context(auth_type="BASIC", desired_org_id=org_id)
+
+                if __auth_ctx__ == "NONE":
+                    # WE'LL FAKE THE STATUS CODE TO GIVE MORE INFO IN THE ERROR.
+                    r.status_code = httpx.codes.BAD_REQUEST
+                    r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, "og_resp": r.text}).encode()
 
         # REQUEST ERRORS DENOTE CONNECTIVITY ISSUES TO THE CLUSTER
         except httpx.RequestError as e:
@@ -160,39 +208,7 @@ class ThoughtSpot:
         if all(not _.is_success for _ in attempted.values()):
             raise errors.AuthenticationFailed(ts_config=self.config, ctx=__auth_ctx__, desired_org_id=org_id) from None
 
-        # GOOD TO GO , INTERACT WITH THE APIs
-        c = self.api.system_info()
-        r = utils.run_sync(c)
-        __system_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | SYSTEM_INFO_ADMINISTRATION
-
-        c = self.api.system_config_overrides()
-        r = utils.run_sync(c)
-        __overrides_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | APPLICATION_ADMINISTRATION
-
-        if not __system_info__:
-            _LOG.warning("CS Tools is meant to be run from an Administrator level context.")
-            __system_info__ = {
-                "id": "UNKNOWN",
-                "release_version": "v0.0.0",
-                "time_zone": "UNKNOWN",
-                "type": "UNKNOWN",
-            }
-
-        d = {
-            "__url__": self.config.thoughtspot.url,
-            "__system_info__": __system_info__,
-            "__overrides_info__": __overrides_info__,
-            "__session_info__": __session_info__,
-            "__is_orgs_enabled__": utils.run_sync(self.api.get("callosum/v1/tspublic/v1/session/orgs")).is_success,
-            "__auth_context__": __auth_ctx__,
-        }
-
-        self._session_context = ctx = SessionContext(thoughtspot=d, user=d)
-
-        if org_id is not None and ctx.user.org_context != org_id:
-            raise errors.AuthenticationFailed(ts_config=self.config, ctx=__auth_ctx__, desired_org_id=org_id) from None
-
-        _LOG.debug(f"SESSION CONTEXT\n{ctx.model_dump_json(indent=4)}")
+        _LOG.debug(f"SESSION CONTEXT\n{self.session_context.model_dump_json(indent=4)}")
 
     def switch_org(self, org_id: _types.OrgIdentifier) -> _types.APIResult:
         """Establish a new session in the target Org."""

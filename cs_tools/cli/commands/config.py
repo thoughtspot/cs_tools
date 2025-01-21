@@ -212,7 +212,7 @@ def check(
     except errors.AuthenticationFailed as e:
         log.debug(e, exc_info=True)
         RICH_CONSOLE.print(Align.center(e))
-        return
+        return 1
 
     ts.logout()
     log.info("[fg-success]Success[/]!")

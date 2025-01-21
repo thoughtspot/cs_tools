@@ -11,7 +11,7 @@ This includes things that will change based on submitted user configuration.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import Annotated, Any, Optional, Union
 import datetime as dt
 import logging
 import platform
@@ -125,11 +125,11 @@ class ThoughtSpotInfo(_GlobalModel):
             data["is_roles_enabled"] = system_info.get("roles_enabled", False)
             data["is_orgs_enabled"] = data["__is_orgs_enabled__"]
 
-        if overrides_info := data.get("__overrides_info__", {}):
+        if overrides_info := data.get("__overrides_info__", {}).get("config_override_info", {}):
             data["is_iam_v2_enabled"] = overrides_info.get("oidcConfiguration.iamV2OIDCEnabled", {}).get(
                 "current", False
             )
-        
+
         return data
 
     @pydantic.field_validator("version", mode="before")
@@ -173,7 +173,7 @@ class UserInfo(_GlobalModel):
     privileges: set[Union[_types.GroupPrivilege, str]]
     org_context: Optional[int] = None
     email: Optional[pydantic.EmailStr] = None
-    auth_context: Optional[_types.AuthContext] = None
+    auth_context: _types.AuthContext = "NONE"
 
     @pydantic.model_validator(mode="before")
     @classmethod
