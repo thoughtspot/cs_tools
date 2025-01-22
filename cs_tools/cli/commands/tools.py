@@ -42,7 +42,7 @@ def _discover_tools() -> None:
 
         app.add_typer(
             tool_info.app,
-            name=tool_info.name,
+            name=tool_info.app.info.name or tool_info.name,  # TAKE THE APP.INFO.NAME OVER THE TOOL.NAME (aka DIRNAME).
             rich_help_panel=tool_info.app.rich_help_panel,
             hidden=not (tool_info.privacy == "public"),
         )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import cast
 import logging
 import pathlib
 
@@ -8,7 +9,7 @@ import sqlalchemy as sa
 from cs_tools import _types
 from cs_tools.sync.base import DatabaseSyncer
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class Mock(DatabaseSyncer):
@@ -17,31 +18,28 @@ class Mock(DatabaseSyncer):
     __manifest_path__ = pathlib.Path(__file__).parent / "MANIFEST.json"
     __syncer_name__ = "mock"
 
-    # dialect: Literal["Databricks", "Falcon", "Redshift", "Snowflake", "SQLite", "Starburst", "Trino"]
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._engine = sa.engine.create_mock_engine("sqlite://", self.sql_query_to_log)  # type: ignore[assignment]
+        self._engine = cast(sa.engine.Engine, sa.engine.create_mock_engine("sqlite://", self.sql_query_to_log))
 
     def __finalize__(self) -> None:
-        log.warning("[fg-warn]THESE DDL ARE APPROXIMATE, YOU WILL NEED TO CUSTOMIZE TO YOUR DIALECT.")
+        _LOG.warning("[fg-warn]THESE ARE [fg-secondary]SQLITE[/] DDL, YOU WILL NEED TO CUSTOMIZE TO YOUR DIALECT.")
         super().__finalize__()
-        log.info("ALL SCOPED TABLES HAVE BEEN PRINTED, EXITING..")
+        _LOG.info("ALL SCOPED TABLES HAVE BEEN PRINTED, EXITING..")
         raise SystemExit(-1)
 
-    def sql_query_to_log(self, query: sa.schema.ExecutableDDLElement, *_multiparams, **_params):
+    def sql_query_to_log(self, sql: sa.sql.ClauseElement, *_multiparams, **_params) -> None:
         """Convert a SQL query into a string."""
-        compiled = query.compile(dialect=self.engine.dialect)
-        log.info(f"\n{compiled.string.strip()}\n")
+        compiled = sql.compile(dialect=self.engine.dialect)
+        _LOG.info(f"\n{compiled.string.strip()}\n")
 
     def __repr__(self):
-        # return f"<Mock{self.dialect.title()}Syncer>"
-        return "<MockSyncer>"
+        return "<MockSyncer dialect='sqlite'>"
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, tablename: str):
-        pass
+    def load(self, tablename: str) -> _types.TableRowsFormat:
+        raise NotImplementedError(f"{self} doesn't support data loading.")
 
     def dump(self, tablename: str, *, data: _types.TableRowsFormat):
-        pass
+        raise NotImplementedError(f"{self} doesn't support data dumping.")

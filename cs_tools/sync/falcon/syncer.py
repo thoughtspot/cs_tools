@@ -70,7 +70,7 @@ class Falcon(DatabaseSyncer):
         compiled = query.compile(dialect=self.engine.dialect)
         return compiled.string.strip() + ";"
 
-    def sql_query_to_api_call(self, sql: sa.sql.ClauseElement, *_multiparams, **_params):
+    def sql_query_to_api_call(self, sql: sa.sql.ClauseElement, *_multiparams, **_params) -> _types.APIResult:
         """Convert SQL queries into ThoughtSpot remote TQL commands."""
         query = self.compile_query(sql)
 

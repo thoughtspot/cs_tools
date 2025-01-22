@@ -122,10 +122,11 @@ class ThoughtSpotInfo(_GlobalModel):
             data["version"] = system_info["release_version"]
             data["timezone"] = system_info["time_zone"]
             data["is_cloud"] = system_info["type"] == "SAAS"
-            data["is_roles_enabled"] = system_info.get("roles_enabled", False)
             data["is_orgs_enabled"] = data["__is_orgs_enabled__"]
+            data["is_roles_enabled"] = data["__is_orgs_enabled__"]
 
         if overrides_info := data.get("__overrides_info__", {}).get("config_override_info", {}):
+            # data["is_roles_enabled"] = overrides_info.get("orion.rolesEnabled", False)
             data["is_iam_v2_enabled"] = overrides_info.get("oidcConfiguration.iamV2OIDCEnabled", {}).get(
                 "current", False
             )

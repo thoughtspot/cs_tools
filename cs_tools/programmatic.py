@@ -21,6 +21,20 @@ class CSToolInfo(_GlobalModel):
     directory: pathlib.Path
     """The directory location of the CS Tool, which should have an __init__.py"""
 
+    @classmethod
+    def fetch_builtin(cls, name: str) -> CSToolInfo:
+        """Fetch a built-in tool by name."""
+        CS_TOOLS_PKG_DIR = utils.get_package_directory("cs_tools")
+
+        tool_info = cls(directory=CS_TOOLS_PKG_DIR / "cli" / "tools" / name)
+
+        try:
+            _ = tool_info.app
+        except ModuleNotFoundError:
+            raise CSToolsError(f"Could not find tool {name}") from None
+
+        return tool_info
+
     @pydantic.computed_field
     @property
     def privacy(self) -> str:
@@ -47,20 +61,6 @@ class CSToolInfo(_GlobalModel):
             return self.directory.stem[len("_") :]
 
         return self.directory.stem
-
-    @classmethod
-    def fetch_builtin(cls, name: str) -> CSToolInfo:
-        """Fetch a built-in tool by name."""
-        CS_TOOLS_PKG_DIR = utils.get_package_directory("cs_tools")
-
-        tool_info = cls(directory=CS_TOOLS_PKG_DIR / "cli" / "tools" / name)
-
-        try:
-            _ = tool_info.app
-        except ModuleNotFoundError:
-            raise CSToolsError(f"Could not find tool {name}") from None
-
-        return tool_info
 
     def import_module(self) -> types.ModuleType:
         """Import a Tool."""
