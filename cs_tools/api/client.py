@@ -259,6 +259,16 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/orgs/search", headers=options.pop("headers", None), json=options)
 
     # ==================================================================================
+    # ORGS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_orgs
+    # ==================================================================================
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    @_transport.CachePolicy.mark_cacheable
+    def roles_search(self, **options: Any) -> Awaitable[httpx.Response]:
+        """Gets Roles configured on a ThoughtSpot instance."""
+        return self.post("api/rest/2.0/roles/search", headers=options.pop("headers", None), json=options)
+
+    # ==================================================================================
     # LOGS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_audit_logs
     # ==================================================================================
 
