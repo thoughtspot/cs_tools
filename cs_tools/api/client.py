@@ -27,6 +27,18 @@ class RESTAPIClient(httpx.AsyncClient):
 
     Endpoints which fetch/search data will have successful responses cached. If you
     need to re-fetch data, you can add the CACHE_BUSTING_HEADER (x-cs-tools-cache-bust).
+
+    INITIAL DESIGN GOALS:
+
+      1. All endpoints should be type-hinted to take advantage of pydantic validators.
+
+      2. Required parameters should be labeled in the function signature, while optional
+         parameters may be passed as keyword arguments. There may be slight deviation in
+         required parameter-naming if it aids the Developer.
+
+      3. Any V1 endpoints which need continued coverage should be prefixed with v1_.
+         These endpoints may violate all other goals above as they will be progressively
+         removed.
     """
 
     @pydantic.validate_call(validate_return=False, config=validators.METHOD_CONFIG)
