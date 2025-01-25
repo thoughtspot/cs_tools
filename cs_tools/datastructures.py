@@ -101,6 +101,34 @@ class ExecutionEnvironment(_GlobalSettings):
         return bool(data)
 
 
+class LocalSystemInfo(_GlobalModel):
+    """Information about the machine running CS Tools."""
+
+    system: str = f"{platform.system()} (detail: {platform.platform()})"
+    python: validators.CoerceVersion = AwesomeVersion(platform.python_version())
+    ran_at: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = dt.datetime.now(tz=dt.timezone.utc)
+
+    @pydantic.computed_field
+    @property
+    def os(self) -> str:
+        """The operating system of the machine running CS Tools."""
+        friendly_name = {"Windows": "Windows", "Darwin": "MacOS", "Linux": "Linux"}
+        os_name, _, _ = self.system.partition(" ")
+        return friendly_name[os_name]
+
+    @property
+    def is_linux(self) -> bool:
+        return self.system.startswith("Linux")
+
+    @property
+    def is_mac_osx(self) -> bool:
+        return self.system.startswith("Darwin")
+
+    @property
+    def is_windows(self) -> bool:
+        return self.system.startswith("Windows")
+
+
 class ThoughtSpotInfo(_GlobalModel):
     """Information about the ThoughtSpot cluster we've established a session with."""
 
@@ -145,26 +173,6 @@ class ThoughtSpotInfo(_GlobalModel):
         return str(url)
 
 
-class LocalSystemInfo(_GlobalModel):
-    """Information about the machine running CS Tools."""
-
-    system: str = f"{platform.system()} (detail: {platform.platform()})"
-    python: validators.CoerceVersion = AwesomeVersion(platform.python_version())
-    ran_at: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = dt.datetime.now(tz=dt.timezone.utc)
-
-    @property
-    def is_linux(self) -> bool:
-        return self.system.startswith("Linux")
-
-    @property
-    def is_mac_osx(self) -> bool:
-        return self.system.startswith("Darwin")
-
-    @property
-    def is_windows(self) -> bool:
-        return self.system.startswith("Windows")
-
-
 class UserInfo(_GlobalModel):
     """Information about the logged in user."""
 
@@ -206,12 +214,14 @@ class UserInfo(_GlobalModel):
 
         return data
 
+    @pydantic.computed_field
     @property
     def is_admin(self) -> bool:
         """Whether or not we're an Admin."""
         allowed = {_types.GroupPrivilege.can_administer_thoughtspot}
         return bool(allowed.intersection(self.privileges))
 
+    @pydantic.computed_field
     @property
     def is_data_manager(self) -> bool:
         """Whether or not we're able to create objects under the Data tab."""

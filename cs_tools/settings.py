@@ -24,7 +24,7 @@ import rich
 import toml
 
 from cs_tools import __project__, __version__, _compat, _types, errors, utils, validators
-from cs_tools.datastructures import ExecutionEnvironment, _GlobalModel, _GlobalSettings
+from cs_tools.datastructures import ExecutionEnvironment, LocalSystemInfo, _GlobalModel, _GlobalSettings
 from cs_tools.updater import cs_tools_venv
 from cs_tools.updater._bootstrapper import get_latest_cs_tools_release
 
@@ -55,6 +55,7 @@ class MetaConfig(_GlobalModel):
     remote: RemoteRepositoryInfo = RemoteRepositoryInfo()
     environment: ExecutionEnvironment = ExecutionEnvironment()
     created_in_cs_tools_version: validators.CoerceVersion = __version__
+    local_system: LocalSystemInfo = LocalSystemInfo()
 
     _new_version_notified_ack: bool = False
 

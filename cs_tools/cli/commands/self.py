@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime as dt
 import logging
 import pathlib
-import platform
 import shutil
 import sys
 import sysconfig
@@ -36,7 +35,7 @@ def info(
     anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
 ):
     """Get information on your install."""
-    if platform.system() == "Windows":
+    if meta.local_system.is_windows:
         source = f"{pathlib.Path(sys.executable).parent.joinpath('Activate.ps1')}"
     else:
         source = f'source "{pathlib.Path(sys.executable).parent.joinpath("activate")}"'
@@ -46,7 +45,7 @@ def info(
         f"\n"
         f"\n           CS Tools: [fg-warn]{__version__}[/]"
         f"\n     Python Version: [fg-warn]Python {sys.version}[/]"
-        f"\n        System Info: [fg-warn]{platform.system()}[/] (detail: [fg-warn]{platform.platform()}[/])"
+        f"\n        System Info: [fg-warn]{meta.local_system.system}[/]"
         f"\n  Configs Directory: [fg-warn]{cs_tools_venv.base_dir}[/]"
         f"\nActivate VirtualEnv: [fg-warn]{source}[/]"
         f"\n      Platform Tags: [fg-warn]{sysconfig.get_platform()}[/]"
