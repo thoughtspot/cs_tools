@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 
 from cs_tools import __version__, errors, utils
@@ -15,6 +16,7 @@ from rich.align import Align
 from rich.prompt import Confirm
 from rich.syntax import Syntax
 from rich.text import Text
+import rich
 import typer
 
 log = logging.getLogger(__name__)
@@ -34,6 +36,7 @@ app = AsyncTyper(
 
 @app.command(no_args_is_help=False)
 def create(
+    ctx: typer.Context,
     config: str = typer.Option(..., help="config file identifier", metavar="NAME"),
     url: str = typer.Option(..., help="your thoughtspot url or IP"),
     username: str = typer.Option(..., help="username when logging into ThoughtSpot"),
@@ -84,31 +87,28 @@ def create(
 
     data["created_in_cs_tools_version"] = __version__
     conf = CSToolsConfig.model_validate(data)
-    ts = ThoughtSpot(conf)
+    conf.save()
 
     try:
-        log.info("Checking supplied configuration..")
-        ts.login()
+        command = typer.main.get_command(app).get_command(ctx, "check")
+        ctx.invoke(command, config=conf.name)
 
     except errors.AuthenticationFailed as e:
         log.debug(e, exc_info=True)
         RICH_CONSOLE.print(Align.center(e))
 
     else:
-        ts.logout()
-
-        if default:
+        if default is not None:
             meta.default_config_name = config
             meta.save()
 
     finally:
-        conf.save()
         log.info(f"Saving as {conf.name}!")
 
 
 @app.command()
 def modify(
-    ctx: typer.Context,  # noqa: ARG001
+    ctx: typer.Context,
     config: str = typer.Option(None, help="config file identifier", metavar="NAME"),
     url: str = typer.Option(None, help="your thoughtspot server"),
     username: str = typer.Option(None, help="username when logging into ThoughtSpot"),
@@ -162,26 +162,23 @@ def modify(
     if proxy is not None:
         data["thoughtspot"]["proxy"] = proxy
 
-    if default is not None:
-        meta.default_config_name = config
-        meta.save()
-
     conf = CSToolsConfig.model_validate(data)
-    ts = ThoughtSpot(conf)
+    conf.save()
 
     try:
-        log.info("Checking supplied configuration..")
-        ts.login()
+        command = typer.main.get_command(app).get_command(ctx, "check")
+        ctx.invoke(command, config=conf.name)
 
     except errors.AuthenticationFailed as e:
         log.debug(e, exc_info=True)
         RICH_CONSOLE.print(Align.center(e))
 
     else:
-        ts.logout()
+        if default is not None:
+            meta.default_config_name = config
+            meta.save()
 
     finally:
-        conf.save()
         log.info(f"Saving as {conf.name}!")
 
 
@@ -205,17 +202,51 @@ def check(
     conf = CSToolsConfig.from_name(name=config, automigrate=True)
     ts = ThoughtSpot(conf)
 
-    try:
-        log.info("Checking supplied configuration..")
-        ts.login()
+    log.info("Checking supplied configuration..")
 
-    except errors.AuthenticationFailed as e:
-        log.debug(e, exc_info=True)
-        RICH_CONSOLE.print(Align.center(e))
-        return 1
+    ts.login()
 
-    ts.logout()
-    log.info("[fg-success]Success[/]!")
+    sess_ctx = ts.session_context
+
+    # fmt: off
+    o = rich.panel.Panel(
+        json.dumps(
+            sess_ctx.environment.model_dump(exclude=["os_args"]) | sess_ctx.system.model_dump(exclude=["system", "ran_at"]),  # noqa: E501
+            indent=2,
+            default=str,
+        ),
+        title="[fg-success]System",
+        box=rich.box.SIMPLE_HEAD,
+    )
+    # fmt: on
+
+    t = rich.panel.Panel(
+        json.dumps(
+            sess_ctx.thoughtspot.model_dump(),
+            indent=2,
+            default=str,
+        ),
+        title="[fg-success]ThoughtSpot",
+        box=rich.box.SIMPLE_HEAD,
+    )
+
+    u = rich.panel.Panel(
+        sess_ctx.user.model_dump_json(exclude=["guid", "display_name", "email", "privileges"], indent=2),
+        title="[fg-success]User",
+        box=rich.box.SIMPLE_HEAD,
+    )
+
+    r = rich.panel.Panel(
+        rich.columns.Columns([o, t, u], align="center"),
+        title="Session Context",
+        subtitle=f"cs_tools v{sess_ctx.cs_tools_version}",
+        subtitle_align="right",
+        border_style="fg-secondary",
+    )
+
+    RICH_CONSOLE.print(r, justify="center")
+
+    log.info("[fg-success]Success![/]")
 
 
 @app.command(no_args_is_help=False)
