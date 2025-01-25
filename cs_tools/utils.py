@@ -12,7 +12,9 @@ import datetime as dt
 import functools as ft
 import getpass
 import importlib
+import importlib.metadata
 import itertools as it
+import json
 import logging
 import pathlib
 import sys
@@ -111,7 +113,15 @@ def batched(iterable: Iterable[_T], *, n: int) -> Generator[Iterable[_T], None, 
 
 def determine_editable_install(package_name: str = "cs_tools") -> bool:
     """Determine if the current CS Tools context is an editable install."""
-    return any(f"__editable__.{package_name}" in path for path in sys.path)
+    try:
+        dist = importlib.metadata.distribution(package_name)
+        text = dist.read_text("direct_url.json")
+        data = json.loads(text or "")
+        return data["dir_info"]["editable"]
+
+    # FALL BACK TO HISTORICAL METHODS.
+    except (importlib.metadata.PackageNotFoundError, json.JSONDecodeError, KeyError):
+        return any(f"__editable__.{package_name}" in path for path in sys.path)
 
 
 @ft.cache
