@@ -40,7 +40,7 @@ class _GlobalModel(pydantic.BaseModel):
 
     @pydantic.model_serializer(mode="wrap")
     def _ignore_extras(self, handler) -> dict[str, Any]:
-        return {k: v for k, v in handler(self).items() if k in self.model_fields}
+        return {k: v for k, v in handler(self).items() if k in (self.model_fields | self.model_computed_fields)}
 
     @pydantic.field_serializer("*", when_used="json")
     @classmethod
@@ -155,6 +155,7 @@ class ThoughtSpotInfo(_GlobalModel):
 
         if overrides_info := data.get("__overrides_info__", {}).get("config_override_info", {}):
             # data["is_roles_enabled"] = overrides_info.get("orion.rolesEnabled", False)
+            # data["is_iam_v2_enabled"] = overrides_info.get("orion.oktaEnabled", False)
             data["is_iam_v2_enabled"] = overrides_info.get("oidcConfiguration.iamV2OIDCEnabled", {}).get(
                 "current", False
             )
