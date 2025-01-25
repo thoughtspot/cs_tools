@@ -92,32 +92,38 @@ class AuthenticationFailed(CSToolsError):
         self,
         *,
         ts_config: settings.CSToolsConfig,
-        ctx: _types.AuthContext,
+        ctxs: list[_types.AuthContext],
         desired_org_id: _types.OrgIdentifier | None = 0,
     ):
         self.ts_config = ts_config
-        self.auth_context = ctx
+        self.auth_contexts = ctxs
         self.desired_org_id = desired_org_id
 
     def __rich__(self) -> rich.panel.Panel:
         ts_info = self.ts_config.thoughtspot
         header = f"Authentication failed for [fg-secondary]{self.ts_config.thoughtspot.username}"
-        reason = f"Config [fg-secondary]{self.ts_config.name}[/] [fg-warn]{self.auth_context} AUTH[/] is not valid."
+        reason = f"{len(self.auth_contexts)} auth contexts {'are' if len(self.auth_contexts) > 1 else 'is'} not valid."
         fixing = []
 
-        if self.auth_context == "BEARER_TOKEN":
+        if "BEARER_TOKEN" in self.auth_contexts:
+            fixing.append("[fg-primary]Bearer Token[/]")
             fixing.append("- Regenerate your Bearer Token in the V2.0 REST API auth/token/full in the Developer tab.")
             fixing.append(f"- Determine if your token is scoped to Org ID {self.desired_org_id}.")
+            fixing.append("")
 
-        if self.auth_context == "TRUSTED_AUTH":
+        if "TRUSTED_AUTH" in self.auth_contexts:
+            fixing.append("[fg-primary]Trusted Authentication[/]")
             fixing.append(f"- Check if your secret_key is still valid {ts_info.secret_key} in the Developer tab.")
             fixing.append(f"- Determine if your secret_key is scoped to Org ID {self.desired_org_id}.")
+            fixing.append("")
 
-        if self.auth_context == "BASIC":
+        if "BASIC" in self.auth_contexts:
+            fixing.append("[fg-primary]Basic Auth[/]")
             fixing.append(
                 f"- Check if your username and password are correct from the ThoughtSpot website. You can try them by "
-                f"navigating to {ts_info.url}?disableSAMLAutoRedirect=true"
+                f"navigating to [fg-secondary]{ts_info.url}?disableSAMLAutoRedirect=true[/]"
             )
+            fixing.append("")
 
         if ts_info.is_orgs_enabled and self.desired_org_id is not None:
             fixing.append(f"- Ensure your User has access to Org ID {self.desired_org_id}.")

@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Awaitable
 from typing import Optional
 import asyncio
-import json
 import logging
 
 import httpx
@@ -51,28 +50,25 @@ class ThoughtSpot:
 
         return self._session_context
 
-    def _attempt_build_context(
-        self, auth_type: _types.AuthContext, desired_org_id: Optional[int] = None
-    ) -> _types.AuthContext:
+    def _attempt_build_context(self, auth_type: _types.AuthContext, desired_org_id: Optional[int] = None) -> None:
         c = self.api.session_info()
         r = utils.run_sync(c)
 
         if _IS_SESSION_ERROR := httpx.codes.is_client_error(r.status_code):
-            return "NONE"
+            return
 
         # GOOD TO GO , INTERACT WITH THE APIs
         __session_info__ = r.json()
-
-        c = self.api.system_info()
-        r = utils.run_sync(c)
-        __system_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | SYSTEM_INFO_ADMINISTRATION
 
         c = self.api.system_config_overrides()
         r = utils.run_sync(c)
         __overrides_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | APPLICATION_ADMINISTRATION
 
+        c = self.api.system_info()
+        r = utils.run_sync(c)
+        __system_info__ = r.json() if r.is_success else {}  # REQUIRES: ADMINISTARTION | SYSTEM_INFO_ADMINISTRATION
+
         if not __system_info__:
-            _LOG.warning("CS Tools is meant to be run from an Administrator level context.")
             __system_info__ = {
                 "id": "UNKNOWN",
                 "release_version": "v0.0.0",
@@ -82,41 +78,57 @@ class ThoughtSpot:
 
         d = {
             "__url__": self.config.thoughtspot.url,
-            "__system_info__": __system_info__,
             "__overrides_info__": __overrides_info__,
+            "__system_info__": __system_info__,
             "__session_info__": __session_info__,
-            "__is_orgs_enabled__": utils.run_sync(self.api.get("callosum/v1/tspublic/v1/session/orgs")).is_success,
+            "__is_orgs_enabled__": utils.run_sync(self.api.orgs_search()).is_success,
+            "__is_roles_enabled__": utils.run_sync(self.api.roles_search()).is_success,
             "__auth_context__": auth_type,
         }
 
-        self._session_context = ctx = SessionContext(thoughtspot=d, user=d)
+        ctx = SessionContext(thoughtspot=d, user=d)
 
         if _NOT_IN_DESIRED_ORG := (desired_org_id is not None and ctx.user.org_context != desired_org_id):
             # DEV NOTE: @boonhapus, 2025/01/21
-            #
-            # SCAL-239189 ... FALL BACK TO V1 SWITCH ORGS API
+            #   SCAL-239189 ... FALL BACK TO V1 SWITCH ORGS API
             #
             if ctx.thoughtspot.is_iam_v2_enabled:
+                # SWITCH ORG.
                 c = self.api.put("callosum/v1/tspublic/v1/session/orgs", data={"orgid": desired_org_id})
                 _ = utils.run_sync(c)
 
+                # IF IT WORKED, REBUILD THE CONTEXT.
                 if _.is_success:
-                    return self._attempt_build_context(auth_type=auth_type, desired_org_id=desired_org_id)
-            # == /
-            return "NONE"
+                    self._attempt_build_context(auth_type=auth_type, desired_org_id=desired_org_id)
 
-        return ctx.user.auth_context
+            _LOG.warning(f"Unable to switch to org {desired_org_id}.")
+            # == /
+            return
+
+        # EVENTUALLY WE ARE SUCCESSFUL, SET OUR .session_context
+        self._session_context = ctx
+
+        if not ctx.user.is_admin:
+            _LOG.warning(f"CS Tools is meant to be run from an Administrator level context ({ctx.user.auth_context})!")
 
     def login(self, org_id: Optional[int] = None) -> None:
         """Log in to ThoughtSpot."""
-        # RESET SESSION_CONTEXT IN CASE WE ATTEMPT TO CALL .login MULTIPLE TIMES
+        # User supply a .config file which includes auth details. CS Tools offers multiple methods to authenticate with,
+        # each attempted in priority order of BEARER_TOKEN -> TRUSTED_AUTHENTICATION -> BASIC. Additionally, CS Tools
+        # offers the ability to set a "default org" to use in the event that the user has access to multiple orgs.
+        # If not provided in the session authentication API parameters, ThoughtSpot will default to the last known org,
+        # which may yield surprising results to a user.
+        #
+        # The user should be informed if their authentication details are not valid.
+        #
+
+        # RESET SESSION_CONTEXT IN CASE WE ATTEMPT TO CALL .LOGIN OR .SWITCH_ORG MULTIPLE TIMES IN A SINGLE SESSION.
         self._session_context = None
 
         username = self.config.thoughtspot.username
         org_id = self.config.thoughtspot.default_org if org_id is None else org_id
 
-        attempted: dict[str, httpx.Response] = {}
-        __auth_ctx__: _types.AuthContext = "NONE"
+        attempted: dict[_types.AuthContext, httpx.Response] = {}
 
         #
         # AUTHENTICATE
@@ -124,53 +136,42 @@ class ThoughtSpot:
         try:
             c: Awaitable[httpx.Response]  # Coroutine from RESTAPIClient
 
-            if __auth_ctx__ == "NONE" and (bearer_token := self.config.thoughtspot.bearer_token) is not None:
+            if self._session_context is None and (bearer_token := self.config.thoughtspot.bearer_token) is not None:
+                _LOG.debug("Attempting Bearer Token Authentication...")
                 self.api.headers["Authorization"] = f"Bearer {bearer_token}"
                 c = self.api.request("GET", "api/rest/2.0/auth/session/token")
                 r = utils.run_sync(c)
 
                 assert "Site Maintenance" not in r.text, "Cluster is in Maintenance Mode."
 
-                attempted["Bearer Token"] = r
+                attempted["BEARER_TOKEN"] = r
 
-                __auth_ctx__ = self._attempt_build_context(auth_type="BEARER_TOKEN", desired_org_id=org_id)
+                _LOG.debug(f"Bearer Token Authentication response: {r}\n{r.text}")
+                self._attempt_build_context(auth_type="BEARER_TOKEN", desired_org_id=org_id)
 
-                if __auth_ctx__ == "NONE":
-                    self.api.headers.pop("Authorization")
-
-                    # WE'LL FAKE THE STATUS CODE TO GIVE MORE INFO IN THE ERROR.
-                    r.status_code = httpx.codes.BAD_REQUEST
-                    r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, "og_resp": r.text}).encode()
-
-            if __auth_ctx__ == "NONE" and (secret_key := self.config.thoughtspot.secret_key) is not None:
+            if self._session_context is None and (secret_key := self.config.thoughtspot.secret_key) is not None:
+                _LOG.debug("Attempting V1 Trusted Authentication...")
                 c = self.api.v1_trusted_authentication(username=username, secret_key=secret_key, org_id=org_id)
                 r = utils.run_sync(c)
 
                 assert "Site Maintenance" not in r.text, "Cluster is in Maintenance Mode."
 
-                attempted["V1 Trusted"] = r
+                attempted["TRUSTED_AUTH"] = r
 
-                __auth_ctx__ = self._attempt_build_context(auth_type="TRUSTED_AUTH", desired_org_id=org_id)
+                _LOG.debug(f"Trusted Authentication response: {r}\n{r.text}")
+                self._attempt_build_context(auth_type="TRUSTED_AUTH", desired_org_id=org_id)
 
-                if __auth_ctx__ == "NONE":
-                    # WE'LL FAKE THE STATUS CODE TO GIVE MORE INFO IN THE ERROR.
-                    r.status_code = httpx.codes.BAD_REQUEST
-                    r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, "og_resp": r.text}).encode()
-
-            if __auth_ctx__ == "NONE" and self.config.thoughtspot.password is not None:
+            if self._session_context is None and self.config.thoughtspot.password is not None:
+                _LOG.debug("Attempting Basic Authentication...")
                 c = self.api.login(username=username, password=self.config.thoughtspot.decoded_password, org_id=org_id)
                 r = utils.run_sync(c)
 
                 assert "Site Maintenance" not in r.text, "Cluster is in Maintenance Mode."
 
-                attempted["Basic"] = r
+                attempted["BASIC"] = r
 
-                __auth_ctx__ = self._attempt_build_context(auth_type="BASIC", desired_org_id=org_id)
-
-                if __auth_ctx__ == "NONE":
-                    # WE'LL FAKE THE STATUS CODE TO GIVE MORE INFO IN THE ERROR.
-                    r.status_code = httpx.codes.BAD_REQUEST
-                    r._content = json.dumps({"cs_tools": {"invalid_for_org_id": org_id}, "og_resp": r.text}).encode()
+                _LOG.debug(f"Basic Authentication response: {r}\n{r.text}")
+                self._attempt_build_context(auth_type="BASIC", desired_org_id=org_id)
 
         # REQUEST ERRORS DENOTE CONNECTIVITY ISSUES TO THE CLUSTER
         except httpx.RequestError as e:
@@ -197,16 +198,18 @@ class ThoughtSpot:
             fixing = f"Visit [fg-secondary]{self.config.thoughtspot.url}[/] to confirm or contact your Administrator."
             raise errors.ThoughtSpotUnreachable(reason=reason, fixing=fixing) from None
 
-        #
-        # PROCESS RESPONSE
-        #
-        for meth, _ in attempted.items():
-            if not _.is_success:
-                _LOG.info(f"Attempted {meth} Authentication and failed (HTTP {_.status_code}), see logs for details..")
-                _LOG.debug(r.text)
+        else:
+            #
+            # PROCESS RESPONSE
+            #
+            for meth, _ in attempted.items():
+                if not _.is_success:
+                    _LOG.info(f"Failed {meth} Authentication (HTTP {_.status_code}), see logs for details..")
 
-        if all(not _.is_success for _ in attempted.values()):
-            raise errors.AuthenticationFailed(ts_config=self.config, ctx=__auth_ctx__, desired_org_id=org_id) from None
+            if not self._session_context:
+                raise errors.AuthenticationFailed(
+                    ts_config=self.config, ctxs=attempted, desired_org_id=org_id
+                ) from None
 
         _LOG.debug(f"SESSION CONTEXT\n{self.session_context.model_dump_json(indent=4)}")
 
@@ -224,7 +227,7 @@ class ThoughtSpot:
         if _["id"] != self.session_context.user.org_context:
             # DEV NOTE: @boonhapus, 2025/01/11
             # This is exactly how ThoughtSpot performs the org/switch operation..
-            # instead, establish a new session in the target org.
+            # instead of actually switching, establish a new session in the target org.
             self.login(org_id=_["id"])
 
         return _
