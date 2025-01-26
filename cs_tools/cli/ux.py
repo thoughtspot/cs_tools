@@ -92,15 +92,17 @@ class AsyncTyper(typer.Typer):
 
         return decorator(fn)
 
-    def callback(self, **typer_options: Any) -> Callable[[CommandFnType], CommandFnType]:
+    def callback(self, **typer_options: Any) -> Callable[[CommandFnType], CommandFnType]:  # type: ignore[override]
         """See: https://typer.tiangolo.com/tutorial/commands/callback/"""
         decorator = super().callback(**typer_options)
-        return lambda f: self.maybe_run_async(decorator, f)
+        decorator = ft.partial(self.maybe_run_async, decorator)
+        return decorator
 
     def command(self, name: Optional[str] = None, **typer_options: Any) -> Callable[[CommandFnType], CommandFnType]:
         """See: https://typer.tiangolo.com/tutorial/commands/"""
         decorator = super().command(name=name, **typer_options)
-        return lambda f: self.maybe_run_async(decorator, f)
+        decorator = ft.partial(self.maybe_run_async, decorator)
+        return decorator
 
 
 CSToolsApp = AsyncTyper

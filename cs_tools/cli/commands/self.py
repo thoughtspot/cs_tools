@@ -8,7 +8,7 @@ import sys
 import sysconfig
 import zipfile
 
-from cs_tools import __version__, updater, utils
+from cs_tools import __version__, _types, updater, utils
 from cs_tools.cli import custom_types
 from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 from cs_tools.settings import _meta_config as meta
@@ -31,9 +31,13 @@ app = AsyncTyper(
 
 @app.command()
 def info(
-    directory: custom_types.Directory = typer.Option(None, help="export an image to share with the CS Tools team"),
+    directory: pathlib.Path = typer.Option(
+        None,
+        help="Where to export the info to share with the CS Tools team.",
+        click_type=custom_types.Directory(exists=True),
+    ),
     anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
-):
+) -> _types.ExitCode:
     """Get information on your install."""
     if meta.local_system.is_windows:
         source = f"{pathlib.Path(sys.executable).parent.joinpath('Activate.ps1')}"
@@ -55,22 +59,30 @@ def info(
     if anonymous:
         text = utils.anonymize(text, anonymizer=" [dim]{anonymous}[/] ")
 
-    renderable = rich.panel.Panel.fit(text, padding=(0, 4, 0, 4))
-    RICH_CONSOLE.print(rich.align.Align.center(renderable))
+    renderable = rich.align.Align.center(rich.panel.Panel.fit(text, padding=(0, 4, 0, 4)))
 
-    if directory is not None:
-        utils.svg_screenshot(
-            renderable,
+    def noop():
+        """Do nothing."""
+        yield
+
+    screenshotter = (
+        noop
+        if directory is None
+        else utils.record_screenshots(
+            RICH_CONSOLE,
             path=directory / f"cs-tools-info-{dt.datetime.now(tz=dt.timezone.utc):%Y-%m-%d}.svg",
-            console=RICH_CONSOLE,
-            centered=True,
-            width="fit",
             title="cs_tools self info",
         )
+    )
+
+    with screenshotter:
+        RICH_CONSOLE.print(renderable)
+
+    return 0
 
 
 @app.command()
-def sync():
+def sync() -> _types.ExitCode:
     """Sync your local environment with the most up-to-date dependencies."""
     # CURRENTLY, THIS ONLY AFFECTS thoughtspot_tml WHICH CAN OFTEN CHANGE BETWEEN CS TOOL RELEASES.
     PACKAGES_TO_SYNC = ("thoughtspot_tml",)
@@ -78,13 +90,15 @@ def sync():
     for package in PACKAGES_TO_SYNC:
         cs_tools_venv.install(package, "--upgrade")
 
+    return 0
+
 
 @app.command(name="update")
 @app.command(name="upgrade", hidden=True)
 def update(
     beta: custom_types.Version = typer.Option(None, "--beta", help="The specific beta version to fetch from Github."),
     offline: custom_types.Directory = typer.Option(None, help="Install cs_tools from a local directory."),
-):
+) -> _types.ExitCode:
     """Upgrade CS Tools."""
     assert isinstance(offline, pathlib.Path), "offline directory must be a pathlib.Path"
 
@@ -97,6 +111,7 @@ def update(
         where = f"https://github.com/thoughtspot/cs_tools/archive/{ref}.zip"
 
     cs_tools_venv.install(f"cs_tools[cli] @ {where}", raise_if_stderr=False)
+    return 0
 
 
 @app.command(name="export", hidden=True)
@@ -111,7 +126,7 @@ def _make_offline_distributable(
         None, metavar="X.Y.Z", help="The specific beta version to fetch from Github."
     ),
     syncer: str = typer.Option(None, metavar="DIALECT", help="Name of the dialect to fetch dependencies for."),
-):
+) -> _types.ExitCode:
     """
     Create an offline distribution of this CS Tools environment.
 
@@ -187,3 +202,5 @@ def _make_offline_distributable(
         [fg-warn]python[/] [fg-secondary]_bootstrapper.py --install --offline-mode --no-clean[/]
         """
     )
+
+    return 0

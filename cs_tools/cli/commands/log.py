@@ -1,42 +1,39 @@
 from __future__ import annotations
 
-import logging
+import functools as ft
 import pathlib
 import shutil
 
+from cs_tools import _types
+from cs_tools.cli import custom_types
 from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 from cs_tools.updater import cs_tools_venv
 import typer
 
-log = logging.getLogger(__name__)
-app = AsyncTyper(name="logs", hidden=True)
+app = AsyncTyper(name="logs")
 
 
 @app.command()
 def report(
     save_path: pathlib.Path = typer.Argument(
-        None,
-        help="location on disk to save logs to",
+        ...,
         metavar="DIRECTORY",
-        file_okay=False,
-        resolve_path=True,
+        help="Where to export the logs.",
+        click_type=custom_types.Directory(exists=True, make=True),
     ),
-    latest: int = typer.Option(1, help="number of most recent logfiles to export", min=1),
-):
-    """
-    Grab logs to share with ThoughtSpot.
-    """
-    while save_path is None:
-        save_fp = typer.prompt(f"Where should we save the last {latest} log files to?")
-        save_path = pathlib.Path(save_fp)
+    latest: int = typer.Option(1, help="Number of most recent logfiles to export.", min=1),
+) -> _types.ExitCode:
+    """Grab logs to share with ThoughtSpot."""
+    RICH_CONSOLE.print(f"\nDirectory :link: [fg-secondary][link={save_path.as_posix()}]{save_path}\n")
+    LAST_MODIFIED = ft.partial(lambda path: path.stat().st_mtime)
+    LOGS_DIRECTORY = cs_tools_venv.subdir(".logs")
 
-    save_path.mkdir(parents=True, exist_ok=True)
-    RICH_CONSOLE.print(f"\nSaving logs to [b blue link={save_path.resolve().as_posix()}]{save_path.resolve()}[/]\n")
+    for idx, logfile in enumerate(sorted(LOGS_DIRECTORY.iterdir(), key=LAST_MODIFIED, reverse=True), start=1):
+        if idx <= latest:
+            stats = logfile.stat()
 
-    logs_dir = cs_tools_venv.subdir(".logs")
-    sorted_newest = sorted(logs_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
-
-    for i, logfile in enumerate(sorted_newest, start=1):
-        if i <= latest:
-            RICH_CONSOLE.print(f"  [fg-secondary]{logfile.name}")
+            RICH_CONSOLE.print(f"  Copying [fg-secondary]{logfile.name}[/] {stats.st_size / 1024:>10,.2f} KB")
             shutil.copy(logfile, save_path)
+
+    RICH_CONSOLE.print("\n")
+    return 0

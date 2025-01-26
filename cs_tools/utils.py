@@ -74,7 +74,7 @@ class BoundedTaskGroup(_compat.TaskGroup):
         self._max_concurrent = max_concurrent
         self._semaphore = asyncio.Semaphore(value=max_concurrent)
 
-    def create_task(
+    def create_task(  # type: ignore[override]
         self, coro: Coroutine, *, name: Optional[str] = None, context: Optional[Context] = None
     ) -> asyncio.Task:
         """See: https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup.create_task"""
