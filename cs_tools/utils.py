@@ -8,6 +8,7 @@ from collections.abc import Awaitable, Coroutine, Generator, Iterable, Sequence
 from contextvars import Context
 from typing import Annotated, Any, Optional, TypeVar
 import asyncio
+import contextlib
 import datetime as dt
 import functools as ft
 import getpass
@@ -25,6 +26,7 @@ from sqlalchemy import types as sa_types
 from sqlalchemy.schema import Column
 from sqlmodel import Field, SQLModel
 import pydantic
+import rich
 
 from cs_tools import _compat
 
@@ -169,6 +171,23 @@ def anonymize(text: str, *, anonymizer: str = " {anonymous} ") -> str:
     """Replace text with an anonymous value."""
     text = text.replace(getpass.getuser(), anonymizer)
     return text
+
+
+@contextlib.contextmanager
+def record_screenshots(
+    console: rich.console.Console, *, path: pathlib.Path, **svg_options
+) -> Generator[None, None, None]:
+    """Temporarily record all console output, then save to an svg."""
+    if "title" not in svg_options:
+        svg_options["title"] = ""
+
+    console.record = True
+
+    try:
+        yield
+    finally:
+        console.record = False
+        console.save_svg(path.as_posix(), **svg_options)
 
 
 class GlobalState:
