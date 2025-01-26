@@ -338,12 +338,7 @@ class CSToolsConfig(_GlobalSettings):
 
         data = {
             "name": data["name"],
-            "thoughtspot": {
-                "url": data["thoughtspot"]["host"],
-                "username": data["auth"]["frontend"]["username"],
-                "password": data["auth"]["frontend"]["password"],
-                "disable_ssl": data["thoughtspot"]["disable_ssl"],
-            },
+            "thoughtspot": data.get("thoughtspot", {}),
             "verbose": data["verbose"],
             "temp_dir": (
                 cs_tools_venv.subdir(".tmp")
@@ -353,6 +348,14 @@ class CSToolsConfig(_GlobalSettings):
             "created_in_cs_tools_version": __version__,
             "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
         }
+
+        if _IS_REALLY_OLD_FORMAT := "auth" in data:
+            data["thoughtspot"] = {
+                "url": data["thoughtspot"]["host"],
+                "username": data["auth"]["frontend"]["username"],
+                "password": data["auth"]["frontend"]["password"],
+                "disable_ssl": data["thoughtspot"]["disable_ssl"],
+            }
 
         return data
 
