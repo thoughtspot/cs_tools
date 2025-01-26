@@ -25,18 +25,19 @@ _TS_GREEN = "#4ab565"
 _TS_YELLOW = "#fcc839"
 # fmt: on
 
-RICH_CONSOLE = rich_console = Console(
-    theme=theme.Theme(
-        {
-            "fg-primary": "white",
-            "fg-secondary": _TS_PURPLE,
-            "fg-success": _TS_GREEN,
-            "fg-warn": _TS_YELLOW,
-            "fg-error": _TS_RED,
-            "bg-primary": "b grey50",
-        },
-    ),
+CS_TOOLS_THEME = theme.Theme(
+    {
+        "fg-primary": "white",
+        "fg-secondary": _TS_PURPLE,
+        "fg-success": _TS_GREEN,
+        "fg-warn": _TS_YELLOW,
+        "fg-error": _TS_RED,
+        "bg-primary": "b grey50",
+    },
+    inherit=True,
 )
+
+RICH_CONSOLE = rich_console = Console(theme=CS_TOOLS_THEME)
 
 
 @contextlib.contextmanager
