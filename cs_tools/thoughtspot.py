@@ -97,13 +97,14 @@ class ThoughtSpot:
                 c = self.api.put("callosum/v1/tspublic/v1/session/orgs", data={"orgid": desired_org_id})
                 _ = utils.run_sync(c)
 
-                # IF IT WORKED, REBUILD THE CONTEXT.
-                if _.is_success:
-                    self._attempt_build_context(auth_type=auth_type, desired_org_id=desired_org_id)
+            # IF IT WORKED, REBUILD THE CONTEXT.
+            if _.is_success:
+                self._attempt_build_context(auth_type=auth_type, desired_org_id=desired_org_id)
+                return
 
             _LOG.warning(f"Unable to switch to org {desired_org_id}.")
-            # == /
             return
+            # == /
 
         # EVENTUALLY WE ARE SUCCESSFUL, SET OUR .session_context
         self._session_context = ctx
