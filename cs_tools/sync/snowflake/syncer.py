@@ -251,3 +251,5 @@ class Snowflake(DatabaseSyncer):
             column = ", ".join(f"${i} as {c.name}" for i, c in enumerate(table.columns, start=1))
             staged = f"(SELECT {column} FROM @{stage})"
             self.merge_into(from_=staged, into=table)
+
+        self.session.commit()
