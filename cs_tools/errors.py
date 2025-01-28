@@ -92,7 +92,7 @@ class AuthenticationFailed(CSToolsError):
         self,
         *,
         ts_config: settings.CSToolsConfig,
-        ctxs: list[_types.AuthContext],
+        ctxs: dict[_types.AuthContext, httpx.Response],
         desired_org_id: _types.OrgIdentifier | None = 0,
     ):
         self.ts_config = ts_config
