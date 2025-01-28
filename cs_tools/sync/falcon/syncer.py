@@ -92,7 +92,9 @@ class Falcon(DatabaseSyncer):
         data = utils.roundtrip_json_for_falcon(data)
         name = f"{self.database}_{self.schema_}_{tablename}"
 
-        with sync_utils.temp_csv_for_upload(tmp=self.thoughtspot.config.temp_dir, filename=name, data=data) as file:
+        with sync_utils.temp_csv_for_upload(
+            tmp=self.thoughtspot.config.temp_dir, filename=name, data=data, include_header=True
+        ) as file:
             upload_options: dict[str, Any] = {
                 "ignore_node_redirect": self.ignore_load_balancer_redirect,
                 "database": self.database,
