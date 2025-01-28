@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import logging
 import pathlib
@@ -61,12 +62,13 @@ def info(
 
     renderable = rich.align.Align.center(rich.panel.Panel.fit(text, padding=(0, 4, 0, 4)))
 
+    @contextlib.contextmanager
     def noop():
         """Do nothing."""
         yield
 
     screenshotter = (
-        noop
+        noop()
         if directory is None
         else utils.record_screenshots(
             RICH_CONSOLE,
