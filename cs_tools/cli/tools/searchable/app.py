@@ -661,6 +661,9 @@ def tml(
         for org in orgs:
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
 
+            if ts.session_context.thoughtspot.is_orgs_enabled:
+                ts.switch_org(org_id=org["id"])
+
             with tracker["TS_METADATA"]:
                 CLI_TYPES_TO_API_TYPES = {
                     "ALL": ["LOGICAL_TABLE", "LIVEBOARD"],
@@ -684,7 +687,8 @@ def tml(
                     q = sa.text(f"""SELECT MAX(modified) AS latest_dt FROM {models.MetadataTML.__tablename__}""")
 
                     if r := syncer.session.execute(q).scalar():
-                        latest_dt = dt.datetime.fromisoformat(r).astimezone(tz=dt.timezone.utc)
+                        latest_dt_naive = r if isinstance(r, dt.datetime) else dt.datetime.fromisoformat(r)
+                        latest_dt = latest_dt_naive.astimezone(tz=dt.timezone.utc)
                         d = [_ for _ in d if _["modified"] > latest_dt]
 
             with tracker["EXPORT"]:
