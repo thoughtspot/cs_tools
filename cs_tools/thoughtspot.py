@@ -148,7 +148,9 @@ class ThoughtSpot:
                 attempted["BEARER_TOKEN"] = r
 
                 _LOG.debug(f"Bearer Token Authentication response: {r}\n{r.text}")
-                self._attempt_build_context(auth_type="BEARER_TOKEN", desired_org_id=org_id)
+
+                if r.is_success:
+                    self._attempt_build_context(auth_type="BEARER_TOKEN", desired_org_id=org_id)
 
             if self._session_context is None and (secret_key := self.config.thoughtspot.secret_key) is not None:
                 _LOG.debug("Attempting V1 Trusted Authentication...")
@@ -160,7 +162,9 @@ class ThoughtSpot:
                 attempted["TRUSTED_AUTH"] = r
 
                 _LOG.debug(f"Trusted Authentication response: {r}\n{r.text}")
-                self._attempt_build_context(auth_type="TRUSTED_AUTH", desired_org_id=org_id)
+
+                if r.is_success:
+                    self._attempt_build_context(auth_type="TRUSTED_AUTH", desired_org_id=org_id)
 
             if self._session_context is None and self.config.thoughtspot.password is not None:
                 _LOG.debug("Attempting Basic Authentication...")
@@ -172,7 +176,9 @@ class ThoughtSpot:
                 attempted["BASIC"] = r
 
                 _LOG.debug(f"Basic Authentication response: {r}\n{r.text}")
-                self._attempt_build_context(auth_type="BASIC", desired_org_id=org_id)
+
+                if r.is_success:
+                    self._attempt_build_context(auth_type="BASIC", desired_org_id=org_id)
 
         # REQUEST ERRORS DENOTE CONNECTIVITY ISSUES TO THE CLUSTER
         except httpx.RequestError as e:
@@ -216,7 +222,7 @@ class ThoughtSpot:
 
     def switch_org(self, org_id: _types.OrgIdentifier) -> _types.APIResult:
         """Establish a new session in the target Org."""
-        c = self.api.orgs_search()
+        c = self.api.orgs_search(org_identifier=org_id)
         r = utils.run_sync(c)
 
         try:
