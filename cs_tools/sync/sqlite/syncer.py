@@ -38,36 +38,23 @@ class SQLite(DatabaseSyncer):
         super().__init__(**kwargs)
         self._engine = sa.create_engine(f"sqlite:///{self.database_path}", future=True)
 
+    def __finalize__(self):
+        super().__finalize__()
+        self._set_sqlite_max_vars()
+
     def __repr__(self):
         return f"<SQLiteSyncer conn_string='{self.engine.url}'>"
 
-    def insert_on_conflict(self, data: TableRows, *, table: sa.Table) -> Union[sa.Insert, sa.Update]:
-        """UPSERT."""
-        stmt = insert(table).values(data)
+    def _set_sqlite_max_vars(self) -> None:
+        """Fetch the maximum number of variables that SQLite supports."""
+        r = self.session.execute(sa.text("PRAGMA compile_options;"))
 
-        if table.columns == table.primary_key:
-            set_ = {c.key: getattr(stmt.excluded, c.key) for c in table.columns}
-        else:
-            set_ = {c.key: getattr(stmt.excluded, c.key) for c in table.columns if c.key not in table.primary_key}
+        for option in r.mappings().all():
+            override = option["compile_options"]
+            name, _, value = override.partition("=")
 
-        stmt = stmt.on_conflict_do_update(
-            index_elements=table.primary_key,
-            set_=set_,
-        )
-        return stmt
-
-    # @contextlib.contextmanager
-    # def pragma_speedy_insert(self):
-    #     """ """
-    #     self.session.execute("PRAGMA journal_mode = OFF;")
-    #     self.session.execute("PRAGMA synchronous = 0;")
-    #     self.session.execute("PRAGMA locking_mode = EXCLUSIVE;")
-    #     self.session.execute("PRAGMA temp_store = MEMORY;")
-    #     yield
-    #     self.session.execute("PRAGMA journal_mode = ON;")
-    #     self.session.execute("PRAGMA synchronous = 0;")
-    #     self.session.execute("PRAGMA locking_mode = EXCLUSIVE;")
-    #     self.session.execute("PRAGMA temp_store = MEMORY;")
+            if name == "MAX_VARIABLE_NUMBER":
+                const.SQLITE_MAX_VARIABLES = int(value)
 
     def read_stream(self, tablename: str, *, batch: int = 100_000) -> Iterator[TableRows]:
         """Read rows from a SQLite database."""
