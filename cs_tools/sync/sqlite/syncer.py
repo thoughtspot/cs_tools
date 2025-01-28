@@ -108,11 +108,10 @@ class SQLite(DatabaseSyncer):
 
         if self.load_strategy == "UPSERT":
             sync_utils.batched(
-                self.insert_on_conflict,
+                insert(table).prefix_with("OR REPLACE").values,
                 session=self.session,
                 data=data,
                 max_parameters=const.SQLITE_MAX_VARIABLES,
-                table=table,
             )
 
         self.session.commit()
