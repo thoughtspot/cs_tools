@@ -167,7 +167,13 @@ class TSLoadMiddleware:
             self.ts.api.v1._redirected_url_due_to_tsload_load_balancer = redirected
 
             log.info(f"The tsload API is redirecting CS Tools to node ->  {redirected}")
-            self.ts.login()
+            d = {
+                "username": self.ts.config.thoughtspot.username,
+                "password": self.ts.config.thoughtspot.decoded_password,
+            }
+            r = self.ts.api.v1.dataservice_dataload_session(**d)
+            log.debug(r.text)
+            r.raise_for_status()
 
     def _check_privileges(self) -> None:
         """
