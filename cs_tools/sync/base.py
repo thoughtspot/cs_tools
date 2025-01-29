@@ -181,7 +181,8 @@ class DatabaseSyncer(Syncer, is_base_class=True):
 
     def __teardown__(self) -> None:
         """Be responsible with database resources."""
-        self._session.close()
+        if self._session is not None:
+            self._session.close()
 
     def __repr__(self) -> str:
         return f"<DatabaseSyncer to '{self.name}'>"
