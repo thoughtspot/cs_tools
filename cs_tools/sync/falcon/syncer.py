@@ -57,6 +57,8 @@ class Falcon(DatabaseSyncer):
         except errors.NoSessionEstablished:
             self.thoughtspot.login()
 
+        assert self.thoughtspot.session_context.user.auth_context == "BASIC", "FalconSyncer only supports BASIC AUTH."
+
         # Create the database and schema if they doesn't exist; idempotent
         self.sql_query_to_api_call(sql=sa.text(f"CREATE DATABASE {self.database}"))
         self.sql_query_to_api_call(sql=sa.text(f"CREATE SCHEMA {self.database}.{self.schema_}"))
@@ -105,15 +107,20 @@ class Falcon(DatabaseSyncer):
             _LOG.warning(f"no data to write to syncer {self}")
             return
 
-        data = utils.roundtrip_json_for_falcon(data)
+        temp = self.thoughtspot.config.temp_dir
         name = f"{self.database}_{self.schema_}_{tablename}"
+        data = utils.roundtrip_json_for_falcon(data)
 
-        with sync_utils.temp_csv_for_upload(tmp=self.thoughtspot.config.temp_dir, filename=name, data=data) as fd:
+        with sync_utils.temp_csv_for_upload(tmp=temp, filename=name, data=data, include_header=True) as fd:
+            auth_options = {
+                "username": self.thoughtspot.config.thoughtspot.username,
+                "password": self.thoughtspot.config.thoughtspot.decoded_password,
+            }
             upload_options: dict[str, Any] = {
                 "database": self.database,
                 "schema": self.schema_,
                 "table": tablename,
-                "has_header_row": False,
+                "has_header_row": True,
                 "ignore_node_redirect": self.ignore_load_balancer_redirect,
             }
 
@@ -126,7 +133,7 @@ class Falcon(DatabaseSyncer):
             if self.load_strategy == "UPSERT":
                 raise NotImplementedError("Falcon does not offer UPSERT / MERGE support.")
 
-            c = workflows.tsload.upload_data(fd, **upload_options, http=self.thoughtspot.api)
+            c = workflows.tsload.upload_data(fd, auth_info=auth_options, **upload_options, http=self.thoughtspot.api)
             cycle_id = cs_tools_utils.run_sync(c)
 
         if self.wait_for_dataload_completion:

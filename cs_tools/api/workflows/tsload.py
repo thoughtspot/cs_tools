@@ -15,6 +15,11 @@ from cs_tools.updater import cs_tools_venv
 _LOG = logging.getLogger(__name__)
 
 
+class AuthInfo(_compat.TypedDict):
+    username: str
+    password: str
+
+
 class DataloadNodeInfo(_compat.TypedDict):
     host: str
     port: int
@@ -74,6 +79,7 @@ class DataloadCache:
 async def upload_data(
     fd: TextIO,
     *,
+    auth_info: AuthInfo,
     # DATABASE OPTIONS
     database: str,
     schema: str,
@@ -158,6 +164,12 @@ async def upload_data(
 
     if not ignore_node_redirect and (redirect := DataloadCache.fetch(cycle_id=data.get("cycle_id", None))):
         http._redirected_url_due_to_tsload_load_balancer = httpx.URL(host=redirect["host"], port=redirect["port"])  # type: ignore[attr-defined]
+        # DEV NOTE: @boonhapus, 2025/01/28
+        # Technically speaking, this endpoint just delegates to the AUTH SERVICE on each node, so any persistent login
+        # API method would work here, it just needs to point at the redirected node. CS Tools offers multiple login
+        # methods, but it's a pretty safe bet that the customer on Falcon will have a BASIC auth context.
+        r = await http.v1_dataservice_dataload_session(**auth_info)
+        r.raise_for_status()
 
     r = await http.v1_dataservice_dataload_start(cycle_id=data["cycle_id"], fd=fd, timeout=http_timeout)
     _LOG.info(f"{database}.{schema}.{table} - {r.text}")

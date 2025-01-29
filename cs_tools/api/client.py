@@ -627,6 +627,15 @@ class RESTAPIClient(httpx.AsyncClient):
         return url
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def v1_dataservice_dataload_session(self, username: str, password: str) -> Awaitable[httpx.Response]:
+        """Use this API to authenticate and sign in a user."""
+        # Further reading:
+        #   https://docs.thoughtspot.com/software/latest/tsload-api#login
+        fullpath = self.v1_dataservice_url.copy_with(path="/ts_dataservice/v1/public/session")
+
+        return self.post(str(fullpath), json={"username": username, "password": password})
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def v1_dataservice_dataload_initialize(
         self, *, data: Any, timeout: Optional[float] = None
     ) -> Awaitable[httpx.Response]:
