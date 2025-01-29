@@ -15,7 +15,7 @@ from cs_tools.sync.base import DatabaseSyncer
 
 from . import const
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class SQLite(DatabaseSyncer):
@@ -52,6 +52,16 @@ class SQLite(DatabaseSyncer):
             # STORE TEMPORARY TABLES AND VIEWS IN RAM.
             self.session.execute(sa.text("PRAGMA temp_store = MEMORY;"))
 
+        # FETCH ALL OTHER PRAGMA TO INFORM THE SYNCER OF CONSTRAINTS.
+        r = self.session.execute(sa.text("PRAGMA compile_options;"))
+
+        for override in [option["compile_options"] for option in r.mappings().all()]:
+            _LOG.debug(f"PRAGMA {override}")
+            name, _, value = override.partition("=")
+
+            if name == "MAX_VARIABLE_NUMBER":
+                const.SQLITE_MAX_VARIABLES = int(value)
+
     def __repr__(self):
         return f"<SQLiteSyncer conn_string='{self.engine.url}'>"
 
@@ -76,7 +86,7 @@ class SQLite(DatabaseSyncer):
     def dump(self, tablename: str, *, data: _types.TableRowsFormat) -> None:
         """INSERT rows into SQLite."""
         if not data:
-            log.warning(f"no '{tablename}' data to write to syncer {self}")
+            _LOG.warning(f"no '{tablename}' data to write to syncer {self}")
             return
 
         table = self.metadata.tables[tablename]
