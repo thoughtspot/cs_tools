@@ -315,7 +315,7 @@ async def tml_export(
     except (httpx.HTTPStatusError, StopIteration):
         log.error(f"Unable to export {guid}, see log for details..")
         log.debug(r.text)
-        return {"edoc": None, "info": {"id": guid}, "httpx_response": r.text}
+        return {"edoc": None, "info": {"id": guid, "status": {"status_code": "ERROR"}, "httpx_response": r.text}}
 
     except ValueError as e:
         log.error(f"Unable to export {guid}, see log for details..")
