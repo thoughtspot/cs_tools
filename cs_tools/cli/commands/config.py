@@ -98,7 +98,7 @@ def create(
         RICH_CONSOLE.print(Align.center(e))
 
     else:
-        if default is not None:
+        if default:
             meta.default_config_name = config
             meta.save()
 
