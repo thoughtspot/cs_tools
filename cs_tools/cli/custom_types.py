@@ -201,9 +201,21 @@ class MultipleInput(CustomType):
 
     name = "TEXT"
 
-    def __init__(self, sep: str = ",", *, type_caster: type = str):
+    def __init__(self, sep: str = ",", *, choices: Optional[Sequence[str]] = None, type_caster: type = str):
         self.sep = sep
+        self.raw_choices = choices
+        self.choices = [c.strip("_") if self.is_private_choice_value(c) else c for c in (choices or [])]
         self.type_caster = type_caster
+
+    def is_private_choice_value(self, value: str) -> bool:
+        """Determine if this value should be displayed in the CLI."""
+        return value.startswith("__") and value.endswith("__")
+
+    def get_metavar(self, param: click.Parameter) -> str:  # noqa: ARG002
+        """Example usage of the parameter to display on the CLI."""
+        if self.raw_choices is None:
+            return "TEXT"
+        return "|".join(c for c in self.raw_choices if not self.is_private_choice_value(c))
 
     def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> list[Any]:
         """Coerce string into an iterable of <type_caster>."""
@@ -215,6 +227,11 @@ class MultipleInput(CustomType):
 
         try:
             values = [self.type_caster(v) for v in values]
+
+            if self.choices:
+                assert all(v in self.choices for v in values), "Invalid value provided."
+        except AssertionError:
+            self.fail(message=f"Got invalid value, must be one of {self.choices}", param=param, ctx=ctx)
         except Exception:
             log.debug(f"Could not coerce all values to '{self.type_caster}', {values}", exc_info=True)
             self.fail(message=f"Could not coerce all values to '{self.type_caster}', {values}", param=param, ctx=ctx)
