@@ -616,7 +616,7 @@ def tml(
         rich_help_panel="Syncer Options",
     ),
 ) -> _types.ExitCode:
-    """..."""
+    """Snapshot your TML to a Syncer."""
     ts = ctx.obj.thoughtspot
 
     temp = SQLite(
