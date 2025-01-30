@@ -35,7 +35,17 @@ def _discover_tools() -> None:
         if path.name == "__pycache__" or not path.is_dir():
             continue
 
-        if path.name not in ("user-management", "searchable", "archiver", "bulk-deleter", "bulk_sharing", "extractor", "rtql", "rtsload"):
+        if path.name not in (
+            "user-management",
+            "searchable",
+            "archiver",
+            "bulk-deleter",
+            "bulk_sharing",
+            "extractor",
+            "rtql",
+            "rtsload",
+            "scriptability",
+        ):
             continue
 
         tool_info = programmatic.CSToolInfo(directory=path)
