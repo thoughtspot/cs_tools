@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Coroutine
+from typing import Literal
 import itertools as it
 import logging
 
@@ -61,6 +62,9 @@ def checkpoint(
 
     All export options are combined in AND format.
     """
+    if metadata_type == ["ALL"] and all(_ is None for _ in (pattern, authors, tags)):
+        raise typer.BadParameter("You must specify at least one other TML Export option when using [fg-success]ALL[/].")
+
     ts = ctx.obj.thoughtspot
 
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
@@ -76,22 +80,23 @@ def checkpoint(
         "ANSWER": ["ANSWER"],
     }
 
-    metadata_types = set(it.chain.from_iterable(CLI_TYPES_TO_API_TYPES[_] for _ in metadata_type))
+    metadata_api_types = set(it.chain.from_iterable(CLI_TYPES_TO_API_TYPES[_] for _ in metadata_type))
 
     c = workflows.paginator(
         ts.api.metadata_search,
         guid="",
-        metadata=[{"type": _, "name_pattern": pattern} for _ in metadata_types],
+        metadata=[{"type": _, "name_pattern": pattern} for _ in metadata_api_types],
         include_headers=True,
         created_by_user_identifiers=authors,
         tag_identifiers=tags,
     )
     _ = utils.run_sync(c)
 
+    # TODO: FILTER BASED ON INP TYPE.
+
     coros: list[Coroutine] = []
 
     for metadata_object in _:
-        # TODO: FILTER BASED ON INP TYPE.
         coros.append(
             workflows.metadata.tml_export(
                 guid=metadata_object["metadata_id"],
@@ -136,7 +141,35 @@ def checkpoint(
 def deploy(
     ctx: typer.Context,
     directory: custom_types.Directory = typer.Option(..., help="Directory to load TML files from."),
+    deploy_type: Literal["DELTA", "FULL"] = typer.Option(
+        "DELTA",
+        help="Indicates if all files or only modified files since the last deploy should be considered.",
+    ),
+    import_policy: _types.ImportPolicy = typer.Option(
+        "ALL_OR_NONE",
+        help="Whether or not to fail the import job if any files don't import successfully.",
+    ),
+    tags: custom_types.MultipleInput = typer.Option(
+        None,
+        click_type=custom_types.MultipleInput(sep=","),
+        help="Tags with these name(s) will be applied to the imported TML, comma separated.",
+        show_default=False,
+        rich_help_panel="TML Export Options",
+    ),
+    use_async_endpoint: bool = typer.Option(
+        False,
+        "--async",
+        help="Use the metadata/tml/async/import endpoint (available in TSv10.5.0).",
+        hidden=True,
+    ),
+    skip_schema_validation: bool = typer.Option(
+        False,
+        "--skip-schema-validation",
+        help="When importing tables, whether or not to attempt validation that the external schema exists.",
+        hidden=True,
+    ),
     org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
+    log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
 ) -> _types.ExitCode:
     """Import TML from a directory."""
     ts = ctx.obj.thoughtspot
@@ -148,10 +181,32 @@ def deploy(
     # IMPORT TMLS
     #
 
+    #
+    # MAP GUIDS
+    #
+
+    table = local_utils.TMLOperations(data=d, domain="SCRIPTABILITY", op="IMPORT")
+
     if ts.session_context.environment.is_ci:
-        _LOG.info("...")
+        _LOG.info(table)
     else:
-        RICH_CONSOLE.print("...")
+        RICH_CONSOLE.print(table)
+
+    if log_errors:
+        for tml_response in filter(lambda r: r["info"]["status"]["status_code"] != "OK", table.data):
+            log_level = logging.WARNING if tml_response["info"]["status"]["status_code"] == "WARNING" else logging.ERROR
+            log_line = " - ".join(
+                [
+                    tml_response["info"]["status"]["status_code"],
+                    tml_response["info"]["id"],
+                    tml_response["info"]["status"]["error_message"].replace("<br/>", "\n"),
+                ]
+            )
+            _LOG.log(level=log_level, msg=log_line)
+
+    if table.job_status != "OK":
+        _LOG.error("One or more TMLs failed to fully import, check the logs or use --log-errors for more details.")
+        return 1
 
     return 0
 
