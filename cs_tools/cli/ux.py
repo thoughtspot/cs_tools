@@ -32,6 +32,7 @@ CS_TOOLS_THEME = theme.Theme(
         "fg-success": _TS_GREEN,
         "fg-warn": _TS_YELLOW,
         "fg-error": _TS_RED,
+        "fg-link": _TS_BLUE,
         "bg-primary": "b grey50",
     },
     inherit=True,
