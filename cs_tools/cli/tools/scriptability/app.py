@@ -2,23 +2,28 @@ from __future__ import annotations
 
 from collections.abc import Coroutine
 from typing import Literal
+import datetime as dt
 import itertools as it
 import logging
+import pathlib
 
 import typer
 
-from cs_tools import _types, utils
+from cs_tools import __version__, _types, utils
 from cs_tools.api import workflows
-from cs_tools.cli import (
-    custom_types,
-)
+from cs_tools.cli import custom_types
 from cs_tools.cli.dependencies import ThoughtSpot, depends_on
 from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 
-from . import utils as local_utils
+from . import (
+    api_transformer,
+    utils as local_utils,
+)
 
 _LOG = logging.getLogger(__name__)
 app = AsyncTyper(help="Maintaining TML between your ThoughtSpot Environments.")
+
+_DOCS_MAPPING = "https://developers.thoughtspot.com/docs/deploy-with-tml-apis#guidMapping"
 
 
 @app.command(name="export", hidden=True)
@@ -26,13 +31,23 @@ app = AsyncTyper(help="Maintaining TML between your ThoughtSpot Environments.")
 @depends_on(thoughtspot=ThoughtSpot())
 def checkpoint(
     ctx: typer.Context,
-    directory: custom_types.Directory = typer.Option(..., help="Directory to save TML files to."),
-    metadata_type: custom_types.MultipleInput = typer.Option(
+    directory: pathlib.Path = typer.Option(
         ...,
+        click_type=custom_types.Directory(exists=True, make=True),
+        help="Directory to save TML files to.",
+    ),
+    environment: str = typer.Option(
+        None,
+        help="The name of the env you're exporting TML from",
+        rich_help_panel=f"[link={_DOCS_MAPPING}]GUID Mapping Options[/]",
+    ),
+    input_types: custom_types.MultipleInput = typer.Option(
+        ...,
+        "--metadata-types",
         click_type=custom_types.MultipleInput(
-            choices=["CONNECTION", "ANY_TABLE", "TABLE", "MODEL", "LIVEBOARD", "ANSWER", "__ALL__"]
+            choices=["CONNECTION", "TABLE", "VIEW", "SQL_VIEW", "MODEL", "LIVEBOARD", "ANSWER", "__ALL__"],
         ),
-        help="The type of TML to export, if not provided, then fetch all of the supported_types.",
+        help="The type of TML(s) to export, comma separated.",
         rich_help_panel="TML Export Options",
     ),
     pattern: str = typer.Option(
@@ -45,6 +60,12 @@ def checkpoint(
         click_type=custom_types.MultipleInput(sep=","),
         help="TML created by these User(s), comma separated.",
         show_default=False,
+        rich_help_panel="TML Export Options",
+    ),
+    include_system_owned_content: bool = typer.Option(
+        False,
+        "--include-system-owned-content",
+        help="Whether or not to include content owned by built-in Administrator accounts.",
         rich_help_panel="TML Export Options",
     ),
     tags: custom_types.MultipleInput = typer.Option(
@@ -60,52 +81,81 @@ def checkpoint(
     """
     Export TML to a directory.
 
-    All export options are combined in AND format.
-    """
-    if metadata_type == ["ALL"] and all(_ is None for _ in (pattern, authors, tags)):
-        raise typer.BadParameter("You must specify at least one other TML Export option when using [fg-success]ALL[/].")
+    Only objects matching ALL Export Options will be exported.
 
+    A mapping file will be created at .mappings/<environment>-guid-mappings.json
+    """
     ts = ctx.obj.thoughtspot
 
-    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
-        ts.switch_org(org_id=org_override)
+    SYSTEM_USER_GUIDS = ts.session_context.thoughtspot.system_users.values()
 
-    CLI_TYPES_TO_API_TYPES = {
+    CLI_TYPES_TO_API_TYPES: dict[str, list[_types.MetadataObjectType]] = {
         "ALL": ["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"],
         "CONNECTION": ["CONNECTION"],
-        "ANY_TABLE": ["LOGICAL_TABLE"],
         "TABLE": ["LOGICAL_TABLE"],
+        "VIEW": ["LOGICAL_TABLE"],
+        "SQL_VIEW": ["LOGICAL_TABLE"],
         "MODEL": ["LOGICAL_TABLE"],
         "LIVEBOARD": ["LIVEBOARD"],
         "ANSWER": ["ANSWER"],
     }
 
-    metadata_api_types = set(it.chain.from_iterable(CLI_TYPES_TO_API_TYPES[_] for _ in metadata_type))
+    metadata_types = set(it.chain.from_iterable(CLI_TYPES_TO_API_TYPES[_] for _ in input_types))
 
-    c = workflows.paginator(
-        ts.api.metadata_search,
-        guid="",
-        metadata=[{"type": _, "name_pattern": pattern} for _ in metadata_api_types],
-        include_headers=True,
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
+
+    if environment is None:
+        environment = "_".join(
+            [
+                ts.session_context.thoughtspot.cluster_name,
+                ts.session_context.user.org_context or "primary",
+            ]
+        )
+
+    # SET UP OUR GUID MAPPING.
+    directory.joinpath(".mappings").mkdir(parents=True, exist_ok=True)
+    mapping_info = local_utils.GUIDMappingInfo.load(path=directory / ".mappings" / f"{environment}-guid-mappings.json")
+    mapping_info.metadata["checkpoint"] = local_utils.MappingMetadataCheckpoint.parse_obj(
+        {
+            **mapping_info.metadata.get("checkpoint", {}),
+            # OVERRIDES
+            "by": f"cs_tools/{__version__}/scriptability/checkpoint",
+            "at": dt.datetime.now(tz=dt.timezone.utc).isoformat(),
+            "counter": mapping_info.metadata.get("checkpoint", {}).get("counter", 0) + 1,
+            "last_export": dt.datetime.now(tz=dt.timezone.utc).isoformat(),
+        }
+    ).model_dump()
+
+    c = workflows.metadata.fetch_all(
+        metadata_types=metadata_types,
+        pattern=pattern,
         created_by_user_identifiers=authors,
         tag_identifiers=tags,
+        http=ts.api,
     )
-    _ = utils.run_sync(c)
-
-    # TODO: FILTER BASED ON INP TYPE.
+    d = api_transformer.ts_metadata_object(data=utils.run_sync(c))
 
     coros: list[Coroutine] = []
 
-    for metadata_object in _:
+    for metadata_object in d:
+        if not local_utils.is_allowed_object(
+            metadata_object,
+            allowed_types=input_types,
+            disallowed_system_users=[] if include_system_owned_content else SYSTEM_USER_GUIDS,
+        ):
+            continue
+
         coros.append(
             workflows.metadata.tml_export(
-                guid=metadata_object["metadata_id"],
+                guid=metadata_object["object_guid"],
                 edoc_format="YAML",
                 directory=directory,
                 http=ts.api,
             )
         )
 
+    # ANY FASTER THAN 4 CONCURRENT DOWNLOADS AND WE WILL STRESS ATLAS OUT :')
     c = utils.bounded_gather(*coros, max_concurrent=4)  # type: ignore[assignment]
     d = utils.run_sync(c)
 
@@ -116,17 +166,19 @@ def checkpoint(
     else:
         RICH_CONSOLE.print(table)
 
-    if log_errors:
-        for tml_response in filter(lambda r: r["info"]["status"]["status_code"] != "OK", table.data):
-            log_level = logging.WARNING if tml_response["info"]["status"]["status_code"] == "WARNING" else logging.ERROR
-            log_line = " - ".join(
-                [
-                    tml_response["info"]["status"]["status_code"],
-                    tml_response["info"]["id"],
-                    tml_response["info"]["status"]["error_message"].replace("<br/>", "\n"),
-                ]
+    for response in table.statuses:
+        if log_errors and response.status != "OK":
+            assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
+            _LOG.log(
+                level=logging.getLevelName(response.status),
+                msg=" - ".join([response.status, response.metadata_guid, response.message]),
             )
-            _LOG.log(level=log_level, msg=log_line)
+
+        if response.status != "ERROR":
+            mapping_info.mapping.setdefault(response.metadata_guid, None)
+
+    # RECORD THE GUID MAPPING
+    mapping_info.save()
 
     if table.job_status != "OK":
         _LOG.error("One or more TMLs failed to fully export, check the logs or use --log-errors for more details.")
@@ -140,32 +192,56 @@ def checkpoint(
 @depends_on(thoughtspot=ThoughtSpot())
 def deploy(
     ctx: typer.Context,
-    directory: custom_types.Directory = typer.Option(..., help="Directory to load TML files from."),
-    deploy_type: Literal["DELTA", "FULL"] = typer.Option(
-        "DELTA",
-        help="Indicates if all files or only modified files since the last deploy should be considered.",
-    ),
-    import_policy: _types.ImportPolicy = typer.Option(
-        "ALL_OR_NONE",
-        help="Whether or not to fail the import job if any files don't import successfully.",
+    directory: pathlib.Path = typer.Option(
+        ...,
+        click_type=custom_types.Directory(exists=True),
+        help="Directory to load TML files from.",
     ),
     tags: custom_types.MultipleInput = typer.Option(
         None,
         click_type=custom_types.MultipleInput(sep=","),
-        help="Tags with these name(s) will be applied to the imported TML, comma separated.",
+        help="TML will be tagged with these name(s), comma separated.",
         show_default=False,
-        rich_help_panel="TML Export Options",
     ),
-    use_async_endpoint: bool = typer.Option(
+    source_environment: str = typer.Option(
+        ...,
+        help="The name of the env you're deploying TML [fg-secondary]from[/].",
+        rich_help_panel=f"[link={_DOCS_MAPPING}]GUID Mapping Options[/]",
+    ),
+    target_environment: str = typer.Option(
+        ...,
+        help="The name of the [fg-secondary]new env[/] you're deploying TML [fg-secondary]to[/].",
+        rich_help_panel=f"[link={_DOCS_MAPPING}]GUID Mapping Options[/]",
+    ),
+    input_types: custom_types.MultipleInput = typer.Option(
+        "ALL",
+        "--metadata-types",
+        click_type=custom_types.MultipleInput(
+            choices=["CONNECTION", "TABLE", "VIEW", "SQL_VIEW", "MODEL", "LIVEBOARD", "ANSWER", "__ALL__"],
+        ),
+        help="The type of TML to deploy",
+        rich_help_panel="TML Import Options",
+    ),
+    deploy_type: Literal["DELTA", "FULL"] = typer.Option(
+        "DELTA",
+        help="If all TML or only modified files since the last known IMPORT should be deployed.",
+        rich_help_panel="TML Import Options",
+    ),
+    deploy_policy: Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY"] = typer.Option(
+        "ALL_OR_NONE",
+        help="Whether to accept any errors during IMPORT.",
+        rich_help_panel="TML Import Options",
+    ),
+    use_async_mode: bool = typer.Option(
         False,
-        "--async",
-        help="Use the metadata/tml/async/import endpoint (available in TSv10.5.0).",
+        help="Whether to use the new metadata/tml/async/import endpoint or not (v10.5.0+).",
+        rich_help_panel="TML Import Options",
         hidden=True,
     ),
-    skip_schema_validation: bool = typer.Option(
+    skip_external_schema_validation: bool = typer.Option(
         False,
-        "--skip-schema-validation",
-        help="When importing tables, whether or not to attempt validation that the external schema exists.",
+        help="Whether to skip validation of Table TML against the external database schema (v10.5.0+).",
+        rich_help_panel="TML Import Options",
         hidden=True,
     ),
     org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
@@ -177,184 +253,23 @@ def deploy(
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
         ts.switch_org(org_id=org_override)
 
+    # SET UP OUR GUID MAPPING.
+    mapping_info = local_utils.GUIDMappingInfo.load(path=directory / ".mappings" / f"{environment}-guid-mappings.json")
+
+    try:
+        mapping_info.metadata["checkpoint"]["by"] = f"cs_tools/{__version__}/scriptability/deploy"
+        mapping_info.metadata["checkpoint"]["counter"] += 1
+        mapping_info.metadata["checkpoint"]["last_import"] = dt.datetime.now(tz=dt.timezone.utc).isoformat()
+    except KeyError:
+        _LOG.critical("")
+
     #
     # IMPORT TMLS
     #
 
-    #
-    # MAP GUIDS
-    #
-
-    table = local_utils.TMLOperations(data=d, domain="SCRIPTABILITY", op="IMPORT")
-
     if ts.session_context.environment.is_ci:
-        _LOG.info(table)
+        _LOG.info("...")
     else:
-        RICH_CONSOLE.print(table)
-
-    if log_errors:
-        for tml_response in filter(lambda r: r["info"]["status"]["status_code"] != "OK", table.data):
-            log_level = logging.WARNING if tml_response["info"]["status"]["status_code"] == "WARNING" else logging.ERROR
-            log_line = " - ".join(
-                [
-                    tml_response["info"]["status"]["status_code"],
-                    tml_response["info"]["id"],
-                    tml_response["info"]["status"]["error_message"].replace("<br/>", "\n"),
-                ]
-            )
-            _LOG.log(level=log_level, msg=log_line)
-
-    if table.job_status != "OK":
-        _LOG.error("One or more TMLs failed to fully import, check the logs or use --log-errors for more details.")
-        return 1
+        RICH_CONSOLE.print("...")
 
     return 0
-
-
-# app.add_typer(tmlfsApp, name="tmlfs", help="Commands for working with the TML file system")
-# app.add_typer(mappingApp, name="mapping", help="Commands for working with TML GUID mappings")
-
-# @app.command(dependencies=[thoughtspot], name="export")
-# def scriptability_export(
-#     ctx: typer.Context,
-#     directory: pathlib.Path = typer.Argument(
-#         ..., help="directory to save TML to", file_okay=False, resolve_path=True, exists=True
-#     ),
-#     tags: str = typer.Option(
-#         None,
-#         click_type=MultipleChoiceType(),
-#         help="objects marked with tags to export, comma separated",
-#     ),
-#     guids: str = typer.Option(
-#         None,
-#         click_type=MultipleChoiceType(),
-#         help="specific objects to export, comma separated",
-#     ),
-#     author: str = typer.Option(None, help="objects authored by this username to export"),
-#     pattern: str = typer.Option(
-#         None, help=r"object names which meet a pattern, follows SQL LIKE operator (% as a wildcard)"
-#     ),
-#     include_types: str = typer.Option(
-#         None,
-#         click_type=MultipleChoiceType(),
-#         help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
-#     ),
-#     exclude_types: str = typer.Option(
-#         None,
-#         click_type=MultipleChoiceType(),
-#         help=(
-#             "list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, "
-#             "worksheet"
-#         ),
-#     ),
-#     include_system_content: bool = typer.Option(False, help="include System User content in export"),
-#     export_associated: bool = typer.Option(
-#         False, "--export-associated", help="if specified, also export related content (does not export connections)"
-#     ),
-#     org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-# ):
-#     """
-#     Exports TML from ThoughtSpot.
-
-#     There are different parameters that can impact content to download. At least one
-#     needs to be specified.
-
-#     - GUIDs: only content with the specific GUIDs will be downloaded.
-#     - filters, e.g tags, author, pattern, include_types, exclude_types.
-
-#     If you specify GUIDs then you can't use any filters.
-
-#     Filters are applied in AND fashion - only items that match all filters will be
-#     exported. For example, if you export for the "finance" tag and author "user123",
-#     then only content owned by that user with the "finance" tag will be exported.
-#     """
-#     export(
-#         ts=ctx.obj.thoughtspot,
-#         path=directory,
-#         tags=tags,
-#         guids=guids,
-#         author=author,
-#         pattern=pattern,
-#         include_types=include_types,
-#         exclude_types=exclude_types,
-#         exclude_system_content=not include_system_content,
-#         export_associated=export_associated,
-#         org=org_override,
-#     )
-
-
-# @app.command(dependencies=[thoughtspot], name="import")
-# def scriptability_import(
-#     ctx: typer.Context,
-#     path: pathlib.Path = typer.Argument(..., help="Root folder to load TML from", file_okay=False, resolve_path=True),
-#     guid: str = typer.Option(
-#         None, help="Loads a specific file.  Assumes all dependencies are met.", file_okay=True, resolve_path=True
-#     ),
-#     import_policy: TMLImportPolicy = typer.Option(TMLImportPolicy.validate, help="The import policy type"),
-#     force_create: bool = typer.Option(False, "--force-create", help="will force a new object to be created"),
-#     source: str = typer.Option(
-#         ..., help="the source environment the TML came from", rich_help_panel="GUID Mapping Options"
-#     ),
-#     dest: str = typer.Option(
-#         ..., help="the destination environment the TML is importing into", rich_help_panel="GUID Mapping Options"
-#     ),
-#     tags: list[str] = typer.Option([], help="one or more tags to add to the imported content"),
-#     share_with: list[str] = typer.Option([], help="one or more groups to share the uploaded content with"),
-#     org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-#     include_types: Optional[str] = typer.Option(
-#         None,
-#         hidden=False,
-#         click_type=MultipleChoiceType(),
-#         help="list of types to export: answer, connection, liveboard, table, sqlview, view, worksheet",
-#     ),
-#     exclude_types: Optional[str] = typer.Option(
-#         None,
-#         hidden=False,
-#         click_type=MultipleChoiceType(),
-#         help=(
-#             "list of types to exclude (overrides include): answer, connection, liveboard, table, sqlview, view, "
-#             "worksheet"
-#         ),
-#     ),
-#     show_mapping: Optional[bool] = typer.Option(default=False, help="show the mapping file"),
-# ):
-#     """
-#     Import TML from a file or directory into ThoughtSpot.
-
-#     \b
-#     cs_tools depends on thoughtspot_tml. The GUID file is produced from
-#     thoughtspot_tml and requires a specific format. For further information on the
-#     GUID File, see
-
-#        https://github.com/thoughtspot/thoughtspot_tml/tree/v2_0_release#environmentguidmapper
-#     """
-#     to_import(
-#         ts=ctx.obj.thoughtspot,
-#         path=path,
-#         guid=guid,
-#         import_policy=import_policy,
-#         force_create=force_create,
-#         source=source,
-#         dest=dest,
-#         tags=tags,
-#         share_with=share_with,
-#         org=org_override,
-#         include_types=include_types,
-#         exclude_types=exclude_types,
-#         show_mapping=show_mapping,
-#     )
-
-
-# @app.command(name="compare")
-# def scriptability_compare(
-#     file1: pathlib.Path = typer.Argument(
-#         ..., help="full path to the first TML file to compare", dir_okay=False, resolve_path=True
-#     ),
-#     file2: pathlib.Path = typer.Argument(
-#         ..., help="full path to the second TML file to compare", dir_okay=False, resolve_path=True
-#     ),
-# ):
-#     """
-#     Compares two TML files for differences.
-#     """
-#     compare(file1=file1, file2=file2)

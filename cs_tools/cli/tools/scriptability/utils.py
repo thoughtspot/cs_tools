@@ -1,124 +1,175 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal, Optional, Union
+import datetime as dt
 import json
+import pathlib
 
+import pydantic
 import rich
 
 from cs_tools import _types
 
-# """Contains useful classes and methods for scriptability."""
 
-# from __future__ import annotations
+def is_allowed_object(
+    metadata_object: _types.APIResult,
+    allowed_types: list[_types.MetadataObjectType],
+    disallowed_system_users: list[_types.GUID],
+) -> bool:
+    """Determines if an object is allowed to be EXPORTED or IMPORTED."""
+    if "TABLE" in allowed_types:
+        allowed_types.append("ONE_TO_ONE_LOGICAL")
+        allowed_types.append("USER_DEFINED")
 
-# from dataclasses import dataclass
-# from typing import TYPE_CHECKING, NewType
-# import pathlib
+    if "VIEW" in allowed_types:
+        allowed_types.append("AGGR_WORKSHEET")
 
-# from thoughtspot_tml import Connection
-# from thoughtspot_tml.types import TMLObject
-# from thoughtspot_tml.utils import (
-#     EnvironmentGUIDMapper as Mapper,
-#     disambiguate as _disambiguate,
-# )
+    if "MODEL" in allowed_types:
+        allowed_types.append("WORKSHEET")
 
-# if TYPE_CHECKING:
-#     from cs_tools.types import GUID
+    #
+    #
+    #
 
-# EnvName = NewType("EnvName", str)
+    if metadata_object["author_guid"] in disallowed_system_users:
+        return False
 
+    if "ALL" in allowed_types:
+        return True
 
-# class GUIDMapping:
-#     """
-#         Wrapper for guid mapping to make it easier to use.
+    if metadata_object["object_type"] in allowed_types:
+        return True
 
-#         Attributes
-#         ----------
-#     from_env : str
-#           the source environment
+    if metadata_object["object_type"] == "LOGICAL_TABLE":
+        return metadata_object["object_subtype"] in allowed_types
 
-#         to_env : str
-#           the target environment
-
-#         filepath : pathlib.Path
-#           path to the mapping object
-
-#         remap_object_guid : bool, default = True
-#           whether to remap the top-level tml.guid
-#     """
-
-#     def __init__(self, source: EnvName, dest: EnvName, path: pathlib.Path, remap_object_guid: bool = True):
-#         self.source: str = source
-#         self.dest: str = dest
-#         self.path: pathlib.Path = path
-#         self.remap_object_guid = remap_object_guid
-#         self.guid_mapper = Mapper.read(path, str.lower) if path.exists() else Mapper(str.lower)
-
-#     def get_mapped_guid(self, from_guid: GUID) -> GUID:
-#         """
-#         Get the mapped guid.
-#         """
-#         # { DEV: guid1, PROD: guid2, ... }
-#         all_envts_from_guid = self.guid_mapper.get(from_guid, default={})
-#         return all_envts_from_guid.get(self.dest, from_guid)
-
-#     def set_mapped_guid(self, from_guid: GUID, to_guid: GUID) -> None:
-#         """
-#         Sets the guid mapping from the old to the new.
-
-#         You have to set both to make sure both are in the file.
-#         """
-#         self.guid_mapper[from_guid] = (self.source, from_guid)
-#         self.guid_mapper[from_guid] = (self.dest, to_guid)
-
-#     def set_mapped_guids(self, from_guids: list[GUID], to_guids: list[GUID]) -> None:
-#         """
-#         Sets a set of mapped GUIDs.
-#         """
-#         for _ in range(len(from_guids)):
-#             self.set_mapped_guid(from_guids[_], to_guids[_])
-
-#     def generate_mapping(self, from_environment: str, to_environment: str) -> dict[GUID, GUID]:
-#         return self.guid_mapper.generate_mapping(from_environment, to_environment)
-
-#     def disambiguate(self, tml: TMLObject, delete_unmapped_guids: bool = False) -> None:
-#         """
-#         Replaces source GUIDs with target.
-#         """
-#         # self.guid_mapper.generate_map(DEV, PROD) # =>  {envt_A_guid1: envt_B_guid2 , .... }
-#         mapper = self.guid_mapper.generate_mapping(self.source, self.dest)
-
-#         _disambiguate(
-#             tml=tml,
-#             guid_mapping=mapper,
-#             remap_object_guid=self.remap_object_guid,
-#             delete_unmapped_guids=delete_unmapped_guids,
-#         )
-
-#     def save(self) -> None:
-#         """
-#         Saves the GUID mappings.
-#         """
-#         self.guid_mapper.save(path=self.path, info={"generated-by": "cs_tools/scriptability"})
+    return False
 
 
-# @dataclass
-# class TMLFile:
-#     """
-#     Combines file information with TML.
-#     """
+class MappingMetadataCheckpoint(pydantic.BaseModel):
+    """Metadata about the export/import process."""
 
-#     filepath: pathlib.Path
-#     tml: TMLObject
-
-#     @property
-#     def is_connection(self) -> bool:
-#         return isinstance(self.tml, Connection)
+    by: str
+    at: dt.datetime
+    counter: int
+    last_export: dt.datetime
+    last_import: Optional[dt.datetime] = None
 
 
-# def strip_blanks(inp: list[str]) -> list[str]:
-#     """Strips blank out of a list."""
-#     return [e for e in inp if e]
+class GUIDMappingInfo(pydantic.BaseModel):
+    """Wrapper for guid mapping to make it easier to use."""
+
+    metadata: dict[str, Any] = pydantic.Field(default={})
+    mapping: dict[_types.GUID, Optional[_types.GUID]] = pydantic.Field(default={})
+    additional_mapping: dict[str, str] = pydantic.Field(default={})
+
+    _path: Optional[pathlib.Path] = None
+
+    @classmethod
+    def load(cls, path: Optional[pathlib.Path] = None) -> GUIDMappingInfo:
+        """Load the GUID mapping info."""
+        try:
+            assert path is not None, "--> raise FileNotFoundError"
+            info = cls.parse_obj(json.loads(path.read_text()))
+
+        except (AssertionError, FileNotFoundError):
+            info = cls()
+
+        finally:
+            info._path = path
+
+        return info
+
+    # def disambiguate(self, tml: TMLObject, delete_unmapped_guids: bool = False) -> None:
+    #     """
+    #     Replaces source GUIDs with target.
+    #     """
+    #     # self.guid_mapper.generate_map(DEV, PROD) # =>  {envt_A_guid1: envt_B_guid2 , .... }
+    #     mapper = self.guid_mapper.generate_mapping(self.source, self.dest)
+
+    #     _disambiguate(
+    #         tml=tml,
+    #         guid_mapping=mapper,
+    #         remap_object_guid=self.remap_object_guid,
+    #         delete_unmapped_guids=delete_unmapped_guids,
+    #     )
+
+    def save(self, new_path: Optional[pathlib.Path] = None) -> None:
+        """Saves the GUID mappings."""
+        if new_path is None and self._path is None:
+            raise ValueError("No save path provided.")
+
+        if new_path is not None:
+            self._path = new_path
+
+        assert self._path is not None, "This should be unreachable. GUIDMappingInfo requires a path."
+
+        self._path.write_text(self.model_dump_json(indent=2))
+
+
+class TMLStatus(pydantic.BaseModel):
+    operation: Literal["EXPORT", "VALIDATE", "IMPORT"]
+    edoc: Optional[str] = None
+    metadata_guid: _types.GUID
+    metadata_name: str
+    metadata_type: Union[_types.UserFriendlyObjectType, Literal["UNKNOWN"]] = "UNKNOWN"
+    status: _types.TMLStatusCode
+    message: Optional[str] = None
+    _raw: dict
+
+    @classmethod
+    def from_api_response(cls, operation: Literal["EXPORT", "VALIDATE", "IMPORT"], data: _types.APIResult) -> TMLStatus:
+        """..."""
+        response = cls(
+            operation=operation,
+            edoc=data["edoc"],
+            metadata_guid=data["info"]["id"],
+            metadata_name=data["info"]["name"],
+            metadata_type=data["info"]["type"],
+            status=data["info"]["status"]["status_code"],
+            message=data["info"]["status"].get("error_message", None),
+            _raw=data,
+        )
+        return response
+
+    @pydantic.field_validator("metadata_type", mode="before")
+    @classmethod
+    def ensure_uppercase(cls, value: str) -> str:
+        """Ensure the metadata type is uppercase."""
+        return value.upper() if value is not None else value
+
+    @pydantic.field_validator("message", mode="before")
+    @classmethod
+    def conform_newlines(cls, value: str) -> Optional[str]:
+        """Some TML errors have <br/> tags instead of standard newlines."""
+        if value is None:
+            return None
+
+        return value.replace("<br/>", "\n")
+
+    @property
+    def color(self) -> str:
+        """Fetch the status color which represents the success of the tml response."""
+        status_colors = {
+            "ERROR": "fg-error",
+            "WARNING": "fg-warn",
+            "OK": "fg-success",
+        }
+
+        return status_colors[self.status]
+
+    @property
+    def emoji(self) -> str:
+        """Fetch the status emoji which represents the success of the tml response."""
+        # fmt: off
+        status_emojis = {
+            "ERROR": ":x:",                 # ❌
+            "WARNING": ":rotating_light:",  # 🚨
+            "OK": ":white_check_mark:",     # ✅
+        }
+        # fmt: on
+
+        return status_emojis[self.status]
 
 
 class TMLOperations:
@@ -128,46 +179,41 @@ class TMLOperations:
         self.data = data
         self.domain = domain
         self.operation = op
+        self._statuses = [TMLStatus.from_api_response(operation=op, data=_) for _ in self.data]
+
+    @property
+    def statuses(self) -> list[TMLStatus]:
+        """Get the statuses of the TML operation."""
+        return self._statuses
 
     @property
     def job_status(self) -> _types.TMLStatusCode:
-        """What is the aggregate status of the TML operation."""
-        if any(_["info"]["status"]["status_code"] == "ERROR" for _ in self.data):
+        """The aggregate status of the TML operation."""
+        if any(_.status == "ERROR" for _ in self.statuses):
             return "ERROR"
-        if any(_["info"]["status"]["status_code"] == "WARNING" for _ in self.data):
+        if any(_.status == "WARNING" for _ in self.statuses):
             return "WARNING"
         return "OK"
 
-    def _make_status_emoji(self, status: _types.TMLStatusCode) -> str:
-        """Fetch the status emoji which represents the success of the tml response."""
-        status_emojis = {
-            "ERROR": ":x:",  # ❌
-            "WARNING": ":rotating_light:",  # 🚨
-            "OK": ":white_check_mark:",  # ✅
-        }
-
-        return status_emojis.get(status, ":white_check_mark:")
-
-    def _make_status_color(self, status: _types.TMLStatusCode) -> str:
-        """Fetch the status emoji which represents the success of the tml response."""
+    @property
+    def job_status_color(self) -> str:
         status_colors = {
             "ERROR": "fg-error",
             "WARNING": "fg-warn",
             "OK": "fg-success",
         }
-
-        return status_colors.get(status, "fg-warn")
+        return status_colors[self.job_status]
 
     def __str__(self) -> str:
         """Represent the trimmed results as JSON."""
         results = [
             {
-                "status": tml_response["info"]["status"]["status_code"],
-                "metadata_type": tml_response["info"].get("type", "UNKNOWN").upper(),
-                "metadata_guid": tml_response["info"]["id"],
-                "metadata_name": tml_response["info"]["name"],
+                "status": response.status,
+                "metadata_type": response.metadata_type,
+                "metadata_guid": response.metadata_guid,
+                "metadata_name": response.metadata_name,
             }
-            for tml_response in self.data
+            for response in self.statuses
         ]
         return json.dumps(results, indent=4)
 
@@ -181,20 +227,15 @@ class TMLOperations:
         t.add_column("Name", width=150 - 5 - 14 - 40, no_wrap=True)
         # fmt: on
 
-        for tml_response in self.data:
-            t.add_row(
-                self._make_status_emoji(tml_response["info"]["status"]["status_code"]),
-                tml_response["info"].get("type", "UNKNOWN").upper(),
-                tml_response["info"]["id"],
-                tml_response["info"]["name"],
-            )
+        for response in self.statuses:
+            t.add_row(response.emoji, response.metadata_type, response.metadata_guid, response.metadata_name)
 
         r = rich.panel.Panel(
             t,
             title="TML Status",
             subtitle=f"TML / {self.domain.upper()} / {self.operation}",
             subtitle_align="right",
-            border_style=self._make_status_color(self.job_status),
+            border_style=self.job_status_color,
         )
 
         return r
