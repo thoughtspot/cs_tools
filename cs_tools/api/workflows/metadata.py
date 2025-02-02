@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Coroutine, Iterable
-from typing import Any, Literal, cast
+from typing import Any, Literal, Optional, cast
 import asyncio
 import datetime as dt
 import itertools as it
@@ -25,6 +25,7 @@ async def fetch_all(
     *,
     http: RESTAPIClient,
     record_size: int = 5_000,
+    pattern: Optional[str] = None,
     **search_options,
 ) -> list[_types.APIResult]:
     """Wraps metadata/search fetching all objects of the given type and exhausts the pagination."""
@@ -34,7 +35,7 @@ async def fetch_all(
     async with utils.BoundedTaskGroup(max_concurrent=len(list(metadata_types))) as g:
         for object_type in metadata_types:
             search_options["guid"] = ""
-            search_options["metadata"] = [{"type": object_type}]
+            search_options["metadata"] = [{"type": object_type, "name_pattern": pattern}]
             coro = paginator(http.metadata_search, record_size=record_size, **search_options)
             task = g.create_task(coro, name=object_type)
             tasks.append(task)
@@ -320,7 +321,7 @@ async def tml_export(
     except ValueError as e:
         log.error(f"Unable to export {guid}, see log for details..")
         log.debug(e.args[0])
-        return {"edoc": None, "info": e.args[0]}
+        return {"edoc": None, "info": {"id": guid, **e.args[0]}}
 
     if directory is not None:
         i = d["info"]
