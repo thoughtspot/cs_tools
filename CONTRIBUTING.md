@@ -85,7 +85,7 @@ released so your contribution might not show up for a while.
 To build the documentation locally, you can use the following commands:
 
 ```bash
-uv run hatch run run docs:serve
+uv run hatch run docs:serve
 ```
 
 To view the documentation, open your browser and go to `http://localhost:8000`. To stop the server, use `^C` 
