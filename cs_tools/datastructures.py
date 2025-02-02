@@ -133,8 +133,10 @@ class ThoughtSpotInfo(_GlobalModel):
     """Information about the ThoughtSpot cluster we've established a session with."""
 
     cluster_id: str
+    cluster_name: Optional[str] = "UNKNOWN"
     url: pydantic.AnyUrl
     version: validators.CoerceVersion
+    system_users: dict[_types.Name, _types.GUID]
     timezone: str
     is_cloud: bool
     is_roles_enabled: bool = False
@@ -146,12 +148,18 @@ class ThoughtSpotInfo(_GlobalModel):
     def check_if_from_session_info(cls, data: Any) -> Any:
         if system_info := data.get("__system_info__", {}):
             data["cluster_id"] = system_info["id"]
+            data["cluster_name"] = system_info["name"]
             data["url"] = data["__url__"]
             data["version"] = system_info["release_version"]
             data["timezone"] = system_info["time_zone"]
             data["is_cloud"] = system_info["type"] == "SAAS"
             data["is_orgs_enabled"] = data["__is_orgs_enabled__"]
             data["is_roles_enabled"] = data["__is_orgs_enabled__"]
+            data["system_users"] = {
+                "tsadmin": system_info["tsadmin_user_id"],
+                "system": system_info["system_user_id"],
+                "su": system_info["super_user_id"],
+            }
 
         if overrides_info := data.get("__overrides_info__", {}).get("config_override_info", {}):
             # data["is_roles_enabled"] = overrides_info.get("orion.rolesEnabled", False)
