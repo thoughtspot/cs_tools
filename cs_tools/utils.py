@@ -113,6 +113,17 @@ def batched(iterable: Iterable[_T], *, n: int) -> Generator[Iterable[_T], None, 
         yield batch
 
 
+def pairwise(iterable: Iterable[_T]) -> Generator[tuple[Optional[_T], _T], None, None]:
+    """Return successive overlapping pairs taken from the input iterable."""
+    # pairwise('ABCDEFG') → AB BC CD DE EF FG
+    iterable = iter(iterable)
+    a = next(iterable, None)
+
+    for b in iterable:
+        yield a, b
+        a = b
+
+
 def determine_editable_install(package_name: str = "cs_tools") -> bool:
     """Determine if the current CS Tools context is an editable install."""
     try:
