@@ -112,7 +112,7 @@ class TMLStatus(pydantic.BaseModel):
     edoc: Optional[str] = None
     metadata_guid: _types.GUID
     metadata_name: str
-    metadata_type: Union[_types.UserFriendlyObjectType, Literal["UNKNOWN"]] = "UNKNOWN"
+    metadata_type: Union[_types.UserFriendlyObjectType, Literal["WORKSHEET"], Literal["UNKNOWN"]] = "UNKNOWN"
     status: _types.TMLStatusCode
     message: Optional[str] = None
     _raw: dict
