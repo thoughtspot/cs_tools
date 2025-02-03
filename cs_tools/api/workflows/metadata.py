@@ -17,7 +17,7 @@ from cs_tools import _types, utils
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.api.workflows.utils import paginator
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 async def fetch_all(
@@ -45,8 +45,8 @@ async def fetch_all(
             d = task.result()
 
         except httpx.HTTPError as e:
-            log.error(f"Could not fetch all objects for '{task.get_name()}' object type, see logs for details..")
-            log.debug(f"Full error: {e}", exc_info=True)
+            _LOG.error(f"Could not fetch all objects for '{task.get_name()}' object type, see logs for details..")
+            _LOG.debug(f"Full error: {e}", exc_info=True)
             continue
 
         results.extend(d)
@@ -89,8 +89,8 @@ async def fetch(
             d = r.json()
 
         except httpx.HTTPError as e:
-            log.error(f"Could not fetch the object for guid={task.get_name()}, see logs for details..")
-            log.debug(f"Full error: {e}", exc_info=True)
+            _LOG.error(f"Could not fetch the object for guid={task.get_name()}, see logs for details..")
+            _LOG.debug(f"Full error: {e}", exc_info=True)
             continue
 
         results.extend(d)
@@ -127,7 +127,7 @@ async def fetch_one(
         r.raise_for_status()
         _ = next(iter(r.json()))
     except httpx.HTTPError as e:
-        log.debug(f"Full error: {e}", exc_info=True)
+        _LOG.debug(f"Full error: {e}", exc_info=True)
         raise ValueError(f"Could not find the {metadata_type} for the given identifier {identifier}") from None
     except StopIteration:
         raise ValueError(f"Could not find the {metadata_type} for the given identifier {identifier}") from None
@@ -142,9 +142,9 @@ async def fetch_one(
         try:
             nested = nested[int(path) if path.isdigit() else path]
         except (KeyError, IndexError) as e:
-            log.debug(f"Full object: {json.dumps(_, indent=4)}\n")
-            log.debug(f" Sub object: {json.dumps(_, indent=4)}\n")
-            log.debug(f"Error: {e}", exc_info=True)
+            _LOG.debug(f"Full object: {json.dumps(_, indent=4)}\n")
+            _LOG.debug(f" Sub object: {json.dumps(_, indent=4)}\n")
+            _LOG.debug(f"Error: {e}", exc_info=True)
             raise ValueError(f"Could not fetch sub-object at path '{path}', see logs for details..") from None
 
     return nested
@@ -215,8 +215,8 @@ async def permissions(
             d = r.json()
 
         except httpx.HTTPError as e:
-            log.error(f"Could not fetch the permissions for guid={task.get_name()}, see logs for details..")
-            log.debug(f"Full error: {e}", exc_info=True)
+            _LOG.error(f"Could not fetch the permissions for guid={task.get_name()}, see logs for details..")
+            _LOG.debug(f"Full error: {e}", exc_info=True)
             continue
 
         results.append(d)
@@ -314,13 +314,13 @@ async def tml_export(
             raise ValueError(d["info"])
 
     except (httpx.HTTPStatusError, StopIteration):
-        log.error(f"Unable to export {guid}, see log for details..")
-        log.debug(r.text)
+        _LOG.error(f"Unable to export {guid}, see log for details..")
+        _LOG.debug(r.text)
         return {"edoc": None, "info": {"id": guid, "status": {"status_code": "ERROR"}, "httpx_response": r.text}}
 
     except ValueError as e:
-        log.error(f"Unable to export {guid}, see log for details..")
-        log.debug(e.args[0])
+        _LOG.error(f"Unable to export {guid}, see log for details..")
+        _LOG.debug(e.args[0])
         return {"edoc": None, "info": {"id": guid, **e.args[0]}}
 
     if directory is not None:
@@ -349,14 +349,14 @@ async def tml_import(
 
         if tml_import_info["response"]["status"]["status_code"] == "ERROR":
             errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
-            log.error(f"{tml_type} '{tml.name}' failed to import, ThoughtSpot errors:\n[fg-error]{errors}")
+            _LOG.error(f"{tml_type} '{tml.name}' failed to import, ThoughtSpot errors:\n[fg-error]{errors}")
             continue
 
         if tml_import_info["response"]["status"]["status_code"] == "WARNING":
             errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
-            log.warning(f"{tml_type} '{tml.name}' partially imported, ThoughtSpot errors:\n[fg-warn]{errors}")
+            _LOG.warning(f"{tml_type} '{tml.name}' partially imported, ThoughtSpot errors:\n[fg-warn]{errors}")
 
         if tml_import_info["response"]["status"]["status_code"] == "OK":
-            log.debug(f"{tml_type} '{tml.name}' successfully imported")
+            _LOG.debug(f"{tml_type} '{tml.name}' successfully imported")
 
     return r.json()
