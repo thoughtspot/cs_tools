@@ -158,7 +158,7 @@ def identify(
 
             coros: list[Coroutine] = []
 
-            for window_beg, window_end in it.pairwise([*range(recent_activity, -1, -ONE_WEEK), 0]):
+            for window_beg, window_end in utils.pairwise([*range(recent_activity, -1, -ONE_WEEK), 0]):
                 when = f" [timestamp] >= '{window_beg} days ago' [timestamp] < '{window_end} days ago'"
                 coros.append(workflows.search(worksheet="TS: BI Server", query=SEARCH_TOKENS + when, http=ts.api))
 
@@ -250,7 +250,7 @@ def identify(
 
                 if ignore_tags is not None:
                     assert isinstance(ignore_tags, list), "Ignore Tags wasn't properly transformed to an array<GUID>."
-                    checks.append(any(t["id"] not in ignore_tags for t in metadata_object["metadata_header"]["tags"]))
+                    checks.append(any(t["id"] not in ignore_tags for t in metadata_object["tags"]))
 
                 if all(checks):
                     filtered.append(metadata_object)
