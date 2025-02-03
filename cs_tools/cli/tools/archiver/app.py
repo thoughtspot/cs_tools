@@ -284,10 +284,10 @@ def identify(
 
         with tracker["PREVIEW_DATA"]:
             t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""), width=150)
-            t.add_column("TYPE", justify="center", width=10)  # LIVEBOARD, ANSWER
-            t.add_column("NAME", no_wrap=True)
-            t.add_column("AUTHOR", width=20)
-            t.add_column("MODIFIED", justify="right", width=12)  # NNN days ago
+            t.add_column("TYPE", justify="center", width=13)  # LIVEBOARD, ANSWER
+            t.add_column("NAME", no_wrap=True, width=150 - 13 - 20 - 16)
+            t.add_column("AUTHOR", no_wrap=True, width=20)
+            t.add_column("MODIFIED", justify="right", width=16)  # NNN days ago
 
             for idx, row in enumerate(sorted(filtered, key=lambda row: row["last_modified"], reverse=True)):  # type: ignore
                 if idx >= 15:
@@ -489,10 +489,10 @@ def remove(
 
         with tracker["PREVIEW_DATA"]:
             t = Table(box=box.SIMPLE_HEAD, row_styles=("dim", ""), width=150)
-            t.add_column("TYPE", justify="center", width=10)  # LIVEBOARD, ANSWER
-            t.add_column("NAME", no_wrap=True)
+            t.add_column("TYPE", justify="center", width=13)  # LIVEBOARD, ANSWER
+            t.add_column("NAME", no_wrap=True, width=150 - 13 - 20 - 16)
             t.add_column("AUTHOR", no_wrap=True, width=20)
-            t.add_column("MODIFIED", justify="right", no_wrap=True, width=13)  # NNNN days ago
+            t.add_column("MODIFIED", justify="right", width=16)  # NNN days ago
 
             for idx, row in enumerate(sorted(filtered, key=lambda row: row["last_modified"], reverse=True)):
                 if idx >= 15:
