@@ -232,13 +232,14 @@ def deploy(
         help="Whether to accept any errors during IMPORT.",
         rich_help_panel="TML Import Options",
     ),
-    use_async_mode: bool = typer.Option(
+    use_async_endpoint: bool = typer.Option(
         False,
+        "--async",
         help="Whether to use the new metadata/tml/async/import endpoint or not (v10.5.0+).",
         rich_help_panel="TML Import Options",
         hidden=True,
     ),
-    skip_external_schema_validation: bool = typer.Option(
+    skip_schema_validation: bool = typer.Option(
         False,
         help="Whether to skip validation of Table TML against the external database schema (v10.5.0+).",
         rich_help_panel="TML Import Options",
@@ -253,23 +254,72 @@ def deploy(
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
         ts.switch_org(org_id=org_override)
 
-    # SET UP OUR GUID MAPPING.
-    mapping_info = local_utils.GUIDMappingInfo.load(path=directory / ".mappings" / f"{environment}-guid-mappings.json")
-
     try:
+        mapping_file = directory / ".mappings" / f"{source_environment}-guid-mappings.json"
+        assert mapping_file.exists(), f"Could not find a guid mapping file at '{mapping_file}'"
+
+        # SET UP OUR GUID MAPPING.
+        mapping_info = local_utils.GUIDMappingInfo.load(path=mapping_file)
+        last_import = dt.datetime.fromisoformat(mapping_info.metadata["checkpoint"]["last_import"] or "1970-01-01T00Z")
         mapping_info.metadata["checkpoint"]["by"] = f"cs_tools/{__version__}/scriptability/deploy"
+        mapping_info.metadata["checkpoint"]["at"] = dt.datetime.now(tz=dt.timezone.utc).isoformat()
         mapping_info.metadata["checkpoint"]["counter"] += 1
         mapping_info.metadata["checkpoint"]["last_import"] = dt.datetime.now(tz=dt.timezone.utc).isoformat()
+    except AssertionError as e:
+        _LOG.error(f"{e}, have you run [fg-secondary]scriptability checkpoint --environment {source_environment}[/]?")
+        return 1
     except KeyError:
-        _LOG.critical("")
+        _LOG.error("Metadata mapping checkpoint is in an invalid state!")
+        return 1
 
-    #
-    # IMPORT TMLS
-    #
+    tmls: list[_types.TMLObject] = []
+
+    for path in directory.rglob("*.tml"):
+        last_modified_time = dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.timezone.utc)
+
+        if deploy_type == "DELTA" and last_modified_time < last_import:
+            continue
+
+        try:
+            text = path.read_text(encoding="utf-8")
+            tml = ...
+            tmls.append(tml)
+        except thoughtspot_tml.exceptions.TMLDecodeError:
+            ...
+
+    RICH_CONSOLE.print(len(tmls))
+    return 1
+
+    c = workflows.metadata.tml_import(
+        tmls=[],
+        # use_async_endpoint=use_async_endpoint,
+        policy=deploy_policy,
+        skip_cdw_validation_for_tables=skip_schema_validation,
+        # enable_large_metadata_validation=True,
+        http=ts.api,
+    )
+    d = utils.run_sync(c)
+
+    oper_ = "VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT"
+    table = local_utils.TMLOperations(data=d, domain="SCRIPTABILITY", op=oper_)
 
     if ts.session_context.environment.is_ci:
-        _LOG.info("...")
+        _LOG.info(table)
     else:
-        RICH_CONSOLE.print("...")
+        RICH_CONSOLE.print(table)
+
+    for response in table.statuses:
+        if log_errors and response.status != "OK":
+            assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
+            _LOG.log(
+                level=logging.getLevelName(response.status),
+                msg=" - ".join([response.status, response.metadata_guid, response.message]),
+            )
+
+        if response.status != "ERROR":
+            mapping_info.mapping.setdefault(response.metadata_guid, None)
+
+    # RECORD THE GUID MAPPING
+    mapping_info.save()
 
     return 0
