@@ -335,26 +335,27 @@ class CSToolsConfig(_GlobalSettings):
         # - remove .auth in favor of grouping attributes on .thoughtspot
         # - added .created_in_cs_tools_version to help later config migrations
         #
+        _IS_REALLY_OLD_FORMAT = data.pop("auth", {})
 
         data = {
             "name": data["name"],
-            "thoughtspot": data.get("thoughtspot", {}),
+            "thoughtspot": data.get("thoughtspot", {}) | data.get("auth", {}),
             "verbose": data["verbose"],
             "temp_dir": (
                 cs_tools_venv.subdir(".tmp")
-                if pathlib.Path(data["temp_dir"]).is_relative_to(cs_tools_venv.base_dir)
+                if pathlib.Path(data.get("temp_dir", pathlib.Path())).is_relative_to(cs_tools_venv.base_dir)
                 else data["temp_dir"]
             ),
             "created_in_cs_tools_version": __version__,
             "__cs_tools_context__": {"config_migration": {"from": "<1.5.0", "to": __version__}},
         }
 
-        if _IS_REALLY_OLD_FORMAT := "auth" in data:
+        if _IS_REALLY_OLD_FORMAT:
             data["thoughtspot"] = {
                 "url": data["thoughtspot"]["host"],
-                "username": data["auth"]["frontend"]["username"],
-                "password": data["auth"]["frontend"]["password"],
-                "disable_ssl": data["thoughtspot"]["disable_ssl"],
+                "username": _IS_REALLY_OLD_FORMAT["frontend"]["username"],
+                "password": _IS_REALLY_OLD_FORMAT["frontend"]["password"],
+                "disable_ssl": data["thoughtspot"].get("disable_ssl", False),
             }
 
         return data
@@ -366,7 +367,7 @@ class CSToolsConfig(_GlobalSettings):
             return data
 
         # NEW DATA FORMAT: v1.6.x
-        # ...
+        # << THIS FILE >>
 
         # OLD DATA FORMAT: v1.5.x
         # https://github.com/thoughtspot/cs_tools/blob/0d43bdeb4f84d1d9bbafafb6c93d0074ce24fdf3/cs_tools/settings.py#L201-L207
@@ -378,7 +379,7 @@ class CSToolsConfig(_GlobalSettings):
             **data,
             "temp_dir": (
                 cs_tools_venv.subdir(".tmp")
-                if pathlib.Path(data["temp_dir"]).is_relative_to(cs_tools_venv.base_dir)
+                if pathlib.Path(data.get("temp_dir", pathlib.Path())).is_relative_to(cs_tools_venv.base_dir)
                 else data["temp_dir"]
             ),
             "created_in_cs_tools_version": __version__,
