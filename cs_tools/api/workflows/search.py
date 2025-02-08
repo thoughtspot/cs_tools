@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 import datetime as dt
+import functools as ft
 import logging
+import zoneinfo
 
 from cs_tools import _types
 from cs_tools.api.client import RESTAPIClient
@@ -31,7 +33,10 @@ def _convert_compact_to_full(compact: list[Any], *, column_names: list[str]) -> 
 
 
 def _cast(
-    data_rows: _types.TableRowsFormat, *, column_info: dict[str, _types.InferredDataType]
+    data_rows: _types.TableRowsFormat,
+    *,
+    column_info: dict[str, _types.InferredDataType],
+    timezone: zoneinfo.ZoneInfo,
 ) -> _types.TableRowsFormat:
     """Cast data coming back from Search API to their intended column _types."""
     TS_TO_PY_TYPE_MAPPING: dict[_types.InferredDataType, type] = {
@@ -43,7 +48,7 @@ def _cast(
         "INT32": int,
         "INT64": int,
         "DATE": dt.date.fromtimestamp,  # type: ignore[dict-item]
-        "DATE_TIME": dt.datetime.fromtimestamp,  # type: ignore[dict-item]
+        "DATE_TIME": ft.partial(dt.datetime.fromtimestamp, tz=timezone),  # type: ignore[dict-item]
         "TIMESTAMP": float,
     }
 
@@ -77,7 +82,12 @@ def _cast(
 
 
 async def search(
-    worksheet: _types.ObjectIdentifier, *, query: str, batch_size: int = 100_000, http: RESTAPIClient
+    worksheet: _types.ObjectIdentifier,
+    *,
+    query: str,
+    timezone: zoneinfo.ZoneInfo,
+    batch_size: int = 100_000,
+    http: RESTAPIClient,
 ) -> _types.TableRowsFormat:
     """
     Perform a Search against a specific Worksheet.
@@ -125,6 +135,6 @@ async def search(
                 f"consider adding a filter or extracting directly from the underlying data source instead!"
             )
 
-    data = _cast(data, column_info=worksheet_column_info)
+    data = _cast(data, column_info=worksheet_column_info, timezone=timezone)
 
     return data
