@@ -86,11 +86,16 @@ def info(
 @app.command()
 def sync() -> _types.ExitCode:
     """Sync your local environment with the most up-to-date dependencies."""
-    # CURRENTLY, THIS ONLY AFFECTS thoughtspot_tml WHICH CAN OFTEN CHANGE BETWEEN CS TOOL RELEASES.
-    PACKAGES_TO_SYNC = ("thoughtspot_tml",)
+    # CURRENTLY, THIS ONLY AFFECTS..
+    # - thoughtspot_tml ..... WHICH CAN OFTEN CHANGE BETWEEN CS TOOL RELEASES
+    # - tzdata (WIN only) ... WHICH UPDATES USUALLY EVERY YEAR
+    PACKAGES_TO_SYNC = ["thoughtspot_tml"]
+
+    if meta.local_system.is_windows:
+        PACKAGES_TO_SYNC.append("tzdata")
 
     for package in PACKAGES_TO_SYNC:
-        cs_tools_venv.install(package, "--upgrade")
+        cs_tools_venv.install(package, "--upgrade", "--prerelease=allow")
 
     return 0
 

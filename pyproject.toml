@@ -49,6 +49,9 @@ dependencies = [
     # TODO: https://github.com/thoughtspot/thoughtspot_tml/issues/24
     "betterproto[compiler] == 2.0.0b6",
 
+    # OS-specific
+    "tzdata; platform_system == 'Windows'",
+
     # version specific
     "typing_extensions; python_version < '3.10.0'",
     "exceptiongroup; python_version < '3.11.0'",

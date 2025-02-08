@@ -16,6 +16,7 @@ import datetime as dt
 import logging
 import platform
 import sys
+import zoneinfo
 
 from awesomeversion import AwesomeVersion
 import pydantic
@@ -137,7 +138,7 @@ class ThoughtSpotInfo(_GlobalModel):
     url: pydantic.AnyUrl
     version: validators.CoerceVersion
     system_users: dict[_types.Name, _types.GUID]
-    timezone: str
+    timezone: zoneinfo.ZoneInfo
     is_cloud: bool
     is_roles_enabled: bool = False
     is_orgs_enabled: bool = False
@@ -176,10 +177,20 @@ class ThoughtSpotInfo(_GlobalModel):
         major, minor, micro, *rest = version_string.split(".")
         return AwesomeVersion(f"{major}.{minor}.{micro}")
 
-    @pydantic.field_serializer("url")
+    @pydantic.field_validator("timezone", mode="before")
     @classmethod
-    def serialize_as_str(cls, url: pydantic.AnyUrl) -> str:
-        return str(url)
+    def sanitize_timezone_name(cls, tzname: str) -> zoneinfo.ZoneInfo:
+        try:
+            tz = zoneinfo.ZoneInfo(key=tzname)
+        except zoneinfo.ZoneInfoNotFoundError:
+            raise ValueError(f"No timezone found '{tzname}', if this persists try re-installing CS Tools.") from None
+
+        return tz
+
+    @pydantic.field_serializer("url", "timezone")
+    @classmethod
+    def serialize_as_str(cls, value: Any) -> str:
+        return str(value)
 
 
 class UserInfo(_GlobalModel):

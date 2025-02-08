@@ -564,7 +564,7 @@ wheels = [
 
 [[package]]
 name = "cs-tools"
-version = "1.6.0a1"
+version = "1.6.0a2"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -584,6 +584,7 @@ dependencies = [
     { name = "thoughtspot-tml" },
     { name = "toml" },
     { name = "typing-extensions", marker = "python_full_version < '3.10'" },
+    { name = "tzdata", marker = "platform_system == 'Windows'" },
 ]
 
 [package.optional-dependencies]
@@ -663,6 +664,7 @@ requires-dist = [
     { name = "typer", marker = "extra == 'dev'", specifier = "==0.12.0" },
     { name = "typer", marker = "extra == 'docs'", specifier = "==0.12.0" },
     { name = "typing-extensions", marker = "python_full_version < '3.10'" },
+    { name = "tzdata", marker = "platform_system == 'Windows'" },
     { name = "uv", marker = "extra == 'cli'", specifier = "==0.5.13" },
     { name = "uv", marker = "extra == 'dev'", specifier = "==0.5.13" },
     { name = "uv", marker = "extra == 'docs'", specifier = "==0.5.13" },
@@ -2805,6 +2807,15 @@ wheels = [
 ]
 
 [[package]]
+name = "tzdata"
+version = "2025.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/0f/fa4723f22942480be4ca9527bbde8d43f6c3f2fe8412f00e7f5f6746bc8b/tzdata-2025.1.tar.gz", hash = "sha256:24894909e88cdb28bd1636c6887801df64cb485bd593f2fd83ef29075a81d694", size = 194950 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/dd/84f10e23edd882c6f968c21c2434fe67bd4a528967067515feca9e611e5e/tzdata-2025.1-py2.py3-none-any.whl", hash = "sha256:7e127113816800496f027041c570f50bcd464a020098a3b6b199517772303639", size = 346762 },
+]
+
+[[package]]
 name = "uc-micro-py"
 version = "1.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2815,11 +2826,11 @@ wheels = [
 
 [[package]]
 name = "urllib3"
-version = "2.3.0"
+version = "1.26.20"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/aa/63/e53da845320b757bf29ef6a9062f5c669fe997973f966045cb019c3f4b66/urllib3-2.3.0.tar.gz", hash = "sha256:f8c5449b3cf0861679ce7e0503c7b44b5ec981bec0d1d3795a07f1ba96f0204d", size = 307268 }
+sdist = { url = "https://files.pythonhosted.org/packages/e4/e8/6ff5e6bc22095cfc59b6ea711b687e2b7ed4bdb373f7eeec370a97d7392f/urllib3-1.26.20.tar.gz", hash = "sha256:40c2dc0c681e47eb8f90e7e27bf6ff7df2e677421fd46756da1161c39ca70d32", size = 307380 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/19/4ec628951a74043532ca2cf5d97b7b14863931476d117c471e8e2b1eb39f/urllib3-2.3.0-py3-none-any.whl", hash = "sha256:1cee9ad369867bfdbbb48b7dd50374c0967a0bb7710050facf0dd6911440e3df", size = 128369 },
+    { url = "https://files.pythonhosted.org/packages/33/cf/8435d5a7159e2a9c83a95896ed596f68cf798005fe107cc655b5c5c14704/urllib3-1.26.20-py2.py3-none-any.whl", hash = "sha256:0ed14ccfbf1c30a9072c7ca157e4319b70d65f623e91e7b32fadb2853431016e", size = 144225 },
 ]
 
 [[package]]
