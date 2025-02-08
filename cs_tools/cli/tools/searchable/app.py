@@ -6,6 +6,7 @@ import collections
 import datetime as dt
 import logging
 import pathlib
+import zoneinfo
 
 from thoughtspot_tml import Table
 from thoughtspot_tml.utils import determine_tml_type
@@ -280,13 +281,22 @@ def bi_server(
     assert isinstance(to_date, dt.date), f"Could not coerce to_date '{to_date}' to a date."
     ts = ctx.obj.thoughtspot
 
+    CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
+
+    # DEV NOTE: @boonhapus, 2025/02/18
+    #   BI Server on SaaS is held in ThoughtSpot's multi-tenant Snowflake database,
+    #   which is set to UTC, whereas BI Server on Software is held in Falcon and set to
+    #   whatever timezone the cluster is.
+    TZ_UTC = zoneinfo.ZoneInfo("UTC")
+    TS_BI_TIMEZONE = TZ_UTC if ts.session_context.thoughtspot.is_cloud else ts.session_context.thoughtspot.timezone
+
     if syncer.protocol == "falcon":
         log.error("Falcon Syncer is not supported for TS: BI Server reflection.")
         models.BIServer.__table__.drop(syncer.engine)
         return 1
 
     if (to_date - from_date) > dt.timedelta(days=31):  # type: ignore[operator]
-        log.warning("Due to how the Search API is exposed, it's recommended to request no more than 1 month at a time.")
+        log.warning("Due to how the Search API functions, it's recommended to request no more than 1 month at a time.")
 
     # DEV NOTE: @boonhapus
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
@@ -322,11 +332,11 @@ def bi_server(
 
     with px.WorkTracker("Fetching TS: BI Server Data", tasks=TOOL_TASKS) as tracker:
         with tracker["SEARCH"]:
-            c = workflows.search(worksheet="TS: BI Server", query=SEARCH_TOKENS, http=ts.api)
+            c = workflows.search(worksheet="TS: BI Server", query=SEARCH_TOKENS, timezone=TS_BI_TIMEZONE, http=ts.api)
             _ = utils.run_sync(c)
 
         with tracker["CLEAN"]:
-            d = api_transformer.ts_bi_server(data=_, cluster=ts.session_context.thoughtspot.cluster_id)
+            d = api_transformer.ts_bi_server(data=_, cluster=CLUSTER_UUID)
 
         with tracker["DUMP_DATA"]:
             syncer.dump("ts_bi_server", data=d)
@@ -689,7 +699,7 @@ def tml(
                     if r := syncer.session.execute(q).scalar():
                         latest_dt_naive = r if isinstance(r, dt.datetime) else dt.datetime.fromisoformat(r)
                         latest_dt = latest_dt_naive.astimezone(tz=dt.timezone.utc)
-                        d = [_ for _ in d if _["modified"] > latest_dt]
+                        d = [_ for _ in d if _["modified"] >= latest_dt or _["created"] >= latest_dt]
 
             with tracker["EXPORT"]:
                 coros: list[Coroutine] = []

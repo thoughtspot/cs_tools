@@ -54,6 +54,8 @@ def search(
     """
     ts = ctx.obj.thoughtspot
 
+    CLUSTER_TIMEZONE = ts.session_context.thoughtspot.timezone
+
     TOOL_TASKS = [
         px.WorkTask(id="SEARCH", description="Fetching data from ThoughtSpot"),
         px.WorkTask(id="CLEAN", description="Transforming API results"),
@@ -62,7 +64,7 @@ def search(
 
     with px.WorkTracker("Extracting Data", tasks=TOOL_TASKS) as tracker:
         with tracker["SEARCH"]:
-            c = workflows.search(worksheet=identifier, query=search_tokens, http=ts.api)
+            c = workflows.search(worksheet=identifier, query=search_tokens, timezone=CLUSTER_TIMEZONE, http=ts.api)
             _ = utils.run_sync(c)
 
         with tracker["CLEAN"]:

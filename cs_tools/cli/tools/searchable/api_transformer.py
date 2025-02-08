@@ -510,20 +510,20 @@ def ts_bi_server(data: list[_types.APIResult], *, cluster: _types.GUID) -> _type
     """Reshapes /searchdata -> searchable.models.BIServer."""
     reshaped: _types.TableRowsFormat = []
 
-    # DEV NOTE: @boonhapus, 2024/11/25
-    # THOUGHTSPOT SEARCH DATA API SEEMS TO HAVE ISSUES WITH TIMEZONES AND THAT
-    # CAUSES DUPLICATION OF DATA.
-    #
+    PARTITION_KEY = ft.partial(lambda r: r["Timestamp"].date())
+    CLUSTER_KEY = ("Timestamp", "Incident Id", "Viz Id")
+
+    # KEEP TRACK OF DUPLICATE ROWS DUE TO DATA MANAGEMENT ISSUES.
     seen: set[str] = set()
 
-    PARTITION_KEY = ft.partial(lambda r: r["Timestamp"].replace(tzinfo=dt.timezone.utc).date())
-    CLUSTER_KEY = ("Timestamp", "Incident Id", "Viz Id")
+    # ENSURE ALL DATA IS IN UTC PRIOR TO GENERATING ROW_NUMBERS.
+    data = [{**row, "Timestamp": validators.ensure_datetime_is_utc.func(row["Timestamp"])} for row in data]
 
     # SORT PRIOR TO GROUP BY SO WE MAINTAIN CLUSTERING KEY SEMANTICS
     data.sort(key=operator.itemgetter(*CLUSTER_KEY))
 
     for row_date, rows in it.groupby(data, key=PARTITION_KEY):
-        # MANUAL ENUMERATION BECAUSE OF DEDUPLICATION BEHAVIOR.
+        # MANUAL ENUMERATION BECAUSE WE NEED TO ACCOUNT FOR DEDUPLICATION.
         row_number = 0
 
         for row in rows:

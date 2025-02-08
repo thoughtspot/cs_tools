@@ -8,6 +8,7 @@ import logging
 import pathlib
 import threading
 import time
+import zoneinfo
 
 from rich import box, console
 from rich.align import Align
@@ -122,6 +123,14 @@ def identify(
 
     ts = ctx.obj.thoughtspot
 
+    # DEV NOTE: @boonhapus, 2025/02/18
+    #   BI Server on SaaS is held in ThoughtSpot's multi-tenant Snowflake database,
+    #   which is set to UTC, whereas BI Server on Software is held in Falcon and set to
+    #   whatever timezone the cluster is.
+    TZ_UTC = zoneinfo.ZoneInfo("UTC")
+    TS_BI_TIMEZONE = TZ_UTC if ts.session_context.thoughtspot.is_cloud else ts.session_context.thoughtspot.timezone
+    TODAY = dt.datetime.now(tz=dt.timezone.utc)
+
     TOOL_TASKS = [
         px.WorkTask(id="GATHER_ACTIVITY", description="Fetching objects' Activity"),
         px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Info"),
@@ -132,13 +141,13 @@ def identify(
         px.WorkTask(id="ARCHIVE_TAGGING", description=f"Applying [fg-secondary]{tag_name}[/] to objects"),
     ]
 
-    TODAY = dt.datetime.now(tz=dt.timezone.utc)
-
     with px.WorkTracker("Identifying Stale Objects", tasks=TOOL_TASKS) as tracker:
         with tracker["GATHER_ACTIVITY"]:
             if recent_activity == _ALL_BI_SERVER_HISTORY_IMPOSSIBLE_THRESHOLD_VALUE:
-                c = workflows.search(worksheet="TS: BI Server", query="min [Timestamp]", http=ts.api)
+                # fmt: off
+                c = workflows.search(worksheet="TS: BI Server", query="min [Timestamp]", timezone=TS_BI_TIMEZONE, http=ts.api)  # noqa: E501
                 _ = utils.run_sync(c)
+                # fmt: on
 
                 ts_bi_lifetime = TODAY - _[0]["Minimum Timestamp"].replace(tzinfo=dt.timezone.utc)
                 recent_activity = ts_bi_lifetime.days + 1
@@ -160,7 +169,14 @@ def identify(
 
             for window_beg, window_end in utils.pairwise([*range(recent_activity, -1, -ONE_WEEK), 0]):
                 when = f" [timestamp] >= '{window_beg} days ago' [timestamp] < '{window_end} days ago'"
-                coros.append(workflows.search(worksheet="TS: BI Server", query=SEARCH_TOKENS + when, http=ts.api))
+                coros.append(
+                    workflows.search(
+                        worksheet="TS: BI Server",
+                        query=SEARCH_TOKENS + when,
+                        timezone=TS_BI_TIMEZONE,
+                        http=ts.api,
+                    )
+                )
 
             c = utils.bounded_gather(*coros, max_concurrent=4)  # type: ignore[assignment]
             d = utils.run_sync(c)
