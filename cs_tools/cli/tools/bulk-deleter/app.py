@@ -9,6 +9,7 @@ import time
 from rich import box, console
 from rich.align import Align
 from rich.table import Table
+import httpx
 import typer
 
 from cs_tools import _types, utils
@@ -59,6 +60,7 @@ def downstream(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
+    org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
 ) -> _types.ExitCode:
     """
     Delete all downstream dependencies of an object.
@@ -66,6 +68,9 @@ def downstream(
     This will not delete the GUID of the object you target.
     """
     ts = ctx.obj.thoughtspot
+
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
     TOOL_TASKS = [
         px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Dependents"),
@@ -81,10 +86,14 @@ def downstream(
     with px.WorkTracker("Removing downstream dependents", tasks=TOOL_TASKS) as tracker:
         with tracker["GATHER_METADATA"]:
             c = workflows.metadata.dependents(guid=guid, http=ts.api)
-            _ = utils.run_sync(c)
+
+            try:
+                _ = utils.run_sync(c)
+            except httpx.HTTPStatusError:
+                _ = None
 
             if not (all_metadata := _):
-                log.info(f"[fg-warn]no dependents were found for {guid}")
+                log.info(f"[fg-warn]no dependents were found for {guid}, are you in the correct org?")
                 return 0
 
         with tracker["DUMP_DATA"] as this_task:
