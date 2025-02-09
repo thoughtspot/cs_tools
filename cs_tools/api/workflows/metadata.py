@@ -342,15 +342,12 @@ async def tml_import(
     r = await http.metadata_tml_import(tmls=[t.dumps() for t in tmls], policy=policy, **tml_import_options)
     r.raise_for_status()
 
-    for tml_import_info in r.json():
-        idx = tml_import_info["request_index"]
-        tml = tmls[idx]
+    for tml_import_info, tml in zip(r.json(), tmls):
         tml_type = tml.tml_type_name.upper()
 
         if tml_import_info["response"]["status"]["status_code"] == "ERROR":
             errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
             _LOG.error(f"{tml_type} '{tml.name}' failed to import, ThoughtSpot errors:\n[fg-error]{errors}")
-            continue
 
         if tml_import_info["response"]["status"]["status_code"] == "WARNING":
             errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
