@@ -7,6 +7,7 @@ import itertools as it
 import logging
 import pathlib
 
+import thoughtspot_tml
 import typer
 
 from cs_tools import __version__, _types, utils
@@ -62,17 +63,17 @@ def checkpoint(
         show_default=False,
         rich_help_panel="TML Export Options",
     ),
-    include_system_owned_content: bool = typer.Option(
-        False,
-        "--include-system-owned-content",
-        help="Whether or not to include content owned by built-in Administrator accounts.",
-        rich_help_panel="TML Export Options",
-    ),
     tags: custom_types.MultipleInput = typer.Option(
         None,
         click_type=custom_types.MultipleInput(sep=","),
         help="TML tagged with these name(s), comma separated.",
         show_default=False,
+        rich_help_panel="TML Export Options",
+    ),
+    include_system_owned_content: bool = typer.Option(
+        False,
+        "--include-system",
+        help="Whether or not to include content owned by built-in Administrator accounts.",
         rich_help_panel="TML Export Options",
     ),
     org_override: str = typer.Option(None, "--org", help="The org to export TML from."),
@@ -239,17 +240,13 @@ def deploy(
         rich_help_panel="TML Import Options",
         hidden=True,
     ),
-    skip_schema_validation: bool = typer.Option(
-        False,
-        help="Whether to skip validation of Table TML against the external database schema (v10.5.0+).",
-        rich_help_panel="TML Import Options",
-        hidden=True,
-    ),
     org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
 ) -> _types.ExitCode:
     """Import TML from a directory."""
     ts = ctx.obj.thoughtspot
+
+    EPOCH_STR = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc).isoformat()
 
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
         ts.switch_org(org_id=org_override)
@@ -260,7 +257,10 @@ def deploy(
 
         # SET UP OUR GUID MAPPING.
         mapping_info = local_utils.GUIDMappingInfo.load(path=mapping_file)
-        last_import = dt.datetime.fromisoformat(mapping_info.metadata["checkpoint"]["last_import"] or "1970-01-01T00Z")
+        last_import = dt.datetime.fromisoformat(mapping_info.metadata["checkpoint"]["last_import"] or EPOCH_STR)
+        mapping_info.metadata["checkpoint"]["mapped_to"] = f"{target_environment}-guid-mappings.json"
+        # raise NotImplementedError("How do we keep users from shooting themselves in the foot here? I want the mapping file to stay clean.")
+
         mapping_info.metadata["checkpoint"]["by"] = f"cs_tools/{__version__}/scriptability/deploy"
         mapping_info.metadata["checkpoint"]["at"] = dt.datetime.now(tz=dt.timezone.utc).isoformat()
         mapping_info.metadata["checkpoint"]["counter"] += 1
@@ -272,7 +272,7 @@ def deploy(
         _LOG.error("Metadata mapping checkpoint is in an invalid state!")
         return 1
 
-    tmls: list[_types.TMLObject] = []
+    tmls: dict[_types.GUID, _types.TMLObject] = {}
 
     for path in directory.rglob("*.tml"):
         last_modified_time = dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.timezone.utc)
@@ -280,46 +280,72 @@ def deploy(
         if deploy_type == "DELTA" and last_modified_time < last_import:
             continue
 
-        try:
-            text = path.read_text(encoding="utf-8")
-            tml = ...
-            tmls.append(tml)
-        except thoughtspot_tml.exceptions.TMLDecodeError:
-            ...
+        TML = thoughtspot_tml.utils.determine_tml_type(path=path)
+        tml = TML.load(path=path)
+        assert tml.guid is not None, f"Could not find a guid for {path}"
+        guid = tml.guid
+        tmls[guid] = mapping_info.disambiguate(tml=tml, delete_unmapped_guids=True)
 
-    RICH_CONSOLE.print(len(tmls))
-    return 1
+    if not tmls:
+        _LOG.info(f"No TML files found to deploy from directory (Deploy Type: {deploy_type}, Last Seen: {last_import})")
+        return 0
+
+    # Silence the cs_tools metadata workflow logger since we've asked the User if they want logged feedback.
+    logging.getLogger("cs_tools.api.workflows.metadata").setLevel(logging.CRITICAL)
 
     c = workflows.metadata.tml_import(
-        tmls=[],
-        # use_async_endpoint=use_async_endpoint,
+        tmls=list(tmls.values()),
+        use_async_endpoint=use_async_endpoint,
         policy=deploy_policy,
-        skip_cdw_validation_for_tables=skip_schema_validation,
-        # enable_large_metadata_validation=True,
         http=ts.api,
     )
     d = utils.run_sync(c)
 
     oper_ = "VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT"
-    table = local_utils.TMLOperations(data=d, domain="SCRIPTABILITY", op=oper_)
+    table = local_utils.TMLOperations(data=d, domain="SCRIPTABILITY", op=oper_, policy=deploy_policy)
+
+    # REPLACE ERRORS WITH MORE INFO FOR USERS.
+    for original_guid, response in zip(tmls, table.statuses):
+        if response.status == "ERROR":
+            tml = tmls[original_guid]
+            response.metadata_name = tml.name
+            response.metadata_type = tml.tml_type_name.upper()
 
     if ts.session_context.environment.is_ci:
         _LOG.info(table)
     else:
         RICH_CONSOLE.print(table)
 
-    for response in table.statuses:
+    for original_guid, response in zip(tmls, table.statuses):
         if log_errors and response.status != "OK":
             assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
             _LOG.log(
                 level=logging.getLevelName(response.status),
-                msg=" - ".join([response.status, response.metadata_guid, response.message]),
+                msg=" - ".join([str(response.metadata_guid), response.message]),
             )
 
-        if response.status != "ERROR":
-            mapping_info.mapping.setdefault(response.metadata_guid, None)
+        if table.can_map_guids:
+            assert response.metadata_guid is not None, "TML errors should not produce GUIDs."
+            mapping_info.map_guid(old=original_guid, new=response.metadata_guid, disallow_overriding=True)
 
     # RECORD THE GUID MAPPING
     mapping_info.save()
+
+    if table.job_status == "ERROR":
+        _LOG.error("One or more TMLs failed to fully import, check the logs or use --log-errors for more details.")
+        return 1
+
+    # if tags:
+    #     c = ts.api.tags_create(name=tag_name, color="#A020F0")  # ThoughtSpot Purple :~)
+    #     _ = utils.run_sync(c)
+
+    #     coros = []
+
+    #     for metadata_object in filtered:
+    #         c = ts.api.tags_assign(guid=metadata_object["guid"], tag=tag_name)
+    #         coros.append(c)
+
+    #     c = utils.bounded_gather(*coros, max_concurrent=15)
+    #     d = utils.run_sync(c)
 
     return 0

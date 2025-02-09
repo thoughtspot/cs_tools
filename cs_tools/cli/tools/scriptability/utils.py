@@ -3,12 +3,16 @@ from __future__ import annotations
 from typing import Any, Literal, Optional, Union
 import datetime as dt
 import json
+import logging
 import pathlib
 
 import pydantic
 import rich
+import thoughtspot_tml
 
 from cs_tools import _types
+
+_LOG = logging.getLogger(__name__)
 
 
 def is_allowed_object(
@@ -80,19 +84,34 @@ class GUIDMappingInfo(pydantic.BaseModel):
 
         return info
 
-    # def disambiguate(self, tml: TMLObject, delete_unmapped_guids: bool = False) -> None:
-    #     """
-    #     Replaces source GUIDs with target.
-    #     """
-    #     # self.guid_mapper.generate_map(DEV, PROD) # =>  {envt_A_guid1: envt_B_guid2 , .... }
-    #     mapper = self.guid_mapper.generate_mapping(self.source, self.dest)
+    def disambiguate(self, tml: _types.TMLObject, delete_unmapped_guids: bool = True) -> _types.TMLObject:
+        """Disambiguate an incoming TML object."""
+        tml = thoughtspot_tml.utils.disambiguate(
+            tml=tml,
+            guid_mapping=self.mapping,
+            remap_object_guid=True,
+            delete_unmapped_guids=delete_unmapped_guids,
+        )
 
-    #     _disambiguate(
-    #         tml=tml,
-    #         guid_mapping=mapper,
-    #         remap_object_guid=self.remap_object_guid,
-    #         delete_unmapped_guids=delete_unmapped_guids,
-    #     )
+        return tml
+
+    def map_guid(self, *, old: _types.GUID, new: _types.GUID, disallow_overriding: bool = True) -> None:
+        """Map a GUID."""
+        if old not in self.mapping:
+            _LOG.warning(f"Old GUID {old} not found in the mapping, setting anyway..")
+
+        if (already_mapped := self.mapping.get(old, None)) is None:
+            self.mapping[old] = new
+
+        elif already_mapped == new:
+            pass
+
+        elif disallow_overriding:
+            _LOG.warning(f"Old GUID {old} already mapped to {already_mapped}, skipping..")
+
+        else:
+            _LOG.warning(f"Old GUID {old} already mapped to {already_mapped}, overriding..")
+            self.mapping[old] = new
 
     def save(self, new_path: Optional[pathlib.Path] = None) -> None:
         """Saves the GUID mappings."""
@@ -110,8 +129,8 @@ class GUIDMappingInfo(pydantic.BaseModel):
 class TMLStatus(pydantic.BaseModel):
     operation: Literal["EXPORT", "VALIDATE", "IMPORT"]
     edoc: Optional[str] = None
-    metadata_guid: _types.GUID
-    metadata_name: str
+    metadata_guid: Optional[_types.GUID] = None
+    metadata_name: Optional[str] = None
     metadata_type: Union[_types.UserFriendlyObjectType, Literal["WORKSHEET"], Literal["UNKNOWN"]] = "UNKNOWN"
     status: _types.TMLStatusCode
     message: Optional[str] = None
@@ -119,17 +138,39 @@ class TMLStatus(pydantic.BaseModel):
 
     @classmethod
     def from_api_response(cls, operation: Literal["EXPORT", "VALIDATE", "IMPORT"], data: _types.APIResult) -> TMLStatus:
-        """..."""
-        response = cls(
-            operation=operation,
-            edoc=data["edoc"],
-            metadata_guid=data["info"]["id"],
-            metadata_name=data["info"]["name"],
-            metadata_type=data["info"]["type"],
-            status=data["info"]["status"]["status_code"],
-            message=data["info"]["status"].get("error_message", None),
-            _raw=data,
-        )
+        """Process the TML API response into a status."""
+        if operation == "EXPORT":
+            response = cls(
+                operation=operation,
+                edoc=data["edoc"],
+                metadata_guid=data["info"]["id"],
+                metadata_name=data["info"]["name"],
+                metadata_type=data["info"]["type"],
+                status=data["info"]["status"]["status_code"],
+                message=data["info"]["status"].get("error_message", None),
+                _raw=data,
+            )
+
+        if operation in ("VALIDATE", "IMPORT"):
+            info = {
+                "operation": operation,
+                # metadata...
+                "status": data["response"]["status"]["status_code"],
+                "message": data["response"]["status"].get("error_message", None),
+                "_raw": data,
+            }
+
+            if "header" in data["response"]:
+                metadata_type = data["response"]["header"].get("type", data["response"]["header"]["metadata_type"])
+                info["metadata_guid"] = data["response"]["header"]["id_guid"]
+                info["metadata_name"] = data["response"]["header"]["name"]
+                info["metadata_type"] = _types.lookup_metadata_type(metadata_type=metadata_type, mode="V1_TO_FRIENDLY")
+
+            response = cls(**info)
+
+            if response.metadata_guid and response.status == "ERROR":
+                response.status = "WARNING"
+
         return response
 
     @pydantic.field_validator("metadata_type", mode="before")
@@ -175,11 +216,29 @@ class TMLStatus(pydantic.BaseModel):
 class TMLOperations:
     """Represents a job of TML operations."""
 
-    def __init__(self, data: list[_types.APIResult], domain: str, op: Literal["EXPORT", "VALIDATE", "IMPORT"]):
+    def __init__(
+        self,
+        data: list[_types.APIResult],
+        domain: str,
+        op: Literal["EXPORT", "VALIDATE", "IMPORT"],
+        policy: Optional[_types.ImportPolicy] = None,
+    ):
         self.data = data
         self.domain = domain
         self.operation = op
+        self.policy = policy
         self._statuses = [TMLStatus.from_api_response(operation=op, data=_) for _ in self.data]
+
+    @property
+    def can_map_guids(self) -> bool:
+        """Determine if the statuses' GUIDs should be mapped."""
+        if self.operation == "VALIDATE":
+            return False
+
+        if self.policy == "ALL_OR_NONE" and self.job_status != "OK":
+            return False
+
+        return self.job_status != "ERROR"
 
     @property
     def statuses(self) -> list[TMLStatus]:
@@ -189,10 +248,18 @@ class TMLOperations:
     @property
     def job_status(self) -> _types.TMLStatusCode:
         """The aggregate status of the TML operation."""
-        if any(_.status == "ERROR" for _ in self.statuses):
+        any_error = any(_.status == "ERROR" for _ in self.statuses)
+        any_warn = any(_.status == "WARNING" for _ in self.statuses)
+
+        if self.policy == "ALL_OR_NONE" and (any_error or any_warn):
             return "ERROR"
-        if any(_.status == "WARNING" for _ in self.statuses):
+
+        if any_error:
+            return "ERROR"
+
+        if any_warn:
             return "WARNING"
+
         return "OK"
 
     @property
