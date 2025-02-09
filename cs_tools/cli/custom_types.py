@@ -72,7 +72,8 @@ class Literal(CustomType):
                 ctx=ctx,
             )
 
-        return original_value
+        # FETCH THE VALUE WHICH MATCHES THE DEFINED CHOICES.
+        return self.choices[choices.index(value)]
 
 
 class Version(CustomType):
