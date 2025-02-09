@@ -34,7 +34,7 @@ classifiers = [
 dependencies = [
     # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
     "aiosqlite",
-    "thoughtspot_tml",
+    "thoughtspot-tml",
     "awesomeversion",
     "httpx >= 0.27.0",
     "pydantic >= 2.6.4",
@@ -45,13 +45,10 @@ dependencies = [
     "tenacity",
     "toml",
     "packaging",
-
     # TODO: https://github.com/thoughtspot/thoughtspot_tml/issues/24
     "betterproto[compiler] == 2.0.0b6",
-
     # OS-specific
     "tzdata; platform_system == 'Windows'",
-
     # version specific
     "typing_extensions; python_version < '3.10.0'",
     "exceptiongroup; python_version < '3.11.0'",
