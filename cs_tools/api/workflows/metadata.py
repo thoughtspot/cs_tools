@@ -259,7 +259,7 @@ async def dependents(guid: _types.GUID, *, http: RESTAPIClient) -> list[_types.A
                 {
                     "guid": metadata_object["metadata_id"],
                     "name": metadata_object["metadata_name"],
-                    "type": _types.lookup_api_type(metadata_object["metadata_type"], mode="V1"),
+                    "type": _types.lookup_metadata_type(metadata_object["metadata_type"], mode="V1_TO_API"),
                     "author_guid": metadata_object["metadata_header"]["author"],
                     "author_name": metadata_object["metadata_header"]["authorName"],
                     "tags": metadata_object["metadata_header"]["tags"],
@@ -281,7 +281,7 @@ async def dependents(guid: _types.GUID, *, http: RESTAPIClient) -> list[_types.A
                         {
                             "guid": dependent["id"],
                             "name": dependent["name"],
-                            "type": _types.lookup_api_type(dependent_type, mode="V1"),
+                            "type": _types.lookup_metadata_type(dependent_type, mode="V1_TO_API"),
                             "author_guid": dependent["author"],
                             "author_name": dependent.get("authorName", "UNKNOWN"),
                             "tags": dependent["tags"],
