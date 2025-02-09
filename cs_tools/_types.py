@@ -147,29 +147,45 @@ class TQLQueryContext(_compat.TypedDict):
     server_schema_version: int
 
 
-def lookup_api_type(
-    metadata_type: str, *, mode: Literal["V1", "FRIENDLY"] = "V1", strict: bool = False
+def lookup_metadata_type(
+    metadata_type: str,
+    *,
+    mode: Literal["V1_TO_API", "V1_TO_FRIENDLY", "FRIENDLY_TO_API"] = "V1_TO_API",
+    strict: bool = False,
 ) -> APIObjectType:
     """
     Determine the APIObjectType based on a standard metadata type.
 
     If strict is True, raise a KeyError if the metadata type is unknown.
     """
-    FRIENDLY_TO_API_TYPE_MAPPING = {
-        "CONNECTION": "CONNECTION",
-        "TABLE": "LOGICAL_TABLE",
-        "VIEW": "LOGICAL_TABLE",
-        "SQL_VIEW": "LOGICAL_TABLE",
-        "MODEL": "LOGICAL_TABLE",
-        "LIVEBOARD": "LIVEBOARD",
-        "ANSWER": "ANSWER",
-    }
-    V1_ENUM_TO_API_TYPE_MAPPING = {
-        "PINBOARD_ANSWER_BOOK": "LIVEBOARD",
-        "QUESTION_ANSWER_BOOK": "ANSWER",
+    mappings = {
+        "V1_TO_API": {
+            "PINBOARD_ANSWER_BOOK": "LIVEBOARD",
+            "QUESTION_ANSWER_BOOK": "ANSWER",
+        },
+        "V1_TO_FRIENDLY": {
+            "ONE_TO_ONE_LOGICAL": "TABLE",
+            "USER_DEFINED": "CSV_UPLOAD",
+            "AGGR_WORKSHEET": "VIEW",
+            "SQL_VIEW": "SQL_VIEW",
+            "WORKSHEET": "WORKSHEET",
+            "MODEL": "MODEL",
+            "PINBOARD_ANSWER_BOOK": "LIVEBOARD",
+            "QUESTION_ANSWER_BOOK": "ANSWER",
+        },
+        "FRIENDLY_TO_API": {
+            "CONNECTION": "CONNECTION",
+            "TABLE": "LOGICAL_TABLE",
+            "CSV_UPLOAD": "LOGICAL_TABLE",
+            "VIEW": "LOGICAL_TABLE",
+            "SQL_VIEW": "LOGICAL_TABLE",
+            "MODEL": "LOGICAL_TABLE",
+            "LIVEBOARD": "LIVEBOARD",
+            "ANSWER": "ANSWER",
+        },
     }
 
-    mapping = FRIENDLY_TO_API_TYPE_MAPPING if mode == "FRIENDLY" else V1_ENUM_TO_API_TYPE_MAPPING
+    mapping = mappings[mode.upper()]
     api_type = mapping.get(metadata_type.upper(), None)
 
     if api_type is None:
