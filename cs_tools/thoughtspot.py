@@ -232,6 +232,7 @@ class ThoughtSpot:
             raise errors.CSToolsError(f"Could not find the org '{org_id}'") from None
 
         if _["id"] != self.session_context.user.org_context:
+            _LOG.info(f"Switching Org context to {_['name']} ({_['id']})")
             # DEV NOTE: @boonhapus, 2025/01/11
             # This is exactly how ThoughtSpot performs the org/switch operation..
             # instead of actually switching, establish a new session in the target org.
