@@ -259,7 +259,6 @@ def deploy(
         mapping_info = local_utils.GUIDMappingInfo.load(path=mapping_file)
         last_import = dt.datetime.fromisoformat(mapping_info.metadata["checkpoint"]["last_import"] or EPOCH_STR)
         mapping_info.metadata["checkpoint"]["mapped_to"] = f"{target_environment}-guid-mappings.json"
-        # raise NotImplementedError("How do we keep users from shooting themselves in the foot here? I want the mapping file to stay clean.")
 
         mapping_info.metadata["checkpoint"]["by"] = f"cs_tools/{__version__}/scriptability/deploy"
         mapping_info.metadata["checkpoint"]["at"] = dt.datetime.now(tz=dt.timezone.utc).isoformat()
@@ -283,6 +282,10 @@ def deploy(
         TML = thoughtspot_tml.utils.determine_tml_type(path=path)
         tml = TML.load(path=path)
         assert tml.guid is not None, f"Could not find a guid for {path}"
+
+        if input_types != ["ALL"] and tml.tml_type_name.upper() not in input_types:
+            continue
+
         guid = tml.guid
         tmls[guid] = mapping_info.disambiguate(tml=tml, delete_unmapped_guids=True)
 
@@ -316,6 +319,8 @@ def deploy(
     else:
         RICH_CONSOLE.print(table)
 
+    guids_to_tag: set[_types.GUID] = set()
+
     for original_guid, response in zip(tmls, table.statuses):
         if log_errors and response.status != "OK":
             assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
@@ -327,6 +332,7 @@ def deploy(
         if table.can_map_guids:
             assert response.metadata_guid is not None, "TML errors should not produce GUIDs."
             mapping_info.map_guid(old=original_guid, new=response.metadata_guid, disallow_overriding=True)
+            guids_to_tag.add(response.metadata_guid)
 
     # RECORD THE GUID MAPPING
     mapping_info.save()
@@ -335,17 +341,14 @@ def deploy(
         _LOG.error("One or more TMLs failed to fully import, check the logs or use --log-errors for more details.")
         return 1
 
-    # if tags:
-    #     c = ts.api.tags_create(name=tag_name, color="#A020F0")  # ThoughtSpot Purple :~)
-    #     _ = utils.run_sync(c)
+    if tags and guids_to_tag:
+        for tag_name in tags:
+            c = ts.api.tags_create(name=tag_name, color="#A020F0")  # ThoughtSpot Purple :~)
+            _ = utils.run_sync(c)
 
-    #     coros = []
+            coros = [ts.api.tags_assign(guid=guid, tag=tag_name) for guid in guids_to_tag]
 
-    #     for metadata_object in filtered:
-    #         c = ts.api.tags_assign(guid=metadata_object["guid"], tag=tag_name)
-    #         coros.append(c)
-
-    #     c = utils.bounded_gather(*coros, max_concurrent=15)
-    #     d = utils.run_sync(c)
+            c = utils.bounded_gather(*coros, max_concurrent=15)
+            d = utils.run_sync(c)
 
     return 0
