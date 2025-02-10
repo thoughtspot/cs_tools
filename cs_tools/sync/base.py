@@ -13,7 +13,7 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import _types, errors, utils
+from cs_tools import _types, errors
 from cs_tools.datastructures import ValidatedSQLModel, _GlobalModel, _GlobalSettings
 from cs_tools.updater._updater import cs_tools_venv
 
@@ -66,9 +66,6 @@ class SyncerManifest(_GlobalModel):
 
     def __ensure_pip_requirements__(self, __syncer_name__: str) -> None:
         """Parse the SyncerManifest and install requirements."""
-        if utils.determine_editable_install():
-            return
-
         if __syncer_name__ in _registry:
             return
 
