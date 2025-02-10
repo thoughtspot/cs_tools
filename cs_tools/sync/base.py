@@ -71,7 +71,7 @@ class SyncerManifest(_GlobalModel):
 
         for pip_requirement in self.requirements:
             log.debug(f"Processing requirement: {pip_requirement}")
-            cs_tools_venv.install(f"{pip_requirement.requirement}", *pip_requirement.pip_args)
+            cs_tools_venv.install(f"{pip_requirement.requirement}", *pip_requirement.pip_args, hush_logging=True)
 
         # Registration is successful, we can add it to the global now.
         _registry.add(__syncer_name__)

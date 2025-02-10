@@ -78,7 +78,9 @@ class CSToolsVenv(venv.EnvBuilder):
         """Get a subdirectory of the CS Tools environment."""
         return self.base_dir / stem
 
-    def run(self, *command: str, raise_if_stderr: bool = True, **popen_options) -> sp.CompletedProcess:
+    def run(
+        self, *command: str, raise_if_stderr: bool = True, hush_logging: bool = False, **popen_options
+    ) -> sp.CompletedProcess:
         """Run a subprocess command and stream its output."""
         STREAMING_OPTIONS = {
             "stdout": sp.PIPE,
@@ -104,7 +106,7 @@ class CSToolsVenv(venv.EnvBuilder):
                     line = line.replace(f"{log_level_name.lower()}: ", "")
                     stderr_buffer.append(line)
                 else:
-                    log_level_name = "INFO"
+                    log_level_name = "DEBUG" if hush_logging else "INFO"
                     stdout_buffer.append(line)
 
                 if not line.strip():
