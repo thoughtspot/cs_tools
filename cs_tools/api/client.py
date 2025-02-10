@@ -575,7 +575,6 @@ class RESTAPIClient(httpx.AsyncClient):
     def security_metadata_share(
         self,
         guids: list[_types.GUID],
-        api_object_type: _types.APIObjectType,
         principals: list[_types.PrincipalIdentifier],
         share_mode: _types.ShareMode = "NO_ACCESS",
         notify_on_share: bool = False,
@@ -583,7 +582,7 @@ class RESTAPIClient(httpx.AsyncClient):
     ) -> Awaitable[httpx.Response]:
         """Allows sharing metadata objects with users and groups in ThoughtSpot."""
         if "metadata" not in options:
-            options["metadata"] = [{"type": api_object_type, "identifier": _} for _ in guids]
+            options["metadata"] = [{"identifier": _} for _ in guids]
 
         options["permissions"] = [
             {

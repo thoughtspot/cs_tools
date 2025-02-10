@@ -155,8 +155,8 @@ class SecurityConfig(Screen):
                 continue
             coros.append(
                 self.app.http.security_metadata_share(
-                    guids=options["guids"],
-                    api_object_type="LOGICAL_COLUMN",
+                    guids=[],
+                    metadata=[{"type": "LOGICAL_COLUMN", "identifier": _} for _ in options["guids"]],
                     principals=options["principals"],
                     share_mode=share_mode,
                 )
