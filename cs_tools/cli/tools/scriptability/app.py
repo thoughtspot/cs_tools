@@ -220,7 +220,7 @@ def deploy(
         click_type=custom_types.MultipleInput(
             choices=["CONNECTION", "TABLE", "VIEW", "SQL_VIEW", "MODEL", "LIVEBOARD", "ANSWER", "__ALL__"],
         ),
-        help="The type of TML to deploy",
+        help="The type of TML to deploy, comma separated.",
         rich_help_panel="TML Import Options",
     ),
     deploy_type: Literal["DELTA", "FULL"] = typer.Option(
