@@ -104,8 +104,3 @@ class AsyncTyper(typer.Typer):
         decorator = super().command(name=name, **typer_options)
         decorator = ft.partial(self.maybe_run_async, decorator)
         return decorator
-
-
-CSToolsApp = AsyncTyper
-CSToolsGroup = typer.core.TyperGroup
-CSToolsCommand = typer.core.TyperCommand
