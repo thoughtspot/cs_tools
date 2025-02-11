@@ -388,9 +388,9 @@ def metadata(
         px.WorkTask(id="PREPARING", description="Preparing for data collection"),
         px.WorkTask(id="ORGS_COUNT", description="Collecting data from ThoughtSpot"),
         px.WorkTask(id="TS_ORG", description="  Fetching [fg-secondary]ORG[/] data"),
-        px.WorkTask(id="TS_USER", description="  Fetching [fg-secondary]USER[/] data"),
         px.WorkTask(id="TS_GROUP", description="  Fetching [fg-secondary]GROUP[/] data"),
         px.WorkTask(id="TS_PRIVILEGE", description="  Fetching [fg-secondary]PRIVILEGE[/] data"),
+        px.WorkTask(id="TS_USER", description="  Fetching [fg-secondary]USER[/] data"),
         px.WorkTask(id="TS_TAG", description="  Fetching [fg-secondary]TAG[/] data"),
         px.WorkTask(id="TS_METADATA", description="  Fetching [fg-secondary]METADATA[/] data"),
         px.WorkTask(id="TS_COLUMN", description="  Fetching [fg-secondary]COLUMN[/] data"),
@@ -428,6 +428,7 @@ def metadata(
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
             seen_guids: dict[_types.APIObjectType, set[_types.GUID]] = collections.defaultdict(set)
             seen_columns: list[list[_types.GUID]] = []
+            # TODO: REMOVE AFTER 10.3.0.SW is n-1 (see COMPAT_GUIDS ref below.)
             seen_group_guids: set[_types.GUID] = set()
 
             with tracker["TS_ORG"]:
@@ -442,6 +443,29 @@ def metadata(
                 # DUMP ORG DATA
                 d = api_transformer.ts_org(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.Org.__tablename__, data=d)
+
+            with tracker["TS_GROUP"]:
+                c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
+                _ = utils.run_sync(c)
+
+                # DUMP GROUP DATA
+                d = api_transformer.ts_group(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.Group.__tablename__, data=d)
+
+                # TODO: REMOVE AFTER 10.3.0.SW is n-1 (see COMPAT_GUIDS ref below.)
+                seen_group_guids.update([group["group_guid"] for group in d])
+
+                # DUMP GROUP->GROUP_MEMBERSHIP DATA
+                d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.GroupMembership.__tablename__, data=d)
+
+            with tracker["TS_PRIVILEGE"]:
+                # TODO: ROLE->PRIVILEGE DATA.
+                # TODO: GROUP->ROLE DATA.
+
+                # DUMP GROUP->PRIVILEGE DATA
+                d = api_transformer.ts_group_privilege(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.GroupPrivilege.__tablename__, data=d)
 
             with tracker["TS_USER"]:
                 c = workflows.paginator(ts.api.users_search, record_size=150_000, timeout=60 * 15)
@@ -458,29 +482,6 @@ def metadata(
                 # DUMP USER->GROUP_MEMBERSHIP DATA
                 d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.GroupMembership.__tablename__, data=d)
-
-            with tracker["TS_GROUP"]:
-                c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
-                _ = utils.run_sync(c)
-
-                # DUMP GROUP DATA
-                d = api_transformer.ts_group(data=_, cluster=CLUSTER_UUID)
-                temp.dump(models.Group.__tablename__, data=d)
-
-                # TODO: REMOVE AFTER 10.3.0 n-1
-                seen_group_guids.update([group["group_guid"] for group in d])
-
-                # DUMP GROUP->GROUP_MEMBERSHIP DATA
-                d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
-                temp.dump(models.GroupMembership.__tablename__, data=d)
-
-            with tracker["TS_PRIVILEGE"]:
-                # TODO: ROLE->PRIVILEGE DATA.
-                # TODO: GROUP->ROLE DATA.
-
-                # DUMP GROUP->PRIVILEGE DATA
-                d = api_transformer.ts_group_privilege(data=_, cluster=CLUSTER_UUID)
-                temp.dump(models.GroupPrivilege.__tablename__, data=d)
 
             with tracker["TS_TAG"]:
                 c = ts.api.tags_search()
@@ -549,9 +550,11 @@ def metadata(
                 temp.dump(models.ColumnSynonym.__tablename__, data=d)
 
             with tracker["TS_DEPENDENT"]:
-                g = {"LOGICAL_COLUMN": seen_columns}
                 c = workflows.metadata.fetch(
-                    typed_guids=g, include_dependent_objects=True, dependent_objects_record_size=-1, http=ts.api
+                    typed_guids={"LOGICAL_COLUMN": seen_columns},
+                    include_dependent_objects=True,
+                    dependent_objects_record_size=-1,
+                    http=ts.api
                 )
                 _ = utils.run_sync(c)
 
@@ -560,6 +563,7 @@ def metadata(
                 temp.dump(models.DependentObject.__tablename__, data=d)
 
             with tracker["TS_ACCESS"]:
+                # TODO: REMOVE AFTER 10.3.0.SW is n-1
                 COMPAT_TS_VERSION = ts.session_context.thoughtspot.version
                 COMPAT_GUIDS = seen_group_guids
 
