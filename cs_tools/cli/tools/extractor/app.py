@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools as ft
-import logging
 
 import typer
 
@@ -15,7 +14,6 @@ from cs_tools.cli.dependencies import ThoughtSpot, depends_on
 from cs_tools.cli.ux import AsyncTyper
 from cs_tools.sync.base import DatabaseSyncer, Syncer
 
-log = logging.getLogger(__name__)
 app = AsyncTyper(help="Extract data from a worksheet, view, or table in ThoughtSpot.")
 
 
