@@ -603,6 +603,30 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/security/metadata/share", json=options)
 
     # ==================================================================================
+    # VERSION CONTROL :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_version_control
+    # ==================================================================================
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    @_transport.CachePolicy.mark_cacheable
+    def vcs_git_config_search(self, **options: Any) -> Awaitable[httpx.Response]:
+        """Gets Git repository connections configured on the ThoughtSpot instance."""
+        return self.post("api/rest/2.0/vcs/git/config/search", headers=options.pop("headers", None), json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def vcs_git_config_create(
+        self,
+        repository_url: str,
+        username: str,
+        access_token: str,
+        **options: Any,
+    ) -> Awaitable[httpx.Response]:
+        """Allows you to connect a ThoughtSpot instance to a Git repository."""
+        options["repository_url"] = repository_url
+        options["username"] = username
+        options["access_token"] = access_token
+        return self.post("api/rest/2.0/vcs/git/config/create", json=options)
+
+    # ==================================================================================
     # REMOTE TQL :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_security
     # ==================================================================================
 
