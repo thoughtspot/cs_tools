@@ -12,8 +12,7 @@ from cs_tools.types import GUID, DeployPolicy, DeployType, MetadataIdentity
 
 app = CSToolsApp(
     name="branches",
-    help="Tools for working with git branches and commits.",
-    invoke_without_command=True,
+    help="Manage commits in your configured GitHub repositories.",
 )
 
 # consider moving to_types.

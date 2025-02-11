@@ -1,190 +1,134 @@
 from __future__ import annotations
 
-from typing import Union
+import logging
 
 from httpx import HTTPStatusError
+from rich import box
 from rich.align import Align
-from rich.table import Table
+from rich.table import Column, Table
+import httpx
 import typer
 
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.types import MultipleChoiceType
-from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.types import GUID
+from cs_tools import _types, utils
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 
-Identifier = Union[GUID, int, str]
-
-app = CSToolsApp(
+_LOG = logging.getLogger(__name__)
+app = AsyncTyper(
     name="config",
-    help="Tools for working with git configurations.",
-    invoke_without_command=True,
+    help="Tools for working with GitHub configurations. An org may only have one configuration.",
 )
 
+V2_PLAYGROUND = "develop/api/rest/playgroundV2_0"
 
-@app.command(dependencies=[thoughtspot], name="create")
+
+@app.command(name="create")
+@depends_on(thoughtspot=ThoughtSpot())
 def config_create(
     ctx: typer.Context,
-    repository_url: str = typer.Option(..., help="the git repository to use"),
-    username: str = typer.Option(..., help="the username to use for the git repository"),
-    access_token: str = typer.Option(..., help="the access token to use for the git repository"),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    branch_names: str = typer.Option(
-        None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
-    ),
-    commit_branch_name: str = typer.Option(None, help="the default branch name to use for the git repository"),
-    enable_guid_mapping: bool = typer.Option(False, help="the enable guid mapping to use for the git repository"),
-    configuration_branch_name: str = typer.Option(
-        None, help="the branch name to use for configuration and GUID mappings."
-    ),
-):
-    """
-    Creates a configuration for a cluster or org.  An org can only have a single configuration.
-    """
+    repository_url: str = typer.Option(..., help="The GitHub repository URL to use."),
+    username: str = typer.Option(..., help="The username of a user with access to the GitHub repository."),
+    access_token: str = typer.Option(..., help="A persanal access token with access to the GitHub repository."),
+    commit_branch: str = typer.Option(..., help="The name of the branch to save TML to."),
+    config_branch: str = typer.Option(..., help="The name of the branch to use for GUID mapping."),
+    org_override: str = typer.Option(None, "--org", help="The org to use."),
+) -> _types.ExitCode:
+    """Creates a GitHub configuration for an org."""
     ts = ctx.obj.thoughtspot
 
-    # check for required parameters
-    if repository_url is None or username is None or access_token is None:
-        rich_console.print("[bold red]Must minimally provide the repository, username, and access_token.[/]")
-        return
-
-    if org_override is not None:
-        ts.org.switch(org_override)
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
     try:
-        r = ts.api.v2.vcs_git_config_create(
+        c = ts.api.vcs_git_config_create(
+            org_identifier=org_override,
             repository_url=repository_url,
             username=username,
             access_token=access_token,
-            org_identifier=org_override,
-            branch_names=branch_names,
-            commit_branch_name=commit_branch_name,
-            enable_guid_mapping=enable_guid_mapping,
-            configuration_branch_name=configuration_branch_name,
+            enable_guid_mapping=True,
+            commit_branch_name=commit_branch,
+            configuration_branch_name=config_branch,
         )
-
-        _show_configs_as_table([r.json()], title="New Configuration Details")
+        r = utils.run_sync(c)
+        r.raise_for_status()
 
     except HTTPStatusError as e:
-        if e.response.status_code == 400 and "Repository already configured" in str(e.response.content):
-            rich_console.print(
-                f'[bold yellow]Warning: There is already an configuration for "{org_override}".  '
-                f"Either update or delete the existing config and create.[/]"
-            )
+        if r.status_code == httpx.codes.BAD_REQUEST and "Repository already configured" in r.text:
+            _LOG.warning("There is already an configuration for this environment!")
         else:
-            rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
-            rich_console.print(f"[bold red]{e.response.content}.[/]")
+            _LOG.error(f"Could create config for '{repository_url}', see logs for details..")
+            _LOG.debug(f"Full error: {e}", exc_info=True)
+        return 1
+
+    # SHOW THE CONFIGURATIONS AS A TABLE.
+    command = typer.main.get_command(app).get_command(ctx, "search")
+    ctx.invoke(command, org_override=org_override)
+
+    return 0
 
 
-@app.command(dependencies=[thoughtspot], name="update")
+@app.command(name="update")
+@depends_on(thoughtspot=ThoughtSpot())
 def config_update(
     ctx: typer.Context,
-    username: str = typer.Option(None, help="the username to use for the git repository"),
-    access_token: str = typer.Option(None, help="the access token to use for the git repository"),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    branch_names: str = typer.Option(
-        None, click_type=MultipleChoiceType(), help="the branch names to use for the git repository"
-    ),
-    commit_branch_name: str = typer.Option(None, help="the default branch name to use for commits"),
-    enable_guid_mapping: bool = typer.Option(True, help="the enable guid mapping to use for the git repository"),
-    configuration_branch_name: str = typer.Option(
-        None, help="the branch name to use for configuration and GUID mappings."
-    ),
-):
-    """
-    Updates a configuration for a cluster or org.
-    """
+    org_override: str = typer.Option(None, "--org", help="The org to use."),
+    repository_url: str = typer.Option(None, help="The GitHub repository URL to use."),
+    username: str = typer.Option(None, help="The username of a user with access to the GitHub repository."),
+    access_token: str = typer.Option(None, help="A persanal access token with access to the GitHub repository."),
+    commit_branch: str = typer.Option(None, help="The name of the branch to save TML to."),
+    config_branch: str = typer.Option(None, help="The name of the branch to use for GUID mapping."),
+) -> _types.ExitCode:
+    """Updates a GitHub configuration for an Org."""
     ts = ctx.obj.thoughtspot
 
-    if org_override is not None:
-        ts.org.switch(org_override)
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
-    try:
-        r = ts.api.v2.vcs_git_config_update(
-            username=username,
-            access_token=access_token,
-            org_identifier=org_override,
-            branch_names=branch_names,
-            commit_branch_name=commit_branch_name,
-            enable_guid_mapping=enable_guid_mapping,
-            configuration_branch_name=configuration_branch_name,
+    _LOG.warning("Editing GitHub configurations via the CLI is deprecated. Visit the UI to update.")
+
+    RICH_CONSOLE.print(
+        f"\n"
+        f"{ts.session_context.thoughtspot.url}/#/{V2_PLAYGROUND}"
+        f"?apiResourceId=http/api-endpoints/version-control/update-config",
+        justify="center",
+    )
+
+    # SHOW THE CONFIGURATIONS AS A TABLE.
+    command = typer.main.get_command(app).get_command(ctx, "search")
+    ctx.invoke(command, org_override=org_override)
+
+    return 0
+
+
+@app.command(name="search")
+@depends_on(thoughtspot=ThoughtSpot())
+def config_search(ctx: typer.Context, org_override: str = typer.Option(None, "--org", help="The org to use.")):
+    """Searches for configurations."""
+    ts = ctx.obj.thoughtspot
+
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        org = ts.switch_org(org_id=org_override)
+
+    c = ts.api.vcs_git_config_search(org_identifiers=None if org_override is None else [org["id"]])
+    r = utils.run_sync(c)
+
+    # fmt: off
+    table = Table(
+        "Org", Column("Repository", width=30), "Username", "Commit Branch", "Config Branch", "GUID Mapping",
+        width=150, box=box.HORIZONTALS, border_style="fg-secondary",
+    )
+    # fmt: on
+
+    for row in r.json():
+        table.add_row(
+            row["org"]["name"],
+            row["repository_url"],
+            row["username"],
+            row["commit_branch_name"],
+            row["configuration_branch_name"],
+            "Yes" if row["enable_guid_mapping"] else "No",
         )
 
-        _show_configs_as_table([r.json()], title="Updated Configuration Details")
+    RICH_CONSOLE.print("\n", Align.center(table), "\n")
 
-    except HTTPStatusError as e:
-        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
-        rich_console.print(f"[bold red]{e.response.content}.[/]")
-
-
-@app.command(dependencies=[thoughtspot], name="search")
-def config_search(
-    ctx: typer.Context,
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    org_ids: str = typer.Option(None, click_type=MultipleChoiceType(), help="The org IDs to get the configuration for"),
-):
-    """
-    Searches for configurations.
-    """
-    ts = ctx.obj.thoughtspot
-
-    if org_override is not None:
-        ts.org.switch(org_override)
-
-    try:
-        r = ts.api.v2.vcs_git_config_search(org_ids=org_ids)
-
-        configs = r.json()
-        _show_configs_as_table(configs)
-
-    except HTTPStatusError as e:
-        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
-        rich_console.print(f"[bold red]{e.response.content}.[/]")
-
-
-@app.command(dependencies=[thoughtspot], name="delete")
-def config_delete(
-    ctx: typer.Context,
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    cluster_level: bool = typer.Option(False, help="the cluster level to use for the git repository"),
-):
-    """
-    Deletes a configuration for a cluster or org.
-    """
-    ts = ctx.obj.thoughtspot
-
-    if org_override is not None:
-        ts.org.switch(org_override)
-    else:
-        # DEV NOTE: delete doesn't take an org, so it will use whatever the last one was.
-        # It might be prudent to prompt to user if they want to continue.  It won't apply to
-        # non-org enabled clusters.
-        rich_console.print("[bold yellow]No org specified, the config in the current org will be deleted.[/]")
-
-    try:
-        r = ts.api.v2.vcs_git_config_delete(cluster_level=cluster_level)
-
-        rich_console.print(f"[fg-success]Deleted the configuration: {r}.[/]")
-
-    except HTTPStatusError as e:
-        rich_console.print(f"[bold red]Error creating the configuration: {e.response}.[/]")
-        rich_console.print(f"[bold red]{e.response.content}.[/]")
-
-
-def _show_configs_as_table(configs: list[dict], title: str = "Configuration Details"):
-    """
-    Show the configurations as a table.
-    """
-    use_cnt = len(configs) > 1
-
-    for count, config in enumerate(configs):
-        title = f"{title} {count}" if use_cnt else title
-
-        table = Table(title=f"Configuration Details {count}", width=100)
-
-        table.add_column("Property", width=25)
-        table.add_column("Value", width=75)
-
-        for k, v in config.items():
-            table.add_row(k, str(v))
-
-        rich_console.print(Align.center(table))
+    return 0
