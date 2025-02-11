@@ -1,5 +1,5 @@
 name:
-  Extract Audit Logs with CS Tools.
+  Extract TML with CS Tools.
 
 on:
   workflow_dispatch:
@@ -41,7 +41,7 @@ jobs:
       # SETUP PYTHON.
       - name: Set up Python
         uses: actions/setup-python@v5
-        
+
       # INSTALL A SPECIFIC VERSION OF cs_tools.
       - name: Install a pinned version of CS Tools
         run: pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/${{ env.CS_TOOLS_VERSION }}.zip"
@@ -50,10 +50,12 @@ jobs:
       # https://thoughtspot.github.io/cs_tools/tools/searchable
       #
       # THE CLI OPTION  --config ENV:  TELLS CS TOOLS TO PULL THE INFORMATION FROM ENVIRONMENT VARIABLES.
-      - name: Grab N-7 days of Audit Logs Data
+      - name: Snapshot TML from ThoughtSpot
         run: |
           cs_tools tools
-          searchable audit-logs
-          --last-k-days 7
+          searchable tml
+          --metadata-type ALL
+          --strategy DELTA
+          --tml-format JSON
           --syncer 'snowflake://${{ env.DECLARATIVE_SYNCER_SYNTAX }}&load_strategy=UPSERT'
           --config ENV:
