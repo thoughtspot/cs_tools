@@ -99,11 +99,11 @@ class Excel(Syncer):
 
     def dump(self, tab_name: str, *, data: _types.TableRowsFormat) -> None:
         """Write rows to a tab in the Workbook."""
-        if not data:
-            log.warning(f"No data to write to syncer {self}")
-            return
-
         tab = self.tab(tab_name)
+
+        if not data:
+            log.warning(f"No data to write to syncer {self.protocol}.{tab_name}")
+            return
 
         if self.save_strategy == "OVERWRITE":
             # idx = 1 means we should delete the header as well, mostly so we can ensure
