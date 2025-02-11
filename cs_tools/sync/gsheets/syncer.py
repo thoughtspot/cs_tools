@@ -6,12 +6,13 @@ import pathlib
 
 import gspread
 import pydantic
+import pydantic_core
 
-from cs_tools import _types
+from cs_tools import _types, errors
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import Syncer
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class GoogleSheets(Syncer):
@@ -27,25 +28,60 @@ class GoogleSheets(Syncer):
 
     def __init__(self, **data):
         super().__init__(**data)
-        self.client = gspread.service_account(filename=self.credentials_file)
-        self.workbook = self.client.open(self.spreadsheet)
+
+        try:
+            self._client = gspread.service_account(filename=self.credentials_file)
+            self._workbook = self._client.open(self.spreadsheet)
+
+        except gspread.exceptions.SpreadsheetNotFound:
+            raise errors.SyncerInitError(
+                protocol="gsheets",
+                pydantic_error=pydantic_core.ValidationError.from_exception_data(
+                    title="Spreadsheet not found",
+                    line_errors=[
+                        pydantic_core.InitErrorDetails(
+                            type="value_error",
+                            loc=("spreadsheet",),
+                            input=self.spreadsheet,
+                            ctx={"error": ValueError(f"Spreadsheet named '{self.spreadsheet}' not found.")},
+                        )
+                    ],
+                ),
+            ) from None
+
+        except gspread.exceptions.GSpreadException as e:
+            _LOG.debug(f"{e}", exc_info=True)
+            raise errors.SyncerInitError(
+                protocol="gsheets",
+                pydantic_error=pydantic_core.ValidationError.from_exception_data(
+                    title="Spreadsheet not found",
+                    line_errors=[
+                        pydantic_core.InitErrorDetails(
+                            type="assertion_error",
+                            loc=("credentials_file",),
+                            input=self.credentials_file,
+                            ctx={"error": e},
+                        )
+                    ],
+                ),
+            ) from None
 
     @property
     def url(self) -> str:
         """Return the URL of the Google Sheet."""
-        return self.workbook.url
+        return self._workbook.url
 
     def tab(self, tab_name: str) -> gspread.worksheet.Worksheet:
         """Fetch the tab. If it does not yet exist, create it."""
         try:
-            tab = self.workbook.worksheet(title=tab_name)
+            tab = self._workbook.worksheet(title=tab_name)
         except gspread.WorksheetNotFound:
-            tab = self.workbook.add_worksheet(title=tab_name, rows=1000, cols=26)
+            tab = self._workbook.add_worksheet(title=tab_name, rows=1000, cols=26)
 
         return tab
 
     def __repr__(self):
-        return f"<GoogleSheetsSyncer url='{self.workbook.url}' in '{self.save_strategy}' mode>"
+        return f"<GoogleSheetsSyncer url='{self._workbook.url}' in '{self.save_strategy}' mode>"
 
     # MANDATORY PROTOCOL MEMBERS
 
@@ -54,14 +90,14 @@ class GoogleSheets(Syncer):
         tab = self.tab(tab_name)
 
         if not (data := tab.get_all_records()):
-            log.warning(f"No data found in tab '{tab_name}'")
+            _LOG.warning(f"No data found in tab '{tab_name}'")
 
         return data
 
     def dump(self, tab_name: str, *, data: _types.TableRowsFormat) -> None:
         """Write rows to a tab in the Workbook."""
         if not data:
-            log.warning(f"No data to write to syncer {self}")
+            _LOG.warning(f"No data to write to syncer {self}")
             return
 
         tab = self.tab(tab_name)
@@ -83,9 +119,9 @@ class GoogleSheets(Syncer):
             tab.append_rows(new)
         except gspread.exceptions.APIError as e:
             try:
-                log.error(f"GoogleSheets Error: {e._extract_text(e)}")
+                _LOG.error(f"GoogleSheets Error: {e._extract_text(e)}")
             except AttributeError:
-                log.error(f"GoogleSheets Error: {e}")
+                _LOG.error(f"GoogleSheets Error: {e}")
 
             if "limit of 10000000 cells" in str(e):
-                log.warning("Consider using a Database Syncer instead, such as SQLite.")
+                _LOG.warning("Consider using a Database Syncer instead, such as SQLite.")
