@@ -422,6 +422,11 @@ class RESTAPIClient(httpx.AsyncClient):
         """Updates a ThoughtSpot group."""
         return self.post(f"api/rest/2.0/groups/{group_identifier}/update", json=options)
 
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def groups_delete(self, group_identifier: _types.ObjectIdentifier) -> Awaitable[httpx.Response]:
+        """Deletes a ThoughtSpot group."""
+        return self.post(f"api/rest/2.0/groups/{group_identifier}/delete")
+
     # ==================================================================================
     # TAGS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_tags
     # ==================================================================================
