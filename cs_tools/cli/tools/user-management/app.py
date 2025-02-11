@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Coroutine
 from typing import Literal
 import collections
 import logging
+import threading
 import time
 
+from rich import console
+from rich.align import Align
 import typer
 
 from cs_tools import _types, errors, utils
@@ -14,13 +18,14 @@ from cs_tools.cli import (
     progress as px,
 )
 from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.input import ConfirmationListener
 from cs_tools.cli.tools import searchable
-from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
+from cs_tools.cli.ux import AsyncTyper
 from cs_tools.sync.base import Syncer
 
 from ._utils import Group, User, determine_what_changed
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 app = AsyncTyper(help="""Manage Users and Groups in bulk.""")
 
 
@@ -87,12 +92,14 @@ def transfer(
 
             if tags:
                 # fmt: off
-                metadata_search_options["metadata"] = [{"type": _types.lookup_api_type(t, mode="FRIENDLY")} for t in ALL_TYPES]  # noqa: E501
+                metadata_search_options["metadata"] = [{"type": _types.lookup_metadata_type(t, mode="FRIENDLY_TO_API")} for t in ALL_TYPES]  # noqa: E501
                 metadata_search_options["tag_identifiers"] = tags
                 # fmt: on
 
             if content:
-                metadata_search_options["metadata"] = [{"type": _types.lookup_api_type(content, mode="FRIENDLY")}]
+                metadata_search_options["metadata"] = [
+                    {"type": _types.lookup_metadata_type(content, mode="FRIENDLY_TO_API")}
+                ]
 
             if guids:
                 metadata_search_options["metadata"] = [{"identifier": guid} for guid in guids]
@@ -122,10 +129,10 @@ def transfer(
             filtered = [m["metadata_id"] for m in d]
 
         if not filtered:
-            log.info("[fg-warn]No objects found with your input options")
+            _LOG.info("[fg-warn]No objects found with your input options")
             return 0
 
-        log.info(f"Found {len(filtered):,} objects to transfer to [fg-secondary]{to_username}")
+        _LOG.info(f"Found {len(filtered):,} objects to transfer to [fg-secondary]{to_username}")
 
         with tracker["TRANSFER"] as this_task:
             this_task.total = len(filtered)
@@ -135,17 +142,17 @@ def transfer(
                 if r.is_success:
                     this_task.advance(step=1)
                 else:
-                    log.debug(f"Could not transfer {guid}\n{r.text}\n")
+                    _LOG.debug(f"Could not transfer {guid}\n{r.text}\n")
 
             c = utils.bounded_gather(*(_transfer_and_advance(guid=_) for _ in filtered), max_concurrent=15)
             d = utils.run_sync(c)
 
-        log.info(f"Successfully transferred {this_task.completed:,} objects to [fg-secondary]{to_username}[/]")
+        _LOG.info(f"Successfully transferred {this_task.completed:,} objects to [fg-secondary]{to_username}[/]")
 
     return 0
 
 
-@app.command()
+@app.command(hidden=True)
 @depends_on(thoughtspot=ThoughtSpot())
 def delete(
     ctx: typer.Context,
@@ -191,7 +198,7 @@ def delete(
     return 0
 
 
-@app.command()
+@app.command(hidden=True)
 @depends_on(thoughtspot=ThoughtSpot())
 def sync(
     ctx: typer.Context,
@@ -212,6 +219,8 @@ def sync(
     """
     Sync your principals (Users, Groups, Memberships) from an external data source.
 
+    Operates on only 1 org at a time.
+
     \b
     Uses the [fg-warn]cs_tools tools searchable metadata[/] data model (or use [fg-warn]--export-only[/] flag to fetch).
 
@@ -222,6 +231,8 @@ def sync(
       [fg-warn]:mage: Important!
       [fg-primary]ts_xref_principal[/] represents the relationship of [fg-primary]Principal K is a member of Group X[/].
     """
+    _LOG.warning(":mage: This command is currently getting an upgrade. We'll be back soon!")
+    return 0
     ts = ctx.obj.thoughtspot
 
     if ts.session_context.thoughtspot.is_orgs_enabled:
@@ -237,10 +248,9 @@ def sync(
 
     TOOL_TASKS = [
         px.WorkTask(id="GATHER", description="Fetching Principals"),
-        px.WorkTask(id="TS_ORG", description="  Fetching [fg-secondary]ORG[/] data"),
-        px.WorkTask(id="TS_USER", description="  Fetching [fg-secondary]USER[/] data"),
         px.WorkTask(id="TS_GROUP", description="  Fetching [fg-secondary]GROUP[/] data"),
         px.WorkTask(id="TS_PRIVILEGE", description="  Fetching [fg-secondary]PRIVILEGE[/] data"),
+        px.WorkTask(id="TS_USER", description="  Fetching [fg-secondary]USER[/] data"),
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
         px.WorkTask(id="LOAD_DATA", description=f"Loading data from {syncer.name}"),
         px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
@@ -257,34 +267,6 @@ def sync(
             # DEV NOTE: @boonhapus, 2025/01/18
             #   This is identical to the flow in cs_tools.cli.tools.searchable.app.metadata
             CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
-
-            with tracker["TS_ORG"]:
-                if not ts.session_context.thoughtspot.is_orgs_enabled:
-                    _ = [{"id": 0, "name": "ThoughtSpot", "description": "Your cluster is not orgs enabled."}]
-                else:
-                    c = ts.api.orgs_search()
-                    r = utils.run_sync(c)
-                    _ = r.json()
-
-                # DUMP ORG DATA
-                d = searchable.api_transformer.ts_org(data=_, cluster=CLUSTER_UUID)
-                existing[searchable.models.Org.__tablename__].extend(d)
-
-            with tracker["TS_USER"]:
-                c = workflows.paginator(ts.api.users_search, record_size=150_000, timeout=60 * 15)
-                _ = utils.run_sync(c)
-
-                # DUMP USER DATA
-                d = searchable.api_transformer.ts_user(data=_, cluster=CLUSTER_UUID)
-                existing[searchable.models.User.__tablename__].extend(d)
-
-                # DUMP USER->ORG_MEMBERSHIP DATA
-                d = searchable.api_transformer.ts_org_membership(data=_, cluster=CLUSTER_UUID)
-                existing[searchable.models.OrgMembership.__tablename__].extend(d)
-
-                # DUMP USER->GROUP_MEMBERSHIP DATA
-                d = searchable.api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
-                existing[searchable.models.GroupMembership.__tablename__].extend(d)
 
             with tracker["TS_GROUP"]:
                 c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
@@ -305,6 +287,21 @@ def sync(
                 # DUMP GROUP->PRIVILEGE DATA
                 d = searchable.api_transformer.ts_group_privilege(data=_, cluster=CLUSTER_UUID)
                 existing[searchable.models.GroupPrivilege.__tablename__].extend(d)
+
+            with tracker["TS_USER"]:
+                c = workflows.paginator(ts.api.users_search, record_size=150_000, timeout=60 * 15)
+                _ = utils.run_sync(c)
+
+                # DUMP USER DATA
+                d = searchable.api_transformer.ts_user(data=_, cluster=CLUSTER_UUID)
+                existing[searchable.models.User.__tablename__].extend(d)
+
+                # DUMP USER->GROUP_MEMBERSHIP DATA
+                d = searchable.api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
+                # FILTER TO ONLY THE GROUPS IN THIS ORG.
+                _ = {_["group_guid"] for _ in existing[searchable.models.Group.__tablename__]}
+                d = [m for m in d if m["group_guid"] in _]
+                existing[searchable.models.GroupMembership.__tablename__].extend(d)
 
         if export_only:
             with tracker["DUMP_DATA"]:
@@ -329,28 +326,26 @@ def sync(
         u_create, u_update, u_delete = determine_what_changed(existing["user"], incoming["user"], key="user_guid")
         # fmt: on
 
-        for group_guid in g_update:
-            group = next(g for g in existing["group"] if g.group_guid == group_guid)
-            RICH_CONSOLE.print(group)
-
         if delete_mode == "HIDE":
             # CREATE A GROUP CALLED HIDDEN.
             ...
 
+        _LOG.info(
+            f"[fg-secondary]Groups Info[/]\n"
+            f":sparkles: [fg-success]CREATE[/] {len(g_create): >4,}\n"
+            f":pencil2:  [fg-warn]UPDATE[/] {len(g_update): >4,}\n"
+            f":wastebasket:  [fg-error]DELETE[/] {len(g_delete): >4,}\n"
+        )
+
+        _LOG.info(
+            f"[fg-secondary]Users Info[/]\n"
+            f":sparkles: [fg-success]CREATE[/] {len(u_create): >4,}\n"
+            f":pencil2:  [fg-warn]UPDATE[/] {len(u_update): >4,}\n"
+            f":wastebasket:  [fg-error]DELETE[/] {len(u_delete): >4,}\n"
+        )
+
         if dry_run:
-            RICH_CONSOLE.print("DRY RUN MODE ENABLED, NO CHANGES MADE.")
-
-            RICH_CONSOLE.print(
-                f"Created Groups: {len(g_create)=:,}",
-                f"Updated Groups: {len(g_update)=:,}",
-                f"Deleted Groups: {len(g_delete)=:,}",
-            )
-
-            RICH_CONSOLE.print(
-                f"Created Users: {len(u_create)=:,}",
-                f"Updated Users: {len(u_update)=:,}",
-                f"Deleted Users: {len(u_delete)=:,}",
-            )
+            _LOG.info(":safety_vest: DRY RUN MODE ENABLED, NO CHANGES MADE!")
             return 0
 
         with tracker["CONFIRM"] as this_task:
@@ -362,7 +357,7 @@ def sync(
 
                 tracker.extra_renderable = lambda: Align.center(
                     console.Group(
-                        Align.center(f"{len(all_metadata):,} objects will be deleted"),
+                        Align.center("Principals will be synced to ThoughtSpot."),
                         "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
                     )
                 )
@@ -379,9 +374,75 @@ def sync(
                 this_task.final()
 
                 if kb.response.upper() == "N":
-                    this_task.description = "[fg-error]Denied[/] (no deleting done)"
+                    this_task.description = "[fg-error]Denied[/] (no syncing done)"
                     return 0
                 else:
-                    this_task.description = f"[fg-success]Approved[/] (deleting {len(all_metadata):,})"
+                    this_task.description = "[fg-success]Approved[/] (syncing principals)"
+
+        with tracker["SYNC"] as this_task:
+            this_task.description = "Syncing Groups.."
+            coros: list[Coroutine] = []
+
+            # CREATE GROUPS.
+            for group in {group for group in incoming["group"] if group.group_guid in g_create}:
+                coros.append(
+                    ts.api.groups_create(
+                        name=group.group_name,
+                        description=group.description,
+                        display_name=group.display_name,
+                        visibility=group.sharing_visibility,
+                        group_type="LOCAL_GROUP",
+                        privileges=list(group.privileges),
+                        sub_group_identifiers=list(group.group_memberships),
+                    )
+                )
+
+            if coros:
+                c = utils.bounded_gather(*(coros.pop() for _ in coros[:]), max_concurrent=15)
+                d = utils.run_sync(c)
+
+            # UPDATE GROUPS.
+            # if coros:
+            #     c = utils.bounded_gather(*(coros.pop() for _ in coros[:]), max_concurrent=15)
+            #     d = utils.run_sync(c)
+
+            # # DELETE GROUPS.
+            # if coros:
+            #     c = utils.bounded_gather(*coros, max_concurrent=15)
+            #     d = utils.run_sync(c)
+
+            # this_task.description = "Syncing Users.."
+
+            # # CREATE USERS.
+            # if coros:
+            #     c = utils.bounded_gather(*(coros.pop() for _ in coros[:]), max_concurrent=15)
+            #     d = utils.run_sync(c)
+
+            # # UPDATE USERS.
+            # if coros:
+            #     c = utils.bounded_gather(*(coros.pop() for _ in coros[:]), max_concurrent=15)
+            #     d = utils.run_sync(c)
+
+            # # DELETE USERS.
+            # if coros:
+            #     c = utils.bounded_gather(*coros, max_concurrent=15)
+            #     d = utils.run_sync(c)
+
+            this_task.description = "Syncing Principals.."
 
     return 0
+
+    # guids_to_delete: set[_types.GUID] = {metadata_object["guid"] for metadata_object in all_metadata}
+    # delete_attempts = collections.defaultdict(int)
+
+    # async def _delete_and_advance(guid: _types.GUID) -> None:
+    #     delete_attempts[guid] += 1
+    #     r = await ts.api.metadata_delete(guid=guid)
+
+    #     if r.is_success or delete_attempts[guid] > 10:
+    #         guids_to_delete.discard(guid)
+    #         this_task.advance(step=1)
+
+    # while guids_to_delete:
+    #     c = utils.bounded_gather(*(_delete_and_advance(guid=_) for _ in guids_to_delete), max_concurrent=15)
+    #     _ = utils.run_sync(c)

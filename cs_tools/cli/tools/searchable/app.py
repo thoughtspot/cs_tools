@@ -554,7 +554,7 @@ def metadata(
                     typed_guids={"LOGICAL_COLUMN": seen_columns},
                     include_dependent_objects=True,
                     dependent_objects_record_size=-1,
-                    http=ts.api
+                    http=ts.api,
                 )
                 _ = utils.run_sync(c)
 
