@@ -269,6 +269,9 @@ class CachedRetryTransport(httpx.AsyncBaseTransport):
         with httpx._exceptions.request_context(request=request):
             r = await self._wrapper.handle_async_request(request=request)
 
+            if isinstance(r, httpx.Response):
+                r.request = request
+
         return r
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
