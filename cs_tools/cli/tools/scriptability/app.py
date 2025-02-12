@@ -256,7 +256,7 @@ def deploy(
 
         # SET UP OUR GUID MAPPING.
         mapping_info = local_utils.GUIDMappingInfo.load(path=mapping_file)
-        last_import = dt.datetime.fromisoformat(mapping_info.metadata["checkpoint"]["last_import"] or EPOCH_STR)
+        last_import = dt.datetime.fromisoformat(mapping_info.metadata["checkpoint"].get("last_import", EPOCH_STR))
         mapping_info.metadata["checkpoint"]["mapped_to"] = f"{target_environment}-guid-mappings.json"
 
         mapping_info.metadata["checkpoint"]["by"] = f"cs_tools/{__version__}/scriptability/deploy"
@@ -328,17 +328,13 @@ def deploy(
                 msg=" - ".join([str(response.metadata_guid), response.message]),
             )
 
-        if table.can_map_guids:
+        if table.can_map_guids and response.status != "ERROR":
             assert response.metadata_guid is not None, "TML errors should not produce GUIDs."
             mapping_info.map_guid(old=original_guid, new=response.metadata_guid, disallow_overriding=True)
             guids_to_tag.add(response.metadata_guid)
 
     # RECORD THE GUID MAPPING
     mapping_info.save()
-
-    if table.job_status == "ERROR":
-        _LOG.error("One or more TMLs failed to fully import, check the logs or use --log-errors for more details.")
-        return 1
 
     if tags and guids_to_tag:
         for tag_name in tags:
@@ -349,5 +345,9 @@ def deploy(
 
             c = utils.bounded_gather(*coros, max_concurrent=15)
             d = utils.run_sync(c)
+
+    if table.job_status == "ERROR":
+        _LOG.error("One or more TMLs failed to fully import, check the logs or use --log-errors for more details.")
+        return 1
 
     return 0
