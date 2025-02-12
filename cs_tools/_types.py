@@ -67,7 +67,8 @@ UserFriendlyObjectType = Literal[
 ]
 # fmt: on
 PrincipalType = Literal["USER", "USER_GROUP"]
-ImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY", "PARTIAL_OBJECTS_ONLY"]
+TMLImportPolicy = Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY"]
+TMLDeployType = Literal["DELTA", "FULL"]
 TMLStatusCode = Literal["OK", "WARNING", "ERROR"]
 ShareType = Literal["DEFINED", "EFFECTIVE"]
 ShareMode = Literal["NO_ACCESS", "READ_ONLY", "MODIFY"]
