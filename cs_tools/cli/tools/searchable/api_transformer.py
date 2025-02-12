@@ -277,8 +277,8 @@ def ts_metadata_object(data: list[_types.APIResult], *, cluster: _types.GUID) ->
                     is_sage_enabled=(
                         not result["metadata_header"]["aiAnswerGenerationDisabled"] if can_be_sage_enabled else None
                     ),
-                    is_verified=result["metadata_header"]["isVerified"],
-                    is_version_controlled=result["metadata_header"]["isVersioningEnabled"],
+                    is_verified=result["metadata_header"].get("isVerified", False),
+                    is_version_controlled=result["metadata_header"].get("isVersioningEnabled", False),
                 ).model_dump()
             )
 
@@ -429,8 +429,8 @@ def ts_metadata_dependent(data: list[_types.APIResult], *, cluster: _types.GUID)
                             "modified": validators.ensure_datetime_is_utc.func(dependent["modified"] / 1000),
                             "object_type": dependent_type,
                             "object_subtype": dependent.get("type", None),
-                            "is_verified": dependent["isVerified"],
-                            "is_version_controlled": dependent["isVersioningEnabled"],
+                            "is_verified": dependent.get("isVerified", False),
+                            "is_version_controlled": dependent.get("isVersioningEnabled", False),
                         }
                     )
 

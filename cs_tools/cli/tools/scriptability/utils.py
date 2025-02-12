@@ -59,6 +59,11 @@ class MappingMetadataCheckpoint(pydantic.BaseModel):
     last_export: dt.datetime
     last_import: Optional[dt.datetime] = None
 
+    @pydantic.field_serializer("at", "last_export", "last_import")
+    @classmethod
+    def serialize_datetime(self, value: dt.datetime) -> str:
+        return value.isoformat()
+
 
 class GUIDMappingInfo(pydantic.BaseModel):
     """Wrapper for guid mapping to make it easier to use."""
@@ -144,8 +149,8 @@ class TMLStatus(pydantic.BaseModel):
                 operation=operation,
                 edoc=data["edoc"],
                 metadata_guid=data["info"]["id"],
-                metadata_name=data["info"]["name"],
-                metadata_type=data["info"]["type"],
+                metadata_name=data["info"].get("name", "--"),
+                metadata_type=data["info"].get("type", "UNKNOWN"),
                 status=data["info"]["status"]["status_code"],
                 message=data["info"]["status"].get("error_message", None),
                 _raw=data,
@@ -218,16 +223,15 @@ class TMLOperations:
 
     def __init__(
         self,
-        data: list[_types.APIResult],
+        statuses: list[TMLStatus],
         domain: str,
         op: Literal["EXPORT", "VALIDATE", "IMPORT"],
-        policy: Optional[_types.ImportPolicy] = None,
+        policy: Optional[_types.TMLImportPolicy] = None,
     ):
-        self.data = data
+        self.statuses = statuses
         self.domain = domain
         self.operation = op
         self.policy = policy
-        self._statuses = [TMLStatus.from_api_response(operation=op, data=_) for _ in self.data]
 
     @property
     def can_map_guids(self) -> bool:
@@ -238,12 +242,10 @@ class TMLOperations:
         if self.policy == "ALL_OR_NONE" and self.job_status != "OK":
             return False
 
-        return self.job_status != "ERROR"
+        if self.policy == "PARTIAL" and any(_.status != "ERROR" for _ in self.statuses):
+            return True
 
-    @property
-    def statuses(self) -> list[TMLStatus]:
-        """Get the statuses of the TML operation."""
-        return self._statuses
+        return self.job_status != "ERROR"
 
     @property
     def job_status(self) -> _types.TMLStatusCode:

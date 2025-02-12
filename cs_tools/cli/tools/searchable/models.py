@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Union
 import datetime as dt
 import logging
+import zoneinfo
 
 from sqlalchemy.schema import Column
 from sqlalchemy.types import TIMESTAMP, BigInteger, Text
@@ -20,6 +21,13 @@ class Cluster(ValidatedSQLModel, table=True):
     cluster_guid: str = Field(primary_key=True)
     url: validators.AnyHttpURLStr
     timezone: str
+
+    @pydantic.field_validator("timezone", mode="before")
+    @classmethod
+    def tzname_only(cls, value: Union[str, zoneinfo.ZoneInfo]) -> str:
+        if isinstance(value, zoneinfo.ZoneInfo):
+            return value.key
+        return value
 
 
 class Org(ValidatedSQLModel, table=True):
