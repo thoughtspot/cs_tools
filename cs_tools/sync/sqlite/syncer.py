@@ -55,6 +55,8 @@ class SQLite(DatabaseSyncer):
         # FETCH ALL OTHER PRAGMA TO INFORM THE SYNCER OF CONSTRAINTS.
         r = self.session.execute(sa.text("PRAGMA compile_options;"))
 
+        _LOG.debug("LOGGING ALL AVAILABLE PRAGMAS.")
+
         for override in [option["compile_options"] for option in r.mappings().all()]:
             _LOG.debug(f"PRAGMA {override}")
             name, _, value = override.partition("=")

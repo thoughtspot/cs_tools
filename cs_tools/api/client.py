@@ -32,9 +32,9 @@ class RESTAPIClient(httpx.AsyncClient):
 
       1. All endpoints should be type-hinted to take advantage of pydantic validators.
 
-      2. Required parameters should be labeled in the function signature, while optional
-         parameters may be passed as keyword arguments. There may be slight deviation in
-         required parameter-naming if it aids the Developer.
+      2. Required and Default parameters should be labeled in the function signature,
+         while optional parameters may be passed as keyword arguments. There may be
+         slight deviation in required parameter-naming if it aids the Developer.
 
       3. Any V1 endpoints which need continued coverage should be prefixed with v1_.
          These endpoints may violate all other goals above as they will be progressively
@@ -63,7 +63,7 @@ class RESTAPIClient(httpx.AsyncClient):
                     tenacity.retry_if_exception(_retry.request_errors_unless_importing_tml)
                     | tenacity.retry_if_result(_retry.if_server_is_under_pressure)
                 ),
-                wait=tenacity.wait_exponential(exp_base=4),
+                wait=tenacity.wait_exponential(min=60, exp_base=4),
                 stop=tenacity.stop_after_attempt(max_attempt_number=3),
                 before_sleep=_retry.log_on_any_retry,
                 reraise=True,
