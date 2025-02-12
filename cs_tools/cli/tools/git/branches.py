@@ -1,240 +1,421 @@
 from __future__ import annotations
 
+from typing import Literal
+import itertools as it
+import logging
+import pathlib
+
 from httpx import HTTPStatusError
-from rich.align import Align
-from rich.table import Table
 import typer
 
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.types import MultipleChoiceType
-from cs_tools.cli.ux import CSToolsApp, rich_console
-from cs_tools.types import GUID, DeployPolicy, DeployType, MetadataIdentity
+from cs_tools import _types, utils
+from cs_tools.api import workflows
+from cs_tools.cli import custom_types
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.tools.scriptability import (
+    api_transformer,
+    utils as local_utils,
+)
+from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 
-app = CSToolsApp(
+_LOG = logging.getLogger(__name__)
+app = AsyncTyper(
     name="branches",
     help="Manage commits in your configured GitHub repositories.",
 )
 
-# consider moving to_types.
-VALID_METADATA_COMMIT_TYPES = ["LOGICAL_TABLE", "PINBOARD_ANSWER_BOOK", "QUESTION_ANSWER_BOOK"]
 
-
-@app.command(dependencies=[thoughtspot], name="commit")
+@app.command(name="commit")
+@depends_on(thoughtspot=ThoughtSpot())
 def branches_commit(
     ctx: typer.Context,
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    tag: str = typer.Option(None, help="the tag for metadata to commit"),
-    metadata_ids: str = typer.Option("", click_type=MultipleChoiceType(), help="the metadata GUIDs or names to commit"),
-    branch_name: str = typer.Option(
-        None, help="the branch name to use for the git repository (or use the default if not provided"
+    input_types: custom_types.MultipleInput = typer.Option(
+        ...,
+        "--metadata-types",
+        click_type=custom_types.MultipleInput(
+            choices=["CONNECTION", "TABLE", "VIEW", "SQL_VIEW", "MODEL", "LIVEBOARD", "ANSWER", "__ALL__"],
+        ),
+        help="The type of Object(s) to export, comma separated.",
+        rich_help_panel="Metadata Fetching Options",
     ),
-    comment: str = typer.Option(..., help="the comment to use for the commit"),
-    delete_aware: bool = typer.Option(False, help="deletes content that doesn't exist in TS from the repo"),
+    pattern: str = typer.Option(
+        None,
+        help=r"Object names which meet a pattern, follows SQL LIKE operator (% as a wildcard).",
+        rich_help_panel="Metadata Fetching Options",
+    ),
+    authors: custom_types.MultipleInput = typer.Option(
+        None,
+        click_type=custom_types.MultipleInput(sep=","),
+        help="Objects created by these User(s), comma separated.",
+        show_default=False,
+        rich_help_panel="Metadata Fetching Options",
+    ),
+    tags: custom_types.MultipleInput = typer.Option(
+        None,
+        click_type=custom_types.MultipleInput(sep=","),
+        help="Objects tagged with these name(s), comma separated.",
+        show_default=False,
+        rich_help_panel="Metadata Fetching Options",
+    ),
+    include_system_owned_content: bool = typer.Option(
+        False,
+        "--include-system",
+        help="Whether or not to include content owned by built-in Administrator accounts.",
+        rich_help_panel="Metadata Fetching Options",
+    ),
+    commit_message: str = typer.Option(
+        ...,
+        "-m",
+        "--comment",
+        help="the comment to use for the commit",
+    ),
+    delete_aware: bool = typer.Option(
+        False, "--delete-aware", help="deletes content that doesn't exist in TS from the repo"
+    ),
+    log_errors: bool = typer.Option(False, "--log-errors", help="Log API errors to the console."),
+    org_override: str = typer.Option(None, "--org", help="The org to commit objects from."),
+    # === DEPRECATED ===
+    branch_override: str = typer.Option(
+        None,
+        "--branch",
+        "--branch-name",
+        help="The name of the branch to commit to. (configure your repository with commit_branch_name)",
+        hidden=True,
+    ),
 ):
-    """
-    Commits from ThoughtSpot to a branch in a git repository.
-    """
+    """Commits from ThoughtSpot to a branch in a GitHub repository."""
+    # DEV NOTE: @boonhapus, 2025/02/11
+    #   This tool should operate as closely as possible to scriptability.checkpoint, as
+    #   they are intended to be used in the same way but have potentially different
+    #   destinations (scriptability -> arbitrary file structre :: git -> GitHub).
     ts = ctx.obj.thoughtspot
 
-    if org_override is not None:
-        ts.org.switch(org_override)
+    if branch_override is not None:
+        _LOG.warning(
+            "--branch-name is [fg-warn]deprecated[/] and may lead to unexpected behavior. "
+            "Configure your ThoughtSpot<->GitHub integration with [fg-secondary]commit_branch_name[/] instead."
+        )
 
-    # TODO consider a check of metadata to make sure there are only the supported_types.
+    SYSTEM_USER_GUIDS = ts.session_context.thoughtspot.system_users.values()
 
-    if tag:
-        metadata_list = ts.metadata.find(tags=[tag], include_types=VALID_METADATA_COMMIT_TYPES)
-        for m in metadata_list:
-            rich_console.print(f"{m['id']}: {m['name']} ({m['metadata_type']})")
-            metadata_ids.append(m["id"])
+    CLI_TYPES_TO_API_TYPES: dict[str, list[_types.MetadataObjectType]] = {
+        "ALL": ["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"],
+        "CONNECTION": ["CONNECTION"],
+        "TABLE": ["LOGICAL_TABLE"],
+        "VIEW": ["LOGICAL_TABLE"],
+        "SQL_VIEW": ["LOGICAL_TABLE"],
+        "MODEL": ["LOGICAL_TABLE"],
+        "LIVEBOARD": ["LIVEBOARD"],
+        "ANSWER": ["ANSWER"],
+    }
 
-    metadata_identifiers = []  # format for the call.
-    for m in metadata_ids:
-        metadata_identifiers.append({"identifier": m})
+    metadata_types = set(it.chain.from_iterable(CLI_TYPES_TO_API_TYPES[_] for _ in input_types))
+
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
+
+    c = workflows.metadata.fetch_all(
+        metadata_types=metadata_types,
+        pattern=pattern,
+        created_by_user_identifiers=authors,
+        tag_identifiers=tags,
+        http=ts.api,
+    )
+    d = api_transformer.ts_metadata_object(data=utils.run_sync(c))
+
+    metadata_guids: list[_types.GUID] = []
+
+    for metadata_object in d:
+        if not local_utils.is_allowed_object(
+            metadata_object,
+            allowed_types=input_types,
+            disallowed_system_users=[] if include_system_owned_content else SYSTEM_USER_GUIDS,
+        ):
+            continue
+
+        metadata_guids.append(metadata_object["object_guid"])
+
+    if not metadata_guids:
+        _LOG.info("No objects found to commit.")
+        return 0
 
     try:
-        r = ts.api.v2.vcs_git_branches_commit(
-            metadata=metadata_identifiers,
-            branch_name=branch_name,
-            comment=comment,
+        c = ts.api.vcs_git_branches_commit(
+            guids=metadata_guids,
+            commit_message=commit_message,
             delete_aware=delete_aware,
+            branch_name=branch_override,
         )
+        r = utils.run_sync(c)
+        r.raise_for_status()
+
     except HTTPStatusError as e:
-        rich_console.print(f"[fg-error]Error creating the configuration: {e.response}.")
-        rich_console.print(f"[fg-error]{e.response.content}.")
+        _LOG.error(f"Could not commit {len(metadata_guids)} Objects, see logs for details..")
+        _LOG.debug(f"Full error: {e}", exc_info=True)
+        return 1
 
-    rich_console.print(r.json())
+    # === CONFORM THE API RESPONSE TO metadata/tml/export RESPONE PAYLOAD \\
+    #
+    d = []
 
+    for committed in r.json()["committed_files"]:
+        # FORMAT: table/TS_DATA_SOURCE.2b7e3ebe-ee63-425c-824f-f09c0028e2b3.table.tml
+        fp = pathlib.Path(committed["file_name"])
 
-@app.command(dependencies=[thoughtspot], name="search-commits")
-def commits_search(
-    ctx: typer.Context,
-    metadata_id: str = typer.Argument(..., help="the metadata GUID or name to search for"),
-    metadata_type: str = typer.Argument(
-        ..., help=f"the metadata type to search for: {', '.join(VALID_METADATA_COMMIT_TYPES)}"
-    ),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    branch_name: str = typer.Option(None, help="the branch name to use for the git repository or use the default"),
-    record_offset: int = typer.Option(0, help="the record offset to use"),
-    record_size: int = typer.Option(-1, help="the record size to use"),
-):
-    """
-    Searches for the commits for the given metadata ID.
-    """
-    ts = ctx.obj.thoughtspot
+        metadata_guid = fp.suffixes[0].replace(".", "")
+        metadata_name = fp.name.replace("".join(fp.suffixes), "")
+        metadata_type = fp.suffixes[1].replace(".", "")
 
-    if org_override is not None:
-        ts.org.switch(org_override)
+        # THESE ARE NOT SEMANTICALLY WARNINGS.....
+        if _GOOFY_WARNING_STATUS := ("File not committed" in committed["status_message"]):
+            committed["status_code"] = "OK"
 
-    try:
-        r = ts.api.v2.vcs_git_commits_search(
-            metadata_identifier=metadata_id,
-            metadata_type=metadata_type,
-            branch_name=branch_name,
-            record_offset=record_offset,
-            record_size=record_size,
+        d.append(
+            {
+                "edoc": None,
+                "info": {  # type: ignore
+                    "id": metadata_guid,
+                    "name": metadata_name,
+                    "type": metadata_type,
+                    "status": {
+                        "status_code": committed["status_code"],
+                        "error_message": committed["status_message"],
+                    },
+                },
+            }
         )
-    except HTTPStatusError as e:
-        rich_console.print(f"[fg-error]Error finding commits for  {metadata_id}: {e}.")
-        rich_console.print(f"[fg-error]{e.response.content}.")
+    # === //
 
-    rich_console.print(r.json())
+    table = local_utils.TMLOperations(data=d, domain="GITHUB", op="EXPORT")
 
+    if ts.session_context.environment.is_ci:
+        _LOG.info(table)
+    else:
+        RICH_CONSOLE.print(table)
 
-@app.command(dependencies=[thoughtspot], name="revert-commit")
-def commit_revert(
-    ctx: typer.Context,
-    commit_id: str = typer.Argument(..., help="the commit ID to revert (found on GitHub)"),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    metadata_ids: str = typer.Option(
-        None, click_type=MultipleChoiceType(), help="the metadata GUIDs or names to revert"
-    ),
-    revert_policy: str = typer.Option("ALL_OR_NONE", help="the revert policy to use, either PARTIAL or ALL_OR_NONE"),
-    branch_name: str = typer.Option(None, help="the branch name to use for the git repository or use the default"),
-):
-    """
-    Reverts a commit in a git repository.
-    """
-    ts = ctx.obj.thoughtspot
+    for response in table.statuses:
+        if log_errors and response.status != "OK":
+            assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
+            _LOG.log(
+                level=logging.getLevelName(response.status),
+                msg=" - ".join([response.metadata_guid, response.message]),
+            )
 
-    valid_policies = ["PARTIAL", "ALL_OR_NONE"]
-    if revert_policy not in valid_policies:
-        rich_console.log(
-            f"[fg-error]Invalid revert policy: {revert_policy}.  Must be one of {', '.join(valid_policies)}"
-        )
-        raise typer.Exit(1)
+    if table.job_status != "OK":
+        _LOG.error("One or more TMLs failed to fully export, check the logs or use --log-errors for more details.")
+        return 1
 
-    if org_override is not None:
-        ts.org.switch(org_override)
-
-    metadata_identifiers = None  # format for the call.
-    if metadata_ids:
-        metadata_identifiers = []  # format for the call.
-        for m in metadata_ids:
-            metadata_identifiers.append({"identifier": m})
-
-    try:
-        r = ts.api.v2.vcs_git_commits_id_revert(
-            commit_id=commit_id,
-            metadata=metadata_identifiers,
-            branch_name=branch_name,
-            revert_policy=revert_policy,
-        )
-    except HTTPStatusError as e:
-        rich_console.print(f"[fg-error]Error reverting commit {commit_id}: {e.response}.")
-        rich_console.print(f"[fg-error]{e.response.content}.")
-
-    rich_console.print(r.json())
+    return 0
 
 
-@app.command(dependencies=[thoughtspot], name="validate")
+@app.command(name="validate")
+@depends_on(thoughtspot=ThoughtSpot())
 def branches_validate(
     ctx: typer.Context,
-    source_branch: str = typer.Argument(..., help="the source branch to use"),
-    target_branch: str = typer.Argument(..., help="the target branch to use"),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+    source: str = typer.Option(..., "--source-branch", help="The source branch to merge from."),
+    target: str = typer.Option(..., "--target-branch", help="The target branch to merge into."),
+    org_override: str = typer.Option(None, "--org", help="The source Org to use when comparing branches."),
 ):
-    """
-    Validates a branch in a git repository before merging.
-    """
+    """Validates that your GitHub branches can be merged."""
     ts = ctx.obj.thoughtspot
 
-    if org_override is not None:
-        ts.org.switch(org_override)
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
     try:
-        ts.api.v2.vcs_git_branches_validate(source_branch_name=source_branch, target_branch_name=target_branch)
+        c = ts.api.vcs_git_branches_validate(source_branch_name=source, target_branch_name=target)
+        r = utils.run_sync(c)
+        r.raise_for_status()
+
     except HTTPStatusError as e:
-        rich_console.print(f"[fg-error]Error validating {source_branch} to {target_branch}: {e}.")
-        rich_console.print(f"[fg-error]{e.response.content}.")
+        _LOG.error("Could not validate branches, see logs for details..")
+        _LOG.debug(f"Full error: {e}", exc_info=True)
+        return 1
 
-    rich_console.print("[bold green]Validation successful.  Ok to deploy.")
+    else:
+        _LOG.info("Branches validated successfully!")
+
+    return 0
 
 
-@app.command(dependencies=[thoughtspot], name="deploy")
+@app.command(name="deploy")
+@depends_on(thoughtspot=ThoughtSpot())
 def branches_deploy(
     ctx: typer.Context,
+    branch_override: str = typer.Option(
+        ...,
+        "--branch",
+        "--branch-name",
+        help="The name of the branch to deploy from.",
+    ),
+    commit_id: str = typer.Option(None, help="The specific commit to deploy, or the HEAD of the branch is used."),
+    tags: custom_types.MultipleInput = typer.Option(
+        None,
+        click_type=custom_types.MultipleInput(sep=","),
+        help="TML will be tagged with these name(s), comma separated.",
+        show_default=False,
+    ),
+    deploy_type: _types.TMLDeployType = typer.Option(
+        "DELTA",
+        help="If all TML or only modified files since the last known DEPLOY should be deployed.",
+    ),
+    deploy_policy: _types.TMLImportPolicy = typer.Option(
+        "ALL_OR_NONE",
+        help="Whether to accept any errors during the DEPLOY.",
+    ),
     org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
-    commit_id: str = typer.Option(None, help="the commit ID to deploy or none for latest"),
-    branch_name: str = typer.Option(None, help="the branch name to use, or default"),
-    deploy_type: str = typer.Option("DELTA", help="the deploy type to use, either DELTA or FULL"),
-    deploy_policy: str = typer.Option("ALL_OR_NONE", help="the deploy policy to use, either PARTIAL or ALL_OR_NONE"),
-    tags: list[str] = typer.Option([], help="one or more tags to add to the imported content"),
 ):
-    """
-    Pulls from a branch in a git repository to ThoughtSpot.
-    """
+    """Pulls from a branch in a GitHub repository to ThoughtSpot."""
     ts = ctx.obj.thoughtspot
 
-    if org_override is not None:
-        ts.org.switch(org_override)
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
     try:
-        r = ts.api.v2.vcs_git_commits_deploy(
+        c = ts.api.vcs_git_commits_deploy(
+            branch_name=branch_override,
             commit_id=commit_id,
-            branch_name=branch_name,
-            deploy_type=DeployType.full if deploy_type == "FULL" else DeployType.delta,
-            deploy_policy=DeployPolicy.all_or_none if deploy_policy == "ALL_OR_NONE" else DeployPolicy.partial,
+            deploy_type=deploy_type,
+            deploy_policy=deploy_policy,
         )
+        r = utils.run_sync(c)
+        r.raise_for_status()
+
     except HTTPStatusError as e:
-        rich_console.print(f"[fg-error]Error deploying: {e}.")
-        rich_console.print(f"[fg-error]{e.response.content}.")
+        _LOG.error("Could not deploy commit, see logs for details..")
+        _LOG.debug(f"Full error: {e}", exc_info=True)
+        return 1
 
-    # An OK response doesn't mean the content was successful.
-    results = r.json()
+    oper_ = "VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT"
 
-    table = Table(title="Deploy Results", width=135)
-    table.add_column("File Name", width=25)
-    table.add_column("Status", width=10)
-    table.add_column("Message", width=100)
+    RICH_CONSOLE.print(r.json())
+    return 1
 
-    guids = []
-    for _ in results:
-        try:
-            guids.append(_["file_name"].split(".")[0])
-        except Exception as e:
-            rich_console.print(f"[fg-error]Error getting GUID for {_['file_name']}:  {e}")
-        table.add_row(_["file_name"], _["status_code"], _["status_message"])
+    # === CONFORM THE API RESPONSE TO metadata/tml/export RESPONE PAYLOAD \\
+    #
+    d: list[local_utils.TMLStatus] = []
 
-    rich_console.print(Align.center(table))
+    for deployed in r.json():
+        # FORMAT: table/TS_DATA_SOURCE.2b7e3ebe-ee63-425c-824f-f09c0028e2b3.table.tml
+        fp = pathlib.Path(deployed["file_name"])
 
-    _add_tags(ts=ts, objects=guids, tags=tags)
+        metadata_guid = fp.suffixes[0].replace(".", "")
+        metadata_name = fp.name.replace("".join(fp.suffixes), "")
+        metadata_type = fp.suffixes[1].replace(".", "")
+
+        d.append(
+            local_utils.TMLStatus(
+                operation=oper_,
+                edoc=None,
+                metadata_guid=metadata_guid,
+                metadata_name=metadata_name,
+                metadata_type=metadata_type,
+                status=deployed["status_code"],
+                message=deployed["status_message"],
+                _raw=deployed,
+            )
+        )
+    # === //
+
+    table = local_utils.TMLOperations(statuses=d, domain="GITHUB", op=oper_, policy=deploy_policy)
+
+    if ts.session_context.environment.is_ci:
+        _LOG.info(table)
+    else:
+        RICH_CONSOLE.print(table)
+
+    # guids_to_tag: set[_types.GUID] = set()
+    #
+    # for original_guid, response in zip(tmls, table.statuses):
+    #     if log_errors and response.status != "OK":
+    #         assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
+    #         _LOG.log(
+    #             level=logging.getLevelName(response.status),
+    #             msg=" - ".join([str(response.metadata_guid), response.message]),
+    #         )
+    #
+    #     if table.can_map_guids and response.status != "ERROR":
+    #         assert response.metadata_guid is not None, "TML errors should not produce GUIDs."
+    #         mapping_info.map_guid(old=original_guid, new=response.metadata_guid, disallow_overriding=True)
+    #         guids_to_tag.add(response.metadata_guid)
+
+    return 0
 
 
-def _add_tags(ts: thoughtspot.ThoughtSpot, objects: list[GUID], tags: list[str]) -> None:
-    """
-    Adds the tags to the items in the response.
-    :param ts: The ThoughtSpot object.
-    :param objects: List of the objects to add the tags to.
-    :param tags: List of tags to create.
-    """
-    with rich_console.status(f"[bold green]adding tags: {tags}[/]"):
-        metadata: list[MetadataIdentity] = []
-        for guid in objects:
-            metadata.append({"identifier": guid})
+@app.command(name="search-commits")
+@depends_on(thoughtspot=ThoughtSpot())
+def commits_search(
+    ctx: typer.Context,
+    metadata: str = typer.Option(None, help="The name or GUID of the Object find commits for."),
+    metadata_type: str = typer.Option(None, help="The metadata type to search for."),
+    branch_override: str = typer.Option(
+        None,
+        "--branch",
+        "--branch-name",
+        help="The name of the branch to search.",
+    ),
+    org_override: str = typer.Option(None, "--org", help="The org to search commit from."),
+):
+    """Searches for the commits for the given metadata ID."""
+    ts = ctx.obj.thoughtspot
 
-        if metadata and tags:  # might all be errors
-            rich_console.print(f"Adding tags {tags} to {objects}")
-            try:
-                ts.api.v2.tags_assign(metadata=metadata, tag_identifiers=tags)
-            except HTTPStatusError as e:
-                rich_console.error(f"Error adding tags {tags} for metadata {objects}. Error: {e}")
+    _LOG.warning("Searching for commits via the CLI is deprecated. Visit the UI with your metadata GUID.")
+
+    RICH_CONSOLE.print(
+        f"\n"
+        f"{ts.session_context.thoughtspot.url}/#/develop/api/rest/playgroundV2_0"
+        f"?apiResourceId=http/api-endpoints/version-control/search-commits",
+        justify="center",
+    )
+
+    return 0
+
+
+@app.command(name="revert-commit")
+@depends_on(thoughtspot=ThoughtSpot())
+def commit_revert(
+    ctx: typer.Context,
+    commit_id: str = typer.Option(None, help="the commit ID to revert (found on GitHub)"),
+    metadata: str = typer.Option(None, help="The name or GUID of the Object find commits for."),
+    revert_policy: Literal["PARTIAL", "ALL_OR_NONE"] = typer.Option("ALL_OR_NONE", help="The revert policy to use."),
+    branch_override: str = typer.Option(
+        None,
+        "--branch",
+        "--branch-name",
+        help="The name of the branch to search.",
+    ),
+    org_override: str = typer.Option(None, "--org", help="The org to revert the commit from."),
+):
+    """Searches for the commits for the given metadata ID."""
+    ts = ctx.obj.thoughtspot
+
+    _LOG.warning("Reverting commits via the CLI is deprecated. Visit the UI with your commitish.")
+
+    RICH_CONSOLE.print(
+        f"\n"
+        f"{ts.session_context.thoughtspot.url}/#/develop/api/rest/playgroundV2_0"
+        f"?apiResourceId=http/api-endpoints/version-control/revert-commit",
+        justify="center",
+    )
+
+    return 0
+
+
+# def _add_tags(ts: thoughtspot.ThoughtSpot, objects: list[GUID], tags: list[str]) -> None:
+#     """
+#     Adds the tags to the items in the response.
+#     :param ts: The ThoughtSpot object.
+#     :param objects: List of the objects to add the tags to.
+#     :param tags: List of tags to create.
+#     """
+#     with rich_console.status(f"[bold green]adding tags: {tags}[/]"):
+#         metadata: list[MetadataIdentity] = []
+#         for guid in objects:
+#             metadata.append({"identifier": guid})
+
+#         if metadata and tags:  # might all be errors
+#             rich_console.print(f"Adding tags {tags} to {objects}")
+#             try:
+#                 ts.api.v2.tags_assign(metadata=metadata, tag_identifiers=tags)
+#             except HTTPStatusError as e:
+#                 rich_console.error(f"Error adding tags {tags} for metadata {objects}. Error: {e}")

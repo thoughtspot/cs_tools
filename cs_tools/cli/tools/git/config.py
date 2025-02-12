@@ -19,8 +19,6 @@ app = AsyncTyper(
     help="Tools for working with GitHub configurations. An org may only have one configuration.",
 )
 
-V2_PLAYGROUND = "develop/api/rest/playgroundV2_0"
-
 
 @app.command(name="create")
 @depends_on(thoughtspot=ThoughtSpot())
@@ -56,7 +54,7 @@ def config_create(
         if r.status_code == httpx.codes.BAD_REQUEST and "Repository already configured" in r.text:
             _LOG.warning("There is already an configuration for this environment!")
         else:
-            _LOG.error(f"Could create config for '{repository_url}', see logs for details..")
+            _LOG.error(f"Could not create config for '{repository_url}', see logs for details..")
             _LOG.debug(f"Full error: {e}", exc_info=True)
         return 1
 
@@ -81,14 +79,11 @@ def config_update(
     """Updates a GitHub configuration for an Org."""
     ts = ctx.obj.thoughtspot
 
-    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
-        ts.switch_org(org_id=org_override)
-
     _LOG.warning("Editing GitHub configurations via the CLI is deprecated. Visit the UI to update.")
 
     RICH_CONSOLE.print(
         f"\n"
-        f"{ts.session_context.thoughtspot.url}/#/{V2_PLAYGROUND}"
+        f"{ts.session_context.thoughtspot.url}/#/develop/api/rest/playgroundV2_0"
         f"?apiResourceId=http/api-endpoints/version-control/update-config",
         justify="center",
     )
