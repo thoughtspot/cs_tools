@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Coroutine
-from typing import Literal
 import datetime as dt
 import itertools as it
 import logging
@@ -76,8 +75,8 @@ def checkpoint(
         help="Whether or not to include content owned by built-in Administrator accounts.",
         rich_help_panel="TML Export Options",
     ),
-    org_override: str = typer.Option(None, "--org", help="The org to export TML from."),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
+    org_override: str = typer.Option(None, "--org", help="The org to export TML from."),
 ) -> _types.ExitCode:
     """
     Export TML to a directory.
@@ -172,7 +171,7 @@ def checkpoint(
             assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
             _LOG.log(
                 level=logging.getLevelName(response.status),
-                msg=" - ".join([response.status, response.metadata_guid, response.message]),
+                msg=" - ".join([response.metadata_guid, response.message]),
             )
 
         if response.status != "ERROR":
@@ -223,12 +222,12 @@ def deploy(
         help="The type of TML to deploy, comma separated.",
         rich_help_panel="TML Import Options",
     ),
-    deploy_type: Literal["DELTA", "FULL"] = typer.Option(
+    deploy_type: _types.TMLDeployType = typer.Option(
         "DELTA",
         help="If all TML or only modified files since the last known IMPORT should be deployed.",
         rich_help_panel="TML Import Options",
     ),
-    deploy_policy: Literal["PARTIAL", "ALL_OR_NONE", "VALIDATE_ONLY"] = typer.Option(
+    deploy_policy: _types.TMLImportPolicy = typer.Option(
         "ALL_OR_NONE",
         help="Whether to accept any errors during IMPORT.",
         rich_help_panel="TML Import Options",

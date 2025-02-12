@@ -330,7 +330,7 @@ class RESTAPIClient(httpx.AsyncClient):
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def metadata_tml_import(
-        self, tmls: list[str], policy: _types.ImportPolicy, **options: Any
+        self, tmls: list[str], policy: _types.TMLImportPolicy, **options: Any
     ) -> Awaitable[httpx.Response]:
         """Push the EDOC of the object into ThoughtSpot."""
         options["metadata_tmls"] = tmls

@@ -334,7 +334,7 @@ async def tml_export(
 async def tml_import(
     tmls: list[TMLObject],
     *,
-    policy: _types.ImportPolicy = "ALL_OR_NONE",
+    policy: _types.TMLImportPolicy = "ALL_OR_NONE",
     http: RESTAPIClient,
     **tml_import_options,
 ) -> _types.APIResult:
