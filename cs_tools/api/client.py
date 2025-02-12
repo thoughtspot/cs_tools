@@ -626,6 +626,40 @@ class RESTAPIClient(httpx.AsyncClient):
         options["access_token"] = access_token
         return self.post("api/rest/2.0/vcs/git/config/create", json=options)
 
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def vcs_git_branches_commit(
+        self,
+        guids: list[_types.GUID],
+        commit_message: str,
+        delete_aware: bool = True,
+        **options: Any,
+    ) -> Awaitable[httpx.Response]:
+        """Allows you to connect a ThoughtSpot instance to a Git repository."""
+        if "metadata" not in options:
+            options["metadata"] = [{"identifier": _} for _ in guids]
+
+        options["delete_aware"] = delete_aware
+        options["comment"] = commit_message
+        return self.post("api/rest/2.0/vcs/git/branches/commit", json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def vcs_git_branches_validate(
+        self,
+        source_branch_name: str,
+        target_branch_name: str,
+        **options: Any,
+    ) -> Awaitable[httpx.Response]:
+        """Allows you to connect a ThoughtSpot instance to a Git repository."""
+        options["source_branch_name"] = source_branch_name
+        options["target_branch_name"] = target_branch_name
+        return self.post("api/rest/2.0/vcs/git/branches/validate", json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def vcs_git_commits_deploy(self, branch_name: str, **options: Any) -> Awaitable[httpx.Response]:
+        """Allows you to deploy a commit and publish TML content to your ThoughtSpot instance."""
+        options["branch_name"] = branch_name
+        return self.post("api/rest/2.0/vcs/git/commits/deploy", json=options)
+
     # ==================================================================================
     # REMOTE TQL :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_security
     # ==================================================================================
