@@ -121,11 +121,11 @@ def branches_commit(
         tag_identifiers=tags,
         http=ts.api,
     )
-    d = api_transformer.ts_metadata_object(data=utils.run_sync(c))
+    _ = api_transformer.ts_metadata_object(data=utils.run_sync(c))
 
     metadata_guids: list[_types.GUID] = []
 
-    for metadata_object in d:
+    for metadata_object in _:
         if not local_utils.is_allowed_object(
             metadata_object,
             allowed_types=input_types,
@@ -156,7 +156,7 @@ def branches_commit(
 
     # === CONFORM THE API RESPONSE TO metadata/tml/export RESPONE PAYLOAD \\
     #
-    d = []
+    d: list[local_utils.TMLStatus] = []
 
     for committed in r.json()["committed_files"]:
         # FORMAT: table/TS_DATA_SOURCE.2b7e3ebe-ee63-425c-824f-f09c0028e2b3.table.tml
@@ -171,22 +171,20 @@ def branches_commit(
             committed["status_code"] = "OK"
 
         d.append(
-            {
-                "edoc": None,
-                "info": {  # type: ignore
-                    "id": metadata_guid,
-                    "name": metadata_name,
-                    "type": metadata_type,
-                    "status": {
-                        "status_code": committed["status_code"],
-                        "error_message": committed["status_message"],
-                    },
-                },
-            }
+            local_utils.TMLStatus(
+                operation="EXPORT",
+                edoc=None,
+                metadata_guid=metadata_guid,
+                metadata_name=metadata_name,
+                metadata_type=metadata_type,
+                status=committed["status_code"],
+                message=committed["status_message"],
+                _raw=committed,
+            )
         )
     # === //
 
-    table = local_utils.TMLOperations(data=d, domain="GITHUB", op="EXPORT")
+    table = local_utils.TMLOperations(statuses=d, domain="GITHUB", op="EXPORT")
 
     if ts.session_context.environment.is_ci:
         _LOG.info(table)

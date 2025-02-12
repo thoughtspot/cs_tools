@@ -12,6 +12,8 @@ import thoughtspot_tml
 
 from cs_tools import _types
 
+from . import api_transformer
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -223,15 +225,25 @@ class TMLOperations:
 
     def __init__(
         self,
-        statuses: list[TMLStatus],
+        data: list[_types.APIResult],
         domain: str,
         op: Literal["EXPORT", "VALIDATE", "IMPORT"],
         policy: Optional[_types.TMLImportPolicy] = None,
     ):
-        self.statuses = statuses
         self.domain = domain
         self.operation = op
         self.policy = policy
+
+        if op == "EXPORT":
+            reshaped = api_transformer.tml_export_status(data)
+        else:
+            reshaped = api_transformer.tml_import_status(data, operation=op)
+
+        self._statuses = [TMLStatus(**_) for _ in reshaped]
+
+    @property
+    def statuses(self) -> list[TMLStatus]:
+        return self._statuses
 
     @property
     def can_map_guids(self) -> bool:

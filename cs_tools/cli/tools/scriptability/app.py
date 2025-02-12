@@ -134,11 +134,11 @@ def checkpoint(
         tag_identifiers=tags,
         http=ts.api,
     )
-    d = api_transformer.ts_metadata_object(data=utils.run_sync(c))
+    _ = api_transformer.ts_metadata_object(data=utils.run_sync(c))
 
     coros: list[Coroutine] = []
 
-    for metadata_object in d:
+    for metadata_object in _:
         if not local_utils.is_allowed_object(
             metadata_object,
             allowed_types=input_types,
@@ -157,9 +157,27 @@ def checkpoint(
 
     # ANY FASTER THAN 4 CONCURRENT DOWNLOADS AND WE WILL STRESS ATLAS OUT :')
     c = utils.bounded_gather(*coros, max_concurrent=4)  # type: ignore[assignment]
-    d = utils.run_sync(c)
+    _ = utils.run_sync(c)
 
-    table = local_utils.TMLOperations(data=d, domain="SCRIPTABILITY", op="EXPORT")
+    d: list[local_utils.TMLStatus] = [
+        local_utils.TMLStatus(
+            operation="EXPORT",
+            edoc=metadata_object["edoc"],
+            metadata_guid=metadata_object["info"]["id"],
+            metadata_name=metadata_object["info"].get("name", "--"),
+            metadata_type=metadata_object["info"].get("type", "UNKNOWN"),
+            status=metadata_object["info"]["status"]["status_code"],
+            message=metadata_object["info"]["status"].get("error_message", None),
+            _raw=metadata_object,
+        )
+        for metadata_object in _
+    ]
+
+    table = local_utils.TMLOperations(
+        statuses=api_transformer.tml_export_status(data=d),
+        domain="SCRIPTABILITY",
+        op="EXPORT",
+    )
 
     if ts.session_context.environment.is_ci:
         _LOG.info(table)
@@ -301,10 +319,14 @@ def deploy(
         policy=deploy_policy,
         http=ts.api,
     )
-    d = utils.run_sync(c)
+    _ = utils.run_sync(c)
 
-    oper_ = "VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT"
-    table = local_utils.TMLOperations(data=d, domain="SCRIPTABILITY", op=oper_, policy=deploy_policy)
+    table = local_utils.TMLOperations(
+        statuses=_,
+        domain="SCRIPTABILITY",
+        op="VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT",
+        policy=deploy_policy,
+    )
 
     # REPLACE ERRORS WITH MORE INFO FOR USERS.
     for original_guid, response in zip(tmls, table.statuses):

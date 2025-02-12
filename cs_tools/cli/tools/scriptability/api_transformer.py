@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from cs_tools import _types
 
 
@@ -31,5 +33,47 @@ def ts_metadata_object(data: list[_types.APIResult]) -> _types.TableRowsFormat:
                     "is_version_controlled": result["metadata_header"].get("isVersioningEnabled", False),
                 }
             )
+
+    return reshaped
+
+
+def tml_export_status(data: list[_types.APIResult]) -> _types.TableRowsFormat:
+    """Reshapes metadata/tml/export or vcs/branches/commit -> scriptability.utils.TMLStatus."""
+    reshaped: _types.TableRowsFormat = []
+
+    for result in data:
+        reshaped.append(
+            {
+                "operation": "EXPORT",
+                "edoc": None,
+                "metadata_guid": ...,
+                "metadata_name": ...,
+                "metadata_type": ...,
+                "status": result.status,
+                "message": response.error_message,
+                "_raw": result,
+            }
+        )
+
+    return reshaped
+
+
+def tml_import_status(data: list[_types.APIResult], operation: Literal["VALIDATE", "IMPORT"]) -> _types.TableRowsFormat:
+    """Reshapes metadata/tml/import or vcs/branches/deploy -> scriptability.utils.TMLStatus."""
+    reshaped: _types.TableRowsFormat = []
+
+    for result in data:
+        reshaped.append(
+            {
+                "operation": operation,
+                "edoc": None,
+                "metadata_guid": ...,
+                "metadata_name": ...,
+                "metadata_type": ...,
+                "status": result.status,
+                "message": response.error_message,
+                "_raw": result,
+            }
+        )
 
     return reshaped
