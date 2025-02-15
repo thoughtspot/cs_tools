@@ -220,19 +220,22 @@ class MultipleInput(CustomType):
 
     def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> list[Any]:
         """Coerce string into an iterable of <type_caster>."""
-        if isinstance(value, str):
-            values = value.split(self.sep)
-
-        elif isinstance(value, collections.abc.Iterable):
-            values = [v.split(self.sep) if isinstance(v, str) else v for v in value]
-
         try:
-            values = [self.type_caster(v) for v in values]
+            values = [self.type_caster(v) for v in value.split(self.sep)]
 
             if self.choices:
                 assert all(v in self.choices for v in values), "Invalid value provided."
+
         except AssertionError:
-            self.fail(message=f"Got invalid value, must be one of {self.choices}", param=param, ctx=ctx)
+            assert self.raw_choices is not None, ".choices was set, but not .raw_choices."
+            public_choices = [c for c in self.raw_choices if not self.is_private_choice_value(c)]
+
+            self.fail(
+                message=f"Invalid value, should be one of {public_choices}, got {values}",
+                param=param,
+                ctx=ctx,
+            )
+
         except Exception:
             log.debug(f"Could not coerce all values to '{self.type_caster}', {values}", exc_info=True)
             self.fail(message=f"Could not coerce all values to '{self.type_caster}', {values}", param=param, ctx=ctx)
