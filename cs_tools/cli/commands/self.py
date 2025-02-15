@@ -100,8 +100,8 @@ def sync() -> _types.ExitCode:
     return 0
 
 
-@app.command(name="update")
 @app.command(name="upgrade", hidden=True)
+@app.command(name="update")
 def update(
     beta: custom_types.Version = typer.Option(None, "--beta", help="The specific beta version to fetch from Github."),
     offline: custom_types.Directory = typer.Option(None, help="Install cs_tools from a local directory."),
@@ -122,7 +122,7 @@ def update(
 
 
 @app.command(name="export", hidden=True)
-@app.command(name="download", hidden=True)
+@app.command(name="download")
 def _make_offline_distributable(
     directory: custom_types.Directory = typer.Option(help="Location to export the python distributable to."),
     platform: str = typer.Option(help="A tag describing the target environment architecture, see --help for details."),
@@ -139,10 +139,10 @@ def _make_offline_distributable(
 
     \b
     Q. How can I find my platform?
-    >>> [fg-warn]python -c "from pip._vendor.packaging.tags import platform_tags; print(next(iter(platform_tags())))"[/]
+    >>> [fg-secondary]python -c "from pip._vendor.packaging.tags import platform_tags; print(next(iter(platform_tags())))"[/]
 
     Q. How can I find my python version?
-    >>> [fg-warn]python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"[/]
+    >>> [fg-secondary]python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"[/]
     """
     assert isinstance(directory, pathlib.Path), "directory must be a pathlib.Path"
 
