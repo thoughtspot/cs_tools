@@ -41,6 +41,10 @@ def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
         value = dt.datetime.fromisoformat(value)
         value_is_a_datetime = True
 
+    #
+    # FORMATTED DATETIME.
+    #
+
     # NAIVE DATETIME
     if value_is_a_datetime and value.tzinfo is None:
         return value.replace(tzinfo=dt.timezone.utc)
@@ -56,7 +60,7 @@ def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
     else:
         raise ValueError(f"value should be a valid datetime representation, got {value}")
 
-    return value
+    assert 1 == 0, "This should be unreachable."
 
 
 @pydantic.PlainValidator
