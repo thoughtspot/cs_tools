@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any, Optional
-import collections
 import datetime as dt
 import logging
 import pathlib
@@ -243,5 +242,13 @@ class MultipleInput(CustomType):
         return values
 
     def __contains__(self, value: Any) -> bool:
+        """Only here to make the typer checker happy."""
+        raise NotImplementedError("MultipleInput is not meant to be instantiated directly, use .convert() instead.")
+
+    def __eq__(self, other: Any) -> bool:
+        """Only here to make the typer checker happy."""
+        raise NotImplementedError("MultipleInput is not meant to be instantiated directly, use .convert() instead.")
+
+    def __iter__(self) -> Iterator[Any]:
         """Only here to make the typer checker happy."""
         raise NotImplementedError("MultipleInput is not meant to be instantiated directly, use .convert() instead.")
