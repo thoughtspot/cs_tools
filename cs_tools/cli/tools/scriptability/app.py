@@ -27,6 +27,7 @@ _DOCS_MAPPING = "https://developers.thoughtspot.com/docs/deploy-with-tml-apis#gu
 
 
 @app.command(name="export", hidden=True)
+@app.command(name="commit", hidden=True)
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
 def checkpoint(
@@ -38,7 +39,7 @@ def checkpoint(
     ),
     environment: str = typer.Option(
         None,
-        help="The name of the env you're exporting TML from",
+        help="The name of the env you're exporting TML from.",
         rich_help_panel=f"[link={_DOCS_MAPPING}]GUID Mapping Options[/]",
     ),
     input_types: custom_types.MultipleInput = typer.Option(
@@ -159,25 +160,7 @@ def checkpoint(
     c = utils.bounded_gather(*coros, max_concurrent=4)  # type: ignore[assignment]
     _ = utils.run_sync(c)
 
-    d: list[local_utils.TMLStatus] = [
-        local_utils.TMLStatus(
-            operation="EXPORT",
-            edoc=metadata_object["edoc"],
-            metadata_guid=metadata_object["info"]["id"],
-            metadata_name=metadata_object["info"].get("name", "--"),
-            metadata_type=metadata_object["info"].get("type", "UNKNOWN"),
-            status=metadata_object["info"]["status"]["status_code"],
-            message=metadata_object["info"]["status"].get("error_message", None),
-            _raw=metadata_object,
-        )
-        for metadata_object in _
-    ]
-
-    table = local_utils.TMLOperations(
-        statuses=api_transformer.tml_export_status(data=d),
-        domain="SCRIPTABILITY",
-        op="EXPORT",
-    )
+    table = local_utils.TMLOperations(_, domain="SCRIPTABILITY", op="EXPORT")
 
     if ts.session_context.environment.is_ci:
         _LOG.info(table)
@@ -189,7 +172,7 @@ def checkpoint(
             assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
             _LOG.log(
                 level=logging.getLevelName(response.status),
-                msg=" - ".join([response.metadata_guid, response.message]),
+                msg="\n".join([response.metadata_guid, response.message]),
             )
 
         if response.status != "ERROR":
@@ -263,7 +246,7 @@ def deploy(
     """Import TML from a directory."""
     ts = ctx.obj.thoughtspot
 
-    EPOCH_STR = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc).isoformat()
+    EPOCH = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc).isoformat()
 
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
         ts.switch_org(org_id=org_override)
@@ -274,7 +257,7 @@ def deploy(
 
         # SET UP OUR GUID MAPPING.
         mapping_info = local_utils.GUIDMappingInfo.load(path=mapping_file)
-        last_import = dt.datetime.fromisoformat(mapping_info.metadata["checkpoint"].get("last_import", EPOCH_STR))
+        last_import = dt.datetime.fromisoformat(mapping_info.metadata["checkpoint"].get("last_import", None) or EPOCH)
         mapping_info.metadata["checkpoint"]["mapped_to"] = f"{target_environment}-guid-mappings.json"
 
         mapping_info.metadata["checkpoint"]["by"] = f"cs_tools/{__version__}/scriptability/deploy"
@@ -322,18 +305,17 @@ def deploy(
     _ = utils.run_sync(c)
 
     table = local_utils.TMLOperations(
-        statuses=_,
+        _,
         domain="SCRIPTABILITY",
         op="VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT",
         policy=deploy_policy,
     )
 
-    # REPLACE ERRORS WITH MORE INFO FOR USERS.
+    # INJECT ERRORS WITH MORE INFO FOR OUR USERS CLARITY.
     for original_guid, response in zip(tmls, table.statuses):
         if response.status == "ERROR":
-            tml = tmls[original_guid]
-            response.metadata_name = tml.name
-            response.metadata_type = tml.tml_type_name.upper()
+            response.metadata_name = tmls[original_guid].name
+            response.metadata_type = tmls[original_guid].tml_type_name.upper()
 
     if ts.session_context.environment.is_ci:
         _LOG.info(table)
@@ -345,13 +327,14 @@ def deploy(
     for original_guid, response in zip(tmls, table.statuses):
         if log_errors and response.status != "OK":
             assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
+            n = len(response.cleaned_messages)
+            s = "" if n == 1 else "s"
             _LOG.log(
                 level=logging.getLevelName(response.status),
-                msg=" - ".join([str(response.metadata_guid), response.message]),
+                msg="\n".join([f"{response.metadata_guid} >> Found {n} issue{s}.\n", response.message, ""]),
             )
 
-        if table.can_map_guids and response.status != "ERROR":
-            assert response.metadata_guid is not None, "TML errors should not produce GUIDs."
+        if table.can_map_guids and response.metadata_guid is not None:
             mapping_info.map_guid(old=original_guid, new=response.metadata_guid, disallow_overriding=True)
             guids_to_tag.add(response.metadata_guid)
 
@@ -359,17 +342,11 @@ def deploy(
     mapping_info.save()
 
     if tags and guids_to_tag:
-        for tag_name in tags:
-            c = ts.api.tags_create(name=tag_name, color="#A020F0")  # ThoughtSpot Purple :~)
-            _ = utils.run_sync(c)
-
-            coros = [ts.api.tags_assign(guid=guid, tag=tag_name) for guid in guids_to_tag]
-
-            c = utils.bounded_gather(*coros, max_concurrent=15)
-            d = utils.run_sync(c)
+        c = workflows.metadata.tag_all(guids_to_tag, tags=tags, color="#A020F0", http=ts.api)  # ThoughtSpot Purple :~)
+        _ = utils.run_sync(c)
 
     if table.job_status == "ERROR":
-        _LOG.error("One or more TMLs failed to fully import, check the logs or use --log-errors for more details.")
+        _LOG.error("One or more TMLs failed to fully deploy, check the logs or use --log-errors for more details.")
         return 1
 
     return 0

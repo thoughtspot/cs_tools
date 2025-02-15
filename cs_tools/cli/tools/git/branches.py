@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Literal
 import itertools as it
+import json
 import logging
-import pathlib
 
 from httpx import HTTPStatusError
 import typer
@@ -70,15 +70,15 @@ def branches_commit(
         help="the comment to use for the commit",
     ),
     delete_aware: bool = typer.Option(
-        False, "--delete-aware", help="deletes content that doesn't exist in TS from the repo"
+        False, "--delete-aware", help="Deletes content in the GitHub repository if it is not present in this commit."
     ),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log API errors to the console."),
     org_override: str = typer.Option(None, "--org", help="The org to commit objects from."),
     # === DEPRECATED ===
     branch_override: str = typer.Option(
         None,
+        "-b",
         "--branch",
-        "--branch-name",
         help="The name of the branch to commit to. (configure your repository with commit_branch_name)",
         hidden=True,
     ),
@@ -148,43 +148,17 @@ def branches_commit(
         )
         r = utils.run_sync(c)
         r.raise_for_status()
+        _ = r.json()
 
     except HTTPStatusError as e:
         _LOG.error(f"Could not commit {len(metadata_guids)} Objects, see logs for details..")
         _LOG.debug(f"Full error: {e}", exc_info=True)
         return 1
 
-    # === CONFORM THE API RESPONSE TO metadata/tml/export RESPONE PAYLOAD \\
-    #
-    d: list[local_utils.TMLStatus] = []
+    else:
+        _LOG.debug(f"RAW /vcs/git/branches/commit API RESPONSE:\n{json.dumps(_, indent=2)}")
 
-    for committed in r.json()["committed_files"]:
-        # FORMAT: table/TS_DATA_SOURCE.2b7e3ebe-ee63-425c-824f-f09c0028e2b3.table.tml
-        fp = pathlib.Path(committed["file_name"])
-
-        metadata_guid = fp.suffixes[0].replace(".", "")
-        metadata_name = fp.name.replace("".join(fp.suffixes), "")
-        metadata_type = fp.suffixes[1].replace(".", "")
-
-        # THESE ARE NOT SEMANTICALLY WARNINGS.....
-        if _GOOFY_WARNING_STATUS := ("File not committed" in committed["status_message"]):
-            committed["status_code"] = "OK"
-
-        d.append(
-            local_utils.TMLStatus(
-                operation="EXPORT",
-                edoc=None,
-                metadata_guid=metadata_guid,
-                metadata_name=metadata_name,
-                metadata_type=metadata_type,
-                status=committed["status_code"],
-                message=committed["status_message"],
-                _raw=committed,
-            )
-        )
-    # === //
-
-    table = local_utils.TMLOperations(statuses=d, domain="GITHUB", op="EXPORT")
+    table = local_utils.TMLOperations(_["committed_files"], domain="GITHUB", op="EXPORT")
 
     if ts.session_context.environment.is_ci:
         _LOG.info(table)
@@ -242,11 +216,14 @@ def branches_deploy(
     ctx: typer.Context,
     branch_override: str = typer.Option(
         ...,
+        "-b",
         "--branch",
-        "--branch-name",
         help="The name of the branch to deploy from.",
     ),
-    commit_id: str = typer.Option(None, help="The specific commit to deploy, or the HEAD of the branch is used."),
+    commit_id: str = typer.Option(
+        None,
+        help="The specific commit to deploy, or the HEAD of the branch is used.",
+    ),
     tags: custom_types.MultipleInput = typer.Option(
         None,
         click_type=custom_types.MultipleInput(sep=","),
@@ -256,12 +233,15 @@ def branches_deploy(
     deploy_type: _types.TMLDeployType = typer.Option(
         "DELTA",
         help="If all TML or only modified files since the last known DEPLOY should be deployed.",
+        rich_help_panel="TML Deploy Options",
     ),
     deploy_policy: _types.TMLImportPolicy = typer.Option(
         "ALL_OR_NONE",
         help="Whether to accept any errors during the DEPLOY.",
+        rich_help_panel="TML Deploy Options",
     ),
-    org_override: str = typer.Option(None, "--org", help="the org to use, if any"),
+    org_override: str = typer.Option(None, "--org", help="The org to deploy TML to."),
+    log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
 ):
     """Pulls from a branch in a GitHub repository to ThoughtSpot."""
     ts = ctx.obj.thoughtspot
@@ -278,64 +258,48 @@ def branches_deploy(
         )
         r = utils.run_sync(c)
         r.raise_for_status()
+        _ = r.json()
 
     except HTTPStatusError as e:
         _LOG.error("Could not deploy commit, see logs for details..")
         _LOG.debug(f"Full error: {e}", exc_info=True)
         return 1
 
-    oper_ = "VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT"
+    else:
+        _LOG.debug(f"RAW /vcs/git/commits/deploy API RESPONSE:\n{json.dumps(_, indent=2)}")
 
-    RICH_CONSOLE.print(r.json())
-    return 1
-
-    # === CONFORM THE API RESPONSE TO metadata/tml/export RESPONE PAYLOAD \\
-    #
-    d: list[local_utils.TMLStatus] = []
-
-    for deployed in r.json():
-        # FORMAT: table/TS_DATA_SOURCE.2b7e3ebe-ee63-425c-824f-f09c0028e2b3.table.tml
-        fp = pathlib.Path(deployed["file_name"])
-
-        metadata_guid = fp.suffixes[0].replace(".", "")
-        metadata_name = fp.name.replace("".join(fp.suffixes), "")
-        metadata_type = fp.suffixes[1].replace(".", "")
-
-        d.append(
-            local_utils.TMLStatus(
-                operation=oper_,
-                edoc=None,
-                metadata_guid=metadata_guid,
-                metadata_name=metadata_name,
-                metadata_type=metadata_type,
-                status=deployed["status_code"],
-                message=deployed["status_message"],
-                _raw=deployed,
-            )
-        )
-    # === //
-
-    table = local_utils.TMLOperations(statuses=d, domain="GITHUB", op=oper_, policy=deploy_policy)
+    table = local_utils.TMLOperations(
+        _, domain="GITHUB", op="VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT", policy=deploy_policy
+    )
 
     if ts.session_context.environment.is_ci:
         _LOG.info(table)
     else:
         RICH_CONSOLE.print(table)
 
-    # guids_to_tag: set[_types.GUID] = set()
-    #
-    # for original_guid, response in zip(tmls, table.statuses):
-    #     if log_errors and response.status != "OK":
-    #         assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
-    #         _LOG.log(
-    #             level=logging.getLevelName(response.status),
-    #             msg=" - ".join([str(response.metadata_guid), response.message]),
-    #         )
-    #
-    #     if table.can_map_guids and response.status != "ERROR":
-    #         assert response.metadata_guid is not None, "TML errors should not produce GUIDs."
-    #         mapping_info.map_guid(old=original_guid, new=response.metadata_guid, disallow_overriding=True)
-    #         guids_to_tag.add(response.metadata_guid)
+    guids_to_tag: set[_types.GUID] = set()
+
+    for response in table.statuses:
+        if log_errors and response.status != "OK":
+            assert response.message is not None, "TML warning/errors should always come with a raw.error_message."
+            n = len(response.cleaned_messages)
+            s = "" if n == 1 else "s"
+            _LOG.log(
+                level=logging.getLevelName(response.status),
+                msg="\n".join([f"{response.metadata_guid} >> Found {n} issue{s}.\n", response.message, "\n"]),
+            )
+
+        if response.status != "ERROR":
+            assert response.metadata_guid is not None, "TML errors should not produce GUIDs."
+            guids_to_tag.add(response.metadata_guid)
+
+    if tags and guids_to_tag:
+        c = workflows.metadata.tag_all(guids_to_tag, tags=tags, color="#A020F0", http=ts.api)  # ThoughtSpot Purple :~)
+        _ = utils.run_sync(c)
+
+    if table.job_status == "ERROR":
+        _LOG.error("One or more TMLs failed to fully deploy, check the logs or use --log-errors for more details.")
+        return 1
 
     return 0
 
@@ -348,7 +312,7 @@ def commits_search(
     metadata_type: str = typer.Option(None, help="The metadata type to search for."),
     branch_override: str = typer.Option(
         None,
-        "--branch",
+        "-b",
         "--branch-name",
         help="The name of the branch to search.",
     ),
@@ -378,7 +342,7 @@ def commit_revert(
     revert_policy: Literal["PARTIAL", "ALL_OR_NONE"] = typer.Option("ALL_OR_NONE", help="The revert policy to use."),
     branch_override: str = typer.Option(
         None,
-        "--branch",
+        "-b",
         "--branch-name",
         help="The name of the branch to search.",
     ),
@@ -397,23 +361,3 @@ def commit_revert(
     )
 
     return 0
-
-
-# def _add_tags(ts: thoughtspot.ThoughtSpot, objects: list[GUID], tags: list[str]) -> None:
-#     """
-#     Adds the tags to the items in the response.
-#     :param ts: The ThoughtSpot object.
-#     :param objects: List of the objects to add the tags to.
-#     :param tags: List of tags to create.
-#     """
-#     with rich_console.status(f"[bold green]adding tags: {tags}[/]"):
-#         metadata: list[MetadataIdentity] = []
-#         for guid in objects:
-#             metadata.append({"identifier": guid})
-
-#         if metadata and tags:  # might all be errors
-#             rich_console.print(f"Adding tags {tags} to {objects}")
-#             try:
-#                 ts.api.v2.tags_assign(metadata=metadata, tag_identifiers=tags)
-#             except HTTPStatusError as e:
-#                 rich_console.error(f"Error adding tags {tags} for metadata {objects}. Error: {e}")

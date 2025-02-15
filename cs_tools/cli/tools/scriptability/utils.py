@@ -63,8 +63,8 @@ class MappingMetadataCheckpoint(pydantic.BaseModel):
 
     @pydantic.field_serializer("at", "last_export", "last_import")
     @classmethod
-    def serialize_datetime(self, value: dt.datetime) -> str:
-        return value.isoformat()
+    def serialize_datetime(self, value: Optional[dt.datetime]) -> Optional[str]:
+        return None if value is None else value.isoformat()
 
 
 class GUIDMappingInfo(pydantic.BaseModel):
@@ -143,43 +143,6 @@ class TMLStatus(pydantic.BaseModel):
     message: Optional[str] = None
     _raw: dict
 
-    @classmethod
-    def from_api_response(cls, operation: Literal["EXPORT", "VALIDATE", "IMPORT"], data: _types.APIResult) -> TMLStatus:
-        """Process the TML API response into a status."""
-        if operation == "EXPORT":
-            response = cls(
-                operation=operation,
-                edoc=data["edoc"],
-                metadata_guid=data["info"]["id"],
-                metadata_name=data["info"].get("name", "--"),
-                metadata_type=data["info"].get("type", "UNKNOWN"),
-                status=data["info"]["status"]["status_code"],
-                message=data["info"]["status"].get("error_message", None),
-                _raw=data,
-            )
-
-        if operation in ("VALIDATE", "IMPORT"):
-            info = {
-                "operation": operation,
-                # metadata...
-                "status": data["response"]["status"]["status_code"],
-                "message": data["response"]["status"].get("error_message", None),
-                "_raw": data,
-            }
-
-            if "header" in data["response"]:
-                metadata_type = data["response"]["header"].get("type", data["response"]["header"]["metadata_type"])
-                info["metadata_guid"] = data["response"]["header"]["id_guid"]
-                info["metadata_name"] = data["response"]["header"]["name"]
-                info["metadata_type"] = _types.lookup_metadata_type(metadata_type=metadata_type, mode="V1_TO_FRIENDLY")
-
-            response = cls(**info)
-
-            if response.metadata_guid and response.status == "ERROR":
-                response.status = "WARNING"
-
-        return response
-
     @pydantic.field_validator("metadata_type", mode="before")
     @classmethod
     def ensure_uppercase(cls, value: str) -> str:
@@ -194,6 +157,30 @@ class TMLStatus(pydantic.BaseModel):
             return None
 
         return value.replace("<br/>", "\n")
+
+    @property
+    def cleaned_messages(self) -> list[str]:
+        """The .message proprty is the raw result from the API."""
+        # An example message from the API as of 10.5.0.cl ..
+        #
+        # TS_GROUP_MEMBERSHIP_to_TS_EFFECTIVE_GROUP_PRIVILEGES: Skipped relationship import as there are no tables with
+        # id 612c8bdb-ff19-40cb-bffb-fe287dbb2705 in CS Tools. <br/><br/>cs_tools - user_mapping_to_TS_GROUP_MEMBERSHIP:
+        # Skipped relationship import as there are no tables with id 5d15ad5b-0a67-4a2c-b16c-c0bb9f3d44a8 in CS Tools.
+        # <br/>
+        #
+        # Which is actually multiple messages/warnings/errors in one. We transform that into.
+        #
+        # [
+        #     "TS_GROUP_MEMBERSHIP_to_TS_EFFECTIVE_GROUP_PRIVILEGES: Skipped relationship import as there are no "
+        #     "tables with id 612c8bdb-ff19-40cb-bffb-fe287dbb2705 in CS Tools.",
+        #
+        #     "cs_tools - user_mapping_to_TS_GROUP_MEMBERSHIP: Skipped relationship import as there are no tables with "
+        #     "id 5d15ad5b-0a67-4a2c-b16c-c0bb9f3d44a8 in CS Tools."
+        # ]
+        #
+        if self.message is None:
+            return []
+        return [m.strip() for m in self.message.split("\n\n")]
 
     @property
     def color(self) -> str:
@@ -226,10 +213,12 @@ class TMLOperations:
     def __init__(
         self,
         data: list[_types.APIResult],
-        domain: str,
+        *,
+        domain: Literal["SCRIPTABILITY", "GITHUB"],
         op: Literal["EXPORT", "VALIDATE", "IMPORT"],
         policy: Optional[_types.TMLImportPolicy] = None,
     ):
+        self._data = data
         self.domain = domain
         self.operation = op
         self.policy = policy
@@ -243,6 +232,7 @@ class TMLOperations:
 
     @property
     def statuses(self) -> list[TMLStatus]:
+        """Return a list of parsed TML statuses."""
         return self._statuses
 
     @property
@@ -293,6 +283,7 @@ class TMLOperations:
                 "metadata_type": response.metadata_type,
                 "metadata_guid": response.metadata_guid,
                 "metadata_name": response.metadata_name,
+                "message": response.message,
             }
             for response in self.statuses
         ]
@@ -302,19 +293,31 @@ class TMLOperations:
         """Generate a pretty table."""
         # fmt: off
         t = rich.table.Table(box=rich.box.SIMPLE_HEAD, row_styles=("dim", ""), width=150)
-        t.add_column("",     width= 1 + 4, justify="center")  # LENGTH OF EMOJI         + 4 pad
-        t.add_column("Type", width=10 + 4)  # LENGTH OF "CONNECTION" (the longest type) + 4 pad
-        t.add_column("GUID", width=36 + 4)  # LENGTH OF A UUID                          + 4 pad
-        t.add_column("Name", width=150 - 5 - 14 - 40, no_wrap=True)
+        t.add_column("",     width= 1 + 4, justify="center")  # .. LENGTH OF EMOJI + 4 padding
+        t.add_column("Type", width=10 + 4)  # .................... LENGTH OF "CONNECTION" (the longest type) + 4 padding
+        t.add_column("GUID", width=36 + 4)  # .................... LENGTH OF A UUID + 4 padding
+        t.add_column("Name", width=24 + 4, no_wrap=True)  # ...... ARBITRARY LENGTH, long enough to understand the NAME
+        t.add_column("Message", width=150 - 5 - 14 - 40 - 28, no_wrap=True)
         # fmt: on
 
         for response in self.statuses:
-            t.add_row(response.emoji, response.metadata_type, response.metadata_guid, response.metadata_name)
+            n = len(response.cleaned_messages)
+            s = "" if n <= 1 else "s"
+
+            t.add_row(
+                response.emoji,
+                response.metadata_type,
+                response.metadata_guid,
+                response.metadata_name,
+                f"{n} issue{s}, use --log-errors for details" if n else "",
+            )
+
+        policy = "" if self.policy is None else f" [dim]. POLICY :: {self.policy}[/]"
 
         r = rich.panel.Panel(
             t,
             title="TML Status",
-            subtitle=f"TML / {self.domain.upper()} / {self.operation}",
+            subtitle=f"TML / {self.domain.upper()} / {self.operation}{policy}",
             subtitle_align="right",
             border_style=self.job_status_color,
         )
