@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Literal
-import itertools as it
 import json
 import logging
 
@@ -98,18 +97,10 @@ def branches_commit(
 
     SYSTEM_USER_GUIDS = ts.session_context.thoughtspot.system_users.values()
 
-    CLI_TYPES_TO_API_TYPES: dict[str, list[_types.MetadataObjectType]] = {
-        "ALL": ["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"],
-        "CONNECTION": ["CONNECTION"],
-        "TABLE": ["LOGICAL_TABLE"],
-        "VIEW": ["LOGICAL_TABLE"],
-        "SQL_VIEW": ["LOGICAL_TABLE"],
-        "MODEL": ["LOGICAL_TABLE"],
-        "LIVEBOARD": ["LIVEBOARD"],
-        "ANSWER": ["ANSWER"],
-    }
+    if input_types == ["ALL"]:
+        input_types = ["CONNECTION", "TABLE", "VIEW", "SQL_VIEW", "MODEL", "LIVEBOARD", "ANSWER"]  # type: ignore[assignment]
 
-    metadata_types = set(it.chain.from_iterable(CLI_TYPES_TO_API_TYPES[_] for _ in input_types))
+    metadata_types = {_types.lookup_metadata_type(_, mode="FRIENDLY_TO_API") for _ in input_types}
 
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
         ts.switch_org(org_id=org_override)
