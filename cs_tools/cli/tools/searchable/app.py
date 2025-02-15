@@ -610,9 +610,13 @@ def metadata(
 def tml(
     ctx: typer.Context,
     org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
-    metadata_type: Literal["MODEL", "LIVEBOARD", "__ALL__"] = typer.Option(
+    input_types: custom_types.MultipleInput = typer.Option(
         ...,
-        help="The type of TML to export, if not provided, then fetch all of the supported_types.",
+        "--metadata-type",
+        help="The type of TML to export.",
+        click_type=custom_types.MultipleInput(
+            choices=["MODEL", "LIVEBOARD", "__CONNECTION__", "__TABLE__", "__VIEW__", "__SQL_VIEW__", "__ANSWER__"]
+        ),
     ),
     strategy: Literal["DELTA", "SNAPSHOT"] = typer.Option(
         "DELTA",
@@ -679,22 +683,25 @@ def tml(
                 ts.switch_org(org_id=org["id"])
 
             with tracker["TS_METADATA"]:
-                CLI_TYPES_TO_API_TYPES = {
-                    "ALL": ["LOGICAL_TABLE", "LIVEBOARD"],
-                    "MODEL": ["LOGICAL_TABLE"],
-                    "LIVEBOARD": ["LIVEBOARD"],
-                }
-
-                api_types = CLI_TYPES_TO_API_TYPES.get(metadata_type.upper(), [metadata_type.upper()])
-                c = workflows.metadata.fetch_all(metadata_types=api_types, http=ts.api)
+                metadata_types = {_types.lookup_metadata_type(_, mode="FRIENDLY_TO_API") for _ in input_types}
+                c = workflows.metadata.fetch_all(metadata_types=metadata_types, http=ts.api)
                 _ = utils.run_sync(c)
 
-                # DISCARD OBJECTS WHICH ARE NOT MODELS/WORKSHEETS.
+                # ADD SUBTYPES OF COMMON FRIENDLY INPUT TYPES.
+                if "TABLE" in input_types:
+                    input_types += ["ONE_TO_ONE_LOGICAL", "USER_DEFINED"]
+
+                if "VIEW" in input_types:
+                    input_types += ["AGGR_WORKSHEET"]
+
+                if "MODEL" in input_types:
+                    input_types += ["WORKSHEET"]
+
+                # DISCARD OBJECTS WHICH ARE NOT ALLOWED BASED ON THE INPUT TYPES.
                 d = [
                     metadata_object
                     for metadata_object in api_transformer.ts_metadata_object(data=_, cluster=CLUSTER_UUID)
-                    if metadata_object["object_type"] == "LIVEBOARD"
-                    or metadata_object["object_subtype"] in ("MODEL", "WORKSHEET")
+                    if metadata_object["object_type"] in input_types or metadata_object["object_subtype"] in input_types
                 ]
 
                 if strategy == "DELTA" and isinstance(syncer, DatabaseSyncer):
