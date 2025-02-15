@@ -150,6 +150,40 @@ async def fetch_one(
     return nested
 
 
+async def tag_all(guids: Iterable[_types.GUID], *, tags: Iterable[str], http: RESTAPIClient, **tag_options) -> None:
+    """Tag all objects."""
+    CONCURRENCY_MAGIC_NUMBER = 15  # Why? It matches HTTP request concurrency.
+
+    async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
+        for tag_name in tags:
+            coro = http.tags_create(name=tag_name, **tag_options)
+            task = g.create_task(coro, name=tag_name)
+
+    tasks: list[asyncio.Task] = []
+
+    async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
+        for guid in guids:
+            for tag_name in tags:
+                coro = http.tags_assign(guid=guid, tag=tag_name)
+                task = g.create_task(coro, name=f"{guid}__{tag_name}")
+                tasks.append(task)
+
+    for task in tasks:
+        try:
+            r = task.result()
+            r.raise_for_status()
+
+        except httpx.HTTPError as e:
+            guid, tag_name = task.get_name().split("__")
+            _LOG.error(f"Could not tag the object for guid={guid} with tag={tag_name}, see logs for details..")
+            _LOG.debug(f"Full error: {e}", exc_info=True)
+            continue
+
+        # results.extend(d)
+
+    # return results
+
+
 async def permissions(
     typed_guids: dict[_types.APIObjectType, Iterable[_types.GUID]],
     *,
