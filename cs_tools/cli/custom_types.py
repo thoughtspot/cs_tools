@@ -224,7 +224,7 @@ class MultipleInput(CustomType):
             values = value.split(self.sep)
 
         elif isinstance(value, collections.abc.Iterable):
-            values = [v.split(",") if isinstance(v, str) else v for v in value]
+            values = [v.split(self.sep) if isinstance(v, str) else v for v in value]
 
         try:
             values = [self.type_caster(v) for v in values]
