@@ -91,7 +91,6 @@ dev = [
     "pre-commit",
     "mypy",
     "ruff",
-    "vulture",
 
     # Testing
     "coverage[toml]",
@@ -123,8 +122,9 @@ setup = [
     "mypy --install-types --non-interactive",
     "uv run python {root:}/cs_tools/updater/_bootstrapper.py --dev --reinstall"
 ]
-test = "pytest"
-clean = "vulture --min-confidence 100"
+test = [
+    "pytest"
+]
 lint = [
     "ruff check --config pyproject.toml",
     "ruff format --config pyproject.toml",
@@ -150,7 +150,6 @@ src = ["cs_tools", "tests"]
 exclude = [
     "__pycache__",   # ignore compiled bytecode
     ".venv*",        # ignore virtual environments
-    ".nox",          # ignore virtual environments
 
     # project specific ignores
     "__init__.py",       # ignore __init__.py
@@ -159,10 +158,6 @@ exclude = [
     "_version.py",       # ignore _version.py
     "_bootstrapper.py",  # ignore bootstrapper
     "const.py",          # ignore const.py
-
-    # code quality files
-    "noxfile.py",
-    ".vulture*",
 ]
 
 [tool.ruff.lint]
@@ -214,6 +209,3 @@ combine-as-imports = true
 force-wrap-aliases = true
 from-first = true
 required-imports = ["from __future__ import annotations"]
-
-[tool.vulture]
-paths = ["cs_tools"]
