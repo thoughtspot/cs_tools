@@ -14,7 +14,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 from cs_tools import _types, errors
-from cs_tools.datastructures import ValidatedSQLModel, _GlobalModel, _GlobalSettings
+from cs_tools.datastructures import ExecutionEnvironment, ValidatedSQLModel, _GlobalModel, _GlobalSettings
 from cs_tools.updater._updater import cs_tools_venv
 
 log = logging.getLogger(__name__)
@@ -69,9 +69,12 @@ class SyncerManifest(_GlobalModel):
         if __syncer_name__ in _registry:
             return
 
-        for pip_requirement in self.requirements:
-            log.debug(f"Processing requirement: {pip_requirement}")
-            cs_tools_venv.install(f"{pip_requirement.requirement}", *pip_requirement.pip_args, hush_logging=True)
+        if ExecutionEnvironment().is_ci:
+            log.info(f"RUNNING IN CI: skipping install of requirements.. {self.requirements}")
+        else:
+            for pip_requirement in self.requirements:
+                log.debug(f"Processing requirement: {pip_requirement}")
+                cs_tools_venv.install(f"{pip_requirement.requirement}", *pip_requirement.pip_args, hush_logging=True)
 
         # Registration is successful, we can add it to the global now.
         _registry.add(__syncer_name__)
