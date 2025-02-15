@@ -241,6 +241,10 @@ class MultipleInput(CustomType):
 
         return values
 
+    def __iadd__(self, value: Any) -> MultipleInput:
+        """Only here to make the typer checker happy."""
+        raise NotImplementedError("MultipleInput is not meant to be instantiated directly, use .convert() instead.")
+
     def __contains__(self, value: Any) -> bool:
         """Only here to make the typer checker happy."""
         raise NotImplementedError("MultipleInput is not meant to be instantiated directly, use .convert() instead.")
