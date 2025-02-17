@@ -27,15 +27,17 @@ jobs:
 
       # COMMON PARAMETERS FOR THE SNOWFLAKE SYNCER
       # https://thoughtspot.github.io/cs_tools/syncer/snowflake/
-      DECLARATIVE_SYNCER_SYNTAX: >-
-        account_name=${{ secrets.SNOWFLAKE_ACCOUNT }}
-        &username=${{ secrets.SNOWFLAKE_USERNAME }}
-        &secret=${{ secrets.SNOWFLAKE_PASSWORD }}
-        &warehouse=${{ secrets.SNOWFLAKE_WAREHOUSE }}
-        &role=${{ secrets.SNOWFLAKE_ROLE }}
-        &database=${{ secrets.SNOWFLAKE_DATABASE }}
-        &schema=${{ secrets.SNOWFLAKE_SCHEMA }}
-        &authentication=basic
+      DECLARATIVE_SYNCER_SYNTAX:
+        "\
+        account_name=${{ secrets.SNOWFLAKE_ACCOUNT }}\
+        &username=${{ secrets.SNOWFLAKE_USERNAME }}\
+        &secret=${{ secrets.SNOWFLAKE_PASSWORD }}\
+        &warehouse=${{ secrets.SNOWFLAKE_WAREHOUSE }}\
+        &role=${{ secrets.SNOWFLAKE_ROLE }}\
+        &database=${{ secrets.SNOWFLAKE_DATABASE }}\
+        &schema=${{ secrets.SNOWFLAKE_SCHEMA }}\
+        &authentication=basic\
+        "
     
     steps:
       # SETUP PYTHON.
