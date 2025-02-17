@@ -2,6 +2,7 @@ name: Test CS Tools Bootstrapper
 
 on:
   workflow_dispatch:
+
   push:
     branches:
       - master
@@ -24,24 +25,21 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
-
-    env:
-      CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
-      CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
-      CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
+          - "3.13"
 
     steps:
-      - uses: actions/checkout@v4
-
+      # SETUP PYTHON.
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      
+        
+      # USES THE COMMAND FROM THE DOCS PAGE.
       - if: ${{ runner.os == 'Windows' }}
-        name: Install on Windows
-        run: (IWR -Uri https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py -MaximumRedirection 3 -ErrorAction SilentlyContinue).content | python - --install
-      
+        name: Install on Windows.
+        run: powershell -ExecutionPolicy ByPass -c "IRM https://thoughtspot.github.io/cs_tools/install.py | python - --reinstall"
+
+      # USES THE COMMAND FROM THE DOCS PAGE.
       - if: ${{ runner.os != 'Windows' }}
-        name: Install on Linux/MacOS
-        run: curl -sSL https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py | python - --install
+        name: Install on Linux/MacOS.
+        run: curl -LsSf https://thoughtspot.github.io/cs_tools/install.py | python - --reinstall
