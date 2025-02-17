@@ -20,14 +20,14 @@ jobs:
     env:
       # CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS
       # https://thoughtspot.github.io/cs_tools/
-      CS_TOOLS_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.cs_tools_version || 'v1.6.0b1' }}
+      CS_TOOLS_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.cs_tools_version || 'v1.5.12' }}
       CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
       CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
       CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
 
       # COMMON PARAMETERS FOR THE SNOWFLAKE SYNCER
       # https://thoughtspot.github.io/cs_tools/syncer/snowflake/
-      DECLARATIVE_SYNCER_SYNTAX: |
+      DECLARATIVE_SYNCER_SYNTAX: >-
         account_name=${{ secrets.SNOWFLAKE_ACCOUNT }}
         &username=${{ secrets.SNOWFLAKE_USERNAME }}
         &secret=${{ secrets.SNOWFLAKE_PASSWORD }}
@@ -41,19 +41,32 @@ jobs:
       # SETUP PYTHON.
       - name: Set up Python
         uses: actions/setup-python@v5
-        
+      
+      # UPDATE PIP.
+      - name: Ensure pip is up to date.
+        run: python -m pip install --upgrade pip
+
       # INSTALL A SPECIFIC VERSION OF cs_tools.
       - name: Install a pinned version of CS Tools
-        run: pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/${{ env.CS_TOOLS_VERSION }}.zip"
+        run: python -m pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/${{ env.CS_TOOLS_VERSION }}.zip"
+
+      # ENSURE SYNCER DEPENDENCIES ARE INSTALLED.
+      #   found in: https://github.com/thoughtspot/cs_tools/blob/master/sync/<dialect>/MANIFEST.json
+      - name: Install a pinned version of CS Tools
+        run: python -m pip install "snowflake-sqlalchemy >= 1.6.1"
 
       # RUNS THE searchable tml COMMAND.
       # https://thoughtspot.github.io/cs_tools/tools/searchable
       #
       # THE CLI OPTION  --config ENV:  TELLS CS TOOLS TO PULL THE INFORMATION FROM ENVIRONMENT VARIABLES.
       - name: Grab N-7 days of Audit Logs Data
-        run: |
+        run: >-
           cs_tools tools
           searchable audit-logs
           --last-k-days 7
           --syncer 'snowflake://${{ env.DECLARATIVE_SYNCER_SYNTAX }}&load_strategy=UPSERT'
           --config ENV:
+
+        # TEMPORARY FLAG FOR v1.5.12
+        env:
+          FAKE_EDITABLE: true
