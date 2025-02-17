@@ -637,6 +637,18 @@ def tml(
     """Snapshot your TML to a Syncer."""
     ts = ctx.obj.thoughtspot
 
+    filter_types = set(input_types)
+
+    # ADD SUBTYPES OF COMMON FRIENDLY INPUT TYPES.
+    if "TABLE" in input_types:
+        filter_types.update(["ONE_TO_ONE_LOGICAL", "USER_DEFINED"])
+
+    if "VIEW" in input_types:
+        filter_types.update(["AGGR_WORKSHEET"])
+
+    if "MODEL" in input_types:
+        filter_types.update(["WORKSHEET"])
+
     temp = SQLite(
         database_path=ts.config.temp_dir / "temp.db",
         pragma_speedy_inserts=True,
@@ -687,21 +699,11 @@ def tml(
                 c = workflows.metadata.fetch_all(metadata_types=metadata_types, http=ts.api)
                 _ = utils.run_sync(c)
 
-                # ADD SUBTYPES OF COMMON FRIENDLY INPUT TYPES.
-                if "TABLE" in input_types:
-                    input_types += ["ONE_TO_ONE_LOGICAL", "USER_DEFINED"]
-
-                if "VIEW" in input_types:
-                    input_types += ["AGGR_WORKSHEET"]
-
-                if "MODEL" in input_types:
-                    input_types += ["WORKSHEET"]
-
                 # DISCARD OBJECTS WHICH ARE NOT ALLOWED BASED ON THE INPUT TYPES.
                 d = [
                     metadata_object
                     for metadata_object in api_transformer.ts_metadata_object(data=_, cluster=CLUSTER_UUID)
-                    if metadata_object["object_type"] in input_types or metadata_object["object_subtype"] in input_types
+                    if {metadata_object["object_type"], metadata_object["object_subtype"]}.intersection(filter_types)
                 ]
 
                 if strategy == "DELTA" and isinstance(syncer, DatabaseSyncer):
