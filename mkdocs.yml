@@ -47,6 +47,9 @@ theme:
 extra_css:
   - stylesheets/extra.css
 
+hooks:
+  - docs/hooks/mirror_bootstrapper.py
+
 extra:
   # Could investigate in order to offer a beta docs page.
   #
@@ -82,7 +85,10 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.keys
   - pymdownx.mark
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path: docs
+      check_paths: true
+      url_download: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -97,9 +103,6 @@ markdown_extensions:
 plugins:
   - glightbox
   - open-in-new-tab
-  - redirects:
-      redirect_maps:
-        'get/bootstrapper.md': 'https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py'
 
 nav:
   - Home: index.md
