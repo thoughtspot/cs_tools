@@ -48,4 +48,4 @@ hide:
 
 </div>
 
-~cs~tools ../.. cs_tools --help
+~cs~tools --help

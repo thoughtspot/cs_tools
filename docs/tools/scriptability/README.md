@@ -63,25 +63,13 @@ This version of `cs_tools scriptability` supports the following:
 ## CLI preview
 
 === "scriptability --help"
-    ~cs~tools ../.. cs_tools tools scriptability --help
-
-=== "scriptability connection-check"
-    ~cs~tools ../.. cs_tools tools scriptability connection-check --help
+    ~cs~tools tools scriptability --help
 
 === "scriptability export"
-    ~cs~tools ../.. cs_tools tools scriptability export --help
+    ~cs~tools tools scriptability export --help
 
 === "scriptability import"
-    ~cs~tools ../.. cs_tools tools scriptability import --help
-
-=== "scriptability compare"
-    ~cs~tools ../.. cs_tools tools scriptability compare --help
-
-=== "scriptability tmlfs"
-    ~cs~tools ../.. cs_tools tools scriptability tmlfs --help
-
-=== "scriptability mapping"
-    ~cs~tools ../.. cs_tools tools scriptability mapping --help
+    ~cs~tools tools scriptability import --help
 
 [keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new/choose

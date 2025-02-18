@@ -20,16 +20,16 @@ holding references to all of these objects as well.
 ## CLI preview
 
 === "archiver --help"
-    ~cs~tools ../.. cs_tools tools archiver --help
+    ~cs~tools tools archiver --help
 
 === "archiver identify"
-    ~cs~tools ../.. cs_tools tools archiver identify --help
+    ~cs~tools tools archiver identify --help
 
-=== "archiver revert"
-    ~cs~tools ../.. cs_tools tools archiver revert --help
+=== "archiver untag"
+    ~cs~tools tools archiver untag --help
 
 === "archiver remove"
-    ~cs~tools ../.. cs_tools tools archiver remove --help
+    ~cs~tools tools archiver remove --help
 
 
 [contrib-boonhapus]: https://github.com/boonhapus

@@ -28,12 +28,12 @@ with the returned cycle id and the `status` command.
 ## CLI preview
 
 === "rtsload --help"
-    ~cs~tools ../.. cs_tools tools rtsload --help
+    ~cs~tools tools rtsload --help
 
 === "rtsload file"
-    ~cs~tools ../.. cs_tools tools rtsload file --help
+    ~cs~tools tools rtsload file --help
 
 === "rtsload status"
-    ~cs~tools ../.. cs_tools tools rtsload status --help
+    ~cs~tools tools rtsload status --help
 
 [contrib-boonhapus]: https://github.com/boonhapus

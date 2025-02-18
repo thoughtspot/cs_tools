@@ -18,19 +18,16 @@ activities when onboarding or offboarding many users at once.
 ## CLI preview
 
 === "user-management --help"
-    ~cs~tools ../.. cs_tools tools user-management --help
-
-=== "user-management rename"
-    ~cs~tools ../.. cs_tools tools user-management rename --help
+    ~cs~tools tools user-management --help
 
 === "user-management delete"
-    ~cs~tools ../.. cs_tools tools user-management delete --help
+    ~cs~tools tools user-management delete --help
 
 === "user-management sync"
-    ~cs~tools ../.. cs_tools tools user-management sync --help
+    ~cs~tools tools user-management sync --help
 
 === "user-management transfer"
-    ~cs~tools ../.. cs_tools tools user-management transfer --help
+    ~cs~tools tools user-management transfer --help
 
 [contrib-boonhapus]: https://github.com/boonhapus
 [tsut]: https://github.com/thoughtspot/user_tools

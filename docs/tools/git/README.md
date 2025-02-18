@@ -22,42 +22,39 @@ For more information see the
 ## CLI preview
 
 === "git --help"
-    ~cs~tools ../.. cs_tools tools git --help
+    ~cs~tools tools git --help
 
 ## CLI Config Commands
 === "git config --help"
-    ~cs~tools ../.. cs_tools tools git config --help
+    ~cs~tools tools git config --help
 
 === "git config create --help"
-    ~cs~tools ../.. cs_tools tools git config create --help
+    ~cs~tools tools git config create --help
 
 === "git config update --help"
-    ~cs~tools ../.. cs_tools tools git config update --help
+    ~cs~tools tools git config update --help
 
 === "git config search --help"
-    ~cs~tools ../.. cs_tools tools git config search --help
-
-=== "git config delete --help"
-    ~cs~tools ../.. cs_tools tools git config delete --help
+    ~cs~tools tools git config search --help
 
 ## CLI Branches Commands
 === "git branches --help"
-    ~cs~tools ../.. cs_tools tools git branches --help
+    ~cs~tools tools git branches --help
 
 === "git branches commit --help"
-    ~cs~tools ../.. cs_tools tools git branches commit --help
+    ~cs~tools tools git branches commit --help
 
 === "git branches search-commits --help"
-    ~cs~tools ../.. cs_tools tools git branches search-commits --help
+    ~cs~tools tools git branches search-commits --help
 
 === "git branches revert-commit --help"
-    ~cs~tools ../.. cs_tools tools git branches revert-commit --help
+    ~cs~tools tools git branches revert-commit --help
 
 === "git branches validate --help"
-    ~cs~tools ../.. cs_tools tools git branches validate --help
+    ~cs~tools tools git branches validate --help
 
 === "git branches deploy --help"
-    ~cs~tools ../.. cs_tools tools git branches deploy --help
+    ~cs~tools tools git branches deploy --help
 
 [keep-a-changelog]: https://keepachangelog.com/en/1.0.0/
 [gh-issue]: https://github.com/thoughtspot/cs_tools/issues/new/choose

@@ -39,7 +39,7 @@ that User is.
         :clock11: This token will expire after the `validitiy_time_in_sec`.
 
 
-~cs~tools ../.. cs_tools config create --help
+~cs~tools config create --help
 
 ## Exploring the Tools
 

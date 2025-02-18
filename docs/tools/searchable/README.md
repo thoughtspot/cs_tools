@@ -30,18 +30,18 @@ provide value to others in your platform.
 ## CLI preview
 
 === "searchable --help"
-    ~cs~tools ../.. cs_tools tools searchable --help
+    ~cs~tools tools searchable --help
 
 === "searchable metadata"
-    ~cs~tools ../.. cs_tools tools searchable metadata --help
+    ~cs~tools tools searchable metadata --help
 
 === "searchable bi-server"
-    ~cs~tools ../.. cs_tools tools searchable bi-server --help
+    ~cs~tools tools searchable bi-server --help
 
 === "searchable audit-logs"
-    ~cs~tools ../.. cs_tools tools searchable audit-logs --help
+    ~cs~tools tools searchable audit-logs --help
 
 === "searchable deploy"
-    ~cs~tools ../.. cs_tools tools searchable deploy --help
+    ~cs~tools tools searchable deploy --help
 
 [contrib-boonhapus]: https://github.com/boonhapus

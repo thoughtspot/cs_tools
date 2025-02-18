@@ -186,14 +186,14 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 
     Try using __CS Tools__ itself!
 
-    ~cs~tools ../.. cs_tools self upgrade --help
+    ~cs~tools self upgrade --help
 
 
 <h2 class="fc-purple">Try running <b>CS Tools</b> by typing..</h2>
 
 __cs_tools self info --anonymous__
 
-~cs~tools ../.. cs_tools self info --anonymous
+~cs~tools self info --anonymous
 
 !!! warning "Where can I reach out for help?"
 

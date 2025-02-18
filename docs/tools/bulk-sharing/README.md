@@ -21,12 +21,10 @@ the appropriate security settings for those group-table combinations.
 ## CLI preview
 
 === "bulk-sharing --help"
-    ~cs~tools ../.. cs_tools tools bulk-sharing --help
+    ~cs~tools tools bulk-sharing --help
 
 === "bulk-sharing cls-ui"
-    ~cs~tools ../.. cs_tools tools bulk-sharing cls-ui --help
+    ~cs~tools tools bulk-sharing cls-ui --help
 
-=== "bulk-sharing single"
-    ~cs~tools ../.. cs_tools tools bulk-sharing single --help
 
 [contrib-misha]: https://github.com/MishaThoughtSpot

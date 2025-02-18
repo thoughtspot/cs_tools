@@ -23,12 +23,12 @@ help guide you through the process.
 ## CLI preview
 
 === "falcon-sharding --help"
-    ~cs~tools ../.. cs_tools tools falcon-sharding --help
+    ~cs~tools tools falcon-sharding --help
 
 === "sharding-recommender gather"
-    ~cs~tools ../.. cs_tools tools falcon-sharding gather --help
+    ~cs~tools tools falcon-sharding gather --help
 
 === "sharding-recommender deploy"
-    ~cs~tools ../.. cs_tools tools falcon-sharding deploy --help
+    ~cs~tools tools falcon-sharding deploy --help
 
 [contrib-boonhapus]: https://github.com/boonhapus

@@ -17,10 +17,10 @@ See [Components of a search query][search-components].
 ## CLI preview
 
 === "extractor --help"
-    ~cs~tools ../.. cs_tools tools extractor --help
+    ~cs~tools tools extractor --help
 
 === "extractor search"
-    ~cs~tools ../.. cs_tools tools extractor search --help
+    ~cs~tools tools extractor search --help
 
 [tsbi]: https://cloud-docs.thoughtspot.com/admin/system-monitor/worksheets.html#description-of-system-worksheets-and-views
 [search-components]: https://developers.thoughtspot.com/docs/?pageid=rest-api-reference#_search_data

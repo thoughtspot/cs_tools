@@ -14,13 +14,10 @@ up the delete process, but gives less visibility should an issue occur. A summar
 what has been removed is saved in the logs directory of cs-tools. 
 
 === "bulk-deleter --help"
-    ~cs~tools ../.. cs_tools tools bulk-deleter --help
-
-=== "bulk-deleter single"
-    ~cs~tools ../.. cs_tools tools bulk-deleter single --help
+    ~cs~tools tools bulk-deleter --help
 
 === "bulk-deleter from-tabular"
-    ~cs~tools ../.. cs_tools tools bulk-deleter from-tabular --help
+    ~cs~tools tools bulk-deleter from-tabular --help
 
 
 [contrib-boonhapus]: https://github.com/boonhapus

@@ -15,4 +15,4 @@ in your __ThoughtSpot__ platform.
     deployments, each environment is different. You should ALWAYS take a snapshot before you make any significant
     changes to your environment!
 
-~cs~tools .. cs_tools tools --help
+~cs~tools tools --help

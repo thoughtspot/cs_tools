@@ -11,7 +11,6 @@ hide:
     .md-grid { max-width: 85%; }
     .md-content { max-width: 85%; }
     .task-list-item { color: var(--ts-color-black60); }
-    object.screenshotter { display: none; }
 </style>
 
 # Welcome to CS Tools { hidden="" }
@@ -49,12 +48,9 @@ hide:
         </ul>
 
     </div>
-    <a><img src="./terminal-screenshots/cs_tools___help.svg"></a>
+    ~cs~tools --help
 
 </div>
-
-<!-- This gets hidden due to the CSS rule above, we just need it to generate the SVG -->
-~cs~tools . cs_tools --help
 
 <span class=grid-define-columns data-columns=3>
     <a class=md-button style="text-align: center" href=./tutorial/install/>:octicons-tools-16: Get the Tools</a>

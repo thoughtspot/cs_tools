@@ -28,15 +28,9 @@ are three command for remote TQL:
 ## CLI preview
 
 === "rtql --help"
-    ~cs~tools ../.. cs_tools tools rtql --help
-
-=== "rtql command"
-    ~cs~tools ../.. cs_tools tools rtql command --help
-
-=== "rtql file"
-    ~cs~tools ../.. cs_tools tools rtql file --help
+    ~cs~tools tools rtql --help
 
 === "rtql interactive"
-    ~cs~tools ../.. cs_tools tools rtql interactive --help
+    ~cs~tools tools rtql interactive --help
 
 [contrib-boonhapus]: https://github.com/boonhapus
