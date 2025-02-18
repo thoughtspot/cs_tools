@@ -105,7 +105,6 @@ docs = [
 
     # Plugins for Mkdocs
     "mkdocs-redirects",
-    "mkdocs-glightbox",
     "mkdocs-open-in-new-tab",
 ]
 

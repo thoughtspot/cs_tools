@@ -101,7 +101,6 @@ markdown_extensions:
   - pymdownx.tilde
 
 plugins:
-  - glightbox
   - open-in-new-tab
 
 nav:
