@@ -83,10 +83,10 @@ dev = [
     # CS Tools CLI
     "cs_tools[cli]",
 
-    # Development
+    # DEVELOPMENT
     "textual-dev >= 1.7.0",
 
-    # Code Quality
+    # CODE QUALITY
     "hatch",
     "pre-commit",
     "mypy",
@@ -100,10 +100,13 @@ docs = [
     # CS Tools CLI
     "cs_tools[cli]",
 
-    # Markdown to Static Site Generator
+    # USED FOR GENERATING SAFE FILENAMES
+    "python-slugify[unidecode]",
+
+    # MARKDOWN TO STATIC SITE GENERATOR
     "mkdocs-material",
 
-    # Plugins for Mkdocs
+    # PLUGINS FOR MKDOCS
     "mkdocs-redirects",
     "mkdocs-open-in-new-tab",
 ]

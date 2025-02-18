@@ -116,7 +116,7 @@ def deploy(
 
 
 @app.command(name="metadata")
-@app.command(name="gather")
+@app.command(name="gather", hidden=True)
 @depends_on(thoughtspot=ThoughtSpot())
 def metadata(
     ctx: typer.Context,
