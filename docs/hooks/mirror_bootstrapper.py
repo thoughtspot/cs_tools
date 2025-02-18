@@ -9,8 +9,15 @@ from mkdocs.config.defaults import MkDocsConfig
 import cs_tools
 
 
-def on_post_build(config: MkDocsConfig, **_options) -> None:
-    """Copy the Bootstrapper to the base directory for a one-command installer."""
+def on_post_build(config: MkDocsConfig) -> None:
+    """
+    Use this event to call post-build scripts.
+
+    Copy the CS Tools Bootstrapper to the base directory for a one-command installer.
+
+    Further reading:
+      https://www.mkdocs.org/dev-guide/plugins/#on_post_build
+    """
     site_dir = pathlib.Path(config["site_dir"])
 
     SRC_BOOT_PY = pathlib.Path(_bootstrapper.__file__)
