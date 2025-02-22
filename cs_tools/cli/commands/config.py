@@ -197,6 +197,12 @@ def delete(config: str = typer.Option(..., help="config file identifier", show_d
 def check(
     ctx: typer.Context,  # noqa: ARG001
     config: str = typer.Option(..., help="config file identifier", show_default=False, metavar="NAME"),
+    anonymous: bool = typer.Option(
+        False,
+        "--anonymous",
+        help="remove personal references from the output",
+        hidden=True,
+    ),
 ):
     """Check your config file."""
     conf = CSToolsConfig.from_name(name=config, automigrate=True)
@@ -204,9 +210,20 @@ def check(
 
     log.info("Checking supplied configuration..")
 
-    ts.login()
+    try:
+        ts.login()
+
+    except errors.AuthenticationFailed as e:
+        RICH_CONSOLE.print(e)
+        return 1
 
     sess_ctx = ts.session_context
+
+    if anonymous:
+        sess_ctx.thoughtspot.cluster_id = "00000000-00000000-00000000-00000000"
+        sess_ctx.thoughtspot.cluster_name = "anonymous"
+        sess_ctx.thoughtspot.url = "https://anonymous.thoughtspot.cloud/"
+        sess_ctx.user.username = "anonymous"
 
     # fmt: off
     o = rich.panel.Panel(
@@ -247,6 +264,7 @@ def check(
     RICH_CONSOLE.print(r, justify="center")
 
     log.info("[fg-success]Success![/]")
+    return 0
 
 
 @app.command(no_args_is_help=False)
