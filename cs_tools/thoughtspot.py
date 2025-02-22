@@ -92,10 +92,9 @@ class ThoughtSpot:
             # DEV NOTE: @boonhapus, 2025/01/21
             #   SCAL-239189 ... FALL BACK TO V1 SWITCH ORGS API
             #
-            if ctx.thoughtspot.is_iam_v2_enabled:
-                # SWITCH ORG.
-                c = self.api.put("callosum/v1/tspublic/v1/session/orgs", data={"orgid": desired_org_id})
-                _ = utils.run_sync(c)
+            # SWITCH ORG.
+            c = self.api.put("callosum/v1/tspublic/v1/session/orgs", data={"orgid": desired_org_id})
+            _ = utils.run_sync(c)
 
             # IF IT WORKED, REBUILD THE CONTEXT.
             if _.is_success:
