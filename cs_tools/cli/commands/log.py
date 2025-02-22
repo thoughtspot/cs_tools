@@ -10,7 +10,7 @@ from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 from cs_tools.updater import cs_tools_venv
 import typer
 
-app = AsyncTyper(name="logs")
+app = AsyncTyper(name="logs", help="Grab logs to share with ThoughtSpot.")
 
 
 @app.command()

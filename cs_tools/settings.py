@@ -188,6 +188,8 @@ class MetaConfig(_GlobalModel):
         if AwesomeVersion(self.remote.version or "v0.0.0") <= AwesomeVersion(__version__):
             return ""
 
+        from cs_tools.cli.ux import RICH_CONSOLE
+
         assert self.remote is not None
         assert self.environment is not None
 
@@ -206,20 +208,20 @@ class MetaConfig(_GlobalModel):
                     f"can be found at   {__project__.__repo__}/releases/latest"
                 )
             else:
-                rich.print(
+                RICH_CONSOLE.print(
                     rich.panel.Panel.fit(
                         (
                             f"\nOut now, CS Tools version {self.remote.version}!"
-                            f"\n\nCheck out the changes in the [b cyan][link={url}]Release Notes[/][/]"
-                            f"\n\nUpgrade with [fg-warn]cs_tools self update[/]"
+                            f"\n\nCheck out the changes in the [b cyan][link={url}]Release Notes[/][/]!"
+                            f"\n\nUpgrade with [fg-secondary]cs_tools self update[/]"
                         ),
-                        title="An update has been released! :tada:",
+                        title=":tada: An update has been released! :tada:",
                         title_align="left",
                         border_style="bold green",
                     )
                 )
 
-        return f"A [fg-success]new[/] CS Tools version is available! :tada: [b cyan link={url}]{self.remote.version}[/]"
+        return ":tada: [fg-success]A new CS Tools version is available![/]"
 
 
 # GLOBAL SCOPE
@@ -302,6 +304,9 @@ class CSToolsConfig(_GlobalSettings):
     @classmethod
     def _enforce_compatability(cls, data: Any) -> Any:
         """Perform config file migrations."""
+        if data["name"] == "ENV":
+            return data
+
         data = cls._migrate_from_pre_150(data)
         data = cls._migrate_from_pre_160(data)
         return data

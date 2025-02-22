@@ -121,7 +121,9 @@ class AuthenticationFailed(CSToolsError):
             fixing.append("[fg-primary]Basic Auth[/]")
             fixing.append(
                 f"- Check if your username and password are correct from the ThoughtSpot website. You can try them by "
-                f"navigating to [fg-secondary]{ts_info.url}?disableSAMLAutoRedirect=true[/]"
+                f"navigating to one of these URLs to try them manually.. "
+                f"\n[fg-secondary]{ts_info.url}?disable[fg-warn]SAML[/]AutoRedirect=true[/]"
+                f"\n[fg-secondary]{ts_info.url}?disable[fg-error]OIDC[/]AutoRedirect=true[/]"
             )
             fixing.append("")
 

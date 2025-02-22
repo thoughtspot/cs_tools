@@ -91,4 +91,10 @@ uv run hatch run docs:serve
 To view the documentation, open your browser and go to `http://localhost:8000`. To stop the server, use `^C` 
 (control+c) in the terminal.
 
+> [!IMPORTANT]
+>  New commands are automatically documented, as the [CLI Reference page](https://thoughtspot.github.io/cs_tools/generated/cli/reference.html) is generated from the command line itself.
+>
+> See [docs/hooks/cli_reference_generator.py](./docs/hooks/cli_reference_generator.py) for implementation details.
+>
+
 ---

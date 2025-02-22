@@ -23,16 +23,12 @@ app = AsyncTyper(
     :wave: [fg-success]Welcome[/] to CS Tools!
 
     \b
-    These are scripts and utilities used to assist in the development, implementation,
-    and administration of your ThoughtSpot platform.
-
-    Lost already? Check out the :link: [cyan][link={__project__.__docs__}/tutorial/config/]Tutorial[/][/]!
-
     {meta.newer_version_string()}
 
-    :sparkles: [fg-warn]All tools are provided as-is[/] :sparkles:
+    :mage: [fg-warn]Enjoy your superpowers, but be careful![/] :sparkles:
+    
     :floppy_disk: [fg-error]You should ALWAYS take a snapshot before you make any significant changes to your environment![/]
-    """,  # noqa: E501
+    """,
     epilog=(
         f":bookmark: v{__version__} "
         f":scroll: [cyan][link={__project__.__docs__}]Documentation[/] "
