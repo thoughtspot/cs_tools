@@ -103,26 +103,8 @@ plugins:
 
 nav:
   - Home: index.md
-  - Tutorial:
-    - "Getting Started": tutorial/intro.md
-    - "Install & Upgrade": tutorial/install.md
-    - "Setup a Config File": tutorial/config.md
-    - "Run the Archiver tool": tutorial/archiver.md
-    - "Using Syncers": tutorial/syncer.md
-    - "Schedule the Archiver": tutorial/schedule.md
-  - Tools:
-    - tools/index.md
-    - Archiver: tools/archiver/README.md
-    - Bulk Deleter: tools/bulk-deleter/README.md
-    - Bulk Sharing: tools/bulk-sharing/README.md
-    - Extractor: tools/extractor/README.md
-    - Falcon Sharding: tools/falcon-sharding/README.md
-    - Remote TQL: tools/rtql/README.md
-    - Remote tsload: tools/rtsload/README.md
-    - Git: tools/git/README.md
-    - Scriptability: tools/scriptability/README.md
-    - Searchable: tools/searchable/README.md
-    - User Management: tools/user-management/README.md
+  - Getting Started: getting-started.md
+  - CLI: generated/cli/reference.md
   - Syncers:
     - "What's a Syncer?": syncer/what-is.md
     - CSV: syncer/csv.md
