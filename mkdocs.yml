@@ -48,7 +48,9 @@ extra_css:
   - stylesheets/extra.css
 
 hooks:
+  # THESE ARE IN ORDER OF PRIORITY.
   - docs/hooks/mirror_bootstrapper.py
+  - docs/hooks/cli_reference_generator.py
   - docs/hooks/screenshotter.py
 
 extra:
