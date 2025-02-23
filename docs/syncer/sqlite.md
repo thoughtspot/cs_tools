@@ -59,6 +59,6 @@ hide:
             cs_tools tools searchable metadata --syncer sqlite://syncer-overwrite.toml --config dogfood
             ```
 
-[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[cs-tools-serverless]: ../../getting-started/#serverless
 [syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/sqlite/MANIFEST.json
 [sqlite-pragmas]: https://www.sqlite.org/pragma.html

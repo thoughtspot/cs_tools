@@ -98,7 +98,7 @@ hide:
             cs_tools tools searchable metadata --syncer databricks://syncer-overwrite.toml --config dogfood
             ```
 
-[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[cs-tools-serverless]: ../../getting-started/#serverless
 [syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/databricks/MANIFEST.json
 [dbx-sqla]: https://docs.databricks.com/aws/en/dev-tools/sqlalchemy
 [dbx-uc]: https://www.databricks.com/product/unity-catalog

@@ -72,5 +72,5 @@ hide:
             cs_tools tools searchable metadata --syncer excel://syncer-overwrite.toml --config dogfood
             ```
 
-[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[cs-tools-serverless]: ../../getting-started/#serverless
 [syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/excel/MANIFEST.json

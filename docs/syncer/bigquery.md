@@ -86,7 +86,7 @@ hide:
             cs_tools tools searchable metadata --syncer bigquery://syncer-overwrite.toml --config dogfood
             ```
 
-[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[cs-tools-serverless]: ../../getting-started/#serverless
 [syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/bigquery/MANIFEST.json
 [gc-dev-console]: https://console.cloud.google.com/apis/dashboard
 [gc-service-account]: https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account

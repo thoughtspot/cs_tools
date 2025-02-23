@@ -330,7 +330,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
             ```
 
             ```markdown
-            ### Runs the [`searchable metadata` command](https://thoughtspot.github.io/cs_tools/tools/searchable/#__tabbed_1_2)
+            ### Runs the [`searchable metadata` command](https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#metadata_1)
 
             The option `--config ENV:` tells CS Tools to fetch config information from the environment variables we set earlier.
             ```

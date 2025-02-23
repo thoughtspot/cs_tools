@@ -119,7 +119,7 @@ hide:
             cs_tools tools searchable metadata --syncer snowflake://syncer-overwrite.toml --config dogfood
             ```
 
-[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[cs-tools-serverless]: ../../getting-started/#serverless
 [syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/snowflake/MANIFEST.json
 [snowflake-account-id]: https://docs.snowflake.com/en/user-guide/admin-account-identifier
 [snowflake-auth]: https://docs.snowflake.com/en/developer-guide/node-js/nodejs-driver-authenticate

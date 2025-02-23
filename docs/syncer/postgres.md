@@ -97,7 +97,7 @@ hide:
             cs_tools tools searchable metadata --syncer postgres://syncer-overwrite.toml --config dogfood
             ```
 
-[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[cs-tools-serverless]: ../../getting-started/#serverless
 [syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/databricks/MANIFEST.json
 [pg-psyco]: https://www.psycopg.org
 [pg-rds]: https://aws.amazon.com/rds/
