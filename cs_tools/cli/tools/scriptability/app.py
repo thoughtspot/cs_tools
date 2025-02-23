@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Coroutine
 import datetime as dt
+import json
 import logging
 import pathlib
 
@@ -25,8 +25,8 @@ app = AsyncTyper(help="Maintaining TML between your ThoughtSpot Environments.")
 _DOCS_MAPPING = "https://developers.thoughtspot.com/docs/deploy-with-tml-apis#guidMapping"
 
 
-@app.command(name="export", hidden=True)
-@app.command(name="commit", hidden=True)
+@app.command(name="export", hidden=True, help="This name is deprecated, but kept for discoverability.")
+@app.command(name="commit", hidden=True, help="This name implies we're a VCS (nope!), but kept to mirror the git tool.")
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
 def checkpoint(
@@ -75,6 +75,9 @@ def checkpoint(
         help="Whether or not to include content owned by built-in Administrator accounts.",
         rich_help_panel="TML Export Options",
     ),
+    delete_aware: bool = typer.Option(
+        False, "--delete-aware", help="Deletes TML in the mapping if it is not present in this checkpoint."
+    ),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
     org_override: str = typer.Option(None, "--org", help="The org to export TML from."),
 ) -> _types.ExitCode:
@@ -84,6 +87,20 @@ def checkpoint(
     Only objects matching ALL Export Options will be exported.
 
     A mapping file will be created at .mappings/<environment>-guid-mappings.json
+
+      The mapping file contains 4 fields.
+
+        .metadata
+          You may add any information to this field, it will be carried forward through deployments.
+
+        .mapping
+          Automatically maintained by CS Tools. GUIDs replacements between environments, will apply to TML before deployment.
+
+        .additional_mapping
+          You may add additional string replacements to this field, will apply to TML before deployment.
+
+        .history
+          Automatically maintained by CS Tools. A log of checkpoints used for merging and deployment.
     """
     ts = ctx.obj.thoughtspot
 
@@ -107,17 +124,9 @@ def checkpoint(
 
     # SET UP OUR GUID MAPPING.
     directory.joinpath(".mappings").mkdir(parents=True, exist_ok=True)
+
     mapping_info = local_utils.GUIDMappingInfo.load(path=directory / ".mappings" / f"{environment}-guid-mappings.json")
-    mapping_info.metadata["checkpoint"] = local_utils.MappingMetadataCheckpoint.parse_obj(
-        {
-            **mapping_info.metadata.get("checkpoint", {}),
-            # OVERRIDES
-            "by": f"cs_tools/{__version__}/scriptability/checkpoint",
-            "at": dt.datetime.now(tz=dt.timezone.utc).isoformat(),
-            "counter": mapping_info.metadata.get("checkpoint", {}).get("counter", 0) + 1,
-            "last_export": dt.datetime.now(tz=dt.timezone.utc).isoformat(),
-        }
-    ).model_dump()
+    mapping_info.metadata.setdefault("cs_tools", {"extract_environment": environment})
 
     c = workflows.metadata.fetch_all(
         metadata_types=metadata_types,
@@ -128,24 +137,39 @@ def checkpoint(
     )
     _ = api_transformer.ts_metadata_object(data=utils.run_sync(c))
 
-    coros: list[Coroutine] = []
-
-    for metadata_object in _:
-        if not local_utils.is_allowed_object(
+    # FILTER TO JUST THE OBJECTS WE CARE ABOUT.
+    _ = [
+        metadata_object
+        for metadata_object in _
+        if local_utils.is_allowed_object(
             metadata_object,
             allowed_types=input_types,
             disallowed_system_users=[] if include_system_owned_content else SYSTEM_USER_GUIDS,
-        ):
-            continue
-
-        coros.append(
-            workflows.metadata.tml_export(
-                guid=metadata_object["object_guid"],
-                edoc_format="YAML",
-                directory=directory,
-                http=ts.api,
-            )
         )
+    ]
+
+    # IF THE OBJECT ISN'T IN THIS LIST, BUT IT'S IN THE MAPPING, WE REMOVE IT FROM THE MAPPING.
+    if delete_aware:
+        incoming_guids = {metadata_object["object_guid"] for metadata_object in _}
+        deleting_guids = {guid for guid in mapping_info.mapping if guid not in incoming_guids}
+
+        for guid in deleting_guids:
+            mapping_info.mapping.pop(guid)
+
+            if tml_path := next(directory.rglob(f"{guid}*.tml"), None):
+                _LOG.debug(f"Deleting orphaned TML {tml_path}")
+                tml_path.unlink()
+
+    # BUILD OUR LIST OF EXPORTS.
+    coros = [
+        workflows.metadata.tml_export(
+            guid=metadata_object["object_guid"],
+            edoc_format="YAML",
+            directory=directory,
+            http=ts.api,
+        )
+        for metadata_object in _
+    ]
 
     # ANY FASTER THAN 4 CONCURRENT DOWNLOADS AND WE WILL STRESS ATLAS OUT :')
     c = utils.bounded_gather(*coros, max_concurrent=4)  # type: ignore[assignment]
@@ -169,6 +193,14 @@ def checkpoint(
         if response.status != "ERROR":
             mapping_info.mapping.setdefault(response.metadata_guid, None)
 
+    # DEFINE A CHECKPOINT.
+    mapping_info.checkpoint(
+        by=f"cs_tools/{__version__}/scriptability/checkpoint",
+        mode="EXPORT",
+        environment=environment,
+        status=table.job_status,
+    )
+
     # RECORD THE GUID MAPPING
     mapping_info.save()
 
@@ -179,7 +211,7 @@ def checkpoint(
     return 0
 
 
-@app.command(name="import", hidden=True)
+@app.command(name="import", hidden=True, help="This name is deprecated, but kept for discoverability.")
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
 def deploy(
@@ -234,32 +266,58 @@ def deploy(
     org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
 ) -> _types.ExitCode:
-    """Import TML from a directory."""
+    """
+    Import TML from a directory.
+
+    The mapping file at .mappings/<source-environment>-guid-mappings.json will be used as context.
+
+    A new mapping file will be created at .mappings/<target-environment>-guid-mappings.json.
+
+      The mapping file contains 4 fields.
+
+        .metadata
+          You may add any information to this field, it will be carried forward through deployments.
+
+        .mapping
+          Automatically maintained by CS Tools. GUIDs replacements between environments, will apply to TML before deployment.
+
+        .additional_mapping
+          You may add additional string replacements to this field, will apply to TML before deployment.
+
+        .history
+          Automatically maintained by CS Tools. A log of checkpoints used for merging and deployment.
+    """
     ts = ctx.obj.thoughtspot
 
-    EPOCH = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc).isoformat()
+    EPOCH = dt.datetime(year=1970, month=1, day=1, tzinfo=dt.timezone.utc)
+
+    if input_types == ["ALL"]:
+        input_types = ["CONNECTION", "TABLE", "VIEW", "SQL_VIEW", "MODEL", "LIVEBOARD", "ANSWER"]  # type: ignore[assignment]
 
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
         ts.switch_org(org_id=org_override)
 
     try:
-        mapping_file = directory / ".mappings" / f"{source_environment}-guid-mappings.json"
-        assert mapping_file.exists(), f"Could not find a guid mapping file at '{mapping_file}'"
+        src_mapping_file = directory / ".mappings" / f"{source_environment}-guid-mappings.json"
+        tar_mapping_file = directory / ".mappings" / f"{target_environment}-guid-mappings.json"
+        assert src_mapping_file.exists(), f"Could not find a guid mapping file at '{src_mapping_file}'"
 
         # SET UP OUR GUID MAPPING.
-        mapping_info = local_utils.GUIDMappingInfo.load(path=mapping_file)
-        last_import = dt.datetime.fromisoformat(mapping_info.metadata["checkpoint"].get("last_import", None) or EPOCH)
-        mapping_info.metadata["checkpoint"]["mapped_to"] = f"{target_environment}-guid-mappings.json"
-
-        mapping_info.metadata["checkpoint"]["by"] = f"cs_tools/{__version__}/scriptability/deploy"
-        mapping_info.metadata["checkpoint"]["at"] = dt.datetime.now(tz=dt.timezone.utc).isoformat()
-        mapping_info.metadata["checkpoint"]["counter"] += 1
-        mapping_info.metadata["checkpoint"]["last_import"] = dt.datetime.now(tz=dt.timezone.utc).isoformat()
+        mapping_info = local_utils.GUIDMappingInfo.merge(source=src_mapping_file, target=tar_mapping_file)
+        last_import_dt = next((c.at for c in mapping_info.history if c.mode == "IMPORT"), EPOCH)
     except AssertionError as e:
         _LOG.error(f"{e}, have you run [fg-secondary]scriptability checkpoint --environment {source_environment}[/]?")
         return 1
-    except KeyError:
-        _LOG.error("Metadata mapping checkpoint is in an invalid state!")
+    except json.JSONDecodeError as e:
+        _LOG.error("One of your .mappings/<env>-guid-mappings.json is in an invalid state, see logs for details..")
+        _LOG.warning(f"Do you have a trailing comma on line {e.lineno - 1}?")
+        return 1
+    except RuntimeError as e:
+        _LOG.error(f"{e}")
+        return 1
+    except Exception:
+        _LOG.debug("Error Info:", exc_info=True)
+        _LOG.error("One of your .mappings/<env>-guid-mappings.json is in an invalid state, see logs for details..")
         return 1
 
     tmls: dict[_types.GUID, _types.TMLObject] = {}
@@ -267,21 +325,21 @@ def deploy(
     for path in directory.rglob("*.tml"):
         last_modified_time = dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.timezone.utc)
 
-        if deploy_type == "DELTA" and last_modified_time < last_import:
+        if deploy_type == "DELTA" and last_modified_time < last_import_dt:
             continue
 
         TML = thoughtspot_tml.utils.determine_tml_type(path=path)
         tml = TML.load(path=path)
         assert tml.guid is not None, f"Could not find a guid for {path}"
 
-        if input_types != ["ALL"] and tml.tml_type_name.upper() not in input_types:
+        if tml.tml_type_name.upper() not in input_types:
             continue
 
         guid = tml.guid
         tmls[guid] = mapping_info.disambiguate(tml=tml, delete_unmapped_guids=True)
 
     if not tmls:
-        _LOG.info(f"No TML files found to deploy from directory (Deploy Type: {deploy_type}, Last Seen: {last_import})")
+        _LOG.info(f"No TML files found to deploy from directory (Deploy Type: {deploy_type}, Last Seen: {last_import_dt})")
         return 0
 
     # Silence the cs_tools metadata workflow logger since we've asked the User if they want logged feedback.
@@ -300,6 +358,14 @@ def deploy(
         domain="SCRIPTABILITY",
         op="VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT",
         policy=deploy_policy,
+    )
+
+    # RECORD A CHECKPOINT.
+    mapping_info.checkpoint(
+        by=f"cs_tools/{__version__}/scriptability/deploy",
+        mode="VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT",
+        environment=target_environment,
+        status=table.job_status,
     )
 
     # INJECT ERRORS WITH MORE INFO FOR OUR USERS CLARITY.
@@ -330,7 +396,7 @@ def deploy(
             guids_to_tag.add(response.metadata_guid)
 
     # RECORD THE GUID MAPPING
-    mapping_info.save()
+    mapping_info.save(new_path=directory / ".mappings" / f"{target_environment}-guid-mappings.json")
 
     if tags and guids_to_tag:
         c = workflows.metadata.tag_all(guids_to_tag, tags=tags, color="#A020F0", http=ts.api)  # ThoughtSpot Purple :~)

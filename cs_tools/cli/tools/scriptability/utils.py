@@ -52,44 +52,138 @@ def is_allowed_object(
     return False
 
 
-class MappingMetadataCheckpoint(pydantic.BaseModel):
+class MappingCheckpoint(pydantic.BaseModel):
     """Metadata about the export/import process."""
 
     by: str
-    at: dt.datetime
-    counter: int
-    last_export: dt.datetime
-    last_import: Optional[dt.datetime] = None
+    """Who or What made the checkpoint."""
 
-    @pydantic.field_serializer("at", "last_export", "last_import")
+    at: dt.datetime
+    """When the checkpoint was recorded, held as an ISO8601 formatted UTC datetime."""
+
+    mode: Literal["EXPORT", "IMPORT"]
+    """The mode of the checkpoint."""
+
+    status: _types.TMLStatusCode
+    """The status of the checkpoint.. OK, WARNING, or ERROR."""
+
+    @pydantic.field_serializer("at")
     @classmethod
     def serialize_datetime(self, value: Optional[dt.datetime]) -> Optional[str]:
         return None if value is None else value.isoformat()
 
 
-class GUIDMappingInfo(pydantic.BaseModel):
-    """Wrapper for guid mapping to make it easier to use."""
+class GUIDMappingInfo(pydantic.BaseModel, extra=pydantic.Extra.forbid):
+    """
+    Wrapper for guid mapping to make it easier to use.
+
+    !! DO NOT INSTANTIATE THIS DIRECTLY !!
+
+    Instead, call GUIDMappingInfo.load(path: Optional[pathlib.Path])
+    """
 
     metadata: dict[str, Any] = pydantic.Field(default={})
+    """Arbitrary / informational metadata about this environment."""
+
     mapping: dict[_types.GUID, Optional[_types.GUID]] = pydantic.Field(default={})
+    """An automatically maintained mapping of GUIDs between two environments which are swapped before IMPORT."""
+
     additional_mapping: dict[str, str] = pydantic.Field(default={})
+    """Any additional string references which should be swapped in IMPORT."""
+
+    history: list[MappingCheckpoint] = pydantic.Field(default=[])
+    """A log of all the checkpoints which have been made."""
 
     _path: Optional[pathlib.Path] = None
+    """Where to write the GUIDMapping."""
 
     @classmethod
     def load(cls, path: Optional[pathlib.Path] = None) -> GUIDMappingInfo:
         """Load the GUID mapping info."""
         try:
             assert path is not None, "--> raise FileNotFoundError"
-            info = cls.parse_obj(json.loads(path.read_text()))
+            info = cls.parse_obj(json.loads(path.read_text(encoding="utf-8")))
+
+        except pydantic.ValidationError:
+            raise
 
         except (AssertionError, FileNotFoundError):
             info = cls()
 
-        finally:
-            info._path = path
+        info._path = path
 
         return info
+
+    @classmethod
+    def merge(cls, *, source: pathlib.Path, target: pathlib.Path) -> GUIDMappingInfo:
+        """Merge two GUID mappings, handling conflicts."""
+        # DEV NOTE: @boonhapus, 2025/02/20
+        #   Q. Why do we need this?
+        #   A. While git helps you manage conflicts between branches natively, Users typically do not understand how to
+        #      handle merge conflicts. While the filesystem managed by scriptability is not a git repository, it
+        #      operates very much in the same way.
+        #
+        #      Additionally, the fs/repo are mirrors of the external ThoughtSpot
+        #      system which is allowed to pace as far ahead as it wants. That said, ThoughtSpot has no knowledge of the
+        #      fs/git repo, and ThoughtSpot Data Manager will perform parallel development.
+        #
+        #      This merge-mapping flow is intended to help alleviae these common git-merge conflicts prior to a commit.
+        #      By combining EXTRACT.history and IMPORT.history, we can piece together parallel workloads from different
+        #      branches.
+        #
+        MAX_NUM_CHECKPOINTS = 300
+        """An arbitrary magic number. High enough to handle parallel 'commit early and often' development workflows."""
+
+        source_env = cls.load(path=source)
+        target_env = cls.load(path=target)
+
+        # WARN THE USER IF THEY ARE TRYING TO MERGE GUID MAPPINGS FROM DIFFERENT EXTRACT ENVIRONMENTS.
+        # THE PURPOSE OF GUID MAPPING IS TO ENSURE THE SAME OBJECTS FROM EXTRACT ALWAYS HIT THE SAME OBJECTS IN TARGET.
+        #
+        if "cs_tools" in target_env.metadata:
+            extract_source = source_env.metadata["cs_tools"]["extract_environment"]
+            extract_target = target_env.metadata["cs_tools"]["extract_environment"]
+
+            if extract_source != extract_target:
+                _LOG.warning(
+                    f"The target environment already has an extract environment of '{extract_target}' but you provided "
+                    f"'{extract_source}'. Did you mean to merge for a different project?"
+                )
+                raise RuntimeError("Cannot merge GUID mappings from different extract environments.")
+
+        # DEV NOTE: @boonhapus, 2025/02/20
+        #   If there are duplicate keys, the value from the right-hand dictionary takes precedence.
+
+        # COPY THE METADATA (preferring SOURCE environment).
+        target_env.metadata = target_env.metadata | source_env.metadata
+
+        # MERGE THE BASE MAPPINGS (preferring TARGET environment).
+        target_env.mapping = source_env.mapping | target_env.mapping
+
+        # MERGE THE ADDITIONAL MAPPINGS (preferring TARGET environment).
+        target_env.additional_mapping = source_env.additional_mapping | target_env.additional_mapping
+
+        # MERGE THE HISTORY (keeping only the K latest).
+        target_env.history = sorted(source_env.history + target_env.history, key=lambda x: x.at)[:MAX_NUM_CHECKPOINTS]
+
+        return target_env
+
+    def checkpoint(
+        self, *, by: str, mode: Literal["EXPORT", "VALIDATE", "IMPORT"], environment: str, status: _types.TMLStatusCode
+    ) -> None:
+        """Checkpoint the GUID mapping info."""
+        if mode != "EXPORT" and not any(checkpoint.mode in ("EXPORT", "VALIDATE") for checkpoint in self.history):
+            raise RuntimeError(f"Cannot {mode} without an EXPORT.")
+
+        self.history.append(
+            MappingCheckpoint(
+                by=by,
+                at=dt.datetime.now(tz=dt.timezone.utc),
+                mode=mode,
+                environment=environment,
+                status=status,
+            )
+        )
 
     def disambiguate(self, tml: _types.TMLObject, delete_unmapped_guids: bool = True) -> _types.TMLObject:
         """Disambiguate an incoming TML object."""
@@ -130,7 +224,7 @@ class GUIDMappingInfo(pydantic.BaseModel):
 
         assert self._path is not None, "This should be unreachable. GUIDMappingInfo requires a path."
 
-        self._path.write_text(self.model_dump_json(indent=2))
+        self._path.write_text(self.model_dump_json(indent=2), encoding="utf-8")
 
 
 class TMLStatus(pydantic.BaseModel):
