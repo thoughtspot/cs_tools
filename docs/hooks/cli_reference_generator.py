@@ -127,6 +127,15 @@ def generate_tabbed_snippet(tree: CommandTree, *, forest_name: str = "", indent:
                 textwrap.dedent(
                     f"""
                     === "{name}"
+
+                        ??? abstract "Get the Command" 
+                        
+                            <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+                    
+                            ```shell
+                            {fullpath}
+                            ```
+                    
                         {fullpath.replace("cs_tools", _common_hook_utils.CS_TOOLS_BLOCK_IDENTITY)}
                     """
                 ),
