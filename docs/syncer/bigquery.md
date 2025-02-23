@@ -4,10 +4,6 @@ hide:
   - toc
 ---
 
-__BigQuery__ is a serverless, cost-effective and multicloud data warehouse designed to help you turn big data into valuable business insights. It a fully-managed, serverless data warehouse that enables scalable analysis over petabytes of data.
-
-<span class=fc-red>__In order to use the BigQuery syncer__</span>, you must first configure your local environment. Click the __setup instructions__{ .fc-purple } below.
-
 ??? example "Setup instructions"
 
     1. Head to [Google Developers Console][gc-dev-console] and create a new project (or select the one you already have).
@@ -22,54 +18,76 @@ __BigQuery__ is a serverless, cost-effective and multicloud data warehouse desig
         - Click <span class=fc-blue>__Create__</span>. A JSON key file is downloaded to your computer.
         - Click <span class=fc-blue>__Close__</span>.
     
-    __[optional]__{ .fc-purple }
-    <br/>:fontawesome-brands-apple:, :fontawesome-brands-linux: Move the downloaded file to `~/.config/cs_tools/bigquery/credentials.json`.
-    <br/>:fontawesome-brands-windows: Move the downloaded file to `%APPDATA%\cs_tools\bigquery\credentials.json`.
 
-
-!!! note "BigQuery parameters"
+!!! note "Parameters"
 
     ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
     ---
 
-    - [X] __project_id__{ .fc-red }, _your BigQuery [__project identifier__][gc-project-id]_
+    - [X] __project_id__{ .fc-red }, *your BigQuery [__project identifier__][gc-project-id]*
 
     ---
 
-    - [X] __dataset__{ .fc-red }, _the dataset to write new data to_
-    <br />___if tables do not exist in the project.dataset location already, we'll auto-create them___{ .fc-green }
+    - [X] __dataset__{ .fc-red }, *the dataset to write new data to*
+    <br />*__if tables do not exist in the__ `project.dataset` __location already, we'll auto-create them__*{ .fc-green }
 
     ---
 
-    - [X] __credentials_keyfile__{ .fc-red }, _the path to your credentials JSON_
+    - [X] __credentials_keyfile__{ .fc-red }, *the path to your credentials JSON*
 
     ---
 
-    - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
+    - [ ] __load_strategy__{ .fc-blue}, *how to write new data into existing tables*
     <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
 
+    ---
 
-??? question "How do I use the BigQuery syncer in commands?"
+    ??? danger "Serverless Requirements"
 
-    `cs_tools tools searchable bi-server --syncer bigquery://project_id=cs_tools&dataset=cs_tools_v150&credentials_keyfile=/usr/etc/searchable-ef192fec85db.json`
+        If you're running __CS Tools__ [&nbsp; :simple-serverless: &nbsp;__serverless__][cs-tools-serverless], you'll want to ensure you install these [&nbsp; :simple-python: &nbsp;__python requirements__][syncer-manifest].
 
-    __- or -__{ .fc-blue }
-
-    `cs_tools tools searchable bi-server --syncer bigquery://definition.toml`
+        :cstools-mage: __Don't know what this means? It's probably safe to ignore it.__{ .fc-purple }
 
 
-## Definition TOML Example
+??? question "How do I use the Syncer in commands?"
 
-`definition.toml`
-```toml
-[configuration]
-project_id = "cs_tools"
-dataset = "cs_tools_v150"
-credentials_keyfile = "/usr/etc/searchable-ef192fec85db.json"
-load_strategy = 'truncate'
-```
+    __CS Tools__ accepts syncer definitions in either declarative or configuration file form.
 
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+
+    === ":mega: &nbsp; Declarative"
+
+        Simply write the parameters out alongside the command.
+
+        ```bash
+        cs_tools tools searchable metadata --syncer "bigquery://project_id=thoughtspot&dataset=cs_tools&credentials_keyfile=/path/to/cs_tools/bigquery/credentials.json" --config dogfood
+        ```
+
+        <sup class=fc-gray><i>* when declaring multiple parameters inline, you should <b class=fc-purple>wrap the enter value</b> in quotes.</i></sup>
+
+    === ":recycle: &nbsp; Configuration File"
+
+        1. Create a file with `.toml` extension.
+
+            ??? abstract "syncer-overwrite.toml"
+                ```toml
+                [configuration]
+                project_id = "thoughtspot"
+                dataset = "cs_tools"
+                credentials_keyfile = "/path/to/cs_tools/bigquery/credentials.json"
+                load_strategy = "TRUNCATE"
+                ```
+                <sup class=fc-gray><i>* this is a complete example, not all parameters are <b class=fc-red>required</b>.</i></sup>
+
+        2. Reference the filename in your command in place of the parameters.
+
+            ```bash
+            cs_tools tools searchable metadata --syncer bigquery://syncer-overwrite.toml --config dogfood
+            ```
+
+[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/bigquery/MANIFEST.json
 [gc-dev-console]: https://console.cloud.google.com/apis/dashboard
 [gc-service-account]: https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account
 [gc-project-id]: https://support.google.com/googleapi/answer/7014113?hl=en

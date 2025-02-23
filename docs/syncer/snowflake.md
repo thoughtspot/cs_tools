@@ -4,97 +4,122 @@ hide:
   - toc
 ---
 
-Snowflake is a powerful cloud-based data warehouse that makes it super easy to store, analyze, and share your company's data. It can handle massive amounts of information, from traditional spreadsheets to complex, unstructured data like web logs and sensor readings. The key thing that sets Snowflake apart is its unique architecture.
-
-Instead of having a single, monolithic database, Snowflake separates the storage of your data from the computing power needed to analyze it. This means you can scale up or down the amount of processing power you use without having to worry about moving or reorganizing your data.
-
-!!! note "Snowflake parameters"
+!!! note "Parameters"
 
     ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
     ---
 
-    - [X] __account_name__{ .fc-red }, _your Snowflake [account identifier][snowflake-account-id]_
-    <br />___for most customers, this is your account name___{ .fc-green }
-    <br />___if you are using Privatelink, use the format `<account>.<region>.privatelink`___{ .fc-green }
+    - [X] __account_name__{ .fc-red }, *your Snowflake [account identifier][snowflake-account-id]*
+    <br />*__for most customers, this is your account name__*{ .fc-green }
+    <br />*__if you are using Privatelink, use the format__ `<account>.<region>.privatelink`*{ .fc-green }
 
     ---
 
-    - [X] __username__{ .fc-red }, _your Snowflake username_
+    - [X] __username__{ .fc-red }, *your Snowflake username*
     
     ---
 
-    - [X] __warehouse__{ .fc-red }, _the name of a Snowflake warehouse you have accces to_
+    - [X] __warehouse__{ .fc-red }, *the name of a Snowflake warehouse you have accces to*
     
     ---
 
-    - [X] __role__{ .fc-red }, _the name of a Snowflake role you have access to_
+    - [X] __role__{ .fc-red }, *the name of a Snowflake role you have access to*
     
     ---
 
-    - [X] __authentication__{ .fc-red }, _the type of [authentication mechanism][snowflake-auth] to use to connect to Snowflake_
+    - [X] __authentication__{ .fc-red }, *the type of [authentication mechanism][snowflake-auth] to use to connect to Snowflake*
     <br />( __allowed__{ .fc-green }: `basic`, `key-pair`, `sso`, `oauth` )
 
     ---
 
-    - [X] __database__{ .fc-red }, _the database to write new data to_
-    <br />___if tables do not exist in the database.schema location already, we'll auto-create them___{ .fc-green }
+    - [X] __database__{ .fc-red }, *the database to write new data to*
+    <br />*__if tables do not exist in the__ `database.schema` __location already, we'll auto-create them__*{ .fc-green }
     
     ---
 
     - [ ] __schema__{ .fc-blue }, _the schema to write new data to_
-    <br />___if tables do not exist in the database.schema location already, we'll auto-create them___{ .fc-green }
+    <br />*__if tables do not exist in the__ `database.schema` __location already, we'll auto-create them__*{ .fc-green }
     <br />__default__{ .fc-gray }: `PUBLIC`
 
     ---
 
-    - [X] __secret__{ .fc-red }, _the secret value to pass to the authentication mechanism_
-    <br />_this will be either a __password__{ .fc-purple } or __oauth token__{ .fc-purple }_
+    - [X] __secret__{ .fc-red }, *the secret value to pass to the authentication mechanism*
+    <br />*__this will be either a <span class=fc-purple>password</span> or <span class=fc-purple>oauth token</span>__*{ .fc-green }
     
     ---
 
-    - [ ] __private_key_path__{ .fc-blue }, _full path to an encrypted private key file_
+    - [ ] __private_key_path__{ .fc-blue }, *full path to an encrypted private key file*
     
     ---
 
-    - [ ] __log_level__{ .fc-blue }, _the noisiness of the underlying Snowflake sql driver_
+    - [ ] __log_level__{ .fc-blue }, *the noisiness of the underlying Snowflake sql driver*
     <br />__default__{ .fc-gray }: `warning` ( __allowed__{ .fc-green }: `debug`, `info`, `warning` )
     
     ---
 
-    - [ ] __temp_dir__{ .fc-blue }, _location to write temporary files prior to staging to Snowflake_
+    - [ ] __temp_dir__{ .fc-blue }, *location to write temporary files prior to staging to Snowflake*
     <br />__default__{ .fc-gray }: `CS_TOOLS.TEMP_DIR` (your temporary directory in the CS Tools configuration)
 
     ---
 
-    - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
+    - [ ] __load_strategy__{ .fc-blue}, *how to write new data into existing tables*
     <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
 
+    ---
 
-??? question "How do I use the Snowflake syncer in commands?"
+    ??? danger "Serverless Requirements"
 
-    `cs_tools tools searchable bi-server --syncer snowflake://account_name=...&username=...&secret=...&warehouse=WH_DATA_LOADS_XS&role=DATA_OPERATIONS&database=GO_TO_MARKET&authentication=basic`
+        If you're running __CS Tools__ [&nbsp; :simple-serverless: &nbsp;__serverless__][cs-tools-serverless], you'll want to ensure you install these [&nbsp; :simple-python: &nbsp;__python requirements__][syncer-manifest].
 
-    __- or -__{ .fc-blue }
-
-    `cs_tools tools searchable bi-server --syncer snowflake://definition.toml`
+        :cstools-mage: __Don't know what this means? It's probably safe to ignore it.__{ .fc-purple }
 
 
-## Definition TOML Example
+??? question "How do I use the Syncer in commands?"
 
-`definition.toml`
-```toml
-[configuration]
-account_name = '...'
-username = '...'
-secret = '...'
-warehouse = 'WH_DATA_LOADS_XS'
-role = 'DATA_OPERATIONS'
-database = 'GO_TO_MARKET'
-schema = 'CS_TOOLS'
-authentication = 'basic'
-load_strategy = 'truncate'
-```
+    __CS Tools__ accepts syncer definitions in either declarative or configuration file form.
 
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+
+    === ":mega: &nbsp; Declarative"
+
+        Simply write the parameters out alongside the command.
+
+        ```bash
+        cs_tools tools searchable metadata --syncer "snowflake://account_name=thoughtspot&username=tsadmin&warehouse=ETL_WH&role=ACCT_DATA_LOADER&authentication=basic&database=thoughtspot&schema=cs_tools&secret=[redacted]" --config dogfood
+        ```
+
+        <sup class=fc-gray><i>* when declaring multiple parameters inline, you should <b class=fc-purple>wrap the enter value</b> in quotes.</i></sup>
+
+    === ":recycle: &nbsp; Configuration File"
+
+        1. Create a file with `.toml` extension.
+
+            ??? abstract "syncer-overwrite.toml"
+                ```toml
+                [configuration]
+                account_name = "thoughtspot"
+                username = "tsadmin"
+                warehouse = "ETL_WH"
+                role = "ACCT_DATA_LOADER"
+                authentication = "basic"
+                database = "thoughtspot"
+                schema = "cs_tools"
+                secret = "[redacted]"
+                # private_key_path = ...
+                log_level = "info"
+                temp_dir = "/tmp"
+                load_strategy = "TRUNCATE"
+                ```
+                <sup class=fc-gray><i>* this is a complete example, not all parameters are <b class=fc-red>required</b>.</i></sup>
+
+        2. Reference the filename in your command in place of the parameters.
+
+            ```bash
+            cs_tools tools searchable metadata --syncer snowflake://syncer-overwrite.toml --config dogfood
+            ```
+
+[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/snowflake/MANIFEST.json
 [snowflake-account-id]: https://docs.snowflake.com/en/user-guide/admin-account-identifier
 [snowflake-auth]: https://docs.snowflake.com/en/developer-guide/node-js/nodejs-driver-authenticate

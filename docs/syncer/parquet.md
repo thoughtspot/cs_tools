@@ -4,45 +4,61 @@ hide:
   - toc
 ---
 
-A Parquet file is a special type of data file that's designed to store large amounts of information in a way that's really efficient and easy to work with. It's kind of like a digital filing cabinet for your data.
-
-Parquet files are really handy for working with large, complex datasets. They're super efficient, fast, and flexible, which makes them a popular choice for a lot of big data and analytics applications.
-
-Some of the key benefits of Parquet files include:
-
-  - __Smaller file size__: The columnar storage and compression features make Parquet files much smaller than other data formats.
-  - __Faster performance__: Data is organized making it really quick and easy to find and access the specific information you need.
-  - __Cross-platform__: They can be used with all kinds of different tools and frameworks, so you can share your data anywhere.
-  - __Metadata support__: They store information about the data structure and schema, which makes them really easy to work with.
-
-!!! note "Parquet parameters"
+!!! note "Parameters"
 
     ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
     ---
 
-    - [x] __directory__{ .fc-red }, _the folder location to write JSON files to_
+    - [x] __directory__{ .fc-red }, *the folder location to write Parquet files to*
 
     ---
 
-    - [ ] __compression__{ .fc-blue }, _the method used to compress data_
+    - [ ] __compression__{ .fc-blue }, *the method used to compress data*
     <br />__default__{ .fc-gray }: `GZIP` ( __allowed__{ .fc-green }: `GZIP`, `SNAPPY` )
 
+    ---
 
-??? question "How do I use the Parquet syncer in commands?"
+    ??? danger "Serverless Requirements"
 
-    `cs_tools tools searchable bi-server --syncer parquet://directory=.`
+        If you're running __CS Tools__ [&nbsp; :simple-serverless: &nbsp;__serverless__][cs-tools-serverless], you'll want to ensure you install these [&nbsp; :simple-python: &nbsp;__python requirements__][syncer-manifest].
 
-    __- or -__{ .fc-blue }
-
-    `cs_tools tools searchable bi-server --syncer parquet://definition.toml`
+        :cstools-mage: __Don't know what this means? It's probably safe to ignore it.__{ .fc-purple }
 
 
-## Definition TOML Example
+??? question "How do I use the Syncer in commands?"
 
-`definition.toml`
-```toml
-[configuration]
-directory = '...'
-compression = 'SNAPPY'
-```
+    __CS Tools__ accepts syncer definitions in either declarative or configuration file form.
+
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+
+    === ":mega: &nbsp; Declarative"
+
+        Simply write the parameters out alongside the command.
+
+        ```bash
+        cs_tools tools searchable metadata --syncer "parquet://directory=." --config dogfood
+        ```
+
+        <sup class=fc-gray><i>* when declaring multiple parameters inline, you should <b class=fc-purple>wrap the enter value</b> in quotes.</i></sup>
+
+    === ":recycle: &nbsp; Configuration File"
+
+        1. Create a file with the `.toml` extension.
+
+            ??? abstract "syncer-overwrite.toml"
+                ```toml
+                [configuration]
+                directory = "."
+                compression = "GZIP"
+                ```
+                <sup class=fc-gray><i>* this is a complete example, not all parameters are <b class=fc-red>required</b>.</i></sup>
+
+        2. Write the filename in your command in place of the parameters.
+
+            ```bash
+            cs_tools tools searchable metadata --syncer parquet://syncer-overwrite.toml --config dogfood
+            ```
+
+[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/parquet/MANIFEST.json

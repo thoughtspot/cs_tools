@@ -4,71 +4,52 @@ hide:
   - toc
 ---
 
-Starburst is a powerful, enterprise-grade data analytics platform that allows you to query and analyze data from a wide variety of sources, all in a single, unified environment. It's built on top of the open-source Trino (formerly Presto) query engine, which is known for its speed, scalability, and flexibility.
+!!! note "Parameters"
 
-Unlike traditional database management systems that require you to move and transform your data into a centralized repository, Starburst lets you query data where it lives - whether that's in a data warehouse, a data lake, or even disparate databases and file systems across your organization. This "data mesh" approach helps you avoid the time and cost of complex ETL (extract, transform, load) processes, while still giving you the ability to access and analyze all your relevant data.
-
-!!! note "Starburst parameters"
-
-    ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
+    __This Syncer inherits all its parameters from the__{ .fc-blue } [__Trino Syncer__](./trino.md).
     
-    ---
-
-    - [X] __host__{ .fc-red }, _the IP address or URL of your Starburst catalog_
-
-    ---
-
-    - [ ] __port__{ .fc-blue }, _the port number where your Starburst catalog is located_
-    <br />__default__{ .fc-gray }: `8080`
-
-    ---
-
-    - [X] __catalog__{ .fc-red }, _the catalog to write new data to_
-    <br />___if tables do not exist in the catalog.schema location already, we'll auto-create them___{ .fc-green }
-
-    ---
-
-    - [ ] __schema__{ .fc-blue }, _the schema to write new data to_
-    <br />__default__{ .fc-gray }: `public`, ___if tables do not exist in the catalog.schema location already, we'll auto-create them___{ .fc-green }
-
-    ---
-
-    - [X] __authentication__{ .fc-red }, _the type of authentication mechanism to use to connect to Starburst_
-    <br />( __allowed__{ .fc-green }: `basic`, `jwt` )
-
-    ---
-
-    - [X] __username__{ .fc-red }, _your Starburst username_
-
-    ---
-
-    - [ ] __secret__{ .fc-blue }, _the secret value to pass to the authentication mechanism_
-    <br />_this will be either a __password__{ .fc-purple } or __jwt__{ .fc-purple }_
-
-    ---
-
-    - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
-    <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
+    :cstools-mage: __Starburst is basically a services layer on top of Trino.__{ .fc-purple }
 
 
-??? question "How do I use the Starburst syncer in commands?"
+??? question "How do I use the Syncer in commands?"
 
-    `cs_tools tools searchable bi-server --syncer starburst://host=0.0.0.0&catalog=...&schema=cs_tools&authentication=basic&username=admin&load_strategy=upsert`
+    __CS Tools__ accepts syncer definitions in either declarative or configuration file form.
 
-    __- or -__{ .fc-blue }
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
 
-    `cs_tools tools searchable bi-server --syncer starburst://definition.toml`
+    === ":mega: &nbsp; Declarative"
 
+        Simply write the parameters out alongside the command.
 
-## Definition TOML Example
+        ```bash
+        cs_tools tools searchable metadata --syncer "starburst://host=thoughtspot.cloud.starburst.io&catalog=thoughtspot&schema=cs_tools&authentication=basic&username=tsadmin&secret=[redacted]" --config dogfood
+        ```
 
-`definition.toml`
-```toml
-[configuration]
-host = "0.0.0.0"
-catalog = "..."
-schema = "cs_tools"
-authentication = "basic"
-username = "admin"
-load_strategy = "upsert"
-```
+        <sup class=fc-gray><i>* when declaring multiple parameters inline, you should <b class=fc-purple>wrap the enter value</b> in quotes.</i></sup>
+
+    === ":recycle: &nbsp; Configuration File"
+
+        1. Create a file with `.toml` extension.
+
+            ??? abstract "syncer-overwrite.toml"
+                ```toml
+                [configuration]
+                host = "thoughtspot.cloud.starburst.io"
+                port = 8080
+                catalog = "thoughtspot"
+                schema = "cs_tools"
+                authentication = "basic"
+                username = "tsadmin"
+                secret = "[redacted]"
+                load_strategy = "TRUNCATE"
+                ```
+                <sup class=fc-gray><i>* this is a complete example, not all parameters are <b class=fc-red>required</b>.</i></sup>
+
+        2. Reference the filename in your command in place of the parameters.
+
+            ```bash
+            cs_tools tools searchable metadata --syncer starburst://syncer-overwrite.toml --config dogfood
+            ```
+
+[cs-tools-serverless]: ../../getting-started/#__tabbed_1_4
+[syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/starburst/MANIFEST.json

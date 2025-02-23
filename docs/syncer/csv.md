@@ -4,11 +4,7 @@ hide:
   - toc
 ---
 
-A CSV file, or __Comma-Separated Values__ file, is a simple type of spreadsheet or database file. It's a way to store and share data in a structured format that's easy for computers to read and understand. Each line of the file is a data record. Each record consists of one or more fields, separated by commas.
-
-A CSV file typically stores tabular data in plain text, in which case each line will have the same number of fields. Alternative delimiter-separated files are often given a ".csv" extension despite the use of a non-comma field separator.
-
-!!! note "CSV parameters"
+!!! note "Parameters"
 
     ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
@@ -52,22 +48,42 @@ A CSV file typically stores tabular data in plain text, in which case each line 
     <br />__default__{ .fc-gray }: `OVERWRITE` ( __allowed__{ .fc-green }: `APPEND`, `OVERWRITE` )
 
 
-??? question "How do I use the CSV syncer in commands?"
+??? question "How do I use the Syncer in commands?"
 
-    `cs_tools tools searchable bi-server --syncer csv://directory=.&header=false&save_strategy=APPEND`
+    __CS Tools__ accepts syncer definitions in either declarative or configuration file form.
 
-    __- or -__{ .fc-blue }
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
 
-    `cs_tools tools searchable bi-server --syncer csv://definition.toml`
+    === ":mega: &nbsp; Declarative"
 
+        Simply write the parameters out alongside the command.
 
-## Definition TOML Example
+        ```bash
+        cs_tools tools searchable metadata --syncer "csv://directory=.&delimiter=|" --config dogfood
+        ```
 
-`definition.toml`
-```toml
-[configuration]
-directory = '...'
-delimiter = '|'
-escape_character = '\'
-save_strategy = APPEND
-```
+        <sup class=fc-gray><i>* when declaring multiple parameters inline, you should <b class=fc-purple>wrap the enter value</b> in quotes.</i></sup>
+
+    === ":recycle: &nbsp; Configuration File"
+
+        1. Create a file with the `.toml` extension.
+
+            ??? abstract "syncer-overwrite.toml"
+                ```toml
+                [configuration]
+                directory = "."
+                delimiter = "|"
+                escape_character = "\\"
+                empty_as_null = true
+                quoting = "ALL"
+                date_time_format = "%Y-%m-%dT%H:%M:%S%z"
+                header = false
+                save_strategy = "APPEND"
+                ```
+                <sup class=fc-gray><i>* this is a complete example, not all parameters are <b class=fc-red>required</b>.</i></sup>
+
+        2. Write the filename in your command in place of the parameters.
+
+            ```bash
+            cs_tools tools searchable metadata --syncer csv://syncer-overwrite.toml --config dogfood
+            ```
