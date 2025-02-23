@@ -1,5 +1,5 @@
 {
     "name": "parquet",
     "syncer_class": "Parquet",
-    "requirements": ["pyarrow == 10.0.1"]
+    "requirements": ["pyarrow == 19.0.1"]
 }
