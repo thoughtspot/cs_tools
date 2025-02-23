@@ -60,7 +60,7 @@ class Excel(Syncer):
     def make_filename(self) -> pathlib.Path:
         """Enforce the SUFFIX + XLSX extension."""
         if self.filepath_suffix is not None:
-            suffix = f"__{dt.datetime.now(tz=dt.timezone.utc).strftime(self.filepath_suffix)}"
+            suffix = f"{dt.datetime.now(tz=dt.timezone.utc).strftime(self.filepath_suffix)}"
             suffix = suffix.replace(":", "-").replace("/", "")
         else:
             suffix = ""
