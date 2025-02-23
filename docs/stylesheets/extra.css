@@ -41,6 +41,8 @@
 
   --md-text-font-family: "Optimo-Plain";
   --md-code-font-family: "BB Roller Mono";
+
+  --md-admonition-icon--tinm: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0,0,100,100"><text x="50" y=".9em" text-anchor="middle" font-size="90" style="">🧙</text></svg>')
 }
 
 
@@ -104,13 +106,23 @@
     }
 }
 
-/* @media (width <= 1500px) {
-    .md-typeset .admonition {
-        height: auto;
-        margin: 0em;
-    }
-    .md-typeset details {
-        height: auto;
-        margin: 0em 0em 1rem 0em;
-    }
-} */
+/* 
+ * There Is No Magic Admonition.
+ */
+.md-typeset .admonition.tinm,
+.md-typeset details.tinm {
+  border-color: var(--ts-color-purple);
+}
+
+.md-typeset .tinm > .admonition-title,
+.md-typeset .tinm > summary {
+  background-color: color-mix(in srgb, var(--ts-color-yellow), transparent 85%);
+  color: var(--ts-color-purple);
+}
+
+.md-typeset .tinm > .admonition-title::before,
+.md-typeset .tinm > summary::before {
+  background-color: var(--ts-color-purple);
+  -webkit-mask-image: var(--md-admonition-icon--tinm);
+          mask-image: var(--md-admonition-icon--tinm);
+}
