@@ -1,5 +1,5 @@
 {
     "name": "excel",
     "syncer_class": "Excel",
-    "requirements": ["openpyxl >= 3.0.7", "lxml >= 4.6.5"]
+    "requirements": ["openpyxl >= 3.1.5", "lxml >= 5.3.1"]
 }
