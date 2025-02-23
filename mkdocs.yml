@@ -118,6 +118,7 @@ nav:
     - Google Sheets: syncer/gsheets.md
     - JSON: syncer/json.md
     - Parquet: syncer/parquet.md
+    - Mock: syncer/mock.md
     - Postgres: syncer/postgres.md
     - Redshift: syncer/redshift.md
     - Snowflake: syncer/snowflake.md
