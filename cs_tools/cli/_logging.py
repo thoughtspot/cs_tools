@@ -50,6 +50,7 @@ class SecretsFilter(logging.Filter):
         # Patterns to match sensitive data
         self.patterns = {
             "password": (r'password[\'"]\s*:\s*[\'"][^\'\"]+[\'"]', r'password": "****"'),
+            "secret_key": (r'secret_key[\'"]\s*:\s*[\'"][^\'\"]+[\'"]', r'secret_key": "****"'),
             "token": (r'token[\'"]\s*:\s*[\'"][^\'\"]+[\'"]', r'token": "****"'),
             "authorization": (r"authorization\s*:\s*bearer\s+\S+", r"authorization: bearer ****"),
             # Add more patterns as needed
