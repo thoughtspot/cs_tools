@@ -18,6 +18,7 @@ theme:
     - announce.dismiss
     - content.code.copy
     - content.code.annotate
+    - content.tabs.link
     - navigation.footer
     - navigation.tracking
     - navigation.tabs
