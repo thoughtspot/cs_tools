@@ -9,24 +9,28 @@ jobs:
  build:
 
     env:
-      CS_TOOLS_THOUGHTSPOT__URL: https://dogfood.thoughtspot.cloud
-      CS_TOOLS_THOUGHTSPOT__USERNAME: FakeUser
-      CS_TOOLS_THOUGHTSPOT__SECRET_KEY: 00000000-0000-0000-0000-000000000000
+      CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
+      CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
+      CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
+      # SETUP PYTHON.
       - name: Set up Python
         uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
+      
+      # UPDATE PIP.
+      - name: Ensure pip is up to date.
+        run: python -m pip install --upgrade pip
 
+      # INSTALL THE LATEST VERSION OF THE CS Tools PROJECT.
       - name: Install Python dependencies
-        run: pip install -e .[docs]
+        run: python -m pip install -e .[docs]
 
-      - name: Build and Deploy Documentation
+      # BUILD THE DOCS.
+      - name: Build MkDocs Documentation
         run: mkdocs build
-
+      
+      # DEPLOY THE DOCS.
       - name: Deploy Documentation
         run: mkdocs gh-deploy --force

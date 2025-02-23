@@ -1,4 +1,5 @@
 ---
+title: CS Tools
 hide:
   - navigation
   - toc
@@ -52,7 +53,7 @@ hide:
 </div>
 
 <span class=grid-define-columns data-columns=3>
-    <a class=md-button style="text-align: center" href=./tutorial/install/>:octicons-tools-16: Get the Tools</a>
-    <a class=md-button style="text-align: center" href=https://github.com/thoughtspot/cs_tools/discussions/55>:octicons-comment-discussion-16: Chat with us on Discussions</a>
-    <a class=md-button style="text-align: center" href=https://github.com/thoughtspot/cs_tools>:octicons-mark-github-16: Find our source code</a>
+    <a class=md-button style="text-align: center" href=./tutorial/install/>:octicons-tools-16: &nbsp;Get the Tools</a>
+    <a class=md-button style="text-align: center" href=https://github.com/thoughtspot/cs_tools/discussions/55>:octicons-comment-discussion-16: &nbsp;Chat with us on Discussions</a>
+    <a class=md-button style="text-align: center" href=https://github.com/thoughtspot/cs_tools>:octicons-mark-github-16: &nbsp;Find our source code</a>
 </span>

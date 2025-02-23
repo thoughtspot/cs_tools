@@ -1,5 +1,4 @@
-name:
-  Extract Metadata with CS Tools.
+name: Extract Metadata with CS Tools.
 
 on:
   workflow_dispatch:
