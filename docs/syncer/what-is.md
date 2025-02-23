@@ -3,10 +3,6 @@ hide:
   - toc
 ---
 
-<style>
-    .task-list-item { color: var(--ts-color-black60); }
-</style>
-
 __CS Tools__ interacts with your __ThoughtSpot__ cluster through the [__V2.0 REST APIs__][ts-rest-apis]. Oftentimes the data that comes back from an API cannot exposed directly back to analytics tools like __ThoughtSpot__, __because it's in the wrong shape__{ .fc-red }. Additionally, __ThoughtSpot__ requires that your data be stored in a database in order to ask questions of it.
 
   - [x] __CS Tools__ takes the responsibility of reshaping that data into a tabular format
