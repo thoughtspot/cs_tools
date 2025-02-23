@@ -6,7 +6,7 @@ hide:
 
 ??? tinm "There is No Magic!"
 
-    __This database is only available if you host the Software version of the ThoughtSpot product__{ .fc-purple }, and are not using [__Connections__](https://docs.thoughtspot.com/software/latest/connections) to an external data store.
+    __This database is only available if you host the Software version of the ThoughtSpot product__{ .fc-purple }, and are not using [__Connections__][ts-sw-connections] to an external data store.
 
 
 !!! note "Parameters"
@@ -76,3 +76,5 @@ hide:
             ```bash
             cs_tools tools searchable metadata --syncer falcon://syncer-overwrite.toml --config dogfood
             ```
+
+[ts-sw-connections]: https://docs.thoughtspot.com/software/latest/connections

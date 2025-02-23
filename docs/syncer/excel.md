@@ -54,7 +54,7 @@ hide:
 
     === ":recycle: &nbsp; Configuration File"
 
-        1. Create a file with `.toml` extension.
+        1. Create a file with the `.toml` extension.
 
             ??? abstract "syncer-overwrite.toml"
                 ```toml
@@ -66,7 +66,7 @@ hide:
                 ```
                 <sup class=fc-gray><i>* this is a complete example, not all parameters are <b class=fc-red>required</b>.</i></sup>
 
-        2. Reference the filename in your command in place of the parameters.
+        2. Write the filename in your command in place of the parameters.
 
             ```bash
             cs_tools tools searchable metadata --syncer excel://syncer-overwrite.toml --config dogfood
