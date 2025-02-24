@@ -35,7 +35,7 @@ def temp_csv_for_upload(
         fd.seek(0)
         yield fd
 
-    pathlib.Path(fd.name).unlink()
+    pathlib.Path(fd.name).unlink(missing_ok=True)
 
 
 def format_datetime_values(row: dict[str, Any], *, dt_format: str = DATETIME_FORMAT_ISO_8601) -> dict[str, Any]:
