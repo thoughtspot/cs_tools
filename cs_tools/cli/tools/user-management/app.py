@@ -152,7 +152,7 @@ def transfer(
     return 0
 
 
-@app.command(hidden=True)
+@app.command()
 @depends_on(thoughtspot=ThoughtSpot())
 def delete(
     ctx: typer.Context,
@@ -162,6 +162,7 @@ def delete(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
+    deletion: str = typer.Option(..., help="directive to find content to delete", rich_help_panel="Syncer Options"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
 ) -> _types.ExitCode:
     """
@@ -192,8 +193,67 @@ def delete(
     TOOL_TASKS = [
         px.WorkTask(id="LOAD_DATA", description=f"Loading data from {syncer.name}"),
         px.WorkTask(id="CONFIRM", description="Confirmation Prompt"),
-        px.WorkTask(id="DELETE", description="Syncing Principals to ThoughtSpot"),
+        px.WorkTask(id="DELETE", description="Deleting Users from ThoughtSpot"),
     ]
+
+    with px.WorkTracker("Deleting Users", tasks=TOOL_TASKS) as tracker:
+        with tracker["LOAD_DATA"]:
+            data = syncer.load(deletion)
+
+            user_identifiers: set[_types.PrincipalIdentifier] = {
+                row.get("user_guid", None) or row.get("username", None)
+                for row in data
+                if row.get("user_guid", None) or row.get("username", None)
+            }
+
+        with tracker["CONFIRM"] as this_task:
+            if no_prompt:
+                this_task.skip()
+            else:
+                this_task.description = "[fg-warn]Confirmation prompt"
+                this_task.total = ONE_MINUTE = 60
+
+                tracker.extra_renderable = lambda: Align.center(
+                    console.Group(
+                        Align.center(f"{len(user_identifiers):,} Users will be deleted"),
+                        "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
+                    )
+                )
+
+                th = threading.Thread(target=_tick_tock, args=(this_task,))
+                th.start()
+
+                kb = ConfirmationListener(timeout=ONE_MINUTE)
+                kb.run()
+
+                assert kb.response is not None, "ConfirmationListener never got a response."
+
+                tracker.extra_renderable = None
+                this_task.final()
+
+                if kb.response.upper() == "N":
+                    this_task.description = "[fg-error]Denied[/] (no deleting done)"
+                    return 0
+                else:
+                    this_task.description = f"[fg-success]Approved[/] (deleting {len(user_identifiers):,})"
+
+        with tracker["DELETING"] as this_task:
+            this_task.total = len(user_identifiers)
+
+            users_to_delete: set[_types.GUID] = {metadata_object["guid"] for metadata_object in user_identifiers}
+            delete_attempts = collections.defaultdict(int)
+
+            async def _delete_and_advance(guid: _types.GUID) -> None:
+                delete_attempts[guid] += 1
+                r = await ts.api.users_delete(user_identifier=guid)
+
+                if r.is_success or delete_attempts[guid] > 10:
+                    users_to_delete.discard(guid)
+                    this_task.advance(step=1)
+
+            while users_to_delete:
+                c = utils.bounded_gather(*(_delete_and_advance(guid=_) for _ in users_to_delete), max_concurrent=15)
+                _ = utils.run_sync(c)
 
     return 0
 
