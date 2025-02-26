@@ -38,7 +38,7 @@ CS_TOOLS_THEME = theme.Theme(
     inherit=True,
 )
 
-RICH_CONSOLE = rich_console = Console(theme=CS_TOOLS_THEME)
+RICH_CONSOLE = Console(theme=CS_TOOLS_THEME)
 
 
 @contextlib.contextmanager

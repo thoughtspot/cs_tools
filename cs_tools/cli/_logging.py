@@ -7,7 +7,7 @@ import logging.handlers
 import pathlib
 import re
 
-from cs_tools.cli.ux import rich_console
+from cs_tools.cli.ux import RICH_CONSOLE
 from cs_tools.updater import cs_tools_venv
 
 
@@ -106,7 +106,7 @@ def _setup_logging() -> None:
                 "formatter": "simple",
                 "filters": ["secrets"],
                 # RichHandler.__init__()
-                "console": rich_console,
+                "console": RICH_CONSOLE,
                 "show_level": True,
                 "rich_tracebacks": True,
                 "markup": True,
