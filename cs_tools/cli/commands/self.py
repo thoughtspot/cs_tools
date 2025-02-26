@@ -129,9 +129,7 @@ def _make_offline_distributable(
     python_version: custom_types.Version = typer.Option(
         metavar="X.Y", help="The major and minor version of the target Python environment, see --help for details"
     ),
-    beta: custom_types.Version = typer.Option(
-        None, metavar="X.Y.Z", help="The specific beta version to fetch from Github."
-    ),
+    beta: str = typer.Option(None, metavar="X.Y.Z", help="The specific beta version to fetch from Github."),
     syncer: str = typer.Option(None, metavar="DIALECT", help="Name of the dialect to fetch dependencies for."),
 ) -> _types.ExitCode:
     """
@@ -142,13 +140,9 @@ def _make_offline_distributable(
     >>> [fg-secondary]python -c "from pip._vendor.packaging.tags import platform_tags; print(next(iter(platform_tags())))"[/]
 
     Q. How can I find my python version?
-    >>> [fg-secondary]python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"[/]
+    >>> [fg-secondary]python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"[/]
     """
     assert isinstance(directory, pathlib.Path), "directory must be a pathlib.Path"
-
-    # JUST IN CASE SOMEONE FORGETS THE `v` PREFIX :~)
-    if beta is not None and "v" not in beta:
-        beta = custom_types.Version().convert(f"v{beta}", None, None)
 
     # ENSURE WE HAVE THE DESIRED SYNCER INSTALLED.
     if syncer is not None:
@@ -162,14 +156,18 @@ def _make_offline_distributable(
     # FETCH THE VERSION TO INSTALL.
     ref = beta if beta is not None else get_latest_cs_tools_release().get("tag_name", f"v{__version__}")
 
-    # fmt: off
-    cs_tools_venv.run(
-        cs_tools_venv.python.as_posix(), "-m", "pip", "download",
-        f"cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/{ref}.zip",
-        "--dest", directory.as_posix(),
-        raise_if_stderr=True,
-    )
-    # fmt: on
+    try:
+        # fmt: off
+        cs_tools_venv.run(
+            cs_tools_venv.python.as_posix(), "-m", "pip", "download",
+            f"cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/{ref}.zip",
+            "--dest", directory.as_posix(),
+            raise_if_stderr=True,
+        )
+        # fmt: on
+    except RuntimeError:
+        _LOG.error(f"Failed to fetch requirements for CS Tools version [fg-error]{ref}, see logs for details..")
+        return 1
 
     # CREATE A ZIP / WHEEL OF OURSELVES.
     next(directory.glob(f"{ref}*.zip")).rename(directory / f"cs_tools-{ref}.zip")
