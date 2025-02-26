@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Union
 import contextlib
+import json
 import logging
 import os
 import pathlib
@@ -120,6 +121,9 @@ class CSToolsVenv(venv.EnvBuilder):
 
         if raise_if_stderr and proc.returncode != 0:
             command_as_string = " ".join(command)
+            _LOG.debug(f"Command:\n{command_as_string}")
+            _LOG.debug(f"StandardOut:\n{json.dumps(stdout_buffer, indent=2)}")
+            _LOG.debug(f"StandardErr:\n{json.dumps(stderr_buffer, indent=2)}")
             raise RuntimeError(f"Failed with exit code: {proc.returncode}\n\nRAN COMMAND BELOW\n{command_as_string}")
 
         output_as_bytes = "\n".join(stdout_buffer).encode()
