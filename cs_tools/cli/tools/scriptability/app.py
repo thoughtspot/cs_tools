@@ -263,6 +263,13 @@ def deploy(
         rich_help_panel="TML Import Options",
         hidden=True,
     ),
+    skip_diff_check: bool = typer.Option(
+        False,
+        "--skip-diff-check",
+        help="Whether to skip the diff check before importing TML.",
+        rich_help_panel="TML Import Options",
+        hidden=True,
+    ),
     org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
 ) -> _types.ExitCode:
