@@ -12,6 +12,7 @@ jobs:
       CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
       CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
       CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
+      CS_TOOLS_TEMP_DIR: ${{ runner.temp }}
 
     runs-on: ubuntu-latest
     steps:
