@@ -47,6 +47,9 @@ venv.bak/
 # ignore linting
 .mypy_cache/
 
+# ignore workflow testing files
+.workflow.test/
+
 # generated documentation
 docs/terminal-screenshots/*.svg
 

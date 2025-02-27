@@ -4,28 +4,104 @@ from base64 import (
     urlsafe_b64decode as b64d,
     urlsafe_b64encode as b64e,
 )
-from collections.abc import Generator, Iterable
-from typing import Any, Callable, Optional, TypeVar, Union
+from collections.abc import Awaitable, Coroutine, Generator, Iterable, Sequence
+from contextvars import Context
+from typing import Annotated, Any, Optional, TypeVar
+import asyncio
+import contextlib
 import datetime as dt
+import functools as ft
 import getpass
 import importlib
-import io
+import importlib.metadata
 import itertools as it
 import json
 import logging
-import os
 import pathlib
-import site
-import threading
+import sys
+import zipfile
 import zlib
 
+from sqlalchemy import types as sa_types
+from sqlalchemy.schema import Column
+from sqlmodel import Field, SQLModel
+import pydantic
 import rich
 
-T = TypeVar("T")
+from cs_tools import _compat
+
 log = logging.getLogger(__name__)
+_T = TypeVar("_T")
+_EVENT_LOOP: Optional[asyncio.AbstractEventLoop] = None
 
 
-def batched(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, None]:
+def get_event_loop() -> asyncio.AbstractEventLoop:
+    """Fetch an event loop."""
+    # DEV NOTE: @boonhapus, 2024/11/24
+    # IF WE WERE TO SWITCH TO thoughtspot.ThoughtSpot ACTING AS A GLOBAL ENTRYPOINT THEN
+    # THIS FUNCTION WOULD BE NO LONGER NEEDED, AND WE COULD USE asyncio.run() INSTEAD.
+    global _EVENT_LOOP
+
+    # RETURN THE EVENT LOOP IF IT'S ALREADY BEEN SET FOR THE PROCESS.
+    if _EVENT_LOOP is not None:
+        return _EVENT_LOOP
+
+    try:
+        loop = asyncio.get_running_loop()
+
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+
+        # SET THE EVENT LOOP ON THE THREAD.
+        asyncio.set_event_loop(loop)
+
+        # SET THE EVENT LOOP FOR THE PROCESS.
+        _EVENT_LOOP = loop
+
+    return loop
+
+
+def run_sync(coro: Awaitable) -> Any:
+    """Run a coroutine synchronously."""
+    return get_event_loop().run_until_complete(coro)
+
+
+class BoundedTaskGroup(_compat.TaskGroup):
+    """An asyncio.TaskGroup that implements backpressure."""
+
+    def __init__(self, max_concurrent: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._max_concurrent = max_concurrent
+        self._semaphore = asyncio.Semaphore(value=max_concurrent)
+
+    def create_task(  # type: ignore[override]
+        self, coro: Coroutine, *, name: Optional[str] = None, context: Optional[Context] = None
+    ) -> asyncio.Task:
+        """See: https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup.create_task"""
+
+        async def with_backpressure() -> Any:
+            async with self._semaphore:
+                return await coro
+
+        return super().create_task(coro=with_backpressure(), name=name, context=context)
+
+
+async def bounded_gather(
+    *aws: Awaitable,
+    max_concurrent: int,
+    return_exceptions: bool = False,
+) -> Sequence[Any]:
+    """An asyncio.gather that implements backpressure."""
+    semaphore = asyncio.Semaphore(value=max_concurrent)
+
+    async def with_backpressure(coro: Awaitable) -> Any:
+        async with semaphore:
+            return await coro
+
+    return await asyncio.gather(*(with_backpressure(coro) for coro in aws), return_exceptions=return_exceptions)
+
+
+def batched(iterable: Iterable[_T], *, n: int) -> Generator[Iterable[_T], None, None]:
     """Yield successive n-sized chunks from list."""
     # batched('ABCDEFG', 3) --> ABC DEF G
     if n < 1:
@@ -37,10 +113,43 @@ def batched(iterable: Iterable[T], *, n: int) -> Generator[Iterable[T], None, No
         yield batch
 
 
-def anonymize(text: str, *, anonymizer: str = " {anonymous} ") -> str:
-    """Replace text with an anonymous value."""
-    text = text.replace(getpass.getuser(), anonymizer)
-    return text
+def pairwise(iterable: Iterable[_T]) -> Generator[tuple[Optional[_T], _T], None, None]:
+    """Return successive overlapping pairs taken from the input iterable."""
+    # pairwise('ABCDEFG') → AB BC CD DE EF FG
+    iterable = iter(iterable)
+    a = next(iterable, None)
+
+    for b in iterable:
+        yield a, b
+        a = b
+
+
+def determine_editable_install(package_name: str = "cs_tools") -> bool:
+    """Determine if the current CS Tools context is an editable install."""
+    try:
+        dist = importlib.metadata.distribution(package_name)
+        text = dist.read_text("direct_url.json")
+        data = json.loads(text or "")
+        return data["dir_info"]["editable"]
+
+    # FALL BACK TO HISTORICAL METHODS.
+    except (importlib.metadata.PackageNotFoundError, json.JSONDecodeError, KeyError):
+        return any(f"__editable__.{package_name}" in path for path in sys.path)
+
+
+@ft.cache
+def get_package_directory(package_name: str) -> pathlib.Path:
+    """Get the path to the package directory."""
+    try:
+        module = importlib.import_module(package_name)
+        assert module.__spec__ is not None
+        assert module.__spec__.origin is not None
+
+    # COMBINE THESE ERROR SEMANTICS TOGETHER.
+    except (ModuleNotFoundError, AssertionError):
+        raise ModuleNotFoundError(f"Could not find module: {package_name}") from None
+
+    return pathlib.Path(module.__spec__.origin).parent
 
 
 def obscure(data: bytes) -> bytes:
@@ -69,20 +178,41 @@ def reveal(obscured: bytes) -> bytes:
     return zlib.decompress(b64d(obscured))
 
 
-def find(predicate: Callable[[Any], [bool]], iterable: list[Any]) -> Any:
-    """
-    Return the first element in the sequence that meets the predicate.
-    """
-    for element in iterable:
-        if predicate(element):
-            return element
-
-    return None
+def anonymize(text: str, *, anonymizer: str = " {anonymous} ") -> str:
+    """Replace text with an anonymous value."""
+    text = text.replace(getpass.getuser(), anonymizer)
+    return text
 
 
-class State:
+@contextlib.contextmanager
+def record_screenshots(
+    console: rich.console.Console, *, path: pathlib.Path, **svg_options
+) -> Generator[None, None, None]:
+    """Temporarily record all console output, then save to an svg."""
+    if "title" not in svg_options:
+        svg_options["title"] = ""
+
+    console.record = True
+
+    try:
+        yield
+    finally:
+        console.record = False
+        console.save_svg(path.as_posix(), **svg_options)
+
+
+class GlobalState:
     """
     An object that can be used to store arbitrary state.
+
+    Access members with dotted access.
+
+    >>> global_state = GlobalState()
+    >>> global_state.foo = 'bar'
+    >>> print(global_state.foo)
+    bar
+    >>> global_state.abc
+    AttributeError: 'State' object has no attribute 'abc'
     """
 
     _state: dict[str, Any]
@@ -107,138 +237,60 @@ class State:
         del self._state[key]
 
 
-def svg_screenshot(
-    *renderables: tuple[rich.console.RenderableType],
-    path: pathlib.Path,
-    console: rich.console.Console = None,
-    width: Optional[Union[int, str]] = None,
-    centered: bool = False,
-    **svg_kwargs,
-) -> None:
-    """
-    Save a rich Renderable as an SVG to path.
-
-    Parameters
-    ----------
-    *renderables: tuple[rich.console.RenderableType]
-      objects to render for the screenshot
-
-    path: pathlib.Path
-      full path to where the screenshot will be saved
-
-    console: rich.console.Console  [default: None]
-      the console to use for screenshots, respects theming
-
-    width: int or 'fit'  [default: console.width]
-      maximum width of the console in the screenshot
-
-    centered: bool  [default: False]
-      whether or not to center the renderable in the screenshot
-
-    **svg_kwargs
-      passthru keyword arguments to Console.save_svg
-      https://rich.readthedocs.io/en/latest/reference/console.html#rich.console.Console.save_svg
-    """
-    if console is None:
-        console = rich.console.Console()
-
-    renderable = rich.console.Group(*renderables)
-
-    if centered:
-        renderable = rich.align.Align.center(renderable)
-
-    # Set up for capturing
-    context = {"width": console.width, "file": console.file, "record": console.record}
-
-    if width == "fit":
-        console.width = console.measure(renderable).maximum
-
-    if isinstance(width, (int, float)):
-        console.width = int(width)
-
-    console.record = True
-    console.file = io.StringIO()
-    console.print(renderable)
-    console.save_svg(path, **svg_kwargs)
-
-    for attribute, value in context.items():
-        setattr(console, attribute, value)
+def timedelta_strftime(timedelta: dt.timedelta, *, sep: str = " ") -> str:
+    """Convert a timedelta to an fstring HHH:MM:SS."""
+    total_seconds = int(timedelta.total_seconds())
+    H, r = divmod(total_seconds, 3600)
+    M, S = divmod(r, 60)
+    return f"{H: 3d}h{sep}{M:02d}m{sep}{S:02d}s"
 
 
-class DateTimeEncoder(json.JSONEncoder):
-    """ """
+def create_dynamic_model(__tablename__: str, *, sample_row: dict[str, Any]) -> type[SQLModel]:
+    """Create a SQLModel from a sample data row."""
+    SQLA_DATA_TYPES = {
+        str: sa_types.Text,
+        bool: sa_types.Boolean,
+        int: sa_types.BigInteger,
+        float: sa_types.Float,
+        dt.date: sa_types.Date,
+        dt.datetime: sa_types.DateTime,
+    }
 
-    def default(self, object_: Any) -> Any:
-        if isinstance(object_, (dt.date, dt.datetime)):
-            return object_.isoformat()
+    field_definitions = {
+        "cluster_guid": Annotated[str, Field(..., sa_column=Column(type_=sa_types.Text, primary_key=True))],
+        "sk_dummy": Annotated[str, Field(..., sa_column=Column(type_=sa_types.Text, primary_key=True))],
+    }
 
-
-class ExceptedThread(threading.Thread):
-    """
-    Drop the level of error reporting down from `warning` to `debug`.
-    """
-
-    def run(self) -> None:
-        try:
-            super().run()
-
-        except Exception:
-            log.debug(f"Something went wrong in {self}", exc_info=True)
-
-
-def determine_editable_install() -> bool:
-    """Determine if the current CS Tools context is an editable install."""
-    if "FAKE_EDITABLE" in os.environ:
-        return True
-
-    for directory in site.getsitepackages():
-        try:
-            site_directory = pathlib.Path(directory)
-
-            for path in site_directory.iterdir():
-                if not path.is_file():
-                    continue
-
-                if "__editable__.cs_tools" in path.as_posix():
-                    return True
-
-        # not all distros will bundle python the same (eg. ubuntu-slim)
-        except FileNotFoundError:
+    for column_name, value in sample_row.items():
+        if column_name in field_definitions:
             continue
 
-    return False
+        try:
+            py_type = type(value)
+            sa_type = SQLA_DATA_TYPES[py_type]
+        except KeyError:
+            log.warning(f"{__tablename__}.{column_name} found no data type for '{py_type}', faling back to VARCHAR..")
+            sa_type = sa_types.Text
+
+        field_definitions[column_name] = Annotated[py_type, Field(None, sa_column=Column(type_=sa_type))]
+
+    # CREATE THE DYNAMIC TABLE
+    Model = pydantic.create_model(__tablename__, __base__=SQLModel, __cls_kwargs__={"table": True}, **field_definitions)  # type: ignore[call-overload]
+
+    return Model
 
 
-def get_package_directory(package_name: str) -> Optional[pathlib.Path]:
-    """Get the path to the package directory."""
-    # TODO: Consider using __spec__.parent instead of module.__file__
-    #       https://docs.python.org/3/reference/import.html#package__
-    try:
-        module = importlib.import_module(package_name)
-        assert module.__file__ is not None
-        return pathlib.Path(module.__file__).parent
-    except ModuleNotFoundError:
-        return None
+def make_zip_archive(directory: pathlib.Path, zipfile_path: pathlib.Path, **zipfile_options) -> None:
+    """Zip a directory up."""
 
+    if "compression" not in zipfile_options:
+        zipfile_options["compression"] = zipfile.ZIP_DEFLATED
 
-def permission_mask_info(file: pathlib.Path) -> str:
-    """
-    Show the permission mask for a given file.
+    with zipfile.ZipFile(file=zipfile_path, mode="w", **zipfile_options) as zf:
+        for path in directory.rglob("*"):
+            # IN CASE directory AND zipfile_path.parent ARE THE SAME.
+            if path == zipfile_path:
+                continue
 
-    eg. -rwxrwxr-x
-    """
-    assert isinstance(file, pathlib.Path), "file must be of type pathlib.Path"
-    assert file.exists(), "file must exist"
-    permissions = []
-
-    mode = file.stat().st_mode
-    mask = oct(mode)[-3:]
-
-    for digit in mask:
-        p = ""
-        p += "r" if int(digit) >= 4 else "-"
-        p += "w" if int(digit) % 4 >= 2 else "-"
-        p += "x" if int(digit) % 2 == 1 else "-"
-        permissions.append(p)
-
-    return "".join(permissions)
+            archive_path = path.relative_to(directory)
+            zf.write(path, archive_path)

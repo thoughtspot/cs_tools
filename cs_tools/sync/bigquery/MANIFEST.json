@@ -2,6 +2,6 @@
     "name": "bigquery",
     "syncer_class": "BigQuery",
     "requirements": [
-        "sqlalchemy-bigquery[bqstorage] >= 1.11.0"
+        "sqlalchemy-bigquery[bqstorage] >= 1.12.1"
     ]
 }

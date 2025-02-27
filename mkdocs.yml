@@ -18,6 +18,7 @@ theme:
     - announce.dismiss
     - content.code.copy
     - content.code.annotate
+    - content.tabs.link
     - navigation.footer
     - navigation.tracking
     - navigation.tabs
@@ -47,6 +48,12 @@ theme:
 extra_css:
   - stylesheets/extra.css
 
+hooks:
+  # THESE ARE IN ORDER OF PRIORITY.
+  - docs/hooks/mirror_bootstrapper.py
+  - docs/hooks/cli_reference_generator.py
+  - docs/hooks/screenshotter.py
+
 extra:
   # Could investigate in order to offer a beta docs page.
   #
@@ -57,14 +64,9 @@ extra:
       link: https://github.com/thoughtspot/cs_tools
       name: find us on github
 
-    - icon: fontawesome/solid/paper-plane
-      link: mailto:nicholas.cooper@thoughtspot.com
-      name: email the team
-
 markdown_extensions:
   - attr_list
   - admonition
-  - cs_tools.md_ext.screenshotter
   - def_list
   - footnotes
   - md_in_html
@@ -75,6 +77,9 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      options:
+        custom_icons:
+          - docs/.overrides/.icons
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -82,47 +87,31 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.keys
   - pymdownx.mark
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path: docs
+      check_paths: true
+      url_download: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
-      alternate_style: true 
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
 
 plugins:
-  - glightbox
   - open-in-new-tab
-  - redirects:
-      redirect_maps:
-        'get/bootstrapper.md': 'https://raw.githubusercontent.com/thoughtspot/cs_tools/master/cs_tools/updater/_bootstrapper.py'
 
 nav:
   - Home: index.md
-  - Tutorial:
-    - "Getting Started": tutorial/intro.md
-    - "Install & Upgrade": tutorial/install.md
-    - "Setup a Config File": tutorial/config.md
-    - "Run the Archiver tool": tutorial/archiver.md
-    - "Using Syncers": tutorial/syncer.md
-    - "Schedule the Archiver": tutorial/schedule.md
-  - Tools:
-    - tools/index.md
-    - Archiver: tools/archiver/README.md
-    - Bulk Deleter: tools/bulk-deleter/README.md
-    - Bulk Sharing: tools/bulk-sharing/README.md
-    - Extractor: tools/extractor/README.md
-    - Falcon Sharding: tools/falcon-sharding/README.md
-    - Remote TQL: tools/rtql/README.md
-    - Remote tsload: tools/rtsload/README.md
-    - Git: tools/git/README.md
-    - Scriptability: tools/scriptability/README.md
-    - Searchable: tools/searchable/README.md
-    - User Management: tools/user-management/README.md
+  - Getting Started: getting-started.md
+  - CLI: generated/cli/reference.md
   - Syncers:
     - "What's a Syncer?": syncer/what-is.md
     - CSV: syncer/csv.md
@@ -133,13 +122,17 @@ nav:
     - Google Sheets: syncer/gsheets.md
     - JSON: syncer/json.md
     - Parquet: syncer/parquet.md
+    - Mock: syncer/mock.md
     - Postgres: syncer/postgres.md
     - Redshift: syncer/redshift.md
     - Snowflake: syncer/snowflake.md
     - SQLite: syncer/sqlite.md
     - Starburst: syncer/starburst.md
     - Trino: syncer/trino.md
+  - Guides:
+    - guides/index.md
   - Changelog:
+    - v1.6.0: changelog/1.6.0.md
     - v1.5.0: changelog/1.5.0.md
     - v1.4.0: changelog/1.4.0.md
     - v1.3.0: changelog/1.3.0.md

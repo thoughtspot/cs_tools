@@ -4,67 +4,91 @@ hide:
   - toc
 ---
 
-Redshift is a powerful data warehousing service provided by Amazon Web Services (AWS). It's designed to help businesses quickly analyze large amounts of data.
-
-Redshift's combination of high performance, scalability, cost-effectiveness, ease of use, and advanced analytics capabilities make it a highly useful data warehousing solution for businesses of all sizes, especially those dealing with large and growing datasets.
-
 ??? example "Setup instructions"
 
-    If you face issues with connectivity to your Redshift cluster, make sure you can first access the cluster from your local machine.
+    __Your Redshift cluster must be accessible over the internet.__{ .fc-purple }
+    
+    Learn how to make your cluster accessible in the [__Redshift documentation__](https://repost.aws/knowledge-center/redshift-cluster-private-public).
 
-    You can learn how to make your cluster accessible in the [__Redshift documentation__](https://repost.aws/knowledge-center/redshift-cluster-private-public).
 
-
-!!! note "Redshift parameters"
+!!! note "Parameters"
 
     ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
     ---
 
-    - [X] __host__{ .fc-red }, _the URL of your Redshift database_
+    - [X] __host__{ .fc-red }, *the URL of your Redshift database*
 
     ---
 
-    - [ ] __port__{ .fc-blue }, _the port number where your Redshift database is located_
+    - [ ] __port__{ .fc-blue }, *the port number where your Redshift database is located*
     <br />__default__{ .fc-gray }: `5439`
 
     ---
 
-    - [X] __database__{ .fc-red }, _the database to write new data to_
-    <br />___if tables do not exist in the database location already, we'll auto-create them___{ .fc-green }
+    - [X] __database__{ .fc-red }, *the database to write new data to*
+    <br />*__if tables do not exist in the__ `database` __location already, we'll auto-create them__*{ .fc-green }
 
     ---
 
-    - [X] __username__{ .fc-red }, _your Redshift username_
+    - [X] __username__{ .fc-red }, *your Redshift username*
 
     ---
 
-    - [X] __secret__{ .fc-red }, _the secret value to pass to the authentication mechanism_
-    <br />_this will be your __password__{ .fc-purple }_
+    - [X] __secret__{ .fc-red }, *the secret value to pass to the authentication mechanism*
+    <br />*this will be your __password__{ .fc-purple }*
 
     ---
 
-    - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
+    - [ ] __load_strategy__{ .fc-blue}, *how to write new data into existing tables*
     <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
 
+    ---
 
-??? question "How do I use the Redshift syncer in commands?"
+    ??? danger "Serverless Requirements"
 
-    `cs_tools tools searchable bi-server --syncer redshift://host=0.0.0.0&database=...&username=admin&password=...&load_strategy=upsert`
+        If you're running __CS Tools__ [&nbsp; :simple-serverless: &nbsp;__serverless__][cs-tools-serverless], you'll want to ensure you install these [&nbsp; :simple-python: &nbsp;__python requirements__][syncer-manifest].
 
-    __- or -__{ .fc-blue }
-
-    `cs_tools tools searchable bi-server --syncer redshift://definition.toml`
+        :cstools-mage: __Don't know what this means? It's probably safe to ignore it.__{ .fc-purple }
 
 
-## Definition TOML Example
+??? question "How do I use the Syncer in commands?"
 
-`definition.toml`
-```toml
-[configuration]
-host = "mycluster.us0I3nrnge4i.us-west-2.redshift.amazonaws.com"
-database = "..."
-username = "admin"
-secret = "..."
-load_strategy = "upsert"
-```
+    __CS Tools__ accepts syncer definitions in either declarative or configuration file form.
+
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+
+    === ":mega: &nbsp; Declarative"
+
+        Simply write the parameters out alongside the command.
+
+        ```bash
+        cs_tools tools searchable metadata --syncer "redshift://host=mycluster.abc123xyz789.us-west-2.redshift.amazonaws.com&port=5439&database=thoughtspot&username=tsadmin&secret=[redacted]" --config dogfood
+        ```
+
+        <sup class=fc-gray><i>* when declaring multiple parameters inline, you should <b class=fc-purple>wrap the enter value</b> in quotes.</i></sup>
+
+    === ":recycle: &nbsp; Configuration File"
+
+        1. Create a file with the `.toml` extension.
+
+            ??? abstract "syncer-overwrite.toml"
+                ```toml
+                [configuration]
+                host = "mycluster.abc123xyz789.us-west-2.redshift.amazonaws.com"
+                port = 5439
+                database = "thoughtspot"
+                username = "tsadmin"
+                secret = "[redacted]"
+                load_strategy = "TRUNCATE"
+                ```
+                <sup class=fc-gray><i>* this is a complete example, not all parameters are <b class=fc-red>required</b>.</i></sup>
+
+        2. Write the filename in your command in place of the parameters.
+
+            ```bash
+            cs_tools tools searchable metadata --syncer redshift://syncer-overwrite.toml --config dogfood
+            ```
+
+[cs-tools-serverless]: ../../getting-started/#serverless
+[syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/redshift/MANIFEST.json

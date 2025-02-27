@@ -16,7 +16,7 @@ import datetime as dt
 import logging
 import platform
 import sys
-import uuid
+import zoneinfo
 
 from awesomeversion import AwesomeVersion
 import pydantic
@@ -24,7 +24,7 @@ import pydantic_settings
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import __project__, __version__, types, utils, validators
+from cs_tools import __project__, __version__, _types, utils, validators
 
 log = logging.getLogger(__name__)
 _COMMON_MODEL_CONFIG = {
@@ -38,6 +38,10 @@ class _GlobalModel(pydantic.BaseModel):
     """Global configuration."""
 
     model_config = pydantic.ConfigDict(**_COMMON_MODEL_CONFIG)
+
+    @pydantic.model_serializer(mode="wrap")
+    def _ignore_extras(self, handler) -> dict[str, Any]:
+        return {k: v for k, v in handler(self).items() if k in (self.model_fields | self.model_computed_fields)}
 
     @pydantic.field_serializer("*", when_used="json")
     @classmethod
@@ -77,10 +81,7 @@ class ValidatedSQLModel(sqlmodel.SQLModel):
 
     @classmethod
     def validated_init(cls, context: Any = None, **data):
-        # defaults  = cls.read_from_environment()
-        # sanitized = cls.model_validate({**defaults, **data})
-        sanitized = cls.model_validate(data, context=context)
-        return cls(**sanitized.model_dump())
+        return cls.model_validate(data, context=context)
 
     @property
     def clustered_on(self) -> list[sa.Column]:
@@ -92,56 +93,13 @@ class ExecutionEnvironment(_GlobalSettings):
     """Information about the runtime environment."""
 
     os_args: str = pydantic.Field(default=" ".join(sys.argv))
-    is_ci: bool = pydantic.Field(default="DEFINITELY_NOT_CI", validation_alias="CI")
+    is_ci: bool = pydantic.Field(default=False, validation_alias="CI")
     is_dev: bool = pydantic.Field(default_factory=utils.determine_editable_install)
 
     @pydantic.field_validator("is_ci", mode="plain")
     @classmethod
     def is_ci_pipeline(cls, data: Any) -> bool:
-        return data != "DEFINITELY_NOT_CI"
-
-
-class ThoughtSpotInfo(_GlobalModel):
-    """Information about the ThoughtSpot cluster we've established a session with."""
-
-    cluster_id: str
-    url: pydantic.AnyUrl
-    version: validators.CoerceVersion
-    timezone: str
-    is_cloud: bool
-    is_api_v2_enabled: bool = False
-    is_roles_enabled: bool = False
-    is_orgs_enabled: bool = False
-    notification_banner: Optional[types.ThoughtSpotNotificationBanner] = None
-
-    @pydantic.model_validator(mode="before")
-    @classmethod
-    def check_if_from_session_info(cls, data: Any) -> Any:
-        if "__is_session_info__" in data:
-            config_info = data.get("configInfo")
-
-            data = {
-                "cluster_id": config_info["selfClusterId"],
-                "url": data["__url__"],
-                "version": data["releaseVersion"],
-                "timezone": data["timezone"],
-                "is_cloud": config_info.get("isSaas", False),
-                # DEV NOTE: @boonhapus, 2024/01/31
-                #   maybe we pick a ThoughtSpot version where V2 APIs are stable enough to switch to for the majority of
-                #   workflows instead?
-                "is_api_v2_enabled": config_info.get("tseRestApiV2PlaygroundEnabled", False),
-                "is_roles_enabled": config_info.get("rolesEnabled", False),
-                "is_orgs_enabled": data["__is_orgs_enabled__"],
-                "notification_banner": data.get("notificationBanner", None),
-            }
-
-        return data
-
-    @pydantic.field_validator("version", mode="before")
-    @classmethod
-    def sanitize_release_version(cls, version_string: str) -> AwesomeVersion:
-        major, minor, micro, *rest = version_string.split(".")
-        return AwesomeVersion(f"{major}.{minor}.{micro}")
+        return bool(data)
 
 
 class LocalSystemInfo(_GlobalModel):
@@ -150,6 +108,14 @@ class LocalSystemInfo(_GlobalModel):
     system: str = f"{platform.system()} (detail: {platform.platform()})"
     python: validators.CoerceVersion = AwesomeVersion(platform.python_version())
     ran_at: Annotated[pydantic.AwareDatetime, validators.ensure_datetime_is_utc] = dt.datetime.now(tz=dt.timezone.utc)
+
+    @pydantic.computed_field
+    @property
+    def os(self) -> str:
+        """The operating system of the machine running CS Tools."""
+        friendly_name = {"Windows": "Windows", "Darwin": "MacOS", "Linux": "Linux"}
+        os_name, _, _ = self.system.partition(" ")
+        return friendly_name[os_name]
 
     @property
     def is_linux(self) -> bool:
@@ -164,27 +130,92 @@ class LocalSystemInfo(_GlobalModel):
         return self.system.startswith("Windows")
 
 
-class UserInfo(_GlobalModel):
-    """Information about the logged in user."""
+class ThoughtSpotInfo(_GlobalModel):
+    """Information about the ThoughtSpot cluster we've established a session with."""
 
-    guid: uuid.UUID
-    username: str
-    display_name: str
-    privileges: set[Union[types.GroupPrivilege, str]]
-    org_context: Optional[int]
-    email: Optional[pydantic.EmailStr] = None
+    cluster_id: str
+    cluster_name: Optional[str] = "UNKNOWN"
+    url: pydantic.AnyUrl
+    version: validators.CoerceVersion
+    system_users: dict[_types.Name, _types.GUID]
+    timezone: zoneinfo.ZoneInfo
+    is_cloud: bool
+    is_roles_enabled: bool = False
+    is_orgs_enabled: bool = False
+    is_iam_v2_enabled: bool = False
 
     @pydantic.model_validator(mode="before")
     @classmethod
     def check_if_from_session_info(cls, data: Any) -> Any:
-        if "__is_session_info__" in data:
+        if system_info := data.get("__system_info__", {}):
+            data["cluster_id"] = system_info["id"]
+            data["cluster_name"] = system_info["name"]
+            data["url"] = data["__url__"]
+            data["version"] = system_info["release_version"]
+            data["timezone"] = system_info["time_zone"]
+            data["is_cloud"] = system_info["type"] == "SAAS"
+            data["is_orgs_enabled"] = data["__is_orgs_enabled__"]
+            data["is_roles_enabled"] = data["__is_orgs_enabled__"]
+            data["system_users"] = {
+                "tsadmin": system_info["tsadmin_user_id"],
+                "system": system_info["system_user_id"],
+                "su": system_info["super_user_id"],
+            }
+
+        if overrides_info := data.get("__overrides_info__", {}).get("config_override_info", {}):
+            # data["is_roles_enabled"] = overrides_info.get("orion.rolesEnabled", False)
+            # data["is_iam_v2_enabled"] = overrides_info.get("orion.oktaEnabled", False)
+            data["is_iam_v2_enabled"] = overrides_info.get("oidcConfiguration.iamV2OIDCEnabled", {}).get(
+                "current", False
+            )
+
+        return data
+
+    @pydantic.field_validator("version", mode="before")
+    @classmethod
+    def sanitize_release_version(cls, version_string: str) -> AwesomeVersion:
+        major, minor, micro, *rest = version_string.split(".")
+        return AwesomeVersion(f"{major}.{minor}.{micro}")
+
+    @pydantic.field_validator("timezone", mode="before")
+    @classmethod
+    def sanitize_timezone_name(cls, tzname: str) -> zoneinfo.ZoneInfo:
+        try:
+            tz = zoneinfo.ZoneInfo(key=tzname)
+        except zoneinfo.ZoneInfoNotFoundError:
+            raise ValueError(f"No timezone found '{tzname}', if this persists try re-installing CS Tools.") from None
+
+        return tz
+
+    @pydantic.field_serializer("url", "timezone")
+    @classmethod
+    def serialize_as_str(cls, value: Any) -> str:
+        return str(value)
+
+
+class UserInfo(_GlobalModel):
+    """Information about the logged in user."""
+
+    guid: _types.GUID
+    username: str
+    display_name: str
+    privileges: set[Union[_types.GroupPrivilege, str]]
+    org_context: Optional[int] = None
+    email: Optional[pydantic.EmailStr] = None
+    auth_context: _types.AuthContext = "NONE"
+
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def check_if_from_session_info(cls, data: Any) -> Any:
+        if session_info := data.get("__session_info__", {}):
             data = {
-                "guid": data["userGUID"],
-                "username": data["userName"],
-                "display_name": data["userDisplayName"],
-                "privileges": data["privileges"],
-                "org_context": data.get("currentOrgId", None),
-                "email": data.get("userEmail", None),
+                "guid": session_info["id"],
+                "username": session_info["name"],
+                "display_name": session_info["display_name"],
+                "privileges": session_info["privileges"],
+                "org_context": (session_info.get("current_org", None) or {}).get("id", None),
+                "email": session_info["email"],
+                "auth_context": data["__auth_context__"],
             }
 
         return data
@@ -194,7 +225,7 @@ class UserInfo(_GlobalModel):
     def check_for_new_or_extra_privileges(cls, data):
         for privilege in data:
             try:
-                types.GroupPrivilege(privilege)
+                _types.GroupPrivilege(privilege)
             except ValueError:
                 log.debug(
                     f"Missing privilege '{privilege}' from CS Tools, please contact us to update it"
@@ -203,16 +234,18 @@ class UserInfo(_GlobalModel):
 
         return data
 
+    @pydantic.computed_field
     @property
     def is_admin(self) -> bool:
         """Whether or not we're an Admin."""
-        allowed = {types.GroupPrivilege.can_administer_thoughtspot}
+        allowed = {_types.GroupPrivilege.can_administer_thoughtspot}
         return bool(allowed.intersection(self.privileges))
 
+    @pydantic.computed_field
     @property
     def is_data_manager(self) -> bool:
         """Whether or not we're able to create objects under the Data tab."""
-        allowed = {types.GroupPrivilege.can_administer_thoughtspot, types.GroupPrivilege.can_manage_data}
+        allowed = {_types.GroupPrivilege.can_administer_thoughtspot, _types.GroupPrivilege.can_manage_data}
         return bool(allowed.intersection(self.privileges))
 
 
@@ -220,7 +253,7 @@ class SessionContext(_GlobalModel):
     """Information about the current CS Tools session."""
 
     cs_tools_version: validators.CoerceVersion = AwesomeVersion(__version__)
-    environment: Optional[ExecutionEnvironment]
+    environment: ExecutionEnvironment = ExecutionEnvironment()
     thoughtspot: ThoughtSpotInfo
-    system: Optional[LocalSystemInfo]
+    system: LocalSystemInfo = LocalSystemInfo()
     user: UserInfo

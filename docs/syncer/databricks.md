@@ -4,38 +4,41 @@ hide:
   - toc
 ---
 
-Databricks is a cloud-based data platform that helps companies manage and analyze large amounts of data from various sources. 
+??? tinm "There is No Magic!"
 
-Databricks was originally created as a way to easily run Apache Spark, a powerful open-source data processing engine, without having to worry about the underlying infrastructure. It provided a user-friendly "notebook" interface where you could write code and run it on a scalable, distributed computing cluster in the cloud.
+    __This Syncer uses [Databricks's SQLAlchemy driver][dbx-sqla] under the hood__.
+    
+    __Databricks__ states that it is intended to connect to [__Unity Catalog__][dbx-uc], and that usage with `hive_metastore` is untested.
 
-!!! note "Databricks parameters"
+
+!!! note "Parameters"
 
     ### __Required__ parameters are in __red__{ .fc-red } and __Optional__ parameters are in __blue__{ .fc-blue }.
     
     ---
 
     - [X] __server_hostname__{ .fc-red }, _your SQL Warehouse's host name_
-    <br />_this can be found on the Connection Details tab_
+    <br />*__this can be found on the Connection Details tab__*{ .fc-green }
 
     ---
 
     - [X] __http_path__{ .fc-red }, _your SQL Warehouse's path_
-    <br />_this can be found on the Connection Details tab_
+    <br />*__this can be found on the Connection Details tab__*{ .fc-green }
     
     ---
 
     - [X] __access_token__{ .fc-red }, _generate a personal access token from your SQL Warehouse_
-    <br />_this can be generated on the Connection Details tab_
+    <br />*__this can be found on the Connection Details tab__*{ .fc-green }
     
     ---
 
     - [X] __catalog__{ .fc-red }, _the catalog to write new data to_
-    <br />___if tables do not exist in the catalog.schema location already, we'll auto-create them___{ .fc-green }
+    <br />*__if tables do not exist in the__ `catalog.schema` __location already, we'll auto-create them__*{ .fc-green }
 
     ---
 
     - [ ] __schema__{ .fc-blue }, _the schema to write new data to_
-    <br />___if tables do not exist in the database.schema location already, we'll auto-create them___{ .fc-green }
+    <br />*__if tables do not exist in the__ `database.schema` __location already, we'll auto-create them__*{ .fc-green }
 
     ---
 
@@ -47,28 +50,55 @@ Databricks was originally created as a way to easily run Apache Spark, a powerfu
     - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
     <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
 
+    ---
 
-??? question "How do I use the Databricks syncer in commands?"
+    ??? danger "Serverless Requirements"
 
-    `cs_tools tools searchable bi-server --syncer "databricks://server_hostname=...&http_path=...&access_token=...&catalog=..."`
+        If you're running __CS Tools__ [&nbsp; :simple-serverless: &nbsp;__serverless__][cs-tools-serverless], you'll want to ensure you install these [&nbsp; :simple-python: &nbsp;__python requirements__][syncer-manifest].
 
-    __- or -__{ .fc-blue }
-
-    `cs_tools tools searchable bi-server --syncer databricks://definition.toml`
+        :cstools-mage: __Don't know what this means? It's probably safe to ignore it.__{ .fc-purple }
 
 
-## Definition TOML Example
+??? question "How do I use the Syncer in commands?"
 
-`definition.toml`
-```toml
-[configuration]
-server_hostname = "..."
-http_path = "..."
-access_token = "..."
-catalog = "..."
-schema = 'CS_TOOLS'
-load_strategy = 'truncate'
-```
+    __CS Tools__ accepts syncer definitions in either declarative or configuration file form.
 
-[snowflake-account-id]: https://docs.snowflake.com/en/user-guide/admin-account-identifier
-[snowflake-auth]: https://docs.snowflake.com/en/developer-guide/node-js/nodejs-driver-authenticate
+    <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
+
+    === ":mega: &nbsp; Declarative"
+
+        Simply write the parameters out alongside the command.
+
+        ```bash
+        cs_tools tools searchable metadata --syncer "databricks://server_hostname=dbc-abc1234-efgh.cloud.databricks.com&http_path=/sql/protocolv1/o/1234567890123456/0123-456789-abcdef01&access_token=dapi0123456789abcdef0123456789abcdef&catalog=thoughtspot" --config dogfood
+        ```
+
+        <sup class=fc-gray><i>* when declaring multiple parameters inline, you should <b class=fc-purple>wrap the enter value</b> in quotes.</i></sup>
+
+    === ":recycle: &nbsp; Configuration File"
+
+        1. Create a file with the `.toml` extension.
+
+            ??? abstract "syncer-overwrite.toml"
+                ```toml
+                [configuration]
+                server_hostname = "dbc-abc1234-efgh.cloud.databricks.com"
+                http_path = "/sql/protocolv1/o/1234567890123456/0123-456789-abcdef01"
+                access_token = "dapi0123456789abcdef0123456789abcdef"
+                catalog = "thoughtspot"
+                schema = "cs_tools"
+                port = 443
+                load_strategy = "TRUNCATE"
+                ```
+                <sup class=fc-gray><i>* this is a complete example, not all parameters are <b class=fc-red>required</b>.</i></sup>
+
+        2. Write the filename in your command in place of the parameters.
+
+            ```bash
+            cs_tools tools searchable metadata --syncer databricks://syncer-overwrite.toml --config dogfood
+            ```
+
+[cs-tools-serverless]: ../../getting-started/#serverless
+[syncer-manifest]: https://github.com/thoughtspot/cs_tools/blob/master/cs_tools/sync/databricks/MANIFEST.json
+[dbx-sqla]: https://docs.databricks.com/aws/en/dev-tools/sqlalchemy
+[dbx-uc]: https://www.databricks.com/product/unity-catalog

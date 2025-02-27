@@ -1,33 +1,30 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any, cast
 import datetime as dt
 import json
 
 import sqlmodel
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
-    from cs_tools.thoughtspot import ThoughtSpot
+from cs_tools import _types
+from cs_tools.thoughtspot import ThoughtSpot
 
 FMT_TSLOAD_DATETIME = "%Y-%m-%d %H:%M:%S"
 
 
-def maybe_fetch_from_context() -> ThoughtSpot:
-    """Attempt to fetch the ThoughtSpot object."""
+def check_if_keyword_needed() -> ThoughtSpot:
+    """Determine if Syncer is being instantiated by CS Tools."""
     try:
         import click
 
-        context = click.get_current_context()
-        thoughtspot = context.obj.thoughtspot
+        ctx = click.get_current_context().find_root()
+        assert ctx.command.name == "cs_tools", "This is not a CS Tools execution, forcing keyword argumentation."
 
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, AssertionError):
         raise ValueError("missing required keyword-argument 'thoughtspot'") from None
 
-    except AttributeError:
-        raise ValueError("could not fetch 'thoughtspot' from execution context") from None
-
-    return thoughtspot
+    # THIS WILL GET SET UP PRIOR TO USER-CODE EXECUTION.
+    return cast(ThoughtSpot, None)  # LOL :~) we're lying to mypy because this is a hack, ok pls get over it
 
 
 def clean_datetime(object_: Any) -> str:
@@ -41,7 +38,7 @@ def clean_datetime(object_: Any) -> str:
     return json.dumps(object_)
 
 
-def roundtrip_json_for_falcon(data: TableRows) -> TableRows:
+def roundtrip_json_for_falcon(data: _types.TableRowsFormat) -> _types.TableRowsFormat:
     """
     Round-trip from JSON to sanitize.
 

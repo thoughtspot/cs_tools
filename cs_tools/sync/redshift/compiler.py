@@ -15,7 +15,7 @@ MAX_VARCHAR_LENGTH = 65535
 class TrimmedString(TypeDecorator):
     impl = String
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value, dialect):  # noqa: ARG002
         """Customize how the value is processed before being sent to the database."""
         if value is None:
             pass
@@ -33,7 +33,7 @@ class TrimmedString(TypeDecorator):
 
 
 @event.listens_for(sa.MetaData, "before_create")
-def before_create(metadata, connection, **kw):
+def before_create(metadata, connection, **kw):  # noqa: ARG001
     """Customize how the Table is configured before CREATE TABLE ran in Redshift."""
     for table in metadata.tables.values():
         for column in table.columns:

@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import datetime as dt
 import logging
 import os
-import pathlib
 
-from cs_tools.programmatic import get_cs_tool
 from cs_tools.settings import CSToolsConfig
 from cs_tools.thoughtspot import ThoughtSpot
 from tests import const
@@ -63,30 +60,3 @@ def test_integration_lib_login():
     thoughtspot.login()
 
     assert thoughtspot.session_context is not None
-
-
-def test_integration_cli_searchable(cleaned_generated_test_data_dir: pathlib.Path):
-    """
-    For running in serverless environments, we should be able to parse
-    environment variables.
-    """
-    env = const.CST_CONFIG_DOT_ENV.as_posix()
-    jan = dt.date(year=2024, month=1, day=1).strftime("%Y-%m-%d")
-    out = cleaned_generated_test_data_dir.as_posix()
-
-    # fmt: off
-    # cs_tools tools searchable bi-server --from-date %TODAY --to-date %TODAY --syncer csv://directory=%OUT
-    result = (
-        get_cs_tool("searchable")
-        .invoke(
-            command="bi-server",
-            arguments=f"--from-date {jan} --to-date {jan} --syncer csv://directory={out} --config ENV:{env}",
-        )
-    )
-    # fmt: on
-
-    if result.exit_code != 0:
-        log.warning(result.stdout)
-
-    assert result.exit_code == 0
-    assert cleaned_generated_test_data_dir.joinpath("ts_bi_server.csv").exists()

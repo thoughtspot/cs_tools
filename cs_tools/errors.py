@@ -1,11 +1,34 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional, TextIO, cast
 import collections
 
 from rich._loop import loop_last
+import httpx
 import pydantic
 import rich
+
+from cs_tools import _types, datastructures, settings
+
+
+def _make_error_panel(*, header: str, reason: Optional[str] = None, fixing: Optional[str] = None) -> rich.panel.Panel:
+    """Creates a pretty dialogue for CLI output."""
+    content = ""
+
+    if reason is not None:
+        content += f"[fg-primary]{reason}[/]"
+
+    if fixing is not None:
+        content += f"\n\n[fg-success]Mitigation[/]\n[fg-warn]{fixing}[/]"
+
+    panel = rich.panel.Panel(
+        content,
+        border_style="fg-error",
+        title=header,
+        expand=False,
+    )
+
+    return panel
 
 
 class CSToolsError(Exception):
@@ -16,6 +39,22 @@ class CSToolsError(Exception):
     """
 
 
+class ThoughtSpotUnreachable(CSToolsError):
+    """
+    Raised when ThoughtSpot can't be seen from the local machine.
+    """
+
+    def __init__(self, reason, fixing):
+        self.reason = reason
+        self.fixing = fixing
+
+    def __rich__(self) -> rich.panel.Panel:
+        header = "Can't connect to your ThoughtSpot cluster."
+        reason = self.reason
+        fixing = self.fixing
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)
+
+
 class NoSessionEstablished(CSToolsError):
     """
     Raised when attempting to access ThoughtSpot runtime information
@@ -23,147 +62,81 @@ class NoSessionEstablished(CSToolsError):
     """
 
 
-class CSToolsCLIError(CSToolsError):
-    """When raised, will present a pretty error to the CLI."""
-
-    # DEV NOTE: @boonhapus, 2023/12/18
-    #
-    # This can be refactored so that subclasses require only to
-    # implement the __rich__ protocol. It will allow us to have CLI
-    # errors and Library errors. CLI errors must implement __rich__ and
-    # have their return type be a rich.panel.Panel
-    #
-
-    def __init_subclass__(cls):
-        super().__init_subclass__()
-
-        if not hasattr(cls, "title"):
-            raise RuntimeError("{cls} must supply atleast a .title !")
+class InsufficientPrivileges(CSToolsError):
+    """
+    Raised when the User cannot perform an action in ThoughtSpot.
+    """
 
     def __init__(
-        self, title: Optional[str] = None, reason: Optional[str] = None, mitigation: Optional[str] = None, **error_info
+        self, *, user: datastructures.UserInfo, service: str, required_privileges: list[_types.GroupPrivilege]
     ):
-        self.title = title if title is not None else self.__class__.title
-        self.reason = reason if reason is not None else getattr(self.__class__, "reason", None)
-        self.mitigation = mitigation if mitigation is not None else getattr(self.__class__, "mitigation", None)
-        self.error_info = error_info
-
-    def __str__(self) -> str:
-        message = "{self.__class__.__name__}: {self.title}"
-
-        if self.reason is not None:
-            message += " - {self.reason}"
-
-        if self.mitigation is not None:
-            message += " - {self.mitigation}"
-
-        return message.format(self=self, **self.error_info)
+        self.user = user
+        self.service = service
+        self.required_privileges = required_privileges
 
     def __rich__(self) -> rich.panel.Panel:
-        error_panel_content = ""
-        extra_info = {"self": self, **self.error_info}
+        additional_privileges = set(self.required_privileges) - cast(set[_types.GroupPrivilege], self.user.privileges)
 
-        if self.reason is not None:
-            error_panel_content += "[b white]{self.reason}[/]".format(**extra_info)
-
-        if self.mitigation is not None:
-            # fmt: off
-            error_panel_content += (
-                "\n"
-                "\n[b green]Mitigation[/]"
-                "\n[b yellow]{self.mitigation}[/]"
-            )
-            # fmt: on
-
-        panel = rich.panel.Panel(
-            # Double .format() because f-string replacement is not recursive until 3.12
-            error_panel_content.format(**extra_info).format(**extra_info),
-            border_style="b red",
-            title=self.title.format(**extra_info),
-            expand=False,
-        )
-
-        return panel
+        header = f"User {self.user.display_name} cannot access {self.service}."
+        reason = f"{self.service} requires the following privileges: {', '.join(self.required_privileges)}"
+        fixing = f"Assign at least these privileges to {self.user.display_name}: {', '.join(additional_privileges)}"
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)
 
 
-class ThoughtSpotUnreachable(CSToolsCLIError):
-    """Raised when ThoughtSpot can't be seen from the local machine."""
-
-    title = "Can't connect to your ThoughtSpot cluster."
-
-
-class ThoughtSpotUnavailable(CSToolsCLIError):
-    """Raised when a ThoughtSpot session can't be established."""
-
-    title = "Your ThoughtSpot cluster is currently unavailable."
-
-
-class AuthenticationError(CSToolsCLIError):
-    """Raised when incorrect authorization details are supplied."""
-
-    title = "Authentication failed for [b blue]{config.thoughtspot.username}"
-    reason = "\nCS Tools config: [b blue]{config.name}[/]"
-    # fmt: off
-    mitigation = (
-        "\n[b white]1/[/] Check if your username and password is correct from the ThoughtSpot website."
-        "\n[b white]2/[/] Determine if your usename ends with a whitelisted email domain."
-        "\n[b white]3/[/] If your password contains a [b green]$[/] or [b green]![/], run this command and type your "
-        "password in the hidden prompt."
-        "\n   [b green]cs_tools config modify --config {config.name} --password prompt[/]"
-        "\n[b white]4/[/] If your cluster is orgs-enabled, ensure you can access the specified org id."
-        "\n"
-        "\n   [b green]**[/] you may need to use this url to see the login page"
-        "\n   [b green]{config.thoughtspot.url}?disableAutoSAMLRedirect=true[/]"
-    )
-    # fmt: on
-
-
-class TSLoadServiceUnreachable(CSToolsCLIError):
-    """Raised when the etl_http_server service cannot be reached."""
-
-    title = "The tsload service is unreachable."
-    reason = "HTTP Error: {http_error.response.status_code} {http_error.response.reason_phrase}"
-    mitigation = (
-        "Ensure your cluster is set up for allow remote data loads"
-        "\n  https://docs.thoughtspot.com/software/latest/tsload-connector#_setting_up_your_cluster"
-        "\n\n"
-        "If you cannot enable it, here's the tsload command for the file you tried to load:"
-        "\n\n"
-        "{tsload_command}"
-    )
-
-
-class ContentDoesNotExist(CSToolsCLIError):
-    """Raised when ThoughtSpot can't find content by this name or guid."""
-
-    title = "No {type} found."
-
-
-class AmbiguousContentError(CSToolsCLIError):
-    """Raised when ThoughtSpot can't determine an exact content match."""
-
-    title = "Multiple {type}s found with the name [blue]{name}."
-
-
-class InsufficientPrivileges(CSToolsCLIError):
-    """Raised when the User cannot perform an action."""
-
-    title = "User [b blue]{user.display_name}[/] does not have enough privilege to access {service}."
-    reason = (
-        "{user.display_name} requires the {required_privileges} privilege(s)."
-        "\nPlease consult with your ThoughtSpot Administrator."
-    )
-
-
-#
-# Syncer
-#
-
-
-class SyncerInitError(CSToolsCLIError):
-    """Raised when a Syncer isn't defined correctly."""
-
+class AuthenticationFailed(CSToolsError):
     """
+    Raised when authentication to ThoughtSpot fails.
+    """
+
+    def __init__(
+        self,
+        *,
+        ts_config: settings.CSToolsConfig,
+        ctxs: dict[_types.AuthContext, httpx.Response],
+        desired_org_id: _types.OrgIdentifier | None = 0,
+    ):
+        self.ts_config = ts_config
+        self.auth_contexts = ctxs
+        self.desired_org_id = desired_org_id
+
+    def __rich__(self) -> rich.panel.Panel:
+        ts_info = self.ts_config.thoughtspot
+        header = f"Authentication failed for [fg-secondary]{self.ts_config.thoughtspot.username}"
+        reason = f"{len(self.auth_contexts)} auth contexts {'are' if len(self.auth_contexts) > 1 else 'is'} not valid."
+        fixing = []
+
+        if "BEARER_TOKEN" in self.auth_contexts:
+            fixing.append("[fg-primary]Bearer Token[/]")
+            fixing.append("- Regenerate your Bearer Token in the V2.0 REST API auth/token/full in the Developer tab.")
+            fixing.append(f"- Determine if your token is scoped to Org ID {self.desired_org_id}.")
+            fixing.append("")
+
+        if "TRUSTED_AUTH" in self.auth_contexts:
+            fixing.append("[fg-primary]Trusted Authentication[/]")
+            fixing.append(f"- Check if your secret_key is still valid {ts_info.secret_key} in the Developer tab.")
+            fixing.append(f"- Determine if your secret_key is scoped to Org ID {self.desired_org_id}.")
+            fixing.append("")
+
+        if "BASIC" in self.auth_contexts:
+            fixing.append("[fg-primary]Basic Auth[/]")
+            fixing.append(
+                f"- Check if your username and password are correct from the ThoughtSpot website. You can try them by "
+                f"navigating to one of these URLs to try them manually.. "
+                f"\n[fg-secondary]{ts_info.url}?disable[fg-warn]SAML[/]AutoRedirect=true[/]"
+                f"\n[fg-secondary]{ts_info.url}?disable[fg-error]OIDC[/]AutoRedirect=true[/]"
+            )
+            fixing.append("")
+
+        if ts_info.is_orgs_enabled and self.desired_org_id is not None:
+            fixing.append(f"- Ensure your User has access to Org ID {self.desired_org_id}.")
+
+        return _make_error_panel(header=header, reason=reason, fixing="\n".join(fixing))
+
+
+class SyncerInitError(CSToolsError):
+    """
+    Raised when a Syncer isn't defined correctly.
+
      ╭──────── Your Starburst Syncer encountered an error. ────────╮
      │                                                             │
      │ 2 arguments have errors.                                    │
@@ -180,20 +153,12 @@ class SyncerInitError(CSToolsCLIError):
      ╰─────────────────────────────────────────────────────────────╯
     """
 
-    title = "Your {proto} Syncer encountered an error."
-    mitigation = (
-        # fmt: off
-        "Check the Syncer's documentation page for more information."
-        "\n[b blue]https://thoughtspot.github.io/cs_tools/syncer/{proto_lower}/"
-        # fmt: on
-    )
-
-    def __init__(self, pydantic_error: pydantic.ValidationError, *, proto: str):
+    def __init__(self, protocol: str, pydantic_error: pydantic.ValidationError):
+        self.protocol = protocol
         self.pydantic_error = pydantic_error
-        self.error_info = {"proto": proto, "proto_lower": proto.lower()}
 
     @property
-    def reason(self) -> str:  # type: ignore[override]
+    def human_friendly_reason(self) -> str:
         """
         Responsible for showing arguments and their errors.
 
@@ -205,47 +170,135 @@ class SyncerInitError(CSToolsCLIError):
         │ secret                                                      │
         │ x Field required, you must provide a json web token         │
         """
-        errors: dict[str, list[str]] = collections.defaultdict(list)
+        ErrorInfo = collections.namedtuple("ErrorInfo", ["user_input", "error_messages"])
+        # ErrorInfo(user_input: str, error_messages: list[str])
 
+        # SYNCER ARGS MAY HAVE MULTIPLE VALIDATION ERRORS EACH, SO WE SANITIZE THEM ALL.
+        errors: dict[str, ErrorInfo] = {}
+
+        # ==============================
+        # CLEAN THE ERRORS FOR NON-TECHNICAL USERS.
+        # ==============================
         for error in self.pydantic_error.errors():
             argument_name, *_ = error["loc"]
             assert isinstance(argument_name, str)
 
-            # Clean error message of technical jargon.
-            message = error["msg"].replace("Assertion failed, ", "")
+            existing_info = errors.get(argument_name, ErrorInfo(user_input="", error_messages=[]))
+            messages = existing_info.error_messages
+            usr_nput = existing_info.user_input
 
-            # Add the user's input, if given.
-            if error["type"] != "missing":
-                message += f" [b yellow](given: [b green]{error['input']}[/])[/]"
+            # ADD THE USER'S INPUT, IF GIVEN.
+            if not usr_nput and error["type"] != "missing":
+                usr_nput = error["input"]
 
-            errors[argument_name].append(message)
+            # CLEAN ERROR MESSAGE OF TECHNICAL JARGON.
+            JARGON = "Assertion failed, "
+            messages.append(error["msg"].replace(JARGON, ""))
 
-        summary = "1 argument has" if len(errors) == 1 else f"{len(errors)} arguments have"
+            # ADD A NOTE IF THE USER GAVE AN EXTRA ARG NAME.
+            if not usr_nput and error["type"] == "extra_forbidden":
+                messages[-1] += ". Did you make a typo?"
+
+            errors[argument_name] = ErrorInfo(user_input=usr_nput, error_messages=messages)
+
+        # ==============================
+        # FORMAT THE ERRORS FOR DISPLAY.
+        # ==============================
+        s = len(errors) > 1  # pluralize
+
+        RED_X = "[fg-error]x[/]"
+
         details = ""
 
-        for is_last_error, (argument, lines) in loop_last(errors.items()):
-            details += f"[b blue]{argument}[/]"
+        for is_last_line, (argument_name, error_info) in loop_last(errors.items()):
+            details += f"[fg-secondary]{argument_name}[/]"
+            details += f"\n[fg-warn]>[/] [fg-success]{error_info.user_input}[/]"
 
-            for line in lines:
-                details += f"\n[b red]x[/] {line}"
+            for error_message in error_info.error_messages:
+                details += f"\n{RED_X} {error_message}"
 
-            if not is_last_error:
+            if not is_last_line:
                 details += "\n\n"
 
         # fmt: off
         phrase = (
-            f"\n{summary} errors."
+            f"\n{len(errors)} argument{'s' if s else ''} ha{'ve' if s else 's'} errors."
             f"\n\n{details}"
         )
         # fmt: on
 
         return phrase
 
+    def __rich__(self) -> rich.panel.Panel:
+        header = f"Your {self.protocol} Syncer encountered an error."
+        reason = self.human_friendly_reason
+        fixing = (
+            # fmt: off
+            f"Check the Syncer's documentation page for more information."
+            f"\n[fg-secondary]https://thoughtspot.github.io/cs_tools/syncer/{self.protocol.lower()}/"
+            # fmt: on
+        )
 
-#
-# Cluster Configurations
-#
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)
 
 
-class ConfigDoesNotExist(CSToolsCLIError):
-    title = "Cluster configuration [b blue]{name}[/] does not exist."
+class ConfigDoesNotExist(CSToolsError):
+    """Raised when a CS Tools config can't be found."""
+
+    def __init__(self, config_name: str):
+        self.config_name = config_name
+
+    def __rich__(self) -> rich.panel.Panel:
+        header = f"Cluster configuration [fg-secondary]{self.config_name}[/] does not exist."
+        reason = None
+        fixing = None
+
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)
+
+
+class TSLoadServiceUnreachable(CSToolsError):
+    """Raised when the etl_http_server service cannot be reached."""
+
+    def __init__(self, *, httpx_error: httpx.HTTPError, file_descriptor: TextIO, tsload_options: dict[str, Any]):
+        self.httpx_error = httpx_error
+        self.file_descriptor = file_descriptor
+        self.options = tsload_options
+
+    def simulate_tsload_command(self) -> str:
+        """Simulate the command that would be run by tsload."""
+        command = (
+            # THESE ALL ON THE SAME LINE IN THE ERROR MESSAGE
+            f"tsload "
+            f"--source_file {self.file_descriptor.name} "
+            f"--target_database {self.options['target']['database']} "
+            f"--target_schema {self.options['target']['schema']} "
+            f"--target_table {self.options['target']['table']} "
+            f"--max_ignored_rows {self.options['load_options']['max_ignored_rows']} "
+            f'--date_format "{self.options["format"]["date_time"]["date_format"]}" '
+            f'--time_format "{self.options["format"]["date_time"]["time_format"]}" '
+            f'--date_time_format "{self.options["format"]["date_time"]["date_time_format"]}" '
+            f'--field_separator "{self.options["format"]["field_separator"]}" '
+            f'--null_value "{self.options["format"]["null_value"]}" '
+            f"--boolean_representation {self.options['format']['boolean']['true_format']}_{self.options['format']['boolean']['false_format']} "  # noqa: E501
+            f'--escape_character "{self.options["format"]["escape_character"]}" '
+            f'--enclosing_character "{self.options["format"]["enclosing_character"]}" '
+            + ("--skip_second_fraction " if self.options["date_time"].get("skip_second_fraction", False) else "")
+            + ("--empty_target " if self.options["load_options"].get("empty_target", False) else "--noempty_target ")
+            + ("--has_header_row " if self.options.get("has_header_row", False) else "")
+            + ("--flexible" if self.options.get("flexible", False) else "")
+        )
+        return command
+
+    def __rich__(self) -> rich.panel.Panel:
+        header = "The tsload service is unreachable."
+        reason = f"HTTP Error: {self.httpx_error}"
+        fixing = (
+            "Ensure your cluster is set up for allow remote data loads"
+            "\n  https://docs.thoughtspot.com/software/latest/tsload-connector#_setting_up_your_cluster"
+            "\n\n"
+            "If you cannot enable it, here's the tsload command for the file you tried to load:"
+            "\n\n"
+            f"{self.simulate_tsload_command()}"
+        )
+
+        return _make_error_panel(header=header, reason=reason, fixing=fixing)

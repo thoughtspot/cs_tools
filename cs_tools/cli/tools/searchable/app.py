@@ -1,179 +1,202 @@
 from __future__ import annotations
 
+from collections.abc import Coroutine
+from typing import Literal
+import collections
 import datetime as dt
-import json
 import logging
 import pathlib
+import zoneinfo
 
-from rich.live import Live
 from thoughtspot_tml import Table
 from thoughtspot_tml.utils import determine_tml_type
 import httpx
+import sqlalchemy as sa
 import typer
 
-from cs_tools import _compat
-from cs_tools.cli.dependencies import thoughtspot
-from cs_tools.cli.dependencies.syncer import DSyncer
-from cs_tools.cli.layout import LiveTasks
-from cs_tools.cli.types import SyncerProtocolType, TZAwareDateTimeType
-from cs_tools.cli.ux import CSToolsApp, rich_console
+from cs_tools import _types, utils
+from cs_tools.api import workflows
+from cs_tools.cli import (
+    custom_types,
+    progress as px,
+)
+from cs_tools.cli.dependencies import ThoughtSpot, depends_on
+from cs_tools.cli.ux import AsyncTyper
+from cs_tools.sync.base import DatabaseSyncer, Syncer
 from cs_tools.sync.sqlite.syncer import SQLite
-from cs_tools.types import GUID, TMLImportPolicy
 
-from . import layout, models, transform
+from . import api_transformer, models
 
 log = logging.getLogger(__name__)
+app = AsyncTyper(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 
 
-app = CSToolsApp(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
+def _ensure_external_mapping(tml: _types.TML, *, connection_info: dict[str, str]) -> _types.TML:
+    """Remap TML object to match the external database."""
+    if not isinstance(tml, Table):
+        return tml
+
+    identity_translator = str.upper if "SNOWFLAKE" in connection_info["dialect"] else str.casefold
+
+    # DATABASE and SCHEMA are taken as-is.
+    tml.table.db = connection_info["database"]
+    tml.table.schema = connection_info["schema"]
+
+    # TABLE names are translated to UPPERCASE or lowercase depending on dialect.
+    tml.table.db_table = identity_translator(tml.table.db_table)
+
+    # COLUMN names are translated to UPPERCASE or lowercase depending on dialect.
+    for column in tml.table.columns:
+        column.db_column_name = identity_translator(column.db_column_name)
+
+    # REMOVE THE CONNECTION GUID IF WE ARE USING FALCON
+    tml.table.connection.name = None if connection_info["dialect"] == "FALCON" else connection_info["name"]
+    tml.table.connection.fqn = None if connection_info["dialect"] == "FALCON" else connection_info["guid"]
+
+    return tml
 
 
-class FriendlyWindowEnd(_compat.StrEnum):
-    NOW = "NOW"
-    TODAY_START_UTC = "TODAY_START_UTC"
-    TODAY_START_LOCAL = "TODAY_START_LOCAL"
+def _is_in_current_org(metadata_object, *, current_org: int) -> bool:
+    """Determine if this object belongs in this org."""
+    return current_org in (metadata_object["metadata_header"].get("orgIds", None) or [0])
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def deploy(
     ctx: typer.Context,
-    connection_guid: GUID = typer.Option(
+    cnxn_guid: _types.GUID = typer.Option(
         ...,
-        help="if Falcon, use [b blue]falcon[/], otherwise find your guid in the Connection URL in the Data Workspace",
-        show_default=False,
+        "--connection-guid",
+        help="If deploying to Falcon, use [fg-secondary]falcon[/], otherwise find your GUID in the Connection URL.",
     ),
     database: str = typer.Option(
         ...,
-        help="if Falcon, use [b blue]cs_tools[/], otherwise use the name of the database which holds Searchable data",
-        show_default=False,
+        help=(
+            "If deploying to Falcon, use [fg-secondary]cs_tools[/], otherwise use the database name holding Searchable "
+            "data."
+        ),
     ),
     schema: str = typer.Option(
         ...,
         help=(
-            "if Falcon, use [b blue]falcon_default_schema[/], otherwise use the name of the schema which holds "
-            "Searchable data"
+            "If deploying to Falcon, use [fg-secondary]falcon_default_schema[/], otherwise use the name of the schema "
+            "holding Searchable data."
         ),
-        show_default=False,
     ),
-    org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
-    export: pathlib.Path = typer.Option(
-        None,
-        help="download the TML files of the SpotApp",
-        file_okay=False,
-        show_default=False,
-    ),
-):
-    """
-    Deploy the Searchable SpotApp.
-    """
+    org_override: str = typer.Option(None, "--org", help="The Org identifier to deploy the SpotApp to."),
+    export: custom_types.Directory = typer.Option(None, help="Download the TML of the SpotApp instead of deploying."),
+) -> _types.ExitCode:
+    """Deploy the Searchable SpotApp."""
     ts = ctx.obj.thoughtspot
 
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
-        ts.org.switch(org=org_override)
+        ts.switch_org(org_id=org_override)
 
-    tasks = [
-        ("connection_details", "Getting details for data source"),
-        ("customize_spotapp", "Customizing [b blue]Searchable Worksheets[/] to your environment"),
-        ("deploy_spotapp", "Deploying the SpotApp to ThoughtSpot"),
+    TOOL_TASKS = [
+        px.WorkTask(id="CONNECTION", description="Getting details for data source"),
+        px.WorkTask(id="CUSTOMIZE", description="Customizing Searchable Model to your cluster"),
+        px.WorkTask(id="DEPLOY", description="Deploying TML to ThoughtSpot"),
     ]
 
-    with LiveTasks(tasks, console=rich_console) as tasks:
-        with tasks["connection_details"] as this_task:
-            connection_name: str = None
-            dialect: str = None
+    with px.WorkTracker("Deploying Searchable", tasks=TOOL_TASKS) as tracker:
+        with tracker["CONNECTION"]:
+            connection = ""
+            db_dialect = ""
 
-            if connection_guid.lower() == "falcon":
-                dialect = "FALCON"
-                this_task.skip()
+            if cnxn_guid.lower() == "falcon":
+                db_dialect = "FALCON"
 
             else:
+                c = ts.api.metadata_search(guid=cnxn_guid)
+                r = utils.run_sync(c)
+                _ = r.json()
+
                 try:
-                    info = ts.metadata.fetch_header_and_extras(metadata_type="DATA_SOURCE", guids=[connection_guid])
-                except (KeyError, IndexError):
-                    log.error(f"Could not find a connection with guid {connection_guid}")
-                    raise typer.Exit(1) from None
+                    d = next(iter(_))
+                except StopIteration:
+                    log.error(f"Could not find a connection with guid {cnxn_guid}")
+                    return 1
+                else:
+                    connection = d["metadata_name"]
+                    db_dialect = d["metadata_header"]["type"]
 
-                connection_name = info[0]["header"]["name"]
-                dialect = info[0]["type"]
+        with tracker["CUSTOMIZE"]:
+            HERE = pathlib.Path(__file__).parent
+            tmls: list[_types.TML] = []
 
-        with tasks["customize_spotapp"]:
-            here = pathlib.Path(__file__).parent
-            tmls = []
+            connection_info = {
+                "dialect": db_dialect,
+                "name": connection,
+                "guid": cnxn_guid,
+                "database": database,
+                "schema": schema,
+            }
 
-            # Care for UPPERCASE or lowercase identity convention in dialects
-            to_translate = str.upper if "SNOWFLAKE" in dialect else str.lower
-            is_falcon_db = "FALCON" in dialect
+            # LOAD THE BUNDLED TML AND CUSTOMIZE IT TO THE EXTERNAL DATABASE
+            for path in HERE.glob("**/*.tml"):
+                tml = determine_tml_type(path=path).load(path=path)
+                tml = _ensure_external_mapping(tml, connection_info=connection_info)
 
-            for file in here.glob("**/*.tml"):
-                tml_cls = determine_tml_type(path=file)
-                tml = tml_cls.load(file)
-
+                # ENFORCE THOUGHTSPOT METADATA TO BE IN UPPERCASE (in case the admin imported the tables already)
                 if isinstance(tml, Table):
-                    # Enforce ThoughtSpot Metadata to be in UPPERCASE
                     tml.table.name = tml.table.name.upper()
 
-                    # External database object name , this has to be specific.
-                    tml.table.db = database
-                    tml.table.schema = schema
-                    tml.table.db_table = to_translate(tml.table.db_table)
-
-                    for column in tml.table.columns:
-                        column.db_column_name = to_translate(column.db_column_name)
-
-                    # Set the connection attribution if we're hitting an external database
-                    tml.table.connection.name = connection_name if not is_falcon_db else None
-                    tml.table.connection.fqn = connection_guid if not is_falcon_db else None
-
                 # fmt: off
-                # No need to replicate TS_BI_SERVER in Falcon, we'll use a Sage View instead.
-                falcon_and_table =     is_falcon_db and "TS_BI_SERVER.table.tml" in file.name
-                embrace_and_view = not is_falcon_db and "TS_BI_SERVER.view.tml"  in file.name
+                falcon_and_tsbi_table = "FALCON"     in db_dialect and "TS_BI_SERVER.table.tml" in path.name
+                embrace_and_tsbi_view = "FALCON" not in db_dialect and "TS_BI_SERVER.view.tml"  in path.name
                 # fmt: on
 
-                if falcon_and_table or embrace_and_view:
+                # NO NEED TO REPLICATE TS_BI_SERVER IN FALCON, WE'LL USE A SAGE VIEW INSTEAD.
+                if falcon_and_tsbi_table or embrace_and_tsbi_view:
                     continue
 
-                if is_falcon_db and "TS_BI_SERVER.view.tml" in file.name:
+                # ENFORCE FALCON CLUSTER GUID
+                if "FALCON" in db_dialect and "TS_BI_SERVER.view.tml" in path.name:
                     tml.view.formulas[-1].expr = f"'{ts.session_context.thoughtspot.cluster_id}'"
 
                 tmls.append(tml)
 
                 if export is not None:
-                    tml.dump(export.joinpath(file.name))
+                    tml.dump(path=export.joinpath(path.name))  # type: ignore[attr-defined]
 
-        with tasks["deploy_spotapp"] as this_task:
+        with tracker["DEPLOY"]:
             if export is not None:
-                this_task.skip()
-                raise typer.Exit(0)
+                return 0
 
-            api_responses = ts.tml.to_import(tmls, policy=TMLImportPolicy.partial)
+            try:
+                c = workflows.metadata.tml_import(tmls=tmls, policy="ALL_OR_NONE", timeout=60 * 15, http=ts.api)
+                d = utils.run_sync(c)
+            except httpx.HTTPError as e:
+                log.error(f"Failed to call metadata/tml/import.. {e}")
+                return 1
 
-            for r in api_responses:
-                divider = "[dim bold white]>>[/]"
+            for tml_import_info in d:
+                idx = tml_import_info["request_index"]
+                tml = tmls[idx]
+                tml_type = tml.tml_type_name.upper()
 
-                if r.is_success:
-                    logger = log.info
-                    info = f"{r.guid} {r.metadata_object_type}"
-                else:
-                    logger = log.warn if r.status_code == "WARNING" else log.error
-                    message = "\n   ".join(r.error_messages)
-                    info = f"import log..\n   {message}"
+                if tml_import_info["response"]["status"]["status_code"] == "OK":
+                    log.info(f"{tml_type} '{tml.name}' successfully imported")
 
-                logger(f"{divider} [b blue]{r.name}[/] {divider} {info}")
+    return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def audit_logs(
     ctx: typer.Context,
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=[models.AuditLogs]),
+        click_type=custom_types.Syncer(models=[models.AuditLogs]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
     last_k_days: int = typer.Option(1, help="how many days of audit logs to fetch", min=1, max=30),
-    window_end: FriendlyWindowEnd = typer.Option(FriendlyWindowEnd.NOW, help="how to track events through time"),
-):
+    window_end: Literal["NOW", "TODAY_START_UTC", "TODAY_START_LOCAL"] = typer.Option(
+        "NOW", help="how to track events through time"
+    ),
+) -> _types.ExitCode:
     """
     Extract audit logs from your ThoughtSpot platform.
 
@@ -194,83 +217,53 @@ def audit_logs(
             .replace(hour=0, minute=0, second=0, microsecond=0)
         )
 
-    # THOUGHTSPOT API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
-    everseen = set()
+    TOOL_TASKS = [
+        px.WorkTask(id="COLLECT", description="Fetching data from ThoughtSpot"),
+        px.WorkTask(id="CLEAN", description="Transforming API results"),
+        px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
+    ]
 
-    renamed = []
+    with px.WorkTracker("Fetching Audit Logs Data", tasks=TOOL_TASKS) as tracker:
+        with tracker["COLLECT"]:
+            _: list[_types.APIResult] = []
 
-    for days_to_fetch in range(last_k_days):
-        utc_end = utc_terminal_end - dt.timedelta(days=days_to_fetch)
-        utc_start = utc_terminal_end - dt.timedelta(days=days_to_fetch + 1)
+            for days in range(last_k_days):
+                beg = utc_terminal_end - dt.timedelta(days=days + 1)
+                end = utc_terminal_end - dt.timedelta(days=days)
+                c = ts.api.logs_fetch(utc_start=beg, utc_end=end)
+                r = utils.run_sync(c)
 
-        r = ts.api.v2.logs_fetch(log_type="SECURITY_AUDIT", utc_start=utc_start, utc_end=utc_end)
+                if r.is_error:
+                    log.error("Failed to call the Audit Logs API, see logs for details..")
+                    log.debug(f"API Response:\n{r.text}")
+                    return 1
 
-        try:
-            r.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            log.error(e.response.json())
-            continue
+                _.append(r.json())
 
-        rows = r.json()
+        with tracker["CLEAN"]:
+            d = api_transformer.ts_audit_logs(data=_, cluster=ts.session_context.thoughtspot.cluster_id)
 
-        if not rows:
-            log.info(f"Found no data for [NOW - {days_to_fetch} DAYS] ({utc_start.date()} -> {utc_end.date()})")
-            continue
+        with tracker["DUMP_DATA"]:
+            syncer.dump("ts_audit_logs", data=d)
 
-        for row in rows:
-            data = json.loads(row["log"])
-
-            # THOUGHTSPOT API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
-            if f"{ts.session_context.thoughtspot.cluster_id}-{data['id']}" in everseen:
-                continue
-
-            everseen.add(f"{ts.session_context.thoughtspot.cluster_id}-{data['id']}")
-
-            renamed.append(
-                models.AuditLogs.validated_init(
-                    **{
-                        "cluster_guid": ts.session_context.thoughtspot.cluster_id,
-                        "org_id": data["orgId"],
-                        "sk_dummy": f"{ts.session_context.thoughtspot.cluster_id}-{data['id']}",
-                        "timestamp": row["date"],
-                        "log_type": data["type"],
-                        "user_guid": data["userGUID"],
-                        "description": data["desc"],
-                        "details": json.dumps(data["data"]),
-                    }
-                ).model_dump()
-            )
-
-    # CLUSTER BY --> TIMESTAMP .. everything else is irrelevant after TS.
-    renamed.sort(key=lambda r: (r["timestamp"], r["sk_dummy"]))
-
-    syncer.dump("ts_audit_logs", data=renamed)
+    return 0
 
 
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def bi_server(
     ctx: typer.Context,
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=models.BISERVER_MODELS),
+        click_type=custom_types.Syncer(models=[models.BIServer]),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    org_override: str = typer.Option(None, "--org", help="the org to fetch history from"),
-    compact: bool = typer.Option(True, "--compact / --full", help="if compact, exclude NULL and INVALID user actions"),
-    from_date: dt.datetime = typer.Option(
-        None,
-        click_type=TZAwareDateTimeType(),
-        metavar="YYYY-MM-DD",
-        help="inclusive lower bound of rows to select from TS: BI Server",
-    ),
-    to_date: dt.datetime = typer.Option(
-        None,
-        click_type=TZAwareDateTimeType(),
-        metavar="YYYY-MM-DD",
-        help="inclusive upper bound of rows to select from TS: BI Server",
-    ),
-):
+    from_date: custom_types.Date = typer.Option(..., help="inclusive lower bound of rows to select from TS: BI Server"),
+    to_date: custom_types.Date = typer.Option(..., help="inclusive upper bound of rows to select from TS: BI Server"),
+    org_override: str = typer.Option(None, "--org", help="The org to fetch history from"),
+    compact: bool = typer.Option(True, "--compact / --full", help="If compact, add  [User Action] != {null} 'invalid'"),
+) -> _types.ExitCode:
     """
     Extract usage statistics from your ThoughtSpot platform.
 
@@ -284,18 +277,36 @@ def bi_server(
         - response size         - latency (us)          - database latency (us)
         - impressions
     """
+    assert isinstance(from_date, dt.date), f"Could not coerce from_date '{from_date}' to a date."
+    assert isinstance(to_date, dt.date), f"Could not coerce to_date '{to_date}' to a date."
     ts = ctx.obj.thoughtspot
+
+    CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
+
+    # DEV NOTE: @boonhapus, 2025/02/18
+    #   BI Server on SaaS is held in ThoughtSpot's multi-tenant Snowflake database,
+    #   which is set to UTC, whereas BI Server on Software is held in Falcon and set to
+    #   whatever timezone the cluster is.
+    TZ_UTC = zoneinfo.ZoneInfo("UTC")
+    TS_BI_TIMEZONE = TZ_UTC if ts.session_context.thoughtspot.is_cloud else ts.session_context.thoughtspot.timezone
 
     if syncer.protocol == "falcon":
         log.error("Falcon Syncer is not supported for TS: BI Server reflection.")
         models.BIServer.__table__.drop(syncer.engine)
-        rich_console.print()
-        raise typer.Abort()
+        return 1
+
+    if (to_date - from_date) > dt.timedelta(days=31):  # type: ignore[operator]
+        log.warning("Due to how the Search API functions, it's recommended to request no more than 1 month at a time.")
 
     # DEV NOTE: @boonhapus
     # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
     if ts.session_context.thoughtspot.is_orgs_enabled:
-        ts.org.switch(org=0)
+        ts.switch_org(org_id=0)
+
+    if org_override is not None:
+        c = workflows.metadata.fetch_one(identifier=org_override, metadata_type="ORG", attr_path="id", http=ts.api)
+        _ = utils.run_sync(c)
+        org_override = _
 
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
@@ -313,87 +324,28 @@ def bi_server(
         + ("" if org_override is None else f" [org id] = {ts.org.guid_for(org_override)}")
     )
 
-    tasks = [
-        ("gather_search", "Collecting data from [b blue]TS: BI Server"),
-        ("syncer_dump", f"Writing rows to [b blue]{syncer.name}"),
+    TOOL_TASKS = [
+        px.WorkTask(id="SEARCH", description="Fetching data from ThoughtSpot"),
+        px.WorkTask(id="CLEAN", description="Transforming API results"),
+        px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
     ]
 
-    with LiveTasks(tasks, console=rich_console) as tasks:
-        with tasks["gather_search"]:
-            data = ts.search(SEARCH_TOKENS, worksheet="TS: BI Server")
+    with px.WorkTracker("Fetching TS: BI Server Data", tasks=TOOL_TASKS) as tracker:
+        with tracker["SEARCH"]:
+            c = workflows.search(worksheet="TS: BI Server", query=SEARCH_TOKENS, timezone=TS_BI_TIMEZONE, http=ts.api)
+            _ = utils.run_sync(c)
 
-            # THOUGHTSPOT API SEEMS TO HAVE ISSUES WITH TIMEZONES AND CAUSES DUPLICATION OF DATA
-            data = [dict(t) for t in {tuple(sorted(d.items())) for d in data}]
+        with tracker["CLEAN"]:
+            d = api_transformer.ts_bi_server(data=_, cluster=CLUSTER_UUID)
 
-            # CLUSTER BY --> TIMESTAMP .. everything else is irrelevant after TS.
-            data.sort(key=lambda r: (r["Timestamp"].replace(tzinfo=dt.timezone.utc), r["Incident Id"], r["Viz Id"]))
+        with tracker["DUMP_DATA"]:
+            syncer.dump("ts_bi_server", data=d)
 
-            renamed = []
-            curr_date, sk_idx = None, 0
-
-            for row in data:
-                row_date = row["Timestamp"].replace(tzinfo=dt.timezone.utc).date()
-
-                # reset the surrogate key every day
-                if curr_date != row_date:
-                    curr_date = row_date
-                    sk_idx = 0
-
-                sk_idx += 1
-
-                renamed.append(
-                    models.BIServer.validated_init(
-                        **{
-                            "cluster_guid": ts.session_context.thoughtspot.cluster_id,
-                            "sk_dummy": f"{ts.session_context.thoughtspot.cluster_id}-{row_date}-{sk_idx}",
-                            "org_id": row.get("Org Id", 0),
-                            "incident_id": row["Incident Id"],
-                            "timestamp": row["Timestamp"],
-                            "url": row["URL"],
-                            "http_response_code": row["HTTP Response Code"],
-                            "browser_type": row["Browser Type"],
-                            "browser_version": row["Browser Version"],
-                            "client_type": row["Client Type"],
-                            "client_id": row["Client Id"],
-                            "answer_book_guid": row["Answer Book GUID"],
-                            "viz_id": row["Viz Id"],
-                            "user_id": row["User Id"],
-                            "user_action": row["User Action"],
-                            "query_text": row["Query Text"],
-                            "response_size": row["Total Response Size"],
-                            "latency_us": row["Total Latency (us)"],
-                            "impressions": row["Total Impressions"],
-                        }
-                    ).model_dump()
-                )
-
-        with tasks["syncer_dump"]:
-            syncer.dump("ts_bi_server", data=renamed)
+    return 0
 
 
-@app.command("gather", dependencies=[thoughtspot], hidden=True)
-def _gather(
-    ctx: typer.Context,
-    # tables: List[str] = typer.Option(None, help="table names to collect data on, can be specified multiple times"),
-    include_column_access: bool = typer.Option(
-        False,
-        "--include-column-access",
-        help="if specified, include security controls for Column Level Security as well",
-    ),
-    org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
-    syncer: DSyncer = typer.Option(
-        ...,
-        click_type=SyncerProtocolType(models=models.METADATA_MODELS),
-        help="protocol and path for options to pass to the syncer",
-        rich_help_panel="Syncer Options",
-    ),
-):
-    # Here for backwards compatability.
-    command = typer.main.get_command(app).get_command(ctx, "metadata")
-    ctx.forward(command)
-
-
-@app.command(dependencies=[thoughtspot])
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
 def metadata(
     ctx: typer.Context,
     # tables: List[str] = typer.Option(None, help="table names to collect data on, can be specified multiple times"),
@@ -403,13 +355,13 @@ def metadata(
         help="if specified, include security controls for Column Level Security as well",
     ),
     org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
-    syncer: DSyncer = typer.Option(
+    syncer: Syncer = typer.Option(
         ...,
-        click_type=SyncerProtocolType(models=models.METADATA_MODELS),
+        click_type=custom_types.Syncer(models=models.METADATA_MODELS),
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-):
+) -> _types.ExitCode:
     """
     Extract metadata from your ThoughtSpot platform.
 
@@ -419,154 +371,383 @@ def metadata(
     """
     ts = ctx.obj.thoughtspot
 
-    if ts.session_context.thoughtspot.is_orgs_enabled:
-        info = ts.api.v1.session_orgs_read().json().get("orgs", [])
-        orgs = [i["orgId"] for i in info] if org_override is None else [ts.org.guid_for(org_override)]
-    else:
-        orgs = ["ThoughtSpot"]
-
     if not ts.session_context.user.is_admin:
         log.warning("Searchable is meant to be run from an Admin-level context, your results may vary..")
 
-    table = layout.Table(data=[[str(org)] + [":popcorn:"] * 8 for org in orgs])
-    temp_sync = SQLite(
-        database_path=ts.config.temp_dir / "temp-data.db", models=models.METADATA_MODELS, load_strategy="UPSERT"
+    temp = SQLite(
+        database_path=ts.config.temp_dir / "temp.db",
+        pragma_speedy_inserts=True,
+        models=models.METADATA_MODELS,
+        load_strategy="UPSERT",
     )
 
     # Silence the intermediate logger.
     logging.getLogger("cs_tools.sync.sqlite.syncer").setLevel(logging.CRITICAL)
 
-    with Live(table, console=rich_console, auto_refresh=1):
-        temp_sync.dump(models.Cluster.__tablename__, data=transform.to_cluster(ts.session_context))
-        cluster_uuid = ts.session_context.thoughtspot.cluster_id
+    TOOL_TASKS = [
+        px.WorkTask(id="PREPARING", description="Preparing for data collection"),
+        px.WorkTask(id="ORGS_COUNT", description="Collecting data from ThoughtSpot"),
+        px.WorkTask(id="TS_ORG", description="  Fetching [fg-secondary]ORG[/] data"),
+        px.WorkTask(id="TS_GROUP", description="  Fetching [fg-secondary]GROUP[/] data"),
+        px.WorkTask(id="TS_PRIVILEGE", description="  Fetching [fg-secondary]PRIVILEGE[/] data"),
+        px.WorkTask(id="TS_USER", description="  Fetching [fg-secondary]USER[/] data"),
+        px.WorkTask(id="TS_TAG", description="  Fetching [fg-secondary]TAG[/] data"),
+        px.WorkTask(id="TS_METADATA", description="  Fetching [fg-secondary]METADATA[/] data"),
+        px.WorkTask(id="TS_COLUMN", description="  Fetching [fg-secondary]COLUMN[/] data"),
+        px.WorkTask(id="TS_DEPENDENT", description="  Fetching [fg-secondary]DEPENDENT[/] data"),
+        px.WorkTask(id="TS_ACCESS", description="  Fetching [fg-secondary]ACCESS[/] data"),
+        px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
+    ]
 
-        for row, org_id in zip(table.data, orgs):
+    with px.WorkTracker("", tasks=TOOL_TASKS) as tracker:
+        with tracker["PREPARING"]:
+            CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
+
+            # FETCH ALL ORG IDs WE'LL NEED TO COLLECT FROM
             if ts.session_context.thoughtspot.is_orgs_enabled:
-                ts.org.switch(org_id)
-                row[1] = ":fire:"
-
-                # org info
-                r = ts.api.v1.org_read(org_id=org_id)
-                temp_sync.dump(models.Org.__tablename__, data=transform.to_org(r.json(), cluster=cluster_uuid))
-
-                # org_membership
-                r = ts.api.v1.user_read()
-                members = {tuple(m.values()) for m in temp_sync.load(models.OrgMembership.__tablename__)}
-                transformed = transform.to_org_membership(r.json(), cluster=cluster_uuid, ever_seen=members)
-                temp_sync.dump(models.OrgMembership.__tablename__, data=transformed)
-                row[1] = ":file_folder:"
+                c = workflows.metadata.fetch_one(identifier=org_override, metadata_type="ORG", http=ts.api)
+                _ = utils.run_sync(c)
+                orgs = [_]
             else:
-                default_org = {"orgId": 0, "orgName": "ThoughtSpot", "description": "Your cluster is not orgs enabled."}
-                temp_sync.dump(models.Org.__tablename__, data=transform.to_org(default_org, cluster=cluster_uuid))
-                row[1] = ""
+                orgs = [{"id": 0, "name": "ThoughtSpot"}]
 
-            row[2] = ":fire:"
-            # user
-            # group_membership
-            r = ts.api.v1.user_read()
-            members = {m["user_guid"] for m in temp_sync.load(models.User.__tablename__)}
-            temp_sync.dump(
-                models.User.__tablename__, data=transform.to_user(r.json(), cluster=cluster_uuid, ever_seen=members)
-            )
-            temp_sync.dump(
-                models.GroupMembership.__tablename__, data=transform.to_group_membership(r.json(), cluster=cluster_uuid)
-            )
-            row[2] = ":file_folder:"
+            if not orgs:
+                log.error(f"Could not find any orgs with name '{org_override}' to collect data from.")
+                return 1
 
-            row[3] = ":fire:"
-            # group
-            # group_privilege
-            # group_membership
-            r = ts.api.v1.group_read()
-            temp_sync.dump(models.Group.__tablename__, data=transform.to_group(r.json(), cluster=cluster_uuid))
-            temp_sync.dump(
-                models.GroupPrivilege.__tablename__, data=transform.to_group_privilege(r.json(), cluster=cluster_uuid)
-            )
-            temp_sync.dump(
-                models.GroupMembership.__tablename__, data=transform.to_group_membership(r.json(), cluster=cluster_uuid)
-            )
-            row[3] = ":file_folder:"
+            tracker["ORGS_COUNT"].total = len(orgs)
 
-            row[4] = ":fire:"
-            # tags
-            r = ts.tag.all()
-            temp_sync.dump(models.Tag.__tablename__, data=transform.to_tag(r, cluster=cluster_uuid))
-            row[4] = ":file_folder:"
+            # DUMP CLUSTER DATA
+            d = api_transformer.ts_cluster(data=ts.session_context)
+            temp.dump(models.Cluster.__tablename__, data=d)
 
-            row[5] = ":fire:"
-            # metadata
-            content = [
-                *ts.logical_table.all(exclude_system_content=False, include_data_source=True, raise_on_error=False),
-                *ts.answer.all(exclude_system_content=False, raise_on_error=False),
-                *ts.liveboard.all(exclude_system_content=False, raise_on_error=False),
-            ]
+        tracker["ORGS_COUNT"].start()
 
-            members = {
-                (m["cluster_guid"], m["org_id"], m["object_guid"])
-                for m in temp_sync.load(models.MetadataObject.__tablename__)
-            }
-            temp_sync.dump(
-                models.DataSource.__tablename__, data=transform.to_data_source(content, cluster=cluster_uuid)
-            )
-            temp_sync.dump(
-                models.MetadataObject.__tablename__,
-                data=transform.to_metadata_object(content, cluster=cluster_uuid, ever_seen=members),
-            )
-            temp_sync.dump(
-                models.TaggedObject.__tablename__, data=transform.to_tagged_object(content, cluster=cluster_uuid)
-            )
-            row[5] = ":file_folder:"
+        # LOOP THROUGH EACH ORG COLLECTING DATA
+        for org in orgs:
+            tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
+            seen_guids: dict[_types.APIObjectType, set[_types.GUID]] = collections.defaultdict(set)
+            seen_columns: list[list[_types.GUID]] = []
+            # TODO: REMOVE AFTER 10.3.0.SW is n-1 (see COMPAT_GUIDS ref below.)
+            seen_group_guids: set[_types.GUID] = set()
 
-            # columns
-            # synonyms
-            row[6] = ":fire:"
-            guids = [obj["id"] for obj in content if obj["metadata_type"] == "LOGICAL_TABLE"]
-            r = ts.logical_table.columns(guids)
-            temp_sync.dump(
-                models.MetadataColumn.__tablename__, data=transform.to_metadata_column(r, cluster=cluster_uuid)
-            )
-            temp_sync.dump(
-                models.ColumnSynonym.__tablename__, data=transform.to_column_synonym(r, cluster=cluster_uuid)
-            )
-            row[6] = ":file_folder:"
+            with tracker["TS_ORG"]:
+                if not ts.session_context.thoughtspot.is_orgs_enabled:
+                    _ = [{"id": 0, "name": "ThoughtSpot", "description": "Your cluster is not orgs enabled."}]
+                else:
+                    ts.switch_org(org_id=org["id"])
+                    c = ts.api.orgs_search()
+                    r = utils.run_sync(c)
+                    _ = r.json()
 
-            # dependents
-            row[7] = ":fire:"
-            r = ts.metadata.dependents([column["column_guid"] for column in r], for_columns=True)
-            temp_sync.dump(
-                models.DependentObject.__tablename__, data=transform.to_dependent_object(r, cluster=cluster_uuid)
-            )
-            row[7] = ":file_folder:"
+                # DUMP ORG DATA
+                d = api_transformer.ts_org(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.Org.__tablename__, data=d)
 
-            # access_controls
-            row[8] = ":fire:"
-            types = ["QUESTION_ANSWER_BOOK", "PINBOARD_ANSWER_BOOK", "LOGICAL_TABLE", "DATA_SOURCE"]
+            with tracker["TS_GROUP"]:
+                c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
+                _ = utils.run_sync(c)
 
-            if include_column_access:
-                types.append("LOGICAL_COLUMN")
+                # DUMP GROUP DATA
+                d = api_transformer.ts_group(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.Group.__tablename__, data=d)
 
-            # NOTE:
-            #    In the case the ThoughtSpot cluster has a high number of users, the
-            #    column access block will take an incredibly long amount of time to
-            #    complete. We can probably find a better algorithm.
-            #
-            for metadata_type in types:
-                guids = [obj["id"] for obj in content if obj["metadata_type"] == metadata_type]
-                r = ts.metadata.permissions(guids, metadata_type=metadata_type)
-                temp_sync.dump(
-                    models.SharingAccess.__tablename__, data=transform.to_sharing_access(r, cluster=cluster_uuid)
+                # TODO: REMOVE AFTER 10.3.0.SW is n-1 (see COMPAT_GUIDS ref below.)
+                seen_group_guids.update([group["group_guid"] for group in d])
+
+                # DUMP GROUP->GROUP_MEMBERSHIP DATA
+                d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.GroupMembership.__tablename__, data=d)
+
+            with tracker["TS_PRIVILEGE"]:
+                # TODO: ROLE->PRIVILEGE DATA.
+                # TODO: GROUP->ROLE DATA.
+
+                # DUMP GROUP->PRIVILEGE DATA
+                d = api_transformer.ts_group_privilege(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.GroupPrivilege.__tablename__, data=d)
+
+            with tracker["TS_USER"]:
+                c = workflows.paginator(ts.api.users_search, record_size=150_000, timeout=60 * 15)
+                _ = utils.run_sync(c)
+
+                # DUMP USER DATA
+                d = api_transformer.ts_user(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.User.__tablename__, data=d)
+
+                # DUMP USER->ORG_MEMBERSHIP DATA
+                d = api_transformer.ts_org_membership(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.OrgMembership.__tablename__, data=d)
+
+                # DUMP USER->GROUP_MEMBERSHIP DATA
+                d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.GroupMembership.__tablename__, data=d)
+
+            with tracker["TS_TAG"]:
+                c = ts.api.tags_search()
+                r = utils.run_sync(c)
+                _ = r.json()
+
+                # DUMP TAG DATA
+                d = api_transformer.ts_tag(data=_, cluster=CLUSTER_UUID, current_org=org["id"])
+                temp.dump(models.Tag.__tablename__, data=d)
+
+            with tracker["TS_METADATA"]:
+                c = workflows.metadata.fetch_all(
+                    metadata_types=["CONNECTION", "LOGICAL_TABLE", "LIVEBOARD", "ANSWER"], http=ts.api
                 )
+                _ = utils.run_sync(c)
 
-            row[8] = ":file_folder:"
+                # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
+                for metadata in _:
+                    if _is_in_current_org(metadata, current_org=org["id"]):
+                        seen_guids[metadata["metadata_type"]].add(metadata["metadata_id"])
 
-            # GO TO NEXT ORG BATCH -->
+                # DUMP DATA_SOURCE DATA
+                d = api_transformer.ts_data_source(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.DataSource.__tablename__, data=d)
 
-        # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
-        is_syncer_initialized_as_db_truncate = syncer.is_database_syncer and syncer.load_strategy == "TRUNCATE"
+                # DUMP METDATA_OBJECT DATA
+                d = api_transformer.ts_metadata_object(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.MetadataObject.__tablename__, data=d)
 
-        for model in models.METADATA_MODELS:
-            for idx, rows in enumerate(temp_sync.read_stream(tablename=model.__tablename__, batch=1_000_000), start=1):
-                if is_syncer_initialized_as_db_truncate:
+                # DUMP TAGGED_OBJECT DATA
+                d = api_transformer.ts_tagged_object(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.TaggedObject.__tablename__, data=d)
+
+            with tracker["TS_COLUMN"]:
+                # USE include_hidden_objects=True BECAUSE HIDDEN COLUMNS ON A LOGICAL_TABLE AREN'T RETURNED WITHOUT IT.
+                g = {"LOGICAL_TABLE": seen_guids["LOGICAL_TABLE"]}
+                c = workflows.metadata.fetch(
+                    typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api
+                )
+                _ = utils.run_sync(c)
+
+                # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
+                for metadata in _:
+                    if _is_in_current_org(metadata, current_org=org["id"]):
+                        seen_guids["CONNECTION"].add(metadata["metadata_detail"]["dataSourceId"])
+
+                        if not metadata["metadata_detail"]["columns"]:
+                            log.warning(
+                                f"LOGICAL_TABLE '{metadata['metadata_header']['name']}' ({metadata['metadata_id']}) "
+                                f"somehow has no columns, skipping.."
+                            )
+                            continue
+
+                        seen_columns.append([_["header"]["id"] for _ in metadata["metadata_detail"]["columns"]])
+
+                # DUMP METDATA_OBJECT DATA (UPSERT LOGICAL_TABLE with .data_source_guid)
+                d = api_transformer.ts_metadata_object(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.MetadataObject.__tablename__, data=d)
+
+                # DUMP METADATA_COLUMN DATA
+                d = api_transformer.ts_metadata_column(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.MetadataColumn.__tablename__, data=d)
+
+                # DUMP COLUMN_SYNONYM DATA
+                d = api_transformer.ts_column_synonym(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.ColumnSynonym.__tablename__, data=d)
+
+            with tracker["TS_DEPENDENT"]:
+                c = workflows.metadata.fetch(
+                    typed_guids={"LOGICAL_COLUMN": seen_columns},
+                    include_dependent_objects=True,
+                    dependent_objects_record_size=-1,
+                    http=ts.api,
+                )
+                _ = utils.run_sync(c)
+
+                # DUMP DEPENDENT_OBJECT DATA
+                d = api_transformer.ts_metadata_dependent(data=_, cluster=CLUSTER_UUID)
+                temp.dump(models.DependentObject.__tablename__, data=d)
+
+            with tracker["TS_ACCESS"]:
+                # TODO: REMOVE AFTER 10.3.0.SW is n-1
+                COMPAT_TS_VERSION = ts.session_context.thoughtspot.version
+                COMPAT_GUIDS = seen_group_guids
+
+                if include_column_access:
+                    seen_guids["LOGICAL_COLUMN"] = seen_columns
+
+                c = workflows.metadata.permissions(
+                    typed_guids=seen_guids, compat_ts_version=COMPAT_TS_VERSION, http=ts.api
+                )
+                _ = utils.run_sync(c)
+
+                # DUMP COLUMN_SYNONYM DATA
+                d = api_transformer.ts_metadata_permissions(
+                    data=_,
+                    compat_ts_version=COMPAT_TS_VERSION,
+                    compat_all_group_guids=COMPAT_GUIDS,
+                    cluster=CLUSTER_UUID,
+                )
+                temp.dump(models.SharingAccess.__tablename__, data=d)
+
+            # INCREASE THE PROGRESS BAR SINCE WE'RE DONE WITH THIS ORG
+            tracker["ORGS_COUNT"].advance(step=1)
+
+        tracker["ORGS_COUNT"].stop()
+
+        with tracker["DUMP_DATA"]:
+            # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
+            is_truncate_load_strategy = isinstance(syncer, DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
+
+            for model in models.METADATA_MODELS:
+                streamer = temp.read_stream(tablename=model.__tablename__, batch=1_000_000)
+
+                for idx, rows in enumerate(streamer, start=1):
+                    if is_truncate_load_strategy:
+                        syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
+
+                    syncer.dump(model.__tablename__, data=rows)
+
+    return 0
+
+
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
+def tml(
+    ctx: typer.Context,
+    org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
+    input_types: custom_types.MultipleInput = typer.Option(
+        ...,
+        "--metadata-type",
+        help="The type of TML to export.",
+        click_type=custom_types.MultipleInput(
+            choices=["MODEL", "LIVEBOARD", "__CONNECTION__", "__TABLE__", "__VIEW__", "__SQL_VIEW__", "__ANSWER__"]
+        ),
+    ),
+    strategy: Literal["DELTA", "SNAPSHOT"] = typer.Option(
+        "DELTA",
+        help=(
+            "SNAPSHOT fetches all objects, DELTA only fetches modified object since the last snapshot (this option "
+            "only works with Database Syncers)"
+        ),
+    ),
+    tml_format: Literal["JSON", "YAML"] = typer.Option("YAML", help="The data format to save the TML data in."),
+    directory: custom_types.Directory = typer.Option(None, help="The directory to additionally save TMLs to."),
+    syncer: Syncer = typer.Option(
+        ...,
+        click_type=custom_types.Syncer(models=[models.MetadataTML]),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
+) -> _types.ExitCode:
+    """Snapshot your TML to a Syncer."""
+    ts = ctx.obj.thoughtspot
+
+    filter_types = set(input_types)
+
+    # ADD SUBTYPES OF COMMON FRIENDLY INPUT TYPES.
+    if "TABLE" in input_types:
+        filter_types.update(["ONE_TO_ONE_LOGICAL", "USER_DEFINED"])
+
+    if "VIEW" in input_types:
+        filter_types.update(["AGGR_WORKSHEET"])
+
+    if "MODEL" in input_types:
+        filter_types.update(["WORKSHEET"])
+
+    temp = SQLite(
+        database_path=ts.config.temp_dir / "temp.db",
+        pragma_speedy_inserts=True,
+        models=[models.MetadataTML],
+        load_strategy="UPSERT",
+    )
+
+    # Silence the intermediate logger.
+    logging.getLogger("cs_tools.sync.sqlite.syncer").setLevel(logging.CRITICAL)
+
+    TOOL_TASKS = [
+        px.WorkTask(id="PREPARING", description="Preparing for data collection"),
+        px.WorkTask(id="ORGS_COUNT", description="Collecting data from ThoughtSpot"),
+        px.WorkTask(id="TS_METADATA", description="  Fetching metadata"),
+        px.WorkTask(id="EXPORT", description="  Exporting TML data"),
+        px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
+    ]
+
+    with px.WorkTracker("", tasks=TOOL_TASKS) as tracker:
+        with tracker["PREPARING"]:
+            CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
+
+            # FETCH ALL ORG IDs WE'LL NEED TO COLLECT FROM
+            if ts.session_context.thoughtspot.is_orgs_enabled:
+                c = ts.api.orgs_search()
+                r = utils.run_sync(c)
+                orgs = [_ for _ in r.json() if org_override is None or _["name"].casefold() == org_override.casefold()]
+            else:
+                orgs = [{"id": 0, "name": "ThoughtSpot"}]
+
+            if not orgs:
+                log.error(f"Could not find any orgs with name '{org_override}' to collect data from.")
+                return 1
+
+            tracker["ORGS_COUNT"].total = len(orgs)
+
+        tracker["ORGS_COUNT"].start()
+
+        # LOOP THROUGH EACH ORG COLLECTING DATA
+        for org in orgs:
+            tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
+
+            if ts.session_context.thoughtspot.is_orgs_enabled:
+                ts.switch_org(org_id=org["id"])
+
+            with tracker["TS_METADATA"]:
+                metadata_types = {_types.lookup_metadata_type(_, mode="FRIENDLY_TO_API") for _ in input_types}
+                c = workflows.metadata.fetch_all(metadata_types=metadata_types, http=ts.api)
+                _ = utils.run_sync(c)
+
+                # DISCARD OBJECTS WHICH ARE NOT ALLOWED BASED ON THE INPUT TYPES.
+                d = [
+                    metadata_object
+                    for metadata_object in api_transformer.ts_metadata_object(data=_, cluster=CLUSTER_UUID)
+                    if {metadata_object["object_type"], metadata_object["object_subtype"]}.intersection(filter_types)
+                ]
+
+                if strategy == "DELTA" and isinstance(syncer, DatabaseSyncer):
+                    q = sa.text(f"""SELECT MAX(modified) AS latest_dt FROM {models.MetadataTML.__tablename__}""")
+
+                    if r := syncer.session.execute(q).scalar():
+                        latest_dt_naive = r if isinstance(r, dt.datetime) else dt.datetime.fromisoformat(r)
+                        latest_dt = latest_dt_naive.astimezone(tz=dt.timezone.utc)
+                        d = [_ for _ in d if _["modified"] >= latest_dt or _["created"] >= latest_dt]
+
+            with tracker["EXPORT"]:
+                coros: list[Coroutine] = []
+
+                for metadata_object in d:
+                    opts = {
+                        "directory": directory,
+                        "export_schema_version": "V2" if metadata_object["object_subtype"] == "MODEL" else "V1",
+                        "edoc_format": tml_format,
+                    }
+                    c = workflows.metadata.tml_export(guid=metadata_object["object_guid"], **opts, http=ts.api)
+                    coros.append(c)
+
+                c = utils.bounded_gather(*coros, max_concurrent=4)
+                _ = utils.run_sync(c)
+
+                d = api_transformer.ts_metadata_tml(
+                    metadata_info=d, tml_info=_, edoc_format=tml_format, cluster=CLUSTER_UUID, org_id=org["id"]
+                )
+                temp.dump(models.MetadataTML.__tablename__, data=d)
+
+            # INCREASE THE PROGRESS BAR SINCE WE'RE DONE WITH THIS ORG
+            tracker["ORGS_COUNT"].advance(step=1)
+
+        tracker["ORGS_COUNT"].stop()
+
+        with tracker["DUMP_DATA"]:
+            # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
+            is_truncate_load_strategy = isinstance(syncer, DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
+            streamer = temp.read_stream(tablename=models.MetadataTML.__tablename__, batch=1_000_000)
+
+            for idx, rows in enumerate(streamer, start=1):
+                if is_truncate_load_strategy:
                     syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
 
-                syncer.dump(model.__tablename__, data=[model.validated_init(**row).model_dump() for row in rows])
+                syncer.dump(models.MetadataTML.__tablename__, data=rows)
+
+    return 0

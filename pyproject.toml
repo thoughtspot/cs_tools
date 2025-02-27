@@ -1,7 +1,6 @@
 [build-system]
-requires = ["setuptools>=42", "setuptools_scm[toml]>=6.2"]
-build-backend = "setuptools.build_meta"
-
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "cs_tools"
@@ -34,27 +33,27 @@ classifiers = [
 
 dependencies = [
     # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
-    "pip >= 23.1",
-
-    "thoughtspot_tml",
+    "aiosqlite",
+    "thoughtspot-tml",
     "awesomeversion",
     "httpx >= 0.27.0",
+    "pydantic >= 2.6.4",
     "pydantic-settings",
     "email-validator",
-    "pendulum >= 3.0.0",
     "rich >= 13.7.1",
     "sqlmodel >= 0.0.16",
+    "tenacity",
     "toml",
     "packaging",
-
-    # TODO: https://github.com/pydantic/pydantic/issues/10910
-    "pydantic == 2.9.2",
-
     # TODO: https://github.com/thoughtspot/thoughtspot_tml/issues/24
     "betterproto[compiler] == 2.0.0b6",
-
+    # OS-specific
+    "tzdata; platform_system == 'Windows'",
     # version specific
-    "strenum >= 0.4.9; python_version < '3.11.0'",
+    "typing_extensions; python_version < '3.10.0'",
+    "exceptiongroup; python_version < '3.11.0'",
+    "strenum; python_version < '3.11.0'",
+    "taskgroup; python_version < '3.11.0'",
 ]
 
 [project.urls]
@@ -63,65 +62,82 @@ repository = "https://github.com/thoughtspot/cs_tools"
 bug_tracker = "https://github.com/thoughtspot/cs_tools/issues"
 documentation = "https://thoughtspot.github.io/cs_tools/"
 
+[project.scripts]
+cs_tools = "cs_tools.cli.commands.main:run"
+cstools = "cs_tools.cli.commands.main:run"
+
 [project.optional-dependencies]
 cli = [
-    # pin these dependencies explicitly so we can ensure they work across environments
-    # 
-    # DEV NOTE @boonhapus 2023/01/14
-    #   these are only the direct dependencies, NOT the transitive dependencies.. so we
-    #   need an extra process to grab the grandchild dependencies so our direct reliance
-    #   doesn't break when a child updates.
-    #
-
-    # platform-specific
-    "pyreadline3 >= 3.4.1 ; sys_platform == 'win32'",
+    # PIN THESE DEPENDENCIES EXPLICITLY SO WE CAN ENSURE THEY WORK ACROSS ENVIRONMENTS
 
     # CLI
-    "prompt_toolkit >= 3.0.47",
-    "typer >= 0.12.0",
+    "prompt_toolkit == 3.0.47",
+    "typer == 0.12.0",
+    "uv == 0.5.13",
 
-    # WEB
-    "litestar >= 2.7.0",
-    # TO REPLACE WITH LITESTAR
-    "uvicorn >= 0.29.0",
-    "fastapi >= 0.110.0",
+    # TUI & WEB
+    "textual[syntax] == 1.0.0",
+    "textual-serve == 1.1.1",
 ]
 dev = [
     # CS Tools CLI
     "cs_tools[cli]",
 
-    # Code Quality
+    # DEVELOPMENT
+    "textual-dev >= 1.7.0",
+
+    # CODE QUALITY
+    "hatch",
     "pre-commit",
-    "taskipy",
-    "ruff",
     "mypy",
-    "vulture",
+    "ruff",
 
     # Testing
-    "nox",
-    "pytest",
     "coverage[toml]",
+    "pytest",
 ]
 docs = [
+    # CS Tools CLI
     "cs_tools[cli]",
+
+    # USED FOR GENERATING SAFE FILENAMES
+    "python-slugify[unidecode]",
+
+    # MARKDOWN TO STATIC SITE GENERATOR
     "mkdocs-material",
-    # Plugins..
+
+    # PLUGINS FOR MKDOCS
     "mkdocs-redirects",
-    "mkdocs-glightbox",
     "mkdocs-open-in-new-tab",
 ]
 
-[project.scripts]
-cs_tools = "cs_tools.cli.commands.main:run"
-cstools = "cs_tools.cli.commands.main:run"
+[tool.hatch.envs.default.scripts]
+# https://hatch.pypa.io/latest/how-to/environment/select-installer/#enabling-uv
+installer = "uv"
 
-[tool.setuptools.dynamic]
-version = {attr = "cs_tools.__project__.__version__"}
+[tool.hatch.version]
+path = "cs_tools/__project__.py"
+
+[tool.hatch.envs.dev.scripts]
+setup = [
+    "pre-commit install",
+    "mypy --install-types --non-interactive",
+    "uv run python {root:}/cs_tools/updater/_bootstrapper.py --dev --reinstall"
+]
+test = [
+    "pytest"
+]
+lint = [
+    "ruff check --config pyproject.toml",
+    "ruff format --config pyproject.toml",
+]
+
+[tool.hatch.envs.docs.scripts]
+serve = "mkdocs serve"
+
 
 [tool.mypy]
-plugins = [
-    "pydantic.mypy"
-]
+plugins = ["pydantic.mypy"]
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
@@ -130,21 +146,20 @@ strict_equality = true
 strict_concatenate = true
 
 [tool.ruff]
+target-version = "py39"
 line-length = 120
 src = ["cs_tools", "tests"]
 exclude = [
     "__pycache__",   # ignore compiled bytecode
     ".venv*",        # ignore virtual environments
-    ".nox",          # ignore virtual environments
 
     # project specific ignores
     "__init__.py",       # ignore __init__.py
     "__project__.py",    # ignore project metadata
     "_compat.py",        # ignore compatibles
-    "const.py",          # ignore constants
+    "_version.py",       # ignore _version.py
     "_bootstrapper.py",  # ignore bootstrapper
-    "noxfile.py",
-    "setup.py",
+    "const.py",          # ignore const.py
 ]
 
 [tool.ruff.lint]
@@ -165,62 +180,34 @@ select = [
     "TCH",   # flake8-type-checking: https://pypi.org/project/flake8-type-checking/
 ]
 ignore = [
-    "B008",    # Checks for function calls in default function arguments.
-    "COM812",  # Checks for the absence of trailing commas.
-    "TCH001",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
-    "TCH002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
-    "TCH003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "A002",   # Function argument `<variable>` is shadowing a Python builtin
+    "B008",   # Checks for function calls in default function arguments.
+    "COM812", # Checks for the absence of trailing commas.
+    "TC001",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TC002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "TC003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
 ]
 
 [tool.ruff.lint.flake8-import-conventions.aliases]
-# Declare the default aliases.
 datetime = "dt"
 sqlalchemy = "sa"
+sqlmodel = "sm"
 
-[tool.ruff.lint.flake8-type-checking]
-runtime-evaluated-base-classes = [
-    "cs_tools.datastructures._GlobalModel",
-    "cs_tools.datastructures._GlobalSettings",
-    "cs_tools.datastructures.ValidatedSQLModel",
-    "typer.params.Option",
-    "typer.params.Argument",
-    "pydantic.BaseModel",
-    "pydantic_settings.BaseSettings",
-    "sqlalchemy.orm.DeclarativeBase",
-    "sqlmodel.SQLModel",
-]
+# [tool.ruff.lint.flake8-type-checking]
+# runtime-evaluated-base-classes = [
+#     "cs_tools.datastructures._GlobalModel",
+#     "cs_tools.datastructures._GlobalSettings",
+#     "cs_tools.datastructures.ValidatedSQLModel",
+#     "typer.params.Option",
+#     "typer.params.Argument",
+#     "pydantic.BaseModel",
+#     "pydantic_settings.BaseSettings",
+#     "sqlalchemy.orm.DeclarativeBase",
+#     "sqlmodel.SQLModel",
+# ]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-wrap-aliases = true
 from-first = true
 required-imports = ["from __future__ import annotations"]
-
-[tool.taskipy.tasks]
-develop = "python -m pip install -e .[dev,docs]"
-
-lint = "task lint_dead && lint_check && task lint_format"
-lint_dead = "vulture --min-confidence 100"
-lint_check = "ruff check --config pyproject.toml"
-lint_format = "ruff format --config pyproject.toml"
-
-docs_local = "mkdocs serve"
-
-[tool.vulture]
-paths = ["cs_tools"]
-
-# [tool.coverage.run]
-# branch = true
-# include = [
-#     "cs_tools/**.py",
-# ]
-
-# [tool.coverage.report]
-# exclude_lines = [
-#     "# pragma: no cover",
-#     "# pragma: peephole optimzer",
-#     "raise NotImplementedError",
-#     "if __name__ == .__main__.:",
-#     "if TYPE_CHECKING:",
-#     "if typing.TYPE_CHECKING:",
-# ]

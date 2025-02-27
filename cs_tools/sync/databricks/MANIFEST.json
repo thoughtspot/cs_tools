@@ -1,5 +1,5 @@
 {
     "name": "databricks",
     "syncer_class": "Databricks",
-    "requirements": ["databricks-sql-connector >= 2.9.3"]
+    "requirements": ["databricks-sqlalchemy >= 2.0.4"]
 }

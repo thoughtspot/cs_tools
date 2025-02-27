@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Union
 import datetime as dt
 import logging
+import zoneinfo
 
 from sqlalchemy.schema import Column
 from sqlalchemy.types import TIMESTAMP, BigInteger, Text
@@ -21,6 +22,13 @@ class Cluster(ValidatedSQLModel, table=True):
     url: validators.AnyHttpURLStr
     timezone: str
 
+    @pydantic.field_validator("timezone", mode="before")
+    @classmethod
+    def tzname_only(cls, value: Union[str, zoneinfo.ZoneInfo]) -> str:
+        if isinstance(value, zoneinfo.ZoneInfo):
+            return value.key
+        return value
+
 
 class Org(ValidatedSQLModel, table=True):
     __tablename__ = "ts_org"
@@ -31,8 +39,10 @@ class Org(ValidatedSQLModel, table=True):
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
 
 class User(ValidatedSQLModel, table=True):
@@ -68,8 +78,10 @@ class Group(ValidatedSQLModel, table=True):
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -126,8 +138,10 @@ class DataSource(ValidatedSQLModel, table=True):
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("dbms_type", mode="before")
     @classmethod
@@ -148,14 +162,16 @@ class MetadataObject(ValidatedSQLModel, table=True):
     object_type: str
     object_subtype: Optional[str]
     data_source_guid: Optional[str]
-    is_sage_enabled: bool
+    is_sage_enabled: Optional[bool]
     is_verified: Optional[bool]
     is_version_controlled: Optional[bool]
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def clean_empty_or_whitespace_description(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -185,12 +201,15 @@ class MetadataColumn(ValidatedSQLModel, table=True):
     spotiq_preference: bool
     calendar_type: Optional[str]
     # custom_sort: ... ???
+    # value_casing: ... ???
     is_formula: bool
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("index_priority")
     @classmethod
@@ -206,11 +225,6 @@ class MetadataColumn(ValidatedSQLModel, table=True):
 
         return max(1, min(10, value))
 
-    @pydantic.field_validator("spotiq_preference", mode="before")
-    @classmethod
-    def cast_default_exclude_to_bool(cls, value: Any) -> bool:
-        return value == "DEFAULT"
-
 
 class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
     """Representation of a Table's column's synonym."""
@@ -219,6 +233,22 @@ class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):
     cluster_guid: str = Field(primary_key=True)
     column_guid: str = Field(primary_key=True)
     synonym: str = Field(primary_key=True)
+
+
+class MetadataTML(ValidatedSQLModel, table=True):
+    __tablename__ = "ts_metadata_tml"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(0, primary_key=True)
+    snapshot_date: dt.date = Field(primary_key=True)
+    object_guid: str = Field(primary_key=True)
+    name: str
+    object_type: Optional[str] = None
+    object_subtype: Optional[str] = None
+    author_guid: Optional[str] = None
+    created: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    modified: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    tml_blob: str
+    tml_format: str  # JSON, YAML
 
 
 class TaggedObject(ValidatedSQLModel, table=True):
@@ -245,8 +275,10 @@ class DependentObject(ValidatedSQLModel, table=True):
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
-    def remove_leading_trailing_spaces(cls, value: Any) -> str:
-        return None if value is None else value.strip()
+    def remove_leading_trailing_spaces(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -265,7 +297,8 @@ class SharingAccess(ValidatedSQLModel, table=True):
     shared_to_user_guid: Optional[str]
     shared_to_group_guid: Optional[str]
     permission_type: str
-    share_mode: str
+    share_mode: str  # READ_ONLY, MODIFY
+    share_type: Optional[str]  # OBJECT_LEVEL_SECURITY, COLUMN_LEVEL_SECURITY
 
 
 class AuditLogs(ValidatedSQLModel, table=True):
@@ -350,4 +383,12 @@ METADATA_MODELS = [
     DependentObject,
     SharingAccess,
 ]
-BISERVER_MODELS = [BIServer]
+
+PRINCIPAL_MODELS = [
+    Org,
+    User,
+    OrgMembership,
+    Group,
+    GroupPrivilege,
+    GroupMembership,
+]

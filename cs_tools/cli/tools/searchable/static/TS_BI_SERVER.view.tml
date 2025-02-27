@@ -13,7 +13,7 @@ view:
     was_auto_generated: false
   - id: sk_dummy
     name: sk_dummy
-    expr: "concat ( [cluster_guid] , \"-\" , to_string ( [Timestamp] , \"%Y-%m-%d\" ) , \"-\" , group_aggregate ( to_string ( rank ( max ( [Timestamp] ) , 'asc' ) ) , { [Timestamp] } , { } ) )"
+    expr: "concat ( [cluster_guid] , \"-\" , [Incident Id] , \"-\" , ifnull ( [URL] , \"__url__\" ) , \"-\" , ifnull ( [Answer Book GUID] , \"__content__\" ) , \"-\" , ifnull ( [Viz Id] , \"__vizid__\" ) )"
     was_auto_generated: false
   - id: cluster_guid
     name: cluster_guid

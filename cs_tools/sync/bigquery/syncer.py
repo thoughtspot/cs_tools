@@ -11,9 +11,8 @@ from sqlalchemy_bigquery._helpers import create_bigquery_client
 import pydantic
 import sqlalchemy as sa
 
-from cs_tools import __version__
+from cs_tools import __version__, _types
 from cs_tools.sync.base import DatabaseSyncer
-from cs_tools.sync.types import TableRows
 
 from . import sanitize
 
@@ -59,7 +58,7 @@ class BigQuery(DatabaseSyncer):
 
         return f"bigquery://{self.project_id}/{self.dataset}?credentials_path={self.credentials_keyfile}"
 
-    def copy_into(self, *, data: TableRows, into: Union[sa.Table, str], wait: bool = False) -> None:
+    def copy_into(self, *, data: _types.TableRowsFormat, into: Union[sa.Table, str], wait: bool = False) -> None:
         """Implement a COPY INTO statement using the BigQuery API."""
         table = self.bq.get_table(f"{self.project_id}.{self.dataset}.{into}")
         data = sanitize.clean_for_bq(data)
@@ -71,7 +70,7 @@ class BigQuery(DatabaseSyncer):
         if wait:
             job.result()
 
-    def merge_into(self, *, data: TableRows, into: sa.Table) -> None:
+    def merge_into(self, *, data: _types.TableRowsFormat, into: sa.Table) -> None:
         """Implement a MERGE INTO statement using the BigQuery API."""
         temporary_stage_name = f"TMP_TABLE_{into}_{uuid.uuid4().hex[:5]}"
         temporary_stage = self.bq.create_table(
@@ -111,13 +110,13 @@ class BigQuery(DatabaseSyncer):
         job = self.bq.query(SQL_MERGE_INTO)
         log.debug(f"BigQuery {job.job_type.upper()} job started: {job.job_id} (>> {job.destination})")
 
-    def load(self, tablename: str) -> TableRows:
+    def load(self, tablename: str) -> _types.TableRowsFormat:
         """SELECT rows from BigQuery."""
         table = self.metadata.tables[tablename]
         rows = self.session.execute(table.select())
         return [row.model_dump() for row in rows]
 
-    def dump(self, tablename: str, *, data: TableRows) -> None:
+    def dump(self, tablename: str, *, data: _types.TableRowsFormat) -> None:
         """INSERT rows into BigQuery."""
         if not data:
             log.warning(f"no data to write to syncer {self}")

@@ -5,8 +5,9 @@ import logging
 import logging.config
 import logging.handlers
 import pathlib
+import re
 
-from cs_tools.cli.ux import rich_console
+from cs_tools.cli.ux import RICH_CONSOLE
 from cs_tools.updater import cs_tools_venv
 
 
@@ -41,10 +42,46 @@ class LimitedFileHistoryHandler(logging.FileHandler):
         super().emit(record)
 
 
+class SecretsFilter(logging.Filter):
+    """Filter to mask sensitive data in log messages."""
+
+    def __init__(self):
+        super().__init__()
+        # Patterns to match sensitive data
+        self.patterns = {
+            "password": (r'password[\'"]\s*:\s*[\'"][^\'\"]+[\'"]', r'password": "****"'),
+            "secret_key": (r'secret_key[\'"]\s*:\s*[\'"][^\'\"]+[\'"]', r'secret_key": "****"'),
+            "token": (r'token[\'"]\s*:\s*[\'"][^\'\"]+[\'"]', r'token": "****"'),
+            "authorization": (r"authorization\s*:\s*bearer\s+\S+", r"authorization: bearer ****"),
+            # Add more patterns as needed
+        }
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.msg, str):
+            msg = record.msg
+            # Apply each pattern
+            for pattern, replacement in self.patterns.values():
+                msg = re.sub(pattern, replacement, msg, flags=re.IGNORECASE)
+            record.msg = msg
+
+        # Handle args if present
+        if record.args:
+            args = []
+            for arg in record.args:
+                if isinstance(arg, str):
+                    masked_arg = arg
+                    for pattern, replacement in self.patterns.values():
+                        masked_arg = re.sub(pattern, replacement, masked_arg, flags=re.IGNORECASE)
+                    args.append(masked_arg)
+                else:
+                    args.append(arg)
+            record.args = tuple(args)
+
+        return True
+
+
 def _setup_logging() -> None:
     """Setup CLI / application logging."""
-    logs_dir = cs_tools_venv.app_dir.joinpath(".logs")
-    logs_dir.mkdir(parents=True, exist_ok=True)
     now = dt.datetime.now(tz=dt.timezone.utc).strftime("%Y-%m-%dT%H_%M_%S")
 
     config = {
@@ -57,13 +94,19 @@ def _setup_logging() -> None:
                 "datefmt": "%Y-%m-%dT%H:%M:%S%z",
             },
         },
+        "filters": {
+            "secrets": {
+                "()": "cs_tools.cli._logging.SecretsFilter",
+            }
+        },
         "handlers": {
             "to_console": {
                 "class": "rich.logging.RichHandler",
                 "level": "INFO",
                 "formatter": "simple",
+                "filters": ["secrets"],
                 # RichHandler.__init__()
-                "console": rich_console,
+                "console": RICH_CONSOLE,
                 "show_level": True,
                 "rich_tracebacks": True,
                 "markup": True,
@@ -73,7 +116,8 @@ def _setup_logging() -> None:
                 "()": "cs_tools.cli._logging.LimitedFileHistoryHandler",
                 "level": "DEBUG",
                 "formatter": "detail",
-                "filename": f"{logs_dir}/{now}.log",
+                "filters": ["secrets"],
+                "filename": f"{cs_tools_venv.subdir('.logs')}/{now}.log",
                 "mode": "w",
                 "max_files_to_keep": 25,
                 "encoding": "utf-8",

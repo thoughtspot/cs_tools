@@ -1,19 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import Any, Literal, Union
 import csv
 import logging
 import pathlib
 
 import pydantic
 
-from cs_tools import utils
+from cs_tools import _types, utils
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import Syncer
-
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
 
@@ -96,13 +93,13 @@ class CSV(Syncer):
         # fmt: on
         return parameters
 
-    def maybe_replace_empty_with_null(self, rows: TableRows) -> TableRows:
+    def maybe_replace_empty_with_null(self, rows: _types.TableRowsFormat) -> _types.TableRowsFormat:
         return [{k: None if v == "" else v for k, v in row.items()} for row in rows]
 
     def __repr__(self):
         return f"<CSVSyncer path='{self.directory}' in '{self.save_strategy}' mode>"
 
-    def read_stream(self, filename: str, *, batch: int = 100_000) -> Iterator[TableRows]:
+    def read_stream(self, filename: str, *, batch: int = 100_000) -> Iterator[_types.TableRows]:
         """Read rows from a CSV file in the directory."""
         path = self.directory.joinpath(f"{filename}.csv")
 
@@ -117,7 +114,7 @@ class CSV(Syncer):
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, filename: str) -> TableRows:
+    def load(self, filename: str) -> _types.TableRowsFormat:
         """Read rows from a CSV file in the directory."""
         path = self.directory.joinpath(f"{filename}.csv")
 
@@ -130,7 +127,7 @@ class CSV(Syncer):
 
         return data
 
-    def dump(self, filename: str, *, data: TableRows) -> None:
+    def dump(self, filename: str, *, data: _types.TableRowsFormat) -> None:
         """Write rows to a CSV file in the directory."""
         if not data:
             log.warning(f"no data to write to syncer {self}")

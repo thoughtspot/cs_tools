@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import Any, Literal, Optional
 import functools as ft
 import importlib.util
 import logging
@@ -13,12 +13,9 @@ import pydantic
 import sqlalchemy as sa
 import sqlmodel
 
-from cs_tools import errors, utils
-from cs_tools.datastructures import ValidatedSQLModel, _GlobalModel, _GlobalSettings
+from cs_tools import _types, errors
+from cs_tools.datastructures import ExecutionEnvironment, ValidatedSQLModel, _GlobalModel, _GlobalSettings
 from cs_tools.updater._updater import cs_tools_venv
-
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
 
 log = logging.getLogger(__name__)
 _registry: set[str] = set()
@@ -69,33 +66,27 @@ class SyncerManifest(_GlobalModel):
 
     def __ensure_pip_requirements__(self, __syncer_name__: str) -> None:
         """Parse the SyncerManifest and install requirements."""
-        if utils.determine_editable_install():
-            return
-
         if __syncer_name__ in _registry:
             return
 
-        for pip_requirement in self.requirements:
-            log.debug(f"Processing requirement: {pip_requirement}")
-            cs_tools_venv.pip(
-                "install", f"{pip_requirement.requirement}", *pip_requirement.pip_args, base_log_level="DEBUG"
-            )
+        if ExecutionEnvironment().is_ci:
+            log.info(f"RUNNING IN CI: skipping install of requirements.. {self.requirements}")
+        else:
+            for pip_requirement in self.requirements:
+                log.debug(f"Processing requirement: {pip_requirement}")
+                cs_tools_venv.install(f"{pip_requirement.requirement}", *pip_requirement.pip_args, hush_logging=True)
 
         # Registration is successful, we can add it to the global now.
         _registry.add(__syncer_name__)
 
 
-class Syncer(_GlobalSettings):
+class Syncer(_GlobalSettings, extra="forbid"):
     """A connection to a Data store."""
 
     __manifest_path__: Optional[pathlib.Path] = None
     __syncer_name__: Optional[str] = None
 
     def __init_subclass__(cls, is_base_class: bool = False):
-        # DEV NOTE: @boonhapus, 2023/12/18
-        # Should we swap this out with __pydantic_init_subclass__ to gain access to model-defined fields?
-        #
-        # https://github.com/pydantic/pydantic/blob/3d2ebef8f76625d6f82e6bf417682fd08ac66296/pydantic/main.py#L607
         super().__init_subclass__()
 
         if is_base_class:
@@ -114,18 +105,16 @@ class Syncer(_GlobalSettings):
 
         except pydantic.ValidationError as e:
             log.debug(e, exc_info=True)
-            raise errors.SyncerInitError(pydantic_error=e, proto=e.title) from None
+            raise errors.SyncerInitError(protocol=e.title, pydantic_error=e) from None
 
         child_self.__finalize__()
 
-    @property
-    def name(self) -> str:
-        """Name of the Syncer."""
-        assert self.__syncer_name__ is not None
-        return self.__syncer_name__
-
     def __finalize__(self) -> None:
         """Will be called after __init__()."""
+        pass
+
+    def __teardown__(self) -> None:
+        """Can be called by external code to clean up Syncer resources."""
         pass
 
     def __repr__(self) -> str:
@@ -133,11 +122,22 @@ class Syncer(_GlobalSettings):
 
     __str__ = __repr__
 
-    def load(self, directive: str) -> TableRows:
+    @property
+    def protocol(self) -> str:
+        """The type of the Syncer."""
+        assert self.__syncer_name__ is not None
+        return self.__syncer_name__
+
+    @property
+    def name(self) -> str:
+        """An alias for the protocol of the Syncer."""
+        return self.protocol
+
+    def load(self, directive: str) -> _types.TableRowsFormat:
         """Fetch data from the external data source."""
         raise NotImplementedError(f"There is no default implementation for {self.__class__.__name__}.load")
 
-    def dump(self, directive: str, *, data: TableRows) -> None:
+    def dump(self, directive: str, *, data: _types.TableRowsFormat) -> None:
         """Send data to the external data source."""
         raise NotImplementedError(f"There is no default implementation for {self.__class__.__name__}.dump")
 
@@ -156,16 +156,6 @@ class DatabaseSyncer(Syncer, is_base_class=True):
     @pydantic.field_validator("load_strategy", mode="before")
     def case_insensitive(cls, value: str) -> str:
         return value.upper()
-
-    @property
-    def engine(self) -> sa.engine.Engine:
-        """The SQLALchemy engine which connects us to our Database."""
-        return self._engine
-
-    @property
-    def session(self) -> sa.orm.Session:
-        """The SQLALchemy session which represents an active connection to our Database."""
-        return self._session
 
     def __finalize__(self) -> None:
         # Metaclass-ish wizardry to determine if the DatabaseSyncer subclass defines the necessary properties.
@@ -189,5 +179,20 @@ class DatabaseSyncer(Syncer, is_base_class=True):
         self._session = sa.orm.Session(self._engine)
         self._session.begin()
 
+    def __teardown__(self) -> None:
+        """Be responsible with database resources."""
+        if self._session is not None:
+            self._session.close()
+
     def __repr__(self) -> str:
         return f"<DatabaseSyncer to '{self.name}'>"
+
+    @property
+    def engine(self) -> sa.engine.Engine:
+        """The SQLALchemy engine which connects us to our Database."""
+        return self._engine
+
+    @property
+    def session(self) -> sa.orm.Session:
+        """The SQLALchemy session which represents an active connection to our Database."""
+        return self._session

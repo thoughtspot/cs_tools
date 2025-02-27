@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Union
+from typing import Union
 import logging
 import pathlib
 
@@ -9,15 +9,13 @@ from sqlalchemy.dialects.sqlite import insert
 import pydantic
 import sqlalchemy as sa
 
+from cs_tools import _types
 from cs_tools.sync import utils as sync_utils
 from cs_tools.sync.base import DatabaseSyncer
 
 from . import const
 
-if TYPE_CHECKING:
-    from cs_tools.sync.types import TableRows
-
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class SQLite(DatabaseSyncer):
@@ -27,6 +25,7 @@ class SQLite(DatabaseSyncer):
     __syncer_name__ = "sqlite"
 
     database_path: Union[pydantic.FilePath, pydantic.NewPath]
+    pragma_speedy_inserts: bool = False
 
     @pydantic.field_validator("database_path", mode="after")
     def ensure_endswith_db(cls, path: pathlib.Path) -> pathlib.Path:
@@ -38,38 +37,37 @@ class SQLite(DatabaseSyncer):
         super().__init__(**kwargs)
         self._engine = sa.create_engine(f"sqlite:///{self.database_path}", future=True)
 
+    def __finalize__(self):
+        super().__finalize__()
+
+        if self.pragma_speedy_inserts:
+            # WRITE-AHEAD-LOG MODE ALLOWS US TO "WRITE" TO THE DATABASE IN PARALLEL WITH READS.
+            self.session.execute(sa.text("PRAGMA journal_mode = WAL;"))
+            # CONTINUES WITHOUT SYNCING ONCE DATA IS HANDED OFF TO THE OS, PROGRAM MAY CRASHES CORRUPT THE DATABASE.
+            self.session.execute(sa.text("PRAGMA synchronous = OFF;"))
+            # SUGGESTED MAX NUMBER OF DATABASE DISK PAGES / KB (FOR NEGATIVE VALUES) HELD IN MEMORY AT ONCE.
+            self.session.execute(sa.text("PRAGMA cache_size = -500000;"))  # 512MB
+            # MAINTAIN THE LOCK ON THE SQLITE DATABASE FILE. DON'T RELEASE/ACQUIRE IT.
+            self.session.execute(sa.text("PRAGMA locking_mode = EXCLUSIVE;"))
+            # STORE TEMPORARY TABLES AND VIEWS IN RAM.
+            self.session.execute(sa.text("PRAGMA temp_store = MEMORY;"))
+
+        # FETCH ALL OTHER PRAGMA TO INFORM THE SYNCER OF CONSTRAINTS.
+        r = self.session.execute(sa.text("PRAGMA compile_options;"))
+
+        _LOG.debug("LOGGING ALL AVAILABLE PRAGMAS.")
+
+        for override in [option["compile_options"] for option in r.mappings().all()]:
+            _LOG.debug(f"PRAGMA {override}")
+            name, _, value = override.partition("=")
+
+            if name == "MAX_VARIABLE_NUMBER":
+                const.SQLITE_MAX_VARIABLES = int(value)
+
     def __repr__(self):
         return f"<SQLiteSyncer conn_string='{self.engine.url}'>"
 
-    def insert_on_conflict(self, data: TableRows, *, table: sa.Table) -> Union[sa.Insert, sa.Update]:
-        """UPSERT."""
-        stmt = insert(table).values(data)
-
-        if table.columns == table.primary_key:
-            set_ = {c.key: getattr(stmt.excluded, c.key) for c in table.columns}
-        else:
-            set_ = {c.key: getattr(stmt.excluded, c.key) for c in table.columns if c.key not in table.primary_key}
-
-        stmt = stmt.on_conflict_do_update(
-            index_elements=table.primary_key,
-            set_=set_,
-        )
-        return stmt
-
-    # @contextlib.contextmanager
-    # def pragma_speedy_insert(self):
-    #     """ """
-    #     self.session.execute("PRAGMA journal_mode = OFF;")
-    #     self.session.execute("PRAGMA synchronous = 0;")
-    #     self.session.execute("PRAGMA locking_mode = EXCLUSIVE;")
-    #     self.session.execute("PRAGMA temp_store = MEMORY;")
-    #     yield
-    #     self.session.execute("PRAGMA journal_mode = ON;")
-    #     self.session.execute("PRAGMA synchronous = 0;")
-    #     self.session.execute("PRAGMA locking_mode = EXCLUSIVE;")
-    #     self.session.execute("PRAGMA temp_store = MEMORY;")
-
-    def read_stream(self, tablename: str, *, batch: int = 100_000) -> Iterator[TableRows]:
+    def read_stream(self, tablename: str, *, batch: int = 100_000) -> Iterator[_types.TableRowsFormat]:
         """Read rows from a SQLite database."""
         table = self.metadata.tables[tablename]
 
@@ -79,7 +77,7 @@ class SQLite(DatabaseSyncer):
 
     # MANDATORY PROTOCOL MEMBERS
 
-    def load(self, tablename: str) -> TableRows:
+    def load(self, tablename: str) -> _types.TableRowsFormat:
         """SELECT rows from SQLite."""
         table = self.metadata.tables[tablename]
         query = table.select()
@@ -87,10 +85,10 @@ class SQLite(DatabaseSyncer):
         rows = [row._asdict() for row in result.all()]
         return rows
 
-    def dump(self, tablename: str, *, data: TableRows) -> None:
+    def dump(self, tablename: str, *, data: _types.TableRowsFormat) -> None:
         """INSERT rows into SQLite."""
         if not data:
-            log.warning(f"no '{tablename}' data to write to syncer {self}")
+            _LOG.warning(f"no '{tablename}' data to write to syncer {self}")
             return
 
         table = self.metadata.tables[tablename]
@@ -108,11 +106,10 @@ class SQLite(DatabaseSyncer):
 
         if self.load_strategy == "UPSERT":
             sync_utils.batched(
-                self.insert_on_conflict,
+                insert(table).prefix_with("OR REPLACE").values,
                 session=self.session,
                 data=data,
                 max_parameters=const.SQLITE_MAX_VARIABLES,
-                table=table,
             )
 
         self.session.commit()
