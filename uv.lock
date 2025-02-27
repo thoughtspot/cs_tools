@@ -558,7 +558,7 @@ wheels = [
 
 [[package]]
 name = "cs-tools"
-version = "1.6.0a2"
+version = "1.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
