@@ -205,6 +205,7 @@ class CSToolsVenv(venv.EnvBuilder):
 
         # INJECT OUR OWN AT THE ROOT OF THE CS TOOLS ENVIRONMENT AS WELL.
         _LOG.debug(f"Setting up CS Tools accessory directories at {self.ctx.env_dir}")
+        self.base_dir.mkdir(parents=True, exist_ok=True)
         self.subdir(".cache").mkdir(exist_ok=True)
         self.subdir(".logs").mkdir(exist_ok=True)
         self.subdir(".tmp").mkdir(exist_ok=True)
