@@ -19,7 +19,7 @@ jobs:
     env:
       # CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS
       # https://thoughtspot.github.io/cs_tools/
-      CS_TOOLS_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.cs_tools_version || 'v1.5.12' }}
+      CS_TOOLS_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.cs_tools_version || 'v1.6.0' }}
       CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
       CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
       CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
@@ -61,12 +61,8 @@ jobs:
       #
       # THE CLI OPTION  --config ENV:  TELLS CS TOOLS TO PULL THE INFORMATION FROM ENVIRONMENT VARIABLES.
       - name: Refresh Metadata from ThoughtSpot
-        run: |
+        run: >-
           cs_tools tools
           searchable metadata
           --syncer 'snowflake://${{ env.DECLARATIVE_SYNCER_SYNTAX }}&load_strategy=TRUNCATE'
           --config ENV:
-
-        # TEMPORARY FLAG FOR v1.5.12
-        env:
-          FAKE_EDITABLE: true
