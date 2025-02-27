@@ -75,7 +75,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
     If you want to run __CS Tools__ from a serverless environment, skip the install script and instead install the
     python package directly.
 
-    === ":simple-github: GitHub Actions"
+    === ":simple-github: &nbsp; GitHub Actions"
 
         ??? abstract "actions-workflow.yaml"
 
@@ -150,7 +150,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
                       --config ENV:
             ```
 
-    === ":simple-gitlab: GitLab CI/CD Pipelines"
+    === ":simple-gitlab: &nbsp; GitLab CI/CD Pipelines"
 
         ??? abstract ".gitlab-ci.yml"
 
@@ -183,7 +183,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
                 - if: $CI_PIPELINE_SOURCE == "schedule"
                 - if: $CI_PIPELINE_SOURCE == "web"
   
-            extract_audit_logs:
+            extract_data_from_thoughtspot:
               image: python:3.12-slim
               script:
                 # UPDATE PIP.
@@ -210,8 +210,85 @@ Follow the steps below to get __CS Tools__ installed on your platform.
             .schedule:
               cron: "20 5 * * *"
             ```
-    
-    === ":simple-docker: Docker"
+
+    === ":material-microsoft-azure-devops: &nbsp; Azure Pipelines"
+
+        ??? abstract "azure-pipelines.yml"
+
+            ```yaml
+            variables:
+
+              # CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS
+              # https://thoughtspot.github.io/cs_tools/
+              CS_TOOLS_VERSION: '1.6.0'
+              CS_TOOLS_THOUGHTSPOT__URL: $(THOUGHTSPOT_URL)
+              CS_TOOLS_THOUGHTSPOT__USERNAME: $(THOUGHTSPOT_USERNAME)
+              CS_TOOLS_THOUGHTSPOT__SECRET_KEY: $(THOUGHTSPOT_SECRET_KEY)
+
+              # NEEDED TO TELL CS TOOLS ABOUT THE ENVIRONMENT (Azure doesn't set this by default~)
+              CI: true
+
+              # COMMON PARAMETERS FOR THE SNOWFLAKE SYNCER
+              # https://thoughtspot.github.io/cs_tools/syncer/snowflake/
+              DECLARATIVE_SYNCER_SYNTAX: >-
+                account_name=$(SNOWFLAKE_ACCOUNT)
+                &username=$(SNOWFLAKE_USERNAME)
+                &secret=$(SNOWFLAKE_PASSWORD)
+                &warehouse=$(SNOWFLAKE_WAREHOUSE)
+                &role=$(SNOWFLAKE_ROLE)
+                &database=$(SNOWFLAKE_DATABASE)
+                &schema=$(SNOWFLAKE_SCHEMA)
+                &authentication=basic
+
+            schedules:
+            # Runs every day at 5:20 AM UTC
+            - cron: '20 5 * * *'
+              displayName: Daily metadata sync
+              branches:
+                include:
+                - main
+              always: true
+
+            # DEFINE MANUAL TRIGGER CAPABILITY
+            trigger: none # DISABLE CONTINUOUS INTEGRATION TRIGGER
+            pr: none      # DISABLE PULL REQUEST TRIGGER
+
+            # ALLOW MANUAL TRIGGER FROM AZURE DEVOPS UI
+            resources:
+              repositories:
+              - repository: self
+
+            pool:
+              vmImage: 'ubuntu-latest'
+
+            jobs:
+            - job: extract_data_from_thoughtspot
+              displayName: 'Extract Data from ThoughtSpot'
+              steps:
+              - task: UsePythonVersion@0
+                inputs:
+                  versionSpec: '3.12'
+                  addToPath: true
+
+              - script: |
+                  # UPDATE PIP
+                  python -m pip install --upgrade pip
+
+                  # INSTALL A SPECIFIC VERSION OF cs_tools
+                  python -m pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/v$(CS_TOOLS_VERSION).zip"
+
+                  # ENSURE SYNCER DEPENDENCIES ARE INSTALLED
+                  python -m pip install "snowflake-sqlalchemy >= 1.6.1"
+
+                  # RUNS THE searchable metadata COMMAND.
+                  # https://thoughtspot.github.io/cs_tools/tools/searchable
+                  #
+                  # THE CLI OPTION  --config ENV:  TELLS CS TOOLS TO PULL THE INFORMATION FROM ENVIRONMENT VARIABLES.
+                  cs_tools tools searchable metadata --syncer "snowflake://$(DECLARATIVE_SYNCER_SYNTAX)&load_strategy=UPSERT" --config ENV:
+                displayName: 'Extract Metadata with CS Tools.'
+            ```
+
+    === ":simple-docker: &nbsp; Docker"
 
         ??? abstract "Dockerfile"
 
@@ -271,7 +348,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
             CMD ["sh", "-c", "cs_tools tools searchable metadata --syncer \"snowflake://${DECLARATIVE_SYNCER_SYNTAX}&load_strategy=UPSERT\" --config ENV:"]
             ```
 
-    === ":simple-jupyter: Python Notebook"
+    === ":simple-jupyter: &nbsp; Python Notebook"
 
         ??? abstract "Untitled.ipynb"
 
