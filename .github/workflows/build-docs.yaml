@@ -34,7 +34,7 @@ jobs:
 
       # BUILD THE DOCS.
       - name: Build MkDocs Documentation
-        run: mkdocs build
+        run: mkdocs build --clean
         env:
           # FORCE THE TERMINAL TO THINK IT'S 130 COLUMNS WIDE.
           COLUMNS: "130"
