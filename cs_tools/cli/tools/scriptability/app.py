@@ -5,6 +5,7 @@ import json
 import logging
 import pathlib
 
+import httpx
 import thoughtspot_tml
 import typer
 
@@ -352,13 +353,20 @@ def deploy(
     # Silence the cs_tools metadata workflow logger since we've asked the User if they want logged feedback.
     logging.getLogger("cs_tools.api.workflows.metadata").setLevel(logging.CRITICAL)
 
-    c = workflows.metadata.tml_import(
-        tmls=list(tmls.values()),
-        use_async_endpoint=use_async_endpoint,
-        policy=deploy_policy,
-        http=ts.api,
-    )
-    _ = utils.run_sync(c)
+    try:
+        c = workflows.metadata.tml_import(
+            tmls=list(tmls.values()),
+            use_async_endpoint=use_async_endpoint,
+            skip_diff_check=skip_diff_check,
+            policy=deploy_policy,
+            http=ts.api,
+        )
+        _ = utils.run_sync(c)
+
+    except httpx.HTTPStatusError as e:
+        _LOG.error("Could not import TML due to a ThoughtSpot API error, see logs for details..")
+        _LOG.debug(f"Full error: {e}", exc_info=True)
+        return 1
 
     table = local_utils.TMLOperations(
         _,
