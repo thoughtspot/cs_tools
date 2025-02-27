@@ -35,6 +35,9 @@ jobs:
       # BUILD THE DOCS.
       - name: Build MkDocs Documentation
         run: mkdocs build
+        env:
+          # FORCE THE TERMINAL TO THINK IT'S 130 COLUMNS WIDE.
+          COLUMNS: "130"
       
       # DEPLOY THE DOCS.
       - name: Deploy Documentation
