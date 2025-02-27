@@ -6,7 +6,8 @@ on:
       - master
 
 jobs:
- build:
+  build:
+    runs-on: ubuntu-latest
 
     env:
       CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
@@ -14,7 +15,9 @@ jobs:
       CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
       CS_TOOLS_TEMP_DIR: /tmp
 
-    runs-on: ubuntu-latest
+      # FORCE THE TERMINAL TO THINK IT'S 130 COLUMNS WIDE.
+      COLUMNS: "130"
+
     steps:
       # CHECKOUT REPOSITORY.
       - name: Checkout repository
@@ -35,10 +38,7 @@ jobs:
       # BUILD THE DOCS.
       - name: Build MkDocs Documentation
         run: mkdocs build --clean
-        env:
-          # FORCE THE TERMINAL TO THINK IT'S 130 COLUMNS WIDE.
-          COLUMNS: "130"
-      
+
       # DEPLOY THE DOCS.
       - name: Deploy Documentation
         run: mkdocs gh-deploy --force
