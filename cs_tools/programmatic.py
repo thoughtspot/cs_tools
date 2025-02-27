@@ -128,6 +128,8 @@ class CSToolInfo(_GlobalModel):
 
     def invoke(self, *cli_args: str) -> Result:
         """Execute a command or subcommand on the tool."""
+        from cs_tools.cli import _monkey  # noqa: F401
+
         # ENSURES CLI INPUT IS A LIST OF STRINGS.
         cli_args = shlex.split(" ".join(cli_args))  # type: ignore[assignment]
 
