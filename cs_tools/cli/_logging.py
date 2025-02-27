@@ -53,7 +53,7 @@ class SecretsFilter(logging.Filter):
             "secret_key": (r'secret_key[\'"]\s*:\s*[\'"][^\'\"]+[\'"]', r'secret_key": "****"'),
             "token": (r'token[\'"]\s*:\s*[\'"][^\'\"]+[\'"]', r'token": "****"'),
             "authorization": (r"authorization\s*:\s*bearer\s+\S+", r"authorization: bearer ****"),
-            # Add more patterns as needed
+            # ADD MORE PATTERNS AS NEEDED
         }
 
     def filter(self, record: logging.LogRecord) -> bool:
