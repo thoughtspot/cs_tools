@@ -458,7 +458,7 @@ Type the command `cs_tools config create --help` and press &nbsp; ++enter++ .
 
 ??? success "Successful config output"
 
-    ~cs~tools config check --anonymous --config dogfood
+    ~cs~tools config check --anonymous --config ENV:
 
 
 [ts-rest-apis]: https://developers.thoughtspot.com/docs/rest-apiv2-reference
