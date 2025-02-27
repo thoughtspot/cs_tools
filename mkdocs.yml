@@ -129,6 +129,8 @@ nav:
     - SQLite: syncer/sqlite.md
     - Starburst: syncer/starburst.md
     - Trino: syncer/trino.md
+  - Guides:
+    - guides/index.md
   - Changelog:
     - v1.6.0: changelog/1.6.0.md
     - v1.5.0: changelog/1.5.0.md
