@@ -7,12 +7,9 @@ body:
       value: >-
         ## *Thanks for your interest in cs_tools!* :tada:
 
-        This project is maintained by the Solutions Consulting organization at ThoughtSpot. It is our passion project!
+        While this project is maintained by the customer team at __ThoughtSpot__, it is our passion project!
 
-        While we make every opportunity to keep up to date, resolve issues, well-document our tools, and provide a great
-        experience..
-
-        If you find something is wrong with your ThoughtSpot cluster, please open a [Support Case](https://community.thoughtspot.com/s/contactsupport).
+        If you are experiencing an issue with your ThoughtSpot cluster, please open a [__Support Case__](https://community.thoughtspot.com/s/article/How-to-submit-a-ThoughtSpot-Support-Case).
 
         If you wish you had a feature in ThoughtSpot, please open a [__Product Idea__](https://community.thoughtspot.com/s/ideas).
 
@@ -22,14 +19,11 @@ body:
       label: First Stop
       description: Please confirm and check all the following options.
       options:
-        - label: I have read and agreed to the ThoughtSpot Dev Tools EULA.
+        - label: I have read and agreed to the ThoughtSpot LICENSE.
           required: true
 
         - label: >-
-            I understand that if I have a critical issue with ThoughtSpot, I should reach out to my designated Account Executive and Solutions Consultant team instead of cs_tools.
-          required: true
-
-        - label: I searched the cs_tools documentation, with the integrated search.
+            I understand that if I have a critical issue with __ThoughtSpot__, I should reach out to my designated __Account Executive__ and __Customer Success Manager__ instead of `cs_tools`.
           required: true
 
   - type: textarea
@@ -37,7 +31,7 @@ body:
     attributes:
       label: Platform Configuration
       description: Please include the output of `cs_tools self info --anonymous --directory .`.
-      placeholder: Drag the cs-tools-info-YYYY-mm-dd.svg into this window.
+      placeholder: Drag the `cs-tools-info-YYYY-mm-dd.svg` into this window.
 
     validations:
       required: true
@@ -49,8 +43,7 @@ body:
       description: >-
         What is the problem, question, or error?
 
-        Write a short description telling us what you are doing, what you expect to
-        happen, and what is currently happening.
+        Write a short description telling us what you are doing, what you expect to happen, and what is currently happening.
 
         If we can copy it, run it, and see it right away, there's a much higher chance we'll be able to help you.
 
@@ -60,11 +53,13 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Need to upload log files securely?
+      label: Considering adding a log file.
       description: >-
         Run the following command.
 
-        `cs_tools logs report --latest 5`
-        
-        Then use the secure file share link below, which routes to the CS Tools team directly.
-        https://thoughtspot.egnyte.com/ul/1bK0dz05L6
+        `cs_tools logs report --latest 3`
+
+        > !! Logs are not totally anonymous !!
+
+        While logs should not hold any secrets, they can still contain information that you may not want publicly
+        available. We can provide a secure mechanism to share logs if this is required.
