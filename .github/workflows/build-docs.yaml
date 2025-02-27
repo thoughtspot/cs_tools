@@ -25,7 +25,7 @@ jobs:
 
       # INSTALL THE LATEST VERSION OF THE CS Tools PROJECT.
       - name: Install Python dependencies
-        run: python -m pip install -e .[docs]
+        run: python -m pip install -e ".[docs]"
 
       # BUILD THE DOCS.
       - name: Build MkDocs Documentation
