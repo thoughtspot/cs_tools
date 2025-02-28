@@ -7,7 +7,7 @@ name = "cs_tools"
 dynamic = ["version"]
 description = "Scale your ThoughtSpot adoption with tools created by the ThoughtSpot Solutions Consulting organization."
 readme = "README.md"
-requires-python = ">= 3.9"
+requires-python = ">= 3.9.2"
 license = {file = "LICENSE"}
 authors = [
 	{name = "boonhapus", email="nicholas.cooper@thoughtspot.com"},
@@ -29,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 dependencies = [

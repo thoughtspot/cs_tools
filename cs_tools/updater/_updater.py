@@ -33,7 +33,35 @@ class CSToolsVenv(venv.EnvBuilder):
     VENV_NAME = ".cs_tools"
     """Default name of the VirtualEnvironment."""
 
-    TYPICAL_BUILD_DEPENDENCIES = ("wheel >= 0.45", "setuptools >= 75", "hatch", "maturin")
+    # fmt: off
+    #
+    # DEV NOTE: @boonhapus, 2024/02/27
+    # AS OF TODAY, THERE ARE NO TOOLS IN THE PYTHON ECOSYSTEM WHICH HELP DISCOVER A
+    # PACKAGE'S build-system requirements. (see: pyproject.toml#build-system.requires)
+    #
+    # UPDATED FOR v1.6.0 ON 2024/02/27 ALA pip-dep-tree STYLE.
+    TYPICAL_BUILD_DEPENDENCIES = (
+        # TOP-LEVEL FOR MOST PYTHON-based DEPENDENCIES.
+        "setuptools >= 75",
+        "wheel >= 0.45",
+          # BUILD-REQUIRES
+          "flit_core >= 3.8, <4",
+
+        # TOP-LEVEL FOR RUST-based DEPENDENCIES.
+        "maturin",
+          # BUILD-REQUIRES
+          # setuptools ,
+          # wheel >= 0.36.2 ,
+          "tomli >= 1.1.0; python_version < '3.11'",
+          "setuptools-rust >= 1.4.0",
+
+        # TOP-LEVEL FOR DEVELOPMENT-based DEPENDENCIES.
+        "hatch",
+          # BUILD-REQUIRES
+          "hatchling >= 1.24.2",
+          "hatch-vcs >= 0.3.0",
+    )
+    # fmt: on
     """uv and pip do not discover these automatically."""
 
     def __init__(
@@ -55,7 +83,7 @@ class CSToolsVenv(venv.EnvBuilder):
         self.register_venv_path = register_venv_path
 
         # REDUNDANT, BUT NECESSARY IF WE'RE INSTANTIATING DIRECTLY.
-        self.ctx = super().ensure_directories(self.base_dir / CSToolsVenv.VENV_NAME)
+        self.ctx = self.ensure_directories(self.base_dir / CSToolsVenv.VENV_NAME)
 
     def __str__(self) -> str:
         return f"<CSToolsVenv @ {self.base_dir} has_internet_access={self.has_internet_access}>"
