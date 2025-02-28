@@ -59,5 +59,7 @@ Please see [__CONTRIBUTING.md__](./CONTRIBUTING.md) for details on how to contri
 [![Test CS Tools Bootstrapper](https://github.com/thoughtspot/cs_tools/actions/workflows/test-bootstrapper.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/test-bootstrapper.yaml)
 
 🧰
-[![Extract Metadata with CS Tools.](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-metdata.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-metdata.yaml)
-[![Extract BI Server with CS Tools.](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-bi-data.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-bi-data.yaml)
+[![Extract Metadata](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-metdata.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-metdata.yaml)
+[![Extract BI Server](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-bi-data.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-bi-data.yaml)
+[![Extract Audit Logs](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-audit-logs.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-audit-logs.yaml)
+[![Extract TML](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-tml.yaml/badge.svg)](https://github.com/thoughtspot/cs_tools/actions/workflows/fetch-tml.yaml)
