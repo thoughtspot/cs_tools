@@ -1,15 +1,7 @@
 <p align="center">
   <img width="400" src="docs/assets/images/logo-transparent.png" alt='ThoughtSpot | CS Tools'>
   <br/>
-  <i>🧙 Give your Admins magic powers with tools created by the <b>ThoughtSpot Customer Success Team</b>.</i>
-  <br/>
-  <br/>
-  <b>Learn more in our documentation
-  <br/>
-  <a href="https://thoughtspot.github.io/cs_tools/">
-    Getting started with CS Tools
-  </a>
-  </b>
+  🧙 <i>Give your Admins magic powers with tools created by the <b>ThoughtSpot Customer Success Team</b>.</i>
 </p>
 
 ## Features
@@ -26,7 +18,7 @@
 > [!IMPORTANT]
 >  While **CS Tools** is maintained by members of the __ThoughtSpot__ team, they are __TOTALLY FREE__!
 >
-> ❗ __ThoughtSpot [Support Team](https://community.thoughtspot.com/__ will be unable to help you resolve any issues.
+> ❗ __ThoughtSpot__ [__Support Team__](https://community.thoughtspot.com/) will be unable to help you resolve any issues.
 >
 > :bulb: __Feature Requests__ and :ring_buoy: __Support__ are handled [__here on Github Discussions__](https://github.com/thoughtspot/cs_tools/discussions).
 >
