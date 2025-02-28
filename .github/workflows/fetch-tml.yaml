@@ -65,7 +65,7 @@ jobs:
         run: >-
           cs_tools tools
           searchable tml
-          --metadata-type ALL
+          --metadata-type "MODEL,LIVEBOARD"
           --strategy DELTA
           --tml-format JSON
           --syncer 'snowflake://${{ env.DECLARATIVE_SYNCER_SYNTAX }}&load_strategy=UPSERT'
