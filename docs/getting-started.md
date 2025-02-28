@@ -131,7 +131,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
             
                   # INSTALL A SPECIFIC VERSION OF cs_tools.
                   - name: Install a pinned version of CS Tools
-                    run: python -m pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/v${{ env.CS_TOOLS_VERSION }}.zip"
+                    run: python -m pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/${{ env.CS_TOOLS_VERSION }}.zip"
             
                   # ENSURE SYNCER DEPENDENCIES ARE INSTALLED.
                   #   found in: https://github.com/thoughtspot/cs_tools/blob/master/sync/<dialect>/MANIFEST.json
@@ -190,7 +190,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
                 - python -m pip install --upgrade pip
   
                 # INSTALL A SPECIFIC VERSION OF cs_tools.
-                - python -m pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/v${CS_TOOLS_VERSION}.zip"
+                - python -m pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/${CS_TOOLS_VERSION}.zip"
   
                 # ENSURE SYNCER DEPENDENCIES ARE INSTALLED.
                 #   found in: https://github.com/thoughtspot/cs_tools/blob/master/sync/<dialect>/MANIFEST.json
@@ -220,7 +220,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 
               # CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS
               # https://thoughtspot.github.io/cs_tools/
-              CS_TOOLS_VERSION: '1.6.0'
+              CS_TOOLS_VERSION: 'v1.6.0'
               CS_TOOLS_THOUGHTSPOT__URL: $(THOUGHTSPOT_URL)
               CS_TOOLS_THOUGHTSPOT__USERNAME: $(THOUGHTSPOT_USERNAME)
               CS_TOOLS_THOUGHTSPOT__SECRET_KEY: $(THOUGHTSPOT_SECRET_KEY)
@@ -275,7 +275,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
                   python -m pip install --upgrade pip
 
                   # INSTALL A SPECIFIC VERSION OF cs_tools
-                  python -m pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/v$(CS_TOOLS_VERSION).zip"
+                  python -m pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/$(CS_TOOLS_VERSION).zip"
 
                   # ENSURE SYNCER DEPENDENCIES ARE INSTALLED
                   python -m pip install "snowflake-sqlalchemy >= 1.6.1"
