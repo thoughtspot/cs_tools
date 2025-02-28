@@ -55,7 +55,7 @@ class CSToolsVenv(venv.EnvBuilder):
         self.register_venv_path = register_venv_path
 
         # REDUNDANT, BUT NECESSARY IF WE'RE INSTANTIATING DIRECTLY.
-        self.ctx = super().ensure_directories(self.base_dir / CSToolsVenv.VENV_NAME)
+        self.ctx = self.ensure_directories(self.base_dir / CSToolsVenv.VENV_NAME)
 
     def __str__(self) -> str:
         return f"<CSToolsVenv @ {self.base_dir} has_internet_access={self.has_internet_access}>"
