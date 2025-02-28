@@ -31,7 +31,7 @@ import rich
 
 from cs_tools import _compat
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 _T = TypeVar("_T")
 _EVENT_LOOP: Optional[asyncio.AbstractEventLoop] = None
 
@@ -106,7 +106,7 @@ def platform_tag() -> str:
     """Return the platform tag for use in pip download."""
     try:
         from pip._vendor.packaging.tags import platform_tags
-        
+
         platform_tag = next(iter(platform_tags()))
     except Exception:
         _LOG.debug("Could not fetch platform tags from vendored pip.packaging, falling back to sysconfig.")
@@ -283,7 +283,7 @@ def create_dynamic_model(__tablename__: str, *, sample_row: dict[str, Any]) -> t
             py_type = type(value)
             sa_type = SQLA_DATA_TYPES[py_type]
         except KeyError:
-            log.warning(f"{__tablename__}.{column_name} found no data type for '{py_type}', faling back to VARCHAR..")
+            _LOG.warning(f"{__tablename__}.{column_name} found no data type for '{py_type}', faling back to VARCHAR..")
             sa_type = sa_types.Text
 
         field_definitions[column_name] = Annotated[py_type, Field(None, sa_column=Column(type_=sa_type))]
