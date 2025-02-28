@@ -1,7 +1,7 @@
 <p align="center">
   <img width="400" src="docs/assets/images/logo-transparent.png" alt='ThoughtSpot | CS Tools'>
   <br/>
-  <i>Scale your <b>ThoughtSpot</b> adoption with tools created by the <b>ThoughtSpot Solutions</b> organization.</i>
+  <i>🧙 Give your Admins magic powers with tools created by the <b>ThoughtSpot Customer Success Team</b>.</i>
   <br/>
   <br/>
   <b>Learn more in our documentation
@@ -13,9 +13,9 @@
 </p>
 
 ## Features
-- Explore your ThoughtSpot platform data with the [__Searchable Liveboards__]()
-- Clean stale and forgotten Answers and Liveboards with [__Archiver__]()
-- Extract your ThoughtSpot data to popular formats with Syncers
+- Explore your ThoughtSpot platform data with the [__Searchable Liveboards__](https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#searchable)
+- Clean stale and forgotten Answers and Liveboards with [__Archiver__](https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#archiver)
+- Extract your ThoughtSpot data to popular formats with [__Syncers__](https://thoughtspot.github.io/cs_tools/syncer/what-is/)
 - Multi-platform support (connect to your __Dev__, __QA__, and __Prod__!)
 - Supports the latest ThoughtSpot version on Software & Cloud
 - Install anywhere: Windows, MacOS, Linux, and serverless
@@ -24,9 +24,9 @@
 ---
 
 > [!IMPORTANT]
->  While **CS Tools** is maintained by members of the __ThoughtSpot__ team, it is totally free!
+>  While **CS Tools** is maintained by members of the __ThoughtSpot__ team, they are __TOTALLY FREE__!
 >
-> _The tools are provided on as-is basis._
+> ❗ __ThoughtSpot [Support Team](https://community.thoughtspot.com/__ will be unable to help you resolve any issues.
 >
 > :bulb: __Feature Requests__ and :ring_buoy: __Support__ are handled [__here on Github Discussions__](https://github.com/thoughtspot/cs_tools/discussions).
 >
@@ -35,7 +35,7 @@
 
 ## Installation
 
-Please see the [__Getting Started guide in our documentation__](https://thoughtspot.github.io/cs_tools/tutorial/intro/).
+Please see the [__Getting Started guide in our documentation__](https://thoughtspot.github.io/cs_tools/getting-started/).
 
 ## Development Installation
 
