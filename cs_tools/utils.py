@@ -19,6 +19,7 @@ import json
 import logging
 import pathlib
 import sys
+import sysconfig
 import zipfile
 import zlib
 
@@ -99,6 +100,19 @@ async def bounded_gather(
             return await coro
 
     return await asyncio.gather(*(with_backpressure(coro) for coro in aws), return_exceptions=return_exceptions)
+
+
+def platform_tag() -> str:
+    """Return the platform tag for use in pip download."""
+    try:
+        from pip._vendor.packaging.tags import platform_tags
+        
+        platform_tag = next(iter(platform_tags()))
+    except Exception:
+        _LOG.debug("Could not fetch platform tags from vendored pip.packaging, falling back to sysconfig.")
+        platform_tag = sysconfig.get_platform()
+
+    return platform_tag
 
 
 def batched(iterable: Iterable[_T], *, n: int) -> Generator[Iterable[_T], None, None]:

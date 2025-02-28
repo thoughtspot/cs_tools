@@ -6,7 +6,6 @@ import logging
 import pathlib
 import shutil
 import sys
-import sysconfig
 import zipfile
 
 from cs_tools import __version__, _types, updater, utils
@@ -53,10 +52,9 @@ def info(
         f"\n        System Info: [fg-warn]{meta.local_system.system}[/]"
         f"\n  Configs Directory: [fg-warn]{cs_tools_venv.base_dir}[/]"
         f"\nActivate VirtualEnv: [fg-warn]{source}[/]"
-        f"\n      Platform Tags: [fg-warn]{sysconfig.get_platform()}[/]"
+        f"\n      Platform Tags: [fg-warn]{utils.platform_tag()}[/]"
         f"\n"
     )
-
     if anonymous:
         text = utils.anonymize(text, anonymizer=" [dim]{anonymous}[/] ")
 
