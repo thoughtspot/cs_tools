@@ -119,7 +119,7 @@ def checkpoint(
         environment = "_".join(
             [
                 ts.session_context.thoughtspot.cluster_name,
-                "cluster" if ts.session_context.user.org_context is None else ts.session_context.user.org_context,
+                "cluster" if ts.session_context.user.org_context is None else str(ts.session_context.user.org_context),
             ]
         )
 
