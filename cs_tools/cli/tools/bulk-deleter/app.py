@@ -60,7 +60,7 @@ def downstream(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
-    org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """
     Delete all downstream dependencies of an object.
@@ -226,12 +226,16 @@ def from_tag(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """Delete content with the identified --tag."""
     if export_only and directory is None:
         raise typer.BadParameter("You must provide a directory to export to when using --export-only.")
 
     ts = ctx.obj.thoughtspot
+
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
     try:
         c = workflows.metadata.fetch_one(tag_name, "TAG", http=ts.api)

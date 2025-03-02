@@ -80,7 +80,7 @@ def checkpoint(
         False, "--delete-aware", help="Deletes TML in the mapping if it is not present in this checkpoint."
     ),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
-    org_override: str = typer.Option(None, "--org", help="The org to export TML from."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """
     Export TML to a directory.
@@ -271,7 +271,7 @@ def deploy(
         rich_help_panel="TML Import Options",
         hidden=True,
     ),
-    org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
 ) -> _types.ExitCode:
     """

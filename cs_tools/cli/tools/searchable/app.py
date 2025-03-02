@@ -84,7 +84,7 @@ def deploy(
             "holding Searchable data."
         ),
     ),
-    org_override: str = typer.Option(None, "--org", help="The Org identifier to deploy the SpotApp to."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
     export: custom_types.Directory = typer.Option(None, help="Download the TML of the SpotApp instead of deploying."),
 ) -> _types.ExitCode:
     """Deploy the Searchable SpotApp."""
@@ -261,7 +261,7 @@ def bi_server(
     ),
     from_date: custom_types.Date = typer.Option(..., help="inclusive lower bound of rows to select from TS: BI Server"),
     to_date: custom_types.Date = typer.Option(..., help="inclusive upper bound of rows to select from TS: BI Server"),
-    org_override: str = typer.Option(None, "--org", help="The org to fetch history from"),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
     compact: bool = typer.Option(True, "--compact / --full", help="If compact, add  [User Action] != {null} 'invalid'"),
 ) -> _types.ExitCode:
     """
@@ -354,7 +354,7 @@ def metadata(
         "--include-column-access",
         help="if specified, include security controls for Column Level Security as well",
     ),
-    org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
     syncer: Syncer = typer.Option(
         ...,
         click_type=custom_types.Syncer(models=models.METADATA_MODELS),
@@ -609,7 +609,7 @@ def metadata(
 @depends_on(thoughtspot=ThoughtSpot())
 def tml(
     ctx: typer.Context,
-    org_override: str = typer.Option(None, "--org", help="the org to gather metadata from"),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
     input_types: custom_types.MultipleInput = typer.Option(
         ...,
         "--metadata-type",

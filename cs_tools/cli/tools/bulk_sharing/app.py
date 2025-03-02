@@ -74,9 +74,13 @@ def from_tag(
         help="The level of access to give to all listed principals.",
     ),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """Share content with the identified --tag."""
     ts = ctx.obj.thoughtspot
+
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
     try:
         c = workflows.metadata.fetch_one(tag_name, "TAG", http=ts.api)
