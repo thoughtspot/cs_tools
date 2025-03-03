@@ -461,9 +461,11 @@ Type the command `cs_tools config create --help` and press &nbsp; ++enter++ .
     ~cs~tools config check --anonymous --config ENV:
 
 
+[cs-tools-discussions]: https://github.com/thoughtspot/cs_tools/discussions
 [ts-rest-apis]: https://developers.thoughtspot.com/docs/rest-apiv2-reference
 [ts-sess-auth]: https://developers.thoughtspot.com/docs/api-authv2
 [ts-rest-auth-basic]: https://developers.thoughtspot.com/docs/api-authv2#_basic_authentication
 [ts-rest-auth-trusted]: https://developers.thoughtspot.com/docs/api-authv2#trusted-auth-v2
 [ts-rest-auth-bearer-token]: https://developers.thoughtspot.com/docs/api-authv2#bearerToken
 [win-exec-pol]: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-7.4#powershell-execution-policies
+[get-rust]: https://www.rust-lang.org/tools/install

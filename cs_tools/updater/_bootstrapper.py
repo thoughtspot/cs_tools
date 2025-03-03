@@ -190,6 +190,12 @@ def cli():
             assert (_PROJ_ROOT / "pyproject.toml").exists(), "This should only be run within a Development Environment."
             where = _PROJ_ROOT.as_posix()
         elif args.offline_mode:
+            if not is_rust_available():
+                _LOG.warning(
+                    "The CS Tools offline installer work best when a Rust compiler (rustc) is available."
+                    "\nRust install instructions can be found on their website."
+                    "\nhttps://www.rust-lang.org/tools/install"
+                )
             wheel = next(p for p in pathlib.Path(__file__).parent.glob("cs_tools-*") if p.suffix in (".whl", ".zip"))
             where = wheel.as_posix()
         elif args.beta:
@@ -463,6 +469,12 @@ def _cleanup():
 
         if path.is_file():
             path.unlink(missing_ok=True)
+
+
+def is_rust_available():
+    # type: () -> bool
+    """Check if the Rust compiler is available."""
+    return shutil.which("rustc") is not None
 
 
 def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
