@@ -34,7 +34,7 @@ def checkpoint(
     ctx: typer.Context,
     directory: pathlib.Path = typer.Option(
         ...,
-        click_type=custom_types.Directory(exists=True, make=True),
+        click_type=custom_types.Directory(),
         help="Directory to save TML files to.",
     ),
     environment: str = typer.Option(
@@ -219,7 +219,7 @@ def deploy(
     ctx: typer.Context,
     directory: pathlib.Path = typer.Option(
         ...,
-        click_type=custom_types.Directory(exists=True),
+        click_type=custom_types.Directory(),
         help="Directory to load TML files from.",
     ),
     tags: custom_types.MultipleInput = typer.Option(

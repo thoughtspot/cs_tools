@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import datetime as dt
 import logging
+import pathlib
 import threading
 import time
 
@@ -49,9 +50,10 @@ def downstream(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    directory: custom_types.Directory = typer.Option(
+    directory: pathlib.Path = typer.Option(
         None,
-        help="folder/directory to export TML objects to",
+        help="Folder/directory to export TML objects to",
+        click_type=custom_types.Directory(exists=False, make=True),
         rich_help_panel="TML Export Options",
     ),
     export_only: bool = typer.Option(
@@ -215,9 +217,10 @@ def from_tag(
     tag_name: str = typer.Option(..., "--tag", help="case sensitive name to tag stale objects with"),
     tag_only: bool = typer.Option(False, "--tag-only", help="delete only the tag itself, not the objects"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    directory: custom_types.Directory = typer.Option(
+    directory: pathlib.Path = typer.Option(
         None,
-        help="folder/directory to export TML objects to",
+        help="Folder/directory to export TML objects to",
+        click_type=custom_types.Directory(exists=False, make=True),
         rich_help_panel="TML Export Options",
     ),
     export_only: bool = typer.Option(
@@ -342,9 +345,10 @@ def from_tabular(
     ),
     deletion: str = typer.Option(..., help="directive to find content to delete", rich_help_panel="Syncer Options"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    directory: custom_types.Directory = typer.Option(
+    directory: pathlib.Path = typer.Option(
         None,
-        help="folder/directory to export TML objects to",
+        help="Folder/directory to export TML objects to",
+        click_type=custom_types.Directory(exists=False, make=True),
         rich_help_panel="TML Export Options",
     ),
     export_only: bool = typer.Option(

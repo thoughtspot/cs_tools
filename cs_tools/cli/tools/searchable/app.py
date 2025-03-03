@@ -85,7 +85,11 @@ def deploy(
         ),
     ),
     org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
-    export: custom_types.Directory = typer.Option(None, help="Download the TML of the SpotApp instead of deploying."),
+    export: pathlib.Path = typer.Option(
+        None,
+        click_type=custom_types.Directory(exists=False, make=True),
+        help="Download the TML of the SpotApp instead of deploying.",
+    ),
 ) -> _types.ExitCode:
     """Deploy the Searchable SpotApp."""
     ts = ctx.obj.thoughtspot
@@ -626,7 +630,11 @@ def tml(
         ),
     ),
     tml_format: Literal["JSON", "YAML"] = typer.Option("YAML", help="The data format to save the TML data in."),
-    directory: custom_types.Directory = typer.Option(None, help="The directory to additionally save TMLs to."),
+    directory: pathlib.Path = typer.Option(
+        None,
+        help="The directory to additionally save TMLs to.",
+        click_type=custom_types.Directory(exists=False, make=True),
+    ),
     syncer: Syncer = typer.Option(
         ...,
         click_type=custom_types.Syncer(models=[models.MetadataTML]),
