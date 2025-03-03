@@ -4,7 +4,7 @@ import contextlib
 import logging
 import random
 
-from cs_tools import __project__, __version__, _compat, datastructures, errors
+from cs_tools import __project__, __version__, _compat, _types, datastructures, errors
 from cs_tools.cli._logging import _setup_logging
 from cs_tools.cli.ux import RICH_CONSOLE, AsyncTyper
 from cs_tools.settings import _meta_config as meta
@@ -52,10 +52,8 @@ def main(version: bool = typer.Option(False, "--version", help="Show the version
         raise typer.Exit(0)
 
 
-def run() -> int:
-    """
-    Entrypoint into cs_tools.
-    """
+def run() -> _types.ExitCode:
+    """Entrypoint into cs_tools."""
     from cs_tools.cli import _monkey  # noqa: F401
     from cs_tools.cli.commands import (
         config as config_command,
@@ -85,7 +83,7 @@ def run() -> int:
 
     except click.ClickException as e:
         return_code = 1
-        log.error(e)
+        log.error(f"{e.format_message()}")
         log.debug("More info..", exc_info=True)
 
     except errors.CSToolsError as e:
