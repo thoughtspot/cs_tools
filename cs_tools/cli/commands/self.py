@@ -102,11 +102,13 @@ def sync() -> _types.ExitCode:
 @app.command(name="update")
 def update(
     beta: custom_types.Version = typer.Option(None, "--beta", help="The specific beta version to fetch from Github."),
-    offline: custom_types.Directory = typer.Option(None, help="Install cs_tools from a local directory."),
+    offline: pathlib.Path = typer.Option(
+        None,
+        help="Install cs_tools from a local directory.",
+        click_type=custom_types.Directory(),
+    ),
 ) -> _types.ExitCode:
     """Upgrade CS Tools."""
-    assert isinstance(offline, pathlib.Path), "offline directory must be a pathlib.Path"
-
     if offline is not None:
         cs_tools_venv.offline_index = offline
         where = offline.as_posix()
