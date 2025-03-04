@@ -1,0 +1,128 @@
+@font-face {
+    font-family: Optimo-Plain;
+    src: url("../assets/fonts/Optimo-Plain/Plain-Light.woff") format("woff");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: Optimo-Plain;
+    src: url("../assets/fonts/Optimo-Plain/Plain-Regular.woff") format("woff");
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+}
+
+@font-face {
+  font-family: "BB Roller Mono";
+  src: url("../assets/fonts/BB Roller Mono/bbrollermonoprotx-regular.woff") format("woff");
+}
+
+:root {
+  /* Primary Colors */
+  --ts-color-black: #000000;
+  --ts-color-gray90: #1D232F;
+  --ts-color-gray60: #777E8B;
+  --ts-color-gray10: #F6F8FA;
+  --ts-color-white: #FFFFFF;
+
+  /* Secondary Colors */
+  --ts-color-blue: #2770EF;
+  --ts-color-blue10: #F2F7FF;
+
+  /* Tertiary Colors (color60) */
+  --ts-color-red: #E22B3D;
+  --ts-color-purple: #8C62F5;
+  --ts-color-teal: #48D1E0;
+  --ts-color-yellow: #FCC838;
+  --ts-color-green: #06BF7F;
+  --ts-color-orange: #FF8142;
+
+  --md-text-font-family: "Optimo-Plain";
+  --md-code-font-family: "BB Roller Mono";
+
+  --md-admonition-icon--tinm: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0,0,100,100"><text x="50" y=".9em" text-anchor="middle" font-size="90" style="">🧙</text></svg>')
+}
+
+
+.fc-black  { color: var(--ts-color-black);  }
+.fc-gray   { color: var(--ts-color-gray60); }
+.fc-blue   { color: var(--ts-color-blue);   }
+.fc-red    { color: var(--ts-color-red);    }
+.fc-purple { color: var(--ts-color-purple); }
+.fc-teal   { color: var(--ts-color-teal);   }
+.fc-yellow { color: var(--ts-color-yellow); }
+.fc-green  { color: var(--ts-color-green);  }
+.fc-orange { color: var(--ts-color-orange); }
+
+[data-md-color-scheme="thoughtspot-light"] {
+    /* Primary color shades */
+    --md-primary-fg-color:        var(--ts-color-gray90);
+    --md-primary-fg-color--light: var(--ts-color-gray60);
+    --md-primary-fg-color--dark:  var(--ts-color-black);
+    --md-primary-bg-color:        var(--ts-color-white);
+    --md-primary-bg-color--light: var(--ts-color-gray10);
+    
+    /* Accent color shades */
+    --md-accent-fg-color:              var(--ts-color-blue);
+    --md-accent-fg-color--transparent: var(--ts-color-blue10);
+    --md-accent-bg-color:              var(--ts-color-white);
+    --md-accent-bg-color--light:       var(--ts-color-gray10);
+    
+    /* Element styles */
+    --md-typeset-a-color: var(--ts-color-blue);
+}
+
+.md-typeset a:focus:not(.md-button),
+.md-typeset a:hover:not(.md-button) {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.md-typeset [type="checkbox"]:checked + .task-list-indicator::before {
+  background-color: var(--ts-color-green);
+}
+
+.grid-define-columns {
+    display: grid;
+    gap: 1rem;
+    align-items: center;
+    grid-template-columns: repeat(var(--column-count, 1), 1fr);
+}
+
+@media (width > 1500px) {
+    .grid-define-columns[data-columns="1"] {
+        --column-count: 1;
+    }
+    .grid-define-columns[data-columns="2"] {
+        --column-count: 2;
+    }
+    .grid-define-columns[data-columns="3"] {
+        --column-count: 3;
+    }
+    .grid-define-columns[data-columns="4"] {
+        --column-count: 4;
+    }
+}
+
+/* 
+ * There Is No Magic Admonition.
+ */
+.md-typeset .admonition.tinm,
+.md-typeset details.tinm {
+  border-color: var(--ts-color-purple);
+}
+
+.md-typeset .tinm > .admonition-title,
+.md-typeset .tinm > summary {
+  background-color: color-mix(in srgb, var(--ts-color-yellow), transparent 85%);
+  color: var(--ts-color-purple);
+}
+
+.md-typeset .tinm > .admonition-title::before,
+.md-typeset .tinm > summary::before {
+  background-color: var(--ts-color-purple);
+  -webkit-mask-image: var(--md-admonition-icon--tinm);
+          mask-image: var(--md-admonition-icon--tinm);
+}
