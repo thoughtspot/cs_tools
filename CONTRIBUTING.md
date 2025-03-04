@@ -79,6 +79,23 @@ requires some extra dependencies.
 uv pip install -e ".[docs]"
 ```
 
+Set your environment variables so that the generated documentation (`hooks/cli_reference_generator.py`) can be built
+against a valid ThoughtSpot cluster.
+
+`Windows`
+```powershell
+$env:CS_TOOLS_THOUGHTSPOT__URL = "https://<YOUR-THOUGHTSPOT-CLUSTER>.thoughtspot.cloud"
+$env:CS_TOOLS_THOUGHTSPOT__USERNAME = "<YOUR-THOUGHTSPOT-USERNAME>"
+$env:CS_TOOLS_THOUGHTSPOT__PASSWORD = "<YOUR-THOUGHTSPOT-PASSWORD>"
+```
+
+`POSIX (Mac, Linux)`
+```bash
+CS_TOOLS_THOUGHTSPOT__URL = "https://<YOUR-THOUGHTSPOT-CLUSTER>.thoughtspot.cloud"
+CS_TOOLS_THOUGHTSPOT__USERNAME = "<YOUR-THOUGHTSPOT-USERNAME>"
+CS_TOOLS_THOUGHTSPOT__PASSWORD = "<YOUR-THOUGHTSPOT-PASSWORD>"
+```
+
 Note that the [__CS Tools__ website](https://thoughtspot.github.io/cs_tools/) is only updated when a new version is
 released so your contribution might not show up for a while.
 

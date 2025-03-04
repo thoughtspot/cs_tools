@@ -61,7 +61,7 @@ class MappingCheckpoint(pydantic.BaseModel):
     at: dt.datetime
     """When the checkpoint was recorded, held as an ISO8601 formatted UTC datetime."""
 
-    mode: Literal["EXPORT", "IMPORT"]
+    mode: Literal["EXPORT", "VALIDATE", "IMPORT"]
     """The mode of the checkpoint."""
 
     status: _types.TMLStatusCode

@@ -59,6 +59,7 @@ def transfer(
         click_type=custom_types.MultipleInput(sep=","),
         help="Content with any of these guids will be [fg-success]selected[/], comma separated",
     ),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ):
     """
     Ensure objects are owned by a User.
@@ -78,6 +79,9 @@ def transfer(
         raise typer.BadParameter("at least one of --from, --tags, or --guids must be provided when using --content")
 
     ts = ctx.obj.thoughtspot
+
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
     TOOL_TASKS = [
         px.WorkTask(id="GATHER", description="Fetching objects to transfer"),

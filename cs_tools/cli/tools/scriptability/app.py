@@ -34,7 +34,7 @@ def checkpoint(
     ctx: typer.Context,
     directory: pathlib.Path = typer.Option(
         ...,
-        click_type=custom_types.Directory(exists=True, make=True),
+        click_type=custom_types.Directory(),
         help="Directory to save TML files to.",
     ),
     environment: str = typer.Option(
@@ -80,7 +80,7 @@ def checkpoint(
         False, "--delete-aware", help="Deletes TML in the mapping if it is not present in this checkpoint."
     ),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
-    org_override: str = typer.Option(None, "--org", help="The org to export TML from."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """
     Export TML to a directory.
@@ -119,7 +119,7 @@ def checkpoint(
         environment = "_".join(
             [
                 ts.session_context.thoughtspot.cluster_name,
-                ts.session_context.user.org_context or "primary",
+                "cluster" if ts.session_context.user.org_context is None else str(ts.session_context.user.org_context),
             ]
         )
 
@@ -219,7 +219,7 @@ def deploy(
     ctx: typer.Context,
     directory: pathlib.Path = typer.Option(
         ...,
-        click_type=custom_types.Directory(exists=True),
+        click_type=custom_types.Directory(),
         help="Directory to load TML files from.",
     ),
     tags: custom_types.MultipleInput = typer.Option(
@@ -271,7 +271,7 @@ def deploy(
         rich_help_panel="TML Import Options",
         hidden=True,
     ),
-    org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
 ) -> _types.ExitCode:
     """
