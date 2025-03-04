@@ -72,7 +72,7 @@ def branches_commit(
         False, "--delete-aware", help="Deletes content in the GitHub repository if it is not present in this commit."
     ),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log API errors to the console."),
-    org_override: str = typer.Option(None, "--org", help="The org to commit objects from."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
     # === DEPRECATED ===
     branch_override: str = typer.Option(
         None,
@@ -177,7 +177,7 @@ def branches_validate(
     ctx: typer.Context,
     source: str = typer.Option(..., "--source-branch", help="The source branch to merge from."),
     target: str = typer.Option(..., "--target-branch", help="The target branch to merge into."),
-    org_override: str = typer.Option(None, "--org", help="The source Org to use when comparing branches."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ):
     """Validates that your GitHub branches can be merged."""
     ts = ctx.obj.thoughtspot
@@ -231,7 +231,7 @@ def branches_deploy(
         help="Whether to accept any errors during the DEPLOY.",
         rich_help_panel="TML Deploy Options",
     ),
-    org_override: str = typer.Option(None, "--org", help="The org to deploy TML to."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
     log_errors: bool = typer.Option(False, "--log-errors", help="Log TML errors to the console."),
 ):
     """Pulls from a branch in a GitHub repository to ThoughtSpot."""
@@ -307,7 +307,7 @@ def commits_search(
         "--branch-name",
         help="The name of the branch to search.",
     ),
-    org_override: str = typer.Option(None, "--org", help="The org to search commit from."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ):
     """Searches for the commits for the given metadata ID."""
     ts = ctx.obj.thoughtspot
@@ -337,7 +337,7 @@ def commit_revert(
         "--branch-name",
         help="The name of the branch to search.",
     ),
-    org_override: str = typer.Option(None, "--org", help="The org to revert the commit from."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ):
     """Searches for the commits for the given metadata ID."""
     ts = ctx.obj.thoughtspot

@@ -19,7 +19,7 @@ def report(
         ...,
         metavar="DIRECTORY",
         help="Where to export the logs.",
-        click_type=custom_types.Directory(exists=True, make=True),
+        click_type=custom_types.Directory(exists=False, make=True),
     ),
     latest: int = typer.Option(1, help="Number of most recent logfiles to export.", min=1),
 ) -> _types.ExitCode:

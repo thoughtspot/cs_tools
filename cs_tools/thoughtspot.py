@@ -143,6 +143,7 @@ class ThoughtSpot:
                 r = utils.run_sync(c)
 
                 assert "Site Maintenance" not in r.text, "Cluster is in Maintenance Mode."
+                assert "System Maintenance" not in r.text, "Cluster is in Maintenance Mode."
 
                 attempted["BEARER_TOKEN"] = r
 
@@ -157,6 +158,7 @@ class ThoughtSpot:
                 r = utils.run_sync(c)
 
                 assert "Site Maintenance" not in r.text, "Cluster is in Maintenance Mode."
+                assert "System Maintenance" not in r.text, "Cluster is in Maintenance Mode."
 
                 attempted["TRUSTED_AUTH"] = r
 
@@ -171,6 +173,7 @@ class ThoughtSpot:
                 r = utils.run_sync(c)
 
                 assert "Site Maintenance" not in r.text, "Cluster is in Maintenance Mode."
+                assert "System Maintenance" not in r.text, "Cluster is in Maintenance Mode."
 
                 attempted["BASIC"] = r
 

@@ -18,7 +18,7 @@ They are designed to complement __ThoughtSpot__ native functionality with advanc
 
     :exclamation: __ThoughtSpot [Support Team](https://community.thoughtspot.com)__ will be <span class=fc-red>unable to help</span> you resolve any issues.
 
-    Instead, :bulb: __Feature Requests__{ .fc-purple } and :ring_buoy: __Support__{ .fc-green } are handled __{>__{ .fc-green} [__on Github Discussions__](https://github.com/thoughtspot/cs_tools/discussions) __<}__{ .fc-green }
+    Instead, :bulb: __Feature Requests__{ .fc-purple } and :ring_buoy: __Support__{ .fc-green } are handled __{>__{ .fc-green} [__on Github Discussions__][cs-tools-discussions] __<}__{ .fc-green }
 
 ~cs~tools tools --help
 
@@ -417,6 +417,35 @@ Follow the steps below to get __CS Tools__ installed on your platform.
             searchable.invoke("metadata", "--syncer", f"snowflake://{syncer_def}", "--config", "ENV:")
             ```
 
+=== ":material-server-network-off: &nbsp; Offline Install"
+
+    __Do none of these options work for you?__{ .fc-purple }
+
+    Reach out to the __ThoughtSpot__ team or the [__Discussions board__][cs-tools-discussions] to get an
+    __**__{ .fc-red }offline installer created for your platform.
+
+    <sub>Please provide the output of these two commands.</sub>
+
+    ??? abstract "Platform Architecture"
+
+        ```python
+        python -c "from pip._vendor.packaging.tags import platform_tags; print(next(iter(platform_tags())))
+        ```
+
+    ??? abstract "Python Version"
+
+        ```python
+        python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"
+        ```
+    
+    ??? danger "Rust-optimized Packages"
+        
+        Many packages in the python ecosystem are also optimized with Rust-backends. More than likely, your server will
+        need a [__rust compiler__][get-rust] for a successful installation. This is __in addition to__{ .fc-purple }
+        the python interpreter.
+      
+    <sup class=fc-red><i>** this is not a foolproof method, and should be used as a last resort!</i></sup> 
+
 ---
 
 ## Configure
@@ -461,9 +490,11 @@ Type the command `cs_tools config create --help` and press &nbsp; ++enter++ .
     ~cs~tools config check --anonymous --config ENV:
 
 
+[cs-tools-discussions]: https://github.com/thoughtspot/cs_tools/discussions
 [ts-rest-apis]: https://developers.thoughtspot.com/docs/rest-apiv2-reference
 [ts-sess-auth]: https://developers.thoughtspot.com/docs/api-authv2
 [ts-rest-auth-basic]: https://developers.thoughtspot.com/docs/api-authv2#_basic_authentication
 [ts-rest-auth-trusted]: https://developers.thoughtspot.com/docs/api-authv2#trusted-auth-v2
 [ts-rest-auth-bearer-token]: https://developers.thoughtspot.com/docs/api-authv2#bearerToken
 [win-exec-pol]: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-7.4#powershell-execution-policies
+[get-rust]: https://www.rust-lang.org/tools/install

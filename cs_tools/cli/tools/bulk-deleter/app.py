@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import datetime as dt
 import logging
+import pathlib
 import threading
 import time
 
@@ -49,9 +50,10 @@ def downstream(
         help="protocol and path for options to pass to the syncer",
         rich_help_panel="Syncer Options",
     ),
-    directory: custom_types.Directory = typer.Option(
+    directory: pathlib.Path = typer.Option(
         None,
-        help="folder/directory to export TML objects to",
+        help="Folder/directory to export TML objects to",
+        click_type=custom_types.Directory(exists=False, make=True),
         rich_help_panel="TML Export Options",
     ),
     export_only: bool = typer.Option(
@@ -60,7 +62,7 @@ def downstream(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
-    org_override: str = typer.Option(None, "--org", help="The org to import TML to."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """
     Delete all downstream dependencies of an object.
@@ -215,9 +217,10 @@ def from_tag(
     tag_name: str = typer.Option(..., "--tag", help="case sensitive name to tag stale objects with"),
     tag_only: bool = typer.Option(False, "--tag-only", help="delete only the tag itself, not the objects"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    directory: custom_types.Directory = typer.Option(
+    directory: pathlib.Path = typer.Option(
         None,
-        help="folder/directory to export TML objects to",
+        help="Folder/directory to export TML objects to",
+        click_type=custom_types.Directory(exists=False, make=True),
         rich_help_panel="TML Export Options",
     ),
     export_only: bool = typer.Option(
@@ -226,12 +229,16 @@ def from_tag(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """Delete content with the identified --tag."""
     if export_only and directory is None:
         raise typer.BadParameter("You must provide a directory to export to when using --export-only.")
 
     ts = ctx.obj.thoughtspot
+
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
     try:
         c = workflows.metadata.fetch_one(tag_name, "TAG", http=ts.api)
@@ -338,9 +345,10 @@ def from_tabular(
     ),
     deletion: str = typer.Option(..., help="directive to find content to delete", rich_help_panel="Syncer Options"),
     no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
-    directory: custom_types.Directory = typer.Option(
+    directory: pathlib.Path = typer.Option(
         None,
-        help="folder/directory to export TML objects to",
+        help="Folder/directory to export TML objects to",
+        click_type=custom_types.Directory(exists=False, make=True),
         rich_help_panel="TML Export Options",
     ),
     export_only: bool = typer.Option(

@@ -29,7 +29,7 @@ def config_create(
     access_token: str = typer.Option(..., help="A persanal access token with access to the GitHub repository."),
     commit_branch: str = typer.Option(..., help="The name of the branch to save TML to."),
     config_branch: str = typer.Option(..., help="The name of the branch to use for GUID mapping."),
-    org_override: str = typer.Option(None, "--org", help="The org to use."),
+    org_override: str = typer.Option(None, "--org", help="The default Org to switch to when issuing commands."),
 ) -> _types.ExitCode:
     """Creates a GitHub configuration for an org."""
     ts = ctx.obj.thoughtspot
@@ -69,7 +69,7 @@ def config_create(
 @depends_on(thoughtspot=ThoughtSpot())
 def config_update(
     ctx: typer.Context,
-    org_override: str = typer.Option(None, "--org", help="The org to use."),
+    org_override: str = typer.Option(None, "--org", help="The default Org to switch to when issuing commands."),
     repository_url: str = typer.Option(None, help="The GitHub repository URL to use."),
     username: str = typer.Option(None, help="The username of a user with access to the GitHub repository."),
     access_token: str = typer.Option(None, help="A persanal access token with access to the GitHub repository."),
@@ -97,7 +97,10 @@ def config_update(
 
 @app.command(name="search")
 @depends_on(thoughtspot=ThoughtSpot())
-def config_search(ctx: typer.Context, org_override: str = typer.Option(None, "--org", help="The org to use.")):
+def config_search(
+    ctx: typer.Context,
+    org_override: str = typer.Option(None, "--org", help="The default Org to switch to when issuing commands."),
+):
     """Searches for configurations."""
     ts = ctx.obj.thoughtspot
 

@@ -34,7 +34,7 @@ def info(
     directory: pathlib.Path = typer.Option(
         None,
         help="Where to export the info to share with the CS Tools team.",
-        click_type=custom_types.Directory(exists=True),
+        click_type=custom_types.Directory(exists=False, make=True),
     ),
     anonymous: bool = typer.Option(False, "--anonymous", help="remove personal references from the output"),
 ) -> _types.ExitCode:
@@ -102,11 +102,13 @@ def sync() -> _types.ExitCode:
 @app.command(name="update")
 def update(
     beta: custom_types.Version = typer.Option(None, "--beta", help="The specific beta version to fetch from Github."),
-    offline: custom_types.Directory = typer.Option(None, help="Install cs_tools from a local directory."),
+    offline: pathlib.Path = typer.Option(
+        None,
+        help="Install cs_tools from a local directory.",
+        click_type=custom_types.Directory(),
+    ),
 ) -> _types.ExitCode:
     """Upgrade CS Tools."""
-    assert isinstance(offline, pathlib.Path), "offline directory must be a pathlib.Path"
-
     if offline is not None:
         cs_tools_venv.offline_index = offline
         where = offline.as_posix()
@@ -122,7 +124,11 @@ def update(
 @app.command(name="export", hidden=True)
 @app.command(name="download")
 def _make_offline_distributable(
-    directory: custom_types.Directory = typer.Option(help="Location to export the python distributable to."),
+    directory: pathlib.Path = typer.Option(
+        ...,
+        help="Location to export the python distributable to.",
+        click_type=custom_types.Directory(exists=False, make=True),
+    ),
     platform: str = typer.Option(help="A tag describing the target environment architecture, see --help for details."),
     python_version: custom_types.Version = typer.Option(
         metavar="X.Y", help="The major and minor version of the target Python environment, see --help for details"
@@ -139,6 +145,9 @@ def _make_offline_distributable(
 
     Q. How can I find my python version?
     >>> [fg-secondary]python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"[/]
+
+    Q. Do I need anything other than python?
+    A. You also likely need a rust compiler, which can be installed via Rust ( https://www.rust-lang.org/tools/install ).
     """
     assert isinstance(directory, pathlib.Path), "directory must be a pathlib.Path"
 

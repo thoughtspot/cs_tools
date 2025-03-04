@@ -9,13 +9,12 @@ import urllib
 
 from awesomeversion import AwesomeVersion, AwesomeVersionStrategy, AwesomeVersionStrategyException
 import click
-import pydantic
 import toml
 
 from cs_tools import datastructures, utils
 from cs_tools.sync import base
 
-log = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class CustomType(click.ParamType):
@@ -113,7 +112,7 @@ class Date(CustomType):
 class Directory(CustomType):
     """Convert STR to DIRECTORY PATH."""
 
-    def __init__(self, exists: bool = False, make: bool = False):
+    def __init__(self, exists: bool = True, make: bool = False):
         self.exists = exists
         self.make = make
 
@@ -124,14 +123,15 @@ class Directory(CustomType):
     def convert(self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> pathlib.Path:
         """Coerce string into a pathlib.Path.is_dir()."""
         try:
-            path = pydantic.TypeAdapter(pydantic.DirectoryPath).validate_python(value)
-        except pydantic.ValidationError as e:
-            self.fail(message="\n".join(_["msg"] for _ in e.errors()), param=param, ctx=ctx)
+            path = pathlib.Path(value)
+        except TypeError:
+            self.fail(message="Not a valid path", param=param, ctx=ctx)
 
         if self.exists and not path.exists():
             self.fail(message="Directory does not exist", param=param, ctx=ctx)
 
-        if self.make:
+        if not path.exists() and self.make:
+            _LOG.warning(f"The directory '{path}' does not yet exist, creating it..")
             path.mkdir(parents=True, exist_ok=True)
 
         return path.resolve()
@@ -159,7 +159,7 @@ class Syncer(CustomType):
             self.fail(message=f"Syncer definition file does not exist at '{definition_spec}'.", param=param, ctx=ctx)
 
         except toml.TomlDecodeError:
-            log.debug(f"Syncer definition file '{definition_spec}' is invalid TOML.", exc_info=True)
+            _LOG.debug(f"Syncer definition file '{definition_spec}' is invalid TOML.", exc_info=True)
             self.fail(message=f"Syncer definition file '{definition_spec}' is invalid TOML.", param=param, ctx=ctx)
 
         return options
@@ -175,7 +175,7 @@ class Syncer(CustomType):
         protocol, _, definition_spec = value.partition("://")
 
         # fmt: off
-        log.debug(f"Registering syncer: {protocol.lower()}")
+        _LOG.debug(f"Registering syncer: {protocol.lower()}")
         syncer_base_dir = CS_TOOLS_PKG_DIR / "sync" / protocol
         syncer_manifest = base.SyncerManifest.model_validate_json(syncer_base_dir.joinpath("MANIFEST.json").read_text())
         syncer_options  = self._parse_syncer_configuration(definition_spec, param=param, ctx=ctx)
@@ -186,7 +186,7 @@ class Syncer(CustomType):
         if issubclass(SyncerClass, base.DatabaseSyncer) and self.models is not None:
             syncer_options["models"] = self.models
 
-        log.info(f"Initializing syncer: {SyncerClass}")
+        _LOG.info(f"Initializing syncer: {SyncerClass}")
         syncer = SyncerClass(**syncer_options)
 
         # CLEAN UP DATABASE RESOURCES.
@@ -236,7 +236,7 @@ class MultipleInput(CustomType):
             )
 
         except Exception:
-            log.debug(f"Could not coerce all values to '{self.type_caster}', {values}", exc_info=True)
+            _LOG.debug(f"Could not coerce all values to '{self.type_caster}', {values}", exc_info=True)
             self.fail(message=f"Could not coerce all values to '{self.type_caster}', {values}", param=param, ctx=ctx)
 
         return values
