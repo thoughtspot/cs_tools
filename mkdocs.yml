@@ -107,6 +107,15 @@ markdown_extensions:
 
 plugins:
   - open-in-new-tab
+  - redirects:
+      redirect_maps:
+        # LINKS FROM 1.5.x MAPPED TO 1.6.x
+        'tutorial/intro.md': 'getting-started.md'
+        'tutorial/install.md': 'getting-started.md#install'
+        'tutorial/config.md': 'getting-started.md#configure'
+        'tutorial/archiver.md': 'guides/process-archiver.md'
+        'tutorial/syncer.md': 'syncer/what-is.md'
+        'tools/index.md': 'generated/cli/reference'
 
 nav:
   - Home: index.md
