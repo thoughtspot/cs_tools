@@ -492,9 +492,6 @@ def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
         base = "https://api.github.com/repos/{owner}/{repo}/contents/{path}"
         endp = base.format(owner="thoughtspot", repo="cs_tools", path="cs_tools/updater/_updater.py")
 
-        if ref is not None:
-            endp += "?ref={ref}".format(ref=ref)
-
         # FETCH FILE METADATA.
         meta = http_request(endp, to_json=True)
         assert isinstance(meta, dict), "Github API returned invalid data for file metadata:\n{d!r}".format(d=meta)
@@ -512,6 +509,7 @@ def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
         sys.path.insert(0, HERE.as_posix())
 
         from _updater import CSToolsVenv  # type: ignore[import-not-found]
+
     except ModuleNotFoundError:
         _LOG.error(
             textwrap.dedent(
