@@ -67,6 +67,9 @@ class MappingCheckpoint(pydantic.BaseModel):
     status: _types.TMLStatusCode
     """The status of the checkpoint.. OK, WARNING, or ERROR."""
 
+    info: dict[str, Any] = pydantic.Field(default={})
+    """Arbitrary information about what happened."""
+
     @pydantic.field_serializer("at")
     @classmethod
     def serialize_datetime(self, value: Optional[dt.datetime]) -> Optional[str]:
@@ -169,7 +172,13 @@ class GUIDMappingInfo(pydantic.BaseModel, extra=pydantic.Extra.forbid):
         return target_env
 
     def checkpoint(
-        self, *, by: str, mode: Literal["EXPORT", "VALIDATE", "IMPORT"], environment: str, status: _types.TMLStatusCode
+        self,
+        *,
+        by: str,
+        mode: Literal["EXPORT", "VALIDATE", "IMPORT"],
+        environment: str,
+        status: _types.TMLStatusCode,
+        info: Optional[dict[str, Any]] = None,
     ) -> None:
         """Checkpoint the GUID mapping info."""
         if mode != "EXPORT" and not any(checkpoint.mode in ("EXPORT", "VALIDATE") for checkpoint in self.history):
@@ -182,6 +191,7 @@ class GUIDMappingInfo(pydantic.BaseModel, extra=pydantic.Extra.forbid):
                 mode=mode,
                 environment=environment,
                 status=status,
+                info=info,
             )
         )
 
