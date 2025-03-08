@@ -12,7 +12,10 @@ from cs_tools import _compat
 # ==========
 # Meta types
 # ==========
-ExitCode: _compat.TypeAlias = Literal[0, 1]
+ExitSuccess: _compat.TypeAlias = Literal[0]
+ExitFailure: _compat.TypeAlias = Literal[1]
+ExitWarning: _compat.TypeAlias = Literal[2]
+ExitCode: _compat.TypeAlias = Literal[ExitSuccess, ExitFailure, ExitWarning]
 PathLike: _compat.TypeAlias = Union[str, os.PathLike, pathlib.Path]
 
 # ==========
