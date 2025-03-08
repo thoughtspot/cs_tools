@@ -332,16 +332,21 @@ class TMLOperations:
     @property
     def can_map_guids(self) -> bool:
         """Determine if the statuses' GUIDs should be mapped."""
+        # GUIDs are returned, but we shouldn't map them since nothing actually imported.
         if self.operation == "VALIDATE":
             return False
 
+        # GUIDs should not be returned if any object failed during an ALL_OR_NONE import.
         if self.policy == "ALL_OR_NONE" and self.job_status != "OK":
             return False
 
-        if self.policy == "PARTIAL" and any(_.status != "ERROR" for _ in self.statuses):
-            return True
+        # All objects failed to IMPORT.
+        if all(_.status == "ERROR" for _ in self.statuses):
+            return False
 
-        return self.job_status != "ERROR"
+        # In this case, at least GUID has returned, EVEN IF the whole job was marked as a failure.
+        # We may have up to 1 failure or 1 warning causing the job to be marked this way.
+        return True
 
     @property
     def job_status(self) -> _types.TMLStatusCode:
