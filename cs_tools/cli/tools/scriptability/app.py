@@ -420,5 +420,11 @@ def deploy(
     if table.job_status == "ERROR":
         _LOG.error("One or more TMLs failed to fully deploy, check the logs or use --log-errors for more details.")
         return 1
+    
+    if table.job_status == "WARNING":
+        _LOG.warning(
+            "TMLs imported succesfully with one or more warnings. Check the logs or use --log-errors for more details."
+        )
+        return 2
 
     return 0
