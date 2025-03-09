@@ -7,6 +7,42 @@ All contributions, suggestions, and feedback you submitted are accepted under th
 represent that if you do not own copyright in the code that you have the authority to submit it under the
 [__Project's license__](./LICENSE). All feedback, suggestions, or contributions are not confidential.
 
+### Architecture Philosophy
+
+This section aims to describe the project layout and some of the core architecture decisions that were made to support
+the development of __CS Tools__.
+
+```shell
+src/cs_tools/
+├─ api/
+|  └─ CONTRIBUTING.md
+|   
+├─ cli/
+├─ sync/
+├─ updater/
+|   
+├─ __main__.py
+├─ programmatic.py
+└ ...
+```
+
+#### API
+Most of what CS Tools does is to interact with the ThoughtSpot REST APIs. Async. `utils.run_sync`
+
+#### CLI
+The "User Interface" of CS Tools. Sync or Async. `cli.AsyncTyper.maybe_run_async` as well as `utils.run_sync`
+
+#### Sync[er]
+
+ThoughtSpot sits on top of the database, but does not store customer data itself. CS Tools extracts and manipulates data
+at scale. Syncers are the glue between ThoughtSpot system, the runtime environment (local machine) and the Database.
+
+#### Updater
+
+Because the UI is a CLI, and because we want to be responsible developers, CS Tools manages its own isolated virtual
+environment. Our users are not developers, so we provide the bootstrapper and maintenance capabilities to ease the
+friction of getting started.
+
 ### Setting Up Your Environment
 
 Fork the __CS Tools__ repository on GitHub and then clone the fork to you local machine. For more details on forking
