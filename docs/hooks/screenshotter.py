@@ -92,7 +92,11 @@ def on_page_markdown(markdown: str, page: Page, config: MkDocsConfig, files: Fil
         fp = f"{cd}/generated/screenshots/{svg_name}.svg"
 
         block_identity_command = match.string[match.start() : match.end()]
-        screenshot_img_src_tag = f'<img src="{fp}" alt="{block_identity_command}" />'
+        screenshot_img_src_tag = f'<img src="{fp}" alt="{block_identity_command}"/>'
+
+        # SKIP IF ALREADY REPLACED (.finditer() returns all matches).
+        if screenshot_img_src_tag in markdown:
+            continue
 
         markdown = markdown.replace(block_identity_command, screenshot_img_src_tag)
 

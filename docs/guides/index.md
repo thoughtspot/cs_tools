@@ -15,24 +15,24 @@ Each of these guides are meant to help get you started in the right direction.
 
 <div class="grid cards" markdown>
 
--   :octicons-search-16:{ .lg .middle } &nbsp; __Searchable Data Model__
+-   :octicons-search-16:{ .lg .middle } &nbsp; [__Searchable Data Model__](process-searchable)
 
     ---
 
     Use __ThoughtSpot__ on __ThoughtSpot__! The Searchable Data Model provides
     augmented Liveboards for Adoption and Cluster Health
 
-    [:point_right: &nbsp; __Learn more__](#)
+    [:point_right: &nbsp; __Learn more__](process-searchable)
 
 
--   :octicons-archive-16:{ .lg .middle } &nbsp; __Archiver__
+-   :octicons-archive-16:{ .lg .middle } &nbsp; [__Archiver__](process-archiver)
 
     ---
 
     Clean up your stale and forgotten __Answers__{ .fc-green } and __Liveboards__{ .fc-purple }
     to improve the health of your __ThoughtSpot__ platform
 
-    [:point_right: &nbsp; __Learn more__](#)
+    [:point_right: &nbsp; __Learn more__](process-archiver)
 
 
 -   :octicons-git-merge-16:{ .lg .middle } &nbsp; __TML Delpoyment CI/CD__
@@ -41,6 +41,6 @@ Each of these guides are meant to help get you started in the right direction.
 
     Manage your TML deployments across ThoughtSpot environments
 
-    [:point_right: &nbsp; __Learn more__](#)
+    :point_right: &nbsp; __Learn more__
 
 </div>

@@ -48,7 +48,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 
     <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
     ```bash
-    curl -LsSf https://thoughtspot.github.io/cs_tools/install.py | python - --reinstall
+    curl -LsSf https://thoughtspot.github.io/cs_tools/install.py | python3 - --reinstall
     ```
 
     ??? failure "command not found: python3"
@@ -63,7 +63,7 @@ Follow the steps below to get __CS Tools__ installed on your platform.
 
     <sub class=fc-blue>Find the copy button :material-content-copy: to the right of the code block.</sub>
     ```bash
-    curl -LsSf https://thoughtspot.github.io/cs_tools/install.py | python - --reinstall
+    curl -LsSf https://thoughtspot.github.io/cs_tools/install.py | python3 - --reinstall
     ```
 
     ??? failure "command not found: python3"
