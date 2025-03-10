@@ -444,6 +444,11 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/tags/create", json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def tags_delete(self, tag_identifier: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+        """Creates a tag object."""
+        return self.post(f"api/rest/2.0/tags/{tag_identifier}/delete", json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def tags_assign(
         self, guid: _types.ObjectIdentifier, tag: _types.ObjectIdentifier, **options: Any
     ) -> Awaitable[httpx.Response]:

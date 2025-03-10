@@ -256,7 +256,7 @@ def from_tag(
     ]
 
     with px.WorkTracker("Deleting objects", tasks=TOOL_TASKS) as tracker:
-        guids_to_delete: set[_types.GUID] = {tag["metadata_id"]}
+        guids_to_delete: set[_types.GUID] = {}
 
         with tracker["PREPARE"] as this_task:
             if not tag_only:
@@ -268,6 +268,9 @@ def from_tag(
 
         with tracker["EXPORTING"] as this_task:
             if directory is None:
+                this_task.skip()
+
+            elif tag_only:
                 this_task.skip()
 
             else:
@@ -292,7 +295,7 @@ def from_tag(
 
                 tracker.extra_renderable = lambda: Align.center(
                     console.Group(
-                        Align.center(f"{len(guids_to_delete):,} objects will be deleted"),
+                        Align.center(f"{1 if tag_only else len(guids_to_delete):,} objects will be deleted"),
                         "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
                     )
                 )
@@ -317,6 +320,12 @@ def from_tag(
         with tracker["DELETING"] as this_task:
             this_task.total = len(guids_to_delete)
             delete_attempts = collections.defaultdict(int)
+
+            if tag_only:
+                c = ts.api.tags_delete(tag_identifier=tag["metadata_id"])
+                _ = utils.run_sync(c)
+                this_task.advance(step=1)
+                return 0
 
             async def _delete_and_advance(guid: _types.GUID) -> None:
                 delete_attempts[guid] += 1
