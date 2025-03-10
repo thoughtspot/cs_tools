@@ -227,7 +227,7 @@ Before merging to `master`, ensure you have a commit bumping the version of the 
 Once all changes are merged to `master`, two GitHub Action workflows will automatically run.
 
 - [__to ensure the `updater/_bootstrapper.py` script functions__](.github/workflows/test-bootstrapper.yaml) across all supported architecture
-- [__to build and push the documentation__](.github/workflows/test-bootstrapper.yaml) out to __https://thoughtspot.github.io/cs_tools/__
+- [__to build and push the documentation__](.github/workflows/build-docs.yaml) out to __https://thoughtspot.github.io/cs_tools/__
 
 \*\**note, the GitHub runner for testing the bootstrapper is flaky, and may need be run several times to before all jobs will succeed.*
 
