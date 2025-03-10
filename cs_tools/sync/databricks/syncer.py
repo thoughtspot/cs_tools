@@ -33,6 +33,7 @@ class Databricks(DatabaseSyncer):
     schema_: Optional[str] = pydantic.Field(default="default", alias="schema")
     port: Optional[int] = 443
     temp_dir: Optional[pydantic.DirectoryPath] = pathlib.Path(".")
+    use_legacy_dataload: bool = False
 
     @pydantic.field_validator("access_token", mode="before")
     @classmethod
@@ -174,16 +175,28 @@ class Databricks(DatabaseSyncer):
             return
 
         table = self.metadata.tables[f"{self.schema_}.{tablename}"]
-        stage = self.stage_and_put(tablename=tablename, data=data)
+
+        if not self.use_legacy_dataload:
+            stage = self.stage_and_put(tablename=tablename, data=data)
 
         if self.load_strategy == "APPEND":
-            self.copy_into(from_=stage, into=tablename)
+            if self.use_legacy_dataload:
+                sync_utils.batched(table.insert().values, session=self.session, data=data, max_parameters=250)
+            else:
+                self.copy_into(from_=stage, into=tablename)
 
         if self.load_strategy == "TRUNCATE":
             self.session.execute(table.delete())
-            self.copy_into(from_=stage, into=tablename)
+
+            if self.use_legacy_dataload:
+                sync_utils.batched(table.insert().values, session=self.session, data=data, max_parameters=250)
+            else:
+                self.copy_into(from_=stage, into=tablename)
 
         if self.load_strategy == "UPSERT":
-            with self.temporary_table(table=table) as temp_table:
-                self.copy_into(from_=stage, into=temp_table.name)
-                self.merge_into(from_=temp_table.name, into=table)
+            if self.use_legacy_dataload:
+                sync_utils.generic_upsert(table, session=self.session, data=data, max_params=250)
+            else:
+                with self.temporary_table(table=table) as temp_table:
+                    self.copy_into(from_=stage, into=temp_table.name)
+                    self.merge_into(from_=temp_table.name, into=table)
