@@ -356,15 +356,13 @@ def deploy(
         )
         return 0
 
-    # Silence the cs_tools metadata workflow logger since we've asked the User if they want logged feedback.
-    logging.getLogger("cs_tools.api.workflows.metadata").setLevel(logging.CRITICAL)
-
     try:
         c = workflows.metadata.tml_import(
             tmls=list(tmls.values()),
-            use_async_endpoint=use_async_endpoint,
-            skip_diff_check=skip_diff_check,
             policy=deploy_policy,
+            use_async_endpoint=use_async_endpoint,
+            wait_for_completion=use_async_endpoint,
+            log_errors=False,
             http=ts.api,
         )
         _ = utils.run_sync(c)
