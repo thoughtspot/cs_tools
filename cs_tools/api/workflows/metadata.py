@@ -390,15 +390,15 @@ async def tml_import(
 
         async_job_id = d["task_id"]
 
-        # AFTER TEN 1-second ITERATIONS, WE'LL ELEVATE THE LOGGING LEVEL.
+        # AFTER FIVE 5-second ITERATIONS (25s), WE'LL ELEVATE THE LOGGING LEVEL.
         n_iterations = 0
 
         # OTHERWISE, PROCESS THE JOB AS IF IT WERE A SYNCHRONOUS PAYLOAD.
         while d.get("task_status") != "COMPLETED":
-            log_level = logging.DEBUG if n_iterations < 10 else logging.INFO
+            log_level = logging.DEBUG if n_iterations < 5 else logging.INFO
             n_iterations += 1
             _LOG.log(log_level, f"Checking status of asynchronous import {async_job_id}")
-            _ = await asyncio.sleep(1)  # type: ignore[func-returns-value]
+            _ = await asyncio.sleep(5)  # type: ignore[func-returns-value]
             r = await http.metadata_tml_async_status(task_ids=[async_job_id])
             r.raise_for_status()
 
@@ -412,6 +412,7 @@ async def tml_import(
 
         # POST-PROCESSING TO MIMIC THE SYNCHRONOUS RESPONSE.
         d = d["import_response"]["object"]
+
     else:
         r = await http.metadata_tml_import(tmls=[t.dumps() for t in tmls], policy=policy, **tml_import_options)
         r.raise_for_status()
