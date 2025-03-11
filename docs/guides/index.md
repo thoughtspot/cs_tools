@@ -35,12 +35,12 @@ Each of these guides are meant to help get you started in the right direction.
     [:point_right: &nbsp; __Learn more__](process-archiver)
 
 
--   :octicons-git-merge-16:{ .lg .middle } &nbsp; __TML Delpoyment CI/CD__
+-   :octicons-git-merge-16:{ .lg .middle } &nbsp; [__TML Delpoyment CI/CD__](process-vcs)
 
     ---
 
     Manage your TML deployments across ThoughtSpot environments
 
-    :point_right: &nbsp; __Learn more__
+    [:point_right: &nbsp; __Learn more__](process-vcs)
 
 </div>

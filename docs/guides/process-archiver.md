@@ -54,7 +54,7 @@ from the system. This helps your users continue to find relevant, timely, and us
 
 ---
 
-## Define a Process
+### Define a Process
 
 !!! danger "Critical"
 
@@ -78,7 +78,7 @@ saved during this time will be identified in your __ThoughtSpot__ cluster with t
 
 ---
 
-## Communicate with Users
+### Communicate with Users
 
 Let your Users know that their visualizations may be removed from the __ThoughtSpot__ platform.
 
@@ -99,7 +99,7 @@ You should provide clear timelines to Users and aim for a 2 weeks notice before 
 
 ---
 
-## Clean Up the Cluster
+### Clean Up the Cluster
 
 Run the `remove` command to delete any content which still has the `INACTIVE` tag.
 
