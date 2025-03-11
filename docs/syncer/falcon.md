@@ -27,7 +27,7 @@ hide:
     ---
 
     - [ ] __wait_for_dataload_completion__{ .fc-blue }, *pause after loading data to check if it was successful*
-    <br />__default__{ .fc-gray }: `false` ( __allowed__{ .fc-green }: `true`, `false` )
+    <br />__default__{ .fc-gray }: `true` ( __allowed__{ .fc-green }: `true`, `false` )
 
     ---
 

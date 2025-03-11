@@ -7,6 +7,14 @@ hide:
 
 Use __ThoughtSpot__, on __ThoughtSpot__!
 
+See what your Users are up to in the __ThoughtSpot Adoption__ Liveboard. This dataset will help you understand what
+types of activities your users are engaging with in __ThoughtSpot__, as well as provide a view into the health of your
+queries.
+
+Need to remove a column? The __Worksheet Column Utilization__ Liveboard can help! See exactly how many dependencies are
+downstream each column in your system. This is also a great place to quickly check the Column Settings to determine if
+your Worksheets are properly configured for a good Search and Spotter experience!
+
 ??? tinm "There is No Magic!"
 
     Remember, __CS Tools__ wraps the __ThoughtSpot__ [__REST APIs__][ts-rest-v2]. This tool uses the following endpoints.
