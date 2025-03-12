@@ -47,6 +47,11 @@ hide:
     
     ---
 
+    - [ ] __use_legacy_dataload__{ .fc-blue }, _fall back to slower data loading with JDBC-style `INSERT`s_
+    <br />__default__{ .fc-gray }: `false` ( __allowed__{ .fc-green }: `true`, `false` )
+
+    ---
+
     - [ ] __load_strategy__{ .fc-blue}, _how to write new data into existing tables_
     <br />__default__{ .fc-gray }: `APPEND` ( __allowed__{ .fc-green }: `APPEND`, `TRUNCATE`, `UPSERT` )
 

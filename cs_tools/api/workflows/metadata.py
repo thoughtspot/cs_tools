@@ -369,25 +369,68 @@ async def tml_import(
     tmls: list[TMLObject],
     *,
     policy: _types.TMLImportPolicy = "ALL_OR_NONE",
+    use_async_endpoint: bool = False,
+    wait_for_completion: bool = False,
+    log_errors: bool = False,
     http: RESTAPIClient,
     **tml_import_options,
 ) -> _types.APIResult:
     """Import a metadata object, alerting about warnings and errors."""
-    r = await http.metadata_tml_import(tmls=[t.dumps() for t in tmls], policy=policy, **tml_import_options)
-    r.raise_for_status()
+    if use_async_endpoint:
+        _LOG.debug(f"Async import initiated on {len(tmls):,} objects (behave synchronously: {wait_for_completion}).")
+        r = await http.metadata_tml_async_import(tmls=[t.dumps() for t in tmls], policy=policy, **tml_import_options)
+        r.raise_for_status()
+        d = r.json()
 
-    for tml_import_info, tml in zip(r.json(), tmls):
-        tml_type = tml.tml_type_name.upper()
+        _LOG.debug(f"RAW DATA\n{json.dumps(d, indent=2, default=str)}\n")
 
-        if tml_import_info["response"]["status"]["status_code"] == "ERROR":
-            errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
-            _LOG.error(f"{tml_type} '{tml.name}' failed to import, ThoughtSpot errors:\n[fg-error]{errors}")
+        # IF WE'RE NOT WAITING FOR THE JOB TO COMPLETE, RETURN THE ASYNC JOB INFO DIRECTLY.
+        if not wait_for_completion:
+            return d
 
-        if tml_import_info["response"]["status"]["status_code"] == "WARNING":
-            errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
-            _LOG.warning(f"{tml_type} '{tml.name}' partially imported, ThoughtSpot errors:\n[fg-warn]{errors}")
+        async_job_id = d["task_id"]
 
-        if tml_import_info["response"]["status"]["status_code"] == "OK":
-            _LOG.debug(f"{tml_type} '{tml.name}' successfully imported")
+        # AFTER FIVE 5-second ITERATIONS (25s), WE'LL ELEVATE THE LOGGING LEVEL.
+        n_iterations = 0
 
-    return r.json()
+        # OTHERWISE, PROCESS THE JOB AS IF IT WERE A SYNCHRONOUS PAYLOAD.
+        while d.get("task_status") != "COMPLETED":
+            log_level = logging.DEBUG if n_iterations < 5 else logging.INFO
+            n_iterations += 1
+            _LOG.log(log_level, f"Checking status of asynchronous import {async_job_id}")
+            _ = await asyncio.sleep(5)  # type: ignore[func-returns-value]
+            r = await http.metadata_tml_async_status(task_ids=[async_job_id])
+            r.raise_for_status()
+
+            # RAW DATA
+            _ = r.json()
+            _LOG.debug(f"RAW DATA\n{json.dumps(_, indent=2, default=str)}\n")
+
+            # FIRST STATUS (we only 1 in job), BUT ONLY REASSIGN while LOOP VAR IF THE KEY EXISTS.
+            d = next(iter(_["status_list"]), d)
+            _LOG.log(log_level, f"TASK ID: {async_job_id}\n{json.dumps(d, indent=2, default=str)}\n")
+
+        # POST-PROCESSING TO MIMIC THE SYNCHRONOUS RESPONSE.
+        d = d["import_response"]["object"]
+
+    else:
+        r = await http.metadata_tml_import(tmls=[t.dumps() for t in tmls], policy=policy, **tml_import_options)
+        r.raise_for_status()
+        d = r.json()
+
+    if log_errors:
+        for tml_import_info, tml in zip(d, tmls):
+            tml_type = tml.tml_type_name.upper()
+
+            if tml_import_info["response"]["status"]["status_code"] == "ERROR":
+                errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
+                _LOG.error(f"{tml_type} '{tml.name}' failed to import, ThoughtSpot errors:\n[fg-error]{errors}")
+
+            if tml_import_info["response"]["status"]["status_code"] == "WARNING":
+                errors = tml_import_info["response"]["status"]["error_message"].replace("<br/>", "\n")
+                _LOG.warning(f"{tml_type} '{tml.name}' partially imported, ThoughtSpot errors:\n[fg-warn]{errors}")
+
+            if tml_import_info["response"]["status"]["status_code"] == "OK":
+                _LOG.debug(f"{tml_type} '{tml.name}' successfully imported")
+
+    return d

@@ -67,6 +67,9 @@ class MappingCheckpoint(pydantic.BaseModel):
     status: _types.TMLStatusCode
     """The status of the checkpoint.. OK, WARNING, or ERROR."""
 
+    info: dict[str, Any] = pydantic.Field(default={})
+    """Arbitrary information about what happened."""
+
     @pydantic.field_serializer("at")
     @classmethod
     def serialize_datetime(self, value: Optional[dt.datetime]) -> Optional[str]:
@@ -169,7 +172,13 @@ class GUIDMappingInfo(pydantic.BaseModel, extra=pydantic.Extra.forbid):
         return target_env
 
     def checkpoint(
-        self, *, by: str, mode: Literal["EXPORT", "VALIDATE", "IMPORT"], environment: str, status: _types.TMLStatusCode
+        self,
+        *,
+        by: str,
+        mode: Literal["EXPORT", "VALIDATE", "IMPORT"],
+        environment: str,
+        status: _types.TMLStatusCode,
+        info: Optional[dict[str, Any]] = None,
     ) -> None:
         """Checkpoint the GUID mapping info."""
         if mode != "EXPORT" and not any(checkpoint.mode in ("EXPORT", "VALIDATE") for checkpoint in self.history):
@@ -182,6 +191,7 @@ class GUIDMappingInfo(pydantic.BaseModel, extra=pydantic.Extra.forbid):
                 mode=mode,
                 environment=environment,
                 status=status,
+                info=info,
             )
         )
 
@@ -332,16 +342,21 @@ class TMLOperations:
     @property
     def can_map_guids(self) -> bool:
         """Determine if the statuses' GUIDs should be mapped."""
+        # GUIDs are returned, but we shouldn't map them since nothing actually imported.
         if self.operation == "VALIDATE":
             return False
 
+        # GUIDs should not be returned if any object failed during an ALL_OR_NONE import.
         if self.policy == "ALL_OR_NONE" and self.job_status != "OK":
             return False
 
-        if self.policy == "PARTIAL" and any(_.status != "ERROR" for _ in self.statuses):
-            return True
+        # All objects failed to IMPORT.
+        if all(_.status == "ERROR" for _ in self.statuses):
+            return False
 
-        return self.job_status != "ERROR"
+        # In this case, at least GUID has returned, EVEN IF the whole job was marked as a failure.
+        # We may have up to 1 failure or 1 warning causing the job to be marked this way.
+        return True
 
     @property
     def job_status(self) -> _types.TMLStatusCode:
