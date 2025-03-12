@@ -55,15 +55,48 @@ fundamentally rely on the same few principles.
 Snapshotting your objects is a lot like "saving your work" in other workflows. In __CS Tools__, we give you the option
 to collect up many objects and create a `checkpoint` (sometimes called a `commit`).
 
-__CS Tools__ doesn't actually save any state for you, but it will export your the TML of your objects in a consistent
-format, and also store a `.mappings/<environment>.json` file alongside them.
+__CS Tools__ wont save any commit state for you, *but it will* export the TML of your objects in a consistent format
+along with a `.mappings/<environment>.json` file.
 
-!!! danger ""
+!!! danger "`.mappings/<environment>.json`"
     __This file is__ __critical to working with TML__{ .fc-red }__, and you should not edit it [unless you absolutely
     know what you're doing][deploy-guid-map]!__
 
+    If you forgot what the `--environment` or `--source-environment` name is, you can look in the `.mappings` directory,
+    it will be located at the top of the file.
+
+    ??? example "ts-develop.json"
+        ```json
+        {
+          "metadata": {
+            "cs_tools": {
+              "extract_environment": "ts-develop"
+            }
+          },
+          "mapping": {
+            "376a0dd2-010f-496e-b840-b6e37d353ea1": null,
+            "4fff9eda-e70b-41b0-859e-260246bc7d4e": null,
+            "381db1c8-688f-4620-9a45-ce9a2dea108c": null,
+          },
+          "additional_mapping": {},
+          "history": [
+            {
+              "by": "cs_tools/1.6.2/scriptability/checkpoint",
+              "at": "2025-03-12T03:09:26.413335+00:00",
+              "mode": "EXPORT",
+              "status": "OK",
+              "info": {
+                "files_expected": 3,
+                "files_exported": 3
+              }
+            }
+          ]
+        }
+        ```
+
 The optional `--environment` parameter is a way for you to give a friendly name to your [__Environment__][deploy-overview-bp].
-Remember this name though, as it will be used in order to appropriately deploy your objects!
+
+__Remember this name__{ .fc-green }, as it will be used in order to appropriately deploy your objects!
 
 !!! tip ""
     ??? abstract "Get the Command"
@@ -88,9 +121,12 @@ environments `develop` and `production` respectively. It would also be a good id
 environments with the same name.
 
 ??? tinm "OK, there's a little bit of Magic."
-    __CS Tools__ maintains *multiple* mapping files. Every time you deploy to a new environment, __CS Tools__ will
-    search for a mapping file with the `--source-environment` name, the `--target-environment` name, and then [merge the
-    two files together][scriptability-merge] intelligently.
+    __CS Tools__ maintains *multiple* mapping files. __Every time you deploy to a new environment__{ .fc-purple },
+    __CS Tools__ will search for a mapping file with the `--source-environment` name, the `--target-environment` name,
+    and then [merge the two files together][scriptability-merge] intelligently.
+
+    - [x] The `<source-environment>.json` contains a record of all the objects under version control.
+    - [x] The `<target-environment>.json` contains a record of all the known __MAPPED__{ .fc-green } objects in your target environment.
 
     This allows us to automatically map GUIDs to your new destination environment and avoid merge conflicts on the
     actual mapping itself.
@@ -167,6 +203,9 @@ __We'll show some common ways to handle commiting your changes to the underlying
 
 In the examples, we'll assume the following.
 
+  - [x] Your current working directory is at the root of your repository.
+  - [x] You are trying to take a snapshot of your [__Environment__][deploy-overview-bp] called __Develop__{ .fc-purple }.
+  - [x] You have already ran `scriptability checkpoint` to extract files from __ThoughtSpot__ to the `project-a` directory.
   - [x] A directory structure that looks like this, where we want to commit our changes to the `project-a` directory.
     ```
     root
@@ -184,9 +223,6 @@ In the examples, we'll assume the following.
     └── /project-b
         └── ...
     ```
-  - [x] You have already ran `scriptability checkpoint` to extract files from __ThoughtSpot__ to the `project-a` directory.
-  - [x] You are trying to take a snapshot of your [__Environment__][deploy-overview-bp] called __Develop__{ .fc-purple }.
-  - [x] Your current working directory is at the root of your repository.
 
 !!! warning "Important"
     It's important to note that both `scriptability checkpoint` and `scriptability deploy` will use produce files when
@@ -198,12 +234,21 @@ In the examples, we'll assume the following.
 === ":simple-git: &nbsp; git (local)"
     ??? abstract "commit.sh"
         ```shell
+        # MAKE SURE WE'RE ON THE RIGHT BRANCH BEFORE ADDING FILES
         git switch ts-develop
+
+        # ADD ALL FILES IN THE DIRECTORY
         git add project-a/
+
+        # CREATE COMMIT
         git commit -m "AUTOCOMMIT >> checkpoint files from ThoughtSpot"
+
+        # PUSH CHANGES BACK USING THE ACCESS TOKEN
         git push origin ts-develop
         ```
-        <sup>*\*The above assumes you have already created the git repo with `git init`!*{ .fc-gray }</sup>
+        <sup class="fc-gray">
+          <i>**The above assumes you have already created the git repo with `git init`!</i>
+        </sup>
 
 === ":simple-github: &nbsp; GitHub"
     ??? abstract "actions-workflow.yaml"
@@ -247,7 +292,9 @@ In the examples, we'll assume the following.
                 env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ```
-        <sup>*\*The only required variables above are `DIRECTORY`, `COMMIT_MESSAGE`, and `ENVIRONMENT_NAME`. All others are set from [Defaults][github-ci-vars]!*{ .fc-gray }</sup>
+        <sup class="fc-gray">
+          <i>**The only required variables above are `DIRECTORY`, `COMMIT_MESSAGE`, and `ENVIRONMENT_NAME`. All others are set from [Defaults][github-ci-vars]!</i>
+        </sup>
 
 === ":simple-gitlab: &nbsp; GitLab"
     ??? abstract ".gitlab-ci.yml"
@@ -284,13 +331,15 @@ In the examples, we'll assume the following.
             # PUSH CHANGES BACK USING THE ACCESS TOKEN
             - git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${ENVIRONMENT_NAME}
         ```
-        <sup>*\*The only required variables above are `DIRECTORY`, `COMMIT_MESSAGE`, and `ENVIRONMENT_NAME`. All others are set from [Defaults][gitlab-ci-vars]!*{ .fc-gray }</sup>
+        <sup class="fc-gray">
+          <i>**The only required variables above are `DIRECTORY`, `COMMIT_MESSAGE`, and `ENVIRONMENT_NAME`. All others are set from [Defaults][gitlab-ci-vars]!</i>
+        </sup>
     
-    Since __CS Tools__ is handling the "fetch TML from ThoughtSpot" and "deploy TML back to ThoughtSpot" pieces of the
-    deployment workflows, all we're left to do is solve the "How do I track my changes?" problem.
+  Since __CS Tools__ is handling the "fetch TML from ThoughtSpot" and "deploy TML back to ThoughtSpot" pieces of the
+  deployment workflows, all we're left to do is solve the "How do I track my changes?" problem.
 
-    While this is totally outside of the scope of __ThoughtSpot__, the above workflows should offer helpful guidance on
-    the steps necessary to commit to a repository.
+  While this is totally outside of the scope of __ThoughtSpot__, the above workflows should offer helpful guidance on
+  the steps necessary to commit to a repository.
 
 ---
 
@@ -299,6 +348,224 @@ In the examples, we'll assume the following.
 These workflows show the complete CI/CD pattern and can be used as a base for getting starting with your own process.
 If you are familiar with your CI platform, these can be extended with __Pull / Merge Request templates__ for even
 greater flexibility in managing __ThoughtSpot__ deployments.
+
+!!! note ""
+    Each workflow is split into the 3 core ThoughtSpot stages, a setup CS Tools stage, and a git-commit stage.
+    
+    - [x] Extract + Commit
+    - [x] Validate
+    - [x] Deploy + Commit
+    
+    __There are environment variables which help configure each stage__{ .fc-purple } __take note of these and customize
+    as needed.__
+
+=== ":simple-git: &nbsp; git (local)"
+    ??? abstract "pipeline.sh"
+        ```shell
+        #!/bin/bash
+        # pipeline.sh - TML Deployments CI/CD pipeline
+        # Usage: ./pipeline.sh --extract|--validate|--deploy
+
+        # PARSE COMMAND LINE ARGUMENTS
+        while [[ $# -gt 0 ]]; do
+          case $1 in
+            --extract)
+              PIPELINE_TYPE="extract"
+              shift
+              ;;
+            --validate)
+              PIPELINE_TYPE="validate"
+              shift
+              ;;
+            --deploy)
+              PIPELINE_TYPE="deploy"
+              shift
+              ;;
+            --help)
+              echo "Usage: ./pipeline.sh --extract|--validate|--deploy"
+              echo ""
+              echo "Pipeline Types:"
+              echo "  --extract   Extract TML from ThoughtSpot (checkpoint)"
+              echo "  --validate  Validate TML on ThoughtSpot"
+              echo "  --deploy    Deploy TML to ThoughtSpot"
+              echo ""
+              echo "Options:"
+              echo "  --help      Show this help message"
+              exit 0
+              ;;
+            *)
+              echo "Unknown option: $1"
+              echo "Use --help for usage information"
+              exit 1
+              ;;
+          esac
+        done
+
+        # CHECK IF AN PIPELINE TYPE WAS SPECIFIED
+        if [ -z "$PIPELINE_TYPE" ]; then
+          echo "Error: No pipeline type specified"
+          echo "Use --help for usage information"
+          exit 1
+        fi
+
+        # ENVIRONMENT VARIABLES FOR CS TOOLS
+        if [ -z "$THOUGHTSPOT_URL" ] || [ -z "$THOUGHTSPOT_USERNAME" ] || [ -z "$THOUGHTSPOT_SECRET_KEY" ]; then
+          echo "Error: Required environment variables are not set"
+          echo "Please set the following environment variables:"
+          echo "  THOUGHTSPOT_URL"
+          echo "  THOUGHTSPOT_USERNAME"
+          echo "  THOUGHTSPOT_SECRET_KEY"
+          exit 1
+        fi
+
+        # ======================================================================================================================
+        # TOP LEVEL VARIABLES
+        # ======================================================================================================================
+
+        # CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS
+        # THE CLI OPTION  --config ENV:  TELLS CS TOOLS TO PULL THE INFORMATION FROM ENVIRONMENT VARIABLES.
+        export CS_TOOLS_THOUGHTSPOT__URL=${THOUGHTSPOT_URL}
+        export CS_TOOLS_THOUGHTSPOT__USERNAME=${THOUGHTSPOT_USERNAME}
+        export CS_TOOLS_THOUGHTSPOT__SECRET_KEY=${THOUGHTSPOT_SECRET_KEY}
+
+        # GIT OPTIONS
+        DIRECTORY="dogfood"
+        COMMIT_MESSAGE="AUTOMATED >> TS-CI ${PIPELINE_TYPE} from pipeline.sh"
+
+        # ======================================================================================================================
+
+        commit_changes() {
+          # CONFIGURE GIT USER IF NOT ALREADY SET LOCALLY OR GLOBALLY
+          if [ -z "$(git config user.name)" ]; then
+            git config user.name "ThoughtSpot CI"
+          fi
+          
+          if [ -z "$(git config user.email)" ]; then
+            git config user.email "ts-ci@nowhere.io"
+          fi
+
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+          # PULL CHANGES FROM ORIGIN / REMOTE
+          git pull origin ${CURRENT_BRANCH} || {
+            echo "Error: Failed to pull latest changes. Please resolve any conflicts and try again."
+            return 1
+          }
+
+          # ADD ALL FILES IN THE DIRECTORY
+          git add ${DIRECTORY}/
+          
+          # CREATE COMMIT, SKIPPING RE-TRIGGERING CI.
+          git commit -m "${COMMIT_MESSAGE}" || echo "No changes to commit"
+
+          # PUSH CHANGES BACK TO ORIGIN / REMOTE
+          echo "You can push changes with:  git push origin ${CURRENT_BRANCH}"
+        }
+
+        # ======================================================================================================================
+
+        case $PIPELINE_TYPE in
+          "extract")
+            TS_METADATA_TYPES="ALL"
+            TS_OBJECT_TAG="CS Tools"
+            TS_ORG="Primary"
+            TS_SOURCE_ENV_NAME="ts-develop"
+
+            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#checkpoint
+            cs_tools tools scriptability checkpoint \
+              --directory ${DIRECTORY} \
+              --environment ${TS_SOURCE_ENV_NAME} \
+              --metadata-types ${TS_METADATA_TYPES} \
+              --tags "${TS_OBJECT_TAG}" \
+              --org "${TS_ORG}" \
+              --config "ENV:"
+            CS_TOOLS_SCRIPTABILITY_EXIT_CODE=$?
+            
+            commit_changes
+            ;;
+            
+          "validate")
+            TS_METADATA_TYPES="TABLE"
+            TS_ORG="production"
+            TS_SOURCE_ENV_NAME="ts-develop"
+            TS_TARGET_ENV_NAME="ts-production"
+            TS_DEPLOY_TYPE="DELTA"
+            
+            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#deploy_2
+            cs_tools tools scriptability deploy \
+              --directory ${DIRECTORY} \
+              --source-environment ${TS_SOURCE_ENV_NAME} \
+              --target-environment ${TS_TARGET_ENV_NAME} \
+              --deploy-type ${TS_DEPLOY_TYPE} \
+              --deploy-policy VALIDATE_ONLY \
+              --metadata-types ${TS_METADATA_TYPES} \
+              --org "${TS_ORG}" \
+              --config "ENV:"
+            CS_TOOLS_SCRIPTABILITY_EXIT_CODE=$?
+            ;;
+            
+          "deploy")
+            TS_ORG="production"
+            TS_METADATA_TYPES="TABLE"
+            TS_OBJECT_TAG="temporary-tag-for-ci"
+            TS_SOURCE_ENV_NAME="ts-develop"
+            TS_TARGET_ENV_NAME="ts-production"
+            TS_DEPLOY_TYPE="DELTA"
+            TS_DEPLOY_POLICY="ALL_OR_NONE"
+            TS_CONTENT_AUTHOR=""
+            TS_SHARE_TO_GROUP=""
+            TS_SHARE_MODE="READ_ONLY"
+            
+            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#deploy_2
+            cs_tools tools scriptability deploy \
+              --directory ${DIRECTORY} \
+              --source-environment ${TS_SOURCE_ENV_NAME} \
+              --target-environment ${TS_TARGET_ENV_NAME} \
+              --deploy-type ${TS_DEPLOY_TYPE} \
+              --deploy-policy ${TS_DEPLOY_POLICY} \
+              --metadata-types ${TS_METADATA_TYPES} \
+              --tags "${TS_OBJECT_TAG}" \
+              --org "${TS_ORG}" \
+              --config "ENV:"
+            CS_TOOLS_SCRIPTABILITY_EXIT_CODE=$?
+            
+            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#transfer
+            if [ -n "${TS_CONTENT_AUTHOR}" ]; then
+              cs_tools tools user-management transfer \
+                --tags ${TS_OBJECT_TAG} \
+                --to ${TS_CONTENT_AUTHOR} \
+                --org "${TS_ORG}" \
+                --config "ENV:"
+            fi
+            
+            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#from-tag_1
+            if [ -n "${TS_SHARE_TO_GROUP}" ]; then
+              cs_tools tools bulk-sharing from-tag \
+                --tag ${TS_OBJECT_TAG} \
+                --groups "${TS_SHARE_TO_GROUP}" \
+                --share-mode ${TS_SHARE_MODE} \
+                --no-prompt \
+                --org "${TS_ORG}" \
+                --config "ENV:"
+            fi
+            
+            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#from-tag
+            cs_tools tools bulk-deleter from-tag \
+              --tag ${TS_OBJECT_TAG} \
+              --tag-only \
+              --no-prompt \
+              --org "${TS_ORG}" \
+              --config "ENV:"
+            
+            commit_changes
+            ;;
+        esac
+
+        exit $CS_TOOLS_SCRIPTABILITY_EXIT_CODE
+        ```
+        <sup class="fc-gray">
+          <i>**The above assumes you have already ran `git init` and installed [__CS Tools__](../../getting-started#install)</i>
+        </sup>
 
 === ":simple-github: &nbsp; GitHub"
     ??? abstract "actions-workflow.yaml"
@@ -331,7 +598,7 @@ greater flexibility in managing __ThoughtSpot__ deployments.
 
         variables:
           # DEFAULT PIPELINE TYPE WILL BE OVERRIDDEN BY WORKFLOW RULES
-          PIPELINE_TYPE: "commit"
+          PIPELINE_TYPE: "extract"
 
           # CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS
           # THE CLI OPTION  --config ENV:  TELLS CS TOOLS TO PULL THE INFORMATION FROM ENVIRONMENT VARIABLES.
@@ -348,20 +615,20 @@ greater flexibility in managing __ThoughtSpot__ deployments.
           stage: extract
           image: python:3.12-slim
           rules:
-            - if: $PIPELINE_TYPE == "commit"
+            - if: $PIPELINE_TYPE == "extract"
 
           variables:
             CS_TOOLS_VERSION: !reference [.cs_tools_setup, variables, CS_TOOLS_VERSION]
             TS_METADATA_TYPES: "ALL"
-            TS_OBJECT_TAG: "CS Tools"
-            TS_ORG: "Primary"
-            TS_SOURCE_ENV_NAME: "champagne_primary"
+            TS_OBJECT_TAG: "version-controlled"
+            TS_ORG: "develop"
+            TS_SOURCE_ENV_NAME: "ts-develop"
           
           before_script:
             - !reference [.cs_tools_setup, before_script]
 
           script:
-            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#scriptability
+            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#checkpoint
             - cs_tools tools scriptability checkpoint --directory ${DIRECTORY} --environment ${TS_SOURCE_ENV_NAME} --metadata-types ${TS_METADATA_TYPES} --tags "${TS_OBJECT_TAG}" --org "${TS_ORG}" --config "ENV:"
 
           artifacts:
@@ -380,13 +647,13 @@ greater flexibility in managing __ThoughtSpot__ deployments.
           variables:
             CS_TOOLS_VERSION: !reference [.cs_tools_setup, variables, CS_TOOLS_VERSION]
             TS_METADATA_TYPES: "TABLE"
-            TS_ORG: "temp-dev"
-            TS_SOURCE_ENV_NAME: "champagne_primary"
-            TS_TARGET_ENV_NAME: "temp-dev"
+            TS_ORG: "production"
+            TS_SOURCE_ENV_NAME: "ts-develop"
+            TS_TARGET_ENV_NAME: "ts-production"
             TS_DEPLOY_TYPE: "DELTA"
 
           script:
-            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#scriptability
+            # https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#deploy_2
             - cs_tools tools scriptability deploy --directory ${DIRECTORY} --source-environment ${TS_SOURCE_ENV_NAME} --target-environment ${TS_TARGET_ENV_NAME} --deploy-type ${TS_DEPLOY_TYPE} --deploy-policy VALIDATE_ONLY --metadata-types ${TS_METADATA_TYPES} --org "${TS_ORG}" --config "ENV:"
 
         deploy_tml_to_thoughtspot:
@@ -400,11 +667,11 @@ greater flexibility in managing __ThoughtSpot__ deployments.
 
           variables:
             CS_TOOLS_VERSION: !reference [.cs_tools_setup, variables, CS_TOOLS_VERSION]
-            TS_ORG: "temp-dev"
+            TS_ORG: "production"
             TS_METADATA_TYPES: "TABLE"
             TS_OBJECT_TAG: "temporary-tag-for-ci"
-            TS_SOURCE_ENV_NAME: "champagne_primary"
-            TS_TARGET_ENV_NAME: "temp-dev"
+            TS_SOURCE_ENV_NAME: "ts-develop"
+            TS_TARGET_ENV_NAME: "ts-production"
             TS_DEPLOY_TYPE: "DELTA"
             TS_DEPLOY_POLICY: "ALL_OR_NONE"
             TS_CONTENT_AUTHOR: ""
