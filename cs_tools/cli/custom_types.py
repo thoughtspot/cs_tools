@@ -1,3 +1,7 @@
+"""
+Custom Types turn unwieldy CLI input into structured python types.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence

@@ -337,6 +337,24 @@ class RESTAPIClient(httpx.AsyncClient):
         options["import_policy"] = policy
         return self.post("api/rest/2.0/metadata/tml/import", headers=options.pop("headers", None), json=options)
 
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    @_transport.CachePolicy.mark_cacheable
+    def metadata_tml_async_import(
+        self, tmls: list[str], policy: _types.TMLImportPolicy, **options: Any
+    ) -> Awaitable[httpx.Response]:
+        """Schedules a task to import TML files into ThoughtSpot."""
+        options["metadata_tmls"] = tmls
+        options["import_policy"] = policy
+        return self.post("api/rest/2.0/metadata/tml/async/import", headers=options.pop("headers", None), json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def metadata_tml_async_status(
+        self, include_import_response: bool = True, **options: Any
+    ) -> Awaitable[httpx.Response]:
+        """Schedules a task to import TML files into ThoughtSpot."""
+        options["include_import_response"] = include_import_response
+        return self.post("api/rest/2.0/metadata/tml/async/status", headers=options.pop("headers", None), json=options)
+
     # ==================================================================================
     # CONNECTIONS :: https://developers.thoughtspot.com/docs/rest-apiv2-reference#_connections
     # ==================================================================================
@@ -442,6 +460,11 @@ class RESTAPIClient(httpx.AsyncClient):
         """Creates a tag object."""
         options["name"] = name
         return self.post("api/rest/2.0/tags/create", json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def tags_delete(self, tag_identifier: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
+        """Creates a tag object."""
+        return self.post(f"api/rest/2.0/tags/{tag_identifier}/delete", json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def tags_assign(

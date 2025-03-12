@@ -200,6 +200,10 @@ def checkpoint(
         mode="EXPORT",
         environment=environment,
         status=table.job_status,
+        info={
+            "files_expected": len(coros),
+            "files_exported": sum(s.status != "ERROR" for s in table.statuses),
+        },
     )
 
     # RECORD THE GUID MAPPING
@@ -325,7 +329,7 @@ def deploy(
         return 1
     except Exception:
         _LOG.debug("Error Info:", exc_info=True)
-        _LOG.error("One of your .mappings/<env>-guid-mappings.json is in an invalid state, see logs for details..")
+        _LOG.error("One of your .mappings/<env>-guid-mappings.json may be in an invalid state, see logs for details..")
         return 1
 
     tmls: dict[_types.GUID, _types.TMLObject] = {}
@@ -347,18 +351,18 @@ def deploy(
         tmls[guid] = mapping_info.disambiguate(tml=tml, delete_unmapped_guids=True)
 
     if not tmls:
-        _LOG.info(f"No TML files found to deploy from directory (Deploy Type: {deploy_type}, Last Seen: {last_import_dt})")
+        _LOG.info(
+            f"No TML files found to deploy from directory (Deploy Type: {deploy_type}, Last Seen: {last_import_dt})"
+        )
         return 0
-
-    # Silence the cs_tools metadata workflow logger since we've asked the User if they want logged feedback.
-    logging.getLogger("cs_tools.api.workflows.metadata").setLevel(logging.CRITICAL)
 
     try:
         c = workflows.metadata.tml_import(
             tmls=list(tmls.values()),
-            use_async_endpoint=use_async_endpoint,
-            skip_diff_check=skip_diff_check,
             policy=deploy_policy,
+            use_async_endpoint=use_async_endpoint,
+            wait_for_completion=use_async_endpoint,
+            log_errors=False,
             http=ts.api,
         )
         _ = utils.run_sync(c)
@@ -381,6 +385,12 @@ def deploy(
         mode="VALIDATE" if deploy_policy == "VALIDATE_ONLY" else "IMPORT",
         environment=target_environment,
         status=table.job_status,
+        info={
+            "deploy_type": deploy_type,
+            "deploy_policy": deploy_policy,
+            "files_expected": len(tmls),
+            "files_deployed": 0 if not table.can_map_guids else sum(s.status != "ERROR" for s in table.statuses),
+        },
     )
 
     # INJECT ERRORS WITH MORE INFO FOR OUR USERS CLARITY.
@@ -420,5 +430,11 @@ def deploy(
     if table.job_status == "ERROR":
         _LOG.error("One or more TMLs failed to fully deploy, check the logs or use --log-errors for more details.")
         return 1
+
+    if table.job_status == "WARNING":
+        _LOG.warning(
+            "TMLs imported succesfully with one or more warnings. Check the logs or use --log-errors for more details."
+        )
+        return 2
 
     return 0
