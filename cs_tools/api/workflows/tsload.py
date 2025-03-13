@@ -166,7 +166,7 @@ async def upload_data(
         http._redirected_url_due_to_tsload_load_balancer = httpx.URL(host=redirect["host"], port=redirect["port"])  # type: ignore[attr-defined]
         # DEV NOTE: @boonhapus, 2025/01/28
         # Technically speaking, this endpoint just delegates to the AUTH SERVICE on each node, so any persistent login
-        # API method would work here, it just needs to point at the redirected node. CS Tools offers multiple login
+        # API method should work here, it just needs to point at the redirected node. CS Tools offers multiple login
         # methods, but it's a pretty safe bet that the customer on Falcon will have a BASIC auth context.
         r = await http.v1_dataservice_dataload_session(**auth_info)
         r.raise_for_status()
@@ -182,19 +182,30 @@ async def upload_data(
     return data["cycle_id"]
 
 
-async def wait_for_dataload_completion(cycle_id: _types.GUID, *, http: RESTAPIClient) -> _types.APIResult:
+async def wait_for_dataload_completion(
+    cycle_id: _types.GUID,
+    *,
+    timeout: int = 300,
+    http: RESTAPIClient,
+) -> _types.APIResult:
     """Wait for dataload to complete."""
+    start = dt.datetime.now(tz=dt.timezone.utc)
+
     while True:
         _LOG.info(f"Checking status of dataload {cycle_id}...")
         r = await http.v1_dataservice_dataload_status(cycle_id=cycle_id)
 
         status_data = r.json()
 
-        if "code" in status_data["status"]:
+        if "code" in status_data.get("status", {}):
+            break
+
+        if (dt.datetime.now(tz=dt.timezone.utc) - start).seconds >= timeout:
+            _LOG.warning(f"Reached the {timeout / 60:.1f} minute CS Tools timeout, giving up on cycle_id {cycle_id}")
             break
 
         _LOG.debug(status_data)
-        await asyncio.sleep(1)
+        await asyncio.sleep(5)
 
     _LOG.info(
         f"Cycle ID: {status_data['cycle_id']} ({status_data['status']['code']})"
