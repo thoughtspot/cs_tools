@@ -121,6 +121,7 @@ class Falcon(DatabaseSyncer):
                 "schema": self.schema_,
                 "table": tablename,
                 "has_header_row": True,
+                "date_time_format": utils.FMT_TSLOAD_DATETIME,
                 "ignore_node_redirect": self.ignore_load_balancer_redirect,
             }
 

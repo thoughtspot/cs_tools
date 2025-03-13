@@ -4,7 +4,9 @@ from typing import Any, Literal, Optional, Union
 import datetime as dt
 import json
 import logging
+import os
 import pathlib
+import re
 
 import pydantic
 import rich
@@ -15,6 +17,9 @@ from cs_tools import _types
 from . import api_transformer
 
 _LOG = logging.getLogger(__name__)
+
+RE_ENVVAR_STRUCTURE = re.compile(r"\$\{\{\s*env\.(?P<envvar>[A-Za-z0-9_]+)\s*\}\}", flags=re.MULTILINE)
+"""Variable structure looks like ${{ env.MY_VAR_NAME }} and can be inline with other text."""
 
 
 def is_allowed_object(
@@ -197,6 +202,43 @@ class GUIDMappingInfo(pydantic.BaseModel, extra=pydantic.Extra.forbid):
 
     def disambiguate(self, tml: _types.TMLObject, delete_unmapped_guids: bool = True) -> _types.TMLObject:
         """Disambiguate an incoming TML object."""
+        # ADDITIONAL MAPPING NEEDS TO COME FIRST, IN CASE WE DELETE A GUID DURING DISAMBIGUATION.
+        if self.additional_mapping:
+            try:
+                text = original = tml.dumps(format_type="YAML")
+
+                for to_find, to_replace in self.additional_mapping.items():
+                    # PRE-PROCESS TO FETCH ENVIRONMENT VARIABLES, WITH FALLBACK TO THE ORIGINAL VALUE.
+                    if match := RE_ENVVAR_STRUCTURE.search(to_replace):
+                        # the whole matched string ............... ${{ env.MY_VAR_NAME }}
+                        envvar_template = match.group(0)
+                        # just the value name .................... MY_VAR_NAME
+                        envvar_name = match.group("envvar")
+                        # fetch the value from os.environ ........ anything~
+                        envvar_value = os.getenv(envvar_name, envvar_template)
+
+                        to_replace = to_replace.replace(envvar_template, envvar_value)
+
+                    # PERFORM STRING REPLACEMENTS VIA EXACT MATCH (case sensitive)
+                    if to_find in text:
+                        _LOG.info(f"Replacing '{to_find}' with '{to_replace}' in {tml.name} ({tml.tml_type_name})")
+                        text = text.replace(to_find, to_replace)
+
+                if text != original:
+                    tml = tml.loads(text)
+
+            except (IndexError, thoughtspot_tml.exceptions.TMLDecodeError) as e:
+                # JUST FALL BACK TO TML WITH THE VARIABLES IN IT, WHICH SHOULD FAIL ON TML IMPORT ANYWAY.
+                _LOG.warning(f"Could not variablize '{tml.name}' ({tml.tml_type_name}), see logs for details..")
+                _LOG.debug(e, exc_info=True)
+
+                if hasattr(e, "parent_exc"):
+                    _LOG.debug(f"due to..\n{e}", exc_info=True)
+
+                _LOG.info(f"TML MODIFIED STATE:\n\n{text}")
+                raise
+
+        # STANDARD DISMABIGUATION
         tml = thoughtspot_tml.utils.disambiguate(
             tml=tml,
             guid_mapping=self.mapping,
