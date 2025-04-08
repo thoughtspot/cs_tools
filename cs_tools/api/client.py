@@ -45,13 +45,18 @@ class RESTAPIClient(httpx.AsyncClient):
     def __init__(
         self,
         base_url: Union[httpx.URL, str],
-        concurrency: int = 15,
+        concurrency: int = 5,
         cache_directory: Optional[pathlib.Path] = None,
         verify: bool = True,
         **client_opts: Any,
     ) -> None:
+        limits = httpx.Limits(
+            max_connections=concurrency,
+            max_keepalive_connections=concurrency,
+        )
         client_opts["base_url"] = str(base_url)
         client_opts["timeout"] = CALLOSUM_DEFAULT_TIMEOUT_SECONDS
+        client_opts["limits"] = limits
         client_opts["event_hooks"] = {"request": [self.__before_request__], "response": [self.__after_response__]}
         client_opts["headers"] = {"x-requested-by": "CS Tools", "user-agent": f"CS Tools/{__version__}"}
 
@@ -74,6 +79,9 @@ class RESTAPIClient(httpx.AsyncClient):
         super().__init__(**client_opts)
         assert isinstance(self._transport, _transport.CachedRetryTransport), "Unexpected transport used for CS Tools"
         self._heartbeat_task: Optional[asyncio.Task] = None
+
+        log.info(f"Max connections: {limits.max_connections}")
+        log.info(f"Max keepalive connections: {limits.max_keepalive_connections}")
 
     @property
     def cache(self) -> Optional[_transport.CachePolicy]:

@@ -428,6 +428,7 @@ def metadata(
         tracker["ORGS_COUNT"].start()
 
         # LOOP THROUGH EACH ORG COLLECTING DATA
+        primary_org_done = False
         for org in orgs:
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
             seen_guids: dict[_types.APIObjectType, set[_types.GUID]] = collections.defaultdict(set)
@@ -449,7 +450,7 @@ def metadata(
                 temp.dump(models.Org.__tablename__, data=d)
 
             with tracker["TS_GROUP"]:
-                c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
+                c = workflows.paginator(ts.api.groups_search, record_size=5_000, timeout=60 * 15)
                 _ = utils.run_sync(c)
 
                 # DUMP GROUP DATA
@@ -471,21 +472,26 @@ def metadata(
                 d = api_transformer.ts_group_privilege(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.GroupPrivilege.__tablename__, data=d)
 
-            with tracker["TS_USER"]:
-                c = workflows.paginator(ts.api.users_search, record_size=150_000, timeout=60 * 15)
-                _ = utils.run_sync(c)
+            if org["id"] == 0 and not primary_org_done:
+                with tracker["TS_USER"]:
+                    c = workflows.paginator(ts.api.users_search, record_size=5_000, timeout=60 * 15)
+                    _ = utils.run_sync(c)
 
-                # DUMP USER DATA
-                d = api_transformer.ts_user(data=_, cluster=CLUSTER_UUID)
-                temp.dump(models.User.__tablename__, data=d)
+                    # DUMP USER DATA
+                    d = api_transformer.ts_user(data=_, cluster=CLUSTER_UUID)
+                    temp.dump(models.User.__tablename__, data=d)
 
-                # DUMP USER->ORG_MEMBERSHIP DATA
-                d = api_transformer.ts_org_membership(data=_, cluster=CLUSTER_UUID)
-                temp.dump(models.OrgMembership.__tablename__, data=d)
+                    # DUMP USER->ORG_MEMBERSHIP DATA
+                    d = api_transformer.ts_org_membership(data=_, cluster=CLUSTER_UUID)
+                    temp.dump(models.OrgMembership.__tablename__, data=d)
 
-                # DUMP USER->GROUP_MEMBERSHIP DATA
-                d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
-                temp.dump(models.GroupMembership.__tablename__, data=d)
+                    # DUMP USER->GROUP_MEMBERSHIP DATA
+                    d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
+                    temp.dump(models.GroupMembership.__tablename__, data=d)
+                primary_org_done = True
+            elif org["id"] != 0:
+                log.info(
+                    f"Skipping USER data fetch for non-primary org (ID: {org['id']}) as it was already fetched.")
 
             with tracker["TS_TAG"]:
                 c = ts.api.tags_search()

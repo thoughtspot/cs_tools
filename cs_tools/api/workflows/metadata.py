@@ -11,6 +11,8 @@ import pathlib
 
 from thoughtspot_tml.types import TMLObject
 import awesomeversion
+
+from tenacity import retry, stop_after_attempt, wait_fixed, before_sleep_log, retry_if_exception_type
 import httpx
 
 from cs_tools import _types, utils
@@ -53,7 +55,15 @@ async def fetch_all(
 
     return results
 
+retry_on_httpx_errors = retry(
+    stop=stop_after_attempt(3),  # Retry up to 3 times
+    wait=wait_fixed(2),          # Wait 2 seconds between retries
+    retry=retry_if_exception_type((httpx.ReadError, httpx.ConnectTimeout, httpx.HTTPStatusError)),
+    before_sleep=before_sleep_log(_LOG, logging.INFO),  # Log before sleeping
+    reraise=True                 # Reraise the exception if all retries fail
+)
 
+@retry_on_httpx_errors
 async def fetch(
     typed_guids: dict[_types.APIObjectType, Iterable[_types.GUID]],
     *,
@@ -62,10 +72,12 @@ async def fetch(
     **search_options,
 ) -> list[_types.APIResult]:
     """Wraps metadata/search fetching specific objects and exhausts the pagination."""
-    CONCURRENCY_MAGIC_NUMBER = 15  # Why? In case **search_options contains
+    CONCURRENCY_MAGIC_NUMBER = 10  # Why? In case **search_options contains
 
     results: list[_types.APIResult] = []
     tasks: list[asyncio.Task] = []
+
+    _LOG.info(f"Max concurrent tasks in fetch func: {CONCURRENCY_MAGIC_NUMBER}")
 
     async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
         for metadata_type, guids in typed_guids.items():
@@ -87,6 +99,11 @@ async def fetch(
             r = task.result()
             r.raise_for_status()
             d = r.json()
+
+        except httpx.ReadError as e:
+            _LOG.error(f"ReadError for guid={task.get_name()}, see logs for details..")
+            _LOG.debug(f"Full error: {e}", exc_info=True)
+            continue
 
         except httpx.HTTPError as e:
             _LOG.error(f"Could not fetch the object for guid={task.get_name()}, see logs for details..")
