@@ -9,10 +9,9 @@ import json
 import logging
 import pathlib
 
+from tenacity import before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from thoughtspot_tml.types import TMLObject
 import awesomeversion
-
-from tenacity import retry, stop_after_attempt, wait_fixed, before_sleep_log, retry_if_exception_type
 import httpx
 
 from cs_tools import _types, utils
@@ -55,13 +54,15 @@ async def fetch_all(
 
     return results
 
+
 retry_on_httpx_errors = retry(
     stop=stop_after_attempt(3),  # Retry up to 3 times
-    wait=wait_fixed(2),          # Wait 2 seconds between retries
+    wait=wait_fixed(2),  # Wait 2 seconds between retries
     retry=retry_if_exception_type((httpx.ReadError, httpx.ConnectTimeout, httpx.HTTPStatusError)),
     before_sleep=before_sleep_log(_LOG, logging.INFO),  # Log before sleeping
-    reraise=True                 # Reraise the exception if all retries fail
+    reraise=True,  # Reraise the exception if all retries fail
 )
+
 
 @retry_on_httpx_errors
 async def fetch(

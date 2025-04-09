@@ -490,8 +490,7 @@ def metadata(
                     temp.dump(models.GroupMembership.__tablename__, data=d)
                 primary_org_done = True
             elif org["id"] != 0:
-                log.info(
-                    f"Skipping USER data fetch for non-primary org (ID: {org['id']}) as it was already fetched.")
+                log.info(f"Skipping USER data fetch for non-primary org (ID: {org['id']}) as it was already fetched.")
 
             with tracker["TS_TAG"]:
                 c = ts.api.tags_search()
