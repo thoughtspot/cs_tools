@@ -45,7 +45,7 @@ class RESTAPIClient(httpx.AsyncClient):
     def __init__(
         self,
         base_url: Union[httpx.URL, str],
-        concurrency: int = 5,
+        concurrency: int = 15,
         cache_directory: Optional[pathlib.Path] = None,
         verify: bool = True,
         **client_opts: Any,
