@@ -187,6 +187,8 @@ ignore = [
     "TC001",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
     "TC002",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
     "TC003",  # Moves imports into the TYPE_CHECKING block, hurting Pydantic, SQLModel
+    "ARG001",
+    "E501",
 ]
 
 [tool.ruff.lint.flake8-import-conventions.aliases]
