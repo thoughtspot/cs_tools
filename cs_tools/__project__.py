@@ -1,4 +1,4 @@
-__version__ = "1.6.2"
+__version__ = "1.6.2b"
 __docs__ = "https://thoughtspot.github.io/cs_tools/"
 __repo__ = "https://github.com/thoughtspot/cs_tools"
 __help__ = f"{__repo__}/discussions/"
