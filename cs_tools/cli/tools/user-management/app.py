@@ -241,7 +241,7 @@ def delete(
                 else:
                     this_task.description = f"[fg-success]Approved[/] (deleting {len(user_identifiers):,})"
 
-        with tracker["DELETING"] as this_task:
+        with tracker["DELETE"] as this_task:
             this_task.total = len(user_identifiers)
 
             users_to_delete: set[_types.GUID] = {metadata_object["guid"] for metadata_object in user_identifiers}
