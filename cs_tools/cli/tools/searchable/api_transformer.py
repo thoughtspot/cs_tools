@@ -11,8 +11,8 @@ import operator
 import awesomeversion
 
 from cs_tools import _types, validators
+from cs_tools._types import TableRowsFormat
 from cs_tools.datastructures import SessionContext
-from cs_tools.types import TableRowsFormat
 
 from . import models
 

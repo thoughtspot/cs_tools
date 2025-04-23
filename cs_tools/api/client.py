@@ -432,7 +432,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
-    def groups_search_v1(self) -> Awaitable[httpx.Response]:
+    def groups_search_v1(self, **options: Any) -> Awaitable[httpx.Response]:  # noqa: ARG002
         """Get a list of ThoughtSpot groups with v1 endpoint."""
         return self.get("callosum/v1/tspublic/v1/group")
 
