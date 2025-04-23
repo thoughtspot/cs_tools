@@ -431,6 +431,12 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/groups/search", headers=headers, timeout=timeout, json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    @_transport.CachePolicy.mark_cacheable
+    def groups_search_v1(self, **options: Any) -> Awaitable[httpx.Response]:  # noqa: ARG002
+        """Get a list of ThoughtSpot groups with v1 endpoint."""
+        return self.get("callosum/v1/tspublic/v1/group")
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     def groups_create(self, **options: Any) -> Awaitable[httpx.Response]:
         """Create a ThoughtSpot group."""
         return self.post("api/rest/2.0/groups/create", json=options)

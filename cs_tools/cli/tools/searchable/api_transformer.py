@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 import datetime as dt
 import functools as ft
 import itertools as it
@@ -10,11 +11,13 @@ import operator
 import awesomeversion
 
 from cs_tools import _types, validators
+from cs_tools._types import TableRowsFormat
 from cs_tools.datastructures import SessionContext
 
 from . import models
 
 log = logging.getLogger(__name__)
+ArbitraryJsonFormat = list[dict[str, Any]]
 
 
 def ts_cluster(data: SessionContext) -> _types.TableRowsFormat:
@@ -111,6 +114,30 @@ def ts_group(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.Ta
     return reshaped
 
 
+def to_group_v1(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
+    """Reshapes groups/search -> searchable.models.Group. Needed for V1 API."""
+    out: TableRowsFormat = []
+
+    for row in data:
+        for org_id in row["header"].get("orgIds", [0]):
+            out.append(
+                models.Group.validated_init(
+                    cluster_guid=cluster,
+                    org_id=org_id,
+                    group_guid=row["header"]["id"],
+                    group_name=row["header"]["name"],
+                    description=row["header"].get("description"),
+                    display_name=row["header"]["displayName"],
+                    sharing_visibility=row["visibility"],
+                    created=row["header"]["created"] / 1000,
+                    modified=row["header"]["modified"] / 1000,
+                    group_type=row["type"],
+                )
+            )
+
+    return [model.model_dump() for model in out]
+
+
 def ts_org_membership(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes users/search -> searchable.models.OrgMembership."""
     reshaped: _types.TableRowsFormat = []
@@ -188,6 +215,21 @@ def ts_group_membership(data: list[_types.APIResult], *, cluster: _types.GUID) -
     return reshaped
 
 
+def to_group_membership(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
+    """Reshapes {groups|users}/search -> searchable.models.GroupMembership. Needed for V1 API."""
+    out: TableRowsFormat = []
+
+    for row in data:
+        for group in row["assignedGroups"]:
+            out.append(
+                models.GroupMembership.validated_init(
+                    cluster_guid=cluster, principal_guid=row["header"]["id"], group_guid=group
+                )
+            )
+
+    return [model.model_dump() for model in out]
+
+
 def ts_group_privilege(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
     """Reshapes {groups|users}/search -> searchable.models.GroupPrivilege."""
     reshaped: _types.TableRowsFormat = []
@@ -203,6 +245,21 @@ def ts_group_privilege(data: list[_types.APIResult], *, cluster: _types.GUID) ->
             )
 
     return reshaped
+
+
+def to_group_privilege(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
+    """Reshapes {groups|users}/search -> searchable.models.GroupPrivilege. Needed for V1 API."""
+    out: TableRowsFormat = []
+
+    for row in data:
+        for privilege in row["privileges"]:
+            out.append(
+                models.GroupPrivilege.validated_init(
+                    cluster_guid=cluster, group_guid=row["header"]["id"], privilege=privilege
+                )
+            )
+
+    return [model.model_dump() for model in out]
 
 
 def ts_tag(data: list[_types.APIResult], *, cluster: _types.GUID, current_org: int) -> _types.TableRowsFormat:

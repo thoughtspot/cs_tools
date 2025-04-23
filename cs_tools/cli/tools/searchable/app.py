@@ -450,18 +450,23 @@ def metadata(
                 temp.dump(models.Org.__tablename__, data=d)
 
             with tracker["TS_GROUP"]:
-                c = workflows.paginator(ts.api.groups_search, record_size=5_000, timeout=60 * 15)
-                _ = utils.run_sync(c)
+                c = ts.api.groups_search_v1()
+                r = utils.run_sync(c)
+                _ = r.json()
+
+                # commenting out calling of v2 api for CWT customer
+                # c = workflows.paginator(ts.api.groups_search, record_size=5_000, timeout=60 * 15)
+                # _ = utils.run_sync(c)
 
                 # DUMP GROUP DATA
-                d = api_transformer.ts_group(data=_, cluster=CLUSTER_UUID)
+                d = api_transformer.to_group_v1(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.Group.__tablename__, data=d)
 
                 # TODO: REMOVE AFTER 10.3.0.SW is n-1 (see COMPAT_GUIDS ref below.)
                 seen_group_guids.update([group["group_guid"] for group in d])
 
                 # DUMP GROUP->GROUP_MEMBERSHIP DATA
-                d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
+                d = api_transformer.to_group_membership(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.GroupMembership.__tablename__, data=d)
 
             with tracker["TS_PRIVILEGE"]:
@@ -469,7 +474,7 @@ def metadata(
                 # TODO: GROUP->ROLE DATA.
 
                 # DUMP GROUP->PRIVILEGE DATA
-                d = api_transformer.ts_group_privilege(data=_, cluster=CLUSTER_UUID)
+                d = api_transformer.to_group_privilege(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.GroupPrivilege.__tablename__, data=d)
 
             if org["id"] == 0 and not primary_org_done:
