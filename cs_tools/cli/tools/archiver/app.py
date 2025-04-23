@@ -185,8 +185,12 @@ def identify(
 
         with tracker["GATHER_METADATA"]:
             if only_groups or ignore_groups:
-                c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
-                d = utils.run_sync(c)
+                c = ts.api.groups_search_v1()
+                r = utils.run_sync(c)
+                _ = r.json()
+
+                # c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
+                # d = utils.run_sync(c)
 
                 all_groups = [
                     {
