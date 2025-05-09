@@ -244,7 +244,7 @@ def delete(
         with tracker["DELETE"] as this_task:
             this_task.total = len(user_identifiers)
 
-            users_to_delete: set[_types.GUID] = {metadata_object["guid"] for metadata_object in user_identifiers}
+            users_to_delete: set[_types.GUID] = user_identifiers
             delete_attempts = collections.defaultdict(int)
 
             async def _delete_and_advance(guid: _types.GUID) -> None:
