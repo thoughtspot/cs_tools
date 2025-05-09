@@ -428,7 +428,11 @@ def metadata(
         tracker["ORGS_COUNT"].start()
 
         # LOOP THROUGH EACH ORG COLLECTING DATA
-        primary_org_done = False
+        if org_override is not None:
+            collect_info = True
+        else:
+            collect_info = False
+
         for org in orgs:
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
             seen_guids: dict[_types.APIObjectType, set[_types.GUID]] = collections.defaultdict(set)
@@ -477,7 +481,7 @@ def metadata(
                 d = api_transformer.to_group_privilege(data=_, cluster=CLUSTER_UUID)
                 temp.dump(models.GroupPrivilege.__tablename__, data=d)
 
-            if org["id"] == 0 and not primary_org_done:
+            if org["id"] == 0 or collect_info:
                 with tracker["TS_USER"]:
                     c = workflows.paginator(ts.api.users_search, record_size=5_000, timeout=60 * 15)
                     _ = utils.run_sync(c)
@@ -493,7 +497,7 @@ def metadata(
                     # DUMP USER->GROUP_MEMBERSHIP DATA
                     d = api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
                     temp.dump(models.GroupMembership.__tablename__, data=d)
-                primary_org_done = True
+                collect_info = False
             elif org["id"] != 0:
                 log.info(f"Skipping USER data fetch for non-primary org (ID: {org['id']}) as it was already fetched.")
 
