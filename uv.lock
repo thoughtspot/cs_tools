@@ -438,7 +438,7 @@ name = "click"
 version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593 }
 wheels = [
@@ -554,7 +554,7 @@ wheels = [
 
 [[package]]
 name = "cs-tools"
-version = "1.6.0"
+version = "1.6.3"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -574,7 +574,7 @@ dependencies = [
     { name = "thoughtspot-tml" },
     { name = "toml" },
     { name = "typing-extensions", marker = "python_full_version < '3.10'" },
-    { name = "tzdata", marker = "platform_system == 'Windows'" },
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
 
 [package.optional-dependencies]
@@ -653,7 +653,7 @@ requires-dist = [
     { name = "typer", marker = "extra == 'dev'", specifier = "==0.12.0" },
     { name = "typer", marker = "extra == 'docs'", specifier = "==0.12.0" },
     { name = "typing-extensions", marker = "python_full_version < '3.10'" },
-    { name = "tzdata", marker = "platform_system == 'Windows'" },
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "uv", marker = "extra == 'cli'", specifier = "==0.5.13" },
     { name = "uv", marker = "extra == 'dev'", specifier = "==0.5.13" },
     { name = "uv", marker = "extra == 'docs'", specifier = "==0.5.13" },
@@ -1269,7 +1269,7 @@ version = "1.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "ghp-import" },
     { name = "importlib-metadata", marker = "python_full_version < '3.10'" },
     { name = "jinja2" },
