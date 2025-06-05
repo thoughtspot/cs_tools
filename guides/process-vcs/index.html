@@ -1,0 +1,2169 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Scale your ThoughtSpot adoption with tools created by the ThoughtSpot Solutions Consulting organization.">
+      
+      
+      
+        <link rel="canonical" href="https://thoughtspot.github.io/cs_tools/guides/process-vcs/">
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>TML Deployments CI/CD - CS Tools</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Optimo-Plain:300,300i,400,400i,700,700i%7CBB+Roller+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Optimo-Plain";--md-code-font:"BB Roller Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="thoughtspot-light" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tml-deployments-cicd" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+        <aside class="md-banner">
+          <div class="md-banner__inner md-grid md-typeset">
+            
+              <button class="md-banner__button md-icon" aria-label="Don't show this again">
+                
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+              </button>
+            
+            
+    <span class="twemoji hand_wave">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#EF9645" d="M4.861 9.147c.94-.657 2.357-.531 3.201.166l-.968-1.407c-.779-1.111-.5-2.313.612-3.093 1.112-.777 4.263 1.312 4.263 1.312-.786-1.122-.639-2.544.483-3.331 1.122-.784 2.67-.513 3.456.611l10.42 14.72L25 31l-11.083-4.042L4.25 12.625c-.793-1.129-.519-2.686.611-3.478z"/><path fill="#FFDC5D" d="M2.695 17.336s-1.132-1.65.519-2.781c1.649-1.131 2.78.518 2.78.518l5.251 7.658c.181-.302.379-.6.6-.894L4.557 11.21s-1.131-1.649.519-2.78c1.649-1.131 2.78.518 2.78.518l6.855 9.997c.255-.208.516-.417.785-.622L7.549 6.732s-1.131-1.649.519-2.78c1.649-1.131 2.78.518 2.78.518l7.947 11.589c.292-.179.581-.334.871-.498L12.238 4.729s-1.131-1.649.518-2.78c1.649-1.131 2.78.518 2.78.518l7.854 11.454 1.194 1.742c-4.948 3.394-5.419 9.779-2.592 13.902.565.825 1.39.26 1.39.26-3.393-4.949-2.357-10.51 2.592-13.903L24.515 8.62s-.545-1.924 1.378-2.47c1.924-.545 2.47 1.379 2.47 1.379l1.685 5.004c.668 1.984 1.379 3.961 2.32 5.831 2.657 5.28 1.07 11.842-3.94 15.279-5.465 3.747-12.936 2.354-16.684-3.11L2.695 17.336z"/><g fill="#5DADEC"><path d="M12 32.042C8 32.042 3.958 28 3.958 24c0-.553-.405-1-.958-1s-1.042.447-1.042 1C1.958 30 6 34.042 12 34.042c.553 0 1-.489 1-1.042s-.447-.958-1-.958z"/><path d="M7 34c-3 0-5-2-5-5 0-.553-.447-1-1-1s-1 .447-1 1c0 4 3 7 7 7 .553 0 1-.447 1-1s-.447-1-1-1zM24 2c-.552 0-1 .448-1 1s.448 1 1 1c4 0 8 3.589 8 8 0 .552.448 1 1 1s1-.448 1-1c0-5.514-4-10-10-10z"/><path d="M29 .042c-.552 0-1 .406-1 .958s.448 1.042 1 1.042c3 0 4.958 2.225 4.958 4.958 0 .552.489 1 1.042 1s.958-.448.958-1C35.958 3.163 33 .042 29 .042z"/></g></svg>
+    </span>
+    Have a question? Come join us on
+    <span class="fc-green">{></span>
+        <a class="fc-blue" href="https://github.com/thoughtspot/cs_tools/discussions">GitHub Disucssions</a>
+    <span class="fc-green"><}</span>
+    to give feedback and connect with the CS Tools maintainers.
+
+          </div>
+          
+            <script>var el=document.querySelector("[data-md-component=announce]");if(el){var content=el.querySelector(".md-typeset");__md_hash(content.innerHTML)===__md_get("__announce")&&(el.hidden=!0)}</script>
+          
+        </aside>
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CS Tools" class="md-header__button md-logo" aria-label="CS Tools" data-md-component="logo">
+      
+  <img src="../../assets/images/thoughtspot-logo-white.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CS Tools
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              TML Deployments CI/CD
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="thoughtspot-light" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/thoughtspot/cs_tools" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    thoughtspot/cs_tools
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../generated/cli/reference.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../syncer/what-is/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Syncers
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../changelog/1.6.0/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Changelog
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CS Tools" class="md-nav__button md-logo" aria-label="CS Tools" data-md-component="logo">
+      
+  <img src="../../assets/images/thoughtspot-logo-white.png" alt="logo">
+
+    </a>
+    CS Tools
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/thoughtspot/cs_tools" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    thoughtspot/cs_tools
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/cli/reference.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CLI
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Syncers
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Syncers
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/what-is/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    What's a Syncer?
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/csv/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 9V3.5L18.5 9M6 2c-1.11 0-2 .89-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+  
+  <span class="md-ellipsis">
+    CSV
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/databricks/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    Databricks
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/excel/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 9V3.5L18.5 9M6 2c-1.11 0-2 .89-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+  
+  <span class="md-ellipsis">
+    Excel
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/falcon/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    Falcon
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/bigquery/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    Google BigQuery
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/gsheets/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 9V3.5L18.5 9M6 2c-1.11 0-2 .89-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+  
+  <span class="md-ellipsis">
+    Google Sheets
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/json/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 9V3.5L18.5 9M6 2c-1.11 0-2 .89-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+  
+  <span class="md-ellipsis">
+    JSON
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/parquet/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 9V3.5L18.5 9M6 2c-1.11 0-2 .89-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+  
+  <span class="md-ellipsis">
+    Parquet
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/mock/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18.68 12.32a4.49 4.49 0 0 0-6.36.01 4.49 4.49 0 0 0 0 6.36 4.51 4.51 0 0 0 5.57.63L21 22.39 22.39 21l-3.09-3.11c1.13-1.77.87-4.09-.62-5.57m-1.41 4.95c-.98.98-2.56.97-3.54 0-.97-.98-.97-2.56.01-3.54.97-.97 2.55-.97 3.53 0 .97.98.97 2.56 0 3.54M10.9 20.1a6.5 6.5 0 0 1-1.48-2.32C6.27 17.25 4 15.76 4 14v3c0 2.21 3.58 4 8 4-.4-.26-.77-.56-1.1-.9M4 9v3c0 1.68 2.07 3.12 5 3.7v-.2c0-.93.2-1.85.58-2.69C6.34 12.3 4 10.79 4 9m8-6C7.58 3 4 4.79 4 7c0 2 3 3.68 6.85 4h.05c1.2-1.26 2.86-2 4.6-2 .91 0 1.81.19 2.64.56A3.22 3.22 0 0 0 20 7c0-2.21-3.58-4-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    Mock
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/postgres/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    Postgres
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/redshift/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    Redshift
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/snowflake/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    Snowflake
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/sqlite/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    SQLite
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/starburst/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    Starburst
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../syncer/trino/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg>
+  
+  <span class="md-ellipsis">
+    Trino
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    Guides
+    
+  </span>
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Guides
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Changelog
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/1.6.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v1.6.0
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/1.5.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v1.5.0
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/1.4.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v1.4.0
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/1.3.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v1.3.0
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/1.2.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v1.2.0
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/1.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v1.1.0
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/1.0.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v1.0.0
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#snapshot-your-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      Snapshot Your Objects
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-your-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploy your Objects
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      Where to Store
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-example-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full Example Workflows
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#frequently-asked-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frequently Asked Questions
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+
+
+
+  
+  
+
+
+<h1 id="tml-deployments-cicd">TML Deployments CI/CD</h1>
+<p>Initial development is fast and exciting in <strong>ThoughtSpot</strong>, but what happens when you need to ensure your new data
+product is safe in the event of catastrophic failure? How can you continue new development without impacting your users
+in <strong class="fc-green">Production</strong>?</p>
+<p>This is where <strong>TML</strong> comes into play. ThoughtSpot has<sup><a href="https://developers.thoughtspot.com/docs/development-and-deployment">[1]</a></sup> many<sup><a href="https://developers.thoughtspot.com/docs/git-integration">[2]</a></sup> 
+guides<sup><a href="https://developers.thoughtspot.com/docs/deploy-with-tml-apis">[3]</a></sup> on how to handle changes programmatically between environments, and they all
+fundamentally rely on the same few principles.</p>
+<ul>
+<li><strong>Checkpointing</strong> your ThoughtSpot objects</li>
+<li><strong>Storing</strong> those objects in safe keeping</li>
+<li><strong>Deploying</strong> those objects to a new environment</li>
+</ul>
+<details class="tinm">
+<summary>There is No Magic!</summary>
+<p>Remember, <strong>CS Tools</strong> wraps the <strong>ThoughtSpot</strong> <a href="https://developers.thoughtspot.com/docs/rest-apiv2-reference"><strong>REST APIs</strong></a>. This tool uses the following endpoints.</p>
+<ul>
+<li><a href="https://developers.thoughtspot.com/docs/restV2-playground?apiResourceId=http%2Fapi-endpoints%2Fmetadata%2Fsearch-metadata"><code>/metadata/search</code></a> <em class="fc-gray">for aggregating GUIDs from content you want to checkpoint</em></li>
+<li><a href="https://developers.thoughtspot.com/docs/restV2-playground?apiResourceId=http%2Fapi-endpoints%2Fmetadata%2Fexport-metadata-tml"><code>/metadata/tml/export</code></a> <em class="fc-gray">for checkpointing TML</em></li>
+<li><a href="https://developers.thoughtspot.com/docs/restV2-playground?apiResourceId=http%2Fapi-endpoints%2Fmetadata%2Fimport-metadata-tml"><code>/metadata/tml/import</code></a> <em class="fc-gray">for validating TML prior to importing it</em></li>
+<li><a href="https://developers.thoughtspot.com/docs/restV2-playground?apiResourceId=http%2Fapi-endpoints%2Fmetadata%2Fimport-metadata-tml"><code>/metadata/tml/import</code></a> <em class="fc-gray">for deploying TML to a new environment</em></li>
+<li><a href="https://developers.thoughtspot.com/docs/restV2-playground?apiResourceId=http%2Fapi-endpoints%2Ftags%2Fassign-tag"><code>/tags/assign</code></a> <em class="fc-gray">for assigning one or more tags to deployed content</em></li>
+</ul>
+</details>
+<div class="admonition tip">
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="--help" name="__tabbed_1" type="radio" /><input id="checkpoint" name="__tabbed_1" type="radio" /><input id="deploy" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="--help">--help</label><label for="checkpoint">checkpoint</label><label for="deploy">deploy</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<details class="abstract">
+<summary>Get the Command</summary>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cs_tools<span class="w"> </span>tools<span class="w"> </span>scriptability<span class="w"> </span>--help
+</span></code></pre></div>
+</details>
+<p><img src="../../generated/screenshots/tools__scriptability__help.svg" alt="~cs~tools tools scriptability --help"/></p>
+</div>
+<div class="tabbed-block">
+<details class="abstract">
+<summary>Get the Command</summary>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cs_tools<span class="w"> </span>tools<span class="w"> </span>scriptability<span class="w"> </span>checkpoint<span class="w"> </span>--help
+</span></code></pre></div>
+</details>
+<p><img src="../../generated/screenshots/tools__scriptability__checkpoint__help.svg" alt="~cs~tools tools scriptability checkpoint --help"/></p>
+</div>
+<div class="tabbed-block">
+<details class="abstract">
+<summary>Get the Command</summary>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cs_tools<span class="w"> </span>tools<span class="w"> </span>scriptability<span class="w"> </span>deploy<span class="w"> </span>--help
+</span></code></pre></div>
+</details>
+<p><img src="../../generated/screenshots/tools__scriptability__deploy__help.svg" alt="~cs~tools tools scriptability deploy --help"/></p>
+</div>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="snapshot-your-objects">Snapshot Your Objects</h3>
+<p>Snapshotting your objects is a lot like "saving your work" in other workflows. In <strong>CS Tools</strong>, we give you the option
+to collect up many objects and create a <code>checkpoint</code> (sometimes called a <code>commit</code>).</p>
+<p><strong>CS Tools</strong> wont save any commit state for you, <em>but it will</em> export the TML of your objects in a consistent format
+along with a <code>.mappings/&lt;environment&gt;.json</code> file.</p>
+<div class="admonition danger">
+<p class="admonition-title"><code>.mappings/&lt;environment&gt;.json</code></p>
+<p><strong>This file is</strong> <strong class="fc-red">critical to working with TML</strong><strong>, and you should not edit it <a href="https://developers.thoughtspot.com/docs/deploy-with-tml-apis#guidMapping">unless you absolutely
+know what you're doing</a>!</strong></p>
+<p>If you forgot what the <code>--environment</code> or <code>--source-environment</code> name is, you can look in the <code>.mappings</code> directory,
+it will be located at the top of the file.</p>
+<details class="example">
+<summary>ts-develop.json</summary>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;cs_tools&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="nt">&quot;extract_environment&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ts-develop&quot;</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nt">&quot;mapping&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">&quot;376a0dd2-010f-496e-b840-b6e37d353ea1&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">&quot;4fff9eda-e70b-41b0-859e-260246bc7d4e&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">&quot;381db1c8-688f-4620-9a45-ce9a2dea108c&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span><span class="nt">&quot;additional_mapping&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span><span class="nt">&quot;history&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">      </span><span class="nt">&quot;by&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cs_tools/1.6.2/scriptability/checkpoint&quot;</span><span class="p">,</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">      </span><span class="nt">&quot;at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-03-12T03:09:26.413335+00:00&quot;</span><span class="p">,</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">      </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EXPORT&quot;</span><span class="p">,</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">      </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OK&quot;</span><span class="p">,</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">      </span><span class="nt">&quot;info&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">        </span><span class="nt">&quot;files_expected&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">        </span><span class="nt">&quot;files_exported&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">      </span><span class="p">}</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="p">}</span>
+</span></code></pre></div>
+</details>
+</div>
+<p>The optional <code>--environment</code> parameter is a way for you to give a friendly name to your <a href="https://developers.thoughtspot.com/docs/development-and-deployment#_best_practices"><strong>Environment</strong></a>.</p>
+<p><strong class="fc-green">Remember this name</strong>, as it will be used in order to appropriately deploy your objects!</p>
+<div class="admonition tip">
+<details class="abstract">
+<summary>Get the Command</summary>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cs_tools<span class="w"> </span>tools<span class="w"> </span>scriptability<span class="w"> </span>checkpoint<span class="w"> </span>--help
+</span></code></pre></div>
+</details>
+<p><img src="../../generated/screenshots/tools__scriptability__checkpoint__help.svg" alt="~cs~tools tools scriptability checkpoint --help"/></p>
+</div>
+<hr />
+<h3 id="deploy-your-objects">Deploy your Objects</h3>
+<p>Once you are ready to push your changes to a <a href="https://developers.thoughtspot.com/docs/development-and-deployment#_best_practices"><strong>new environment</strong></a>, you can use the <code>deploy</code>
+command. This command provides you the ability to perform mutliple different styles of deployments.</p>
+<p>The <code>--source-environment</code> and <code>--target-environment</code> parameters are <strong class="fc-red">required</strong> and should map to the same
+names you consistently use to describe the place you've extracted TML and the place you want to deploy TML.</p>
+<p>For example, if you have a <code>develop</code> Org and a <code>production</code> Org in <strong>ThoughtSpot</strong>, you may choose to call these
+environments <code>develop</code> and <code>production</code> respectively. It would also be a good idea to have branches in <code>git</code> called
+<code>ts-develop</code> and <code>ts-production</code> in order to signify to all users that these two branches map to the <strong>ThoughtSpot</strong>
+environments with the same name.</p>
+<details class="tinm">
+<summary>OK, there's a little bit of Magic.</summary>
+<p><strong>CS Tools</strong> maintains <em>multiple</em> mapping files. <strong class="fc-purple">Every time you deploy to a new environment</strong>,
+<strong>CS Tools</strong> will search for a mapping file with the <code>--source-environment</code> name, the <code>--target-environment</code> name,
+and then <a href="https://github.com/thoughtspot/cs_tools/blob/ec907ae1e2cbabb9415590f6f8b7bbd5f0e318ea/cs_tools/cli/tools/scriptability/utils.py#L117-L169">merge the two files together</a> intelligently.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> The <code>&lt;source-environment&gt;.json</code> contains a record of all the objects under version control.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> The <code>&lt;target-environment&gt;.json</code> contains a record of all the known <strong class="fc-green">MAPPED</strong> objects in your target environment.</li>
+</ul>
+<p>This allows us to automatically map GUIDs to your new destination environment and avoid merge conflicts on the
+actual mapping itself.</p>
+</details>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="selective-types" name="__tabbed_2" type="radio" /><input id="deploy-type" name="__tabbed_2" type="radio" /><input id="deploy-policy" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="selective-types">Selective Types</label><label for="deploy-type">Deploy Type</label><label for="deploy-policy">Deploy Policy</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Provide a comma-separated list of types <strong class="fc-purple">without spaces</strong> to import into <strong>ThoughtSpot</strong>.</p>
+<p>It can be useful to batch together your types into multiple groups, for better import performance.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>TABLE,SQL_VIEW</code> - the base layer of the object hierarchy in <strong>ThoughtSpot</strong>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>VIEW,MODEL</code> - the semantic model layer of the object hierarchy.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>ANSWER,LIVEBOARD</code> - the user layer of the object hierarchy.</li>
+</ul>
+<div class="admonition note">
+<p><strong>Connections</strong> will always fail to sucessfully import. This is because connections require authentication
+details, and <strong>CS Tools</strong> does not provide a mechanism to automatically fill this in. It is <strong class="fc-green">recommended</strong>
+to use Connection APIs to update connections as opposed to deploying changed via TML.</p>
+</div>
+</div>
+<div class="tabbed-block">
+<p><strong>CS Tools</strong> takes a little bit of metadata on your <code>scriptability</code> actions and stores it in a history within your
+mapping file. This history is used not only for descriptive purposes, but also to understand if any new objects are
+available for deployment.</p>
+<p>This is an <strong class="fc-green">optimization technique</strong> that helps your <strong>ThoughtSpot</strong> cluster avoid processing incoming
+TML files that are identical to those that already exist in the system. It is recommended to use <code>DELTA</code> mode when
+your deployments become more complex.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>DELTA</code> - based on the last successful deployment, only attempt to deploy newly modified objects.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>FULL</code> - regardless of prior deployments, treat all objects as newly modified.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>VALIDATE_ONLY</code> - regardless of status, no TML will be imported, all status messages are printed on screen.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>PARTIAL</code> - if any TML imports (any error code is <strong class="fc-green">OK</strong> or <strong class="fc-orange">WARNING</strong>), then the job succeeds.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <code>ALL_OR_NONE</code> - if any TML fails to import FULLY (all error codes must be <strong class="fc-green">OK</strong>), then the entire job fails.</li>
+</ul>
+</div>
+</div>
+</div>
+<details class="tip">
+<summary>Use Tags to your advantage</summary>
+<p>This command will assign any number of tags to deployed objects. <strong class="fc-green">This can combo really well</strong> with
+other commands who take their input from tags as well!</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="bulk-sharing-from-tag" name="__tabbed_3" type="radio" /><input id="user-management-transfer---tags" name="__tabbed_3" type="radio" /><input id="bulk-deleter-from-tag---tag-only" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="bulk-sharing-from-tag">bulk-sharing from-tag</label><label for="user-management-transfer---tags">user-management transfer --tags</label><label for="bulk-deleter-from-tag---tag-only">bulk-deleter from-tag --tag-only</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<details class="abstract">
+<summary>Get the Command</summary>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>cs_tools<span class="w"> </span>tools<span class="w"> </span>bulk-sharing<span class="w"> </span>from-tag<span class="w"> </span>--help
+</span></code></pre></div>
+</details>
+<p><img src="../../generated/screenshots/tools__bulk__sharing__from__tag__help.svg" alt="~cs~tools tools bulk-sharing from-tag --help"/></p>
+</div>
+<div class="tabbed-block">
+<details class="abstract">
+<summary>Get the Command</summary>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>cs_tools<span class="w"> </span>tools<span class="w"> </span>user-management<span class="w"> </span>transfer<span class="w"> </span>--help
+</span></code></pre></div>
+</details>
+<p><img src="../../generated/screenshots/tools__user__management__transfer__help.svg" alt="~cs~tools tools user-management transfer --help"/></p>
+</div>
+<div class="tabbed-block">
+<details class="abstract">
+<summary>Get the Command</summary>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>cs_tools<span class="w"> </span>tools<span class="w"> </span>bulk-deleter<span class="w"> </span>from-tag<span class="w"> </span>--help
+</span></code></pre></div>
+</details>
+<p><img src="../../generated/screenshots/tools__bulk__deleter__from__tag__help.svg" alt="~cs~tools tools bulk-deleter from-tag --help"/></p>
+</div>
+</div>
+</div>
+</details>
+<div class="admonition tip">
+<details class="abstract">
+<summary>Get the Command</summary>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>cs_tools<span class="w"> </span>tools<span class="w"> </span>scriptability<span class="w"> </span>deploy<span class="w"> </span>--help
+</span></code></pre></div>
+</details>
+<p><img src="../../generated/screenshots/tools__scriptability__deploy__help.svg" alt="~cs~tools tools scriptability deploy --help"/></p>
+</div>
+<hr />
+<h3 id="where-to-store">Where to Store</h3>
+<p>The most common place to store your objects is a version control system like <a href="https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F"><strong>Git</strong></a>.</p>
+<p><strong class="fc-purple">We'll show some common ways to handle commiting your changes to the underlying git repository.</strong></p>
+<p>In the examples, we'll assume the following.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Your current working directory is at the root of your repository.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> You are trying to take a snapshot of your <a href="https://developers.thoughtspot.com/docs/development-and-deployment#_best_practices"><strong>Environment</strong></a> called <strong class="fc-purple">Develop</strong>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> You have already ran <code>scriptability checkpoint</code> to extract files from <strong>ThoughtSpot</strong> to the <code>project-a</code> directory.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> A directory structure that looks like this, where we want to commit our changes to the <code>project-a</code> directory.
+    <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>root
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>├── .git
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>├── .gitignore
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>├── README.md
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>│
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>├── /project-a
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>│   ├── .mappings/
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>│   ├── connection/
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>│   ├── table/
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>│   ├── model/
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>│   └── liveboard/
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>│   
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>└── /project-b
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>    └── ...
+</span></code></pre></div></li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Important</p>
+<p>It's important to note that both <code>scriptability checkpoint</code> and <code>scriptability deploy</code> will use produce files when
+run.</p>
+<p><strong class="fc-red">This means you MUST run</strong> one of the below commit processes in order to capture those changes and
+complete the CI workflow!</p>
+</div>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="git-local" name="__tabbed_4" type="radio" /><input id="github" name="__tabbed_4" type="radio" /><input id="gitlab" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="git-local"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.546 10.93 13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.85 1.85 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348a1.85 1.85 0 0 1 0 2.6 1.844 1.844 0 0 1-2.609 0 1.834 1.834 0 0 1 0-2.598c.182-.18.387-.316.605-.406V8.835a1.834 1.834 0 0 1-.996-2.41L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477a1.545 1.545 0 0 0 2.186 0l10.43-10.43a1.544 1.544 0 0 0 0-2.187"/></svg></span> &nbsp; git (local)</label><label for="github"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></span> &nbsp; GitHub</label><label for="gitlab"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m23.6 9.593-.033-.086L20.3.98a.85.85 0 0 0-.336-.405.875.875 0 0 0-1 .054.88.88 0 0 0-.29.44L16.47 7.818H7.537L5.333 1.07a.86.86 0 0 0-.29-.441.875.875 0 0 0-1-.054.86.86 0 0 0-.336.405L.433 9.502l-.032.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.01 1.01 0 0 0 1.22 0l1.499-1.132 2.461-1.863 5.006-3.75.013-.01a6.07 6.07 0 0 0 2.01-7.002"/></svg></span> &nbsp; GitLab</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<details class="abstract">
+<summary>commit.sh</summary>
+<p><div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># MAKE SURE WE&#39;RE ON THE RIGHT BRANCH BEFORE ADDING FILES</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>git<span class="w"> </span>switch<span class="w"> </span>ts-develop
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># ADD ALL FILES IN THE DIRECTORY</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>git<span class="w"> </span>add<span class="w"> </span>project-a/
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># CREATE COMMIT</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;AUTOCOMMIT &gt;&gt; checkpoint files from ThoughtSpot&quot;</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="c1"># PUSH CHANGES BACK USING THE ACCESS TOKEN</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>ts-develop
+</span></code></pre></div>
+<sup class="fc-gray">
+  <i>**The above assumes you have already created the git repo with <code>git init</code>!</i>
+</sup></p>
+</details>
+</div>
+<div class="tabbed-block">
+<details class="abstract">
+<summary>actions-workflow.yaml</summary>
+<p><div class="language-yaml highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">jobs</span><span class="p">:</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">commit_changes</span><span class="p">:</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="nt">env</span><span class="p">:</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">      </span><span class="c1"># USER-SPECIFIED VARIABLES</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">      </span><span class="nt">DIRECTORY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;project-a&quot;</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">      </span><span class="nt">COMMIT_MESSAGE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AUTOCOMMIT</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">checkpoint</span><span class="nv"> </span><span class="s">files</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">ThoughtSpot&quot;</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">      </span><span class="nt">ENVIRONMENT_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ts-develop&quot;</span><span class="w">  </span><span class="c1"># or.. ${{ github.ref_name }}</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">      </span><span class="c1"># MAKE SURE WE&#39;RE ON THE RIGHT BRANCH BEFORE ADDING FILES</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Checkout code</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="w">          </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">          </span><span class="c1"># FETCH ALL HISTORY TO ENSURE PROPER CHECKOUT</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">          </span><span class="nt">fetch-depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="w">          </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.GITHUB_TOKEN }}</span>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="w">      </span><span class="c1"># SETUP AUTOCOMMITER</span>
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Configure Git</span>
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-11-24"><a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="w">          </span><span class="no">git config --global user.name &quot;GitHub Actions&quot;</span>
+</span><span id="__span-11-25"><a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="w">          </span><span class="no">git config --global user.email &quot;github-actions@github.com&quot;</span>
+</span><span id="__span-11-26"><a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>
+</span><span id="__span-11-27"><a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a><span class="w">      </span><span class="c1"># MAKE SURE WE&#39;RE ON THE RIGHT BRANCH BEFORE ADDING FILES</span>
+</span><span id="__span-11-28"><a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="w">      </span><span class="c1"># ADD ALL FILES IN THE DIRECTORY</span>
+</span><span id="__span-11-29"><a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a><span class="w">      </span><span class="c1"># CREATE COMMIT, SKIPPING RE-TRIGGERING CI.</span>
+</span><span id="__span-11-30"><a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a><span class="w">      </span><span class="c1"># PUSH CHANGES BACK USING THE ACCESS TOKEN</span>
+</span><span id="__span-11-31"><a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Commit and push changes</span>
+</span><span id="__span-11-32"><a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-11-33"><a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a><span class="w">          </span><span class="no">git checkout ${{ env.ENVIRONMENT_NAME }}</span>
+</span><span id="__span-11-34"><a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a><span class="w">          </span><span class="no">git add ${{ env.DIRECTORY }}/</span>
+</span><span id="__span-11-35"><a id="__codelineno-11-35" name="__codelineno-11-35" href="#__codelineno-11-35"></a><span class="w">          </span><span class="no">git commit -m &quot;${{ env.COMMIT_MESSAGE }}&quot; || echo &quot;No changes to commit&quot;</span>
+</span><span id="__span-11-36"><a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a><span class="w">          </span><span class="no">git push</span>
+</span><span id="__span-11-37"><a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a><span class="w">        </span><span class="nt">env</span><span class="p">:</span>
+</span><span id="__span-11-38"><a id="__codelineno-11-38" name="__codelineno-11-38" href="#__codelineno-11-38"></a><span class="w">          </span><span class="nt">GITHUB_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.GITHUB_TOKEN }}</span>
+</span></code></pre></div>
+<sup class="fc-gray">
+  <i>**The only required variables above are <code>DIRECTORY</code>, <code>COMMIT_MESSAGE</code>, and <code>ENVIRONMENT_NAME</code>. All others are set from <a href="https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables">Defaults</a>!</i>
+</sup></p>
+</details>
+</div>
+<div class="tabbed-block">
+<details class="abstract">
+<summary>.gitlab-ci.yml</summary>
+<p><div class="language-yaml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">commit_changes</span><span class="p">:</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">commit</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:latest</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">    </span><span class="c1"># WE&#39;LL USE FETCH STRATEGY TO PUSH CHANGES BACK TO GIT</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">    </span><span class="nt">GIT_STRATEGY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fetch</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">    </span><span class="nt">GIT_CHECKOUT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">    </span><span class="c1"># USER-SPECIFIED VARIABLES</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">    </span><span class="nt">DIRECTORY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;project-a&quot;</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">    </span><span class="nt">COMMIT_MESSAGE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AUTOCOMMIT</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">checkpoint</span><span class="nv"> </span><span class="s">files</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">ThoughtSpot&quot;</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">    </span><span class="nt">ENVIRONMENT_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ts-develop&quot;</span><span class="w">  </span><span class="c1"># or.. ${CI_COMMIT_REF_NAME}</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="w">  </span><span class="nt">script</span><span class="p">:</span>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="w">    </span><span class="c1"># INSTALL GIT AND SETUP AUTOCOMMITER</span>
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apk add --no-cache git</span>
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git config --global user.name &quot;GitLab CI&quot;</span>
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git config --global user.email &quot;gitlab-ci@nowhere.io&quot;</span>
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="w">    </span><span class="c1"># MAKE SURE WE&#39;RE ON THE RIGHT BRANCH BEFORE ADDING FILES</span>
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git checkout ${ENVIRONMENT_NAME}</span>
+</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>
+</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="w">    </span><span class="c1"># ADD ALL FILES IN THE DIRECTORY</span>
+</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git add ${DIRECTORY}/</span>
+</span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a>
+</span><span id="__span-12-27"><a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a><span class="w">    </span><span class="c1"># CREATE COMMIT, SKIPPING RE-TRIGGERING CI.</span>
+</span><span id="__span-12-28"><a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git commit -m &quot;${COMMIT_MESSAGE} [skip ci]&quot;</span>
+</span><span id="__span-12-29"><a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a>
+</span><span id="__span-12-30"><a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a><span class="w">    </span><span class="c1"># PUSH CHANGES BACK USING THE ACCESS TOKEN</span>
+</span><span id="__span-12-31"><a id="__codelineno-12-31" name="__codelineno-12-31" href="#__codelineno-12-31"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git push &quot;https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git&quot; HEAD:${ENVIRONMENT_NAME}</span>
+</span></code></pre></div>
+<sup class="fc-gray">
+  <i>**The only required variables above are <code>DIRECTORY</code>, <code>COMMIT_MESSAGE</code>, and <code>ENVIRONMENT_NAME</code>. All others are set from <a href="https://docs.gitlab.com/ci/variables/predefined_variables/">Defaults</a>!</i>
+</sup></p>
+</details>
+</div>
+</div>
+</div>
+<p>Since <strong>CS Tools</strong> is handling the "fetch TML from ThoughtSpot" and "deploy TML back to ThoughtSpot" pieces of the
+  deployment workflows, all we're left to do is solve the "How do I track my changes?" problem.</p>
+<p>While this is totally outside of the scope of <strong>ThoughtSpot</strong>, the above workflows should offer helpful guidance on
+  the steps necessary to commit to a repository.</p>
+<hr />
+<h3 id="full-example-workflows">Full Example Workflows</h3>
+<p>These workflows show the complete CI/CD pattern and can be used as a base for getting starting with your own process.
+If you are familiar with your CI platform, these can be extended with <strong>Pull / Merge Request templates</strong> for even
+greater flexibility in managing <strong>ThoughtSpot</strong> deployments.</p>
+<div class="admonition note">
+<p>Each workflow is split into the 3 core ThoughtSpot stages, a setup CS Tools stage, and a git-commit stage.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Extract + Commit</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Validate</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Deploy + Commit</li>
+</ul>
+<p><strong class="fc-purple">There are environment variables which help configure each stage</strong> <strong>take note of these and customize
+as needed.</strong></p>
+</div>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:4"><input checked="checked" id="git-local_1" name="__tabbed_5" type="radio" /><input id="github_1" name="__tabbed_5" type="radio" /><input id="gitlab_1" name="__tabbed_5" type="radio" /><input id="docker" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="git-local_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.546 10.93 13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.85 1.85 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348a1.85 1.85 0 0 1 0 2.6 1.844 1.844 0 0 1-2.609 0 1.834 1.834 0 0 1 0-2.598c.182-.18.387-.316.605-.406V8.835a1.834 1.834 0 0 1-.996-2.41L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477a1.545 1.545 0 0 0 2.186 0l10.43-10.43a1.544 1.544 0 0 0 0-2.187"/></svg></span> &nbsp; git (local)</label><label for="github_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></span> &nbsp; GitHub</label><label for="gitlab_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m23.6 9.593-.033-.086L20.3.98a.85.85 0 0 0-.336-.405.875.875 0 0 0-1 .054.88.88 0 0 0-.29.44L16.47 7.818H7.537L5.333 1.07a.86.86 0 0 0-.29-.441.875.875 0 0 0-1-.054.86.86 0 0 0-.336.405L.433 9.502l-.032.086a6.066 6.066 0 0 0 2.012 7.01l.01.009.03.021 4.977 3.727 2.462 1.863 1.5 1.132a1.01 1.01 0 0 0 1.22 0l1.499-1.132 2.461-1.863 5.006-3.75.013-.01a6.07 6.07 0 0 0 2.01-7.002"/></svg></span> &nbsp; GitLab</label><label for="docker"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.983 11.078h2.119a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.119a.185.185 0 0 0-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 0 0 .186-.186V3.574a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.185m0 2.716h2.118a.187.187 0 0 0 .186-.186V6.29a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 0 0 .184-.186V6.29a.185.185 0 0 0-.185-.185H8.1a.185.185 0 0 0-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 0 0 .185-.186V6.29a.185.185 0 0 0-.185-.185H5.136a.186.186 0 0 0-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 0 0 .185-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.186.186 0 0 0-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.184.185v1.888c0 .102.082.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51q-.508.001-1.01.087c-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.75.75 0 0 0-.75.748 11.4 11.4 0 0 0 .692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137a15.7 15.7 0 0 0 2.93-.266 12.3 12.3 0 0 0 3.823-1.389 10.5 10.5 0 0 0 2.61-2.136c1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z"/></svg></span> &nbsp; Docker</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<details class="abstract">
+<summary>pipeline.sh</summary>
+<p><div class="language-shell highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="ch">#!/bin/bash</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># pipeline.sh - TML Deployments CI/CD pipeline</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="c1"># Usage: ./pipeline.sh --extract|--validate|--deploy</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1"># PARSE COMMAND LINE ARGUMENTS</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="k">while</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span><span class="nv">$#</span><span class="w"> </span>-gt<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="nv">$1</span><span class="w"> </span><span class="k">in</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">    </span>--extract<span class="o">)</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">      </span><span class="nv">PIPELINE_TYPE</span><span class="o">=</span><span class="s2">&quot;extract&quot;</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">      </span><span class="nb">shift</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">      </span><span class="p">;;</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">    </span>--validate<span class="o">)</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">      </span><span class="nv">PIPELINE_TYPE</span><span class="o">=</span><span class="s2">&quot;validate&quot;</span>
+</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="w">      </span><span class="nb">shift</span>
+</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="w">      </span><span class="p">;;</span>
+</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a><span class="w">    </span>--deploy<span class="o">)</span>
+</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="w">      </span><span class="nv">PIPELINE_TYPE</span><span class="o">=</span><span class="s2">&quot;deploy&quot;</span>
+</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a><span class="w">      </span><span class="nb">shift</span>
+</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a><span class="w">      </span><span class="p">;;</span>
+</span><span id="__span-13-20"><a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a><span class="w">    </span>--help<span class="o">)</span>
+</span><span id="__span-13-21"><a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Usage: ./pipeline.sh --extract|--validate|--deploy&quot;</span>
+</span><span id="__span-13-22"><a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+</span><span id="__span-13-23"><a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Pipeline Types:&quot;</span>
+</span><span id="__span-13-24"><a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  --extract   Extract TML from ThoughtSpot (checkpoint)&quot;</span>
+</span><span id="__span-13-25"><a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  --validate  Validate TML on ThoughtSpot&quot;</span>
+</span><span id="__span-13-26"><a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  --deploy    Deploy TML to ThoughtSpot&quot;</span>
+</span><span id="__span-13-27"><a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+</span><span id="__span-13-28"><a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Options:&quot;</span>
+</span><span id="__span-13-29"><a id="__codelineno-13-29" name="__codelineno-13-29" href="#__codelineno-13-29"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  --help      Show this help message&quot;</span>
+</span><span id="__span-13-30"><a id="__codelineno-13-30" name="__codelineno-13-30" href="#__codelineno-13-30"></a><span class="w">      </span><span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
+</span><span id="__span-13-31"><a id="__codelineno-13-31" name="__codelineno-13-31" href="#__codelineno-13-31"></a><span class="w">      </span><span class="p">;;</span>
+</span><span id="__span-13-32"><a id="__codelineno-13-32" name="__codelineno-13-32" href="#__codelineno-13-32"></a><span class="w">    </span>*<span class="o">)</span>
+</span><span id="__span-13-33"><a id="__codelineno-13-33" name="__codelineno-13-33" href="#__codelineno-13-33"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Unknown option: </span><span class="nv">$1</span><span class="s2">&quot;</span>
+</span><span id="__span-13-34"><a id="__codelineno-13-34" name="__codelineno-13-34" href="#__codelineno-13-34"></a><span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Use --help for usage information&quot;</span>
+</span><span id="__span-13-35"><a id="__codelineno-13-35" name="__codelineno-13-35" href="#__codelineno-13-35"></a><span class="w">      </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-13-36"><a id="__codelineno-13-36" name="__codelineno-13-36" href="#__codelineno-13-36"></a><span class="w">      </span><span class="p">;;</span>
+</span><span id="__span-13-37"><a id="__codelineno-13-37" name="__codelineno-13-37" href="#__codelineno-13-37"></a><span class="w">  </span><span class="k">esac</span>
+</span><span id="__span-13-38"><a id="__codelineno-13-38" name="__codelineno-13-38" href="#__codelineno-13-38"></a><span class="k">done</span>
+</span><span id="__span-13-39"><a id="__codelineno-13-39" name="__codelineno-13-39" href="#__codelineno-13-39"></a>
+</span><span id="__span-13-40"><a id="__codelineno-13-40" name="__codelineno-13-40" href="#__codelineno-13-40"></a><span class="c1"># CHECK IF AN PIPELINE TYPE WAS SPECIFIED</span>
+</span><span id="__span-13-41"><a id="__codelineno-13-41" name="__codelineno-13-41" href="#__codelineno-13-41"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PIPELINE_TYPE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-13-42"><a id="__codelineno-13-42" name="__codelineno-13-42" href="#__codelineno-13-42"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Error: No pipeline type specified&quot;</span>
+</span><span id="__span-13-43"><a id="__codelineno-13-43" name="__codelineno-13-43" href="#__codelineno-13-43"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Use --help for usage information&quot;</span>
+</span><span id="__span-13-44"><a id="__codelineno-13-44" name="__codelineno-13-44" href="#__codelineno-13-44"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-13-45"><a id="__codelineno-13-45" name="__codelineno-13-45" href="#__codelineno-13-45"></a><span class="k">fi</span>
+</span><span id="__span-13-46"><a id="__codelineno-13-46" name="__codelineno-13-46" href="#__codelineno-13-46"></a>
+</span><span id="__span-13-47"><a id="__codelineno-13-47" name="__codelineno-13-47" href="#__codelineno-13-47"></a><span class="c1"># ENVIRONMENT VARIABLES FOR CS TOOLS</span>
+</span><span id="__span-13-48"><a id="__codelineno-13-48" name="__codelineno-13-48" href="#__codelineno-13-48"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$THOUGHTSPOT_URL</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$THOUGHTSPOT_USERNAME</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$THOUGHTSPOT_SECRET_KEY</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-13-49"><a id="__codelineno-13-49" name="__codelineno-13-49" href="#__codelineno-13-49"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Error: Required environment variables are not set&quot;</span>
+</span><span id="__span-13-50"><a id="__codelineno-13-50" name="__codelineno-13-50" href="#__codelineno-13-50"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Please set the following environment variables:&quot;</span>
+</span><span id="__span-13-51"><a id="__codelineno-13-51" name="__codelineno-13-51" href="#__codelineno-13-51"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  THOUGHTSPOT_URL&quot;</span>
+</span><span id="__span-13-52"><a id="__codelineno-13-52" name="__codelineno-13-52" href="#__codelineno-13-52"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  THOUGHTSPOT_USERNAME&quot;</span>
+</span><span id="__span-13-53"><a id="__codelineno-13-53" name="__codelineno-13-53" href="#__codelineno-13-53"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;  THOUGHTSPOT_SECRET_KEY&quot;</span>
+</span><span id="__span-13-54"><a id="__codelineno-13-54" name="__codelineno-13-54" href="#__codelineno-13-54"></a><span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-13-55"><a id="__codelineno-13-55" name="__codelineno-13-55" href="#__codelineno-13-55"></a><span class="k">fi</span>
+</span><span id="__span-13-56"><a id="__codelineno-13-56" name="__codelineno-13-56" href="#__codelineno-13-56"></a>
+</span><span id="__span-13-57"><a id="__codelineno-13-57" name="__codelineno-13-57" href="#__codelineno-13-57"></a><span class="c1"># ======================================================================================================================</span>
+</span><span id="__span-13-58"><a id="__codelineno-13-58" name="__codelineno-13-58" href="#__codelineno-13-58"></a><span class="c1"># TOP LEVEL VARIABLES</span>
+</span><span id="__span-13-59"><a id="__codelineno-13-59" name="__codelineno-13-59" href="#__codelineno-13-59"></a><span class="c1"># ======================================================================================================================</span>
+</span><span id="__span-13-60"><a id="__codelineno-13-60" name="__codelineno-13-60" href="#__codelineno-13-60"></a>
+</span><span id="__span-13-61"><a id="__codelineno-13-61" name="__codelineno-13-61" href="#__codelineno-13-61"></a><span class="c1"># CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS</span>
+</span><span id="__span-13-62"><a id="__codelineno-13-62" name="__codelineno-13-62" href="#__codelineno-13-62"></a><span class="c1"># THE CLI OPTION  --config ENV:  TELLS CS TOOLS TO PULL THE INFORMATION FROM ENVIRONMENT VARIABLES.</span>
+</span><span id="__span-13-63"><a id="__codelineno-13-63" name="__codelineno-13-63" href="#__codelineno-13-63"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CS_TOOLS_THOUGHTSPOT__URL</span><span class="o">=</span><span class="si">${</span><span class="nv">THOUGHTSPOT_URL</span><span class="si">}</span>
+</span><span id="__span-13-64"><a id="__codelineno-13-64" name="__codelineno-13-64" href="#__codelineno-13-64"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CS_TOOLS_THOUGHTSPOT__USERNAME</span><span class="o">=</span><span class="si">${</span><span class="nv">THOUGHTSPOT_USERNAME</span><span class="si">}</span>
+</span><span id="__span-13-65"><a id="__codelineno-13-65" name="__codelineno-13-65" href="#__codelineno-13-65"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CS_TOOLS_THOUGHTSPOT__SECRET_KEY</span><span class="o">=</span><span class="si">${</span><span class="nv">THOUGHTSPOT_SECRET_KEY</span><span class="si">}</span>
+</span><span id="__span-13-66"><a id="__codelineno-13-66" name="__codelineno-13-66" href="#__codelineno-13-66"></a>
+</span><span id="__span-13-67"><a id="__codelineno-13-67" name="__codelineno-13-67" href="#__codelineno-13-67"></a><span class="c1"># GIT OPTIONS</span>
+</span><span id="__span-13-68"><a id="__codelineno-13-68" name="__codelineno-13-68" href="#__codelineno-13-68"></a><span class="nv">DIRECTORY</span><span class="o">=</span><span class="s2">&quot;dogfood&quot;</span>
+</span><span id="__span-13-69"><a id="__codelineno-13-69" name="__codelineno-13-69" href="#__codelineno-13-69"></a><span class="nv">COMMIT_MESSAGE</span><span class="o">=</span><span class="s2">&quot;AUTOMATED &gt;&gt; TS-CI </span><span class="si">${</span><span class="nv">PIPELINE_TYPE</span><span class="si">}</span><span class="s2"> from pipeline.sh&quot;</span>
+</span><span id="__span-13-70"><a id="__codelineno-13-70" name="__codelineno-13-70" href="#__codelineno-13-70"></a>
+</span><span id="__span-13-71"><a id="__codelineno-13-71" name="__codelineno-13-71" href="#__codelineno-13-71"></a><span class="c1"># ======================================================================================================================</span>
+</span><span id="__span-13-72"><a id="__codelineno-13-72" name="__codelineno-13-72" href="#__codelineno-13-72"></a>
+</span><span id="__span-13-73"><a id="__codelineno-13-73" name="__codelineno-13-73" href="#__codelineno-13-73"></a>commit_changes<span class="o">()</span><span class="w"> </span><span class="o">{</span>
+</span><span id="__span-13-74"><a id="__codelineno-13-74" name="__codelineno-13-74" href="#__codelineno-13-74"></a><span class="w">  </span><span class="c1"># CONFIGURE GIT USER IF NOT ALREADY SET LOCALLY OR GLOBALLY</span>
+</span><span id="__span-13-75"><a id="__codelineno-13-75" name="__codelineno-13-75" href="#__codelineno-13-75"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>git<span class="w"> </span>config<span class="w"> </span>user.name<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-13-76"><a id="__codelineno-13-76" name="__codelineno-13-76" href="#__codelineno-13-76"></a><span class="w">    </span>git<span class="w"> </span>config<span class="w"> </span>user.name<span class="w"> </span><span class="s2">&quot;ThoughtSpot CI&quot;</span>
+</span><span id="__span-13-77"><a id="__codelineno-13-77" name="__codelineno-13-77" href="#__codelineno-13-77"></a><span class="w">  </span><span class="k">fi</span>
+</span><span id="__span-13-78"><a id="__codelineno-13-78" name="__codelineno-13-78" href="#__codelineno-13-78"></a>
+</span><span id="__span-13-79"><a id="__codelineno-13-79" name="__codelineno-13-79" href="#__codelineno-13-79"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>git<span class="w"> </span>config<span class="w"> </span>user.email<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-13-80"><a id="__codelineno-13-80" name="__codelineno-13-80" href="#__codelineno-13-80"></a><span class="w">    </span>git<span class="w"> </span>config<span class="w"> </span>user.email<span class="w"> </span><span class="s2">&quot;ts-ci@nowhere.io&quot;</span>
+</span><span id="__span-13-81"><a id="__codelineno-13-81" name="__codelineno-13-81" href="#__codelineno-13-81"></a><span class="w">  </span><span class="k">fi</span>
+</span><span id="__span-13-82"><a id="__codelineno-13-82" name="__codelineno-13-82" href="#__codelineno-13-82"></a>
+</span><span id="__span-13-83"><a id="__codelineno-13-83" name="__codelineno-13-83" href="#__codelineno-13-83"></a><span class="w">  </span><span class="nv">CURRENT_BRANCH</span><span class="o">=</span><span class="k">$(</span>git<span class="w"> </span>rev-parse<span class="w"> </span>--abbrev-ref<span class="w"> </span>HEAD<span class="k">)</span>
+</span><span id="__span-13-84"><a id="__codelineno-13-84" name="__codelineno-13-84" href="#__codelineno-13-84"></a>
+</span><span id="__span-13-85"><a id="__codelineno-13-85" name="__codelineno-13-85" href="#__codelineno-13-85"></a><span class="w">  </span><span class="c1"># PULL CHANGES FROM ORIGIN / REMOTE</span>
+</span><span id="__span-13-86"><a id="__codelineno-13-86" name="__codelineno-13-86" href="#__codelineno-13-86"></a><span class="w">  </span>git<span class="w"> </span>pull<span class="w"> </span>origin<span class="w"> </span><span class="si">${</span><span class="nv">CURRENT_BRANCH</span><span class="si">}</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">{</span>
+</span><span id="__span-13-87"><a id="__codelineno-13-87" name="__codelineno-13-87" href="#__codelineno-13-87"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Error: Failed to pull latest changes. Please resolve any conflicts and try again.&quot;</span>
+</span><span id="__span-13-88"><a id="__codelineno-13-88" name="__codelineno-13-88" href="#__codelineno-13-88"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-13-89"><a id="__codelineno-13-89" name="__codelineno-13-89" href="#__codelineno-13-89"></a><span class="w">  </span><span class="o">}</span>
+</span><span id="__span-13-90"><a id="__codelineno-13-90" name="__codelineno-13-90" href="#__codelineno-13-90"></a>
+</span><span id="__span-13-91"><a id="__codelineno-13-91" name="__codelineno-13-91" href="#__codelineno-13-91"></a><span class="w">  </span><span class="c1"># ADD ALL FILES IN THE DIRECTORY</span>
+</span><span id="__span-13-92"><a id="__codelineno-13-92" name="__codelineno-13-92" href="#__codelineno-13-92"></a><span class="w">  </span>git<span class="w"> </span>add<span class="w"> </span><span class="si">${</span><span class="nv">DIRECTORY</span><span class="si">}</span>/
+</span><span id="__span-13-93"><a id="__codelineno-13-93" name="__codelineno-13-93" href="#__codelineno-13-93"></a>
+</span><span id="__span-13-94"><a id="__codelineno-13-94" name="__codelineno-13-94" href="#__codelineno-13-94"></a><span class="w">  </span><span class="c1"># CREATE COMMIT, SKIPPING RE-TRIGGERING CI.</span>
+</span><span id="__span-13-95"><a id="__codelineno-13-95" name="__codelineno-13-95" href="#__codelineno-13-95"></a><span class="w">  </span>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">COMMIT_MESSAGE</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;No changes to commit&quot;</span>
+</span><span id="__span-13-96"><a id="__codelineno-13-96" name="__codelineno-13-96" href="#__codelineno-13-96"></a>
+</span><span id="__span-13-97"><a id="__codelineno-13-97" name="__codelineno-13-97" href="#__codelineno-13-97"></a><span class="w">  </span><span class="c1"># PUSH CHANGES BACK TO ORIGIN / REMOTE</span>
+</span><span id="__span-13-98"><a id="__codelineno-13-98" name="__codelineno-13-98" href="#__codelineno-13-98"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;You can push changes with:  git push origin </span><span class="si">${</span><span class="nv">CURRENT_BRANCH</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-13-99"><a id="__codelineno-13-99" name="__codelineno-13-99" href="#__codelineno-13-99"></a><span class="o">}</span>
+</span><span id="__span-13-100"><a id="__codelineno-13-100" name="__codelineno-13-100" href="#__codelineno-13-100"></a>
+</span><span id="__span-13-101"><a id="__codelineno-13-101" name="__codelineno-13-101" href="#__codelineno-13-101"></a><span class="c1"># ======================================================================================================================</span>
+</span><span id="__span-13-102"><a id="__codelineno-13-102" name="__codelineno-13-102" href="#__codelineno-13-102"></a>
+</span><span id="__span-13-103"><a id="__codelineno-13-103" name="__codelineno-13-103" href="#__codelineno-13-103"></a><span class="k">case</span><span class="w"> </span><span class="nv">$PIPELINE_TYPE</span><span class="w"> </span><span class="k">in</span>
+</span><span id="__span-13-104"><a id="__codelineno-13-104" name="__codelineno-13-104" href="#__codelineno-13-104"></a><span class="w">  </span><span class="s2">&quot;extract&quot;</span><span class="o">)</span>
+</span><span id="__span-13-105"><a id="__codelineno-13-105" name="__codelineno-13-105" href="#__codelineno-13-105"></a><span class="w">    </span><span class="nv">TS_METADATA_TYPES</span><span class="o">=</span><span class="s2">&quot;ALL&quot;</span>
+</span><span id="__span-13-106"><a id="__codelineno-13-106" name="__codelineno-13-106" href="#__codelineno-13-106"></a><span class="w">    </span><span class="nv">TS_OBJECT_TAG</span><span class="o">=</span><span class="s2">&quot;CS Tools&quot;</span>
+</span><span id="__span-13-107"><a id="__codelineno-13-107" name="__codelineno-13-107" href="#__codelineno-13-107"></a><span class="w">    </span><span class="nv">TS_ORG</span><span class="o">=</span><span class="s2">&quot;Primary&quot;</span>
+</span><span id="__span-13-108"><a id="__codelineno-13-108" name="__codelineno-13-108" href="#__codelineno-13-108"></a><span class="w">    </span><span class="nv">TS_SOURCE_ENV_NAME</span><span class="o">=</span><span class="s2">&quot;ts-develop&quot;</span>
+</span><span id="__span-13-109"><a id="__codelineno-13-109" name="__codelineno-13-109" href="#__codelineno-13-109"></a>
+</span><span id="__span-13-110"><a id="__codelineno-13-110" name="__codelineno-13-110" href="#__codelineno-13-110"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#checkpoint</span>
+</span><span id="__span-13-111"><a id="__codelineno-13-111" name="__codelineno-13-111" href="#__codelineno-13-111"></a><span class="w">    </span>cs_tools<span class="w"> </span>tools<span class="w"> </span>scriptability<span class="w"> </span>checkpoint<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-112"><a id="__codelineno-13-112" name="__codelineno-13-112" href="#__codelineno-13-112"></a><span class="w">      </span>--directory<span class="w"> </span><span class="si">${</span><span class="nv">DIRECTORY</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-113"><a id="__codelineno-13-113" name="__codelineno-13-113" href="#__codelineno-13-113"></a><span class="w">      </span>--environment<span class="w"> </span><span class="si">${</span><span class="nv">TS_SOURCE_ENV_NAME</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-114"><a id="__codelineno-13-114" name="__codelineno-13-114" href="#__codelineno-13-114"></a><span class="w">      </span>--metadata-types<span class="w"> </span><span class="si">${</span><span class="nv">TS_METADATA_TYPES</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-115"><a id="__codelineno-13-115" name="__codelineno-13-115" href="#__codelineno-13-115"></a><span class="w">      </span>--tags<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_OBJECT_TAG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-116"><a id="__codelineno-13-116" name="__codelineno-13-116" href="#__codelineno-13-116"></a><span class="w">      </span>--org<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_ORG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-117"><a id="__codelineno-13-117" name="__codelineno-13-117" href="#__codelineno-13-117"></a><span class="w">      </span>--config<span class="w"> </span><span class="s2">&quot;ENV:&quot;</span>
+</span><span id="__span-13-118"><a id="__codelineno-13-118" name="__codelineno-13-118" href="#__codelineno-13-118"></a><span class="w">    </span><span class="nv">CS_TOOLS_SCRIPTABILITY_EXIT_CODE</span><span class="o">=</span><span class="nv">$?</span>
+</span><span id="__span-13-119"><a id="__codelineno-13-119" name="__codelineno-13-119" href="#__codelineno-13-119"></a>
+</span><span id="__span-13-120"><a id="__codelineno-13-120" name="__codelineno-13-120" href="#__codelineno-13-120"></a><span class="w">    </span>commit_changes
+</span><span id="__span-13-121"><a id="__codelineno-13-121" name="__codelineno-13-121" href="#__codelineno-13-121"></a><span class="w">    </span><span class="p">;;</span>
+</span><span id="__span-13-122"><a id="__codelineno-13-122" name="__codelineno-13-122" href="#__codelineno-13-122"></a>
+</span><span id="__span-13-123"><a id="__codelineno-13-123" name="__codelineno-13-123" href="#__codelineno-13-123"></a><span class="w">  </span><span class="s2">&quot;validate&quot;</span><span class="o">)</span>
+</span><span id="__span-13-124"><a id="__codelineno-13-124" name="__codelineno-13-124" href="#__codelineno-13-124"></a><span class="w">    </span><span class="nv">TS_METADATA_TYPES</span><span class="o">=</span><span class="s2">&quot;TABLE&quot;</span>
+</span><span id="__span-13-125"><a id="__codelineno-13-125" name="__codelineno-13-125" href="#__codelineno-13-125"></a><span class="w">    </span><span class="nv">TS_ORG</span><span class="o">=</span><span class="s2">&quot;production&quot;</span>
+</span><span id="__span-13-126"><a id="__codelineno-13-126" name="__codelineno-13-126" href="#__codelineno-13-126"></a><span class="w">    </span><span class="nv">TS_SOURCE_ENV_NAME</span><span class="o">=</span><span class="s2">&quot;ts-develop&quot;</span>
+</span><span id="__span-13-127"><a id="__codelineno-13-127" name="__codelineno-13-127" href="#__codelineno-13-127"></a><span class="w">    </span><span class="nv">TS_TARGET_ENV_NAME</span><span class="o">=</span><span class="s2">&quot;ts-production&quot;</span>
+</span><span id="__span-13-128"><a id="__codelineno-13-128" name="__codelineno-13-128" href="#__codelineno-13-128"></a><span class="w">    </span><span class="nv">TS_DEPLOY_TYPE</span><span class="o">=</span><span class="s2">&quot;DELTA&quot;</span>
+</span><span id="__span-13-129"><a id="__codelineno-13-129" name="__codelineno-13-129" href="#__codelineno-13-129"></a>
+</span><span id="__span-13-130"><a id="__codelineno-13-130" name="__codelineno-13-130" href="#__codelineno-13-130"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#deploy_2</span>
+</span><span id="__span-13-131"><a id="__codelineno-13-131" name="__codelineno-13-131" href="#__codelineno-13-131"></a><span class="w">    </span>cs_tools<span class="w"> </span>tools<span class="w"> </span>scriptability<span class="w"> </span>deploy<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-132"><a id="__codelineno-13-132" name="__codelineno-13-132" href="#__codelineno-13-132"></a><span class="w">      </span>--directory<span class="w"> </span><span class="si">${</span><span class="nv">DIRECTORY</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-133"><a id="__codelineno-13-133" name="__codelineno-13-133" href="#__codelineno-13-133"></a><span class="w">      </span>--source-environment<span class="w"> </span><span class="si">${</span><span class="nv">TS_SOURCE_ENV_NAME</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-134"><a id="__codelineno-13-134" name="__codelineno-13-134" href="#__codelineno-13-134"></a><span class="w">      </span>--target-environment<span class="w"> </span><span class="si">${</span><span class="nv">TS_TARGET_ENV_NAME</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-135"><a id="__codelineno-13-135" name="__codelineno-13-135" href="#__codelineno-13-135"></a><span class="w">      </span>--deploy-type<span class="w"> </span><span class="si">${</span><span class="nv">TS_DEPLOY_TYPE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-136"><a id="__codelineno-13-136" name="__codelineno-13-136" href="#__codelineno-13-136"></a><span class="w">      </span>--deploy-policy<span class="w"> </span>VALIDATE_ONLY<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-137"><a id="__codelineno-13-137" name="__codelineno-13-137" href="#__codelineno-13-137"></a><span class="w">      </span>--metadata-types<span class="w"> </span><span class="si">${</span><span class="nv">TS_METADATA_TYPES</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-138"><a id="__codelineno-13-138" name="__codelineno-13-138" href="#__codelineno-13-138"></a><span class="w">      </span>--org<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_ORG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-139"><a id="__codelineno-13-139" name="__codelineno-13-139" href="#__codelineno-13-139"></a><span class="w">      </span>--config<span class="w"> </span><span class="s2">&quot;ENV:&quot;</span>
+</span><span id="__span-13-140"><a id="__codelineno-13-140" name="__codelineno-13-140" href="#__codelineno-13-140"></a><span class="w">    </span><span class="nv">CS_TOOLS_SCRIPTABILITY_EXIT_CODE</span><span class="o">=</span><span class="nv">$?</span>
+</span><span id="__span-13-141"><a id="__codelineno-13-141" name="__codelineno-13-141" href="#__codelineno-13-141"></a><span class="w">    </span><span class="p">;;</span>
+</span><span id="__span-13-142"><a id="__codelineno-13-142" name="__codelineno-13-142" href="#__codelineno-13-142"></a>
+</span><span id="__span-13-143"><a id="__codelineno-13-143" name="__codelineno-13-143" href="#__codelineno-13-143"></a><span class="w">  </span><span class="s2">&quot;deploy&quot;</span><span class="o">)</span>
+</span><span id="__span-13-144"><a id="__codelineno-13-144" name="__codelineno-13-144" href="#__codelineno-13-144"></a><span class="w">    </span><span class="nv">TS_ORG</span><span class="o">=</span><span class="s2">&quot;production&quot;</span>
+</span><span id="__span-13-145"><a id="__codelineno-13-145" name="__codelineno-13-145" href="#__codelineno-13-145"></a><span class="w">    </span><span class="nv">TS_METADATA_TYPES</span><span class="o">=</span><span class="s2">&quot;TABLE&quot;</span>
+</span><span id="__span-13-146"><a id="__codelineno-13-146" name="__codelineno-13-146" href="#__codelineno-13-146"></a><span class="w">    </span><span class="nv">TS_OBJECT_TAG</span><span class="o">=</span><span class="s2">&quot;temporary-tag-for-ci&quot;</span>
+</span><span id="__span-13-147"><a id="__codelineno-13-147" name="__codelineno-13-147" href="#__codelineno-13-147"></a><span class="w">    </span><span class="nv">TS_SOURCE_ENV_NAME</span><span class="o">=</span><span class="s2">&quot;ts-develop&quot;</span>
+</span><span id="__span-13-148"><a id="__codelineno-13-148" name="__codelineno-13-148" href="#__codelineno-13-148"></a><span class="w">    </span><span class="nv">TS_TARGET_ENV_NAME</span><span class="o">=</span><span class="s2">&quot;ts-production&quot;</span>
+</span><span id="__span-13-149"><a id="__codelineno-13-149" name="__codelineno-13-149" href="#__codelineno-13-149"></a><span class="w">    </span><span class="nv">TS_DEPLOY_TYPE</span><span class="o">=</span><span class="s2">&quot;DELTA&quot;</span>
+</span><span id="__span-13-150"><a id="__codelineno-13-150" name="__codelineno-13-150" href="#__codelineno-13-150"></a><span class="w">    </span><span class="nv">TS_DEPLOY_POLICY</span><span class="o">=</span><span class="s2">&quot;ALL_OR_NONE&quot;</span>
+</span><span id="__span-13-151"><a id="__codelineno-13-151" name="__codelineno-13-151" href="#__codelineno-13-151"></a><span class="w">    </span><span class="nv">TS_CONTENT_AUTHOR</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+</span><span id="__span-13-152"><a id="__codelineno-13-152" name="__codelineno-13-152" href="#__codelineno-13-152"></a><span class="w">    </span><span class="nv">TS_SHARE_TO_GROUP</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+</span><span id="__span-13-153"><a id="__codelineno-13-153" name="__codelineno-13-153" href="#__codelineno-13-153"></a><span class="w">    </span><span class="nv">TS_SHARE_MODE</span><span class="o">=</span><span class="s2">&quot;READ_ONLY&quot;</span>
+</span><span id="__span-13-154"><a id="__codelineno-13-154" name="__codelineno-13-154" href="#__codelineno-13-154"></a>
+</span><span id="__span-13-155"><a id="__codelineno-13-155" name="__codelineno-13-155" href="#__codelineno-13-155"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#deploy_2</span>
+</span><span id="__span-13-156"><a id="__codelineno-13-156" name="__codelineno-13-156" href="#__codelineno-13-156"></a><span class="w">    </span>cs_tools<span class="w"> </span>tools<span class="w"> </span>scriptability<span class="w"> </span>deploy<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-157"><a id="__codelineno-13-157" name="__codelineno-13-157" href="#__codelineno-13-157"></a><span class="w">      </span>--directory<span class="w"> </span><span class="si">${</span><span class="nv">DIRECTORY</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-158"><a id="__codelineno-13-158" name="__codelineno-13-158" href="#__codelineno-13-158"></a><span class="w">      </span>--source-environment<span class="w"> </span><span class="si">${</span><span class="nv">TS_SOURCE_ENV_NAME</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-159"><a id="__codelineno-13-159" name="__codelineno-13-159" href="#__codelineno-13-159"></a><span class="w">      </span>--target-environment<span class="w"> </span><span class="si">${</span><span class="nv">TS_TARGET_ENV_NAME</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-160"><a id="__codelineno-13-160" name="__codelineno-13-160" href="#__codelineno-13-160"></a><span class="w">      </span>--deploy-type<span class="w"> </span><span class="si">${</span><span class="nv">TS_DEPLOY_TYPE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-161"><a id="__codelineno-13-161" name="__codelineno-13-161" href="#__codelineno-13-161"></a><span class="w">      </span>--deploy-policy<span class="w"> </span><span class="si">${</span><span class="nv">TS_DEPLOY_POLICY</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-162"><a id="__codelineno-13-162" name="__codelineno-13-162" href="#__codelineno-13-162"></a><span class="w">      </span>--metadata-types<span class="w"> </span><span class="si">${</span><span class="nv">TS_METADATA_TYPES</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-163"><a id="__codelineno-13-163" name="__codelineno-13-163" href="#__codelineno-13-163"></a><span class="w">      </span>--tags<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_OBJECT_TAG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-164"><a id="__codelineno-13-164" name="__codelineno-13-164" href="#__codelineno-13-164"></a><span class="w">      </span>--org<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_ORG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-165"><a id="__codelineno-13-165" name="__codelineno-13-165" href="#__codelineno-13-165"></a><span class="w">      </span>--config<span class="w"> </span><span class="s2">&quot;ENV:&quot;</span>
+</span><span id="__span-13-166"><a id="__codelineno-13-166" name="__codelineno-13-166" href="#__codelineno-13-166"></a><span class="w">    </span><span class="nv">CS_TOOLS_SCRIPTABILITY_EXIT_CODE</span><span class="o">=</span><span class="nv">$?</span>
+</span><span id="__span-13-167"><a id="__codelineno-13-167" name="__codelineno-13-167" href="#__codelineno-13-167"></a>
+</span><span id="__span-13-168"><a id="__codelineno-13-168" name="__codelineno-13-168" href="#__codelineno-13-168"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#transfer</span>
+</span><span id="__span-13-169"><a id="__codelineno-13-169" name="__codelineno-13-169" href="#__codelineno-13-169"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_CONTENT_AUTHOR</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-13-170"><a id="__codelineno-13-170" name="__codelineno-13-170" href="#__codelineno-13-170"></a><span class="w">      </span>cs_tools<span class="w"> </span>tools<span class="w"> </span>user-management<span class="w"> </span>transfer<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-171"><a id="__codelineno-13-171" name="__codelineno-13-171" href="#__codelineno-13-171"></a><span class="w">        </span>--tags<span class="w"> </span><span class="si">${</span><span class="nv">TS_OBJECT_TAG</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-172"><a id="__codelineno-13-172" name="__codelineno-13-172" href="#__codelineno-13-172"></a><span class="w">        </span>--to<span class="w"> </span><span class="si">${</span><span class="nv">TS_CONTENT_AUTHOR</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-173"><a id="__codelineno-13-173" name="__codelineno-13-173" href="#__codelineno-13-173"></a><span class="w">        </span>--org<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_ORG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-174"><a id="__codelineno-13-174" name="__codelineno-13-174" href="#__codelineno-13-174"></a><span class="w">        </span>--config<span class="w"> </span><span class="s2">&quot;ENV:&quot;</span>
+</span><span id="__span-13-175"><a id="__codelineno-13-175" name="__codelineno-13-175" href="#__codelineno-13-175"></a><span class="w">    </span><span class="k">fi</span>
+</span><span id="__span-13-176"><a id="__codelineno-13-176" name="__codelineno-13-176" href="#__codelineno-13-176"></a>
+</span><span id="__span-13-177"><a id="__codelineno-13-177" name="__codelineno-13-177" href="#__codelineno-13-177"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#from-tag_1</span>
+</span><span id="__span-13-178"><a id="__codelineno-13-178" name="__codelineno-13-178" href="#__codelineno-13-178"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_SHARE_TO_GROUP</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-13-179"><a id="__codelineno-13-179" name="__codelineno-13-179" href="#__codelineno-13-179"></a><span class="w">      </span>cs_tools<span class="w"> </span>tools<span class="w"> </span>bulk-sharing<span class="w"> </span>from-tag<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-180"><a id="__codelineno-13-180" name="__codelineno-13-180" href="#__codelineno-13-180"></a><span class="w">        </span>--tag<span class="w"> </span><span class="si">${</span><span class="nv">TS_OBJECT_TAG</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-181"><a id="__codelineno-13-181" name="__codelineno-13-181" href="#__codelineno-13-181"></a><span class="w">        </span>--groups<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_SHARE_TO_GROUP</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-182"><a id="__codelineno-13-182" name="__codelineno-13-182" href="#__codelineno-13-182"></a><span class="w">        </span>--share-mode<span class="w"> </span><span class="si">${</span><span class="nv">TS_SHARE_MODE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-183"><a id="__codelineno-13-183" name="__codelineno-13-183" href="#__codelineno-13-183"></a><span class="w">        </span>--no-prompt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-184"><a id="__codelineno-13-184" name="__codelineno-13-184" href="#__codelineno-13-184"></a><span class="w">        </span>--org<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_ORG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-185"><a id="__codelineno-13-185" name="__codelineno-13-185" href="#__codelineno-13-185"></a><span class="w">        </span>--config<span class="w"> </span><span class="s2">&quot;ENV:&quot;</span>
+</span><span id="__span-13-186"><a id="__codelineno-13-186" name="__codelineno-13-186" href="#__codelineno-13-186"></a><span class="w">    </span><span class="k">fi</span>
+</span><span id="__span-13-187"><a id="__codelineno-13-187" name="__codelineno-13-187" href="#__codelineno-13-187"></a>
+</span><span id="__span-13-188"><a id="__codelineno-13-188" name="__codelineno-13-188" href="#__codelineno-13-188"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#from-tag</span>
+</span><span id="__span-13-189"><a id="__codelineno-13-189" name="__codelineno-13-189" href="#__codelineno-13-189"></a><span class="w">    </span>cs_tools<span class="w"> </span>tools<span class="w"> </span>bulk-deleter<span class="w"> </span>from-tag<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-190"><a id="__codelineno-13-190" name="__codelineno-13-190" href="#__codelineno-13-190"></a><span class="w">      </span>--tag<span class="w"> </span><span class="si">${</span><span class="nv">TS_OBJECT_TAG</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-191"><a id="__codelineno-13-191" name="__codelineno-13-191" href="#__codelineno-13-191"></a><span class="w">      </span>--tag-only<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-192"><a id="__codelineno-13-192" name="__codelineno-13-192" href="#__codelineno-13-192"></a><span class="w">      </span>--no-prompt<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-193"><a id="__codelineno-13-193" name="__codelineno-13-193" href="#__codelineno-13-193"></a><span class="w">      </span>--org<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TS_ORG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-194"><a id="__codelineno-13-194" name="__codelineno-13-194" href="#__codelineno-13-194"></a><span class="w">      </span>--config<span class="w"> </span><span class="s2">&quot;ENV:&quot;</span>
+</span><span id="__span-13-195"><a id="__codelineno-13-195" name="__codelineno-13-195" href="#__codelineno-13-195"></a>
+</span><span id="__span-13-196"><a id="__codelineno-13-196" name="__codelineno-13-196" href="#__codelineno-13-196"></a><span class="w">    </span>commit_changes
+</span><span id="__span-13-197"><a id="__codelineno-13-197" name="__codelineno-13-197" href="#__codelineno-13-197"></a><span class="w">    </span><span class="p">;;</span>
+</span><span id="__span-13-198"><a id="__codelineno-13-198" name="__codelineno-13-198" href="#__codelineno-13-198"></a><span class="k">esac</span>
+</span><span id="__span-13-199"><a id="__codelineno-13-199" name="__codelineno-13-199" href="#__codelineno-13-199"></a>
+</span><span id="__span-13-200"><a id="__codelineno-13-200" name="__codelineno-13-200" href="#__codelineno-13-200"></a><span class="nb">exit</span><span class="w"> </span><span class="nv">$CS_TOOLS_SCRIPTABILITY_EXIT_CODE</span>
+</span></code></pre></div>
+<sup class="fc-gray">
+  <i>**The above assumes you have already ran <code>git init</code> and installed <a href="../../getting-started#install"><strong>CS Tools</strong></a></i>
+</sup></p>
+</details>
+</div>
+<div class="tabbed-block">
+<details class="abstract">
+<summary>actions-workflow.yaml</summary>
+<p><strong class="fc-purple">Coming soon!</strong></p>
+</details>
+</div>
+<div class="tabbed-block">
+<details class="abstract">
+<summary>.gitlab-ci.yml</summary>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">stages</span><span class="p">:</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deploy</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">commit</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="nt">workflow</span><span class="p">:</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$CI_PIPELINE_SOURCE == &quot;web&quot;</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$CI_PIPELINE_SOURCE == &quot;schedule&quot;</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="nt">.cs_tools_setup</span><span class="p">:</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="w">  </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="w">    </span><span class="nt">CS_TOOLS_VERSION</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.6.2&quot;</span>
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="w">  </span><span class="nt">before_script</span><span class="p">:</span>
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="w">    </span><span class="c1"># ENSURE PIP IS UP TO DATE.</span>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python -m pip install --upgrade pip</span>
+</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>
+</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a><span class="w">    </span><span class="c1"># INSTALL A SPECIFIC VERSION OF cs_tools.</span>
+</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python -m pip install &quot;cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/${CS_TOOLS_VERSION}.zip&quot;</span>
+</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>
+</span><span id="__span-14-23"><a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a><span class="nt">variables</span><span class="p">:</span>
+</span><span id="__span-14-24"><a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a><span class="w">  </span><span class="c1"># DEFAULT PIPELINE TYPE WILL BE OVERRIDDEN BY WORKFLOW RULES</span>
+</span><span id="__span-14-25"><a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a><span class="w">  </span><span class="nt">PIPELINE_TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;extract&quot;</span>
+</span><span id="__span-14-26"><a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>
+</span><span id="__span-14-27"><a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a><span class="w">  </span><span class="c1"># CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS</span>
+</span><span id="__span-14-28"><a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a><span class="w">  </span><span class="c1"># THE CLI OPTION  --config ENV:  TELLS CS TOOLS TO PULL THE INFORMATION FROM ENVIRONMENT VARIABLES.</span>
+</span><span id="__span-14-29"><a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a><span class="w">  </span><span class="nt">CS_TOOLS_THOUGHTSPOT__URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${THOUGHTSPOT_URL}</span>
+</span><span id="__span-14-30"><a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a><span class="w">  </span><span class="nt">CS_TOOLS_THOUGHTSPOT__USERNAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${THOUGHTSPOT_USERNAME}</span>
+</span><span id="__span-14-31"><a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a><span class="w">  </span><span class="nt">CS_TOOLS_THOUGHTSPOT__SECRET_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${THOUGHTSPOT_SECRET_KEY}</span>
+</span><span id="__span-14-32"><a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>
+</span><span id="__span-14-33"><a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a><span class="w">  </span><span class="c1"># GIT OPTIONS</span>
+</span><span id="__span-14-34"><a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a><span class="w">  </span><span class="nt">DIRECTORY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dogfood&quot;</span>
+</span><span id="__span-14-35"><a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a><span class="w">  </span><span class="nt">COMMIT_MESSAGE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AUTOMATED</span><span class="nv"> </span><span class="s">&gt;&gt;</span><span class="nv"> </span><span class="s">TS-CI</span><span class="nv"> </span><span class="s">${PIPELINE_TYPE}</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">${CI_PIPELINE_SOURCE}&quot;</span>
+</span><span id="__span-14-36"><a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a>
+</span><span id="__span-14-37"><a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>
+</span><span id="__span-14-38"><a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a><span class="nt">extract_tml_from_thoughtspot</span><span class="p">:</span>
+</span><span id="__span-14-39"><a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract</span>
+</span><span id="__span-14-40"><a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12-slim</span>
+</span><span id="__span-14-41"><a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-14-42"><a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PIPELINE_TYPE == &quot;extract&quot;</span>
+</span><span id="__span-14-43"><a id="__codelineno-14-43" name="__codelineno-14-43" href="#__codelineno-14-43"></a>
+</span><span id="__span-14-44"><a id="__codelineno-14-44" name="__codelineno-14-44" href="#__codelineno-14-44"></a><span class="w">  </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="__span-14-45"><a id="__codelineno-14-45" name="__codelineno-14-45" href="#__codelineno-14-45"></a><span class="w">    </span><span class="nt">CS_TOOLS_VERSION</span><span class="p">:</span><span class="w"> </span><span class="kt">!reference</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.cs_tools_setup</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">variables</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">CS_TOOLS_VERSION</span><span class="p p-Indicator">]</span>
+</span><span id="__span-14-46"><a id="__codelineno-14-46" name="__codelineno-14-46" href="#__codelineno-14-46"></a><span class="w">    </span><span class="nt">TS_METADATA_TYPES</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ALL&quot;</span>
+</span><span id="__span-14-47"><a id="__codelineno-14-47" name="__codelineno-14-47" href="#__codelineno-14-47"></a><span class="w">    </span><span class="nt">TS_OBJECT_TAG</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;version-controlled&quot;</span>
+</span><span id="__span-14-48"><a id="__codelineno-14-48" name="__codelineno-14-48" href="#__codelineno-14-48"></a><span class="w">    </span><span class="nt">TS_ORG</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;develop&quot;</span>
+</span><span id="__span-14-49"><a id="__codelineno-14-49" name="__codelineno-14-49" href="#__codelineno-14-49"></a><span class="w">    </span><span class="nt">TS_SOURCE_ENV_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ts-develop&quot;</span>
+</span><span id="__span-14-50"><a id="__codelineno-14-50" name="__codelineno-14-50" href="#__codelineno-14-50"></a>
+</span><span id="__span-14-51"><a id="__codelineno-14-51" name="__codelineno-14-51" href="#__codelineno-14-51"></a><span class="w">  </span><span class="nt">before_script</span><span class="p">:</span>
+</span><span id="__span-14-52"><a id="__codelineno-14-52" name="__codelineno-14-52" href="#__codelineno-14-52"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="kt">!reference</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.cs_tools_setup</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">before_script</span><span class="p p-Indicator">]</span>
+</span><span id="__span-14-53"><a id="__codelineno-14-53" name="__codelineno-14-53" href="#__codelineno-14-53"></a>
+</span><span id="__span-14-54"><a id="__codelineno-14-54" name="__codelineno-14-54" href="#__codelineno-14-54"></a><span class="w">  </span><span class="nt">script</span><span class="p">:</span>
+</span><span id="__span-14-55"><a id="__codelineno-14-55" name="__codelineno-14-55" href="#__codelineno-14-55"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#checkpoint</span>
+</span><span id="__span-14-56"><a id="__codelineno-14-56" name="__codelineno-14-56" href="#__codelineno-14-56"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cs_tools tools scriptability checkpoint --directory ${DIRECTORY} --environment ${TS_SOURCE_ENV_NAME} --metadata-types ${TS_METADATA_TYPES} --tags &quot;${TS_OBJECT_TAG}&quot; --org &quot;${TS_ORG}&quot; --config &quot;ENV:&quot;</span>
+</span><span id="__span-14-57"><a id="__codelineno-14-57" name="__codelineno-14-57" href="#__codelineno-14-57"></a>
+</span><span id="__span-14-58"><a id="__codelineno-14-58" name="__codelineno-14-58" href="#__codelineno-14-58"></a><span class="w">  </span><span class="nt">artifacts</span><span class="p">:</span>
+</span><span id="__span-14-59"><a id="__codelineno-14-59" name="__codelineno-14-59" href="#__codelineno-14-59"></a><span class="w">    </span><span class="nt">paths</span><span class="p">:</span>
+</span><span id="__span-14-60"><a id="__codelineno-14-60" name="__codelineno-14-60" href="#__codelineno-14-60"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DIRECTORY}/</span>
+</span><span id="__span-14-61"><a id="__codelineno-14-61" name="__codelineno-14-61" href="#__codelineno-14-61"></a>
+</span><span id="__span-14-62"><a id="__codelineno-14-62" name="__codelineno-14-62" href="#__codelineno-14-62"></a><span class="nt">validate_tml_on_thoughtspot</span><span class="p">:</span>
+</span><span id="__span-14-63"><a id="__codelineno-14-63" name="__codelineno-14-63" href="#__codelineno-14-63"></a><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate</span>
+</span><span id="__span-14-64"><a id="__codelineno-14-64" name="__codelineno-14-64" href="#__codelineno-14-64"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12-slim</span>
+</span><span id="__span-14-65"><a id="__codelineno-14-65" name="__codelineno-14-65" href="#__codelineno-14-65"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-14-66"><a id="__codelineno-14-66" name="__codelineno-14-66" href="#__codelineno-14-66"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PIPELINE_TYPE == &quot;validate&quot;</span>
+</span><span id="__span-14-67"><a id="__codelineno-14-67" name="__codelineno-14-67" href="#__codelineno-14-67"></a>
+</span><span id="__span-14-68"><a id="__codelineno-14-68" name="__codelineno-14-68" href="#__codelineno-14-68"></a><span class="w">  </span><span class="nt">before_script</span><span class="p">:</span>
+</span><span id="__span-14-69"><a id="__codelineno-14-69" name="__codelineno-14-69" href="#__codelineno-14-69"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="kt">!reference</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.cs_tools_setup</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">before_script</span><span class="p p-Indicator">]</span>
+</span><span id="__span-14-70"><a id="__codelineno-14-70" name="__codelineno-14-70" href="#__codelineno-14-70"></a>
+</span><span id="__span-14-71"><a id="__codelineno-14-71" name="__codelineno-14-71" href="#__codelineno-14-71"></a><span class="w">  </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="__span-14-72"><a id="__codelineno-14-72" name="__codelineno-14-72" href="#__codelineno-14-72"></a><span class="w">    </span><span class="nt">CS_TOOLS_VERSION</span><span class="p">:</span><span class="w"> </span><span class="kt">!reference</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.cs_tools_setup</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">variables</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">CS_TOOLS_VERSION</span><span class="p p-Indicator">]</span>
+</span><span id="__span-14-73"><a id="__codelineno-14-73" name="__codelineno-14-73" href="#__codelineno-14-73"></a><span class="w">    </span><span class="nt">TS_METADATA_TYPES</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TABLE&quot;</span>
+</span><span id="__span-14-74"><a id="__codelineno-14-74" name="__codelineno-14-74" href="#__codelineno-14-74"></a><span class="w">    </span><span class="nt">TS_ORG</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;production&quot;</span>
+</span><span id="__span-14-75"><a id="__codelineno-14-75" name="__codelineno-14-75" href="#__codelineno-14-75"></a><span class="w">    </span><span class="nt">TS_SOURCE_ENV_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ts-develop&quot;</span>
+</span><span id="__span-14-76"><a id="__codelineno-14-76" name="__codelineno-14-76" href="#__codelineno-14-76"></a><span class="w">    </span><span class="nt">TS_TARGET_ENV_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ts-production&quot;</span>
+</span><span id="__span-14-77"><a id="__codelineno-14-77" name="__codelineno-14-77" href="#__codelineno-14-77"></a><span class="w">    </span><span class="nt">TS_DEPLOY_TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DELTA&quot;</span>
+</span><span id="__span-14-78"><a id="__codelineno-14-78" name="__codelineno-14-78" href="#__codelineno-14-78"></a>
+</span><span id="__span-14-79"><a id="__codelineno-14-79" name="__codelineno-14-79" href="#__codelineno-14-79"></a><span class="w">  </span><span class="nt">script</span><span class="p">:</span>
+</span><span id="__span-14-80"><a id="__codelineno-14-80" name="__codelineno-14-80" href="#__codelineno-14-80"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#deploy_2</span>
+</span><span id="__span-14-81"><a id="__codelineno-14-81" name="__codelineno-14-81" href="#__codelineno-14-81"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cs_tools tools scriptability deploy --directory ${DIRECTORY} --source-environment ${TS_SOURCE_ENV_NAME} --target-environment ${TS_TARGET_ENV_NAME} --deploy-type ${TS_DEPLOY_TYPE} --deploy-policy VALIDATE_ONLY --metadata-types ${TS_METADATA_TYPES} --org &quot;${TS_ORG}&quot; --config &quot;ENV:&quot;</span>
+</span><span id="__span-14-82"><a id="__codelineno-14-82" name="__codelineno-14-82" href="#__codelineno-14-82"></a>
+</span><span id="__span-14-83"><a id="__codelineno-14-83" name="__codelineno-14-83" href="#__codelineno-14-83"></a><span class="nt">deploy_tml_to_thoughtspot</span><span class="p">:</span>
+</span><span id="__span-14-84"><a id="__codelineno-14-84" name="__codelineno-14-84" href="#__codelineno-14-84"></a><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deploy</span>
+</span><span id="__span-14-85"><a id="__codelineno-14-85" name="__codelineno-14-85" href="#__codelineno-14-85"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12-slim</span>
+</span><span id="__span-14-86"><a id="__codelineno-14-86" name="__codelineno-14-86" href="#__codelineno-14-86"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-14-87"><a id="__codelineno-14-87" name="__codelineno-14-87" href="#__codelineno-14-87"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PIPELINE_TYPE == &quot;deploy&quot;</span>
+</span><span id="__span-14-88"><a id="__codelineno-14-88" name="__codelineno-14-88" href="#__codelineno-14-88"></a>
+</span><span id="__span-14-89"><a id="__codelineno-14-89" name="__codelineno-14-89" href="#__codelineno-14-89"></a><span class="w">  </span><span class="nt">before_script</span><span class="p">:</span>
+</span><span id="__span-14-90"><a id="__codelineno-14-90" name="__codelineno-14-90" href="#__codelineno-14-90"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="kt">!reference</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.cs_tools_setup</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">before_script</span><span class="p p-Indicator">]</span>
+</span><span id="__span-14-91"><a id="__codelineno-14-91" name="__codelineno-14-91" href="#__codelineno-14-91"></a>
+</span><span id="__span-14-92"><a id="__codelineno-14-92" name="__codelineno-14-92" href="#__codelineno-14-92"></a><span class="w">  </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="__span-14-93"><a id="__codelineno-14-93" name="__codelineno-14-93" href="#__codelineno-14-93"></a><span class="w">    </span><span class="nt">CS_TOOLS_VERSION</span><span class="p">:</span><span class="w"> </span><span class="kt">!reference</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">.cs_tools_setup</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">variables</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">CS_TOOLS_VERSION</span><span class="p p-Indicator">]</span>
+</span><span id="__span-14-94"><a id="__codelineno-14-94" name="__codelineno-14-94" href="#__codelineno-14-94"></a><span class="w">    </span><span class="nt">TS_ORG</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;production&quot;</span>
+</span><span id="__span-14-95"><a id="__codelineno-14-95" name="__codelineno-14-95" href="#__codelineno-14-95"></a><span class="w">    </span><span class="nt">TS_METADATA_TYPES</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TABLE&quot;</span>
+</span><span id="__span-14-96"><a id="__codelineno-14-96" name="__codelineno-14-96" href="#__codelineno-14-96"></a><span class="w">    </span><span class="nt">TS_OBJECT_TAG</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;temporary-tag-for-ci&quot;</span>
+</span><span id="__span-14-97"><a id="__codelineno-14-97" name="__codelineno-14-97" href="#__codelineno-14-97"></a><span class="w">    </span><span class="nt">TS_SOURCE_ENV_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ts-develop&quot;</span>
+</span><span id="__span-14-98"><a id="__codelineno-14-98" name="__codelineno-14-98" href="#__codelineno-14-98"></a><span class="w">    </span><span class="nt">TS_TARGET_ENV_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ts-production&quot;</span>
+</span><span id="__span-14-99"><a id="__codelineno-14-99" name="__codelineno-14-99" href="#__codelineno-14-99"></a><span class="w">    </span><span class="nt">TS_DEPLOY_TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DELTA&quot;</span>
+</span><span id="__span-14-100"><a id="__codelineno-14-100" name="__codelineno-14-100" href="#__codelineno-14-100"></a><span class="w">    </span><span class="nt">TS_DEPLOY_POLICY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ALL_OR_NONE&quot;</span>
+</span><span id="__span-14-101"><a id="__codelineno-14-101" name="__codelineno-14-101" href="#__codelineno-14-101"></a><span class="w">    </span><span class="nt">TS_CONTENT_AUTHOR</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+</span><span id="__span-14-102"><a id="__codelineno-14-102" name="__codelineno-14-102" href="#__codelineno-14-102"></a><span class="w">    </span><span class="nt">TS_SHARE_TO_GROUP</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+</span><span id="__span-14-103"><a id="__codelineno-14-103" name="__codelineno-14-103" href="#__codelineno-14-103"></a><span class="w">    </span><span class="nt">TS_SHARE_MODE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;READ_ONLY&quot;</span>
+</span><span id="__span-14-104"><a id="__codelineno-14-104" name="__codelineno-14-104" href="#__codelineno-14-104"></a>
+</span><span id="__span-14-105"><a id="__codelineno-14-105" name="__codelineno-14-105" href="#__codelineno-14-105"></a><span class="w">  </span><span class="nt">script</span><span class="p">:</span>
+</span><span id="__span-14-106"><a id="__codelineno-14-106" name="__codelineno-14-106" href="#__codelineno-14-106"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#deploy_2</span>
+</span><span id="__span-14-107"><a id="__codelineno-14-107" name="__codelineno-14-107" href="#__codelineno-14-107"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cs_tools tools scriptability deploy --directory ${DIRECTORY} --source-environment ${TS_SOURCE_ENV_NAME} --target-environment ${TS_TARGET_ENV_NAME} --deploy-type ${TS_DEPLOY_TYPE} --deploy-policy ${TS_DEPLOY_POLICY} --metadata-types ${TS_METADATA_TYPES} --tags &quot;${TS_OBJECT_TAG}&quot; --org &quot;${TS_ORG}&quot; --config &quot;ENV:&quot;</span>
+</span><span id="__span-14-108"><a id="__codelineno-14-108" name="__codelineno-14-108" href="#__codelineno-14-108"></a>
+</span><span id="__span-14-109"><a id="__codelineno-14-109" name="__codelineno-14-109" href="#__codelineno-14-109"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#transfer</span>
+</span><span id="__span-14-110"><a id="__codelineno-14-110" name="__codelineno-14-110" href="#__codelineno-14-110"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-14-111"><a id="__codelineno-14-111" name="__codelineno-14-111" href="#__codelineno-14-111"></a><span class="w">      </span><span class="no">if [ -n &quot;${TS_CONTENT_AUTHOR}&quot; ]; then</span>
+</span><span id="__span-14-112"><a id="__codelineno-14-112" name="__codelineno-14-112" href="#__codelineno-14-112"></a><span class="w">        </span><span class="no">cs_tools tools user-management transfer --tags ${TS_OBJECT_TAG} --to ${TS_CONTENT_AUTHOR} --org &quot;${TS_ORG}&quot; --config &quot;ENV:&quot;</span>
+</span><span id="__span-14-113"><a id="__codelineno-14-113" name="__codelineno-14-113" href="#__codelineno-14-113"></a><span class="w">      </span><span class="no">else</span>
+</span><span id="__span-14-114"><a id="__codelineno-14-114" name="__codelineno-14-114" href="#__codelineno-14-114"></a><span class="w">        </span><span class="no">echo &quot;Skipping ASSIGN_CONTENT_AUTHOR as $TS_CONTENT_AUTHOR is empty.&quot;</span>
+</span><span id="__span-14-115"><a id="__codelineno-14-115" name="__codelineno-14-115" href="#__codelineno-14-115"></a><span class="w">      </span><span class="no">fi</span>
+</span><span id="__span-14-116"><a id="__codelineno-14-116" name="__codelineno-14-116" href="#__codelineno-14-116"></a>
+</span><span id="__span-14-117"><a id="__codelineno-14-117" name="__codelineno-14-117" href="#__codelineno-14-117"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#from-tag_1</span>
+</span><span id="__span-14-118"><a id="__codelineno-14-118" name="__codelineno-14-118" href="#__codelineno-14-118"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-14-119"><a id="__codelineno-14-119" name="__codelineno-14-119" href="#__codelineno-14-119"></a><span class="w">      </span><span class="no">if [ -n &quot;${TS_SHARE_TO_GROUP}&quot; ]; then</span>
+</span><span id="__span-14-120"><a id="__codelineno-14-120" name="__codelineno-14-120" href="#__codelineno-14-120"></a><span class="w">        </span><span class="no">cs_tools tools bulk-sharing from-tag --tag ${TS_OBJECT_TAG} --groups &quot;${TS_SHARE_TO_GROUP}&quot; --share-mode ${TS_SHARE_MODE} --no-prompt --org &quot;${TS_ORG}&quot; --config &quot;ENV:&quot;</span>
+</span><span id="__span-14-121"><a id="__codelineno-14-121" name="__codelineno-14-121" href="#__codelineno-14-121"></a><span class="w">      </span><span class="no">else</span>
+</span><span id="__span-14-122"><a id="__codelineno-14-122" name="__codelineno-14-122" href="#__codelineno-14-122"></a><span class="w">        </span><span class="no">echo &quot;Skipping SHARING_CONTENT as $TS_SHARE_TO_GROUP is empty.&quot;</span>
+</span><span id="__span-14-123"><a id="__codelineno-14-123" name="__codelineno-14-123" href="#__codelineno-14-123"></a><span class="w">      </span><span class="no">fi</span>
+</span><span id="__span-14-124"><a id="__codelineno-14-124" name="__codelineno-14-124" href="#__codelineno-14-124"></a>
+</span><span id="__span-14-125"><a id="__codelineno-14-125" name="__codelineno-14-125" href="#__codelineno-14-125"></a><span class="w">    </span><span class="c1"># https://thoughtspot.github.io/cs_tools/generated/cli/reference.html#from-tag</span>
+</span><span id="__span-14-126"><a id="__codelineno-14-126" name="__codelineno-14-126" href="#__codelineno-14-126"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cs_tools tools bulk-deleter from-tag --tag ${TS_OBJECT_TAG} --tag-only --no-prompt --org &quot;${TS_ORG}&quot; --config &quot;ENV:&quot;</span>
+</span><span id="__span-14-127"><a id="__codelineno-14-127" name="__codelineno-14-127" href="#__codelineno-14-127"></a>
+</span><span id="__span-14-128"><a id="__codelineno-14-128" name="__codelineno-14-128" href="#__codelineno-14-128"></a><span class="w">  </span><span class="nt">artifacts</span><span class="p">:</span>
+</span><span id="__span-14-129"><a id="__codelineno-14-129" name="__codelineno-14-129" href="#__codelineno-14-129"></a><span class="w">    </span><span class="nt">paths</span><span class="p">:</span>
+</span><span id="__span-14-130"><a id="__codelineno-14-130" name="__codelineno-14-130" href="#__codelineno-14-130"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DIRECTORY}/</span>
+</span><span id="__span-14-131"><a id="__codelineno-14-131" name="__codelineno-14-131" href="#__codelineno-14-131"></a>
+</span><span id="__span-14-132"><a id="__codelineno-14-132" name="__codelineno-14-132" href="#__codelineno-14-132"></a><span class="nt">commit_changes</span><span class="p">:</span>
+</span><span id="__span-14-133"><a id="__codelineno-14-133" name="__codelineno-14-133" href="#__codelineno-14-133"></a><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">commit</span>
+</span><span id="__span-14-134"><a id="__codelineno-14-134" name="__codelineno-14-134" href="#__codelineno-14-134"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:latest</span>
+</span><span id="__span-14-135"><a id="__codelineno-14-135" name="__codelineno-14-135" href="#__codelineno-14-135"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-14-136"><a id="__codelineno-14-136" name="__codelineno-14-136" href="#__codelineno-14-136"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$PIPELINE_TYPE != &quot;validate&quot;</span>
+</span><span id="__span-14-137"><a id="__codelineno-14-137" name="__codelineno-14-137" href="#__codelineno-14-137"></a><span class="w">  </span><span class="nt">needs</span><span class="p">:</span>
+</span><span id="__span-14-138"><a id="__codelineno-14-138" name="__codelineno-14-138" href="#__codelineno-14-138"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_tml_from_thoughtspot</span>
+</span><span id="__span-14-139"><a id="__codelineno-14-139" name="__codelineno-14-139" href="#__codelineno-14-139"></a><span class="w">      </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-14-140"><a id="__codelineno-14-140" name="__codelineno-14-140" href="#__codelineno-14-140"></a><span class="w">      </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-14-141"><a id="__codelineno-14-141" name="__codelineno-14-141" href="#__codelineno-14-141"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deploy_tml_to_thoughtspot</span>
+</span><span id="__span-14-142"><a id="__codelineno-14-142" name="__codelineno-14-142" href="#__codelineno-14-142"></a><span class="w">      </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-14-143"><a id="__codelineno-14-143" name="__codelineno-14-143" href="#__codelineno-14-143"></a><span class="w">      </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-14-144"><a id="__codelineno-14-144" name="__codelineno-14-144" href="#__codelineno-14-144"></a>
+</span><span id="__span-14-145"><a id="__codelineno-14-145" name="__codelineno-14-145" href="#__codelineno-14-145"></a><span class="w">  </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="__span-14-146"><a id="__codelineno-14-146" name="__codelineno-14-146" href="#__codelineno-14-146"></a><span class="w">    </span><span class="c1"># WE&#39;LL USE FETCH STRATEGY TO PUSH CHANGES BACK TO GIT</span>
+</span><span id="__span-14-147"><a id="__codelineno-14-147" name="__codelineno-14-147" href="#__codelineno-14-147"></a><span class="w">    </span><span class="nt">GIT_STRATEGY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fetch</span>
+</span><span id="__span-14-148"><a id="__codelineno-14-148" name="__codelineno-14-148" href="#__codelineno-14-148"></a><span class="w">    </span><span class="nt">GIT_CHECKOUT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+</span><span id="__span-14-149"><a id="__codelineno-14-149" name="__codelineno-14-149" href="#__codelineno-14-149"></a>
+</span><span id="__span-14-150"><a id="__codelineno-14-150" name="__codelineno-14-150" href="#__codelineno-14-150"></a><span class="w">  </span><span class="nt">script</span><span class="p">:</span>
+</span><span id="__span-14-151"><a id="__codelineno-14-151" name="__codelineno-14-151" href="#__codelineno-14-151"></a><span class="w">    </span><span class="c1"># INSTALL GIT AND SETUP AUTOCOMMITER</span>
+</span><span id="__span-14-152"><a id="__codelineno-14-152" name="__codelineno-14-152" href="#__codelineno-14-152"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apk add --no-cache git</span>
+</span><span id="__span-14-153"><a id="__codelineno-14-153" name="__codelineno-14-153" href="#__codelineno-14-153"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git config --global user.name &quot;GitLab CI&quot;</span>
+</span><span id="__span-14-154"><a id="__codelineno-14-154" name="__codelineno-14-154" href="#__codelineno-14-154"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git config --global user.email &quot;gitlab-ci@nowhere.io&quot;</span>
+</span><span id="__span-14-155"><a id="__codelineno-14-155" name="__codelineno-14-155" href="#__codelineno-14-155"></a>
+</span><span id="__span-14-156"><a id="__codelineno-14-156" name="__codelineno-14-156" href="#__codelineno-14-156"></a><span class="w">    </span><span class="c1"># MAKE SURE WE&#39;RE ON THE RIGHT BRANCH BEFORE ADDING FILES</span>
+</span><span id="__span-14-157"><a id="__codelineno-14-157" name="__codelineno-14-157" href="#__codelineno-14-157"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git checkout ${CI_COMMIT_REF_NAME}</span>
+</span><span id="__span-14-158"><a id="__codelineno-14-158" name="__codelineno-14-158" href="#__codelineno-14-158"></a>
+</span><span id="__span-14-159"><a id="__codelineno-14-159" name="__codelineno-14-159" href="#__codelineno-14-159"></a><span class="w">    </span><span class="c1"># ADD ALL FILES IN THE DIRECTORY</span>
+</span><span id="__span-14-160"><a id="__codelineno-14-160" name="__codelineno-14-160" href="#__codelineno-14-160"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git add ${DIRECTORY}/</span>
+</span><span id="__span-14-161"><a id="__codelineno-14-161" name="__codelineno-14-161" href="#__codelineno-14-161"></a>
+</span><span id="__span-14-162"><a id="__codelineno-14-162" name="__codelineno-14-162" href="#__codelineno-14-162"></a><span class="w">    </span><span class="c1"># CREATE COMMIT, SKIPPING RE-TRIGGERING CI.</span>
+</span><span id="__span-14-163"><a id="__codelineno-14-163" name="__codelineno-14-163" href="#__codelineno-14-163"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git commit -m &quot;${COMMIT_MESSAGE} [skip ci]&quot;</span>
+</span><span id="__span-14-164"><a id="__codelineno-14-164" name="__codelineno-14-164" href="#__codelineno-14-164"></a>
+</span><span id="__span-14-165"><a id="__codelineno-14-165" name="__codelineno-14-165" href="#__codelineno-14-165"></a><span class="w">    </span><span class="c1"># PUSH CHANGES BACK USING THE ACCESS TOKEN</span>
+</span><span id="__span-14-166"><a id="__codelineno-14-166" name="__codelineno-14-166" href="#__codelineno-14-166"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git push &quot;https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git&quot; HEAD:${CI_COMMIT_REF_NAME}</span>
+</span></code></pre></div>
+</details>
+</div>
+<div class="tabbed-block">
+<details class="abstract">
+<summary>Dockerfile</summary>
+<p><strong class="fc-purple">Coming soon!</strong></p>
+</details>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="frequently-asked-questions">Frequently Asked Questions</h3>
+<details class="question">
+<summary>Can CS Tools deploy TML if I would break my downstream dependents in Production?</summary>
+<p><strong class="fc-red">No.</strong> <strong>CS Tools</strong> simply runs the <code>tml/import</code> API after mapping the target environment's GUIDs onto
+the incoming TML. However, it cannot change the limitations that the target <strong>ThoughtSpot</strong> system imposes.</p>
+<p>There are ways to mitigate breaking changes in <strong>ThoughtSpot</strong> and avoid the dependency problem, but they are out of
+scope for this guide.</p>
+</details>
+<details class="question">
+<summary>Will CS Tools manage my merge conflicts?</summary>
+<p><strong class="fc-red">No.</strong> Simply put, <strong>CS Tools</strong> as a codebase has no idea <code>git</code> even exists. This is done intentionally,
+as it leaves <code>git</code> itself to handle, warn, or block on any specific issues related to the version controlling system.</p>
+<p>There are ways to effectively handle merge conflicts in <code>git</code>, but they are out of scope for this guide.</p>
+</details>
+<details class="question">
+<summary>What happens if I don't push my changes to a repository?</summary>
+<p>Typically -- it is a non-destructive action to export or import TML. If you were testing your workflow and forgot to
+commit the last round of changes to your branch, you can typically re-run the workflow and either checkpoint or
+deploy again. <span class=fc-green>Just make sure to save your work the second time!</span></p>
+</details>
+<details class="question">
+<summary>Can I revert a commit?</summary>
+<p><strong>Yes!</strong> This is a function of <code>git</code> itself and can be thought of as "totally outside the scope of <strong>CS Tools</strong>".
+However, if you are trying to <strong class="fc-purple">deploy</strong> a prior commit back up to you <strong>ThoughtSpot</strong> environment,
+then the question really becomes <span class=fc-green>"Can CS Tools deploy TML if I would break my downstream
+dependents in Production?"</span></p>
+</details>
+<hr />
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+  
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2021 ThoughtSpot Inc. All Rights Reserved
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/thoughtspot/cs_tools" target="_blank" rel="noopener" title="find us on github" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["announce.dismiss", "content.code.copy", "content.code.annotate", "content.tabs.link", "navigation.footer", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.instant"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+        <script src="../../js/open_in_new_tab.js"></script>
+      
+    
+  </body>
+</html>
