@@ -80,25 +80,25 @@ class Snowflake(DatabaseSyncer):
         warehouse = self.warehouse
         return f"<SnowflakeSyncer ACCOUNT='{account_name}', USER='{username}', ROLE='{role}', WAREHOUSE='{warehouse}'>"
 
-    def _fetch_private_key(self) -> bytes:
-        """
-        Summarized from the Snowflake SQLAlchemy documentation.
+    # def _fetch_private_key(self) -> bytes:
+    #     """
+    #     Summarized from the Snowflake SQLAlchemy documentation.
 
-        https://github.com/snowflakedb/snowflake-sqlalchemy/tree/main#key-pair-authentication-support
-        """
-        from cryptography.hazmat.backends import default_backend  # type: ignore
-        from cryptography.hazmat.primitives import serialization  # type: ignore
+    #     https://github.com/snowflakedb/snowflake-sqlalchemy/tree/main#key-pair-authentication-support
+    #     """
+    #     from cryptography.hazmat.backends import default_backend  # type: ignore
+    #     from cryptography.hazmat.primitives import serialization  # type: ignore
 
-        assert self.private_key_path is not None
-        pem_data = self.private_key_path.read_bytes()
-        passphrase = self.secret.encode() if self.secret is not None else self.secret
-        private_key = serialization.load_pem_private_key(data=pem_data, password=passphrase, backend=default_backend())
-        pk_as_bytes = private_key.private_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
-        )
-        return pk_as_bytes
+    #     assert self.private_key_path is not None
+    #     pem_data = self.private_key_path.read_bytes()
+    #     passphrase = self.secret.encode() if self.secret is not None else self.secret
+    #     private_key = serialization.load_pem_private_key(data=pem_data,password=passphrase,backend=default_backend())
+    #     pk_as_bytes = private_key.private_bytes(
+    #         encoding=serialization.Encoding.DER,
+    #         format=serialization.PrivateFormat.PKCS8,
+    #         encryption_algorithm=serialization.NoEncryption(),
+    #     )
+    #     return pk_as_bytes
 
     def make_url(self) -> URL:
         """Format a connection string for the Snowflake JDBC driver."""
@@ -123,7 +123,9 @@ class Snowflake(DatabaseSyncer):
         # SNOWFLAKE DOCS:
         # https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect#using-key-pair-authentication-key-pair-rotation
         if self.authentication == "key-pair":
-            url_kwargs["connect_args"]["private_key"] = self._fetch_private_key()
+            # url_kwargs["connect_args"]["private_key"] = self._fetch_private_key()
+            url_kwargs["private_key_file"] = self.private_key_path
+            url_kwargs["private_key_file_pwd"] = self.secret
 
         # SNOWFLAKE DOCS:
         # https://docs.snowflake.com/en/user-guide/admin-security-fed-auth-use#browser-based-sso
