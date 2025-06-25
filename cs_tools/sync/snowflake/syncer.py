@@ -88,7 +88,6 @@ class Snowflake(DatabaseSyncer):
     #     """
     #     from cryptography.hazmat.backends import default_backend  # type: ignore
     #     from cryptography.hazmat.primitives import serialization  # type: ignore
-
     #     assert self.private_key_path is not None
     #     pem_data = self.private_key_path.read_bytes()
     #     passphrase = self.secret.encode() if self.secret is not None else self.secret
