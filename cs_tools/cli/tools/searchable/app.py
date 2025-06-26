@@ -325,7 +325,7 @@ def bi_server(
         + ("" if from_date is None else f" [timestamp] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if to_date is None else f" [timestamp] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if not ts.session_context.thoughtspot.is_orgs_enabled else " [org id]")
-        + ("" if org_override is None else f" [org id] = {ts.org.guid_for(org_override)}")
+        + ("" if org_override is None else f" [org id] = {org_override}")
     )
 
     TOOL_TASKS = [
