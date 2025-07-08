@@ -244,7 +244,7 @@ def delete(
         with tracker["DELETE"] as this_task:
             this_task.total = len(user_identifiers)
 
-            users_to_delete: set[_types.GUID] = {metadata_object["guid"] for metadata_object in user_identifiers}
+            users_to_delete: set[_types.GUID] = user_identifiers
             delete_attempts = collections.defaultdict(int)
 
             async def _delete_and_advance(guid: _types.GUID) -> None:
@@ -333,15 +333,19 @@ def sync(
             CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
 
             with tracker["TS_GROUP"]:
-                c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
-                _ = utils.run_sync(c)
+                c = ts.api.groups_search_v1()
+                r = utils.run_sync(c)
+                _ = r.json()
+
+                # c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
+                # _ = utils.run_sync(c)
 
                 # DUMP GROUP DATA
-                d = searchable.api_transformer.ts_group(data=_, cluster=CLUSTER_UUID)
+                d = searchable.api_transformer.to_group_v1(data=_, cluster=CLUSTER_UUID)
                 existing[searchable.models.Group.__tablename__].extend(d)
 
                 # DUMP GROUP->GROUP_MEMBERSHIP DATA
-                d = searchable.api_transformer.ts_group_membership(data=_, cluster=CLUSTER_UUID)
+                d = searchable.api_transformer.to_group_membership(data=_, cluster=CLUSTER_UUID)
                 existing[searchable.models.GroupMembership.__tablename__].extend(d)
 
             with tracker["TS_PRIVILEGE"]:
@@ -349,7 +353,7 @@ def sync(
                 # TODO: GROUP->ROLE DATA.
 
                 # DUMP GROUP->PRIVILEGE DATA
-                d = searchable.api_transformer.ts_group_privilege(data=_, cluster=CLUSTER_UUID)
+                d = searchable.api_transformer.to_group_privilege(data=_, cluster=CLUSTER_UUID)
                 existing[searchable.models.GroupPrivilege.__tablename__].extend(d)
 
             with tracker["TS_USER"]:

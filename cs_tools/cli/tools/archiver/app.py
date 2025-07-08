@@ -41,6 +41,19 @@ def _tick_tock(task: px.WorkTask) -> None:
         task.advance(step=1)
 
 
+def get_group_users(guids: list[_types.ObjectIdentifier], users_profiles: list[dict]):
+    users = []
+    for guid in guids:
+        for user in users_profiles:
+            if guid in user["assignedGroups"]:
+                users.append(user["header"])
+
+            if guid in user["inheritedGroups"]:
+                users.append(user["header"])
+
+    return users
+
+
 app = AsyncTyper(
     help="""
     Manage stale answers and liveboards within your platform.
@@ -156,7 +169,7 @@ def identify(
 
             SEARCH_TOKENS = (
                 # SELECT TS: BI ACTIVITY ON ANY ACTIVITY WITH A QUERY
-                "[query text] != '{null}' "
+                # "[query text] != '{null}' "
                 # FILTER OUT AD-HOC SEARCH
                 "[user action] != [user action].answer_unsaved "
                 # FILTER OUT POTENTIAL DATA QUALITY ISSUES ? (just here for safety~)
@@ -185,20 +198,69 @@ def identify(
 
         with tracker["GATHER_METADATA"]:
             if only_groups or ignore_groups:
-                c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
-                d = utils.run_sync(c)
+                c = ts.api.groups_search_v1()
+                r = utils.run_sync(c)
+                d = r.json()
 
+                # Inline with V1 Group API.
                 all_groups = [
                     {
-                        "guid": group["id"],
-                        "name": group["name"],
-                        "users": group["users"],
+                        "guid": group["header"]["id"],
+                        "name": group["header"]["name"],
                     }
                     for group in d
                 ]
 
-                only_groups = [group["guid"] for group in all_groups if group["name"] in (only_groups or [])]  # type: ignore[assignment]
-                ignore_groups = [group["guid"] for group in all_groups if group["name"] in (ignore_groups or [])]  # type: ignore[assignment]
+                # c = workflows.paginator(ts.api.groups_search, record_size=150_000, timeout=60 * 15)
+                # d = utils.run_sync(c)
+
+                # all_groups = [
+                #     {
+                #         "guid": group["id"],
+                #         "name": group["name"],
+                #         "users": group["users"],
+                #     }
+                #     for group in d
+                # ]
+
+                only_groups_lst = [group["guid"] for group in all_groups if group["name"] in (only_groups or [])]  # type: ignore[assignment]
+                ignore_groups_lst = [group["guid"] for group in all_groups if group["name"] in (ignore_groups or [])]  # type: ignore[assignment]
+
+                if only_groups is not None:
+                    users_profiles: list = []
+                    for guid in only_groups_lst:
+                        c = ts.api.group_list_users(group_guid=guid)
+                        r = r = utils.run_sync(c)
+                        users = r.json()
+                        if not users:
+                            # Exception needs to be redone
+                            info = {
+                                "reason": "Group names are case sensitive. "
+                                + "You can find a group's 'Group Name' in the Admin panel.",
+                                "mitigation": "Verify the name and try again.",
+                                "type": "Group",
+                            }
+                            raise Exception(str(info)) from None
+                        users_profiles.extend(users)
+                    users_only = [user["id"] for user in get_group_users(only_groups_lst, users_profiles)]
+
+                if ignore_groups is not None:
+                    users_profiles: list = []
+                    for guid in ignore_groups_lst:
+                        c = ts.api.group_list_users(group_guid=guid)
+                        r = utils.run_sync(c)
+                        users = r.json()
+                        if not users:
+                            info = {
+                                "reason": "Group names are case sensitive. "
+                                + "You can find a group's 'Group Name' in the Admin panel.",
+                                "mitigation": "Verify the name and try again.",
+                                "type": "Group",
+                            }
+                            raise Exception(str(info)) from None
+                        users_profiles.extend(users)
+
+                    users_ignore = [user["id"] for user in get_group_users(ignore_groups_lst, users_profiles)]
 
             if ignore_tags:
                 c = workflows.metadata.fetch_all(metadata_types=["TAG"], http=ts.api)
@@ -255,18 +317,18 @@ def identify(
                 # CHECK: THE AUTHOR IS A MEMBER OF GROUPS WHOSE CONTENT SHOULD NEEDS TO INCLUDED.
                 if only_groups is not None:
                     assert isinstance(only_groups, list), "Only Groups wasn't properly transformed to an array<GUID>."
-                    checks.append(metadata_object["author_guid"] in only_groups)
+                    checks.append(metadata_object["author_guid"] in users_only)
 
                 # CHECK: THE AUTHOR IS NOT A MEMBER OF GROUPS WHOSE CONTENT SHOULD BE IGNORED.
                 if ignore_groups is not None:
                     assert isinstance(
                         ignore_groups, list
                     ), "Ignore Groups wasn't properly transformed to an array<GUID>."
-                    checks.append(metadata_object["author_guid"] not in ignore_groups)
+                    checks.append(metadata_object["author_guid"] not in users_ignore)
 
                 if ignore_tags is not None:
                     assert isinstance(ignore_tags, list), "Ignore Tags wasn't properly transformed to an array<GUID>."
-                    checks.append(any(t["id"] not in ignore_tags for t in metadata_object["tags"]))
+                    checks.append(not any(t["id"] in ignore_tags for t in metadata_object["tags"]))
 
                 if all(checks):
                     filtered.append(metadata_object)
