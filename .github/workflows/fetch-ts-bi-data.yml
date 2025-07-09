@@ -1,4 +1,4 @@
-name: fetch-ts-bi-data
+name: Extract TS BI Server history with CS Tools using key pair snowflake auth.
 
 on:
   workflow_dispatch:
