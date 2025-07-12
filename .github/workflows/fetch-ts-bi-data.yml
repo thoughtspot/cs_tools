@@ -9,8 +9,8 @@ on:
         type: string
 
   schedule:
-    # Runs every day at 5:20 AM UTC
-    - cron: "20 5 * * *"
+    # Runs every day at 5:30 AM UTC
+    - cron: "30 5 * * *"
 
 jobs:
   fetch-ts-bi-data:
