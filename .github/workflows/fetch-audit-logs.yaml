@@ -10,8 +10,8 @@ on:
         type: string
 
   schedule:
-    # Runs every day at 5:20 AM UTC
-    - cron: "20 5 * * *"
+    # Runs every day at 5:45 AM UTC
+    - cron: "45 5 * * *"
 
 jobs:
   extract_data_from_thoughtspot:
