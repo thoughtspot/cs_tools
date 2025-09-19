@@ -665,3 +665,81 @@ def ts_audit_logs(data: list[_types.APIResult], *, cluster: _types.GUID) -> _typ
     reshaped.sort(key=operator.itemgetter(*CLUSTER_KEY))
 
     return reshaped
+
+
+def ts_ai_stats(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
+    """Reshapes /searchdata -> searchable.models.BIServer."""
+    reshaped: _types.TableRowsFormat = []
+
+    PARTITION_KEY = ft.partial(lambda r: r["ThoughtSpot Start Time"].date())
+    CLUSTER_KEY = ("ThoughtSpot Start Time", "User ID", "Visualization ID")
+
+    # KEEP TRACK OF DUPLICATE ROWS DUE TO DATA MANAGEMENT ISSUES.
+    seen: set[str] = set()
+
+    # ENSURE ALL DATA IS IN UTC PRIOR TO GENERATING ROW_NUMBERS.
+    data = [{**row, "ThoughtSpot Start Time": validators.ensure_datetime_is_utc.func(row["ThoughtSpot Start Time"])} for row in data]
+
+    # SORT PRIOR TO GROUP BY SO WE MAINTAIN CLUSTERING KEY SEMANTICS
+    data.sort(key=operator.itemgetter(*CLUSTER_KEY))
+
+    for row_date, rows in it.groupby(data, key=PARTITION_KEY):
+        # MANUAL ENUMERATION BECAUSE WE NEED TO ACCOUNT FOR DEDUPLICATION.
+        row_number = 0
+
+        for row in rows:
+            if (unique := f"{row['ThoughtSpot Start Time']}-{row['User ID']}-{row['Visualization ID']}") in seen:
+                continue
+
+            row_number += 1
+
+            reshaped.append(
+                models.AIStats.validated_init(
+                    **{
+                        "cluster_guid": cluster,
+                        "sk_dummy": f"{cluster}-{row_date}-{row_number}",
+                        "answer_session_id" :  row["Answer Session ID"],
+                        "query_latency" : row["Average Query Latency (External)"],
+                        "system_latency" :  row["Average System Latency (Overall)"],
+                        "connection" :  row["Connection"],
+                        "connection_id" :  row["Connection ID"],
+                        "db_auth_type" : row["DB Auth Type"],
+                        "db_type" :  row["DB Type"],
+                        "error_message" :  row["Error Message"],
+                        "external_database_query_id" : row["External Database Query ID"],
+                        "impressions" : row["Impressions"],
+                        "is_billable" :  row["Is Billable"],
+                        "is_system" :  row["Is System"],
+                        "model" :  row["Model"],
+                        "model_id" :  row["Model ID"],
+                        "object" :  row["Object"],
+                        "object_id" :  row["Object ID"],
+                        "object_subtype" :   row["Object Subtype"],
+                        "object_type" :  row["Object Type"],
+                        "org" :  row["Org"],
+                        "org_id" :   row["Org ID"],
+                        "query_count" :  row["Query Count"],
+                        "query_end_time" :  row["Query End Time"],
+                        "query_errors" :  row["Query Errors"],
+                        "query_start_time" :  row["Query Start Time"],
+                        "query_status" :  row["Query Status"],
+                        "sql_query" :  row["SQL Query"],
+                        "thoughtspot_query_id" :  row["ThoughtSpot Query ID"],
+                        "thoughtspot_start_time" :  row["ThoughtSpot Start Time"],
+                        "credits" :  row["Total Credits"],
+                        "nums_rows_fetched" :  row["Total Nums Rows Fetched"],
+                        "trace_id" :  row["Trace ID"],
+                        "user" :  row["User"],
+                        "user_action" :   row["User Action"],
+                        "user_action_count" :  row["User Action Count"],
+                        "user_count" :  row["User Count"],
+                        "user_display_name" :  row["User Display Name"],
+                        "user_id" :  row["User ID"],
+                        "visualization_id" :  row["Visualization ID"],
+                    }
+                ).model_dump()
+            )
+
+            seen.add(unique)
+
+    return reshaped
