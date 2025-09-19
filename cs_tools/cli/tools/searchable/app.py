@@ -375,8 +375,6 @@ def metadata(
     """
     ts = ctx.obj.thoughtspot
 
-    print(ts.__dict__.get('config').thoughtspot.concurrency)
-
     if not ts.session_context.user.is_admin:
         log.warning("Searchable is meant to be run from an Admin-level context, your results may vary..")
 
