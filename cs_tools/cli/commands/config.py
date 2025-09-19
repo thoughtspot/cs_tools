@@ -44,6 +44,7 @@ def create(
         None, help="the password you type on the ThoughtSpot login screen, use [b magenta]prompt[/] to type it hidden"
     ),
     secret: str = typer.Option(None, help="the trusted authentication secret key, found in the developer tab"),
+    concurrency: int = typer.Option(None, help="change the number call sending to TS, By default 15"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
     default_org: int = typer.Option(None, help="org ID to sign into by default"),
     temp_dir: custom_types.Directory = typer.Option(None, help="the temporary directory to use for uploading files"),
@@ -80,6 +81,7 @@ def create(
             "default_org": default_org,
             "disable_ssl": disable_ssl,
             "proxy": proxy,
+            "concurrency": concurrency,
         },
         "verbose": verbose,
         "temp_dir": temp_dir or cs_tools_venv.subdir(".tmp"),
@@ -117,6 +119,7 @@ def modify(
     ),
     secret: str = typer.Option(None, help="the trusted authentication secret key"),
     token: str = typer.Option(None, help="the V2 API bearer token"),
+    concurrency: int = typer.Option(None, help="change the number call sending to TS, By default 15"),
     temp_dir: custom_types.Directory = typer.Option(None, help="the temporary directory to use for uploading files"),
     disable_ssl: bool = typer.Option(
         None, "--disable-ssl", help="whether or not to turn off checking the SSL certificate"
@@ -161,6 +164,9 @@ def modify(
 
     if proxy is not None:
         data["thoughtspot"]["proxy"] = proxy
+
+    if concurrency is not None:
+        data["thoughtspot"]["concurrency"] = concurrency
 
     conf = CSToolsConfig.model_validate(data)
     conf.save()

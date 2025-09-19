@@ -28,7 +28,7 @@ class ThoughtSpot:
         self.config = config
         self.api = RESTAPIClient(
             base_url=str(config.thoughtspot.url),
-            concurrency=15,
+            concurrency= 15 if config.thoughtspot.concurrency is None else config.thoughtspot.concurrency,
             # cache_directory=config.temp_dir,
             verify=not config.thoughtspot.disable_ssl,
             proxy=config.thoughtspot.proxy,
