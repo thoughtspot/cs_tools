@@ -30,10 +30,10 @@ jobs:
 
     steps:
       - name: Get 7 days ago
-        run: echo "days_ago_7=$(date -d "-7 days" +'%Y-%m-%d')" >> $GITHUB_ENV
+        run: echo "days_ago_7=$(date -d "-38 days" +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Get 1 days ago
-        run: echo "days_ago_1=$(date -d "-1 days" +'%Y-%m-%d')" >> $GITHUB_ENV
+        run: echo "days_ago_1=$(date -d "-6 days" +'%Y-%m-%d')" >> $GITHUB_ENV
 
       # SETUP PYTHON.
       - name: Set up Python
