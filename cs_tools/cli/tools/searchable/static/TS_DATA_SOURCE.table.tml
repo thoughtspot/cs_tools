@@ -1,4 +1,4 @@
-guid: 9def4655-9c53-4487-924c-7e67403d1147
+guid: 54676606-6db8-4129-a077-2c55fcda775d
 table:
   name: TS_DATA_SOURCE
   description: "Data sources in ThoughtSpot hold the data which is presented in the UI. They may be internally located like Falcon, or externally linked to ThoughtSpot via the Connection interface."
@@ -67,3 +67,6 @@ table:
       name: TS_CLUSTER
     "on": "[TS_DATA_SOURCE::CLUSTER_GUID] = [TS_CLUSTER::Cluster GUID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

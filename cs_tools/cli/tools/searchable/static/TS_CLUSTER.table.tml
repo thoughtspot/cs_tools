@@ -1,4 +1,4 @@
-guid: 4c2c9fcb-2f73-4087-83a9-57ebf279b2a6
+guid: 1af2db98-2dee-44b9-a77a-8053a464faeb
 table:
   name: TS_CLUSTER
   db: << DATABASE >>
@@ -29,3 +29,6 @@ table:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

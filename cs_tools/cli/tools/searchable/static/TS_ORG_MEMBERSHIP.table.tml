@@ -1,4 +1,4 @@
-guid: 657f0e27-1163-4ab2-aa40-2896e641c10a
+guid: bcef03fe-f8e6-464d-b575-2630a43bdd73
 table:
   name: TS_ORG_MEMBERSHIP
   description: This is a link table. Users in ThoughtSpot may be a member of one or more Orgs.
@@ -43,3 +43,6 @@ table:
       name: TS_ORG
     "on": "[TS_ORG_MEMBERSHIP::CLUSTER_GUID] = [TS_ORG::CLUSTER_GUID] AND [TS_ORG_MEMBERSHIP::ORG_ID] = [TS_ORG::Org ID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

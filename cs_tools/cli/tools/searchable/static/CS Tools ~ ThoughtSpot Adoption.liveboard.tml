@@ -1,6 +1,6 @@
-guid: 1a5e1046-62e6-4f36-8c69-724f0adadb45
+guid: 0eef2c50-94d2-4a8d-98ea-984af4b1552d
 liveboard:
-  name: "CS Tools ~ ThoughtSpot Adoption"
+  name: CS Tools ~ ThoughtSpot Adoption
   description: |-
     Learn how your ThoughtSpot cluster is used..
 
@@ -28,9 +28,9 @@ liveboard:
         custom_name: Interaction Month
       table:
         table_columns:
-        - column_id: Month(Interaction Timestamp)
-          show_headline: false
         - column_id: Active Users
+          show_headline: false
+        - column_id: Month(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Month(Interaction Timestamp)
@@ -40,8 +40,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Month(Interaction Timestamp)
         - column_id: Active Users
+        - column_id: Month(Interaction Timestamp)
         axis_configs:
         - x:
           - Month(Interaction Timestamp)
@@ -50,7 +50,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Active Users\",\"columnProperty\": {}},{\"columnId\": \"Month(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}}],\"axisProperties\": [{\"id\": \"39bfc92d-3337-4840-9048-a69e05be6c71\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Active Users\"],\"isOpposite\": false}},{\"id\": \"a6aa5a83-fb3f-48c7-b325-9b1bae78d222\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Interaction Timestamp)\"]}}],\"systemSeriesColors\": [{\"serieName\": \"Active Users\",\"color\": \"#2770ef\"}]}"
       display_mode: CHART_MODE
-    viz_guid: 40a820f8-48be-4d4c-8a1a-5b5dc95635ab
+    viz_guid: ee514095-5bb3-462e-8f7d-09a65cee598f
   - id: Viz_2
     answer:
       name: Quarterly
@@ -73,9 +73,9 @@ liveboard:
         custom_name: Interaction Quarter
       table:
         table_columns:
-        - column_id: Quarter(Interaction Timestamp)
-          show_headline: false
         - column_id: Active Users
+          show_headline: false
+        - column_id: Quarter(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Quarter(Interaction Timestamp)
@@ -85,8 +85,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Quarter(Interaction Timestamp)
         - column_id: Active Users
+        - column_id: Quarter(Interaction Timestamp)
         axis_configs:
         - x:
           - Quarter(Interaction Timestamp)
@@ -95,7 +95,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":false,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Active Users\",\"columnProperty\": {}},{\"columnId\": \"Quarter(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}}],\"axisProperties\": [{\"id\": \"ad425049-732f-4826-8c89-9943a7335264\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Active Users\"],\"isOpposite\": false}},{\"id\": \"81cc6158-9690-4a45-b83a-fff67cb2d180\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Quarter(Interaction Timestamp)\"]}}],\"systemSeriesColors\": [{\"serieName\": \"Active Users\",\"color\": \"#2770ef\"}]}"
       display_mode: CHART_MODE
-    viz_guid: e4529afe-824a-4588-9d51-0088ae4e8553
+    viz_guid: 9098f4d3-a909-4fca-af14-43cc180389cd
   - id: Viz_3
     answer:
       name: Total
@@ -118,9 +118,9 @@ liveboard:
         custom_name: Interaction Year
       table:
         table_columns:
-        - column_id: Year(Interaction Timestamp)
-          show_headline: false
         - column_id: Active Users
+          show_headline: false
+        - column_id: Year(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Year(Interaction Timestamp)
@@ -130,8 +130,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Year(Interaction Timestamp)
         - column_id: Active Users
+        - column_id: Year(Interaction Timestamp)
         axis_configs:
         - x:
           - Year(Interaction Timestamp)
@@ -140,7 +140,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":false,\\\"showSparkline\\\":false,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Active Users\",\"columnProperty\": {}},{\"columnId\": \"Year(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}}],\"axisProperties\": [{\"id\": \"1c59b5f3-5f23-4ca1-bbca-2e275bbdba78\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Active Users\"],\"isOpposite\": false}},{\"id\": \"369dd33b-da1f-4e4b-a7f1-5c6d5a6c128d\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Year(Interaction Timestamp)\"]}}]}"
       display_mode: CHART_MODE
-    viz_guid: 02122bf1-236c-4afe-b764-cf5675712657
+    viz_guid: f001efc8-f6c0-487c-90c4-e8ed1356f35f
   - id: Viz_4
     answer:
       name: Day at a Glance
@@ -153,15 +153,17 @@ liveboard:
       - name: Active Users
       - name: Day of Week(Interaction Timestamp)
         custom_name: Day of the Week
+        sort_info:
+          category: DEFAULT
       - name: HOUR_OF_DAY(Interaction Timestamp)
         custom_name: Hour (UTC)
       table:
         table_columns:
+        - column_id: Active Users
+          show_headline: false
         - column_id: Day of Week(Interaction Timestamp)
           show_headline: false
         - column_id: HOUR_OF_DAY(Interaction Timestamp)
-          show_headline: false
-        - column_id: Active Users
           show_headline: false
         ordered_column_ids:
         - Day of Week(Interaction Timestamp)
@@ -172,9 +174,9 @@ liveboard:
       chart:
         type: LINE
         chart_columns:
+        - column_id: Active Users
         - column_id: Day of Week(Interaction Timestamp)
         - column_id: HOUR_OF_DAY(Interaction Timestamp)
-        - column_id: Active Users
         axis_configs:
         - x:
           - HOUR_OF_DAY(Interaction Timestamp)
@@ -185,7 +187,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"visibleSeriesNames\": [\"monday\",\"tuesday\",\"wednesday\",\"thursday\",\"friday\",\"sunday\",\"saturday\"],\"gridLines\": {\"xGridlineEnabled\": false,\"yGridlineEnabled\": true},\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"markersEnabled\": true,\"pivotSummariesState\": {}},\"showStackedLabels\": false,\"allLabels\": false,\"legendPosition\": \"TOP_LEGEND\"},\"columnProperties\": [{\"columnId\": \"Day of Week(Interaction Timestamp)\",\"columnProperty\": {\"dataLabels\": false}},{\"columnId\": \"HOUR_OF_DAY(Interaction Timestamp)\",\"columnProperty\": {\"dataLabels\": false}},{\"columnId\": \"Active Users\",\"columnProperty\": {\"dataLabels\": false}}],\"axisProperties\": [{\"id\": \"14c77fc6-2939-4c3e-8617-6b4c309d4b93\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"HOUR_OF_DAY(Interaction Timestamp)\"]}},{\"id\": \"a51e5436-4daf-4838-90b8-e618f232347d\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Active Users\"],\"format\": {\"category\": \"NUMBER\",\"numberFormatConfig\": {\"unit\": \"NONE\",\"decimals\": 0.0,\"negativeValueFormat\": \"PREFIX_DASH\",\"toSeparateThousands\": true},\"isCategoryEditable\": true},\"isOpposite\": false,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":true,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}}],\"seriesColors\": [{\"serieName\": \"0\",\"color\": \"#2E75F0\"},{\"serieName\": \"1\",\"color\": \"#48D1E0\"},{\"serieName\": \"2\",\"color\": \"#FCC838\"},{\"serieName\": \"3\",\"color\": \"#06BF7F\"},{\"serieName\": \"4\",\"color\": \"#8C62F5\"},{\"serieName\": \"5\",\"color\": \"#FF8142\"},{\"serieName\": \"6\",\"color\": \"#ABC7F9\"},{\"serieName\": \"7\",\"color\": \"#B5ECF2\"},{\"serieName\": \"8\",\"color\": \"#FDE9AF\"},{\"serieName\": \"9\",\"color\": \"#9BE5CB\"},{\"serieName\": \"10\",\"color\": \"#D1C0FB\"},{\"serieName\": \"11\",\"color\": \"#FFCCB3\"},{\"serieName\": \"12\",\"color\": \"#2359B6\"},{\"serieName\": \"13\",\"color\": \"#369FAA\"},{\"serieName\": \"14\",\"color\": \"#BF982A\"},{\"serieName\": \"15\",\"color\": \"#049160\"},{\"serieName\": \"16\",\"color\": \"#6A4ABA\"},{\"serieName\": \"17\",\"color\": \"#C26232\"},{\"serieName\": \"18\",\"color\": \"#71A1F4\"},{\"serieName\": \"19\",\"color\": \"#82DFE9\"},{\"serieName\": \"20\",\"color\": \"#FCD977\"},{\"serieName\": \"21\",\"color\": \"#56D3A8\"},{\"serieName\": \"22\",\"color\": \"#B094F8\"},{\"serieName\": \"23\",\"color\": \"#FFA97E\"},{\"serieName\": \"HOUR_OF_DAY(Interaction Timestamp)\",\"color\": \"#48d1e0\"},{\"serieName\": \"Day of Week(Interaction Timestamp)\",\"color\": \"#71A1F4\"},{\"serieName\": \"monday\",\"color\": \"#71A1F4\"},{\"serieName\": \"tuesday\",\"color\": \"#82DFE9\"},{\"serieName\": \"wednesday\",\"color\": \"#56D3A8\"},{\"serieName\": \"thursday\",\"color\": \"#FCD977\"},{\"serieName\": \"friday\",\"color\": \"#FFA97E\"},{\"serieName\": \"sunday\",\"color\": \"#A2ACBA\"},{\"serieName\": \"saturday\",\"color\": \"#BEC6D0\"}],\"systemSeriesColors\": [{\"serieName\": \"0\",\"color\": \"#2E75F0\"},{\"serieName\": \"1\",\"color\": \"#48D1E0\"},{\"serieName\": \"2\",\"color\": \"#FCC838\"},{\"serieName\": \"3\",\"color\": \"#06BF7F\"},{\"serieName\": \"4\",\"color\": \"#8C62F5\"},{\"serieName\": \"5\",\"color\": \"#FF8142\"},{\"serieName\": \"6\",\"color\": \"#ABC7F9\"},{\"serieName\": \"7\",\"color\": \"#B5ECF2\"},{\"serieName\": \"8\",\"color\": \"#FDE9AF\"},{\"serieName\": \"9\",\"color\": \"#9BE5CB\"},{\"serieName\": \"10\",\"color\": \"#D1C0FB\"},{\"serieName\": \"11\",\"color\": \"#FFCCB3\"},{\"serieName\": \"12\",\"color\": \"#2359B6\"},{\"serieName\": \"13\",\"color\": \"#369FAA\"},{\"serieName\": \"14\",\"color\": \"#BF982A\"},{\"serieName\": \"15\",\"color\": \"#049160\"},{\"serieName\": \"16\",\"color\": \"#6A4ABA\"},{\"serieName\": \"17\",\"color\": \"#C26232\"},{\"serieName\": \"18\",\"color\": \"#71A1F4\"},{\"serieName\": \"19\",\"color\": \"#82DFE9\"},{\"serieName\": \"20\",\"color\": \"#FCD977\"},{\"serieName\": \"21\",\"color\": \"#56D3A8\"},{\"serieName\": \"22\",\"color\": \"#B094F8\"},{\"serieName\": \"23\",\"color\": \"#FFA97E\"},{\"serieName\": \"HOUR_OF_DAY(Interaction Timestamp)\",\"color\": \"#48d1e0\"},{\"serieName\": \"Day of Week(Interaction Timestamp)\",\"color\": \"#71A1F4\"},{\"serieName\": \"monday\",\"color\": \"#2E75F0\"},{\"serieName\": \"tuesday\",\"color\": \"#48D1E0\"},{\"serieName\": \"wednesday\",\"color\": \"#FCC838\"},{\"serieName\": \"thursday\",\"color\": \"#06BF7F\"},{\"serieName\": \"friday\",\"color\": \"#8C62F5\"},{\"serieName\": \"saturday\",\"color\": \"#FF8142\"},{\"serieName\": \"sunday\",\"color\": \"#ABC7F9\"}]}"
       display_mode: CHART_MODE
-    viz_guid: b04863bb-285b-4312-8e41-eab4b84e0a55
+    viz_guid: fbbb33d7-b1de-45fa-9a42-7afe05079981
   - id: Viz_5
     answer:
       name: <b><font color="#8C62F5">Liveboard</font></b>
@@ -208,9 +210,9 @@ liveboard:
         custom_name: Interaction Month
       table:
         table_columns:
-        - column_id: Month(Interaction Timestamp)
-          show_headline: false
         - column_id: Interactions
+          show_headline: false
+        - column_id: Month(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Month(Interaction Timestamp)
@@ -220,8 +222,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Month(Interaction Timestamp)
         - column_id: Interactions
+        - column_id: Month(Interaction Timestamp)
         axis_configs:
         - x:
           - Month(Interaction Timestamp)
@@ -230,7 +232,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Interactions\",\"columnProperty\": {}},{\"columnId\": \"Month(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}}],\"axisProperties\": [{\"id\": \"4580eece-a25f-4eef-b675-7ca4553165bd\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Interactions\"],\"isOpposite\": false}},{\"id\": \"aee833f5-808f-4416-bfbd-ae3c9b578196\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"Interactions\",\"color\": \"#8C62F5\"}],\"systemSeriesColors\": [{\"serieName\": \"Interactions\",\"color\": \"#2770ef\"}]}"
       display_mode: CHART_MODE
-    viz_guid: 22af151d-a330-41b7-afcc-6937da3862e0
+    viz_guid: 76a1c1eb-a061-4dba-a0df-103801ba9238
   - id: Viz_6
     answer:
       name: Searches
@@ -253,9 +255,9 @@ liveboard:
         custom_name: Interaction Month
       table:
         table_columns:
-        - column_id: Month(Interaction Timestamp)
-          show_headline: false
         - column_id: Interactions
+          show_headline: false
+        - column_id: Month(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Month(Interaction Timestamp)
@@ -265,8 +267,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Month(Interaction Timestamp)
         - column_id: Interactions
+        - column_id: Month(Interaction Timestamp)
         axis_configs:
         - x:
           - Month(Interaction Timestamp)
@@ -275,7 +277,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Interactions\",\"columnProperty\": {}},{\"columnId\": \"Month(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}}],\"axisProperties\": [{\"id\": \"4580eece-a25f-4eef-b675-7ca4553165bd\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Interactions\"],\"isOpposite\": false}},{\"id\": \"aee833f5-808f-4416-bfbd-ae3c9b578196\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"Interactions\",\"color\": \"#FCC838\"}],\"systemSeriesColors\": [{\"serieName\": \"Interactions\",\"color\": \"#2770ef\"}]}"
       display_mode: CHART_MODE
-    viz_guid: c9b90042-4f34-46c8-bcda-f4203107932f
+    viz_guid: 0999cd2e-0481-4dca-b153-d412dba63642
   - id: Viz_7
     answer:
       name: <b><font color="#06BF7F">Answer</font></b>
@@ -298,9 +300,9 @@ liveboard:
         custom_name: Interaction Month
       table:
         table_columns:
-        - column_id: Month(Interaction Timestamp)
-          show_headline: false
         - column_id: Interactions
+          show_headline: false
+        - column_id: Month(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Month(Interaction Timestamp)
@@ -310,8 +312,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Month(Interaction Timestamp)
         - column_id: Interactions
+        - column_id: Month(Interaction Timestamp)
         axis_configs:
         - x:
           - Month(Interaction Timestamp)
@@ -320,17 +322,17 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Interactions\",\"columnProperty\": {}},{\"columnId\": \"Month(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}}],\"axisProperties\": [{\"id\": \"4580eece-a25f-4eef-b675-7ca4553165bd\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Interactions\"],\"isOpposite\": false}},{\"id\": \"aee833f5-808f-4416-bfbd-ae3c9b578196\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"Interactions\",\"color\": \"#06BF7F\"}],\"systemSeriesColors\": [{\"serieName\": \"Interactions\",\"color\": \"#2770ef\"}]}"
       display_mode: CHART_MODE
-    viz_guid: e12bd473-8863-4000-a6e4-aebe7a4367d7
+    viz_guid: 27dbc58f-c1bc-4b00-965a-22bb7fa99244
   - id: Viz_8
-    viz_guid: 1b81b3bb-8d4e-41d7-9bda-434f1a0a5719
+    viz_guid: adab69d8-291c-43b6-8b1c-0f3142151a0f
     note_tile:
       html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><i><em class=\"theme-module__editor-text-italic\">In </em></i><b><strong class=\"theme-module__editor-text-bold\">ThoughtSpot</strong></b><i><em class=\"theme-module__editor-text-italic\">, an </em></i><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">active user</strong></b></i><i><em class=\"theme-module__editor-text-italic\"> is defined as someone who has interacted with Search, Answers, or Liveboards.</em></i></p>"
   - id: Viz_9
-    viz_guid: c3c855fe-106d-4557-b794-03f63ad6ab07
+    viz_guid: 04355eb1-c4fa-4bb6-9a76-71e5f8dccfdc
     note_tile:
       html_parsed_string: "<h2 dir=\"ltr\"><span style=\"white-space: pre-wrap;\">Data Sources</span></h2><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">1/ TS: BI Server</strong></b><span style=\"white-space: pre-wrap;\"> - [</span><u><span class=\"theme-module__editor-text-underline\" style=\"white-space: pre-wrap;\">command</span></u><span style=\"white-space: pre-wrap;\"> cs_tools searchable bi-server]</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><i><em class=\"theme-module__editor-text-italic\" style=\"white-space: pre-wrap;\">A built-in worksheet which describes how Users interact with content created in ThoughtSpot.</em></i></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">2/ ThoughtSpot Worksheets</strong></b><span style=\"white-space: pre-wrap;\"> - [</span><u><span class=\"theme-module__editor-text-underline\" style=\"white-space: pre-wrap;\">command</span></u><span style=\"white-space: pre-wrap;\"> cs_tools searchable metadata]</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><i><em class=\"theme-module__editor-text-italic\" style=\"white-space: pre-wrap;\">Worksheet columns' settings are included, as is the data source (Falcon, Connection) and which cluster/org the Worksheet belongs to. The \"Worksheet\" field in this Liveboard is not unique - if you have identically named worksheets, consider adding the guid to disambiguate.</em></i></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">3/ ThoughtSpot Dependencies</strong></b><span style=\"white-space: pre-wrap;\"> - [</span><u><span class=\"theme-module__editor-text-underline\" style=\"white-space: pre-wrap;\">command</span></u><span style=\"white-space: pre-wrap;\"> cs_tools searchable metadata]</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><i><em class=\"theme-module__editor-text-italic\" style=\"white-space: pre-wrap;\">Objects which are can be created from Worksheets are considered as dependencies. (primarily these are Liveboards and Answers)</em></i></p>"
   - id: Viz_10
-    viz_guid: 6340d9b2-830d-4032-a29e-0a179311a0b7
+    viz_guid: fa5117f8-4800-4d30-877f-b0c232ba4a7f
     note_tile:
       html_parsed_string: "<h2 dir=\"ltr\"><span style=\"white-space: pre-wrap;\">Known Limitations</span></h2><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">1/ ThoughtSpot does not record the Searchable (anything that can produce a Search) that a visualization was generated from.</strong></b></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><span style=\"white-space: pre-wrap;\">This means that once you include any metadata - Answer/Liveboard name or \"upstream\" Worksheet/Data Source - in a Search against TS: BI Server, your values for Search activity will be vastly under-reported. Want to fix this?</span><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\"> </strong></b><a href=\"https://community.thoughtspot.com/s/idea/0873n000000kFQ0AAM/detail\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">Vote for it</strong></b></a><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\"> </strong></b><span style=\"white-space: pre-wrap;\">on </span><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">ThoughtSpot Community</strong></b><span style=\"white-space: pre-wrap;\">!</span></p><p class=\"theme-module__editor-paragraph\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">2/ Activity is double-counted when including multiple Groups.</strong></b></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><span style=\"white-space: pre-wrap;\">Because ThoughtSpot places no restriction on the number of groups that user may be a member of, or groups having their own memberships, attributing </span><u><span class=\"theme-module__editor-text-underline\" style=\"white-space: pre-wrap;\">exact</span></u><span style=\"white-space: pre-wrap;\"> activity metrics by group is impossible. Use these numbers directionally to understand how various groups impact your system.</span></p>"
   - id: Viz_11
@@ -341,15 +343,15 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: New Content Creation
+      - id: formula_New Content Creation
         name: New Content Creation
-        expr: "cumulative_sum ( [fx Unique Count of Created objects] , [Interaction Timestamp] )"
+        expr: "cumulative_sum ( [formula_fx Unique Count of Created objects] , [Interaction Timestamp] )"
         was_auto_generated: false
-      - id: fx Unique Count of Created objects
+      - id: formula_fx Unique Count of Created objects
         name: fx Unique Count of Created objects
         expr: "group_aggregate ( unique count ( [Object GUID] ) , query_groups ( ) , query_filters ( ) + { date ( [Interaction Timestamp] ) = date ( [Object Created At] ) } )"
         was_auto_generated: false
-      search_query: "[Interaction Timestamp].'last 3 months' [Active Users] [New Content Creation] [Interaction Timestamp] [Interaction Timestamp].weekly"
+      search_query: "[Interaction Timestamp].'last 3 months' [Active Users] [formula_New Content Creation] [Interaction Timestamp] [Interaction Timestamp].weekly"
       answer_columns:
       - name: Active Users
         custom_name: Weekly Active Users
@@ -366,11 +368,11 @@ liveboard:
         custom_name: Interaction Week
       table:
         table_columns:
-        - column_id: Week(Interaction Timestamp)
-          show_headline: false
         - column_id: Active Users
           show_headline: false
         - column_id: New Content Creation
+          show_headline: false
+        - column_id: Week(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Week(Interaction Timestamp)
@@ -381,9 +383,9 @@ liveboard:
       chart:
         type: LINE
         chart_columns:
-        - column_id: Week(Interaction Timestamp)
         - column_id: Active Users
         - column_id: New Content Creation
+        - column_id: Week(Interaction Timestamp)
         axis_configs:
         - x:
           - Week(Interaction Timestamp)
@@ -393,7 +395,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {\"xGridlineEnabled\": false,\"yGridlineEnabled\": false},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"markersEnabled\": true,\"dataFieldArea\": \"column\"},\"showStackedLabels\": false,\"allLabels\": false,\"legendPosition\": \"BOTTOM_LEGEND\"},\"columnProperties\": [{\"columnId\": \"Week(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}},{\"columnId\": \"Active Users\",\"columnProperty\": {\"dataLabels\": false}},{\"columnId\": \"New Content Creation\",\"columnProperty\": {\"dataLabels\": true,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"dataLabels\\\":{\\\"backgroundColor\\\":\\\"\\\",\\\"borderColor\\\":\\\"\\\",\\\"borderWidth\\\":\\\"\\\",\\\"filter\\\":{\\\"operator\\\":\\\"\\\",\\\"value\\\":\\\"\\\"},\\\"align\\\":\\\"center\\\",\\\"style\\\":{\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false},\\\"maxCharacters\\\":\\\"\\\"}}}\"}}],\"axisProperties\": [{\"id\": \"7f4a1a37-9cee-4117-973b-869c6fe9dff1\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Active Users\"],\"isOpposite\": false,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":false,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":true,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}},{\"id\": \"2cc460f2-aba0-4c66-a9bd-e647d6030927\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"New Content Creation\"],\"isOpposite\": true,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":false,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":true,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}},{\"id\": \"5ea745be-3788-4067-969c-5d341b6e6484\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Week(Interaction Timestamp)\"],\"name\": \"Interaction Week\",\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":true,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}}],\"seriesColors\": [{\"serieName\": \"f0d3f3a0-d0c4-4d62-8217-19753fefd805\",\"color\": \"#FCC838\"},{\"serieName\": \"f85cb6bd-2742-4cd0-aa6e-ab810eaa09a2\",\"color\": \"#48D1E0\"},{\"serieName\": \"New Content Creation\",\"color\": \"#FF8142\"},{\"serieName\": \"Active Users\",\"color\": \"#ABC7F9\"}],\"systemSeriesColors\": [{\"serieName\": \"f0d3f3a0-d0c4-4d62-8217-19753fefd805\",\"color\": \"#FCC838\"},{\"serieName\": \"f85cb6bd-2742-4cd0-aa6e-ab810eaa09a2\",\"color\": \"#48D1E0\"},{\"serieName\": \"Active Users\",\"color\": \"#FCC838\"},{\"serieName\": \"New Content Creation\",\"color\": \"#48D1E0\"}]}"
       display_mode: CHART_MODE
-    viz_guid: 4813f9a9-9a7c-44e8-bfc1-3c9472ba4e20
+    viz_guid: 72fdbab3-5cac-4cd1-9e01-f26831c52690
   - id: Viz_12
     answer:
       name: Query Errors
@@ -402,11 +404,11 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Errors
+      - id: formula_Errors
         name: Errors
         expr: "count_if ( [HTTP Response Status] = 'error' , [Incident ID] )"
         was_auto_generated: false
-      search_query: "[Errors] [Interaction Timestamp].monthly [Search Query] != '{null}'"
+      search_query: "[formula_Errors] [Interaction Timestamp].monthly [Search Query] != '{null}'"
       answer_columns:
       - name: Errors
         format:
@@ -421,9 +423,9 @@ liveboard:
         custom_name: Interaction Month
       table:
         table_columns:
-        - column_id: Month(Interaction Timestamp)
-          show_headline: false
         - column_id: Errors
+          show_headline: false
+        - column_id: Month(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Month(Interaction Timestamp)
@@ -433,8 +435,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Month(Interaction Timestamp)
         - column_id: Errors
+        - column_id: Month(Interaction Timestamp)
         axis_configs:
         - x:
           - Month(Interaction Timestamp)
@@ -443,7 +445,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":false,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Month(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}},{\"columnId\": \"Errors\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"EQUAL_TO\",\"value\": \"0\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#56D3A8\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN\",\"value\": \"0\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#F47E89\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}],\"axisProperties\": [{\"id\": \"78d18a41-be39-4f28-a7a9-a989babbbfe1\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Errors\"],\"isOpposite\": false}},{\"id\": \"9b7acc08-24ec-49ee-b054-2c48cc90f07b\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"Errors\",\"color\": \"#F04152\"}],\"systemSeriesColors\": [{\"serieName\": \"Errors\",\"color\": \"#2770ef\"}],\"customColorSelectorArray\": [\"#F04152\",\"#06BF7F\",\"#F04152\",\"#747E8C\"]}"
       display_mode: CHART_MODE
-    viz_guid: 7d837801-2dac-4664-baa1-e5b2dd3c73f6
+    viz_guid: a68b6d31-7d64-427c-8255-40a309fb346e
   - id: Viz_13
     answer:
       name: Average Query Latency (s)
@@ -452,15 +454,15 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Is Likely Results Cachced
+      - id: formula_Is Likely Results Cachced
         name: Is Likely Results Cachced
         expr: "[Latency (s)] < 1.00"
         was_auto_generated: false
-      - id: Is Likely Search Token AutoComplete
+      - id: formula_Is Likely Search Token AutoComplete
         name: Is Likely Search Token AutoComplete
         expr: "[Latency (s)] < 0.40"
         was_auto_generated: false
-      search_query: "average [Latency (s)] [Interaction Timestamp].weekly [User Action Category] [Is Likely Results Cachced] = false"
+      search_query: "average [Latency (s)] [Interaction Timestamp].weekly [User Action Category] [formula_Is Likely Results Cachced] = false"
       answer_columns:
       - name: Average Latency (s)
         format:
@@ -471,15 +473,15 @@ liveboard:
             negativeValueFormat: PREFIX_DASH
             toSeparateThousands: false
           isCategoryEditable: true
-      - name: Week(Interaction Timestamp)
       - name: User Action Category
+      - name: Week(Interaction Timestamp)
       table:
         table_columns:
-        - column_id: Week(Interaction Timestamp)
+        - column_id: Average Latency (s)
           show_headline: false
         - column_id: User Action Category
           show_headline: false
-        - column_id: Average Latency (s)
+        - column_id: Week(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Week(Interaction Timestamp)
@@ -490,9 +492,9 @@ liveboard:
       chart:
         type: LINE
         chart_columns:
-        - column_id: Week(Interaction Timestamp)
-        - column_id: User Action Category
         - column_id: Average Latency (s)
+        - column_id: User Action Category
+        - column_id: Week(Interaction Timestamp)
         axis_configs:
         - x:
           - Week(Interaction Timestamp)
@@ -503,7 +505,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"visibleSeriesNames\": [\"search\",\"answers\",\"liveboards\"],\"gridLines\": {\"xGridlineEnabled\": false,\"yGridlineEnabled\": true},\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}},\"legendPosition\": \"TOP_LEGEND\"},\"columnProperties\": [{\"columnId\": \"Week(Interaction Timestamp)\",\"columnProperty\": {}},{\"columnId\": \"User Action Category\",\"columnProperty\": {}},{\"columnId\": \"Average Latency (s)\",\"columnProperty\": {\"dataLabels\": false,\"conditionalFormatting\": {}}}],\"axisProperties\": [{\"id\": \"7d9c5c5b-7bf8-4f0c-96bb-15c91d8a9f62\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Average Latency (s)\"],\"format\": {\"category\": \"NUMBER\",\"numberFormatConfig\": {\"unit\": \"NONE\",\"decimals\": 0.0,\"negativeValueFormat\": \"PREFIX_DASH\",\"toSeparateThousands\": true},\"isCategoryEditable\": true},\"isOpposite\": false,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":true,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}},{\"id\": \"d51fa1ae-e0b6-446c-9447-5f1a0bbc986e\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Week(Interaction Timestamp)\"],\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":true,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}}],\"seriesColors\": [{\"serieName\": \"5288fc08-84e0-4210-904b-c8b239cb64af\",\"color\": \"#06BF7F\"},{\"serieName\": \"Average Latency (s)\",\"color\": \"#8C62F5\"},{\"serieName\": \"answers\",\"color\": \"#06BF7F\"},{\"serieName\": \"liveboards\",\"color\": \"#8C62F5\"},{\"serieName\": \"search\",\"color\": \"#FCC838\"},{\"serieName\": \"spot iq\",\"color\": \"#48D1E0\"},{\"serieName\": \"other\",\"color\": \"#747E8C\"},{\"serieName\": \"data export\",\"color\": \"#F04152\"},{\"serieName\": \"thoughtspot views\",\"color\": \"#FF8142\"},{\"serieName\": \"data exports\",\"color\": \"#F04152\"}],\"systemSeriesColors\": [{\"serieName\": \"5288fc08-84e0-4210-904b-c8b239cb64af\",\"color\": \"#06BF7F\"},{\"serieName\": \"Average Latency (s)\",\"color\": \"#8C62F5\"},{\"serieName\": \"answers\",\"color\": \"#06BF7F\"},{\"serieName\": \"liveboards\",\"color\": \"#8C62F5\"},{\"serieName\": \"search\",\"color\": \"#FCC838\"},{\"serieName\": \"spot iq\",\"color\": \"#48D1E0\"},{\"serieName\": \"other\",\"color\": \"#747E8C\"},{\"serieName\": \"data export\",\"color\": \"#F04152\"},{\"serieName\": \"thoughtspot views\",\"color\": \"#FF8142\"},{\"serieName\": \"data exports\",\"color\": \"#2E75F0\"}]}"
       display_mode: CHART_MODE
-    viz_guid: f1468a9a-3cb3-436f-ba92-43dc4d9f42f1
+    viz_guid: 7b472062-1c66-4c6c-8d91-5b6f14a851db
   - id: Viz_14
     answer:
       name: Database Results Cache
@@ -512,19 +514,19 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Results Cache Usage (approximation)
+      - id: formula_Results Cache Usage (approximation)
         name: Results Cache Usage (approximation)
-        expr: "unique_count_if ( not [Is Likely Search Token AutoComplete] and [Is Likely Results Cached] , [Incident ID] ) / unique count ( [Incident ID] )"
+        expr: "unique_count_if ( not [formula_Is Likely Search Token AutoComplete] and [formula_Is Likely Results Cached] , [Incident ID] ) / unique count ( [Incident ID] )"
         was_auto_generated: false
-      - id: Is Likely Results Cached
+      - id: formula_Is Likely Results Cached
         name: Is Likely Results Cached
         expr: "[Latency (s)] < 1.00"
         was_auto_generated: false
-      - id: Is Likely Search Token AutoComplete
+      - id: formula_Is Likely Search Token AutoComplete
         name: Is Likely Search Token AutoComplete
         expr: "[Latency (s)] < 0.40"
         was_auto_generated: false
-      search_query: "[Interaction Timestamp].monthly [Results Cache Usage (approximation)] [Search Query] != '{null}'"
+      search_query: "[Interaction Timestamp].monthly [formula_Results Cache Usage (approximation)] [Search Query] != '{null}'"
       answer_columns:
       - name: Month(Interaction Timestamp)
         custom_name: Interaction Month
@@ -558,7 +560,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":false,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Results Cache Usage (approximation)\",\"columnProperty\": {}},{\"columnId\": \"Month(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}}],\"axisProperties\": [{\"id\": \"f0a5c689-0bb7-434c-b081-10035770ddc3\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Results Cache Usage (approximation)\"],\"isOpposite\": false}},{\"id\": \"e24a4391-14a3-4ce6-8c39-547492914234\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"0509773f-4f31-4747-af8e-03c1d6aa6848\",\"color\": \"#F04152\"}],\"systemSeriesColors\": [{\"serieName\": \"0509773f-4f31-4747-af8e-03c1d6aa6848\",\"color\": \"#F04152\"},{\"serieName\": \"Results Cache Usage (approximation)\",\"color\": \"#2770ef\"}],\"customColorSelectorArray\": [\"#06BF7F\",\"#F04152\",\"#F04152\",\"#747E8C\"]}"
       display_mode: CHART_MODE
-    viz_guid: fb48f4e6-5a5b-4dc1-bb21-0ac9301375c9
+    viz_guid: 162b2aaa-210e-4540-9494-0cbf4c1ee1c3
   - id: Viz_15
     answer:
       name: <b><font color="#8C62F5">Liveboard</font></b> activity per User
@@ -566,13 +568,12 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Liveboard Interactions per Active User
+      - id: formula_Liveboard Interactions per Active User
         name: Liveboard Interactions per Active User
         expr: "count_if ( [User Action Category] = 'liveboards' , [Incident ID] ) / [Active Users]"
         was_auto_generated: false
-      search_query: "[Interaction Timestamp] [Interaction Timestamp].quarterly [Liveboard Interactions per Active User]"
+      search_query: "[Interaction Timestamp] [Interaction Timestamp].quarterly [formula_Liveboard Interactions per Active User]"
       answer_columns:
-      - name: Quarter(Interaction Timestamp)
       - name: Liveboard Interactions per Active User
         format:
           category: NUMBER
@@ -582,11 +583,12 @@ liveboard:
             negativeValueFormat: PREFIX_DASH
             toSeparateThousands: true
           isCategoryEditable: true
+      - name: Quarter(Interaction Timestamp)
       table:
         table_columns:
-        - column_id: Quarter(Interaction Timestamp)
-          show_headline: false
         - column_id: Liveboard Interactions per Active User
+          show_headline: false
+        - column_id: Quarter(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Quarter(Interaction Timestamp)
@@ -596,8 +598,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Quarter(Interaction Timestamp)
         - column_id: Liveboard Interactions per Active User
+        - column_id: Quarter(Interaction Timestamp)
         axis_configs:
         - x:
           - Quarter(Interaction Timestamp)
@@ -606,7 +608,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Quarter(Interaction Timestamp)\",\"columnProperty\": {}},{\"columnId\": \"Liveboard Interactions per Active User\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"cee9db8c-9a34-4a59-847b-4e2f39f15eb2\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Liveboard Interactions per Active User\"],\"isOpposite\": false}},{\"id\": \"59fa82c5-525d-43c8-a523-6f526fbfc201\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Quarter(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"251efc3a-f849-4a6d-92ff-2518fa26bb52\",\"color\": \"#FCC838\"},{\"serieName\": \"Liveboard Interactions per Active User\",\"color\": \"#8C62F5\"}],\"systemSeriesColors\": [{\"serieName\": \"251efc3a-f849-4a6d-92ff-2518fa26bb52\",\"color\": \"#FCC838\"},{\"serieName\": \"Liveboard Interactions per Active User\",\"color\": \"#2770ef\"}]}"
       display_mode: CHART_MODE
-    viz_guid: 0d171d33-aced-41f5-b0b1-b723f42416f9
+    viz_guid: acb82ebe-c224-4fe2-9460-a3bd102659ea
   - id: Viz_16
     answer:
       name: ThoughtSpot Leaderboard
@@ -615,65 +617,35 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Leaderboard Rank
+      - id: formula_Leaderboard Rank
         name: Leaderboard Rank
-        expr: "rank ( [Leaderboard Score] , 'desc' )"
+        expr: "rank ( [formula_Leaderboard Score] , 'desc' )"
         properties:
           column_type: ATTRIBUTE
         was_auto_generated: false
-      - id: Leaderboard Score
+      - id: formula_Leaderboard Score
         name: Leaderboard Score
-        expr: "0 + ( [Searches (5x)] * 5 ) + ( [Answers (3x)] * 3 ) + ( [Liveboards (1x)] * 1 ) + ( [Data Exports (-5x)] * - 5 )"
+        expr: "0 + ( [formula_Searches (5x)] * 5 ) + ( [formula_Answers (3x)] * 3 ) + ( [formula_Liveboards (1x)] * 1 ) + ( [formula_Data Exports (-5x)] * - 5 )"
         was_auto_generated: false
-      - id: Answers (3x)
+      - id: formula_Answers (3x)
         name: Answers (3x)
         expr: "unique_count_if ( [User Action Category] = 'answers' , [Incident ID] )"
         was_auto_generated: false
-      - id: Data Exports (-5x)
+      - id: formula_Data Exports (-5x)
         name: Data Exports (-5x)
         expr: "unique_count_if ( [User Action Category] = 'data exports' , [Incident ID] )"
         was_auto_generated: false
-      - id: Liveboards (1x)
+      - id: formula_Liveboards (1x)
         name: Liveboards (1x)
         expr: "unique_count_if ( [User Action Category] = 'liveboards' , [Incident ID] )"
         was_auto_generated: false
-      - id: Searches (5x)
+      - id: formula_Searches (5x)
         name: Searches (5x)
         expr: "unique_count_if ( [User Action Category] = 'search' , [Incident ID] )"
         was_auto_generated: false
-      search_query: "[Interaction User] sort by [Leaderboard Score] descending [Interaction User] != '{null}' top 15 [Leaderboard Rank] [Searches (5x)] [Answers (3x)] [Liveboards (1x)] [Data Exports (-5x)] [Leaderboard Score]"
+      search_query: "[Interaction User] sort by [formula_Leaderboard Score] descending [Interaction User] != '{null}' top 15 [formula_Leaderboard Rank] [formula_Searches (5x)] [formula_Answers (3x)] [formula_Liveboards (1x)] [formula_Data Exports (-5x)] [formula_Leaderboard Score]"
       answer_columns:
-      - name: Interaction User
-        custom_name: User
-      - name: Leaderboard Score
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: THOUSANDS
-            decimals: 1.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
-      - name: Leaderboard Rank
-      - name: Searches (5x)
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: NONE
-            decimals: 0.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
       - name: Answers (3x)
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: NONE
-            decimals: 0.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
-      - name: Liveboards (1x)
         format:
           category: NUMBER
           numberFormatConfig:
@@ -691,21 +663,51 @@ liveboard:
             negativeValueFormat: PREFIX_DASH
             toSeparateThousands: true
           isCategoryEditable: true
+      - name: Interaction User
+        custom_name: User
+      - name: Leaderboard Rank
+      - name: Leaderboard Score
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: THOUSANDS
+            decimals: 1.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Liveboards (1x)
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Searches (5x)
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
       table:
         table_columns:
+        - column_id: Answers (3x)
+          show_headline: false
+        - column_id: Data Exports (-5x)
+          show_headline: false
         - column_id: Interaction User
           show_headline: false
         - column_id: Leaderboard Rank
           show_headline: false
         - column_id: Leaderboard Score
           show_headline: false
-        - column_id: Searches (5x)
-          show_headline: false
-        - column_id: Answers (3x)
-          show_headline: false
         - column_id: Liveboards (1x)
           show_headline: false
-        - column_id: Data Exports (-5x)
+        - column_id: Searches (5x)
           show_headline: false
         ordered_column_ids:
         - Interaction User
@@ -720,13 +722,13 @@ liveboard:
       chart:
         type: BAR
         chart_columns:
+        - column_id: Answers (3x)
+        - column_id: Data Exports (-5x)
         - column_id: Interaction User
         - column_id: Leaderboard Rank
         - column_id: Leaderboard Score
-        - column_id: Searches (5x)
-        - column_id: Answers (3x)
         - column_id: Liveboards (1x)
-        - column_id: Data Exports (-5x)
+        - column_id: Searches (5x)
         axis_configs:
         - x:
           - Interaction User
@@ -735,7 +737,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Interaction User\",\"columnProperty\": {}},{\"columnId\": \"Leaderboard Rank\",\"columnProperty\": {}},{\"columnId\": \"Searches (5x)\",\"columnProperty\": {}},{\"columnId\": \"Answers (3x)\",\"columnProperty\": {}},{\"columnId\": \"Leaderboard Score\",\"columnProperty\": {\"dataLabels\": true,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"dataLabels\\\":{\\\"backgroundColor\\\":\\\"\\\",\\\"borderColor\\\":\\\"\\\",\\\"borderWidth\\\":\\\"\\\",\\\"filter\\\":{\\\"operator\\\":\\\"\\\",\\\"value\\\":\\\"\\\"},\\\"align\\\":\\\"left\\\",\\\"style\\\":{\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false},\\\"maxCharacters\\\":\\\"\\\"}}}\"}},{\"columnId\": \"Liveboards (1x)\",\"columnProperty\": {}},{\"columnId\": \"Data Exports (-5x)\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"20c79e62-4d89-459c-9be7-c9b8bf3ec9b2\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Interaction User\"],\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":true,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"20\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}},{\"id\": \"202f1d0e-017f-4bcb-89e7-ce297f5a5a43\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Leaderboard Score\"],\"isOpposite\": false,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":false,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}}],\"seriesColors\": [{\"serieName\": \"answer_pinboard_context\",\"color\": \"#06BF7F\"},{\"serieName\": \"answer_unsaved\",\"color\": \"#FCC838\"},{\"serieName\": \"answer_viz_context_view\",\"color\": \"#48D1E0\"},{\"serieName\": \"data_chart_config\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_print_view\",\"color\": \"#2E75F0\"},{\"serieName\": \"data export\",\"color\": \"#F04152\"},{\"serieName\": \"liveboards\",\"color\": \"#8C62F5\"},{\"serieName\": \"answers\",\"color\": \"#06BF7F\"},{\"serieName\": \"search\",\"color\": \"#FCC838\"},{\"serieName\": \"spot iq\",\"color\": \"#48D1E0\"},{\"serieName\": \"thoughtspot views\",\"color\": \"#FF8142\"},{\"serieName\": \"c6be6c25-ec76-492d-900a-46ad9746bba1\",\"color\": \"#71A1F4\"},{\"serieName\": \"Leaderboard Score\",\"color\": \"#71A1F4\"}],\"systemSeriesColors\": [{\"serieName\": \"answer_pinboard_context\",\"color\": \"#06BF7F\"},{\"serieName\": \"answer_unsaved\",\"color\": \"#FCC838\"},{\"serieName\": \"answer_viz_context_view\",\"color\": \"#48D1E0\"},{\"serieName\": \"data_chart_config\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_print_view\",\"color\": \"#2E75F0\"},{\"serieName\": \"data export\",\"color\": \"#F04152\"},{\"serieName\": \"liveboards\",\"color\": \"#8C62F5\"},{\"serieName\": \"answers\",\"color\": \"#06BF7F\"},{\"serieName\": \"search\",\"color\": \"#FCC838\"},{\"serieName\": \"spot iq\",\"color\": \"#48D1E0\"},{\"serieName\": \"thoughtspot views\",\"color\": \"#FF8142\"},{\"serieName\": \"c6be6c25-ec76-492d-900a-46ad9746bba1\",\"color\": \"#71A1F4\"},{\"serieName\": \"Leaderboard Score\",\"color\": \"#71A1F4\"},{\"serieName\": \"Searches (5x)\",\"color\": \"#2E75F0\"},{\"serieName\": \"Answers (3x)\",\"color\": \"#2E75F0\"},{\"serieName\": \"Liveboards (1x)\",\"color\": \"#48D1E0\"},{\"serieName\": \"Data Exports (-5x)\",\"color\": \"#2E75F0\"}],\"tooltipConfig\": {\"columnIds\": [\"Interaction User\",\"Leaderboard Rank\",\"Leaderboard Score\",\"Searches (5x)\",\"Answers (3x)\",\"Liveboards (1x)\",\"Data Exports (-5x)\"]}}"
       display_mode: CHART_MODE
-    viz_guid: 7981ca0a-bd80-4a3b-ae3c-c1797c10c74d
+    viz_guid: d0c770b6-0d2c-4cd0-ad63-6a15c0a2cfd7
   - id: Viz_17
     answer:
       name: Disengaged Users
@@ -744,31 +746,31 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: fx Net Active Users
+      - id: formula_fx Net Active Users
         name: fx Net Active Users
-        expr: "[Active Users] - [New Users] + [Churned Users]"
+        expr: "[Active Users] - [formula_New Users] + [formula_Churned Users]"
         was_auto_generated: false
-      - id: Churned Users
+      - id: formula_Churned Users
         name: Churned Users
-        expr: "unique_count_if ( diff_days ( [fx Datestamp] , [fx User Last Seen] ) = 0 and diff_days ( today ( ) , [fx Datestamp] ) >= 35 , [Interaction User] ) * - 1"
+        expr: "unique_count_if ( diff_days ( [formula_fx Datestamp] , [formula_fx User Last Seen] ) = 0 and diff_days ( today ( ) , [formula_fx Datestamp] ) >= 35 , [Interaction User] ) * - 1"
         was_auto_generated: false
-      - id: New Users
+      - id: formula_New Users
         name: New Users
-        expr: "unique_count_if ( [fx Datestamp] = [fx User First Seen] , [Interaction User] )"
+        expr: "unique_count_if ( [formula_fx Datestamp] = [formula_fx User First Seen] , [Interaction User] )"
         was_auto_generated: false
-      - id: fx User First Seen
+      - id: formula_fx User First Seen
         name: fx User First Seen
-        expr: "group_aggregate ( min ( [fx Datestamp] ) , { [Interaction User] } , { } )"
+        expr: "group_aggregate ( min ( [formula_fx Datestamp] ) , { [Interaction User] } , { } )"
         was_auto_generated: false
-      - id: fx User Last Seen
+      - id: formula_fx User Last Seen
         name: fx User Last Seen
-        expr: "group_aggregate ( max ( [fx Datestamp] ) , { [Interaction User] } , { } )"
+        expr: "group_aggregate ( max ( [formula_fx Datestamp] ) , { [Interaction User] } , { } )"
         was_auto_generated: false
-      - id: fx Datestamp
+      - id: formula_fx Datestamp
         name: fx Datestamp
         expr: "date ( [Interaction Timestamp] )"
         was_auto_generated: false
-      search_query: "[Churned Users] [Interaction Timestamp].quarterly"
+      search_query: "[formula_Churned Users] [Interaction Timestamp].quarterly"
       answer_columns:
       - name: Churned Users
         format:
@@ -782,9 +784,9 @@ liveboard:
       - name: Quarter(Interaction Timestamp)
       table:
         table_columns:
-        - column_id: Quarter(Interaction Timestamp)
-          show_headline: false
         - column_id: Churned Users
+          show_headline: false
+        - column_id: Quarter(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Quarter(Interaction Timestamp)
@@ -794,8 +796,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Quarter(Interaction Timestamp)
         - column_id: Churned Users
+        - column_id: Quarter(Interaction Timestamp)
         axis_configs:
         - x:
           - Quarter(Interaction Timestamp)
@@ -804,9 +806,9 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {\"xGridlineEnabled\": false,\"yGridlineEnabled\": true},\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"isStackedAsPercent\": false,\"stackedAsPercentFormat\": {\"category\": \"PERCENTAGE\",\"percentageFormatConfig\": {\"decimals\": 2.0,\"removeTrailingZeroes\": false},\"isCategoryEditable\": false},\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":false,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}},\"showStackedLabels\": false,\"allLabels\": false},\"columnProperties\": [{\"columnId\": \"Churned Users\",\"columnProperty\": {\"dataLabels\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"LESS_THAN\",\"value\": \"0\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#F47E89\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}},{\"columnId\": \"Quarter(Interaction Timestamp)\",\"columnProperty\": {\"dataLabels\": false}}],\"axisProperties\": [{\"id\": \"173cc3fd-f821-478a-8d95-c0bc90d1eedf\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Churned Users\"],\"isOpposite\": false}},{\"id\": \"5eea5d5d-ea25-47dd-a65f-1cc7371e1bb4\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Quarter(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"c5b2ad12-bc34-47fe-b3ec-9be8cd64687a\",\"color\": \"#FCC838\"},{\"serieName\": \"active users\",\"color\": \"#FCC838\"},{\"serieName\": \"churned users\",\"color\": \"#FF8142\"},{\"serieName\": \"new users\",\"color\": \"#2E75F0\"},{\"serieName\": \"d599149d-985a-4886-88de-e64648a95e8a\",\"color\": \"#F47E89\"},{\"serieName\": \"7332793c-20c5-454e-86d8-7fa9ec5260cb\",\"color\": \"#ABC7F9\"},{\"serieName\": \"ba56ccbe-966f-4785-87d3-1e954649f698\",\"color\": \"#56D3A8\"},{\"serieName\": \"Churned Users\",\"color\": \"#F47E89\"}],\"customColorSelectorArray\": [\"#06BF7F\",\"#F04152\",\"#F04152\",\"#747E8C\"]}"
       display_mode: CHART_MODE
-    viz_guid: 71cd20e6-e287-4b06-9b0e-7bc438c507c7
+    viz_guid: 0ab505f5-366e-45ab-ab5a-4694c1462f5d
   - id: Viz_18
-    viz_guid: 57e8e5fc-b7fb-41ab-aa97-64099ca5b82a
+    viz_guid: 760a84e9-9cdd-44e6-bb2a-3218d637e064
     note_tile:
       html_parsed_string: "<h1 dir=\"ltr\"><span style=\"white-space: pre-wrap;\">How to Use</span></h1><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><span style=\"white-space: pre-wrap;\">- ADJUST FILTERS ON </span><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">Days since Last Edited</strong></b></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><span style=\"white-space: pre-wrap;\">- Interaction Date is unlinked</span></p><p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><span style=\"white-space: pre-wrap;\">- User/Group are linked - this represents these Users' activity against stale content</span></p>"
   - id: Viz_19
@@ -817,6 +819,12 @@ liveboard:
         name: CS Tools ~ BI Server Advanced
       search_query: "[Latency (s)] [Search Query] top 50 ranked by [Latency (s)] [Search Query] != '{null}' [Interaction Timestamp] [Interaction Timestamp].detailed [Interaction User] [HTTP Response Status]"
       answer_columns:
+      - name: HTTP Response Status
+        custom_name: Status
+      - name: Interaction Timestamp
+        custom_name: Timestamp (UTC)
+      - name: Interaction User
+      - name: Search Query
       - name: Total Latency (s)
         custom_name: Latency (s)
         format:
@@ -827,21 +835,15 @@ liveboard:
             negativeValueFormat: PREFIX_DASH
             toSeparateThousands: true
           isCategoryEditable: true
-      - name: Search Query
-      - name: Interaction Timestamp
-        custom_name: Timestamp (UTC)
-      - name: Interaction User
-      - name: HTTP Response Status
-        custom_name: Status
       table:
         table_columns:
-        - column_id: Search Query
+        - column_id: HTTP Response Status
           show_headline: false
         - column_id: Interaction Timestamp
           show_headline: false
         - column_id: Interaction User
           show_headline: false
-        - column_id: HTTP Response Status
+        - column_id: Search Query
           show_headline: false
         - column_id: Total Latency (s)
           show_headline: false
@@ -856,10 +858,10 @@ liveboard:
       chart:
         type: BAR
         chart_columns:
-        - column_id: Search Query
+        - column_id: HTTP Response Status
         - column_id: Interaction Timestamp
         - column_id: Interaction User
-        - column_id: HTTP Response Status
+        - column_id: Search Query
         - column_id: Total Latency (s)
         axis_configs:
         - x:
@@ -869,7 +871,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Total Latency (s)\",\"columnProperty\": {}},{\"columnId\": \"Search Query\",\"columnProperty\": {}},{\"columnId\": \"Interaction Timestamp\",\"columnProperty\": {}},{\"columnId\": \"Interaction User\",\"columnProperty\": {}},{\"columnId\": \"HTTP Response Status\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"cbeab067-37dd-4c28-82b1-5f39edf421cc\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Total Latency (s)\"],\"isOpposite\": false}},{\"id\": \"4cb4982a-c8b0-4bf2-bd78-733776cd1e75\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Interaction Timestamp\"]}}],\"systemSeriesColors\": [{\"serieName\": \"c2a7c6b7-b368-4c50-86ac-146fa243e952\",\"color\": \"#FCC838\"}]}"
       display_mode: TABLE_MODE
-    viz_guid: 57de8e1b-5270-4272-bca3-0fef1ed0a1c5
+    viz_guid: 6bfb6c9c-ec09-4ed2-b1c4-ea981d5e9500
   - id: Viz_20
     answer:
       name: Search Experience
@@ -878,15 +880,15 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Is Likely Search Token AutoComplete
+      - id: formula_Is Likely Search Token AutoComplete
         name: Is Likely Search Token AutoComplete
         expr: "[Latency (s)] < 0.40"
         was_auto_generated: false
-      - id: Search Latency
+      - id: formula_Search Latency
         name: Search Latency
         expr: "count_if ( [Latency (s)] <= 15 , [Incident ID] ) / count ( [Incident ID] )"
         was_auto_generated: false
-      search_query: "[Interaction Timestamp].monthly [Search Latency] [Search Query] != '{null}' [Is Likely Search Token AutoComplete] = false"
+      search_query: "[Interaction Timestamp].monthly [formula_Search Latency] [Search Query] != '{null}' [formula_Is Likely Search Token AutoComplete] = false"
       answer_columns:
       - name: Month(Interaction Timestamp)
         custom_name: Interaction Month
@@ -920,7 +922,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":false,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Month(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}},{\"columnId\": \"Search Latency\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"GREATER_THAN\",\"value\": \"0.95\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#06BF7F\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN\",\"value\": \"0.80\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#71A1F4\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"LESS_THAN\",\"value\": \"0.9\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#FF8142\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"LESS_THAN\",\"value\": \"0.8\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#F04152\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}],\"axisProperties\": [{\"id\": \"f0a5c689-0bb7-434c-b081-10035770ddc3\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Search Latency\"],\"isOpposite\": false}},{\"id\": \"e24a4391-14a3-4ce6-8c39-547492914234\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"0509773f-4f31-4747-af8e-03c1d6aa6848\",\"color\": \"#F04152\"},{\"serieName\": \"Search Latency\",\"color\": \"#2E75F0\"}],\"systemSeriesColors\": [{\"serieName\": \"0509773f-4f31-4747-af8e-03c1d6aa6848\",\"color\": \"#F04152\"},{\"serieName\": \"Search Latency\",\"color\": \"#2770ef\"}],\"customColorSelectorArray\": [\"#06BF7F\",\"#F04152\",\"#F04152\",\"#747E8C\"]}"
       display_mode: CHART_MODE
-    viz_guid: 07ccd872-9623-4031-9c46-a56ff0283408
+    viz_guid: 0a17e2d9-ddaf-4dce-a8ea-46f01826b285
   - id: Viz_21
     answer:
       name: Forgotten Objects
@@ -929,51 +931,19 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Days since last Activity
+      - id: formula_Days since last Activity
         name: Days since last Activity
         expr: "diff_days ( today ( ) , max ( [Interaction Timestamp] ) )"
         was_auto_generated: false
-      - id: Days since last Edited
+      - id: formula_Days since last Edited
         name: Days since last Edited
         expr: "max ( diff_days ( today ( ) , [Object Modified At] ) )"
         properties:
           column_type: ATTRIBUTE
         was_auto_generated: false
-      search_query: "[Object GUID] [Object Type] [Object Link] [Object Author] [Object Author Email] [Interactions] [Active Users] [Days since last Edited] [Days since last Activity] [Days since last Edited] > 365 [Days since last Activity] > 365 [Object Type] = [Object Type].answer [Object Type].liveboard [Object Created At] [Object Created At].daily sort by [Days since last Activity] descending"
+      search_query: "[Object GUID] [Object Type] [Object Link] [Object Author] [Object Author Email] [Interactions] [Active Users] [formula_Days since last Edited] [formula_Days since last Activity] [formula_Days since last Edited] > 365 [formula_Days since last Activity] > 365 [Object Type] = [Object Type].answer [Object Type].liveboard [Object Created At] [Object Created At].daily sort by [formula_Days since last Activity] descending"
       answer_columns:
-      - name: Object GUID
-      - name: Object Type
-      - name: Object Link
-      - name: Object Author
-      - name: Object Author Email
-      - name: Interactions
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: NONE
-            decimals: 0.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
       - name: Active Users
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: NONE
-            decimals: 0.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
-      - name: Days since last Edited
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: NONE
-            decimals: 0.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
-      - name: Days since last Activity
         format:
           category: NUMBER
           numberFormatConfig:
@@ -984,27 +954,61 @@ liveboard:
           isCategoryEditable: true
       - name: Day(Object Created At)
         custom_name: Created on
+      - name: Days since last Activity
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+        sort_info:
+          category: DEFAULT
+      - name: Days since last Edited
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Interactions
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Object Author
+      - name: Object Author Email
+      - name: Object GUID
+      - name: Object Link
+      - name: Object Type
       table:
         table_columns:
-        - column_id: Object GUID
+        - column_id: Active Users
           show_headline: false
-        - column_id: Object Type
+        - column_id: Day(Object Created At)
           show_headline: false
-        - column_id: Object Link
+        - column_id: Days since last Activity
+          show_headline: false
+        - column_id: Days since last Edited
+          show_headline: false
+        - column_id: Interactions
           show_headline: false
         - column_id: Object Author
           show_headline: false
         - column_id: Object Author Email
           show_headline: false
-        - column_id: Day(Object Created At)
+        - column_id: Object GUID
           show_headline: false
-        - column_id: Interactions
+        - column_id: Object Link
           show_headline: false
-        - column_id: Active Users
-          show_headline: false
-        - column_id: Days since last Edited
-          show_headline: false
-        - column_id: Days since last Activity
+        - column_id: Object Type
           show_headline: false
         ordered_column_ids:
         - Object GUID
@@ -1022,16 +1026,16 @@ liveboard:
       chart:
         type: COLUMN
         chart_columns:
-        - column_id: Object GUID
-        - column_id: Object Type
-        - column_id: Object Link
+        - column_id: Active Users
+        - column_id: Day(Object Created At)
+        - column_id: Days since last Activity
+        - column_id: Days since last Edited
+        - column_id: Interactions
         - column_id: Object Author
         - column_id: Object Author Email
-        - column_id: Day(Object Created At)
-        - column_id: Interactions
-        - column_id: Active Users
-        - column_id: Days since last Edited
-        - column_id: Days since last Activity
+        - column_id: Object GUID
+        - column_id: Object Link
+        - column_id: Object Type
         axis_configs:
         - x:
           - Day(Object Created At)
@@ -1043,7 +1047,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Object Link\",\"columnProperty\": {}},{\"columnId\": \"Object Author\",\"columnProperty\": {}},{\"columnId\": \"Interactions\",\"columnProperty\": {}},{\"columnId\": \"Active Users\",\"columnProperty\": {}},{\"columnId\": \"Days since last Edited\",\"columnProperty\": {}},{\"columnId\": \"Days since last Activity\",\"columnProperty\": {}},{\"columnId\": \"Object Author Email\",\"columnProperty\": {}},{\"columnId\": \"Object GUID\",\"columnProperty\": {}},{\"columnId\": \"Object Type\",\"columnProperty\": {}},{\"columnId\": \"Day(Object Created At)\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"bbd395c7-04b9-4fd5-926a-d65a202ffb77\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Interactions\"],\"isOpposite\": false}},{\"id\": \"1b440a4d-1644-4d12-a473-9dcaa7bedefb\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Active Users\"],\"isOpposite\": true}},{\"id\": \"1520174c-2366-46ca-a286-81d111a22169\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Days since last Edited\"],\"isOpposite\": true}},{\"id\": \"3a8a6698-95ab-436d-9202-b3b31e61971d\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Days since last Activity\"],\"isOpposite\": true}},{\"id\": \"588fb61b-a5e6-4528-812f-e42fdc210ad5\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Day(Object Created At)\"]}}]}"
       display_mode: TABLE_MODE
-    viz_guid: 4ad5ac6b-dede-43fa-b6e4-39f8d4cb18f0
+    viz_guid: f67a8a4c-bee9-45a0-bd1f-a0fbb6967513
   - id: Viz_22
     answer:
       name: Days since
@@ -1052,21 +1056,21 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: modified before median modify date
+      - id: formula_modified before median modify date
         name: modified before median modify date
-        expr: "[fx days since object modified] >= ( [fx days since oldest object modified] / 2 )"
+        expr: "[formula_fx days since object modified] >= ( [formula_fx days since oldest object modified] / 2 )"
         was_auto_generated: false
-      - id: fx days since object modified
+      - id: formula_fx days since object modified
         name: fx days since object modified
         expr: "diff_days ( today ( ) , [Object Modified At] )"
         was_auto_generated: false
-      - id: fx days since oldest object modified
+      - id: formula_fx days since oldest object modified
         name: fx days since oldest object modified
         expr: "diff_days ( today ( ) , group_aggregate ( min ( [Object Modified At] ) , { } , query_filters ( ) + { [Object Author] not in { 'system user' } } ) )"
         properties:
           column_type: ATTRIBUTE
         was_auto_generated: false
-      search_query: "[modified before median modify date] = true min [fx days since object modified]"
+      search_query: "[formula_modified before median modify date] = true min [formula_fx days since object modified]"
       answer_columns:
       - name: Minimum fx days since object modified
       table:
@@ -1087,7 +1091,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Minimum fx days since object modified\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"cf1e54f9-e03a-40c6-afee-1f42c67227f6\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Minimum fx days since object modified\"],\"isOpposite\": false}},{\"id\": \"77f2b419-58f8-4167-8284-1557bc477426\",\"properties\": {\"axisType\": \"X\"}}],\"systemSeriesColors\": [{\"serieName\": \"Minimum fx days since object modified\",\"color\": \"#2E75F0\"}]}"
       display_mode: CHART_MODE
-    viz_guid: e1cb69f0-dfc4-45d3-b746-6ccc7d9959ca
+    viz_guid: 518c9a49-fc38-4ce5-add6-58f814682cf3
   - id: Viz_23
     answer:
       name: Users Experiencing
@@ -1096,11 +1100,11 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Slow Queries
+      - id: formula_Slow Queries
         name: Slow Queries
         expr: "[Latency (s)] >= 30"
         was_auto_generated: false
-      search_query: "[Interaction Timestamp].monthly [Slow Queries] = true [Search Query] != '{null}' unique count [Interaction User]"
+      search_query: "[Interaction Timestamp].monthly [formula_Slow Queries] = true [Search Query] != '{null}' unique count [Interaction User]"
       answer_columns:
       - name: Month(Interaction Timestamp)
         custom_name: Interaction Month
@@ -1138,7 +1142,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":true,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":false,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Month(Interaction Timestamp)\",\"columnProperty\": {\"excludeNullValues\": false}},{\"columnId\": \"Unique Number of Interaction User\",\"columnProperty\": {\"conditionalFormatting\": {\"rows\": [{\"operator\": \"EQUAL_TO\",\"value\": \"0\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#56D3A8\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false},{\"operator\": \"GREATER_THAN\",\"value\": \"0\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#F47E89\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false},\"comparisonType\": \"VALUE_BASED\",\"isHighlightRow\": false}]}}}],\"axisProperties\": [{\"id\": \"c23081fa-7897-4f6a-8a36-b80465f74ea3\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Interaction User\"],\"isOpposite\": false}},{\"id\": \"79c75f27-3433-4049-aa58-565d9df23a8a\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Month(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"0509773f-4f31-4747-af8e-03c1d6aa6848\",\"color\": \"#F04152\"},{\"serieName\": \"Slow Queries\",\"color\": \"#2E75F0\"},{\"serieName\": \"Unique Number of Interaction User\",\"color\": \"#F04152\"}],\"systemSeriesColors\": [{\"serieName\": \"0509773f-4f31-4747-af8e-03c1d6aa6848\",\"color\": \"#F04152\"},{\"serieName\": \"Slow Queries\",\"color\": \"#2E75F0\"},{\"serieName\": \"Unique Number of Interaction User\",\"color\": \"#2770ef\"}],\"customColorSelectorArray\": [\"#F04152\",\"#06BF7F\",\"#F04152\",\"#747E8C\"]}"
       display_mode: CHART_MODE
-    viz_guid: fb031e20-6cd0-4cb3-9571-eb2f3d97726f
+    viz_guid: 0e2d9788-f829-48a3-a211-18431f3d5710
   - id: Viz_24
     answer:
       name: Total <b><font color="#8C62F5">Liveboards</font></b>
@@ -1175,7 +1179,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":false,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Unique Number of Object\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"87534327-28df-43b9-aa1e-04281c5ad689\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Object\"],\"isOpposite\": false}},{\"id\": \"c94a8ba0-abdd-4249-8686-4b6c5d0d86b5\",\"properties\": {\"axisType\": \"X\"}}],\"seriesColors\": [{\"serieName\": \"c8c1d258-9b48-4651-a445-4d8dad0b71cc\",\"color\": \"#FCC838\"},{\"serieName\": \"Unique Number of Object\",\"color\": \"#8C62F5\"}],\"systemSeriesColors\": [{\"serieName\": \"c8c1d258-9b48-4651-a445-4d8dad0b71cc\",\"color\": \"#FCC838\"},{\"serieName\": \"Unique Number of Object\",\"color\": \"#2770ef\"}]}"
       display_mode: CHART_MODE
-    viz_guid: 561a3800-1a03-4266-a325-d34a782552ba
+    viz_guid: 9b673c89-2b05-4441-8bb3-125e8ecae97e
   - id: Viz_25
     answer:
       name: Total <b><font color="#06BF7F">Answers</font></b>
@@ -1212,7 +1216,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"customProps\": \"{\\\"showLabel\\\":false,\\\"showComparison\\\":true,\\\"showSparkline\\\":true,\\\"showAnomalies\\\":true,\\\"showBounds\\\":true,\\\"customCompare\\\":\\\"PREV_AVAILABLE\\\"}\",\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Unique Number of Object\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"18f11ee4-0d01-4b2e-add7-a5dd0c47c963\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Unique Number of Object\"],\"isOpposite\": false}},{\"id\": \"7c8185d4-2c77-41eb-a9d8-72086ab31756\",\"properties\": {\"axisType\": \"X\"}}],\"seriesColors\": [{\"serieName\": \"c8c1d258-9b48-4651-a445-4d8dad0b71cc\",\"color\": \"#FCC838\"},{\"serieName\": \"Unique Number of Object\",\"color\": \"#06BF7F\"}],\"systemSeriesColors\": [{\"serieName\": \"c8c1d258-9b48-4651-a445-4d8dad0b71cc\",\"color\": \"#FCC838\"},{\"serieName\": \"Unique Number of Object\",\"color\": \"#2770ef\"}]}"
       display_mode: CHART_MODE
-    viz_guid: 21e889b6-8006-40cd-8bee-782e2614a43c
+    viz_guid: 2be9520c-7803-4956-bb6c-c4fb689c8bbf
   - id: Viz_26
     answer:
       name: Weekly User Breakdown
@@ -1221,63 +1225,52 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Net Active Users
+      - id: formula_Net Active Users
         name: Net Active Users
-        expr: "[Active Users] - [New Users] + [Churned Users] - [Winback Users]"
+        expr: "[Active Users] - [formula_New Users] + [formula_Churned Users] - [formula_Winback Users]"
         was_auto_generated: false
-      - id: Churned Users
+      - id: formula_Churned Users
         name: Churned Users
-        expr: "unique_count_if ( [fx Churn Threshold Reached] , [Interaction User] ) * - 1"
+        expr: "unique_count_if ( [formula_fx Churn Threshold Reached] , [Interaction User] ) * - 1"
         was_auto_generated: false
-      - id: New Users
+      - id: formula_New Users
         name: New Users
-        expr: "unique_count_if ( [fx Last Activity Datestamp] = null , [Interaction User] )"
+        expr: "unique_count_if ( [formula_fx Last Activity Datestamp] = null , [Interaction User] )"
         was_auto_generated: false
-      - id: Winback Users
+      - id: formula_Winback Users
         name: Winback Users
-        expr: "unique_count_if ( diff_days ( [Datestamp] , [fx Last Activity Datestamp] ) >= [fx Inactivity Day Threshold Amount] , [Interaction User] )"
+        expr: "unique_count_if ( diff_days ( [formula_Datestamp] , [formula_fx Last Activity Datestamp] ) >= [formula_fx Inactivity Day Threshold Amount] , [Interaction User] )"
         was_auto_generated: false
-      - id: fx Churn Threshold Reached
+      - id: formula_fx Churn Threshold Reached
         name: fx Churn Threshold Reached
-        expr: "diff_days ( [Datestamp] , [fx User Last Seen] ) = 0 and diff_days ( today ( ) , [Datestamp] ) >= [fx Inactivity Day Threshold Amount]"
+        expr: "diff_days ( [formula_Datestamp] , [formula_fx User Last Seen] ) = 0 and diff_days ( today ( ) , [formula_Datestamp] ) >= [formula_fx Inactivity Day Threshold Amount]"
         was_auto_generated: false
-      - id: fx Days Since Last Activity
+      - id: formula_fx Days Since Last Activity
         name: fx Days Since Last Activity
-        expr: "diff_days ( [Datestamp] , [fx Last Activity Datestamp] )"
+        expr: "diff_days ( [formula_Datestamp] , [formula_fx Last Activity Datestamp] )"
         properties:
           column_type: ATTRIBUTE
         was_auto_generated: false
-      - id: fx Inactivity Day Threshold Amount
+      - id: formula_fx Inactivity Day Threshold Amount
         name: fx Inactivity Day Threshold Amount
         expr: "35"
         properties:
           column_type: ATTRIBUTE
         was_auto_generated: false
-      - id: fx Last Activity Datestamp
+      - id: formula_fx Last Activity Datestamp
         name: fx Last Activity Datestamp
-        expr: "group_aggregate ( moving_max ( [Datestamp] , 2 , - 1 , [Datestamp] ) , query_groups ( ) + { [Interaction User] } , query_filters ( ) + { [Interaction User] } - { [Datestamp] , [Interaction Timestamp] } )"
+        expr: "group_aggregate ( moving_max ( [formula_Datestamp] , 2 , - 1 , [formula_Datestamp] ) , query_groups ( ) + { [Interaction User] } , query_filters ( ) + { [Interaction User] } - { [formula_Datestamp] , [Interaction Timestamp] } )"
         was_auto_generated: false
-      - id: fx User Last Seen
+      - id: formula_fx User Last Seen
         name: fx User Last Seen
-        expr: "group_aggregate ( max ( [Datestamp] ) , { [Interaction User] } , { } )"
+        expr: "group_aggregate ( max ( [formula_Datestamp] ) , { [Interaction User] } , { } )"
         was_auto_generated: false
-      - id: Datestamp
+      - id: formula_Datestamp
         name: Datestamp
         expr: "date ( [Interaction Timestamp] )"
         was_auto_generated: false
-      search_query: "[Datestamp] [Datestamp].weekly sort by [Datestamp] [Datestamp].weekly [New Users] [Churned Users] [Winback Users] [Net Active Users]"
+      search_query: "[formula_Datestamp] [formula_Datestamp].weekly sort by [formula_Datestamp] [formula_Datestamp].weekly [formula_New Users] [formula_Churned Users] [formula_Winback Users] [formula_Net Active Users]"
       answer_columns:
-      - name: Week(Datestamp)
-      - name: New Users
-        custom_name: Brand New Users
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: NONE
-            decimals: 0.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
       - name: Churned Users
         custom_name: Disengaged Users
         format:
@@ -1288,7 +1281,6 @@ liveboard:
             negativeValueFormat: PREFIX_DASH
             toSeparateThousands: true
           isCategoryEditable: true
-      - name: Winback Users
       - name: Net Active Users
         custom_name: Existing Active Users
         format:
@@ -1299,17 +1291,31 @@ liveboard:
             negativeValueFormat: PREFIX_DASH
             toSeparateThousands: true
           isCategoryEditable: true
+      - name: New Users
+        custom_name: Brand New Users
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Week(Datestamp)
+        sort_info:
+          category: DEFAULT
+      - name: Winback Users
       table:
         table_columns:
-        - column_id: Week(Datestamp)
+        - column_id: Churned Users
+          show_headline: false
+        - column_id: Net Active Users
           show_headline: false
         - column_id: New Users
           show_headline: false
-        - column_id: Churned Users
+        - column_id: Week(Datestamp)
           show_headline: false
         - column_id: Winback Users
-          show_headline: false
-        - column_id: Net Active Users
           show_headline: false
         ordered_column_ids:
         - Week(Datestamp)
@@ -1322,11 +1328,11 @@ liveboard:
       chart:
         type: STACKED_COLUMN
         chart_columns:
-        - column_id: Week(Datestamp)
-        - column_id: New Users
         - column_id: Churned Users
-        - column_id: Winback Users
         - column_id: Net Active Users
+        - column_id: New Users
+        - column_id: Week(Datestamp)
+        - column_id: Winback Users
         axis_configs:
         - x:
           - Week(Datestamp)
@@ -1338,7 +1344,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {\"xGridlineEnabled\": false,\"yGridlineEnabled\": true},\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"isStackedAsPercent\": false,\"stackedAsPercentFormat\": {\"category\": \"PERCENTAGE\",\"percentageFormatConfig\": {\"decimals\": 2.0,\"removeTrailingZeroes\": false},\"isCategoryEditable\": false},\"pivotSummariesState\": {}},\"showStackedLabels\": false,\"allLabels\": false,\"legendPosition\": \"TOP_LEGEND\"},\"columnProperties\": [{\"columnId\": \"New Users\",\"columnProperty\": {\"dataLabels\": false}},{\"columnId\": \"Churned Users\",\"columnProperty\": {\"dataLabels\": false}},{\"columnId\": \"Winback Users\",\"columnProperty\": {\"dataLabels\": false}},{\"columnId\": \"Net Active Users\",\"columnProperty\": {\"dataLabels\": false}},{\"columnId\": \"Week(Datestamp)\",\"columnProperty\": {\"dataLabels\": false}}],\"axisProperties\": [{\"id\": \"910e0111-8cdc-43d5-be51-637141cbd3af\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Week(Datestamp)\"],\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":true,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}},{\"id\": \"090ef492-8ea7-4567-a35c-e80020084fae\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"New Users\",\"Churned Users\",\"Winback Users\",\"Net Active Users\"],\"format\": {\"category\": \"NUMBER\",\"numberFormatConfig\": {\"unit\": \"NONE\",\"decimals\": 0.0,\"negativeValueFormat\": \"PREFIX_DASH\",\"toSeparateThousands\": true},\"isCategoryEditable\": true},\"isOpposite\": false,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":true,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}}],\"seriesColors\": [{\"serieName\": \"c5b2ad12-bc34-47fe-b3ec-9be8cd64687a\",\"color\": \"#FCC838\"},{\"serieName\": \"active users\",\"color\": \"#FCC838\"},{\"serieName\": \"churned users\",\"color\": \"#FF8142\"},{\"serieName\": \"new users\",\"color\": \"#2E75F0\"},{\"serieName\": \"d599149d-985a-4886-88de-e64648a95e8a\",\"color\": \"#F47E89\"},{\"serieName\": \"7332793c-20c5-454e-86d8-7fa9ec5260cb\",\"color\": \"#ABC7F9\"},{\"serieName\": \"ba56ccbe-966f-4785-87d3-1e954649f698\",\"color\": \"#56D3A8\"},{\"serieName\": \"New Users\",\"color\": \"#56D3A8\"},{\"serieName\": \"Net Active Users\",\"color\": \"#ABC7F9\"},{\"serieName\": \"Churned Users\",\"color\": \"#F47E89\"},{\"serieName\": \"Winback Users\",\"color\": \"#FCD977\"}],\"systemSeriesColors\": [{\"serieName\": \"c5b2ad12-bc34-47fe-b3ec-9be8cd64687a\",\"color\": \"#FCC838\"},{\"serieName\": \"active users\",\"color\": \"#FCC838\"},{\"serieName\": \"churned users\",\"color\": \"#FF8142\"},{\"serieName\": \"new users\",\"color\": \"#2E75F0\"},{\"serieName\": \"d599149d-985a-4886-88de-e64648a95e8a\",\"color\": \"#F47E89\"},{\"serieName\": \"7332793c-20c5-454e-86d8-7fa9ec5260cb\",\"color\": \"#ABC7F9\"},{\"serieName\": \"ba56ccbe-966f-4785-87d3-1e954649f698\",\"color\": \"#56D3A8\"},{\"serieName\": \"New Users\",\"color\": \"#2E75F0\"},{\"serieName\": \"Churned Users\",\"color\": \"#FF8142\"},{\"serieName\": \"Winback Users\",\"color\": \"#48D1E0\"},{\"serieName\": \"Net Active Users\",\"color\": \"#2E75F0\"}]}"
       display_mode: CHART_MODE
-    viz_guid: 9e22452f-9418-4e47-926b-0e8000807b93
+    viz_guid: 3dce8bd5-9264-47dc-b992-d8c6baaba8ef
   - id: Viz_27
     answer:
       name: Brand New Users
@@ -1347,53 +1353,52 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Net Active Users
+      - id: formula_Net Active Users
         name: Net Active Users
-        expr: "[Active Users] - [New Users] + [Churned Users] - [Winback Users]"
+        expr: "[Active Users] - [formula_New Users] + [formula_Churned Users] - [formula_Winback Users]"
         was_auto_generated: false
-      - id: New Users
+      - id: formula_New Users
         name: New Users
-        expr: "unique_count_if ( [fx Last Activity Datestamp] = null , [Interaction User] )"
+        expr: "unique_count_if ( [formula_fx Last Activity Datestamp] = null , [Interaction User] )"
         was_auto_generated: false
-      - id: Churned Users
+      - id: formula_Churned Users
         name: Churned Users
-        expr: "unique_count_if ( [fx Churn Threshold Reached] , [Interaction User] ) * - 1"
+        expr: "unique_count_if ( [formula_fx Churn Threshold Reached] , [Interaction User] ) * - 1"
         was_auto_generated: false
-      - id: Winback Users
+      - id: formula_Winback Users
         name: Winback Users
-        expr: "unique_count_if ( diff_days ( [Datestamp] , [fx Last Activity Datestamp] ) >= [fx Inactivity Day Threshold Amount] , [Interaction User] )"
+        expr: "unique_count_if ( diff_days ( [formula_Datestamp] , [formula_fx Last Activity Datestamp] ) >= [formula_fx Inactivity Day Threshold Amount] , [Interaction User] )"
         was_auto_generated: false
-      - id: fx Churn Threshold Reached
+      - id: formula_fx Churn Threshold Reached
         name: fx Churn Threshold Reached
-        expr: "diff_days ( [Datestamp] , [fx User Last Seen] ) = 0 and diff_days ( today ( ) , [Datestamp] ) >= [fx Inactivity Day Threshold Amount]"
+        expr: "diff_days ( [formula_Datestamp] , [formula_fx User Last Seen] ) = 0 and diff_days ( today ( ) , [formula_Datestamp] ) >= [formula_fx Inactivity Day Threshold Amount]"
         was_auto_generated: false
-      - id: fx Days Since Last Activity
+      - id: formula_fx Days Since Last Activity
         name: fx Days Since Last Activity
-        expr: "diff_days ( [Datestamp] , [fx Last Activity Datestamp] )"
+        expr: "diff_days ( [formula_Datestamp] , [formula_fx Last Activity Datestamp] )"
         properties:
           column_type: ATTRIBUTE
         was_auto_generated: false
-      - id: fx Inactivity Day Threshold Amount
+      - id: formula_fx Inactivity Day Threshold Amount
         name: fx Inactivity Day Threshold Amount
         expr: "35"
         properties:
           column_type: ATTRIBUTE
         was_auto_generated: false
-      - id: fx Last Activity Datestamp
+      - id: formula_fx Last Activity Datestamp
         name: fx Last Activity Datestamp
-        expr: "group_aggregate ( moving_max ( [Datestamp] , 2 , - 1 , [Datestamp] ) , query_groups ( ) + { [Interaction User] } , query_filters ( ) + { [Interaction User] } - { [Datestamp] , [Interaction Timestamp] } )"
+        expr: "group_aggregate ( moving_max ( [formula_Datestamp] , 2 , - 1 , [formula_Datestamp] ) , query_groups ( ) + { [Interaction User] } , query_filters ( ) + { [Interaction User] } - { [formula_Datestamp] , [Interaction Timestamp] } )"
         was_auto_generated: false
-      - id: fx User Last Seen
+      - id: formula_fx User Last Seen
         name: fx User Last Seen
-        expr: "group_aggregate ( max ( [Datestamp] ) , { [Interaction User] } , { } )"
+        expr: "group_aggregate ( max ( [formula_Datestamp] ) , { [Interaction User] } , { } )"
         was_auto_generated: false
-      - id: Datestamp
+      - id: formula_Datestamp
         name: Datestamp
         expr: "date ( [Interaction Timestamp] )"
         was_auto_generated: false
-      search_query: "[Datestamp] [Datestamp].quarterly [New Users]"
+      search_query: "[formula_Datestamp] [formula_Datestamp].quarterly [formula_New Users]"
       answer_columns:
-      - name: Quarter(Datestamp)
       - name: New Users
         custom_name: Brand New Users
         format:
@@ -1404,11 +1409,12 @@ liveboard:
             negativeValueFormat: PREFIX_DASH
             toSeparateThousands: true
           isCategoryEditable: true
+      - name: Quarter(Datestamp)
       table:
         table_columns:
-        - column_id: Quarter(Datestamp)
-          show_headline: false
         - column_id: New Users
+          show_headline: false
+        - column_id: Quarter(Datestamp)
           show_headline: false
         ordered_column_ids:
         - Quarter(Datestamp)
@@ -1418,8 +1424,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Quarter(Datestamp)
         - column_id: New Users
+        - column_id: Quarter(Datestamp)
         axis_configs:
         - x:
           - Quarter(Datestamp)
@@ -1428,7 +1434,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {\"xGridlineEnabled\": false,\"yGridlineEnabled\": true},\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"isStackedAsPercent\": false,\"stackedAsPercentFormat\": {\"category\": \"PERCENTAGE\",\"percentageFormatConfig\": {\"decimals\": 2.0,\"removeTrailingZeroes\": false},\"isCategoryEditable\": false},\"pivotSummariesState\": {}},\"showStackedLabels\": false,\"allLabels\": false},\"columnProperties\": [{\"columnId\": \"Quarter(Datestamp)\",\"columnProperty\": {\"dataLabels\": false}},{\"columnId\": \"New Users\",\"columnProperty\": {\"dataLabels\": false,\"conditionalFormatting\": {\"rows\": [{\"operator\": \"GREATER_THAN\",\"value\": \"0\",\"plotAsBand\": false,\"fontProperties\": {\"color\": \"#56D3A8\",\"bold\": true,\"italic\": false,\"strikeThrough\": false,\"underline\": false}}]}}}],\"axisProperties\": [{\"id\": \"d80dc02d-a30c-4ee1-8a95-cd76e39b999c\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"New Users\"],\"isOpposite\": false}},{\"id\": \"9cb53966-fe83-49d4-b1a4-af56491e2464\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Quarter(Datestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"c5b2ad12-bc34-47fe-b3ec-9be8cd64687a\",\"color\": \"#FCC838\"},{\"serieName\": \"active users\",\"color\": \"#FCC838\"},{\"serieName\": \"churned users\",\"color\": \"#FF8142\"},{\"serieName\": \"new users\",\"color\": \"#2E75F0\"},{\"serieName\": \"d599149d-985a-4886-88de-e64648a95e8a\",\"color\": \"#F47E89\"},{\"serieName\": \"7332793c-20c5-454e-86d8-7fa9ec5260cb\",\"color\": \"#ABC7F9\"},{\"serieName\": \"ba56ccbe-966f-4785-87d3-1e954649f698\",\"color\": \"#56D3A8\"},{\"serieName\": \"New Users\",\"color\": \"#56D3A8\"},{\"serieName\": \"a71c0cd4-5c48-4742-8c1b-ad406bfa9698\",\"color\": \"#ABC7F9\"},{\"serieName\": \"7217c777-6f59-4d63-a84f-dbc7841b4acd\",\"color\": \"#F47E89\"},{\"serieName\": \"995df912-020e-4f15-963b-33d885c86622\",\"color\": \"#FCD977\"}]}"
       display_mode: CHART_MODE
-    viz_guid: b64246be-ad55-46c3-930b-0d0f274d3c27
+    viz_guid: 401c25bb-3d91-4cd3-9f5e-63ab3ed8bf6c
   - id: Viz_28
     answer:
       name: <b><font color="#F04152">Data Exports</font></b> per User
@@ -1437,19 +1443,19 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Data Exports per User
+      - id: formula_Data Exports per User
         name: Data Exports per User
-        expr: "count_if ( [User Action Category] = 'data exports' , [Incident ID] ) / [Active Users] "
+        expr: "count_if ( [User Action Category] = 'data exports' , [Incident ID] ) / [Active Users]"
         was_auto_generated: false
-      search_query: "[Interaction Timestamp] [Interaction Timestamp].quarterly [Interaction User] != '{Null}' [Data Exports per User]"
+      search_query: "[Interaction Timestamp] [Interaction Timestamp].quarterly [Interaction User] != '{null}' [formula_Data Exports per User]"
       answer_columns:
-      - name: Quarter(Interaction Timestamp)
       - name: Data Exports per User
+      - name: Quarter(Interaction Timestamp)
       table:
         table_columns:
-        - column_id: Quarter(Interaction Timestamp)
-          show_headline: false
         - column_id: Data Exports per User
+          show_headline: false
+        - column_id: Quarter(Interaction Timestamp)
           show_headline: false
         ordered_column_ids:
         - Quarter(Interaction Timestamp)
@@ -1459,8 +1465,8 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Quarter(Interaction Timestamp)
         - column_id: Data Exports per User
+        - column_id: Quarter(Interaction Timestamp)
         axis_configs:
         - x:
           - Quarter(Interaction Timestamp)
@@ -1469,13 +1475,13 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Quarter(Interaction Timestamp)\",\"columnProperty\": {}},{\"columnId\": \"Data Exports per User\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"99fd7ef7-dfd1-4ff2-9d0d-eb38f099fe6a\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Data Exports per User\"],\"isOpposite\": false}},{\"id\": \"d3e231df-cc88-45b9-852e-c8efd5abfa83\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Quarter(Interaction Timestamp)\"]}}],\"seriesColors\": [{\"serieName\": \"56955d13-deb6-4f79-bf73-7d9e8a770c8c\",\"color\": \"#FCC838\"},{\"serieName\": \"3ceee54b-d5ee-4126-afec-bf44b0a1ece4\",\"color\": \"#FF8142\"},{\"serieName\": \"5e0ad842-5465-4bc0-84a1-bacce8cce09b\",\"color\": \"#FF8142\"},{\"serieName\": \"Interaction User\",\"color\": \"#FF8142\"},{\"serieName\": \"a3230c60-e126-45a5-9ef8-1c8d9167bde3\",\"color\": \"#FF8142\"},{\"serieName\": \"Data Exports per User\",\"color\": \"#FF8142\"}],\"systemSeriesColors\": [{\"serieName\": \"56955d13-deb6-4f79-bf73-7d9e8a770c8c\",\"color\": \"#FCC838\"},{\"serieName\": \"3ceee54b-d5ee-4126-afec-bf44b0a1ece4\",\"color\": \"#FF8142\"},{\"serieName\": \"5e0ad842-5465-4bc0-84a1-bacce8cce09b\",\"color\": \"#FF8142\"},{\"serieName\": \"Interaction User\",\"color\": \"#FF8142\"},{\"serieName\": \"a3230c60-e126-45a5-9ef8-1c8d9167bde3\",\"color\": \"#FF8142\"},{\"serieName\": \"Data Exports per User\",\"color\": \"#2770ef\"}],\"customColorSelectorArray\": [\"#F04152\",\"#06BF7F\",\"#F04152\",\"#747E8C\"]}"
       display_mode: CHART_MODE
-    viz_guid: d28aa08d-b115-483d-97c1-5a2924bfcd02
+    viz_guid: e00074a9-8d7a-46f4-9462-cdffd0c9b84c
   - id: Viz_29
-    viz_guid: aeac90f4-ba11-484b-b853-b288df519c97
+    viz_guid: 8d25f392-2dc1-4585-8314-dc7e061da6c9
     note_tile:
       html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
   - id: Viz_30
-    viz_guid: 27d5a42e-0ff8-4369-8711-93a3e638018f
+    viz_guid: f96540ee-79d3-4ad3-b2bc-245b1ae3b806
     note_tile:
       html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
   - id: Viz_31
@@ -1486,63 +1492,35 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Leaderboard Rank
+      - id: formula_Leaderboard Rank
         name: Leaderboard Rank
-        expr: "rank ( [Leaderboard Score] , 'desc' )"
+        expr: "rank ( [formula_Leaderboard Score] , 'desc' )"
         properties:
           column_type: ATTRIBUTE
         was_auto_generated: false
-      - id: Leaderboard Score
+      - id: formula_Leaderboard Score
         name: Leaderboard Score
-        expr: "( 0 + [Searches (5x)] + [Answers (3x)] + [Liveboards (1x)] + [Data Exports (-5x)] )"
+        expr: "( 0 + [formula_Searches (5x)] + [formula_Answers (3x)] + [formula_Liveboards (1x)] + [formula_Data Exports (-5x)] )"
         was_auto_generated: false
-      - id: Answers (3x)
+      - id: formula_Answers (3x)
         name: Answers (3x)
         expr: "unique_count_if ( [User Action Category] = 'answers' , [Incident ID] ) * 3"
         was_auto_generated: false
-      - id: Data Exports (-5x)
+      - id: formula_Data Exports (-5x)
         name: Data Exports (-5x)
         expr: "unique_count_if ( [User Action Category] = 'data exports' , [Incident ID] ) * - 5"
         was_auto_generated: false
-      - id: Liveboards (1x)
+      - id: formula_Liveboards (1x)
         name: Liveboards (1x)
         expr: "unique_count_if ( [User Action Category] = 'liveboards' , [Incident ID] ) * 1"
         was_auto_generated: false
-      - id: Searches (5x)
+      - id: formula_Searches (5x)
         name: Searches (5x)
         expr: "unique_count_if ( [User Action Category] = 'search' , [Incident ID] ) * 5"
         was_auto_generated: false
-      search_query: "[Leaderboard Score] [Group] [Group Sharing] = 'default' [Searches (5x)] [Answers (3x)] [Liveboards (1x)] [Data Exports (-5x)] [Interaction User] not in ( [Interaction User] [Group] = [Group].'administration group' [Group].'system management group' ) [Leaderboard Rank] sort by [Leaderboard Score] descending"
+      search_query: "[formula_Leaderboard Score] [Group] [Group Sharing] = 'default' [formula_Searches (5x)] [formula_Answers (3x)] [formula_Liveboards (1x)] [formula_Data Exports (-5x)] [Interaction User] not in ( [Interaction User] [Group] = [Group].'administration group' [Group].'system management group' ) [formula_Leaderboard Rank] sort by [formula_Leaderboard Score] descending"
       answer_columns:
-      - name: Leaderboard Score
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: THOUSANDS
-            decimals: 1.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
-      - name: Group
-      - name: Searches (5x)
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: NONE
-            decimals: 0.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
       - name: Answers (3x)
-        format:
-          category: NUMBER
-          numberFormatConfig:
-            unit: NONE
-            decimals: 0.0
-            negativeValueFormat: PREFIX_DASH
-            toSeparateThousands: true
-          isCategoryEditable: true
-      - name: Liveboards (1x)
         format:
           category: NUMBER
           numberFormatConfig:
@@ -1560,22 +1538,52 @@ liveboard:
             negativeValueFormat: PREFIX_DASH
             toSeparateThousands: true
           isCategoryEditable: true
+      - name: Group
       - name: Leaderboard Rank
+      - name: Leaderboard Score
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: THOUSANDS
+            decimals: 1.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+        sort_info:
+          category: DEFAULT
+      - name: Liveboards (1x)
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
+      - name: Searches (5x)
+        format:
+          category: NUMBER
+          numberFormatConfig:
+            unit: NONE
+            decimals: 0.0
+            negativeValueFormat: PREFIX_DASH
+            toSeparateThousands: true
+          isCategoryEditable: true
       table:
         table_columns:
+        - column_id: Answers (3x)
+          show_headline: false
+        - column_id: Data Exports (-5x)
+          show_headline: false
         - column_id: Group
           show_headline: false
         - column_id: Leaderboard Rank
           show_headline: false
         - column_id: Leaderboard Score
           show_headline: false
-        - column_id: Searches (5x)
-          show_headline: false
-        - column_id: Answers (3x)
-          show_headline: false
         - column_id: Liveboards (1x)
           show_headline: false
-        - column_id: Data Exports (-5x)
+        - column_id: Searches (5x)
           show_headline: false
         ordered_column_ids:
         - Group
@@ -1590,13 +1598,13 @@ liveboard:
       chart:
         type: STACKED_BAR
         chart_columns:
+        - column_id: Answers (3x)
+        - column_id: Data Exports (-5x)
         - column_id: Group
         - column_id: Leaderboard Rank
         - column_id: Leaderboard Score
-        - column_id: Searches (5x)
-        - column_id: Answers (3x)
         - column_id: Liveboards (1x)
-        - column_id: Data Exports (-5x)
+        - column_id: Searches (5x)
         axis_configs:
         - x:
           - Group
@@ -1607,7 +1615,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"axisExtremes\": {\"x\": [{\"min\": 0.0,\"max\": 19.0}],\"y\": [{\"min\": -100000.0,\"max\": 1000000.0}]},\"isZoomed\": false,\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"isStackedAsPercent\": false,\"stackedAsPercentFormat\": {\"category\": \"PERCENTAGE\",\"percentageFormatConfig\": {\"decimals\": 2.0,\"removeTrailingZeroes\": false},\"isCategoryEditable\": false},\"pivotSummariesState\": {}},\"showStackedLabels\": false,\"legendPosition\": \"TOP_LEGEND\"},\"columnProperties\": [{\"columnId\": \"Group\",\"columnProperty\": {}},{\"columnId\": \"Leaderboard Score\",\"columnProperty\": {\"dataLabels\": false,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"dataLabels\\\":{\\\"backgroundColor\\\":\\\"\\\",\\\"borderColor\\\":\\\"\\\",\\\"borderWidth\\\":\\\"\\\",\\\"filter\\\":{\\\"operator\\\":\\\"\\\",\\\"value\\\":\\\"\\\"},\\\"align\\\":\\\"left\\\",\\\"style\\\":{\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false},\\\"maxCharacters\\\":\\\"\\\"}}}\"}},{\"columnId\": \"Searches (5x)\",\"columnProperty\": {}},{\"columnId\": \"Answers (3x)\",\"columnProperty\": {}},{\"columnId\": \"Leaderboard Rank\",\"columnProperty\": {}},{\"columnId\": \"Liveboards (1x)\",\"columnProperty\": {\"conditionalFormatting\": {}}},{\"columnId\": \"Data Exports (-5x)\",\"columnProperty\": {\"conditionalFormatting\": {}}}],\"axisProperties\": [{\"id\": \"b976bfd5-d214-4060-939d-5b17e0b8e9be\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Searches (5x)\",\"Answers (3x)\",\"Liveboards (1x)\"],\"isOpposite\": false,\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":false,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":true,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}},{\"id\": \"dc9d30a9-02e7-4421-80d1-79eb5a6ddae5\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Group\"],\"customProps\": \"{\\\"advancedProperties\\\":{\\\"axisSettings\\\":{\\\"visible\\\":true,\\\"axisName\\\":{\\\"isAxisNameVisible\\\":false,\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":false,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false}},\\\"labels\\\":{\\\"enabled\\\":true,\\\"maxCharacters\\\":\\\"30\\\",\\\"fontSize\\\":\\\"12\\\",\\\"boldFontWeight\\\":true,\\\"underlineTextDecoration\\\":false,\\\"italicFontStyle\\\":false,\\\"wrap\\\":false},\\\"ticks\\\":{\\\"showTicks\\\":false,\\\"tickWidth\\\":\\\"1\\\",\\\"tickLength\\\":\\\"5\\\",\\\"tickColor\\\":\\\"\\\"}}}\"}}],\"seriesColors\": [{\"serieName\": \"answer_pinboard_context\",\"color\": \"#06BF7F\"},{\"serieName\": \"answer_unsaved\",\"color\": \"#FCC838\"},{\"serieName\": \"answer_viz_context_view\",\"color\": \"#48D1E0\"},{\"serieName\": \"data_chart_config\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_print_view\",\"color\": \"#2E75F0\"},{\"serieName\": \"data export\",\"color\": \"#F04152\"},{\"serieName\": \"liveboards\",\"color\": \"#8C62F5\"},{\"serieName\": \"answers\",\"color\": \"#06BF7F\"},{\"serieName\": \"search\",\"color\": \"#FCC838\"},{\"serieName\": \"spot iq\",\"color\": \"#48D1E0\"},{\"serieName\": \"thoughtspot views\",\"color\": \"#FF8142\"},{\"serieName\": \"c6be6c25-ec76-492d-900a-46ad9746bba1\",\"color\": \"#71A1F4\"},{\"serieName\": \"Leaderboard Score\",\"color\": \"#71A1F4\"},{\"serieName\": \"c5a7f6b3-5886-4872-9347-c0fdd68f808a\",\"color\": \"#2E75F0\"},{\"serieName\": \"d6baccc1-940d-4750-889a-ec84707734d9\",\"color\": \"#2E75F0\"},{\"serieName\": \"f7a2762c-93bb-4763-ad03-e143cd33040f\",\"color\": \"#48D1E0\"},{\"serieName\": \"ae49a4d0-2cae-4543-b824-0ce56a1b5752\",\"color\": \"#2E75F0\"},{\"serieName\": \"aaron\",\"color\": \"#721F27\"},{\"serieName\": \"aastha\",\"color\": \"#F47E89\"},{\"serieName\": \"abhinav gupta\",\"color\": \"#B6313E\"},{\"serieName\": \"aby jerin\",\"color\": \"#F9B3B9\"},{\"serieName\": \"dave rubin\",\"color\": \"#F04152\"},{\"serieName\": \"devin mcpherson\",\"color\": \"#2F3947\"},{\"serieName\": \"dr. thoughtspot\",\"color\": \"#A2ACBA\"},{\"serieName\": \"ismael hernandez\",\"color\": \"#47515F\"},{\"serieName\": \"jj\",\"color\": \"#BEC6D0\"},{\"serieName\": \"james belsey\",\"color\": \"#747E8C\"},{\"serieName\": \"josh royse\",\"color\": \"#7A3D1F\"},{\"serieName\": \"kaushik patel\",\"color\": \"#FFA97E\"},{\"serieName\": \"ram\",\"color\": \"#C26232\"},{\"serieName\": \"rifdhan nazeer\",\"color\": \"#FFCCB3\"},{\"serieName\": \"sydney akers\",\"color\": \"#FF8142\"},{\"serieName\": \"trey salas\",\"color\": \"#422E75\"},{\"serieName\": \"tri tu\",\"color\": \"#B094F8\"},{\"serieName\": \"vaibhav singh\",\"color\": \"#6A4ABA\"},{\"serieName\": \"adelaide.mcnamara\",\"color\": \"#D1C0FB\"},{\"serieName\": \"akshat sharda\",\"color\": \"#8C62F5\"},{\"serieName\": \"aman.bhattarai\",\"color\": \"#025B3C\"},{\"serieName\": \"andrea.frisk\",\"color\": \"#56D3A8\"},{\"serieName\": \"andreea.pop\",\"color\": \"#049160\"},{\"serieName\": \"arpit.rai\",\"color\": \"#9BE5CB\"},{\"serieName\": \"azimuddin.mohammed\",\"color\": \"#06BF7F\"},{\"serieName\": \"barbara.trevino\",\"color\": \"#785F1A\"},{\"serieName\": \"brendon.ritz\",\"color\": \"#FCD977\"},{\"serieName\": \"brian.reynolds\",\"color\": \"#BF982A\"},{\"serieName\": \"damian.waldron\",\"color\": \"#FDE9AF\"},{\"serieName\": \"danielle.peranich\",\"color\": \"#FCC838\"},{\"serieName\": \"delara.patel\",\"color\": \"#22636B\"},{\"serieName\": \"emma.robinson\",\"color\": \"#82DFE9\"},{\"serieName\": \"evan rodriguez\",\"color\": \"#369FAA\"},{\"serieName\": \"gabi.sicher\",\"color\": \"#B5ECF2\"},{\"serieName\": \"hungpin.kao\",\"color\": \"#48D1E0\"},{\"serieName\": \"izabella.dee\",\"color\": \"#163772\"},{\"serieName\": \"kendrick.heath\",\"color\": \"#71A1F4\"},{\"serieName\": \"kim.skornik\",\"color\": \"#2359B6\"},{\"serieName\": \"leanne.monter\",\"color\": \"#ABC7F9\"},{\"serieName\": \"manan.shah\",\"color\": \"#2E75F0\"},{\"serieName\": \"martha.miller\",\"color\": \"#721F27\"},{\"serieName\": \"mason.vreugde\",\"color\": \"#F47E89\"},{\"serieName\": \"micah.terry\",\"color\": \"#B6313E\"},{\"serieName\": \"mohil.verma\",\"color\": \"#F9B3B9\"},{\"serieName\": \"patrick.evans\",\"color\": \"#F04152\"},{\"serieName\": \"prashant.patil\",\"color\": \"#2F3947\"},{\"serieName\": \"ron.dugger\",\"color\": \"#A2ACBA\"},{\"serieName\": \"ryan.ng\",\"color\": \"#47515F\"},{\"serieName\": \"sagar.murthy\",\"color\": \"#BEC6D0\"},{\"serieName\": \"sebastian.haep\",\"color\": \"#747E8C\"},{\"serieName\": \"shubham.sonawane\",\"color\": \"#7A3D1F\"},{\"serieName\": \"srinithya.chikyala\",\"color\": \"#FFA97E\"},{\"serieName\": \"stephen.newman\",\"color\": \"#C26232\"},{\"serieName\": \"sumeet.arora\",\"color\": \"#FFCCB3\"},{\"serieName\": \"tejas.sachdeva\",\"color\": \"#FF8142\"},{\"serieName\": \"thomas.day\",\"color\": \"#422E75\"},{\"serieName\": \"administration group\",\"color\": \"#C26232\"},{\"serieName\": \"customer service\",\"color\": \"#FFCCB3\"},{\"serieName\": \"customer success\",\"color\": \"#FF8142\"},{\"serieName\": \"data management\",\"color\": \"#B094F8\"},{\"serieName\": \"data-ops\",\"color\": \"#6A4ABA\"},{\"serieName\": \"discovergroup\",\"color\": \"#D1C0FB\"},{\"serieName\": \"emea ps\",\"color\": \"#8C62F5\"},{\"serieName\": \"engineering\",\"color\": \"#56D3A8\"},{\"serieName\": \"executive\",\"color\": \"#049160\"},{\"serieName\": \"friends of cs tools\",\"color\": \"#9BE5CB\"},{\"serieName\": \"friends of professional services\",\"color\": \"#06BF7F\"},{\"serieName\": \"growth\",\"color\": \"#FCD977\"},{\"serieName\": \"hr\",\"color\": \"#BF982A\"},{\"serieName\": \"marketing\",\"color\": \"#FDE9AF\"},{\"serieName\": \"operations\",\"color\": \"#FCC838\"},{\"serieName\": \"product management\",\"color\": \"#82DFE9\"},{\"serieName\": \"professional services\",\"color\": \"#369FAA\"},{\"serieName\": \"sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"solution consultant\",\"color\": \"#48D1E0\"},{\"serieName\": \"strategic accounts team\",\"color\": \"#71A1F4\"},{\"serieName\": \"tse team\",\"color\": \"#2359B6\"},{\"serieName\": \"data_manager\",\"color\": \"#ABC7F9\"},{\"serieName\": \"dm_grp\",\"color\": \"#2E75F0\"},{\"serieName\": \"cs tools\",\"color\": \"#F47E89\"},{\"serieName\": \"hailey hickman\",\"color\": \"#F04152\"},{\"serieName\": \"krupal.desai\",\"color\": \"#BEC6D0\"},{\"serieName\": \"lizzette corona\",\"color\": \"#747E8C\"},{\"serieName\": \"nupur badoni\",\"color\": \"#7A3D1F\"},{\"serieName\": \"scott holden\",\"color\": \"#C26232\"},{\"serieName\": \"scottiq\",\"color\": \"#FFCCB3\"},{\"serieName\": \"sree\",\"color\": \"#FF8142\"},{\"serieName\": \"system user\",\"color\": \"#422E75\"},{\"serieName\": \"vikas gautam\",\"color\": \"#D1C0FB\"},{\"serieName\": \"aditya.abhinav\",\"color\": \"#025B3C\"},{\"serieName\": \"alok.yadav\",\"color\": \"#049160\"},{\"serieName\": \"andrew.sue\",\"color\": \"#FCD977\"},{\"serieName\": \"anthony.dimascio\",\"color\": \"#BF982A\"},{\"serieName\": \"autumn.bushman\",\"color\": \"#FDE9AF\"},{\"serieName\": \"charles.tuttle\",\"color\": \"#82DFE9\"},{\"serieName\": \"daxesh.patwa\",\"color\": \"#48D1E0\"},{\"serieName\": \"denise.lee\",\"color\": \"#71A1F4\"},{\"serieName\": \"harsh.sinha\",\"color\": \"#721F27\"},{\"serieName\": \"jacob.rehmann\",\"color\": \"#B6313E\"},{\"serieName\": \"jeff.depa\",\"color\": \"#F9B3B9\"},{\"serieName\": \"jens.englert\",\"color\": \"#F04152\"},{\"serieName\": \"joshua.gill\",\"color\": \"#2F3947\"},{\"serieName\": \"katie.dunn\",\"color\": \"#A2ACBA\"},{\"serieName\": \"kelly.daugherty\",\"color\": \"#47515F\"},{\"serieName\": \"maheshwari.dhandapani\",\"color\": \"#7A3D1F\"},{\"serieName\": \"mani.uppala\",\"color\": \"#FFA97E\"},{\"serieName\": \"manish.agarwal\",\"color\": \"#C26232\"},{\"serieName\": \"mohit.daswani\",\"color\": \"#6A4ABA\"},{\"serieName\": \"nitish.rajguru\",\"color\": \"#D1C0FB\"},{\"serieName\": \"paul.froggatt\",\"color\": \"#025B3C\"},{\"serieName\": \"priya.waghmare\",\"color\": \"#56D3A8\"},{\"serieName\": \"robert.baxley\",\"color\": \"#049160\"},{\"serieName\": \"sheryl.zhang\",\"color\": \"#BF982A\"},{\"serieName\": \"svc.champagne2-migration\",\"color\": \"#22636B\"},{\"serieName\": \"vikram.bhaskaran\",\"color\": \"#369FAA\"},{\"serieName\": \"Answers (3x)\",\"color\": \"#56D3A8\"},{\"serieName\": \"Searches (5x)\",\"color\": \"#FCD977\"},{\"serieName\": \"Liveboards (1x)\",\"color\": \"#B094F8\"},{\"serieName\": \"Data Exports (-5x)\",\"color\": \"#F47E89\"}],\"systemSeriesColors\": [{\"serieName\": \"answer_pinboard_context\",\"color\": \"#06BF7F\"},{\"serieName\": \"answer_unsaved\",\"color\": \"#FCC838\"},{\"serieName\": \"answer_viz_context_view\",\"color\": \"#48D1E0\"},{\"serieName\": \"data_chart_config\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_print_view\",\"color\": \"#2E75F0\"},{\"serieName\": \"data export\",\"color\": \"#F04152\"},{\"serieName\": \"liveboards\",\"color\": \"#8C62F5\"},{\"serieName\": \"answers\",\"color\": \"#06BF7F\"},{\"serieName\": \"search\",\"color\": \"#FCC838\"},{\"serieName\": \"spot iq\",\"color\": \"#48D1E0\"},{\"serieName\": \"thoughtspot views\",\"color\": \"#FF8142\"},{\"serieName\": \"c6be6c25-ec76-492d-900a-46ad9746bba1\",\"color\": \"#71A1F4\"},{\"serieName\": \"Leaderboard Score\",\"color\": \"#71A1F4\"},{\"serieName\": \"c5a7f6b3-5886-4872-9347-c0fdd68f808a\",\"color\": \"#2E75F0\"},{\"serieName\": \"d6baccc1-940d-4750-889a-ec84707734d9\",\"color\": \"#2E75F0\"},{\"serieName\": \"f7a2762c-93bb-4763-ad03-e143cd33040f\",\"color\": \"#48D1E0\"},{\"serieName\": \"ae49a4d0-2cae-4543-b824-0ce56a1b5752\",\"color\": \"#2E75F0\"},{\"serieName\": \"aaron\",\"color\": \"#721F27\"},{\"serieName\": \"aastha\",\"color\": \"#F47E89\"},{\"serieName\": \"abhinav gupta\",\"color\": \"#B6313E\"},{\"serieName\": \"aby jerin\",\"color\": \"#F9B3B9\"},{\"serieName\": \"dave rubin\",\"color\": \"#F04152\"},{\"serieName\": \"devin mcpherson\",\"color\": \"#2F3947\"},{\"serieName\": \"dr. thoughtspot\",\"color\": \"#A2ACBA\"},{\"serieName\": \"ismael hernandez\",\"color\": \"#47515F\"},{\"serieName\": \"jj\",\"color\": \"#BEC6D0\"},{\"serieName\": \"james belsey\",\"color\": \"#747E8C\"},{\"serieName\": \"josh royse\",\"color\": \"#7A3D1F\"},{\"serieName\": \"kaushik patel\",\"color\": \"#FFA97E\"},{\"serieName\": \"ram\",\"color\": \"#C26232\"},{\"serieName\": \"rifdhan nazeer\",\"color\": \"#FFCCB3\"},{\"serieName\": \"sydney akers\",\"color\": \"#FF8142\"},{\"serieName\": \"trey salas\",\"color\": \"#422E75\"},{\"serieName\": \"tri tu\",\"color\": \"#B094F8\"},{\"serieName\": \"vaibhav singh\",\"color\": \"#6A4ABA\"},{\"serieName\": \"adelaide.mcnamara\",\"color\": \"#D1C0FB\"},{\"serieName\": \"akshat sharda\",\"color\": \"#8C62F5\"},{\"serieName\": \"aman.bhattarai\",\"color\": \"#025B3C\"},{\"serieName\": \"andrea.frisk\",\"color\": \"#56D3A8\"},{\"serieName\": \"andreea.pop\",\"color\": \"#049160\"},{\"serieName\": \"arpit.rai\",\"color\": \"#9BE5CB\"},{\"serieName\": \"azimuddin.mohammed\",\"color\": \"#06BF7F\"},{\"serieName\": \"barbara.trevino\",\"color\": \"#785F1A\"},{\"serieName\": \"brendon.ritz\",\"color\": \"#FCD977\"},{\"serieName\": \"brian.reynolds\",\"color\": \"#BF982A\"},{\"serieName\": \"damian.waldron\",\"color\": \"#FDE9AF\"},{\"serieName\": \"danielle.peranich\",\"color\": \"#FCC838\"},{\"serieName\": \"delara.patel\",\"color\": \"#22636B\"},{\"serieName\": \"emma.robinson\",\"color\": \"#82DFE9\"},{\"serieName\": \"evan rodriguez\",\"color\": \"#369FAA\"},{\"serieName\": \"gabi.sicher\",\"color\": \"#B5ECF2\"},{\"serieName\": \"hungpin.kao\",\"color\": \"#48D1E0\"},{\"serieName\": \"izabella.dee\",\"color\": \"#163772\"},{\"serieName\": \"kendrick.heath\",\"color\": \"#71A1F4\"},{\"serieName\": \"kim.skornik\",\"color\": \"#2359B6\"},{\"serieName\": \"leanne.monter\",\"color\": \"#ABC7F9\"},{\"serieName\": \"manan.shah\",\"color\": \"#2E75F0\"},{\"serieName\": \"martha.miller\",\"color\": \"#721F27\"},{\"serieName\": \"mason.vreugde\",\"color\": \"#F47E89\"},{\"serieName\": \"micah.terry\",\"color\": \"#B6313E\"},{\"serieName\": \"mohil.verma\",\"color\": \"#F9B3B9\"},{\"serieName\": \"patrick.evans\",\"color\": \"#F04152\"},{\"serieName\": \"prashant.patil\",\"color\": \"#2F3947\"},{\"serieName\": \"ron.dugger\",\"color\": \"#A2ACBA\"},{\"serieName\": \"ryan.ng\",\"color\": \"#47515F\"},{\"serieName\": \"sagar.murthy\",\"color\": \"#BEC6D0\"},{\"serieName\": \"sebastian.haep\",\"color\": \"#747E8C\"},{\"serieName\": \"shubham.sonawane\",\"color\": \"#7A3D1F\"},{\"serieName\": \"srinithya.chikyala\",\"color\": \"#FFA97E\"},{\"serieName\": \"stephen.newman\",\"color\": \"#C26232\"},{\"serieName\": \"sumeet.arora\",\"color\": \"#FFCCB3\"},{\"serieName\": \"tejas.sachdeva\",\"color\": \"#FF8142\"},{\"serieName\": \"thomas.day\",\"color\": \"#422E75\"},{\"serieName\": \"administration group\",\"color\": \"#C26232\"},{\"serieName\": \"customer service\",\"color\": \"#FFCCB3\"},{\"serieName\": \"customer success\",\"color\": \"#FF8142\"},{\"serieName\": \"data management\",\"color\": \"#B094F8\"},{\"serieName\": \"data-ops\",\"color\": \"#6A4ABA\"},{\"serieName\": \"discovergroup\",\"color\": \"#D1C0FB\"},{\"serieName\": \"emea ps\",\"color\": \"#8C62F5\"},{\"serieName\": \"engineering\",\"color\": \"#56D3A8\"},{\"serieName\": \"executive\",\"color\": \"#049160\"},{\"serieName\": \"friends of cs tools\",\"color\": \"#9BE5CB\"},{\"serieName\": \"friends of professional services\",\"color\": \"#06BF7F\"},{\"serieName\": \"growth\",\"color\": \"#FCD977\"},{\"serieName\": \"hr\",\"color\": \"#BF982A\"},{\"serieName\": \"marketing\",\"color\": \"#FDE9AF\"},{\"serieName\": \"operations\",\"color\": \"#FCC838\"},{\"serieName\": \"product management\",\"color\": \"#82DFE9\"},{\"serieName\": \"professional services\",\"color\": \"#369FAA\"},{\"serieName\": \"sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"solution consultant\",\"color\": \"#48D1E0\"},{\"serieName\": \"strategic accounts team\",\"color\": \"#71A1F4\"},{\"serieName\": \"tse team\",\"color\": \"#2359B6\"},{\"serieName\": \"data_manager\",\"color\": \"#ABC7F9\"},{\"serieName\": \"dm_grp\",\"color\": \"#2E75F0\"},{\"serieName\": \"cs tools\",\"color\": \"#F47E89\"},{\"serieName\": \"hailey hickman\",\"color\": \"#F04152\"},{\"serieName\": \"krupal.desai\",\"color\": \"#BEC6D0\"},{\"serieName\": \"lizzette corona\",\"color\": \"#747E8C\"},{\"serieName\": \"nupur badoni\",\"color\": \"#7A3D1F\"},{\"serieName\": \"scott holden\",\"color\": \"#C26232\"},{\"serieName\": \"scottiq\",\"color\": \"#FFCCB3\"},{\"serieName\": \"sree\",\"color\": \"#FF8142\"},{\"serieName\": \"system user\",\"color\": \"#422E75\"},{\"serieName\": \"vikas gautam\",\"color\": \"#D1C0FB\"},{\"serieName\": \"aditya.abhinav\",\"color\": \"#025B3C\"},{\"serieName\": \"alok.yadav\",\"color\": \"#049160\"},{\"serieName\": \"andrew.sue\",\"color\": \"#FCD977\"},{\"serieName\": \"anthony.dimascio\",\"color\": \"#BF982A\"},{\"serieName\": \"autumn.bushman\",\"color\": \"#FDE9AF\"},{\"serieName\": \"charles.tuttle\",\"color\": \"#82DFE9\"},{\"serieName\": \"daxesh.patwa\",\"color\": \"#48D1E0\"},{\"serieName\": \"denise.lee\",\"color\": \"#71A1F4\"},{\"serieName\": \"harsh.sinha\",\"color\": \"#721F27\"},{\"serieName\": \"jacob.rehmann\",\"color\": \"#B6313E\"},{\"serieName\": \"jeff.depa\",\"color\": \"#F9B3B9\"},{\"serieName\": \"jens.englert\",\"color\": \"#F04152\"},{\"serieName\": \"joshua.gill\",\"color\": \"#2F3947\"},{\"serieName\": \"katie.dunn\",\"color\": \"#A2ACBA\"},{\"serieName\": \"kelly.daugherty\",\"color\": \"#47515F\"},{\"serieName\": \"maheshwari.dhandapani\",\"color\": \"#7A3D1F\"},{\"serieName\": \"mani.uppala\",\"color\": \"#FFA97E\"},{\"serieName\": \"manish.agarwal\",\"color\": \"#C26232\"},{\"serieName\": \"mohit.daswani\",\"color\": \"#6A4ABA\"},{\"serieName\": \"nitish.rajguru\",\"color\": \"#D1C0FB\"},{\"serieName\": \"paul.froggatt\",\"color\": \"#025B3C\"},{\"serieName\": \"priya.waghmare\",\"color\": \"#56D3A8\"},{\"serieName\": \"robert.baxley\",\"color\": \"#049160\"},{\"serieName\": \"sheryl.zhang\",\"color\": \"#BF982A\"},{\"serieName\": \"svc.champagne2-migration\",\"color\": \"#22636B\"},{\"serieName\": \"vikram.bhaskaran\",\"color\": \"#369FAA\"},{\"serieName\": \"Searches (5x)\",\"color\": \"#FCC838\"},{\"serieName\": \"Answers (3x)\",\"color\": \"#48D1E0\"},{\"serieName\": \"Liveboards (1x)\",\"color\": \"#2E75F0\"},{\"serieName\": \"Data Exports (-5x)\",\"color\": \"#06BF7F\"}],\"tooltipConfig\": {\"columnIds\": [\"Leaderboard Rank\",\"Group\",\"Leaderboard Score\",\"Searches (5x)\",\"Answers (3x)\",\"Liveboards (1x)\",\"Data Exports (-5x)\"]}}"
       display_mode: CHART_MODE
-    viz_guid: 81f32930-cad0-42d3-b6df-5af7ac238614
+    viz_guid: fa5a1540-6625-4e57-b65d-ca085e1256f1
   - id: Viz_32
     answer:
       name: Users in more than 1 Shareable Group
@@ -1616,16 +1624,16 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Shareable Group Memberships
+      - id: formula_Shareable Group Memberships
         name: Shareable Group Memberships
         expr: "group_aggregate ( count ( [Group] ) , { [Interaction User] } , { [Group Sharing] = 'default' , [Group] not in { 'administration group' , 'demo retail group' } } )"
         was_auto_generated: false
-      search_query: "[Interaction User] [Group] count [Group] sum [Interactions] > 0 [Group Sharing] = 'default' [Group] != [Group].'administration group' [Group].'demo retail group' [Shareable Group Memberships] > 1 [Interaction User] not in ( [Interaction User] [Group] = [Group].'administration group' [Group].'system management group' )"
+      search_query: "[Interaction User] [Group] count [Group] sum [Interactions] > 0 [Group Sharing] = 'default' [Group] != [Group].'administration group' [Group].'demo retail group' [formula_Shareable Group Memberships] > 1 [Interaction User] not in ( [Interaction User] [Group] = [Group].'administration group' [Group].'system management group' )"
       answer_columns:
-      - name: Interaction User
-        custom_name: Active User
       - name: Group
         custom_name: Shareable Group
+      - name: Interaction User
+        custom_name: Active User
       - name: Number of Group
         custom_name: Group Memberships
         format:
@@ -1638,9 +1646,9 @@ liveboard:
           isCategoryEditable: true
       table:
         table_columns:
-        - column_id: Interaction User
-          show_headline: false
         - column_id: Group
+          show_headline: false
+        - column_id: Interaction User
           show_headline: false
         - column_id: Number of Group
           show_headline: false
@@ -1653,8 +1661,8 @@ liveboard:
       chart:
         type: SANKEY
         chart_columns:
-        - column_id: Interaction User
         - column_id: Group
+        - column_id: Interaction User
         - column_id: Number of Group
         axis_configs:
         - x:
@@ -1665,9 +1673,9 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Interaction User\",\"columnProperty\": {}},{\"columnId\": \"Number of Group\",\"columnProperty\": {}},{\"columnId\": \"Group\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"40c02415-c9d4-4457-9222-6c60028d4da9\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Number of Group\"],\"isOpposite\": false}},{\"id\": \"496e79df-621d-468b-acb1-94ccfb1c8f29\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Group\",\"Interaction User\"]}}],\"systemSeriesColors\": [{\"serieName\": \"administration group\",\"color\": \"#A2ACBA\"},{\"serieName\": \"customer service\",\"color\": \"#47515F\"},{\"serieName\": \"customer success\",\"color\": \"#BEC6D0\"},{\"serieName\": \"data management\",\"color\": \"#747E8C\"},{\"serieName\": \"data-ops\",\"color\": \"#FFA97E\"},{\"serieName\": \"demo retail group\",\"color\": \"#C26232\"},{\"serieName\": \"developer group\",\"color\": \"#FFCCB3\"},{\"serieName\": \"discovergroup\",\"color\": \"#FF8142\"},{\"serieName\": \"emea ps\",\"color\": \"#422E75\"},{\"serieName\": \"engineering\",\"color\": \"#B094F8\"},{\"serieName\": \"executive\",\"color\": \"#6A4ABA\"},{\"serieName\": \"friends of cs tools\",\"color\": \"#D1C0FB\"},{\"serieName\": \"friends of professional services\",\"color\": \"#8C62F5\"},{\"serieName\": \"growth\",\"color\": \"#025B3C\"},{\"serieName\": \"hr\",\"color\": \"#56D3A8\"},{\"serieName\": \"liveboard verifier\",\"color\": \"#049160\"},{\"serieName\": \"marketing\",\"color\": \"#9BE5CB\"},{\"serieName\": \"operations\",\"color\": \"#06BF7F\"},{\"serieName\": \"ps: administrator\",\"color\": \"#785F1A\"},{\"serieName\": \"ps: data managers\",\"color\": \"#FCD977\"},{\"serieName\": \"ps: end users\",\"color\": \"#BF982A\"},{\"serieName\": \"ps: power users\",\"color\": \"#FDE9AF\"},{\"serieName\": \"product management\",\"color\": \"#FCC838\"},{\"serieName\": \"professional services\",\"color\": \"#22636B\"},{\"serieName\": \"sales\",\"color\": \"#82DFE9\"},{\"serieName\": \"service accounts\",\"color\": \"#369FAA\"},{\"serieName\": \"solution consultant\",\"color\": \"#B5ECF2\"},{\"serieName\": \"strategic accounts team\",\"color\": \"#48D1E0\"},{\"serieName\": \"system management group\",\"color\": \"#163772\"},{\"serieName\": \"tse team\",\"color\": \"#71A1F4\"},{\"serieName\": \"data_manager\",\"color\": \"#2359B6\"},{\"serieName\": \"dm_grp\",\"color\": \"#ABC7F9\"},{\"serieName\": \"test_group\",\"color\": \"#2E75F0\"},{\"serieName\": \"cff7f168-1351-4999-a180-ba87792b1755\",\"color\": \"#747E8C\"}],\"tooltipConfig\": {\"columnIds\": [\"Group\",\"Interaction User\"]}}"
       display_mode: CHART_MODE
-    viz_guid: b2252bdc-19b3-4194-8874-1753dd9a579d
+    viz_guid: 3b56da93-7f8b-4d8c-9c9c-b16b9472fb98
   - id: Viz_33
-    viz_guid: c2e3cc7a-e3ba-4d65-9444-4c205daad2cb
+    viz_guid: 5e607cb9-d4e6-4c4b-bcb5-8176ceaac43b
     note_tile:
       html_parsed_string: "<h2 dir=\"ltr\"><span style=\"white-space: pre-wrap;\">Notes </span></h2><p class=\"theme-module__editor-paragraph\"><br></p><ul><li value=\"1\"><span style=\"white-space: pre-wrap;\">User and Group Filters are </span><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">unlinked </strong></b><span style=\"white-space: pre-wrap;\">from these visualizations</span><br><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">Group Leaderboard</strong></b><span style=\"white-space: pre-wrap;\"> &amp; </span><b><strong class=\"theme-module__editor-text-bold\" style=\"white-space: pre-wrap;\">Sankey diagram</strong></b><br></li><li value=\"2\"><span style=\"white-space: pre-wrap;\">Including any metadata filter above will restrict any Search activity, see Appedix for more details</span></li></ul>"
   - id: Viz_34
@@ -1676,12 +1684,11 @@ liveboard:
       tables:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
-      search_query: "[Group] [Interaction User] [Group Sharing] = 'default' [Interaction User] not in ( [Interaction User] [Group] = [Group].'administration group' [Group].'system management group' ) [User Action Category] [Interactions] [User Action Category] != [User Action Category].'thoughtspot views' [User Action Category].{Null}"
+      search_query: "[Group] [Interaction User] [Group Sharing] = 'default' [Interaction User] not in ( [Interaction User] [Group] = [Group].'administration group' [Group].'system management group' ) [User Action Category] [Interactions] [User Action Category] != [User Action Category].'thoughtspot views' [User Action Category].{null}"
       answer_columns:
       - name: Group
       - name: Interaction User
         custom_name: User
-      - name: User Action Category
       - name: Interactions
         format:
           category: NUMBER
@@ -1691,15 +1698,16 @@ liveboard:
             negativeValueFormat: PREFIX_DASH
             toSeparateThousands: true
           isCategoryEditable: true
+      - name: User Action Category
       table:
         table_columns:
         - column_id: Group
           show_headline: false
         - column_id: Interaction User
           show_headline: false
-        - column_id: User Action Category
-          show_headline: false
         - column_id: Interactions
+          show_headline: false
+        - column_id: User Action Category
           show_headline: false
         ordered_column_ids:
         - Group
@@ -1713,8 +1721,8 @@ liveboard:
         chart_columns:
         - column_id: Group
         - column_id: Interaction User
-        - column_id: User Action Category
         - column_id: Interactions
+        - column_id: User Action Category
         axis_configs:
         - x:
           - Group
@@ -1736,7 +1744,7 @@ liveboard:
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"chartSpecific\": {\"pivotState\": {\"fields\": [{\"dataField\": \"Group\",\"sortBy\": \"value\",\"sortBySummaryField\": \"Interactions\",\"sortOrder\": \"desc\",\"expanded\": false,\"area\": \"row\"},{\"dataField\": \"Interaction User\",\"sortBy\": \"value\",\"sortBySummaryField\": \"Interactions\",\"sortOrder\": \"desc\",\"expanded\": false,\"area\": \"row\"}]},\"summaryMode\": \"None\",\"isHeatmapOverlayed\": true,\"isStackedAsPercent\": false,\"stackedAsPercentFormat\": {\"category\": \"PERCENTAGE\",\"percentageFormatConfig\": {\"decimals\": 2.0,\"removeTrailingZeroes\": false},\"isCategoryEditable\": false},\"dataFieldArea\": \"column\",\"pivotSummariesState\": {\"showColumnTotals\": true,\"showRowGrandTotals\": false,\"showColumnGrandTotals\": true},\"showPivotSummaryPrior\": \"BOTH\"},\"showStackedLabels\": false},\"columnProperties\": [{\"columnId\": \"Group\",\"columnProperty\": {}},{\"columnId\": \"Interaction User\",\"columnProperty\": {}},{\"columnId\": \"User Action Category\",\"columnProperty\": {}},{\"columnId\": \"Interactions\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"a84d0d57-3724-46ec-92a3-8906719719c0\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Interactions\"],\"isOpposite\": false}},{\"id\": \"624a83c0-d079-49fd-9b5e-4a14a0c89e98\",\"properties\": {\"axisType\": \"X\",\"linkedColumns\": [\"Group\",\"Interaction User\"]}}],\"seriesColors\": [{\"serieName\": \"answer_pinboard_context\",\"color\": \"#06BF7F\"},{\"serieName\": \"answer_unsaved\",\"color\": \"#FCC838\"},{\"serieName\": \"answer_viz_context_view\",\"color\": \"#48D1E0\"},{\"serieName\": \"data_chart_config\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_print_view\",\"color\": \"#2E75F0\"},{\"serieName\": \"data export\",\"color\": \"#F04152\"},{\"serieName\": \"liveboards\",\"color\": \"#8C62F5\"},{\"serieName\": \"answers\",\"color\": \"#06BF7F\"},{\"serieName\": \"search\",\"color\": \"#FCC838\"},{\"serieName\": \"spot iq\",\"color\": \"#48D1E0\"},{\"serieName\": \"thoughtspot views\",\"color\": \"#FF8142\"},{\"serieName\": \"c6be6c25-ec76-492d-900a-46ad9746bba1\",\"color\": \"#71A1F4\"},{\"serieName\": \"9b7cc31b-fa1f-4d83-b15a-bf3ffcb5688e\",\"color\": \"#71A1F4\"},{\"serieName\": \"c5a7f6b3-5886-4872-9347-c0fdd68f808a\",\"color\": \"#2E75F0\"},{\"serieName\": \"d6baccc1-940d-4750-889a-ec84707734d9\",\"color\": \"#2E75F0\"},{\"serieName\": \"f7a2762c-93bb-4763-ad03-e143cd33040f\",\"color\": \"#48D1E0\"},{\"serieName\": \"ae49a4d0-2cae-4543-b824-0ce56a1b5752\",\"color\": \"#2E75F0\"},{\"serieName\": \"aaron\",\"color\": \"#721F27\"},{\"serieName\": \"aastha\",\"color\": \"#F47E89\"},{\"serieName\": \"abhinav gupta\",\"color\": \"#B6313E\"},{\"serieName\": \"aby jerin\",\"color\": \"#F9B3B9\"},{\"serieName\": \"dave rubin\",\"color\": \"#F04152\"},{\"serieName\": \"devin mcpherson\",\"color\": \"#2F3947\"},{\"serieName\": \"dr. thoughtspot\",\"color\": \"#A2ACBA\"},{\"serieName\": \"ismael hernandez\",\"color\": \"#47515F\"},{\"serieName\": \"jj\",\"color\": \"#BEC6D0\"},{\"serieName\": \"james belsey\",\"color\": \"#747E8C\"},{\"serieName\": \"josh royse\",\"color\": \"#7A3D1F\"},{\"serieName\": \"kaushik patel\",\"color\": \"#FFA97E\"},{\"serieName\": \"ram\",\"color\": \"#C26232\"},{\"serieName\": \"rifdhan nazeer\",\"color\": \"#FFCCB3\"},{\"serieName\": \"sydney akers\",\"color\": \"#FF8142\"},{\"serieName\": \"trey salas\",\"color\": \"#422E75\"},{\"serieName\": \"tri tu\",\"color\": \"#B094F8\"},{\"serieName\": \"vaibhav singh\",\"color\": \"#6A4ABA\"},{\"serieName\": \"adelaide.mcnamara\",\"color\": \"#D1C0FB\"},{\"serieName\": \"akshat sharda\",\"color\": \"#8C62F5\"},{\"serieName\": \"aman.bhattarai\",\"color\": \"#025B3C\"},{\"serieName\": \"andrea.frisk\",\"color\": \"#56D3A8\"},{\"serieName\": \"andreea.pop\",\"color\": \"#049160\"},{\"serieName\": \"arpit.rai\",\"color\": \"#9BE5CB\"},{\"serieName\": \"azimuddin.mohammed\",\"color\": \"#06BF7F\"},{\"serieName\": \"barbara.trevino\",\"color\": \"#785F1A\"},{\"serieName\": \"brendon.ritz\",\"color\": \"#FCD977\"},{\"serieName\": \"brian.reynolds\",\"color\": \"#BF982A\"},{\"serieName\": \"damian.waldron\",\"color\": \"#FDE9AF\"},{\"serieName\": \"danielle.peranich\",\"color\": \"#FCC838\"},{\"serieName\": \"delara.patel\",\"color\": \"#22636B\"},{\"serieName\": \"emma.robinson\",\"color\": \"#82DFE9\"},{\"serieName\": \"evan rodriguez\",\"color\": \"#369FAA\"},{\"serieName\": \"gabi.sicher\",\"color\": \"#B5ECF2\"},{\"serieName\": \"hungpin.kao\",\"color\": \"#48D1E0\"},{\"serieName\": \"izabella.dee\",\"color\": \"#163772\"},{\"serieName\": \"kendrick.heath\",\"color\": \"#71A1F4\"},{\"serieName\": \"kim.skornik\",\"color\": \"#2359B6\"},{\"serieName\": \"leanne.monter\",\"color\": \"#ABC7F9\"},{\"serieName\": \"manan.shah\",\"color\": \"#2E75F0\"},{\"serieName\": \"martha.miller\",\"color\": \"#721F27\"},{\"serieName\": \"mason.vreugde\",\"color\": \"#F47E89\"},{\"serieName\": \"micah.terry\",\"color\": \"#B6313E\"},{\"serieName\": \"mohil.verma\",\"color\": \"#F9B3B9\"},{\"serieName\": \"patrick.evans\",\"color\": \"#F04152\"},{\"serieName\": \"prashant.patil\",\"color\": \"#2F3947\"},{\"serieName\": \"ron.dugger\",\"color\": \"#A2ACBA\"},{\"serieName\": \"ryan.ng\",\"color\": \"#47515F\"},{\"serieName\": \"sagar.murthy\",\"color\": \"#BEC6D0\"},{\"serieName\": \"sebastian.haep\",\"color\": \"#747E8C\"},{\"serieName\": \"shubham.sonawane\",\"color\": \"#7A3D1F\"},{\"serieName\": \"srinithya.chikyala\",\"color\": \"#FFA97E\"},{\"serieName\": \"stephen.newman\",\"color\": \"#C26232\"},{\"serieName\": \"sumeet.arora\",\"color\": \"#FFCCB3\"},{\"serieName\": \"tejas.sachdeva\",\"color\": \"#FF8142\"},{\"serieName\": \"thomas.day\",\"color\": \"#422E75\"},{\"serieName\": \"administration group\",\"color\": \"#C26232\"},{\"serieName\": \"customer service\",\"color\": \"#FFCCB3\"},{\"serieName\": \"customer success\",\"color\": \"#FF8142\"},{\"serieName\": \"data management\",\"color\": \"#B094F8\"},{\"serieName\": \"data-ops\",\"color\": \"#6A4ABA\"},{\"serieName\": \"discovergroup\",\"color\": \"#D1C0FB\"},{\"serieName\": \"emea ps\",\"color\": \"#8C62F5\"},{\"serieName\": \"engineering\",\"color\": \"#56D3A8\"},{\"serieName\": \"executive\",\"color\": \"#049160\"},{\"serieName\": \"friends of cs tools\",\"color\": \"#9BE5CB\"},{\"serieName\": \"friends of professional services\",\"color\": \"#06BF7F\"},{\"serieName\": \"growth\",\"color\": \"#FCD977\"},{\"serieName\": \"hr\",\"color\": \"#BF982A\"},{\"serieName\": \"marketing\",\"color\": \"#FDE9AF\"},{\"serieName\": \"operations\",\"color\": \"#FCC838\"},{\"serieName\": \"product management\",\"color\": \"#82DFE9\"},{\"serieName\": \"professional services\",\"color\": \"#369FAA\"},{\"serieName\": \"sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"solution consultant\",\"color\": \"#48D1E0\"},{\"serieName\": \"strategic accounts team\",\"color\": \"#71A1F4\"},{\"serieName\": \"tse team\",\"color\": \"#2359B6\"},{\"serieName\": \"data_manager\",\"color\": \"#ABC7F9\"},{\"serieName\": \"dm_grp\",\"color\": \"#2E75F0\"},{\"serieName\": \"cs tools\",\"color\": \"#F47E89\"},{\"serieName\": \"hailey hickman\",\"color\": \"#F04152\"},{\"serieName\": \"krupal.desai\",\"color\": \"#BEC6D0\"},{\"serieName\": \"lizzette corona\",\"color\": \"#747E8C\"},{\"serieName\": \"nupur badoni\",\"color\": \"#7A3D1F\"},{\"serieName\": \"scott holden\",\"color\": \"#C26232\"},{\"serieName\": \"scottiq\",\"color\": \"#FFCCB3\"},{\"serieName\": \"sree\",\"color\": \"#FF8142\"},{\"serieName\": \"system user\",\"color\": \"#422E75\"},{\"serieName\": \"vikas gautam\",\"color\": \"#D1C0FB\"},{\"serieName\": \"aditya.abhinav\",\"color\": \"#025B3C\"},{\"serieName\": \"alok.yadav\",\"color\": \"#049160\"},{\"serieName\": \"andrew.sue\",\"color\": \"#FCD977\"},{\"serieName\": \"anthony.dimascio\",\"color\": \"#BF982A\"},{\"serieName\": \"autumn.bushman\",\"color\": \"#FDE9AF\"},{\"serieName\": \"charles.tuttle\",\"color\": \"#82DFE9\"},{\"serieName\": \"daxesh.patwa\",\"color\": \"#48D1E0\"},{\"serieName\": \"denise.lee\",\"color\": \"#71A1F4\"},{\"serieName\": \"harsh.sinha\",\"color\": \"#721F27\"},{\"serieName\": \"jacob.rehmann\",\"color\": \"#B6313E\"},{\"serieName\": \"jeff.depa\",\"color\": \"#F9B3B9\"},{\"serieName\": \"jens.englert\",\"color\": \"#F04152\"},{\"serieName\": \"joshua.gill\",\"color\": \"#2F3947\"},{\"serieName\": \"katie.dunn\",\"color\": \"#A2ACBA\"},{\"serieName\": \"kelly.daugherty\",\"color\": \"#47515F\"},{\"serieName\": \"maheshwari.dhandapani\",\"color\": \"#7A3D1F\"},{\"serieName\": \"mani.uppala\",\"color\": \"#FFA97E\"},{\"serieName\": \"manish.agarwal\",\"color\": \"#C26232\"},{\"serieName\": \"mohit.daswani\",\"color\": \"#6A4ABA\"},{\"serieName\": \"nitish.rajguru\",\"color\": \"#D1C0FB\"},{\"serieName\": \"paul.froggatt\",\"color\": \"#025B3C\"},{\"serieName\": \"priya.waghmare\",\"color\": \"#56D3A8\"},{\"serieName\": \"robert.baxley\",\"color\": \"#049160\"},{\"serieName\": \"sheryl.zhang\",\"color\": \"#BF982A\"},{\"serieName\": \"svc.champagne2-migration\",\"color\": \"#22636B\"},{\"serieName\": \"vikram.bhaskaran\",\"color\": \"#369FAA\"},{\"serieName\": \"21734688-e3eb-4aa8-a294-324aa54c60ea\",\"color\": \"#56D3A8\"},{\"serieName\": \"d17f5537-939a-41fe-96fe-21f4bec01707\",\"color\": \"#FCD977\"},{\"serieName\": \"5922fb05-480e-4aff-9811-f0f5b617917e\",\"color\": \"#B094F8\"},{\"serieName\": \"5b83508a-0d59-4370-a7dc-0b17b21a568e\",\"color\": \"#F47E89\"}],\"systemSeriesColors\": [{\"serieName\": \"answer_pinboard_context\",\"color\": \"#06BF7F\"},{\"serieName\": \"answer_unsaved\",\"color\": \"#FCC838\"},{\"serieName\": \"answer_viz_context_view\",\"color\": \"#48D1E0\"},{\"serieName\": \"data_chart_config\",\"color\": \"#71A1F4\"},{\"serieName\": \"pinboard_print_view\",\"color\": \"#2E75F0\"},{\"serieName\": \"data export\",\"color\": \"#F04152\"},{\"serieName\": \"liveboards\",\"color\": \"#8C62F5\"},{\"serieName\": \"answers\",\"color\": \"#06BF7F\"},{\"serieName\": \"search\",\"color\": \"#FCC838\"},{\"serieName\": \"spot iq\",\"color\": \"#48D1E0\"},{\"serieName\": \"thoughtspot views\",\"color\": \"#FF8142\"},{\"serieName\": \"c6be6c25-ec76-492d-900a-46ad9746bba1\",\"color\": \"#71A1F4\"},{\"serieName\": \"9b7cc31b-fa1f-4d83-b15a-bf3ffcb5688e\",\"color\": \"#71A1F4\"},{\"serieName\": \"c5a7f6b3-5886-4872-9347-c0fdd68f808a\",\"color\": \"#2E75F0\"},{\"serieName\": \"d6baccc1-940d-4750-889a-ec84707734d9\",\"color\": \"#2E75F0\"},{\"serieName\": \"f7a2762c-93bb-4763-ad03-e143cd33040f\",\"color\": \"#48D1E0\"},{\"serieName\": \"ae49a4d0-2cae-4543-b824-0ce56a1b5752\",\"color\": \"#2E75F0\"},{\"serieName\": \"aaron\",\"color\": \"#721F27\"},{\"serieName\": \"aastha\",\"color\": \"#F47E89\"},{\"serieName\": \"abhinav gupta\",\"color\": \"#B6313E\"},{\"serieName\": \"aby jerin\",\"color\": \"#F9B3B9\"},{\"serieName\": \"dave rubin\",\"color\": \"#F04152\"},{\"serieName\": \"devin mcpherson\",\"color\": \"#2F3947\"},{\"serieName\": \"dr. thoughtspot\",\"color\": \"#A2ACBA\"},{\"serieName\": \"ismael hernandez\",\"color\": \"#47515F\"},{\"serieName\": \"jj\",\"color\": \"#BEC6D0\"},{\"serieName\": \"james belsey\",\"color\": \"#747E8C\"},{\"serieName\": \"josh royse\",\"color\": \"#7A3D1F\"},{\"serieName\": \"kaushik patel\",\"color\": \"#FFA97E\"},{\"serieName\": \"ram\",\"color\": \"#C26232\"},{\"serieName\": \"rifdhan nazeer\",\"color\": \"#FFCCB3\"},{\"serieName\": \"sydney akers\",\"color\": \"#FF8142\"},{\"serieName\": \"trey salas\",\"color\": \"#422E75\"},{\"serieName\": \"tri tu\",\"color\": \"#B094F8\"},{\"serieName\": \"vaibhav singh\",\"color\": \"#6A4ABA\"},{\"serieName\": \"adelaide.mcnamara\",\"color\": \"#D1C0FB\"},{\"serieName\": \"akshat sharda\",\"color\": \"#8C62F5\"},{\"serieName\": \"aman.bhattarai\",\"color\": \"#025B3C\"},{\"serieName\": \"andrea.frisk\",\"color\": \"#56D3A8\"},{\"serieName\": \"andreea.pop\",\"color\": \"#049160\"},{\"serieName\": \"arpit.rai\",\"color\": \"#9BE5CB\"},{\"serieName\": \"azimuddin.mohammed\",\"color\": \"#06BF7F\"},{\"serieName\": \"barbara.trevino\",\"color\": \"#785F1A\"},{\"serieName\": \"brendon.ritz\",\"color\": \"#FCD977\"},{\"serieName\": \"brian.reynolds\",\"color\": \"#BF982A\"},{\"serieName\": \"damian.waldron\",\"color\": \"#FDE9AF\"},{\"serieName\": \"danielle.peranich\",\"color\": \"#FCC838\"},{\"serieName\": \"delara.patel\",\"color\": \"#22636B\"},{\"serieName\": \"emma.robinson\",\"color\": \"#82DFE9\"},{\"serieName\": \"evan rodriguez\",\"color\": \"#369FAA\"},{\"serieName\": \"gabi.sicher\",\"color\": \"#B5ECF2\"},{\"serieName\": \"hungpin.kao\",\"color\": \"#48D1E0\"},{\"serieName\": \"izabella.dee\",\"color\": \"#163772\"},{\"serieName\": \"kendrick.heath\",\"color\": \"#71A1F4\"},{\"serieName\": \"kim.skornik\",\"color\": \"#2359B6\"},{\"serieName\": \"leanne.monter\",\"color\": \"#ABC7F9\"},{\"serieName\": \"manan.shah\",\"color\": \"#2E75F0\"},{\"serieName\": \"martha.miller\",\"color\": \"#721F27\"},{\"serieName\": \"mason.vreugde\",\"color\": \"#F47E89\"},{\"serieName\": \"micah.terry\",\"color\": \"#B6313E\"},{\"serieName\": \"mohil.verma\",\"color\": \"#F9B3B9\"},{\"serieName\": \"patrick.evans\",\"color\": \"#F04152\"},{\"serieName\": \"prashant.patil\",\"color\": \"#2F3947\"},{\"serieName\": \"ron.dugger\",\"color\": \"#A2ACBA\"},{\"serieName\": \"ryan.ng\",\"color\": \"#47515F\"},{\"serieName\": \"sagar.murthy\",\"color\": \"#BEC6D0\"},{\"serieName\": \"sebastian.haep\",\"color\": \"#747E8C\"},{\"serieName\": \"shubham.sonawane\",\"color\": \"#7A3D1F\"},{\"serieName\": \"srinithya.chikyala\",\"color\": \"#FFA97E\"},{\"serieName\": \"stephen.newman\",\"color\": \"#C26232\"},{\"serieName\": \"sumeet.arora\",\"color\": \"#FFCCB3\"},{\"serieName\": \"tejas.sachdeva\",\"color\": \"#FF8142\"},{\"serieName\": \"thomas.day\",\"color\": \"#422E75\"},{\"serieName\": \"administration group\",\"color\": \"#C26232\"},{\"serieName\": \"customer service\",\"color\": \"#FFCCB3\"},{\"serieName\": \"customer success\",\"color\": \"#FF8142\"},{\"serieName\": \"data management\",\"color\": \"#B094F8\"},{\"serieName\": \"data-ops\",\"color\": \"#6A4ABA\"},{\"serieName\": \"discovergroup\",\"color\": \"#D1C0FB\"},{\"serieName\": \"emea ps\",\"color\": \"#8C62F5\"},{\"serieName\": \"engineering\",\"color\": \"#56D3A8\"},{\"serieName\": \"executive\",\"color\": \"#049160\"},{\"serieName\": \"friends of cs tools\",\"color\": \"#9BE5CB\"},{\"serieName\": \"friends of professional services\",\"color\": \"#06BF7F\"},{\"serieName\": \"growth\",\"color\": \"#FCD977\"},{\"serieName\": \"hr\",\"color\": \"#BF982A\"},{\"serieName\": \"marketing\",\"color\": \"#FDE9AF\"},{\"serieName\": \"operations\",\"color\": \"#FCC838\"},{\"serieName\": \"product management\",\"color\": \"#82DFE9\"},{\"serieName\": \"professional services\",\"color\": \"#369FAA\"},{\"serieName\": \"sales\",\"color\": \"#B5ECF2\"},{\"serieName\": \"solution consultant\",\"color\": \"#48D1E0\"},{\"serieName\": \"strategic accounts team\",\"color\": \"#71A1F4\"},{\"serieName\": \"tse team\",\"color\": \"#2359B6\"},{\"serieName\": \"data_manager\",\"color\": \"#ABC7F9\"},{\"serieName\": \"dm_grp\",\"color\": \"#2E75F0\"},{\"serieName\": \"cs tools\",\"color\": \"#F47E89\"},{\"serieName\": \"hailey hickman\",\"color\": \"#F04152\"},{\"serieName\": \"krupal.desai\",\"color\": \"#BEC6D0\"},{\"serieName\": \"lizzette corona\",\"color\": \"#747E8C\"},{\"serieName\": \"nupur badoni\",\"color\": \"#7A3D1F\"},{\"serieName\": \"scott holden\",\"color\": \"#C26232\"},{\"serieName\": \"scottiq\",\"color\": \"#FFCCB3\"},{\"serieName\": \"sree\",\"color\": \"#FF8142\"},{\"serieName\": \"system user\",\"color\": \"#422E75\"},{\"serieName\": \"vikas gautam\",\"color\": \"#D1C0FB\"},{\"serieName\": \"aditya.abhinav\",\"color\": \"#025B3C\"},{\"serieName\": \"alok.yadav\",\"color\": \"#049160\"},{\"serieName\": \"andrew.sue\",\"color\": \"#FCD977\"},{\"serieName\": \"anthony.dimascio\",\"color\": \"#BF982A\"},{\"serieName\": \"autumn.bushman\",\"color\": \"#FDE9AF\"},{\"serieName\": \"charles.tuttle\",\"color\": \"#82DFE9\"},{\"serieName\": \"daxesh.patwa\",\"color\": \"#48D1E0\"},{\"serieName\": \"denise.lee\",\"color\": \"#71A1F4\"},{\"serieName\": \"harsh.sinha\",\"color\": \"#721F27\"},{\"serieName\": \"jacob.rehmann\",\"color\": \"#B6313E\"},{\"serieName\": \"jeff.depa\",\"color\": \"#F9B3B9\"},{\"serieName\": \"jens.englert\",\"color\": \"#F04152\"},{\"serieName\": \"joshua.gill\",\"color\": \"#2F3947\"},{\"serieName\": \"katie.dunn\",\"color\": \"#A2ACBA\"},{\"serieName\": \"kelly.daugherty\",\"color\": \"#47515F\"},{\"serieName\": \"maheshwari.dhandapani\",\"color\": \"#7A3D1F\"},{\"serieName\": \"mani.uppala\",\"color\": \"#FFA97E\"},{\"serieName\": \"manish.agarwal\",\"color\": \"#C26232\"},{\"serieName\": \"mohit.daswani\",\"color\": \"#6A4ABA\"},{\"serieName\": \"nitish.rajguru\",\"color\": \"#D1C0FB\"},{\"serieName\": \"paul.froggatt\",\"color\": \"#025B3C\"},{\"serieName\": \"priya.waghmare\",\"color\": \"#56D3A8\"},{\"serieName\": \"robert.baxley\",\"color\": \"#049160\"},{\"serieName\": \"sheryl.zhang\",\"color\": \"#BF982A\"},{\"serieName\": \"svc.champagne2-migration\",\"color\": \"#22636B\"},{\"serieName\": \"vikram.bhaskaran\",\"color\": \"#369FAA\"},{\"serieName\": \"d17f5537-939a-41fe-96fe-21f4bec01707\",\"color\": \"#FCC838\"},{\"serieName\": \"21734688-e3eb-4aa8-a294-324aa54c60ea\",\"color\": \"#48D1E0\"},{\"serieName\": \"5922fb05-480e-4aff-9811-f0f5b617917e\",\"color\": \"#2E75F0\"},{\"serieName\": \"5b83508a-0d59-4370-a7dc-0b17b21a568e\",\"color\": \"#06BF7F\"}]}"
       display_mode: CHART_MODE
-    viz_guid: 6d6902f5-3975-44b4-a121-ffb2744d1dae
+    viz_guid: 70260142-7fdf-4ee2-b4a6-458fbfe72d1f
   - id: Viz_35
     answer:
       name: First Interaction Date
@@ -1745,11 +1753,11 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Interaction Date
+      - id: formula_Interaction Date
         name: Interaction Date
         expr: "date ( [Interaction Timestamp] )"
         was_auto_generated: false
-      search_query: "min [Interaction Date]"
+      search_query: "min [formula_Interaction Date]"
       answer_columns:
       - name: Minimum Interaction Date
       table:
@@ -1759,6 +1767,7 @@ liveboard:
         ordered_column_ids:
         - Minimum Interaction Date
         client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"columnProperties\": [{\"columnId\": \"Minimum Interaction Date\",\"columnProperty\": {}}]}"
       chart:
         type: KPI
         chart_columns:
@@ -1767,8 +1776,9 @@ liveboard:
         - "y":
           - Minimum Interaction Date
         client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Minimum Interaction Date\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"a46fc51a-35a1-4a75-9ee0-600347c72950\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Minimum Interaction Date\"],\"isOpposite\": false}},{\"id\": \"e31ea42a-475b-475d-aec4-f22f423f00a0\",\"properties\": {\"axisType\": \"X\"}}]}"
       display_mode: CHART_MODE
-    viz_guid: defd3c3c-ed44-4bce-8d7e-1b4d4065592c
+    viz_guid: bde2736c-dcd5-4716-814c-b242b741c843
   - id: Viz_36
     answer:
       name: Latest Interaction Date
@@ -1777,11 +1787,11 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Interaction Date
+      - id: formula_Interaction Date
         name: Interaction Date
         expr: "date ( [Interaction Timestamp] )"
         was_auto_generated: false
-      search_query: "max [Interaction Date]"
+      search_query: "max [formula_Interaction Date]"
       answer_columns:
       - name: Maximum Interaction Date
       table:
@@ -1791,6 +1801,7 @@ liveboard:
         ordered_column_ids:
         - Maximum Interaction Date
         client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"columnProperties\": [{\"columnId\": \"Maximum Interaction Date\",\"columnProperty\": {}}]}"
       chart:
         type: KPI
         chart_columns:
@@ -1799,8 +1810,9 @@ liveboard:
         - "y":
           - Maximum Interaction Date
         client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Maximum Interaction Date\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"d080ee6b-c373-4209-99f2-33bc27ba1b46\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Maximum Interaction Date\"],\"isOpposite\": false}},{\"id\": \"f49321d0-42ef-41fc-b418-7b1f447e5120\",\"properties\": {\"axisType\": \"X\"}}]}"
       display_mode: CHART_MODE
-    viz_guid: a759ad0f-2fc1-41d9-8c32-b8779bc6c458
+    viz_guid: 74f24aa1-2382-4218-8fb3-71c01dee5f75
   - id: Viz_37
     answer:
       name: First Interaction Date
@@ -1809,11 +1821,11 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Interaction Date
+      - id: formula_Interaction Date
         name: Interaction Date
         expr: "date ( [Interaction Timestamp] )"
         was_auto_generated: false
-      search_query: "min [Interaction Date]"
+      search_query: "min [formula_Interaction Date]"
       answer_columns:
       - name: Minimum Interaction Date
       table:
@@ -1823,6 +1835,7 @@ liveboard:
         ordered_column_ids:
         - Minimum Interaction Date
         client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"columnProperties\": [{\"columnId\": \"Minimum Interaction Date\",\"columnProperty\": {}}]}"
       chart:
         type: KPI
         chart_columns:
@@ -1831,8 +1844,9 @@ liveboard:
         - "y":
           - Minimum Interaction Date
         client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Minimum Interaction Date\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"ea6bbd75-1510-439e-a13e-f51e2401ea6d\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Minimum Interaction Date\"],\"isOpposite\": false}},{\"id\": \"3159e127-b092-43c4-963b-2d63d5a3892d\",\"properties\": {\"axisType\": \"X\"}}]}"
       display_mode: CHART_MODE
-    viz_guid: c96473b0-b329-4680-ac72-3cdda38b1610
+    viz_guid: cab5ca45-a511-4358-9f0e-9eb4c8038e70
   - id: Viz_38
     answer:
       name: Latest Interaction Date
@@ -1841,11 +1855,11 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Interaction Date
+      - id: formula_Interaction Date
         name: Interaction Date
         expr: "date ( [Interaction Timestamp] )"
         was_auto_generated: false
-      search_query: "max [Interaction Date]"
+      search_query: "max [formula_Interaction Date]"
       answer_columns:
       - name: Maximum Interaction Date
       table:
@@ -1855,6 +1869,7 @@ liveboard:
         ordered_column_ids:
         - Maximum Interaction Date
         client_state: ""
+        client_state_v2: "{\"tableVizPropVersion\": \"V1\",\"columnProperties\": [{\"columnId\": \"Maximum Interaction Date\",\"columnProperty\": {}}]}"
       chart:
         type: KPI
         chart_columns:
@@ -1863,22 +1878,23 @@ liveboard:
         - "y":
           - Maximum Interaction Date
         client_state: ""
+        client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"gridLines\": {},\"responsiveLayoutPreference\": \"USER_PREFERRED_ON\",\"chartSpecific\": {\"dataFieldArea\": \"column\"}},\"columnProperties\": [{\"columnId\": \"Maximum Interaction Date\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"f016ee7f-b9b7-4699-813e-9ad63f97bafe\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Maximum Interaction Date\"],\"isOpposite\": false}},{\"id\": \"ccf4dda8-9fd1-43f2-820d-7bb73c409970\",\"properties\": {\"axisType\": \"X\"}}]}"
       display_mode: CHART_MODE
-    viz_guid: 1584ab0e-5473-43c5-b409-125468ddc860
+    viz_guid: 831855ba-8292-4524-9e8b-5e8d6fc4d29c
   - id: Viz_39
-    viz_guid: bbce365c-9634-4d75-9c2f-4bd45b8375c8
+    viz_guid: 6b0e5b02-f673-4da3-a986-c94d5723af68
     note_tile:
       html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
   - id: Viz_40
-    viz_guid: 9e2261cd-4000-430a-9a29-789c3657e3ff
+    viz_guid: cc22a128-0df1-43d8-82f5-6cb45dd0affe
     note_tile:
       html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
   - id: Viz_41
-    viz_guid: 216488fa-315c-4974-946a-3c44dff6152b
+    viz_guid: 20ada1b9-fbce-4871-9e46-fb76b6eb7fb4
     note_tile:
       html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
   - id: Viz_42
-    viz_guid: e8852759-e654-4639-a587-97f8689d80cb
+    viz_guid: 6d641458-0dd2-4aff-b740-8b5071f5605e
     note_tile:
       html_parsed_string: "<p class=\"theme-module__editor-paragraph\" dir=\"ltr\"><br><span>                            </span><img id=\"undefined\" src=\"https://www.thoughtspot.com/images/logo-black-with-r.svg\" alt=\"LINK\" height=\"26\" width=\"135\"><span>            💖 </span><i><em class=\"theme-module__editor-text-italic\">created by the </em></i><b><strong class=\"theme-module__editor-text-bold\">CS Tools </strong></b><i><b><strong class=\"theme-module__editor-text-bold theme-module__editor-text-italic\">team</strong></b></i><i><em class=\"theme-module__editor-text-italic\">, give feedback on</em></i><span> </span><a href=\"https://github.com/thoughtspot/cs_tools/discussions\" target=\"_blank\" rel=\"noreferrer\" class=\"theme-module__editor-link\"><b><strong class=\"theme-module__editor-text-bold\">GitHub Discussions</strong></b></a><b><strong class=\"theme-module__editor-text-bold\"> 📣</strong></b></p>"
   - id: Viz_43
@@ -1888,7 +1904,7 @@ liveboard:
       - id: CS Tools ~ BI Server Advanced
         name: CS Tools ~ BI Server Advanced
       formulas:
-      - id: Interaction Date
+      - id: formula_Interaction Date
         name: Interaction Date
         expr: "date ( [Interaction Timestamp] )"
         was_auto_generated: false
@@ -1898,9 +1914,9 @@ liveboard:
       - name: Maximum Worksheet
       table:
         table_columns:
-        - column_id: Maximum Worksheet
-          show_headline: false
         - column_id: Interactions
+          show_headline: false
+        - column_id: Maximum Worksheet
           show_headline: false
         ordered_column_ids:
         - Maximum Worksheet
@@ -1910,15 +1926,15 @@ liveboard:
       chart:
         type: KPI
         chart_columns:
-        - column_id: Maximum Worksheet
         - column_id: Interactions
+        - column_id: Maximum Worksheet
         axis_configs:
         - "y":
           - Maximum Worksheet
         client_state: ""
         client_state_v2: "{\"version\": \"V4DOT2\",\"chartProperties\": {\"responsiveLayoutPreference\": \"AUTO_ON\",\"chartSpecific\": {\"pivotSummariesState\": {}}},\"columnProperties\": [{\"columnId\": \"Maximum Worksheet\",\"columnProperty\": {}},{\"columnId\": \"Interactions\",\"columnProperty\": {}}],\"axisProperties\": [{\"id\": \"0403b121-545f-49b9-abaf-10ffe49f512c\",\"properties\": {\"axisType\": \"Y\",\"linkedColumns\": [\"Maximum Worksheet\"],\"isOpposite\": false}},{\"id\": \"37107459-bf99-46c3-8c50-a435baca2158\",\"properties\": {\"axisType\": \"X\"}}],\"systemSeriesColors\": [{\"serieName\": \"9a06aae6-c0df-437d-b133-0bd01bf19169\",\"color\": \"#48D1E0\"}]}"
       display_mode: CHART_MODE
-    viz_guid: 23038871-896d-4216-96f8-8def8eb09101
+    viz_guid: fa395894-d1e5-4cba-89d6-037e0de7cf79
   filters:
   - column:
     - ThoughtSpot URL
@@ -2046,6 +2062,7 @@ liveboard:
         "y": 9
         height: 1
         width: 6
+      id: 7c29a773-7786-49fd-af4e-2c22b33a5c7d
     - name: Adoption
       description: ""
       tiles:
@@ -2084,6 +2101,7 @@ liveboard:
         "y": 8
         height: 1
         width: 6
+      id: 47f39b84-1d74-45da-a2b5-e5551f658c3f
     - name: Health
       description: ""
       tiles:
@@ -2122,6 +2140,7 @@ liveboard:
         "y": 14
         height: 1
         width: 6
+      id: 139fd0b8-cd93-466e-8274-eae597c584b5
     - name: Archiver
       description: ""
       tiles:
@@ -2155,6 +2174,7 @@ liveboard:
         "y": 10
         height: 1
         width: 6
+      id: 9a159cae-6687-442b-a734-c7989c21328c
     - name: Groups
       description: ""
       tiles:
@@ -2188,6 +2208,7 @@ liveboard:
         "y": 0
         height: 2
         width: 5
+      id: ea3606e1-b204-4f6a-b0f6-d5d8b9dd8ddb
     - name: Appendix
       description: ""
       tiles:
@@ -2226,3 +2247,25 @@ liveboard:
         "y": 4
         height: 1
         width: 6
+      id: 5af63f07-5d17-4b41-b4eb-4f7913771789
+  ordered_chips:
+  - name: ThoughtSpot URL
+    type: FILTER
+  - name: Org
+    type: FILTER
+  - name: Group
+    type: FILTER
+  - name: Interaction User
+    type: FILTER
+  - name: Experience Type
+    type: FILTER
+  - name: Data Source Type
+    type: FILTER
+  - name: Data Source
+    type: FILTER
+  - name: Worksheet
+    type: FILTER
+  - name: Interaction Timestamp
+    type: FILTER
+  - name: User Action Category
+    type: FILTER

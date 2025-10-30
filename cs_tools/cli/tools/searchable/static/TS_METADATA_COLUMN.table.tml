@@ -1,4 +1,4 @@
-guid: e6d43b82-be02-4c3f-971c-db73e071e12b
+guid: 5620dee7-2916-46a0-bcab-46b5e9d2c96d
 table:
   name: TS_METADATA_COLUMN
   db: << DATABASE >>
@@ -157,3 +157,6 @@ table:
       name: TS_METADATA_OBJECT
     "on": "[TS_METADATA_COLUMN::CLUSTER_GUID] = [TS_METADATA_OBJECT::CLUSTER_GUID] AND [TS_METADATA_COLUMN::OBJECT_GUID] = [TS_METADATA_OBJECT::Object GUID]"
     type: RIGHT_OUTER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

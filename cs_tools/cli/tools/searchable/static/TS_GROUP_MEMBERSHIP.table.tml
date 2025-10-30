@@ -1,4 +1,4 @@
-guid: 091eb0fa-893b-4fde-8511-4b33905f062f
+guid: d46b8959-caf4-4a5f-8464-cc97f3401f26
 table:
   name: TS_GROUP_MEMBERSHIP
   description: |-
@@ -48,3 +48,6 @@ table:
       name: TS_USER
     "on": "[TS_GROUP_MEMBERSHIP::PRINCIPAL_GUID] = [TS_USER::User GUID] AND [TS_GROUP_MEMBERSHIP::CLUSTER_GUID] = [TS_USER::CLUSTER_GUID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

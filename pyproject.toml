@@ -36,7 +36,7 @@ dependencies = [
     # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
     "aiosqlite",
     "click == 8.1.7",
-    "thoughtspot-tml",
+    "thoughtspot-tml >= 2.4.2",
     "awesomeversion",
     "httpx >= 0.27.0",
     "pydantic >= 2.6.4",
@@ -56,6 +56,7 @@ dependencies = [
     "exceptiongroup; python_version < '3.11.0'",
     "strenum; python_version < '3.11.0'",
     "taskgroup; python_version < '3.11.0'",
+    "snowflake-sqlalchemy>=1.7.4",
 ]
 
 [project.urls]

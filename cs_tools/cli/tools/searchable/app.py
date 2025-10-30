@@ -773,3 +773,103 @@ def tml(
                 syncer.dump(models.MetadataTML.__tablename__, data=rows)
 
     return 0
+
+@app.command()
+@depends_on(thoughtspot=ThoughtSpot())
+def ts_ai_stats(
+    ctx: typer.Context,
+    syncer: Syncer = typer.Option(
+        ...,
+        click_type=custom_types.Syncer(models=[models.AIStats]),
+        help="protocol and path for options to pass to the syncer",
+        rich_help_panel="Syncer Options",
+    ),
+    from_date: custom_types.Date = typer.Option(..., help="inclusive lower bound of rows to select from TS: BI Server"),
+    to_date: custom_types.Date = typer.Option(..., help="inclusive upper bound of rows to select from TS: BI Server"),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
+    compact: bool = typer.Option(True, "--compact / --full", help="If compact, add  [User Action] != {null} 'invalid'"),
+) -> _types.ExitCode:
+    """
+    Extract query performance metrics for each query made against an external database
+
+    To extract one day of data, set [b cyan]--from-date[/] and [b cyan]--to-date[/] to the same value.
+    \b
+    Fields extracted from TS: AI and BI Stats
+    - Answer Session ID     - Average Query Latency (External)      - Average System Latency (Overall)      - Impressions
+    - Connection            - Connection ID                         - DB Auth Type                          - Is System
+    - DB Type               - Error Message                         - External Database Query ID            - Is Billable
+    - Model                 - Model ID                              - Object                                - Object ID
+    - Object Subtype        - Object Type                           - Org                                   - Org ID
+    - Query Count           - Query End Time                        - Query Errors                          - Query Start Time
+    - Query Status          - SQL Query                             - ThoughtSpot Query ID                  - ThoughtSpot Start Time
+    - Total Credits         - Total Nums Rows Fetched               - Trace ID                              - User
+    - User Action           - User Action Count                     - User Count                            - User Display Name
+    - User ID               - Visualization ID
+    """
+    assert isinstance(from_date, dt.date), f"Could not coerce from_date '{from_date}' to a date."
+    assert isinstance(to_date, dt.date), f"Could not coerce to_date '{to_date}' to a date."
+    ts = ctx.obj.thoughtspot
+
+    CLUSTER_UUID = ts.session_context.thoughtspot.cluster_id
+
+    TZ_UTC = zoneinfo.ZoneInfo("UTC")
+    TS_AI_TIMEZONE = TZ_UTC if ts.session_context.thoughtspot.is_cloud else ts.session_context.thoughtspot.timezone
+    print(f"TS_AI_TIMEZONE -> {TS_AI_TIMEZONE}")
+
+    if syncer.protocol == "falcon":
+        log.error("Falcon Syncer is not supported for TS: AI Server reflection.")
+        models.AIStats.__table__.drop(syncer.engine)
+        return 1
+
+    if (to_date - from_date) > dt.timedelta(days=31):  # type: ignore[operator]
+        log.warning("Due to how the Search API functions, it's recommended to request no more than 1 month at a time.")
+
+    # DEV NOTE: @boonhapus
+    # As of 9.10.0.cl , TS: BI Server only resides in the Primary Org(0), so switch to it
+    if ts.session_context.thoughtspot.is_orgs_enabled:
+        ts.switch_org(org_id=0)
+
+    if org_override is not None:
+        c = workflows.metadata.fetch_one(identifier=org_override, metadata_type="ORG", attr_path="id", http=ts.api)
+        _ = utils.run_sync(c)
+        org_override = _
+
+    SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
+    SEARCH_TOKENS = (
+        "[Query Start Time] [Query Start Time].detailed [Query End Time] [Query End Time].detailed [Org]"
+        "[Query Status] [Connection] [User] [Nums Rows Fetched] [ThoughtSpot Query ID] [Is Billable] [ThoughtSpot Start Time]"
+        "[ThoughtSpot Start Time].detailed [User Action] [Is System] [Visualization ID] [External Database Query ID] [Query Latency (External)] "
+        "[Object] [User ID] [Org ID] [Credits] [Impressions] [Query Count] [Query Errors] [System Latency (Overall)] [User Action Count]"
+        "[User Action Count] [User Count] [Answer Session ID] [Connection ID] [DB Auth Type] [DB Type] [Error Message] [Model]"
+        "[Model ID] [Object ID] [Object Subtype] [Object Type] [SQL Query] [User Display Name] [Trace ID]"
+        "[ThoughtSpot Start Time].detailed [ThoughtSpot Start Time] != 'today'"
+        # FOR DATA QUALITY PURPOSES
+        # CONDITIONALS BASED ON CLI OPTIONS OR ENVIRONMENT
+        + ("" if not compact else " [user action] != [user action].invalid [user action].{null}")
+        + ("" if from_date is None else f" [ThoughtSpot Start Time] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
+        + ("" if to_date is None else f" [ThoughtSpot Start Time] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
+        + ("" if not ts.session_context.thoughtspot.is_orgs_enabled else " [org id]")
+        + ("" if org_override is None else f" [org id] = {org_override}")
+    )
+
+    TOOL_TASKS = [
+        px.WorkTask(id="SEARCH", description="Fetching data from ThoughtSpot"),
+        px.WorkTask(id="CLEAN", description="Transforming API results"),
+        px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
+    ]
+
+    # DEV NOTE: @saurabhsingh1608. 09/15/2025
+    # Currently worksheet name is "TS: AI and BI Stats (Beta)" change it in future as need arise
+
+    with px.WorkTracker("Fetching TS: AI and BI Stats", tasks=TOOL_TASKS) as tracker:
+        with tracker["SEARCH"]:
+            c = workflows.search(worksheet="TS: AI and BI Stats (Beta)", query=SEARCH_TOKENS, timezone=TS_AI_TIMEZONE, http=ts.api)
+            _ = utils.run_sync(c)
+
+        with tracker["CLEAN"]:
+            d = api_transformer.ts_ai_stats(data=_, cluster=CLUSTER_UUID)
+
+        with tracker["DUMP_DATA"]:
+            syncer.dump("ts_ai_stats", data=d)
+
+    return 0

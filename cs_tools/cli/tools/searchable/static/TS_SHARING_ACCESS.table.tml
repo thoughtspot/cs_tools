@@ -1,4 +1,4 @@
-guid: 7572d30f-ecd7-4166-9f27-1e92144b76d0
+guid: 2c5101da-ee77-4c99-88fa-d7cd2851a283
 table:
   name: TS_SHARING_ACCESS
   db: << DATABASE >>
@@ -66,6 +66,12 @@ table:
     properties:
       column_type: ATTRIBUTE
       index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  - name: SHARE_TYPE
+    db_column_name: SHARE_TYPE
+    properties:
+      column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
   joins_with:
