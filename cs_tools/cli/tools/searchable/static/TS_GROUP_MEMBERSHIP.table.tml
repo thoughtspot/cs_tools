@@ -48,3 +48,6 @@ table:
       name: TS_USER
     "on": "[TS_GROUP_MEMBERSHIP::PRINCIPAL_GUID] = [TS_USER::User GUID] AND [TS_GROUP_MEMBERSHIP::CLUSTER_GUID] = [TS_USER::CLUSTER_GUID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

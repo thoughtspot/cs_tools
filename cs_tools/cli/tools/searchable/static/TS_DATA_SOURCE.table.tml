@@ -67,3 +67,6 @@ table:
       name: TS_CLUSTER
     "on": "[TS_DATA_SOURCE::CLUSTER_GUID] = [TS_CLUSTER::Cluster GUID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

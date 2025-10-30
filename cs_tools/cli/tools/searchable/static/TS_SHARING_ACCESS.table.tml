@@ -68,6 +68,12 @@ table:
       index_type: DONT_INDEX
     db_column_properties:
       data_type: VARCHAR
+  - name: SHARE_TYPE
+    db_column_name: SHARE_TYPE
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: VARCHAR
   joins_with:
   - name: TS_SHARING_ACCESS_to_TS_METADATA_OBJECT
     destination:

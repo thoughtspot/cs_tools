@@ -38,3 +38,6 @@ table:
       name: TS_METADATA_COLUMN
     "on": "[TS_COLUMN_SYNONYM::COLUMN_GUID] = [TS_METADATA_COLUMN::Column GUID] AND [TS_COLUMN_SYNONYM::CLUSTER_GUID] = [TS_METADATA_COLUMN::CLUSTER_GUID]"
     type: RIGHT_OUTER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

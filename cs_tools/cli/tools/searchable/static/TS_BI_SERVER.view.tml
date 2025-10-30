@@ -173,3 +173,6 @@ view:
       name: TS_METADATA_OBJECT
     "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_METADATA_OBJECT::CLUSTER_GUID] AND [TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_METADATA_OBJECT::Object GUID]"
     type: LEFT_OUTER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

@@ -96,6 +96,12 @@ table:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
+  - name: IS_VERSION_CONTROLLED
+    db_column_name: IS_VERSION_CONTROLLED
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: BOOL
   joins_with:
   - name: TS_DEPENDENT_OBJECT_to_TS_USER
     destination:
@@ -112,3 +118,6 @@ table:
       name: TS_METADATA_COLUMN
     "on": "[TS_DEPENDENT_OBJECT::COLUMN_GUID] = [TS_METADATA_COLUMN::Column GUID] AND [TS_DEPENDENT_OBJECT::CLUSTER_GUID] = [TS_METADATA_COLUMN::CLUSTER_GUID]"
     type: RIGHT_OUTER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

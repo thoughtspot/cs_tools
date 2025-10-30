@@ -43,3 +43,6 @@ table:
       name: TS_ORG
     "on": "[TS_ORG_MEMBERSHIP::CLUSTER_GUID] = [TS_ORG::CLUSTER_GUID] AND [TS_ORG_MEMBERSHIP::ORG_ID] = [TS_ORG::Org ID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

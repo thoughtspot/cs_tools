@@ -29,3 +29,6 @@ table:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

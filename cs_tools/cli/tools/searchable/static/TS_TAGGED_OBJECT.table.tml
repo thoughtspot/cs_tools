@@ -46,3 +46,6 @@ table:
       name: TS_TAG
     "on": "[TS_TAGGED_OBJECT::TAG_GUID] = [TS_TAG::Tag GUID] AND [TS_TAGGED_OBJECT::CLUSTER_GUID] = [TS_TAG::CLUSTER_GUID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

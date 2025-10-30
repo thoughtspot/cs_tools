@@ -92,3 +92,6 @@ table:
       name: TS_ORG
     "on": "[TS_TAG::CLUSTER_GUID] = [TS_ORG::CLUSTER_GUID] AND [TS_TAG::ORG_ID] = [TS_ORG::Org ID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

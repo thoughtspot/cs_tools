@@ -91,3 +91,6 @@ table:
       name: TS_GROUP_PRIVILEGE
     "on": "[TS_GROUP::CLUSTER_GUID] = [TS_GROUP_PRIVILEGE::CLUSTER_GUID] AND [TS_GROUP::Group GUID] = [TS_GROUP_PRIVILEGE::GROUP_GUID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

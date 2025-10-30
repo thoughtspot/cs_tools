@@ -24,3 +24,6 @@ view:
     search_output_column: User Email
     properties:
       column_type: ATTRIBUTE
+  properties:
+    spotter_config:
+      is_spotter_enabled: false
