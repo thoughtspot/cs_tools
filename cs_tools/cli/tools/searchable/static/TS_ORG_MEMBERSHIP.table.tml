@@ -1,4 +1,4 @@
-guid: 657f0e27-1163-4ab2-aa40-2896e641c10a
+guid: bcef03fe-f8e6-464d-b575-2630a43bdd73
 table:
   name: TS_ORG_MEMBERSHIP
   description: This is a link table. Users in ThoughtSpot may be a member of one or more Orgs.

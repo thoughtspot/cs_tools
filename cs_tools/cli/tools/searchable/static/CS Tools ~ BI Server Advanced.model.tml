@@ -1,4 +1,4 @@
-guid: 381db1c8-688f-4620-9a45-ce9a2dea108c
+guid: 47c5164a-f094-4add-82f3-d806896f829f
 model:
   name: CS Tools ~ Worksheet Column Utilization
   description: Show the data lineage of Worksheets and how the columns are used in the ThoughtSpot system.
@@ -11,7 +11,7 @@ model:
     joins:
     - with: TS_METADATA_COLUMN
       referencing_join: TS_DEPENDENT_OBJECT_to_TS_METADATA_COLUMN
-    - with: TS_USERÞ
+    - with: TS_USER
       referencing_join: TS_DEPENDENT_OBJECT_to_TS_USER
   - name: TS_BI_SERVER
     joins:

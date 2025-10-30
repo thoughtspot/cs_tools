@@ -1,4 +1,4 @@
-guid: db93b51b-e19b-4cfc-938b-e7dc7d3d3091
+guid: 57f34092-2bfe-406b-97bd-be0a2fa71b12
 table:
   name: TS_DEPENDENT_OBJECT
   description: "Dependencies in ThoughtSpot are any object which are built from another object. In the majority case a dependent is an Answer or Liveboard, however Worksheets and ThoughtSpot Views are dependents of their underlying Tables."

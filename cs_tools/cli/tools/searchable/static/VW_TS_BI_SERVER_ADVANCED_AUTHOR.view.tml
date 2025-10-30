@@ -1,4 +1,4 @@
-guid: 4fff9eda-e70b-41b0-859e-260246bc7d4e
+guid: 9aae3267-0ca1-4fec-b838-e6e7623bb193
 view:
   name: VW_TS_BI_SERVER_ADVANCED_AUTHOR
   tables:
@@ -24,6 +24,3 @@ view:
     search_output_column: User Email
     properties:
       column_type: ATTRIBUTE
-  properties:
-    spotter_config:
-      is_spotter_enabled: false
