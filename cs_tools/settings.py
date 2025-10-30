@@ -233,6 +233,7 @@ class ThoughtSpotConfiguration(_GlobalSettings):
     username: str
     password: Optional[str] = pydantic.Field(default=None)
     secret_key: Optional[_types.GUID] = pydantic.Field(default=None)
+    concurrency: Optional[int] = 15
     bearer_token: Optional[str] = pydantic.Field(default=None)
     default_org: Optional[int] = None
     disable_ssl: bool = False

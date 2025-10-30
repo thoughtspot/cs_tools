@@ -1,4 +1,4 @@
-guid: 95901c39-5987-4631-9d5d-d4ed6b73c2b1
+guid: 4efc270c-529f-4e7d-a563-a9f91bfe0ff9
 table:
   name: TS_BI_SERVER
   description: "TS: BI Server is an event history. Metadata (Answers, Liveboards, Users, Orgs) exists at the time of recording, but may become deleted as time progresses so we LEFT OUTER JOIN to all other objects. TS_CLUSTER is a CS Tools-maintained field and is not vulnerable to the same issue."
@@ -196,3 +196,6 @@ table:
       name: TS_METADATA_OBJECT
     "on": "[TS_BI_SERVER::CLUSTER_GUID] = [TS_METADATA_OBJECT::CLUSTER_GUID] AND [TS_BI_SERVER::ANSWER_BOOK_GUID] = [TS_METADATA_OBJECT::Object GUID]"
     type: LEFT_OUTER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

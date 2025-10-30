@@ -1,4 +1,4 @@
-guid: befbaaa3-04e9-4edb-9638-a6eaa63f891f
+guid: d6c4bc3f-18d4-41f8-a2e0-a1373363fb4d
 table:
   name: TS_TAGGED_OBJECT
   description: This is a link table. Objects in ThoughtSpot can be tagged multiple times.
@@ -46,3 +46,6 @@ table:
       name: TS_TAG
     "on": "[TS_TAGGED_OBJECT::TAG_GUID] = [TS_TAG::Tag GUID] AND [TS_TAGGED_OBJECT::CLUSTER_GUID] = [TS_TAG::CLUSTER_GUID]"
     type: INNER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

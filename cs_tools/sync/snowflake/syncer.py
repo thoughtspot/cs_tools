@@ -42,7 +42,7 @@ class Snowflake(DatabaseSyncer):
     @classmethod
     def check_regionless_privatelink(cls, value: str) -> str:
         # FIXES: https://github.com/snowflakedb/snowflake-sqlalchemy/issues/489
-        if "privatelink" in value.lower() and len(value.split(".")) != 2:
+        if "privatelink" in value.lower() and len(value.split(".")) < 2:
             raise ValueError("Privatelink identifiers must include the region, eg. 'thoughtspot.us-west-1.privatelink'")
 
         return value

@@ -1,4 +1,4 @@
-guid: c5f22923-e4c5-4d28-973d-57efcd435ec3
+guid: dfc5ab9e-c64c-493b-a7e2-473ee27803e7
 table:
   name: TS_GROUP_PRIVILEGE
   db: << DATABASE >>
@@ -32,3 +32,6 @@ table:
       column_type: ATTRIBUTE
     db_column_properties:
       data_type: VARCHAR
+  properties:
+    spotter_config:
+      is_spotter_enabled: false
