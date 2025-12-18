@@ -56,6 +56,7 @@ class User(ValidatedSQLModel, table=True):
     created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     user_type: str
+    user_author_guid: str
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
@@ -135,6 +136,9 @@ class DataSource(ValidatedSQLModel, table=True):
     dbms_type: str
     name: str
     description: Optional[str]
+    author: str
+    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
@@ -365,49 +369,49 @@ class BIServer(ValidatedSQLModel, table=True):
 
         return query_text
 
+
 class AIStats(ValidatedSQLModel, table=True):
     __tablename__ = "ts_ai_stats"
     cluster_guid: str = Field(primary_key=True)
     sk_dummy: str = Field(primary_key=True)
-    answer_session_id : Optional[str]
-    query_latency : Optional[int]
-    system_latency : Optional[int]
-    connection : Optional[str]
-    connection_id : Optional[str]
-    db_auth_type : Optional[str]
-    db_type : Optional[str]
-    error_message : Optional[str]
-    external_database_query_id : Optional[str]
-    impressions : Optional[int]
-    is_billable : Optional[bool]
-    is_system : Optional[bool]
-    model : Optional[str]
-    model_id : Optional[str]
-    object : Optional[str]
-    object_id : Optional[str]
-    object_subtype : Optional[str]
-    object_type : Optional[str]
-    org : Optional[str]
+    answer_session_id: Optional[str]
+    query_latency: Optional[int]
+    system_latency: Optional[int]
+    connection: Optional[str]
+    connection_id: Optional[str]
+    db_auth_type: Optional[str]
+    db_type: Optional[str]
+    error_message: Optional[str]
+    external_database_query_id: Optional[str]
+    impressions: Optional[int]
+    is_billable: Optional[bool]
+    is_system: Optional[bool]
+    model: Optional[str]
+    model_id: Optional[str]
+    object: Optional[str]
+    object_id: Optional[str]
+    object_subtype: Optional[str]
+    object_type: Optional[str]
+    org: Optional[str]
     org_id: int = 0
-    query_count : Optional[int]
-    query_end_time : dt.datetime = Field(sa_column = Column(TIMESTAMP))
-    query_errors : Optional[int]
-    query_start_time : dt.datetime = Field(sa_column =Column(TIMESTAMP))
-    query_status : Optional[str]
-    sql_query : Optional[str] = Field(sa_column = Column(Text, info = {"length_override": "MAX"}))
-    thoughtspot_query_id :Optional[str]
-    thoughtspot_start_time : dt.datetime = Field(sa_column =Column(TIMESTAMP))
-    credits : Optional[int]
-    nums_rows_fetched : Optional[int]
-    trace_id : Optional[str]
-    user : Optional[str]
-    user_action : Optional[str]
-    user_action_count : Optional[int]
-    user_count : Optional[int]
-    user_display_name : Optional[str]
-    user_id : Optional[str]
-    visualization_id : Optional[str] 
-
+    query_count: Optional[int]
+    query_end_time: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    query_errors: Optional[int]
+    query_start_time: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    query_status: Optional[str]
+    sql_query: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
+    thoughtspot_query_id: Optional[str]
+    thoughtspot_start_time: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    credits: Optional[int]
+    nums_rows_fetched: Optional[int]
+    trace_id: Optional[str]
+    user: Optional[str]
+    user_action: Optional[str]
+    user_action_count: Optional[int]
+    user_count: Optional[int]
+    user_display_name: Optional[str]
+    user_id: Optional[str]
+    visualization_id: Optional[str]
 
     @pydantic.field_validator("thoughtspot_start_time", mode="before")
     @classmethod
@@ -420,7 +424,7 @@ class AIStats(ValidatedSQLModel, table=True):
         # Why not Annotated[str, pydantic.StringContraints(to_upper=True)] ?
         # sqlmodel#67: https://github.com/tiangolo/sqlmodel/issues/67
         return None if value is None else value.upper()
-    
+
     @pydantic.field_serializer("sql_query")
     def export_reserved_characters_are_escaped(self, sql_query: Optional[str]) -> Optional[str]:
         if sql_query is None:
@@ -429,8 +433,9 @@ class AIStats(ValidatedSQLModel, table=True):
 
         for character in reserved_characters:
             sql_query = sql_query.replace(character, f"\\{character}")
-        
+
         return sql_query
+
 
 METADATA_MODELS = [
     Cluster,

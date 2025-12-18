@@ -530,6 +530,46 @@ class RESTAPIClient(httpx.AsyncClient):
         return self.post("api/rest/2.0/security/metadata/assign", json=options)
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def security_share_content(
+        self,
+        principal_guid: _types.ObjectIdentifier,
+        principal_type: str,
+        message: str,
+        object_guid: _types.ObjectIdentifier,
+        metadata_type: str,
+        share_mode: _types.ShareMode,
+        **options: Any,
+    ) -> Awaitable[httpx.Response]:
+        """Get a list of Users and Groups who can access the ThoughtSpot object."""
+        """NOTE: Extend for mutiple objects to share"""
+        options["permissions"] = [
+            {"principal": {"identifier": principal_guid, "type": principal_type}, "share_mode": share_mode}
+        ]
+        options["message"] = message
+        options["metadata_type"] = metadata_type
+        options["metadata_identifiers"] = [object_guid]
+
+        headers = options.pop("headers", None)
+        timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
+        return self.post("api/rest/2.0/security/metadata/share", headers=headers, timeout=timeout, json=options)
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
+    def security_principal_permissions(
+        self, guid: _types.ObjectIdentifier, principal_type: str, metadata_type: str, **options: Any
+    ) -> Awaitable[httpx.Response]:
+        """Get a list of objects a User/ User group has acess to metadata objects."""
+        if "principals" not in options:
+            options["principals"] = [{"identifier": guid, "type": principal_type}]
+
+        options["default_metadata_type"] = metadata_type
+
+        headers = options.pop("headers", None)
+        timeout = options.pop("timeout", httpx.USE_CLIENT_DEFAULT)
+        return self.post(
+            "api/rest/2.0/security/principals/fetch-permissions", headers=headers, timeout=timeout, json=options
+        )
+
+    @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
     def security_metadata_permissions(
         self, guid: _types.ObjectIdentifier, permission_type: _types.ShareType = "DEFINED", **options: Any
