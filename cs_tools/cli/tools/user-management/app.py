@@ -9,6 +9,7 @@ import time
 
 from rich import console
 from rich.align import Align
+import httpx
 import typer
 
 from cs_tools import _types, errors, utils
@@ -24,6 +25,7 @@ from cs_tools.cli.ux import AsyncTyper
 from cs_tools.sync.base import Syncer
 
 from ._utils import Group, User, determine_what_changed
+from .models import PrincipalMetadataPermission
 
 _LOG = logging.getLogger(__name__)
 app = AsyncTyper(help="""Manage Users and Groups in bulk.""")
@@ -34,6 +36,214 @@ def _tick_tock(task: px.WorkTask) -> None:
     while not task.finished:
         time.sleep(1)
         task.advance(step=1)
+
+
+def _transform_shared(input_data):
+    out = []
+    for p in input_data.get("principal_permission_details", []):
+        principal_id = p.get("principal_id")
+        principal_name = p.get("principal_name")
+        for mi in p.get("metadata_permission_info", []):
+            metadata_type = mi.get("metadata_type")
+            for m in mi.get("metadata_permissions", []):
+                metadata_id = m.get("metadata_id") or (m.get("metadata_owner") or {}).get("id")
+                metadata_name = m.get("metadata_name") or (m.get("metadata_owner") or {}).get("name")
+                permission = m.get("permission")
+                out.append(
+                    {
+                        "principal_id": principal_id,
+                        "principal_name": principal_name,
+                        "metadata_type": metadata_type,
+                        "metadata_id": metadata_id,
+                        "metadata_name": metadata_name,
+                        "permission": permission,
+                    }
+                )
+    return out
+
+
+@app.command(name="transfer-sharing")
+@depends_on(thoughtspot=ThoughtSpot())
+def transfer_sharing(
+    ctx: typer.Context,
+    to_username: str = typer.Option(..., "--to", help="User to share the content."),
+    from_username: str = typer.Option(..., "--from", help="Transfer content shared to current user."),
+    message: str = typer.Option("Transfering Content Sharing...", "--message", help="Messge to send the target user."),
+    no_prompt: bool = typer.Option(False, "--no-prompt", help="disable the confirmation prompt"),
+    content: _types.UserFriendlyObjectType = typer.Option(
+        None,
+        help=(
+            "Only content of this type will be [fg-success]selected[/]. If not specified will run for:"
+            " LIVEBOARD, ANSWER, LOGICAL_TABLE values only. "
+        ),
+    ),
+    syncer: Syncer = typer.Option(
+        None,
+        click_type=custom_types.Syncer(models=[PrincipalMetadataPermission]),
+        help="protocol and path for options to pass to the syncer",
+        show_default=False,
+        rich_help_panel="Syncer Options",
+    ),
+    notify_on_share: bool = typer.Option(False, "--notify", help="Notify target user."),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
+):
+    """
+    Ensure objects are owned by a User.
+
+    Content may be selected in AND fashion based on the following..
+    \b
+        - Current Owner
+        - Metadata Type
+        - Tag
+        - Indvidual GUID
+
+    ..ALL objects must match the selection criteria to be moved to the new owner.
+    """
+
+    ts = ctx.obj.thoughtspot
+    org_id = None
+    # Switch the org
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
+
+    if org_override is not None:
+        c = ts.api.orgs_search(org_identifier=org_override)
+        r = utils.run_sync(c)
+
+        try:
+            r.raise_for_status()
+            _ = next(iter(r.json()))
+        except StopIteration:
+            raise errors.CSToolsError(f"Could not find the org '{org_id}'") from None
+
+        org_id = _["id"]
+
+    if from_username is None:
+        raise typer.BadParameter("--from_username must be provided")
+
+    if to_username is None:
+        raise typer.BadParameter("--to_username must be provided")
+
+    # if content not in ['LIVEBOARD','ANSWER','LOGICAL_TABLE']:
+    # Extend for: ['CONNECTION', 'TABLE', 'VIEW', 'SQL_VIEW', 'MODEL', 'LIVEBOARD', 'ANSWER']
+    # raise typer.BadParameter("--content is not recognized.")
+
+    # Validate If user is admin or not.
+    user_info = ts.api.users_search(guid=to_username)
+    r = utils.run_sync(user_info)
+    _ = r.json()
+    to_user_id = _[0]["id"]
+
+    if len(_) == 0:
+        _LOG.warning(f"[fg-warn]No user with name  {to_username}.")
+        return 0
+    elif "ADMINISTRATION" in _[0]["org_privileges"][str(org_id)]:
+        _LOG.warning(f"[fg-warn]Target User is Admin. Not required to do the sharing for user {to_username}.")
+        return 0
+
+    TOOL_TASKS = [
+        px.WorkTask(id="GATHER", description="Fetching objects to share"),
+        px.WorkTask(id="DUMP", description="Dumping Details"),
+        px.WorkTask(id="CONFIRM", description="Confirmation for sharing to new user"),
+        px.WorkTask(id="TRANSFER", description=f"Setting [fg-secondary]{to_username}[/] as the Author"),
+    ]
+
+    with px.WorkTracker(
+        f"Identifying Shared Objects for [fg-secondary]{from_username}[/]", tasks=TOOL_TASKS
+    ) as tracker:
+        with tracker["GATHER"] as this_task:
+            # security_metadata_permissions
+            shared_content = []
+            if content is None:
+                for content in ["LIVEBOARD", "ANSWER", "LOGICAL_TABLE"]:
+                    c = ts.api.security_principal_permissions(
+                        guid=from_username, principal_type="USER", metadata_type=content
+                    )
+                    r = utils.run_sync(c)
+                    _ = r.json()
+                    shared_content.extend(_transform_shared(_))
+
+            else:
+                c = ts.api.security_principal_permissions(
+                    guid=from_username, principal_type="USER", metadata_type=content
+                )
+                r = utils.run_sync(c)
+                _ = r.json()
+                shared_content.extend(_transform_shared(_))
+
+        with tracker["DUMP"] as this_task:
+            d = [
+                PrincipalMetadataPermission.validated_init(
+                    principal_id=row["principal_id"],
+                    principal_name=row["principal_name"],
+                    metadata_type=row["metadata_type"],
+                    metadata_id=row["metadata_id"],
+                    metadata_name=row["metadata_name"],
+                    permission=row["permission"],
+                ).model_dump()
+                for row in shared_content
+            ]
+
+            syncer.dump("share_report", data=d)
+
+        with tracker["CONFIRM"] as this_task:
+            if no_prompt:
+                this_task.skip()
+
+            else:
+                this_task.description = "[fg-warn]Confirmation prompt"
+                this_task.total = ONE_MINUTE = 60
+
+                tracker.extra_renderable = lambda: Align.center(
+                    console.Group(
+                        Align.center(f"{len(shared_content)} metadata found to be shared"),
+                        "\n[fg-warn]Press [fg-success]Y[/] to proceed, or [fg-error]n[/] to cancel.",
+                    )
+                )
+
+                th = threading.Thread(target=_tick_tock, args=(this_task,))
+                th.start()
+
+                kb = ConfirmationListener(timeout=ONE_MINUTE)
+                kb.run()
+
+                assert kb.response is not None, "ConfirmationListener never got a response."
+
+                tracker.extra_renderable = None
+                this_task.final()
+
+                if kb.response.upper() == "N":
+                    this_task.description = "[fg-error]Denied[/] (no sharing done)"
+                    return 0
+                else:
+                    this_task.description = f"[fg-success]Approved[/] (sharing {len(shared_content):,})"
+
+        # Applying Sharing
+        with tracker["TRANSFER"] as this_task:
+            for row in shared_content:
+                try:
+                    c = ts.api.security_share_content(
+                        principal_guid=to_user_id,
+                        principal_type="USER",
+                        message=message,
+                        object_guid=row["metadata_id"],
+                        metadata_type=row["metadata_type"],
+                        share_mode=row["permission"],
+                        notify_on_share=notify_on_share,
+                    )
+                    r = utils.run_sync(c)
+                    r.raise_for_status()
+                except httpx.HTTPStatusError as e:
+                    logging.warning(
+                        "security_share failed: principal=%s object=%s status=%s response=%s error=%s",
+                        row.get("principal_id"),
+                        row.get("metadata_id"),
+                        getattr(e.response, "status_code", None),
+                        r.json(),
+                        str(e),
+                    )
+
+    return 0
 
 
 @app.command()
@@ -80,6 +290,7 @@ def transfer(
 
     ts = ctx.obj.thoughtspot
 
+    # Switch the org
     if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
         ts.switch_org(org_id=org_override)
 

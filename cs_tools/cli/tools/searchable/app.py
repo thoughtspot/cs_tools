@@ -774,6 +774,7 @@ def tml(
 
     return 0
 
+
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
 def ts_ai_stats(
@@ -793,18 +794,31 @@ def ts_ai_stats(
     Extract query performance metrics for each query made against an external database
 
     To extract one day of data, set [b cyan]--from-date[/] and [b cyan]--to-date[/] to the same value.
-    \b
+
     Fields extracted from TS: AI and BI Stats
-    - Answer Session ID     - Average Query Latency (External)      - Average System Latency (Overall)      - Impressions
-    - Connection            - Connection ID                         - DB Auth Type                          - Is System
-    - DB Type               - Error Message                         - External Database Query ID            - Is Billable
-    - Model                 - Model ID                              - Object                                - Object ID
-    - Object Subtype        - Object Type                           - Org                                   - Org ID
-    - Query Count           - Query End Time                        - Query Errors                          - Query Start Time
-    - Query Status          - SQL Query                             - ThoughtSpot Query ID                  - ThoughtSpot Start Time
-    - Total Credits         - Total Nums Rows Fetched               - Trace ID                              - User
-    - User Action           - User Action Count                     - User Count                            - User Display Name
-    - User ID               - Visualization ID
+
+    -----------------------------------------------------------------------------------------
+    | Answer Session ID | Is System | Average System Latency (Overall) | Impressions      |
+    -----------------------------------------------------------------------------------------
+    | Connection         | Connection ID | DB Auth Type          | Average Query Latency (External) |
+    -----------------------------------------------------------------------------------------
+    | DB Type            | Error Message | External DB Query ID  | Is Billable     |
+    -----------------------------------------------------------------------------------------
+    | Model              | Model ID      | Object                | Object ID       |
+    -----------------------------------------------------------------------------------------
+    | Object Subtype     | Object Type   | Org                   | Org ID          |
+    -----------------------------------------------------------------------------------------
+    | Queries            | DB End Time   | Query Errors          | DB Start Time   |
+    -----------------------------------------------------------------------------------------
+    | Query Status       | SQL Query     | ThoughtSpot Query ID  | TS Query Start  |
+    -----------------------------------------------------------------------------------------
+    | Total Credits      | Total Query Rows Fetched | Trace ID     | User            |
+    -----------------------------------------------------------------------------------------
+    | User Action        | Actions       | Active Users          | User Display Name|
+    -----------------------------------------------------------------------------------------
+    | User ID            | Visualization ID |                |                 |
+    -----------------------------------------------------------------------------------------
+
     """
     assert isinstance(from_date, dt.date), f"Could not coerce from_date '{from_date}' to a date."
     assert isinstance(to_date, dt.date), f"Could not coerce to_date '{to_date}' to a date."
@@ -814,7 +828,6 @@ def ts_ai_stats(
 
     TZ_UTC = zoneinfo.ZoneInfo("UTC")
     TS_AI_TIMEZONE = TZ_UTC if ts.session_context.thoughtspot.is_cloud else ts.session_context.thoughtspot.timezone
-    print(f"TS_AI_TIMEZONE -> {TS_AI_TIMEZONE}")
 
     if syncer.protocol == "falcon":
         log.error("Falcon Syncer is not supported for TS: AI Server reflection.")
@@ -836,18 +849,23 @@ def ts_ai_stats(
 
     SEARCH_DATA_DATE_FMT = "%m/%d/%Y"
     SEARCH_TOKENS = (
-        "[Query Start Time] [Query Start Time].detailed [Query End Time] [Query End Time].detailed [Org]"
-        "[Query Status] [Connection] [User] [Nums Rows Fetched] [ThoughtSpot Query ID] [Is Billable] [ThoughtSpot Start Time]"
-        "[ThoughtSpot Start Time].detailed [User Action] [Is System] [Visualization ID] [External Database Query ID] [Query Latency (External)] "
-        "[Object] [User ID] [Org ID] [Credits] [Impressions] [Query Count] [Query Errors] [System Latency (Overall)] [User Action Count]"
-        "[User Action Count] [User Count] [Answer Session ID] [Connection ID] [DB Auth Type] [DB Type] [Error Message] [Model]"
-        "[Model ID] [Object ID] [Object Subtype] [Object Type] [SQL Query] [User Display Name] [Trace ID]"
-        "[ThoughtSpot Start Time].detailed [ThoughtSpot Start Time] != 'today'"
+        "[DB Start Time] [DB Start Time].detailed [DB End Time] [DB End Time].detailed [Org] "
+        "[Query Status] [Connection] [User] [Query Rows Fetched] "
+        "[ThoughtSpot Query ID] [Is Billable] [TS Query Start Time] "
+        "[TS Query Start Time].detailed [User Action] [Is System] "
+        "[Visualization ID] [Query ID] [Query Latency (External)] "
+        "[Object] [User ID] [Org ID] [Credits] [Impressions] "
+        "[Queries] [Query Errors] [System Latency (Overall)] "
+        "[Actions] [Active Users] [Answer Session ID] [Connection ID] "
+        "[DB Auth Type] [DB Type] [Error Message] [Model] "
+        "[Model ID] [Object ID] [Object Subtype] [Object Type] [Query SQL] "
+        "[User Display Name] [Trace ID] "
+        "[TS Query Start Time].detailed [TS Query Start Time] != 'today'"
         # FOR DATA QUALITY PURPOSES
         # CONDITIONALS BASED ON CLI OPTIONS OR ENVIRONMENT
         + ("" if not compact else " [user action] != [user action].invalid [user action].{null}")
-        + ("" if from_date is None else f" [ThoughtSpot Start Time] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
-        + ("" if to_date is None else f" [ThoughtSpot Start Time] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
+        + ("" if from_date is None else f" [TS Query Start Time] >= '{from_date.strftime(SEARCH_DATA_DATE_FMT)}'")
+        + ("" if to_date is None else f" [TS Query Start Time] <= '{to_date.strftime(SEARCH_DATA_DATE_FMT)}'")
         + ("" if not ts.session_context.thoughtspot.is_orgs_enabled else " [org id]")
         + ("" if org_override is None else f" [org id] = {org_override}")
     )
@@ -863,7 +881,9 @@ def ts_ai_stats(
 
     with px.WorkTracker("Fetching TS: AI and BI Stats", tasks=TOOL_TASKS) as tracker:
         with tracker["SEARCH"]:
-            c = workflows.search(worksheet="TS: AI and BI Stats (Beta)", query=SEARCH_TOKENS, timezone=TS_AI_TIMEZONE, http=ts.api)
+            c = workflows.search(
+                worksheet="TS: AI and BI Stats (Beta)", query=SEARCH_TOKENS, timezone=TS_AI_TIMEZONE, http=ts.api
+            )
             _ = utils.run_sync(c)
 
         with tracker["CLEAN"]:
