@@ -121,6 +121,7 @@ def identify(
         show_default=False,
         rich_help_panel="Syncer Options",
     ),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """
     Identify content which can be archived.
@@ -135,7 +136,6 @@ def identify(
         return 1
 
     ts = ctx.obj.thoughtspot
-
     # DEV NOTE: @boonhapus, 2025/02/18
     #   BI Server on SaaS is held in ThoughtSpot's multi-tenant Snowflake database,
     #   which is set to UTC, whereas BI Server on Software is held in Falcon and set to
@@ -146,6 +146,7 @@ def identify(
 
     TOOL_TASKS = [
         px.WorkTask(id="GATHER_ACTIVITY", description="Fetching objects' Activity"),
+        px.WorkTask(id="SWITCH", description=f"Switch to org [fg-secondary]{org_override}[/n]"),
         px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Info"),
         px.WorkTask(id="FILTER_METADATA", description="Filtering based on your criteria"),
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {'nowhere' if syncer is None else syncer.name}"),
@@ -180,12 +181,13 @@ def identify(
 
             coros: list[Coroutine] = []
 
+            ORG_CONTEXT = f" [Org Name].'{org_override}'" if org_override is not None else ""
             for window_beg, window_end in utils.pairwise([*range(recent_activity, -1, -ONE_WEEK), 0]):
                 when = f" [timestamp] >= '{window_beg} days ago' [timestamp] < '{window_end} days ago'"
                 coros.append(
                     workflows.search(
                         worksheet="TS: BI Server",
-                        query=SEARCH_TOKENS + when,
+                        query=SEARCH_TOKENS + ORG_CONTEXT + when,
                         timezone=TS_BI_TIMEZONE,
                         http=ts.api,
                     )
@@ -195,6 +197,10 @@ def identify(
             d = utils.run_sync(c)
 
             active_guids = {row["Answer Book GUID"] for row in it.chain.from_iterable(d)}
+        with tracker["SWITCH"]:
+            # Switch the org
+            if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+                ts.switch_org(org_id=org_override)
 
         with tracker["GATHER_METADATA"]:
             if only_groups or ignore_groups:
@@ -286,7 +292,7 @@ def identify(
                     "name": metadata_object["metadata_name"],
                     "type": metadata_object["metadata_type"],
                     "author_guid": metadata_object["metadata_header"]["author"],
-                    "author_name": metadata_object["metadata_header"]["authorName"],
+                    "author_name": metadata_object["metadata_header"].get("authorName", None),
                     "tags": metadata_object["metadata_header"]["tags"],
                     "last_modified": dt.datetime.fromtimestamp(
                         metadata_object["metadata_header"]["modified"] / 1000, tz=dt.timezone.utc
@@ -374,7 +380,7 @@ def identify(
                 t.add_row(
                     str(row["type"]).strip(),
                     str(row["name"]).strip(),
-                    str(row["author_name"]).strip(),
+                    str(row["guid"]).strip(),
                     f"{(TODAY - row['last_modified'].replace(tzinfo=dt.timezone.utc)).days} days ago",  # type: ignore
                 )
 
@@ -436,10 +442,13 @@ def identify(
 def untag(
     ctx: typer.Context,
     tag_name: str = typer.Option(_DEFAULT_TAG_NAME, "--tag", help="case sensitive name to tag stale objects with"),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """Remove content with the identified --tag."""
     ts = ctx.obj.thoughtspot
-
+    # Switch the org
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
     c = ts.api.tags_search()
     r = utils.run_sync(c)
     _ = r.json()
@@ -488,6 +497,7 @@ def remove(
         help="export all tagged content, but don't remove it from ThoughtSpot",
         rich_help_panel="TML Export Options",
     ),
+    org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
 ) -> _types.ExitCode:
     """
     Remove objects from the ThoughtSpot platform.
@@ -496,6 +506,10 @@ def remove(
     as TML before being deleted from the ThoughtSpot platform.
     """
     ts = ctx.obj.thoughtspot
+
+    # Switch the org
+    if ts.session_context.thoughtspot.is_orgs_enabled and org_override is not None:
+        ts.switch_org(org_id=org_override)
 
     TOOL_TASKS = [
         px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Info"),
