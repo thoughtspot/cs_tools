@@ -794,20 +794,31 @@ def ts_ai_stats(
     Extract query performance metrics for each query made against an external database
 
     To extract one day of data, set [b cyan]--from-date[/] and [b cyan]--to-date[/] to the same value.
-    \b
+
     Fields extracted from TS: AI and BI Stats
-    |---|---|---|---|
-    | **Answer Session ID** | **Is System** | **Average System Latency (Overall)** | **Impressions** |
-    | **Connection** | **Connection ID** | **DB Auth Type** | **Average Query Latency (External)** |
-    | **DB Type** | **Error Message** | **External Database Query ID** | **Is Billable** |
-    | **Model** | **Model ID** | **Object** | **Object ID** |
-    | **Object Subtype** | **Object Type** | **Org** | **Org ID** |
-    | **Queries** | **DB End Time** | **Query Errors** | **DB Start Time** |
-    | **Query Status** | **SQL Query** | **ThoughtSpot Query ID** | **TS Query Start Time** |
-    | **Total Credits** | **Total Query Rows Fetched** | **Trace ID** | **User** |
-    | **User Action** | **Actions** | **Active Users** | **User Display Name** |
-    | **User ID** | **Visualization ID** |  |  |
-    \b
+
+    -----------------------------------------------------------------------------------------
+    | Answer Session ID | Is System | Average System Latency (Overall) | Impressions      |
+    -----------------------------------------------------------------------------------------
+    | Connection         | Connection ID | DB Auth Type          | Average Query Latency (External) |
+    -----------------------------------------------------------------------------------------
+    | DB Type            | Error Message | External DB Query ID  | Is Billable     |
+    -----------------------------------------------------------------------------------------
+    | Model              | Model ID      | Object                | Object ID       |
+    -----------------------------------------------------------------------------------------
+    | Object Subtype     | Object Type   | Org                   | Org ID          |
+    -----------------------------------------------------------------------------------------
+    | Queries            | DB End Time   | Query Errors          | DB Start Time   |
+    -----------------------------------------------------------------------------------------
+    | Query Status       | SQL Query     | ThoughtSpot Query ID  | TS Query Start  |
+    -----------------------------------------------------------------------------------------
+    | Total Credits      | Total Query Rows Fetched | Trace ID     | User            |
+    -----------------------------------------------------------------------------------------
+    | User Action        | Actions       | Active Users          | User Display Name|
+    -----------------------------------------------------------------------------------------
+    | User ID            | Visualization ID |                |                 |
+    -----------------------------------------------------------------------------------------
+
     """
     assert isinstance(from_date, dt.date), f"Could not coerce from_date '{from_date}' to a date."
     assert isinstance(to_date, dt.date), f"Could not coerce to_date '{to_date}' to a date."
