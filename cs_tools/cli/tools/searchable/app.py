@@ -851,10 +851,10 @@ def ts_ai_stats(
     SEARCH_TOKENS = (
         "[DB Start Time] [DB Start Time].detailed [DB End Time] [DB End Time].detailed [Org] "
         "[Query Status] [Connection] [User] [Query Rows Fetched] "
-        "[ThoughtSpot Query ID] [Is Billable] [TS Query Start Time] "
+        "[ThoughtSpot Query ID] [TS Query Start Time] "
         "[TS Query Start Time].detailed [User Action] [Is System] "
         "[Visualization ID] [Query ID] [Query Latency (External)] "
-        "[Object] [User ID] [Org ID] [Credits] [Impressions] "
+        "[User ID] [Org ID] [Credits] [Impressions] "
         "[Queries] [Query Errors] [System Latency (Overall)] "
         "[Actions] [Active Users] [Answer Session ID] [Connection ID] "
         "[DB Auth Type] [DB Type] [Error Message] [Model] "
@@ -876,13 +876,10 @@ def ts_ai_stats(
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
     ]
 
-    # DEV NOTE: @saurabhsingh1608. 09/15/2025
-    # Currently worksheet name is "TS: AI and BI Stats (Beta)" change it in future as need arise
-
     with px.WorkTracker("Fetching TS: AI and BI Stats", tasks=TOOL_TASKS) as tracker:
         with tracker["SEARCH"]:
             c = workflows.search(
-                worksheet="TS: AI and BI Stats (Beta)", query=SEARCH_TOKENS, timezone=TS_AI_TIMEZONE, http=ts.api
+                worksheet="TS: AI and BI Stats", query=SEARCH_TOKENS, timezone=TS_AI_TIMEZONE, http=ts.api
             )
             _ = utils.run_sync(c)
 
