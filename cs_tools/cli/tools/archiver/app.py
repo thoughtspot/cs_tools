@@ -146,7 +146,7 @@ def identify(
 
     TOOL_TASKS = [
         px.WorkTask(id="GATHER_ACTIVITY", description="Fetching objects' Activity"),
-        px.WorkTask(id="SWITCH", description=f"Switch to org [fg-secondary]{org_override}[/n]"),
+        px.WorkTask(id="SWITCH", description=f"Switch to org [fg-secondary]{org_override}"),
         px.WorkTask(id="GATHER_METADATA", description="Fetching objects' Info"),
         px.WorkTask(id="FILTER_METADATA", description="Filtering based on your criteria"),
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {'nowhere' if syncer is None else syncer.name}"),
