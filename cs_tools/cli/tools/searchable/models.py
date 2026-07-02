@@ -384,6 +384,7 @@ class AIStats(ValidatedSQLModel, table=True):
     error_message: Optional[str]
     external_database_query_id: Optional[str]
     impressions: Optional[int]
+    is_billable: Optional[bool]
     is_system: Optional[bool]
     model: Optional[str]
     model_id: Optional[str]

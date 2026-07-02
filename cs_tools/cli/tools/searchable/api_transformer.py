@@ -715,6 +715,7 @@ def ts_ai_stats(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types
                         "error_message": row["Error Message"],
                         "external_database_query_id": row["Query ID"],
                         "impressions": row["Impressions"],
+                        "is_billable": row["Is Billable"],
                         "is_system": row["Is System"],
                         "model": row["Model"],
                         "model_id": row["Model ID"],
