@@ -851,7 +851,7 @@ def ts_ai_stats(
     SEARCH_TOKENS = (
         "[DB Start Time] [DB Start Time].detailed [DB End Time] [DB End Time].detailed [Org] "
         "[Query Status] [Connection] [User] [Query Rows Fetched] "
-        "[ThoughtSpot Query ID] [TS Query Start Time] "
+        "[ThoughtSpot Query ID] [Is Billable] [TS Query Start Time] "
         "[TS Query Start Time].detailed [User Action] [Is System] "
         "[Visualization ID] [Query ID] [Query Latency (External)] "
         "[User ID] [Org ID] [Credits] [Impressions] "
