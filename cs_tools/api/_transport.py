@@ -252,9 +252,11 @@ class CachedRetryTransport(httpx.AsyncBaseTransport):
         cache_policy: Optional[CachePolicy] = None,
         max_concurrent_requests: int = 1,
         retry_policy: Optional[tenacity.AsyncRetrying] = None,
+        wrapped_transport: Optional[httpx.AsyncBaseTransport] = None,
         **transport_options: Any,
     ):
-        self._wrapper = httpx.AsyncHTTPTransport(**transport_options)
+        # WHEN A TRANSPORT IS INJECTED (eg. httpx.MockTransport IN TESTS), transport_options ARE IGNORED.
+        self._wrapper = wrapped_transport or httpx.AsyncHTTPTransport(**transport_options)
         self.cache = cache_policy
         self.rate_limit = asyncio.Semaphore(value=max_concurrent_requests)
         self.retrier = retry_policy or tenacity.AsyncRetrying(stop=tenacity.stop_after_attempt(1))

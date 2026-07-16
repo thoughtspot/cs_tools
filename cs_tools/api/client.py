@@ -58,12 +58,14 @@ class RESTAPIClient(httpx.AsyncClient):
         client_opts["transport"] = _transport.CachedRetryTransport(
             cache_policy=_transport.CachePolicy(directory=cache_directory) if cache_directory else None,
             max_concurrent_requests=concurrency,
+            wrapped_transport=client_opts.pop("wrapped_transport", None),
             retry_policy=tenacity.AsyncRetrying(
                 retry=(
                     tenacity.retry_if_exception(_retry.request_errors_unless_importing_tml)
                     | tenacity.retry_if_result(_retry.if_server_is_under_pressure)
                 ),
-                wait=tenacity.wait_exponential(min=60, exp_base=4),
+                # JITTER SO CONCURRENT RETRIES DON'T STAMPEDE A SERVER THAT IS ALREADY STRUGGLING.
+                wait=tenacity.wait_exponential_jitter(initial=2, max=30),
                 stop=tenacity.stop_after_attempt(max_attempt_number=3),
                 before_sleep=_retry.log_on_any_retry,
                 reraise=True,
@@ -329,6 +331,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
+    @_retry.mark_nonidempotent
     def metadata_tml_import(
         self, tmls: list[str], policy: _types.TMLImportPolicy, **options: Any
     ) -> Awaitable[httpx.Response]:
@@ -339,6 +342,7 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
+    @_retry.mark_nonidempotent
     def metadata_tml_async_import(
         self, tmls: list[str], policy: _types.TMLImportPolicy, **options: Any
     ) -> Awaitable[httpx.Response]:
