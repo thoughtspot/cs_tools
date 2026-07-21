@@ -21,7 +21,7 @@ import textwrap
 import typing
 
 _LOG = logging.getLogger("cs_tools.bootstrapper")
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __minimum_python_version__ = (3, 9)
 
 
@@ -485,22 +485,22 @@ def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
     HERE = pathlib.Path(__file__).parent
     UPDATER_PY = HERE / "_updater.py"
 
+    # Fetch the raw file straight from the CDN. This is the same host, branch, and bytes
+    # the GitHub Contents API's download_url resolves to for a public repo -- we just skip
+    # the api.github.com metadata hop. That hop enforced a 60 requests/hour unauthenticated
+    # rate limit per IP; shared egress IPs (CI runners, corporate NAT/VPN) can exhaust it
+    # and get HTTP 403. raw.githubusercontent.com is a CDN and is not subject to that quota.
+    base = "https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path}"
+    endp = base.format(owner="thoughtspot", repo="cs_tools", ref="master", path="cs_tools/updater/_updater.py")
+
     # DOWNLOAD IT FROM GITHUB.
     if not UPDATER_PY.exists():
         _LOG.info("Missing '{py}', downloading from GitHub".format(py=UPDATER_PY))
 
-        base = "https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        endp = base.format(owner="thoughtspot", repo="cs_tools", path="cs_tools/updater/_updater.py")
-
-        # FETCH FILE METADATA.
-        meta = http_request(endp, to_json=True)
-        assert isinstance(meta, dict), "Github API returned invalid data for file metadata:\n{d!r}".format(d=meta)
-
         # FETCH THE FILE ITSELF.
-        data = http_request(meta["download_url"], to_json=False)
-        assert isinstance(data, bytes), "Github API returned invalid data for file download:\n{d!r}".format(d=data)
+        data = http_request(endp, to_json=False)
+        assert isinstance(data, bytes), "GitHub returned invalid data for file download:\n{d!r}".format(d=data)
 
-        # FETCH THE FILE ITSELF.
         UPDATER_PY.write_bytes(data)
         _LOG.info("Downloaded as '{py}'".format(py=UPDATER_PY))
 
@@ -524,7 +524,7 @@ def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
                 
                 ..then re-run the bootstrapper with the {p}--no-clean{x} option.
                 """
-                .format(b=_BLUE, file_location=meta["download_url"], here=HERE, p=_PURPLE, x=_RESET)
+                .format(b=_BLUE, file_location=endp, here=HERE, p=_PURPLE, x=_RESET)
             )
         )
         
