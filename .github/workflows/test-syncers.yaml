@@ -1,0 +1,50 @@
+name: Test Syncers
+
+# Guards the syncers against breaking changes in their database drivers. The Snowflake
+# matrix exercises both the declared floor AND the latest release of snowflake-sqlalchemy,
+# so a driver tightening its rules (e.g. rejecting 'private_key_file' in the URL query
+# string) is caught here instead of in a customer's pipeline.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  snowflake:
+    name: Snowflake syncer (snowflake-sqlalchemy ${{ matrix.snowflake-sqlalchemy }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # cs_tools declares 'snowflake-sqlalchemy>=1.7.4' with no upper cap, so both ends
+        # of the supported range must pass. 'latest' is the early-warning cell.
+        snowflake-sqlalchemy:
+          - "1.7.4"
+          - "latest"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install cs_tools and pytest
+        run: python -m pip install -e . pytest
+
+      - name: Pin snowflake-sqlalchemy (${{ matrix.snowflake-sqlalchemy }})
+        run: |
+          if [ "${{ matrix.snowflake-sqlalchemy }}" = "latest" ]; then
+            python -m pip install --upgrade snowflake-sqlalchemy
+          else
+            python -m pip install "snowflake-sqlalchemy==${{ matrix.snowflake-sqlalchemy }}"
+          fi
+
+      - name: Show resolved version
+        run: python -c "import snowflake.sqlalchemy as s; print('snowflake-sqlalchemy', s.__version__)"
+
+      - name: Run Snowflake syncer tests
+        run: python -m pytest tests/test_sync_snowflake.py -v
