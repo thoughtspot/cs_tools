@@ -47,11 +47,6 @@ jobs:
       - name: Install a pinned version of CS Tools
         run: python -m pip install "cs_tools[cli] @ https://github.com/thoughtspot/cs_tools/archive/${{ env.CS_TOOLS_VERSION }}.zip"
 
-      # ENSURE SYNCER DEPENDENCIES ARE INSTALLED.
-      #   found in: https://github.com/thoughtspot/cs_tools/blob/master/sync/<dialect>/MANIFEST.json
-      - name: Install a pinned version of CS Tools
-        run: python -m pip install "snowflake-sqlalchemy >= 1.6.1"
-
       - name: Decode PEM file
         run: echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > $P8_KEY_PATH
 
