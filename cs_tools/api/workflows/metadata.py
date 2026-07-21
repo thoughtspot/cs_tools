@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Coroutine, Iterable
-from typing import Any, Literal, Optional, cast
+from typing import Any, Literal, NamedTuple, Optional, Union, cast
 import asyncio
 import datetime as dt
 import itertools as it
@@ -31,6 +31,21 @@ _MAX_IDENTIFIERS_PER_SEARCH = 25
 # OF 25 SUCH OBJECTS CAN BALLOON INTO A MULTI-MINUTE QUERY THE SERVER DROPS MID-RESPONSE
 # (httpx.ReadError). BATCH THESE ONE OBJECT AT A TIME SO EACH REQUEST STAYS SMALL AND SURVIVABLE.
 _MAX_IDENTIFIERS_PER_SEARCH_WITH_DEPENDENTS = 1
+
+
+class SkippedSearch(NamedTuple):
+    """A metadata/search batch that failed (after transport retries) and was skipped."""
+
+    metadata_type: _types.APIObjectType
+    identifiers: list[_types.GUID]
+    error: str
+
+
+class FetchResult(NamedTuple):
+    """Outcome of a fetch: the rows gathered, plus any batches that were skipped along the way."""
+
+    rows: list[_types.APIResult]
+    skipped: list[SkippedSearch]
 
 
 async def fetch_all(
@@ -80,13 +95,19 @@ def _flatten_identifiers(guids: Iterable[Any]) -> list[_types.GUID]:
     return flat
 
 
-async def _gather_search(coro: Awaitable[httpx.Response], *, name: str) -> Optional[list[_types.APIResult]]:
+async def _gather_search(
+    coro: Awaitable[httpx.Response],
+    *,
+    metadata_type: _types.APIObjectType,
+    identifiers: list[_types.GUID],
+) -> Union[list[_types.APIResult], SkippedSearch]:
     """
-    Run one metadata/search, returning its rows or None if the request failed.
+    Run one metadata/search, returning its rows or a SkippedSearch if the request failed.
 
-    Failures are swallowed here — after the client's own transport-level retries are exhausted —
-    so a single slow or broken batch cannot cancel its siblings inside the TaskGroup and abort the
-    whole phase. The caller gets whatever could be gathered; the miss is logged.
+    Failures are caught here — after the client's own transport-level retries are exhausted — so a
+    single slow or broken batch cannot cancel its siblings inside the TaskGroup and abort the whole
+    phase. The caller gets whatever could be gathered; the miss is logged and reported back so it
+    is never silent.
     """
     try:
         r = await coro
@@ -94,9 +115,12 @@ async def _gather_search(coro: Awaitable[httpx.Response], *, name: str) -> Optio
         return r.json()
 
     except httpx.HTTPError as e:
-        _LOG.error(f"metadata/search failed for {name}; continuing without it, see logs for details..")
+        _LOG.error(
+            f"metadata/search failed for {metadata_type} [{len(identifiers)} ids]; "
+            f"continuing without it, see logs for details.."
+        )
         _LOG.debug(f"Full error: {e}", exc_info=True)
-        return None
+        return SkippedSearch(metadata_type=metadata_type, identifiers=identifiers, error=repr(e))
 
 
 async def fetch(
@@ -105,11 +129,12 @@ async def fetch(
     http: RESTAPIClient,
     record_size: int = 5_000,
     **search_options,
-) -> list[_types.APIResult]:
+) -> FetchResult:
     """Wraps metadata/search fetching specific objects and exhausts the pagination."""
     CONCURRENCY_MAGIC_NUMBER = 10  # Why? In case **search_options contains
 
     results: list[_types.APIResult] = []
+    skipped: list[SkippedSearch] = []
     tasks: list[asyncio.Task] = []
 
     _LOG.info(f"Max concurrent tasks in fetch func: {CONCURRENCY_MAGIC_NUMBER}")
@@ -128,21 +153,25 @@ async def fetch(
             # THEM, THEN RE-BATCH TO A BOUNDED SIZE SO REQUEST COST STAYS PREDICTABLE REGARDLESS OF
             # HOW WIDE OR NUMEROUS THE OBJECTS ARE.
             for batch in utils.batched(_flatten_identifiers(guids), n=max_per_request):
-                options = {**search_options, "metadata": [{"type": metadata_type, "identifier": _} for _ in batch]}
+                identifiers = list(batch)
+                metadata_spec = [{"type": metadata_type, "identifier": i} for i in identifiers]
+                options = {**search_options, "metadata": metadata_spec}
                 coro = http.metadata_search(guid="", record_size=record_size, **options)
-                name = f"{metadata_type} [{len(batch)} ids]"
-                task = g.create_task(_gather_search(coro, name=name))
+                task = g.create_task(_gather_search(coro, metadata_type=metadata_type, identifiers=identifiers))
                 tasks.append(task)
 
     for task in tasks:
-        # _gather_search never raises: a failed batch yields None and is skipped, so one slow or
-        # broken request no longer aborts the phase — fetch returns whatever it could gather.
-        rows = task.result()
+        # _gather_search never raises: a failed batch comes back as a SkippedSearch (logged and
+        # reported), so one slow or broken request no longer aborts the phase — fetch returns
+        # whatever it could gather alongside a record of what it could not.
+        outcome = task.result()
 
-        if rows:
-            results.extend(rows)
+        if isinstance(outcome, SkippedSearch):
+            skipped.append(outcome)
+        else:
+            results.extend(outcome)
 
-    return results
+    return FetchResult(rows=results, skipped=skipped)
 
 
 async def fetch_one(

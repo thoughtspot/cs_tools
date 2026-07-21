@@ -539,7 +539,7 @@ def metadata(
                 c = workflows.metadata.fetch(
                     typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api
                 )
-                _ = utils.run_sync(c)
+                _ = utils.run_sync(c).rows
 
                 # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
                 for metadata in _:
@@ -574,7 +574,7 @@ def metadata(
                     dependent_objects_record_size=-1,
                     http=ts.api,
                 )
-                _ = utils.run_sync(c)
+                _ = utils.run_sync(c).rows
 
                 # DUMP DEPENDENT_OBJECT DATA
                 d = api_transformer.ts_metadata_dependent(data=_, cluster=CLUSTER_UUID)

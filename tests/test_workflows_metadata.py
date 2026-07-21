@@ -148,11 +148,11 @@ def test_a_many_single_objects_are_coalesced_into_bounded_requests():
     assert set(sent) == guids
 
 
-def test_c_a_failing_batch_is_skipped_and_the_phase_returns_partial_results():
-    # DELIBERATE CONTRACT CHANGE (fix C): a request that fails at the network level (after the
+def test_c_a_failing_batch_is_reported_in_skipped_and_the_phase_returns_partial_results():
+    # DELIBERATE CONTRACT CHANGE: a request that fails at the network level (after the
     # client's transport retries are exhausted) no longer aborts the whole phase. The failing
-    # batch is logged and skipped; fetch returns whatever it could gather, so one slow object
-    # can't sink an entire extract.
+    # batch is logged and RECORDED in FetchResult.skipped; fetch returns whatever it could gather,
+    # so one slow object can't sink an entire extract — and the miss is never silent.
     def respond(request: httpx.Request) -> Union[int, Exception]:
         if b"BOOM" in request.content:
             return httpx.ReadTimeout("simulated slow endpoint")
@@ -162,7 +162,7 @@ def test_c_a_failing_batch_is_skipped_and_the_phase_returns_partial_results():
     good = [f"good-{i}" for i in range(EXPECTED_MAX_PER_REQUEST)]
     bad = [f"BOOM-{i}" for i in range(EXPECTED_MAX_PER_REQUEST)]
 
-    async def scenario() -> list:
+    async def scenario() -> metadata_workflow.FetchResult:
         client = make_client(server)
         return await metadata_workflow.fetch(
             typed_guids={"LOGICAL_COLUMN": [good, bad]},
@@ -171,6 +171,12 @@ def test_c_a_failing_batch_is_skipped_and_the_phase_returns_partial_results():
             http=client,
         )
 
-    # DOES NOT RAISE; THE GOOD BATCHES COME BACK, THE FAILING ONES ARE SKIPPED.
-    results = asyncio.run(scenario())
-    assert len(results) == len(good)
+    # DOES NOT RAISE; THE GOOD BATCHES COME BACK IN .rows, THE FAILING ONES ARE REPORTED IN .skipped.
+    result = asyncio.run(scenario())
+
+    assert len(result.rows) == len(good)
+    # dependents => batch of one, so each failing id becomes its own SkippedSearch record
+    skipped_ids = [identifier for s in result.skipped for identifier in s.identifiers]
+    assert set(skipped_ids) == set(bad)
+    assert all(s.metadata_type == "LOGICAL_COLUMN" for s in result.skipped)
+    assert all(s.error for s in result.skipped)  # the underlying error is captured, not empty
