@@ -26,6 +26,13 @@ _LOG = logging.getLogger(__name__)
 # RESTAPIClient.v1_security_metadata_permissions.
 _MAX_IDENTIFIERS_PER_SEARCH = 25
 
+# WHEN A SEARCH ALSO PULLS EACH OBJECT'S DEPENDENTS (include_dependent_objects=True), THE
+# PER-REQUEST COST IS DOMINATED BY THE DEPENDENT LISTS, NOT THE IDENTIFIER COUNT. THOSE LISTS
+# ARE UNBOUNDED (dependent_objects_record_size=-1) AND THE API CANNOT PAGINATE THEM, SO A BATCH
+# OF 25 SUCH OBJECTS CAN BALLOON INTO A MULTI-MINUTE QUERY THE SERVER DROPS MID-RESPONSE
+# (httpx.ReadError). BATCH THESE ONE OBJECT AT A TIME SO EACH REQUEST STAYS SMALL AND SURVIVABLE.
+_MAX_IDENTIFIERS_PER_SEARCH_WITH_DEPENDENTS = 1
+
 
 async def fetch_all(
     metadata_types: Iterable[_types.APIObjectType],
@@ -99,12 +106,20 @@ async def fetch(
 
     _LOG.info(f"Max concurrent tasks in fetch func: {CONCURRENCY_MAGIC_NUMBER}")
 
+    # DEPENDENT-OBJECT SEARCHES CARRY UNBOUNDED, NON-PAGINABLE DEPENDENT LISTS, SO THEY MUST BE
+    # BATCHED MUCH MORE CONSERVATIVELY THAN A PLAIN SEARCH TO KEEP EACH REQUEST SURVIVABLE.
+    max_per_request = (
+        _MAX_IDENTIFIERS_PER_SEARCH_WITH_DEPENDENTS
+        if search_options.get("include_dependent_objects")
+        else _MAX_IDENTIFIERS_PER_SEARCH
+    )
+
     async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
         for metadata_type, guids in typed_guids.items():
             # CALLERS GROUP IDENTIFIERS INCONSISTENTLY (single guids, or per-object lists). FLATTEN
             # THEM, THEN RE-BATCH TO A BOUNDED SIZE SO REQUEST COST STAYS PREDICTABLE REGARDLESS OF
             # HOW WIDE OR NUMEROUS THE OBJECTS ARE.
-            for batch in utils.batched(_flatten_identifiers(guids), n=_MAX_IDENTIFIERS_PER_SEARCH):
+            for batch in utils.batched(_flatten_identifiers(guids), n=max_per_request):
                 options = {**search_options, "metadata": [{"type": metadata_type, "identifier": _} for _ in batch]}
                 coro = http.metadata_search(guid="", record_size=record_size, **options)
                 task = g.create_task(coro, name=f"{metadata_type} [{len(batch)} ids]")

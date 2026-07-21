@@ -36,6 +36,10 @@ ANY_CLUSTER = "https://customer.thoughtspot.cloud"
 # MIRRORS THE EXISTING PRECEDENT IN client.v1_security_metadata_permissions (n=25).
 EXPECTED_MAX_PER_REQUEST = 25
 
+# WHEN A SEARCH ALSO PULLS DEPENDENTS, EACH REQUEST CARRIES ONE OBJECT'S (UNBOUNDED,
+# NON-PAGINABLE) DEPENDENT LIST, SO fetch BATCHES FAR MORE CONSERVATIVELY.
+EXPECTED_MAX_PER_REQUEST_WITH_DEPENDENTS = 1
+
 
 class RecordingServer:
     """In-memory server that records requests and answers by a per-request rule."""
@@ -75,9 +79,10 @@ def make_client(server: RecordingServer) -> RESTAPIClient:
     return client
 
 
-def test_a_wide_identifier_list_is_split_into_bounded_requests():
-    # ONE TABLE'S WORTH OF COLUMNS, GROUPED AS THE CALLER DOES IT (a single list),
-    # MUST NOT BECOME ONE ENORMOUS metadata/search.
+def test_a_dependent_search_is_batched_one_object_at_a_time():
+    # include_dependent_objects PULLS EACH OBJECT'S UNBOUNDED, NON-PAGINABLE DEPENDENT LIST.
+    # PACKING 25 SUCH OBJECTS INTO ONE REQUEST BALLOONS INTO A MULTI-MINUTE QUERY THE SERVER
+    # DROPS (ReadError), SO A WIDE IDENTIFIER LIST MUST BE SPLIT ONE OBJECT PER REQUEST.
     server = RecordingServer(respond=lambda _: 200)
     guids = [f"col-{i}" for i in range(60)]
 
@@ -93,9 +98,31 @@ def test_a_wide_identifier_list_is_split_into_bounded_requests():
     asyncio.run(scenario())
 
     batches = server.sent_identifiers()
+    assert all(len(b) <= EXPECTED_MAX_PER_REQUEST_WITH_DEPENDENTS for b in batches), batches
+    assert len(batches) == math.ceil(len(guids) / EXPECTED_MAX_PER_REQUEST_WITH_DEPENDENTS)
+    # EVERY IDENTIFIER SENT, EXACTLY ONCE, IN ORDER.
+    assert [g for batch in batches for g in batch] == guids
+
+
+def test_a_plain_search_without_dependents_still_batches_at_25():
+    # THE CONSERVATIVE ONE-AT-A-TIME BATCHING APPLIES ONLY WHEN DEPENDENTS ARE REQUESTED.
+    # A PLAIN SEARCH KEEPS THE EFFICIENT 25-PER-REQUEST BATCHING.
+    server = RecordingServer(respond=lambda _: 200)
+    guids = [f"col-{i}" for i in range(60)]
+
+    async def scenario() -> None:
+        client = make_client(server)
+        await metadata_workflow.fetch(
+            typed_guids={"LOGICAL_COLUMN": [guids]},
+            include_details=True,
+            http=client,
+        )
+
+    asyncio.run(scenario())
+
+    batches = server.sent_identifiers()
     assert all(len(b) <= EXPECTED_MAX_PER_REQUEST for b in batches), batches
     assert len(batches) == math.ceil(len(guids) / EXPECTED_MAX_PER_REQUEST)
-    # EVERY IDENTIFIER SENT, EXACTLY ONCE, IN ORDER.
     assert [g for batch in batches for g in batch] == guids
 
 
