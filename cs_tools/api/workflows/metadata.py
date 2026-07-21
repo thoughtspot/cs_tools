@@ -20,6 +20,12 @@ from cs_tools.api.workflows.utils import paginator
 
 _LOG = logging.getLogger(__name__)
 
+# THE MOST IDENTIFIERS WE PLACE IN A SINGLE metadata/search REQUEST. BOUNDING THIS KEEPS ONE
+# WIDE OBJECT (eg. A TABLE WITH HUNDREDS OF COLUMNS) FROM BECOMING A SINGLE, ENORMOUS REQUEST,
+# AND MANY SINGLE OBJECTS FROM BECOMING MANY REQUESTS. MIRRORS THE n=25 PRECEDENT IN
+# RESTAPIClient.v1_security_metadata_permissions.
+_MAX_IDENTIFIERS_PER_SEARCH = 25
+
 
 async def fetch_all(
     metadata_types: Iterable[_types.APIObjectType],
@@ -55,6 +61,19 @@ async def fetch_all(
     return results
 
 
+def _flatten_identifiers(guids: Iterable[Any]) -> list[_types.GUID]:
+    """Flatten a caller's identifiers (loose single guids and/or grouped lists) into one flat list."""
+    flat: list[_types.GUID] = []
+
+    for guid in guids:
+        if isinstance(guid, str):
+            flat.append(guid)
+        else:
+            flat.extend(guid)
+
+    return flat
+
+
 retry_on_httpx_errors = retry(
     stop=stop_after_attempt(3),  # Retry up to 3 times
     wait=wait_fixed(2),  # Wait 2 seconds between retries
@@ -82,17 +101,13 @@ async def fetch(
 
     async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
         for metadata_type, guids in typed_guids.items():
-            for guid in guids:
-                # A SINGLE OBJECT
-                if isinstance(guid, str):
-                    search_options["metadata"] = [{"type": metadata_type, "identifier": guid}]
-
-                # AN ARRAY OF OBJECTS
-                if isinstance(guid, list):
-                    search_options["metadata"] = [{"type": metadata_type, "identifier": _} for _ in guid]
-
-                coro = http.metadata_search(guid="", record_size=record_size, **search_options)
-                task = g.create_task(coro, name=guid)
+            # CALLERS GROUP IDENTIFIERS INCONSISTENTLY (single guids, or per-object lists). FLATTEN
+            # THEM, THEN RE-BATCH TO A BOUNDED SIZE SO REQUEST COST STAYS PREDICTABLE REGARDLESS OF
+            # HOW WIDE OR NUMEROUS THE OBJECTS ARE.
+            for batch in utils.batched(_flatten_identifiers(guids), n=_MAX_IDENTIFIERS_PER_SEARCH):
+                options = {**search_options, "metadata": [{"type": metadata_type, "identifier": _} for _ in batch]}
+                coro = http.metadata_search(guid="", record_size=record_size, **options)
+                task = g.create_task(coro, name=f"{metadata_type} [{len(batch)} ids]")
                 tasks.append(task)
 
     for task in tasks:
