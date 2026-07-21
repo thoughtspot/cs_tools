@@ -348,6 +348,43 @@ def bi_server(
     return 0
 
 
+def _report_skipped_searches(skipped: list[workflows.metadata.SkippedSearch], *, is_truncate: bool) -> None:
+    """
+    Loudly summarize the metadata/search batches fetch had to skip, so a partial extract is never
+    silent. Per-type counts and a small sample go to the console; the full id list goes to debug.
+    """
+    per_type: dict[str, int] = {}
+    all_ids: list[str] = []
+
+    for search in skipped:
+        per_type[search.metadata_type] = per_type.get(search.metadata_type, 0) + len(search.identifiers)
+        all_ids.extend(search.identifiers)
+
+    total = sum(per_type.values())
+    breakdown = "\n".join(f"    {metadata_type}: {count} skipped" for metadata_type, count in per_type.items())
+    sample = ", ".join(all_ids[:5])
+    more = f" (+{len(all_ids) - 5} more)" if len(all_ids) > 5 else ""
+
+    if is_truncate:
+        consequence = (
+            "Load strategy is TRUNCATE, so the target tables were REPLACED with this incomplete data. "
+            "Re-run the extract to restore completeness; failing this run so it is not trusted as clean."
+        )
+    else:
+        consequence = (
+            "Load strategy is UPSERT/APPEND, so the missing rows fill in on the next successful run "
+            "— no data loss, no duplicates."
+        )
+
+    log.warning(
+        f"metadata extract completed with PARTIAL data: {total} object(s) could not be fetched.\n"
+        f"{breakdown}\n"
+        f"    sample: {sample}{more}\n"
+        f"  {consequence}"
+    )
+    log.debug("Full list of skipped identifiers (%d): %s", len(all_ids), all_ids)
+
+
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
 def metadata(
@@ -387,6 +424,10 @@ def metadata(
 
     # Silence the intermediate logger.
     logging.getLogger("cs_tools.sync.sqlite.syncer").setLevel(logging.CRITICAL)
+
+    # COLLECT EVERY metadata/search BATCH WE HAD TO SKIP (ACROSS ALL ORGS) SO A PARTIAL EXTRACT IS
+    # REPORTED LOUDLY AT THE END INSTEAD OF PASSING SILENTLY AS A CLEAN RUN.
+    skipped_searches: list[workflows.metadata.SkippedSearch] = []
 
     TOOL_TASKS = [
         px.WorkTask(id="PREPARING", description="Preparing for data collection"),
@@ -539,7 +580,9 @@ def metadata(
                 c = workflows.metadata.fetch(
                     typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api
                 )
-                _ = utils.run_sync(c).rows
+                _result = utils.run_sync(c)
+                _ = _result.rows
+                skipped_searches.extend(_result.skipped)
 
                 # COLLECT GUIDS FOR LATER ON.. THIS WILL BE MORE EFFICIENT THAN metadata.fetch_all MULTIPLE TIMES.
                 for metadata in _:
@@ -574,7 +617,9 @@ def metadata(
                     dependent_objects_record_size=-1,
                     http=ts.api,
                 )
-                _ = utils.run_sync(c).rows
+                _result = utils.run_sync(c)
+                _ = _result.rows
+                skipped_searches.extend(_result.skipped)
 
                 # DUMP DEPENDENT_OBJECT DATA
                 d = api_transformer.ts_metadata_dependent(data=_, cluster=CLUSTER_UUID)
@@ -619,6 +664,14 @@ def metadata(
                         syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
 
                     syncer.dump(model.__tablename__, data=rows)
+
+    if skipped_searches:
+        _report_skipped_searches(skipped_searches, is_truncate=is_truncate_load_strategy)
+
+        # A TRUNCATE run REPLACED the target with incomplete data — fail loudly (exit 1) so it is not
+        # trusted as a clean success. UPSERT/APPEND self-heal on the next run, so they stay green.
+        if is_truncate_load_strategy:
+            return 1
 
     return 0
 
