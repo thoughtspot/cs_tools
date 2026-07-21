@@ -70,7 +70,7 @@ class Snowflake(DatabaseSyncer):
         super().__init__(**kwargs)
         logging.getLogger("snowflake").setLevel(self.log_level.upper())
 
-        self._engine = sa.create_engine(self.make_url())
+        self._engine = sa.create_engine(self.make_url(), connect_args=self.make_connect_args())
         self.metadata = sqlmodel.MetaData(schema=self.schema_)
 
     def __repr__(self) -> str:
@@ -89,9 +89,6 @@ class Snowflake(DatabaseSyncer):
             "schema": self.schema_,
             "warehouse": self.warehouse,
             "role": self.role,
-            "connect_args": {
-                "session_parameters": {"query_tag": f"thoughtspot.cs_tools (v{__version__})"},
-            },
         }
 
         # SNOWFLAKE DOCS:
@@ -99,12 +96,6 @@ class Snowflake(DatabaseSyncer):
         if self.authentication == "basic":
             url_kwargs["authenticator"] = "snowflake"
             url_kwargs["password"] = self.secret
-
-        # SNOWFLAKE DOCS:
-        # https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect#using-key-pair-authentication-key-pair-rotation
-        if self.authentication == "key-pair":
-            url_kwargs["private_key_file"] = self.private_key_path
-            url_kwargs["private_key_file_pwd"] = self.secret
 
         # SNOWFLAKE DOCS:
         # https://docs.snowflake.com/en/user-guide/admin-security-fed-auth-use#browser-based-sso
@@ -118,6 +109,26 @@ class Snowflake(DatabaseSyncer):
             url_kwargs["token"] = self.secret
 
         return URL(**url_kwargs)
+
+    def make_connect_args(self) -> dict[str, Any]:
+        """
+        Build args passed straight to the Snowflake driver, not the URL.
+
+        Newer snowflake-sqlalchemy rejects sensitive connection parameters such as
+        'private_key_file' in the URL query string; they must be supplied via connect_args
+        to create_engine() instead. session_parameters also belongs here, not in the URL.
+        """
+        connect_args: dict[str, Any] = {
+            "session_parameters": {"query_tag": f"thoughtspot.cs_tools (v{__version__})"},
+        }
+
+        # SNOWFLAKE DOCS:
+        # https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect#using-key-pair-authentication-key-pair-rotation
+        if self.authentication == "key-pair":
+            connect_args["private_key_file"] = str(self.private_key_path)
+            connect_args["private_key_file_pwd"] = self.secret
+
+        return connect_args
 
     def stage_and_put(self, tablename: str, *, data: _types.TableRowsFormat) -> str:
         """Add a local file to Snowflake's internal temporary stage."""
