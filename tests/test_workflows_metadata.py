@@ -24,11 +24,9 @@ import asyncio
 import json
 import math
 
-from cs_tools import _compat
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.api.workflows import metadata as metadata_workflow
 import httpx
-import pytest
 
 ANY_CLUSTER = "https://customer.thoughtspot.cloud"
 
@@ -150,12 +148,11 @@ def test_a_many_single_objects_are_coalesced_into_bounded_requests():
     assert set(sent) == guids
 
 
-def test_c_a_failing_batch_aborts_and_raises_the_current_contract():
-    # CONTRACT PIN, NOT AN ASPIRATION: today a request that fails at the network
-    # level (after retries are exhausted) aborts the whole phase and propagates.
-    # Customers key retries / exit codes off this, so re-batching (fix A) must not
-    # quietly turn it into a partial-success return. If we ever choose to make the
-    # phase resilient, that is a deliberate contract change with its own decision.
+def test_c_a_failing_batch_is_skipped_and_the_phase_returns_partial_results():
+    # DELIBERATE CONTRACT CHANGE (fix C): a request that fails at the network level (after the
+    # client's transport retries are exhausted) no longer aborts the whole phase. The failing
+    # batch is logged and skipped; fetch returns whatever it could gather, so one slow object
+    # can't sink an entire extract.
     def respond(request: httpx.Request) -> Union[int, Exception]:
         if b"BOOM" in request.content:
             return httpx.ReadTimeout("simulated slow endpoint")
@@ -174,5 +171,6 @@ def test_c_a_failing_batch_aborts_and_raises_the_current_contract():
             http=client,
         )
 
-    with pytest.raises(_compat.ExceptionGroup):
-        asyncio.run(scenario())
+    # DOES NOT RAISE; THE GOOD BATCHES COME BACK, THE FAILING ONES ARE SKIPPED.
+    results = asyncio.run(scenario())
+    assert len(results) == len(good)

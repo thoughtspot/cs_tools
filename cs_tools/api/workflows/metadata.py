@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Coroutine, Iterable
+from collections.abc import Awaitable, Coroutine, Iterable
 from typing import Any, Literal, Optional, cast
 import asyncio
 import datetime as dt
@@ -9,7 +9,6 @@ import json
 import logging
 import pathlib
 
-from tenacity import before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from thoughtspot_tml.types import TMLObject
 import awesomeversion
 import httpx
@@ -81,16 +80,25 @@ def _flatten_identifiers(guids: Iterable[Any]) -> list[_types.GUID]:
     return flat
 
 
-retry_on_httpx_errors = retry(
-    stop=stop_after_attempt(3),  # Retry up to 3 times
-    wait=wait_fixed(2),  # Wait 2 seconds between retries
-    retry=retry_if_exception_type((httpx.ReadError, httpx.ConnectTimeout, httpx.HTTPStatusError)),
-    before_sleep=before_sleep_log(_LOG, logging.INFO),  # Log before sleeping
-    reraise=True,  # Reraise the exception if all retries fail
-)
+async def _gather_search(coro: Awaitable[httpx.Response], *, name: str) -> Optional[list[_types.APIResult]]:
+    """
+    Run one metadata/search, returning its rows or None if the request failed.
+
+    Failures are swallowed here — after the client's own transport-level retries are exhausted —
+    so a single slow or broken batch cannot cancel its siblings inside the TaskGroup and abort the
+    whole phase. The caller gets whatever could be gathered; the miss is logged.
+    """
+    try:
+        r = await coro
+        r.raise_for_status()
+        return r.json()
+
+    except httpx.HTTPError as e:
+        _LOG.error(f"metadata/search failed for {name}; continuing without it, see logs for details..")
+        _LOG.debug(f"Full error: {e}", exc_info=True)
+        return None
 
 
-@retry_on_httpx_errors
 async def fetch(
     typed_guids: dict[_types.APIObjectType, Iterable[_types.GUID]],
     *,
@@ -122,26 +130,17 @@ async def fetch(
             for batch in utils.batched(_flatten_identifiers(guids), n=max_per_request):
                 options = {**search_options, "metadata": [{"type": metadata_type, "identifier": _} for _ in batch]}
                 coro = http.metadata_search(guid="", record_size=record_size, **options)
-                task = g.create_task(coro, name=f"{metadata_type} [{len(batch)} ids]")
+                name = f"{metadata_type} [{len(batch)} ids]"
+                task = g.create_task(_gather_search(coro, name=name))
                 tasks.append(task)
 
     for task in tasks:
-        try:
-            r = task.result()
-            r.raise_for_status()
-            d = r.json()
+        # _gather_search never raises: a failed batch yields None and is skipped, so one slow or
+        # broken request no longer aborts the phase — fetch returns whatever it could gather.
+        rows = task.result()
 
-        except httpx.ReadError as e:
-            _LOG.error(f"ReadError for guid={task.get_name()}, see logs for details..")
-            _LOG.debug(f"Full error: {e}", exc_info=True)
-            continue
-
-        except httpx.HTTPError as e:
-            _LOG.error(f"Could not fetch the object for guid={task.get_name()}, see logs for details..")
-            _LOG.debug(f"Full error: {e}", exc_info=True)
-            continue
-
-        results.extend(d)
+        if rows:
+            results.extend(rows)
 
     return results
 
