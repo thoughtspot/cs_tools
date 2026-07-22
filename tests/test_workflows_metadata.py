@@ -24,19 +24,17 @@ import asyncio
 import json
 import math
 
+from cs_tools import _compat
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.api.workflows import metadata as metadata_workflow
 import httpx
+import pytest
 
 ANY_CLUSTER = "https://customer.thoughtspot.cloud"
 
 # THE MOST IDENTIFIERS fetch SHOULD PLACE IN A SINGLE metadata/search REQUEST.
 # MIRRORS THE EXISTING PRECEDENT IN client.v1_security_metadata_permissions (n=25).
 EXPECTED_MAX_PER_REQUEST = 25
-
-# WHEN A SEARCH ALSO PULLS DEPENDENTS, EACH REQUEST CARRIES ONE OBJECT'S (UNBOUNDED,
-# NON-PAGINABLE) DEPENDENT LIST, SO fetch BATCHES FAR MORE CONSERVATIVELY.
-EXPECTED_MAX_PER_REQUEST_WITH_DEPENDENTS = 1
 
 
 class RecordingServer:
@@ -77,10 +75,9 @@ def make_client(server: RecordingServer) -> RESTAPIClient:
     return client
 
 
-def test_a_dependent_search_is_batched_one_object_at_a_time():
-    # include_dependent_objects PULLS EACH OBJECT'S UNBOUNDED, NON-PAGINABLE DEPENDENT LIST.
-    # PACKING 25 SUCH OBJECTS INTO ONE REQUEST BALLOONS INTO A MULTI-MINUTE QUERY THE SERVER
-    # DROPS (ReadError), SO A WIDE IDENTIFIER LIST MUST BE SPLIT ONE OBJECT PER REQUEST.
+def test_a_wide_identifier_list_is_split_into_bounded_requests():
+    # ONE TABLE'S WORTH OF COLUMNS, GROUPED AS THE CALLER DOES IT (a single list),
+    # MUST NOT BECOME ONE ENORMOUS metadata/search.
     server = RecordingServer(respond=lambda _: 200)
     guids = [f"col-{i}" for i in range(60)]
 
@@ -96,31 +93,9 @@ def test_a_dependent_search_is_batched_one_object_at_a_time():
     asyncio.run(scenario())
 
     batches = server.sent_identifiers()
-    assert all(len(b) <= EXPECTED_MAX_PER_REQUEST_WITH_DEPENDENTS for b in batches), batches
-    assert len(batches) == math.ceil(len(guids) / EXPECTED_MAX_PER_REQUEST_WITH_DEPENDENTS)
-    # EVERY IDENTIFIER SENT, EXACTLY ONCE, IN ORDER.
-    assert [g for batch in batches for g in batch] == guids
-
-
-def test_a_plain_search_without_dependents_still_batches_at_25():
-    # THE CONSERVATIVE ONE-AT-A-TIME BATCHING APPLIES ONLY WHEN DEPENDENTS ARE REQUESTED.
-    # A PLAIN SEARCH KEEPS THE EFFICIENT 25-PER-REQUEST BATCHING.
-    server = RecordingServer(respond=lambda _: 200)
-    guids = [f"col-{i}" for i in range(60)]
-
-    async def scenario() -> None:
-        client = make_client(server)
-        await metadata_workflow.fetch(
-            typed_guids={"LOGICAL_COLUMN": [guids]},
-            include_details=True,
-            http=client,
-        )
-
-    asyncio.run(scenario())
-
-    batches = server.sent_identifiers()
     assert all(len(b) <= EXPECTED_MAX_PER_REQUEST for b in batches), batches
     assert len(batches) == math.ceil(len(guids) / EXPECTED_MAX_PER_REQUEST)
+    # EVERY IDENTIFIER SENT, EXACTLY ONCE, IN ORDER.
     assert [g for batch in batches for g in batch] == guids
 
 
@@ -148,11 +123,12 @@ def test_a_many_single_objects_are_coalesced_into_bounded_requests():
     assert set(sent) == guids
 
 
-def test_c_a_failing_batch_is_reported_in_skipped_and_the_phase_returns_partial_results():
-    # DELIBERATE CONTRACT CHANGE: a request that fails at the network level (after the
-    # client's transport retries are exhausted) no longer aborts the whole phase. The failing
-    # batch is logged and RECORDED in FetchResult.skipped; fetch returns whatever it could gather,
-    # so one slow object can't sink an entire extract — and the miss is never silent.
+def test_c_a_failing_batch_aborts_and_raises_the_current_contract():
+    # CONTRACT PIN, NOT AN ASPIRATION: today a request that fails at the network
+    # level (after retries are exhausted) aborts the whole phase and propagates.
+    # Customers key retries / exit codes off this, so re-batching (fix A) must not
+    # quietly turn it into a partial-success return. If we ever choose to make the
+    # phase resilient, that is a deliberate contract change with its own decision.
     def respond(request: httpx.Request) -> Union[int, Exception]:
         if b"BOOM" in request.content:
             return httpx.ReadTimeout("simulated slow endpoint")
@@ -162,7 +138,7 @@ def test_c_a_failing_batch_is_reported_in_skipped_and_the_phase_returns_partial_
     good = [f"good-{i}" for i in range(EXPECTED_MAX_PER_REQUEST)]
     bad = [f"BOOM-{i}" for i in range(EXPECTED_MAX_PER_REQUEST)]
 
-    async def scenario() -> metadata_workflow.FetchResult:
+    async def scenario() -> list:
         client = make_client(server)
         return await metadata_workflow.fetch(
             typed_guids={"LOGICAL_COLUMN": [good, bad]},
@@ -171,12 +147,5 @@ def test_c_a_failing_batch_is_reported_in_skipped_and_the_phase_returns_partial_
             http=client,
         )
 
-    # DOES NOT RAISE; THE GOOD BATCHES COME BACK IN .rows, THE FAILING ONES ARE REPORTED IN .skipped.
-    result = asyncio.run(scenario())
-
-    assert len(result.rows) == len(good)
-    # dependents => batch of one, so each failing id becomes its own SkippedSearch record
-    skipped_ids = [identifier for s in result.skipped for identifier in s.identifiers]
-    assert set(skipped_ids) == set(bad)
-    assert all(s.metadata_type == "LOGICAL_COLUMN" for s in result.skipped)
-    assert all(s.error for s in result.skipped)  # the underlying error is captured, not empty
+    with pytest.raises(_compat.ExceptionGroup):
+        asyncio.run(scenario())
