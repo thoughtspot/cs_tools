@@ -470,19 +470,10 @@ def ts_metadata_dependent(data: list[_types.APIResult], *, cluster: _types.GUID)
     """Reshapes metadata/search?type=LOGICAL_COLUMN&include_dependent_objects=True -> searchable.models.MetadataObject."""  # noqa: E501
     reshaped: _types.TableRowsFormat = []
 
-    # DependentObject requires these to be non-null. Some dependents (eg. certain system objects)
-    # come back from the API without them, so skip those rows rather than crash the whole extract.
-    required_fields = ("id", "name", "author", "created", "modified")
-    skipped = 0
-
     for result in data:
         for dependents_info in result["dependent_objects"].values():
             for dependent_type, dependents in dependents_info.items():
                 for dependent in dependents:
-                    if any(dependent.get(field) is None for field in required_fields):
-                        skipped += 1
-                        continue
-
                     reshaped.append(
                         # DEV NOTE: @boonhapus, 2024/12/06
                         # There are typically an order of magnitude MORE dependents than anything else in ThoughtSpot
@@ -503,9 +494,6 @@ def ts_metadata_dependent(data: list[_types.APIResult], *, cluster: _types.GUID)
                             "is_version_controlled": dependent.get("isVersioningEnabled", False),
                         }
                     )
-
-    if skipped:
-        log.warning(f"skipped {skipped} dependent object(s) missing required fields {required_fields}")
 
     return reshaped
 

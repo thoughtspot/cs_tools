@@ -131,11 +131,7 @@ async def fetch(
     **search_options,
 ) -> FetchResult:
     """Wraps metadata/search fetching specific objects and exhausts the pagination."""
-    # Dependent searches are batched one object at a time (see max_per_request below), so they are
-    # numerous but individually small — parallelize them harder so the phase doesn't run for an
-    # hour on a large instance. Plain searches stay at 10. NOTE: this is a starting point; re-measure
-    # live and tune, since more concurrency also means more simultaneous queries against the server.
-    CONCURRENCY_MAGIC_NUMBER = 20 if search_options.get("include_dependent_objects") else 10
+    CONCURRENCY_MAGIC_NUMBER = 10  # Why? In case **search_options contains
 
     results: list[_types.APIResult] = []
     skipped: list[SkippedSearch] = []
