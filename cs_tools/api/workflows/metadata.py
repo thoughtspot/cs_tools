@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Coroutine, Iterable
-from typing import Any, Literal, NamedTuple, Optional, Union, cast
+from collections.abc import Coroutine, Iterable
+from typing import Any, Literal, Optional, cast
 import asyncio
 import datetime as dt
 import itertools as it
@@ -9,6 +9,7 @@ import json
 import logging
 import pathlib
 
+from tenacity import before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from thoughtspot_tml.types import TMLObject
 import awesomeversion
 import httpx
@@ -24,28 +25,6 @@ _LOG = logging.getLogger(__name__)
 # AND MANY SINGLE OBJECTS FROM BECOMING MANY REQUESTS. MIRRORS THE n=25 PRECEDENT IN
 # RESTAPIClient.v1_security_metadata_permissions.
 _MAX_IDENTIFIERS_PER_SEARCH = 25
-
-# WHEN A SEARCH ALSO PULLS EACH OBJECT'S DEPENDENTS (include_dependent_objects=True), THE
-# PER-REQUEST COST IS DOMINATED BY THE DEPENDENT LISTS, NOT THE IDENTIFIER COUNT. THOSE LISTS
-# ARE UNBOUNDED (dependent_objects_record_size=-1) AND THE API CANNOT PAGINATE THEM, SO A BATCH
-# OF 25 SUCH OBJECTS CAN BALLOON INTO A MULTI-MINUTE QUERY THE SERVER DROPS MID-RESPONSE
-# (httpx.ReadError). BATCH THESE ONE OBJECT AT A TIME SO EACH REQUEST STAYS SMALL AND SURVIVABLE.
-_MAX_IDENTIFIERS_PER_SEARCH_WITH_DEPENDENTS = 1
-
-
-class SkippedSearch(NamedTuple):
-    """A metadata/search batch that failed (after transport retries) and was skipped."""
-
-    metadata_type: _types.APIObjectType
-    identifiers: list[_types.GUID]
-    error: str
-
-
-class FetchResult(NamedTuple):
-    """Outcome of a fetch: the rows gathered, plus any batches that were skipped along the way."""
-
-    rows: list[_types.APIResult]
-    skipped: list[SkippedSearch]
 
 
 async def fetch_all(
@@ -95,83 +74,61 @@ def _flatten_identifiers(guids: Iterable[Any]) -> list[_types.GUID]:
     return flat
 
 
-async def _gather_search(
-    coro: Awaitable[httpx.Response],
-    *,
-    metadata_type: _types.APIObjectType,
-    identifiers: list[_types.GUID],
-) -> Union[list[_types.APIResult], SkippedSearch]:
-    """
-    Run one metadata/search, returning its rows or a SkippedSearch if the request failed.
-
-    Failures are caught here — after the client's own transport-level retries are exhausted — so a
-    single slow or broken batch cannot cancel its siblings inside the TaskGroup and abort the whole
-    phase. The caller gets whatever could be gathered; the miss is logged and reported back so it
-    is never silent.
-    """
-    try:
-        r = await coro
-        r.raise_for_status()
-        return r.json()
-
-    except httpx.HTTPError as e:
-        _LOG.error(
-            f"metadata/search failed for {metadata_type} [{len(identifiers)} ids]; "
-            f"continuing without it, see logs for details.."
-        )
-        _LOG.debug(f"Full error: {e}", exc_info=True)
-        return SkippedSearch(metadata_type=metadata_type, identifiers=identifiers, error=repr(e))
+retry_on_httpx_errors = retry(
+    stop=stop_after_attempt(3),  # Retry up to 3 times
+    wait=wait_fixed(2),  # Wait 2 seconds between retries
+    retry=retry_if_exception_type((httpx.ReadError, httpx.ConnectTimeout, httpx.HTTPStatusError)),
+    before_sleep=before_sleep_log(_LOG, logging.INFO),  # Log before sleeping
+    reraise=True,  # Reraise the exception if all retries fail
+)
 
 
+@retry_on_httpx_errors
 async def fetch(
     typed_guids: dict[_types.APIObjectType, Iterable[_types.GUID]],
     *,
     http: RESTAPIClient,
     record_size: int = 5_000,
     **search_options,
-) -> FetchResult:
+) -> list[_types.APIResult]:
     """Wraps metadata/search fetching specific objects and exhausts the pagination."""
     CONCURRENCY_MAGIC_NUMBER = 10  # Why? In case **search_options contains
 
     results: list[_types.APIResult] = []
-    skipped: list[SkippedSearch] = []
     tasks: list[asyncio.Task] = []
 
     _LOG.info(f"Max concurrent tasks in fetch func: {CONCURRENCY_MAGIC_NUMBER}")
-
-    # DEPENDENT-OBJECT SEARCHES CARRY UNBOUNDED, NON-PAGINABLE DEPENDENT LISTS, SO THEY MUST BE
-    # BATCHED MUCH MORE CONSERVATIVELY THAN A PLAIN SEARCH TO KEEP EACH REQUEST SURVIVABLE.
-    max_per_request = (
-        _MAX_IDENTIFIERS_PER_SEARCH_WITH_DEPENDENTS
-        if search_options.get("include_dependent_objects")
-        else _MAX_IDENTIFIERS_PER_SEARCH
-    )
 
     async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
         for metadata_type, guids in typed_guids.items():
             # CALLERS GROUP IDENTIFIERS INCONSISTENTLY (single guids, or per-object lists). FLATTEN
             # THEM, THEN RE-BATCH TO A BOUNDED SIZE SO REQUEST COST STAYS PREDICTABLE REGARDLESS OF
             # HOW WIDE OR NUMEROUS THE OBJECTS ARE.
-            for batch in utils.batched(_flatten_identifiers(guids), n=max_per_request):
-                identifiers = list(batch)
-                metadata_spec = [{"type": metadata_type, "identifier": i} for i in identifiers]
-                options = {**search_options, "metadata": metadata_spec}
+            for batch in utils.batched(_flatten_identifiers(guids), n=_MAX_IDENTIFIERS_PER_SEARCH):
+                options = {**search_options, "metadata": [{"type": metadata_type, "identifier": _} for _ in batch]}
                 coro = http.metadata_search(guid="", record_size=record_size, **options)
-                task = g.create_task(_gather_search(coro, metadata_type=metadata_type, identifiers=identifiers))
+                task = g.create_task(coro, name=f"{metadata_type} [{len(batch)} ids]")
                 tasks.append(task)
 
     for task in tasks:
-        # _gather_search never raises: a failed batch comes back as a SkippedSearch (logged and
-        # reported), so one slow or broken request no longer aborts the phase — fetch returns
-        # whatever it could gather alongside a record of what it could not.
-        outcome = task.result()
+        try:
+            r = task.result()
+            r.raise_for_status()
+            d = r.json()
 
-        if isinstance(outcome, SkippedSearch):
-            skipped.append(outcome)
-        else:
-            results.extend(outcome)
+        except httpx.ReadError as e:
+            _LOG.error(f"ReadError for guid={task.get_name()}, see logs for details..")
+            _LOG.debug(f"Full error: {e}", exc_info=True)
+            continue
 
-    return FetchResult(rows=results, skipped=skipped)
+        except httpx.HTTPError as e:
+            _LOG.error(f"Could not fetch the object for guid={task.get_name()}, see logs for details..")
+            _LOG.debug(f"Full error: {e}", exc_info=True)
+            continue
+
+        results.extend(d)
+
+    return results
 
 
 async def fetch_one(
