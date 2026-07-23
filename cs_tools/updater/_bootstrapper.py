@@ -535,14 +535,10 @@ def ensure_import_cs_tools_venv(ref=None):  # type: ignore[name-defined]
     return CSToolsVenv
 
 
-def http_request(url, to_json=True, timeout=None):
-    # type: (str, bool, float | None) -> dict[str, typing.Any] | bytes
-    """Makes a GET request to <url>."""
-    import json
+def _ssl_context():
+    # type: () -> ssl.SSLContext
+    """The permissive SSL context the installer uses (legacy TLS + corporate-proxy tolerant)."""
     import ssl
-    import urllib.request
-    import urllib.error
-    import urllib
 
     ctx = ssl.create_default_context()
 
@@ -557,11 +553,43 @@ def http_request(url, to_json=True, timeout=None):
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
+    return ctx
+
+
+def _http_get_with_retries(open_fn, attempts=3, base_delay=1.0):
+    # type: (typing.Callable[[], typing.Any], int, float) -> typing.Any
+    """Call open_fn(), retrying transient network errors with exponential backoff."""
+    import time
+    import urllib.error
+
+    for attempt in range(1, attempts + 1):
+        try:
+            return open_fn()
+        except urllib.error.URLError as e:
+            if attempt == attempts:
+                raise
+            delay = base_delay * (2 ** (attempt - 1))
+            _LOG.debug("Request failed ({e}); retrying {a}/{t} in {d}s".format(e=e, a=attempt, t=attempts, d=delay))
+            time.sleep(delay)
+
+
+def http_request(url, to_json=True, timeout=None):
+    # type: (str, bool, float | None) -> dict[str, typing.Any] | bytes
+    """Makes a GET request to <url>."""
+    import json
+    import urllib.request
+    import urllib.error
+
+    ctx = _ssl_context()
+
+    def _open():
+        with urllib.request.urlopen(url, timeout=timeout, context=ctx) as r:
+            return r.read()
+
     try:
         _LOG.debug("Making HTTP GET {u}".format(u=url))
 
-        with urllib.request.urlopen(url, timeout=timeout, context=ctx) as r:
-            data = r.read()
+        data = _http_get_with_retries(_open)
 
         if to_json:
             data = json.loads(data)
@@ -581,14 +609,30 @@ def http_request(url, to_json=True, timeout=None):
 
 def get_latest_cs_tools_release(timeout=None):
     # type: (float | None) -> dict[str, typing.Any]
-    """Gets the latest CS Tools release."""
-    base = "https://api.github.com/repos/{owner}/{repo}/releases/latest"
-    endp = base.format(owner="thoughtspot", repo="cs_tools")
+    """
+    Resolve the latest CS Tools release tag.
 
-    data = http_request(endp, timeout=timeout)
-    assert isinstance(data, dict), "http_request didn't return valid JSON, got '{!r}".format(data)
+    Uses the github.com web redirect (/releases/latest -> /releases/tag/<tag>) rather than
+    api.github.com, whose 60 requests/hour unauthenticated per-IP limit shared CI / corporate
+    egress IPs exhaust (HTTP 403). github.com web routes are not subject to that quota, so this
+    needs no token and works the same for CI runners and end-user one-liner installs.
+    """
+    import urllib.request
 
-    return data
+    ctx = _ssl_context()
+    url = "https://github.com/{owner}/{repo}/releases/latest".format(owner="thoughtspot", repo="cs_tools")
+
+    def _resolve():
+        # urlopen follows the 302; geturl() is the resolved /releases/tag/<tag> URL.
+        with urllib.request.urlopen(url, timeout=timeout, context=ctx) as r:
+            return r.geturl()
+
+    final_url = _http_get_with_retries(_resolve)
+    tag = final_url.rstrip("/").rsplit("/", 1)[-1]
+    assert tag and tag != "latest", "Could not resolve the latest release tag from {u!r}".format(u=final_url)
+
+    # published_at isn't available from the redirect (that needs the API); callers treat it as optional.
+    return {"tag_name": tag, "published_at": None}
 
 
 # ======================================================================================================================
