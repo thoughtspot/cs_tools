@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # Stream Python stdout live (unbuffered) so long extracts show progress in the run log.
+      PYTHONUNBUFFERED: "1"
+
       # CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS
       # https://thoughtspot.github.io/cs_tools/
       CS_TOOLS_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.cs_tools_version || 'v1.7.0' }}
