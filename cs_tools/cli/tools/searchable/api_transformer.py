@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 import datetime as dt
 import functools as ft
@@ -79,8 +80,8 @@ def ts_user(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.Tab
                 email=result["email"],
                 display_name=result["display_name"],
                 sharing_visibility=result["visibility"],
-                created=result["creation_time_in_millis"] / 1000,
-                modified=result["modification_time_in_millis"] / 1000,
+                created=validators.utc_from_millis(result.get("creation_time_in_millis")),
+                modified=validators.utc_from_millis(result.get("modification_time_in_millis")),
                 user_type=result["account_type"],
                 user_author_guid=result["author_id"],
             ).model_dump()
@@ -106,8 +107,8 @@ def ts_group(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.Ta
                     description=result["description"],
                     display_name=result["display_name"],
                     sharing_visibility=result["visibility"],
-                    created=result["creation_time_in_millis"] / 1000,
-                    modified=result["modification_time_in_millis"] / 1000,
+                    created=validators.utc_from_millis(result.get("creation_time_in_millis")),
+                    modified=validators.utc_from_millis(result.get("modification_time_in_millis")),
                     group_type=result["type"],
                 ).model_dump()
             )
@@ -130,8 +131,8 @@ def to_group_v1(data: ArbitraryJsonFormat, cluster: str) -> TableRowsFormat:
                     description=row["header"].get("description"),
                     display_name=row["header"]["displayName"],
                     sharing_visibility=row["visibility"],
-                    created=row["header"]["created"] / 1000,
-                    modified=row["header"]["modified"] / 1000,
+                    created=validators.utc_from_millis(row["header"].get("created")),
+                    modified=validators.utc_from_millis(row["header"].get("modified")),
                     group_type=row["type"],
                 )
             )
@@ -275,8 +276,8 @@ def ts_tag(data: list[_types.APIResult], *, cluster: _types.GUID, current_org: i
                 tag_guid=result["id"],
                 tag_name=result["name"],
                 author_guid=result["author_id"],
-                created=result["creation_time_in_millis"] / 1000,
-                modified=result["modification_time_in_millis"] / 1000,
+                created=validators.utc_from_millis(result.get("creation_time_in_millis")),
+                modified=validators.utc_from_millis(result.get("modification_time_in_millis")),
                 color=result["color"],
             ).model_dump()
         )
@@ -302,8 +303,8 @@ def ts_data_source(data: list[_types.APIResult], *, cluster: _types.GUID) -> _ty
                     name=result["metadata_name"],
                     description=result["metadata_header"].get("description", None),
                     author=result["metadata_header"].get("author", None),
-                    created=result["metadata_header"].get("created", None) / 1000,
-                    modified=result["metadata_header"].get("modified", None) / 1000,
+                    created=validators.utc_from_millis(result["metadata_header"].get("created")),
+                    modified=validators.utc_from_millis(result["metadata_header"].get("modified")),
                 ).model_dump()
             )
 
@@ -330,8 +331,8 @@ def ts_metadata_object(data: list[_types.APIResult], *, cluster: _types.GUID) ->
                     name=result["metadata_name"],
                     description=result["metadata_header"].get("description", None),
                     author_guid=result["metadata_header"]["author"],
-                    created=result["metadata_header"]["created"] / 1000,
-                    modified=result["metadata_header"]["modified"] / 1000,
+                    created=validators.utc_from_millis(result["metadata_header"].get("created")),
+                    modified=validators.utc_from_millis(result["metadata_header"].get("modified")),
                     object_type=result["metadata_type"],
                     object_subtype="MODEL" if is_worksheetv2 else result["metadata_header"].get("type", None),
                     data_source_guid=(result["metadata_detail"] or {}).get("dataSourceId", None),
@@ -466,36 +467,48 @@ def ts_column_synonym(data: list[_types.APIResult], *, cluster: _types.GUID) -> 
     return reshaped
 
 
-def ts_metadata_dependent(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
-    """Reshapes metadata/search?type=LOGICAL_COLUMN&include_dependent_objects=True -> searchable.models.MetadataObject."""  # noqa: E501
-    reshaped: _types.TableRowsFormat = []
-
+def _iter_dependents(data: list[_types.APIResult]) -> Iterator[tuple[_types.GUID, str, dict[str, Any]]]:
+    """Flatten the nested dependent_objects shape into (column_guid, dependent_type, dependent)."""
     for result in data:
+        column_guid = result["metadata_id"]
         for dependents_info in result["dependent_objects"].values():
             for dependent_type, dependents in dependents_info.items():
                 for dependent in dependents:
-                    reshaped.append(
-                        # DEV NOTE: @boonhapus, 2024/12/06
-                        # There are typically an order of magnitude MORE dependents than anything else in ThoughtSpot
-                        # so we'll trust most of the fields coming back from the ThoughtSpot API and only validate the
-                        # complex_types.
-                        {
-                            "cluster_guid": cluster,
-                            "dependent_guid": dependent["id"],
-                            "column_guid": result["metadata_id"],
-                            "name": dependent["name"],
-                            "description": dependent.get("description", None),
-                            "author_guid": dependent["author"],
-                            "created": validators.ensure_datetime_is_utc.func(dependent["created"] / 1000),
-                            "modified": validators.ensure_datetime_is_utc.func(dependent["modified"] / 1000),
-                            "object_type": dependent_type,
-                            "object_subtype": dependent.get("type", None),
-                            "is_verified": dependent.get("isVerified", False),
-                            "is_version_controlled": dependent.get("isVersioningEnabled", False),
-                        }
-                    )
+                    yield column_guid, dependent_type, dependent
 
-    return reshaped
+
+def _reshape_dependent(
+    dependent: dict[str, Any], *, dependent_type: str, column_guid: _types.GUID, cluster: _types.GUID
+) -> dict[str, Any]:
+    """
+    Reshape one dependent into a DependentObject row.
+
+    DEV NOTE: @boonhapus, 2024/12/06 — there are typically an order of magnitude MORE dependents
+    than anything else, so we trust most fields as-is. Timestamps are tolerated as absent (some
+    object types, e.g. FEEDBACK, omit 'created') via validators.utc_from_millis -> stored NULL.
+    """
+    return {
+        "cluster_guid": cluster,
+        "dependent_guid": dependent["id"],
+        "column_guid": column_guid,
+        "name": dependent["name"],
+        "description": dependent.get("description", None),
+        "author_guid": dependent["author"],
+        "created": validators.utc_from_millis(dependent.get("created")),
+        "modified": validators.utc_from_millis(dependent.get("modified")),
+        "object_type": dependent_type,
+        "object_subtype": dependent.get("type", None),
+        "is_verified": dependent.get("isVerified", False),
+        "is_version_controlled": dependent.get("isVersioningEnabled", False),
+    }
+
+
+def ts_metadata_dependent(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types.TableRowsFormat:
+    """Reshape metadata/search LOGICAL_COLUMN dependents -> DependentObject rows."""
+    return [
+        _reshape_dependent(dependent, dependent_type=dependent_type, column_guid=column_guid, cluster=cluster)
+        for column_guid, dependent_type, dependent in _iter_dependents(data)
+    ]
 
 
 def ts_metadata_permissions(
