@@ -20,8 +20,13 @@ METHOD_CONFIG = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
 
 @pydantic.PlainValidator
-def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
-    """Ensures the input value is a valid, aware, datetime."""
+def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime | None:
+    """Ensures the input value is a valid, aware, datetime (or None if absent)."""
+    # NULL CASE: ThoughtSpot APIs omit created/modified for some object types. A batch extract
+    # stores null rather than crashing; a genuinely-required field stays loud via its own typing.
+    if value is None:
+        return None
+
     # HAPPIEST CASE
     if (value_is_a_datetime := isinstance(value, dt.datetime)) and value.tzinfo == dt.timezone.utc:
         return value
@@ -61,6 +66,18 @@ def ensure_datetime_is_utc(value: Any) -> pydantic.AwareDatetime:
         raise ValueError(f"value should be a valid datetime representation, got {value}")
 
     assert 1 == 0, "This should be unreachable."
+
+
+def utc_from_millis(value: Any) -> dt.datetime | None:
+    """
+    Epoch-milliseconds -> aware UTC datetime, or None when the field is absent/null.
+
+    Some object types omit created/modified; a batch extract stores null rather than crashing.
+    Guards the `/ 1000` against a missing (KeyError) or null (TypeError) value -- pass `src.get(...)`.
+    """
+    if value is None:
+        return None
+    return ensure_datetime_is_utc.func(value / 1000)
 
 
 @pydantic.PlainValidator

@@ -53,8 +53,8 @@ class User(ValidatedSQLModel, table=True):
     email: Optional[str]
     display_name: str
     sharing_visibility: str
-    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
-    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    created: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    modified: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
     user_type: str
     user_author_guid: str
 
@@ -73,8 +73,8 @@ class Group(ValidatedSQLModel, table=True):
     description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     display_name: str
     sharing_visibility: str
-    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
-    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    created: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    modified: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
     group_type: str
 
     @pydantic.field_validator("description", mode="before")
@@ -118,8 +118,8 @@ class Tag(ValidatedSQLModel, table=True):
     tag_guid: str = Field(primary_key=True)
     tag_name: str
     author_guid: str
-    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
-    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    created: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    modified: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
     color: Optional[str]
 
     @pydantic.field_validator("created", "modified", mode="before")
@@ -137,8 +137,8 @@ class DataSource(ValidatedSQLModel, table=True):
     name: str
     description: Optional[str]
     author: str
-    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
-    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    created: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    modified: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
 
     @pydantic.field_validator("description", mode="before")
     @classmethod
@@ -161,8 +161,8 @@ class MetadataObject(ValidatedSQLModel, table=True):
     name: str = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     author_guid: str
-    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
-    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    created: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    modified: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
     object_type: str
     object_subtype: Optional[str]
     data_source_guid: Optional[str]
@@ -270,8 +270,8 @@ class DependentObject(ValidatedSQLModel, table=True):
     name: str = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
     author_guid: str
-    created: dt.datetime = Field(sa_column=Column(TIMESTAMP))
-    modified: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    created: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    modified: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
     object_type: str
     object_subtype: Optional[str]
     is_verified: Optional[bool]
@@ -286,7 +286,7 @@ class DependentObject(ValidatedSQLModel, table=True):
 
     @pydantic.field_validator("created", "modified", mode="before")
     @classmethod
-    def check_valid_utc_datetime(cls, value: Any) -> dt.datetime:
+    def check_valid_utc_datetime(cls, value: Any) -> Optional[dt.datetime]:
         return validators.ensure_datetime_is_utc.func(value)
 
 
