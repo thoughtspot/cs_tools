@@ -20,9 +20,7 @@ jobs:
       # Stream Python stdout live (unbuffered) so long extracts show progress in the run log.
       PYTHONUNBUFFERED: "1"
 
-      # CS TOOLS IS COMMAND LINE LIBRARY WRAPPING TS APIS
-      # https://thoughtspot.github.io/cs_tools/
-      CS_TOOLS_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.cs_tools_version || 'v1.7.0' }}
+      # CS_TOOLS_VERSION is set at runtime by the resolve step below.
       CS_TOOLS_THOUGHTSPOT__URL: ${{ secrets.THOUGHTSPOT_URL }}
       CS_TOOLS_THOUGHTSPOT__USERNAME: ${{ secrets.THOUGHTSPOT_USERNAME }}
       CS_TOOLS_THOUGHTSPOT__SECRET_KEY: ${{ secrets.THOUGHTSPOT_SECRET_KEY }}
@@ -42,6 +40,17 @@ jobs:
         "
     
     steps:
+      # Dispatch input wins; otherwise resolve the latest release tag via the releases/latest redirect.
+      - name: Resolve CS Tools version
+        run: |
+          if [ -n "${{ inputs.cs_tools_version }}" ]; then
+            VERSION="${{ inputs.cs_tools_version }}"
+          else
+            VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/thoughtspot/cs_tools/releases/latest | sed 's#.*/tag/##')"
+          fi
+          echo "Resolved CS Tools version: $VERSION"
+          echo "CS_TOOLS_VERSION=$VERSION" >> "$GITHUB_ENV"
+
       # SETUP PYTHON.
       - name: Set up Python
         uses: actions/setup-python@v5
