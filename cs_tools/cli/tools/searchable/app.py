@@ -61,6 +61,19 @@ def _is_in_current_org(metadata_object, *, current_org: int) -> bool:
     return current_org in (metadata_object["metadata_header"].get("orgIds", None) or [0])
 
 
+def _report_tml_import_results(tmls: list[_types.TML], results: list[_types.APIResult]) -> None:
+    """
+    Log the import status for each submitted TML.
+
+    DEV NOTE: the import response is positionally 1:1 with the TMLs we submitted, in order. Do NOT
+    use a result's `request_index` as an index into `tmls` -- it is a server-side ordinal that can
+    exceed the number of submitted TMLs, so `tmls[request_index]` raises IndexError.
+    """
+    for tml, result in zip(tmls, results):
+        if result["response"]["status"]["status_code"] == "OK":
+            log.info(f"{tml.tml_type_name.upper()} '{tml.name}' successfully imported")
+
+
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
 def deploy(
@@ -175,13 +188,7 @@ def deploy(
                 log.error(f"Failed to call metadata/tml/import.. {e}")
                 return 1
 
-            for tml_import_info in d:
-                idx = tml_import_info["request_index"]
-                tml = tmls[idx]
-                tml_type = tml.tml_type_name.upper()
-
-                if tml_import_info["response"]["status"]["status_code"] == "OK":
-                    log.info(f"{tml_type} '{tml.name}' successfully imported")
+            _report_tml_import_results(tmls, d)
 
     return 0
 
