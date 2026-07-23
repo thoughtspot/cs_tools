@@ -12,6 +12,7 @@ from rich.align import Align
 from rich.console import Console, Group, RenderableType
 from rich.progress import BarColumn, Task, TimeElapsedColumn
 from rich.table import Column, Table
+from rich.text import Text
 
 from cs_tools import _compat, utils
 from cs_tools.cli.ux import RICH_CONSOLE
@@ -52,6 +53,7 @@ class WorkTask:
 
     def __enter__(self) -> _compat.Self:
         self.start()
+        log.info(f"→ {self._log_label()}")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -59,6 +61,18 @@ class WorkTask:
             return
 
         self.stop()
+        # This entry's duration only -- NOT self.elapsed, which accumulates across re-entries
+        # (the metadata command re-enters the same task once per org).
+        duration = (self.stop_time or self.get_time()) - self.start_time
+
+        if exc_type is not None:
+            log.info(f"✗ {self._log_label()} failed after {duration:.1f}s")
+        else:
+            log.info(f"✓ {self._log_label()} ({duration:.1f}s)")
+
+    def _log_label(self) -> str:
+        """Plain-text phase label for logs (rich markup and indentation stripped)."""
+        return Text.from_markup(self.description).plain.strip()
 
     @property
     def started(self) -> bool:
