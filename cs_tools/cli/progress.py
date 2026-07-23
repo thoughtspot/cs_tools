@@ -254,3 +254,8 @@ class WorkTracker(live.Live):
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.refresh()
+        # DEV NOTE: start() hid the cursor (rich Live.show_cursor(False)); stop() restores it and
+        # halts the refresh thread. Without this the cursor stays hidden after exit -- harmless on
+        # lenient local terminals, but it persists in strict emulators (e.g. cloud shells). The
+        # tracker isn't transient, so the final frame remains on screen.
+        self.stop()

@@ -7,9 +7,12 @@ narrates itself to the console and the persistent log — no more black-box phas
 
 from __future__ import annotations
 
+import io
 import logging
 
-from cs_tools.cli.progress import WorkTask
+from cs_tools.cli.progress import WorkTask, WorkTracker
+from cs_tools.cli.ux import CS_TOOLS_THEME
+from rich.console import Console
 
 
 def test_phase_logs_start_and_timed_end(caplog):
@@ -50,3 +53,25 @@ def test_phase_logs_failure_on_exception(caplog):
 
     assert "✗ Fetching ORG data failed after" in caplog.text
     assert "✓ Fetching ORG data" not in caplog.text
+
+
+def test_worktracker_restores_cursor_on_exit():
+    # WorkTracker (rich Live) hides the cursor on enter; it MUST restore it on exit, or the cursor
+    # stays hidden after the command finishes -- invisible on lenient terminals, but it persists in
+    # strict emulators like cloud shells.
+    console = Console(force_terminal=True, theme=CS_TOOLS_THEME, file=io.StringIO())
+    calls: list[bool] = []
+    real_show_cursor = console.show_cursor
+
+    def spy(show: bool = True) -> bool:
+        calls.append(show)
+        return real_show_cursor(show)
+
+    console.show_cursor = spy  # type: ignore[method-assign]
+
+    with WorkTracker("deploy", tasks=[WorkTask(id="A", description="Fetching X")], console=console):
+        pass
+
+    # hidden on enter (False), restored on exit (True) -- the LAST toggle must be a restore
+    assert calls, "cursor visibility was never toggled"
+    assert calls[-1] is True, f"cursor not restored on exit; show_cursor calls={calls}"
