@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Coroutine, Iterable
-from typing import Any, Literal, Optional, cast
+from collections.abc import Coroutine, Iterable, Sequence
+from typing import Any, Literal, NamedTuple, Optional, cast
 import asyncio
 import datetime as dt
 import itertools as it
@@ -12,6 +12,7 @@ import pathlib
 from thoughtspot_tml.types import TMLObject
 import awesomeversion
 import httpx
+import tenacity
 
 from cs_tools import _types, utils
 from cs_tools.api.client import RESTAPIClient
@@ -73,49 +74,167 @@ def _flatten_identifiers(guids: Iterable[Any]) -> list[_types.GUID]:
     return flat
 
 
+class FetchFailure(NamedTuple):
+    """One batched API request which could not be fetched."""
+
+    metadata_type: str
+    identifiers: tuple[_types.GUID, ...]
+    error: BaseException
+
+
+class _FailureDigest:
+    """
+    Report request failures on the console as they happen.
+
+    A failure storm (eg. a server stuck returning 502s) can fail thousands of requests in a single
+    phase. One ERROR line per failure at that scale buries the phase warning and the end-of-run
+    summary, so the console gets the first few failures in detail and a periodic tally after that.
+    The logfile always receives every failure in full.
+    """
+
+    DETAIL_LIMIT = 5
+    TALLY_EVERY = 250
+
+    def __init__(self) -> None:
+        self.n_failed = 0
+
+    def record(self, metadata_type: str, identifiers: tuple[_types.GUID, ...], error: httpx.HTTPError) -> None:
+        self.n_failed += 1
+
+        if self.n_failed <= self.DETAIL_LIMIT:
+            _LOG.error(
+                f"Could not fetch data for {len(identifiers)} {metadata_type} objects "
+                f"({type(error).__name__}: {error}), the extract will continue without them.."
+            )
+        elif self.n_failed % self.TALLY_EVERY == 0:
+            _LOG.error(f"{self.n_failed:,} API requests have failed so far, the extract will continue..")
+
+        _LOG.debug(f"Full error: {error}", exc_info=True)
+
+
+async def _observed_request(
+    coro: Coroutine,
+    metadata_type: str,
+    identifiers: tuple[_types.GUID, ...],
+    digest: _FailureDigest,
+) -> httpx.Response:
+    """Await one batched request, reporting a failure the moment it happens."""
+    try:
+        try:
+            r = await coro
+        except tenacity.RetryError as error:
+            # A SERVER STUCK ON PRESSURE STATUSES (429/502/503/504) EXHAUSTS THE RESULT-BASED RETRY
+            # POLICY, WHICH SURFACES AS tenacity.RetryError WRAPPING THE LAST RESPONSE (reraise=True
+            # ONLY COVERS EXCEPTION-BASED EXHAUSTION). UNWRAP IT SO IT FLOWS THROUGH THE SAME
+            # STATUS-FAILURE PATH AS ANY OTHER ERROR RESPONSE.
+            if error.last_attempt.failed:
+                raise
+            r = error.last_attempt.result()
+
+        r.raise_for_status()
+
+    except httpx.HTTPError as e:
+        digest.record(metadata_type, identifiers, e)
+        raise
+
+    return r
+
+
+def _sift_gathered_outcomes(
+    batches: list[tuple[str, tuple[_types.GUID, ...]]],
+    outcomes: Sequence[Any],
+    *,
+    failures: Optional[list[FetchFailure]] = None,
+) -> list[Any]:
+    """
+    Split gathered request outcomes into their parsed payloads, reporting the failed batches.
+
+    Failures were already reported on the console as they happened (see `_observed_request`). Here
+    they are tallied into the phase warning, and reported to `failures` when the caller passes a
+    collector, so it can report the gaps and decide whether an incomplete result is acceptable.
+    """
+    payloads: list[Any] = []
+    missing_by_type: dict[str, int] = {}
+    n_failed = 0
+
+    for (metadata_type, identifiers), outcome in zip(batches, outcomes):
+        # ONLY TRANSPORT AND STATUS FAILURES ARE TOLERATED. ANYTHING ELSE IS A BUG IN OUR OWN CODE
+        # AND MUST STAY LOUD, RATHER THAN BECOMING A SILENTLY INCOMPLETE EXTRACT.
+        if isinstance(outcome, httpx.HTTPError):
+            missing_by_type[metadata_type] = missing_by_type.get(metadata_type, 0) + len(identifiers)
+            n_failed += 1
+
+            if failures is not None:
+                failures.append(FetchFailure(metadata_type=metadata_type, identifiers=identifiers, error=outcome))
+
+            continue
+
+        if isinstance(outcome, BaseException):
+            raise outcome
+
+        payloads.append(outcome.json())
+
+    if n_failed:
+        *rest, last = [f"{count:,} {metadata_type}" for metadata_type, count in missing_by_type.items()]
+        missing = f"{', '.join(rest)} and {last}" if rest else last
+
+        # ONLY THE CALLERS WHICH COLLECT FAILURES REPORT AN END-OF-RUN SUMMARY.
+        followup = " A summary follows at the end of the run." if failures is not None else ""
+
+        _LOG.warning(
+            f"{n_failed:,} of {len(batches):,} API requests failed after retries. The extract will "
+            f"continue, but data for up to {missing} objects will be missing from this run. Each "
+            f"failure is recorded in the logfile.{followup}"
+        )
+
+    return payloads
+
+
 async def fetch(
     typed_guids: dict[_types.APIObjectType, Iterable[_types.GUID]],
     *,
     http: RESTAPIClient,
     record_size: int = 5_000,
+    failures: Optional[list[FetchFailure]] = None,
     **search_options,
 ) -> list[_types.APIResult]:
-    """Wraps metadata/search fetching specific objects and exhausts the pagination."""
-    CONCURRENCY_MAGIC_NUMBER = 10  # Why? In case **search_options contains
+    """
+    Wraps metadata/search fetching specific objects.
+
+    A batch which cannot be fetched -- after the client's own retries are exhausted -- is skipped
+    instead of cancelling its siblings. Dependent lists are unbounded and cannot be paginated, so a
+    request can always exceed the read timeout; one dropped batch must not cost the entire extract.
+
+    Skipped batches are always logged, and are reported to `failures` when the caller passes a
+    collector, so it can report the gaps and decide whether an incomplete result is acceptable.
+    """
+    # WHY 10? metadata/search IS THE HEAVIEST READ WE MAKE, AND THE TRANSPORT'S OWN LIMIT IS SHARED
+    # WITH EVERY OTHER CALLER. HOLD BACK A FEW SLOTS SO ONE PHASE CAN'T MONOPOLISE THE CLIENT.
+    CONCURRENCY_MAGIC_NUMBER = 10
+
+    batches: list[tuple[_types.APIObjectType, tuple[_types.GUID, ...]]] = []
+    coros: list[Coroutine] = []
+    digest = _FailureDigest()
+
+    for metadata_type, guids in typed_guids.items():
+        # CALLERS GROUP IDENTIFIERS INCONSISTENTLY (single guids, or per-object lists). FLATTEN
+        # THEM, THEN RE-BATCH TO A BOUNDED SIZE SO REQUEST COST STAYS PREDICTABLE REGARDLESS OF
+        # HOW WIDE OR NUMEROUS THE OBJECTS ARE.
+        for batch in utils.batched(_flatten_identifiers(guids), n=_MAX_IDENTIFIERS_PER_SEARCH):
+            identifiers = tuple(batch)
+            options = {**search_options, "metadata": [{"type": metadata_type, "identifier": _} for _ in identifiers]}
+            c = http.metadata_search(guid="", record_size=record_size, **options)
+            coros.append(_observed_request(c, metadata_type, identifiers, digest))
+            batches.append((metadata_type, identifiers))
+
+    # return_exceptions=True IS THE WHOLE POINT: a TaskGroup WOULD CANCEL EVERY SIBLING ON THE
+    # FIRST FAILURE, WHICH IS WHAT USED TO THROW AWAY ~25 MINUTES OF COMPLETED WORK.
+    outcomes = await utils.bounded_gather(*coros, max_concurrent=CONCURRENCY_MAGIC_NUMBER, return_exceptions=True)
 
     results: list[_types.APIResult] = []
-    tasks: list[asyncio.Task] = []
 
-    _LOG.info(f"Max concurrent tasks in fetch func: {CONCURRENCY_MAGIC_NUMBER}")
-
-    async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
-        for metadata_type, guids in typed_guids.items():
-            # CALLERS GROUP IDENTIFIERS INCONSISTENTLY (single guids, or per-object lists). FLATTEN
-            # THEM, THEN RE-BATCH TO A BOUNDED SIZE SO REQUEST COST STAYS PREDICTABLE REGARDLESS OF
-            # HOW WIDE OR NUMEROUS THE OBJECTS ARE.
-            for batch in utils.batched(_flatten_identifiers(guids), n=_MAX_IDENTIFIERS_PER_SEARCH):
-                options = {**search_options, "metadata": [{"type": metadata_type, "identifier": _} for _ in batch]}
-                coro = http.metadata_search(guid="", record_size=record_size, **options)
-                task = g.create_task(coro, name=f"{metadata_type} [{len(batch)} ids]")
-                tasks.append(task)
-
-    for task in tasks:
-        try:
-            r = task.result()
-            r.raise_for_status()
-            d = r.json()
-
-        except httpx.ReadError as e:
-            _LOG.error(f"ReadError for guid={task.get_name()}, see logs for details..")
-            _LOG.debug(f"Full error: {e}", exc_info=True)
-            continue
-
-        except httpx.HTTPError as e:
-            _LOG.error(f"Could not fetch the object for guid={task.get_name()}, see logs for details..")
-            _LOG.debug(f"Full error: {e}", exc_info=True)
-            continue
-
-        results.extend(d)
+    for payload in _sift_gathered_outcomes(batches, outcomes, failures=failures):
+        results.extend(payload)
 
     return results
 
@@ -211,10 +330,18 @@ async def permissions(
     *,
     compat_ts_version: awesomeversion.AwesomeVersion,
     record_size: int = -1,
+    failures: Optional[list[FetchFailure]] = None,
     http: RESTAPIClient,
     **permission_options,
 ) -> list[_types.APIResult]:
-    """Wraps security/metadata/fetch-permissions fetching specific objects and exhausts the pagination."""
+    """
+    Wraps security/metadata/fetch-permissions fetching specific objects.
+
+    Permissions is the most server-expensive data we fetch, and it runs last -- a request which
+    fails after the client's own retries is skipped instead of cancelling its siblings, so one bad
+    request cannot throw away every phase which already succeeded before it. Skipped requests are
+    always logged, and are reported to `failures` when the caller passes a collector.
+    """
     FIFTEEN_MINUTES = 60 * 15
 
     if compat_ts_version < "10.3.0":
@@ -222,62 +349,53 @@ async def permissions(
     else:
         CONCURRENCY_MAGIC_NUMBER = 5  # Why? Fetching permissions could potentially be very expensive for the server.
 
-    results: list[_types.APIResult] = []
-    tasks: list[asyncio.Task] = []
+    batches: list[tuple[_types.APIObjectType, tuple[_types.GUID, ...]]] = []
+    coros: list[Coroutine] = []
+    digest = _FailureDigest()
 
-    async with utils.BoundedTaskGroup(max_concurrent=CONCURRENCY_MAGIC_NUMBER) as g:
-        for metadata_type, guids in typed_guids.items():
-            for _, guid in enumerate(guids):
-                # DEV NOTE: @boonhapus, 2024/11/25
-                # 10.3.0 IS WHEN WE RELEASED .permission_type={DEFINED|EFFECTIVE} FOR THE
-                # ENDPOINT security/metadata/fetch-permissions , PRIOR TO THIS, THE DEFAULT
-                # WAS TO FETCH EFFECTIVE PERMISSIONS.
-                #
-                # ONCE 10.3.0.SW IS N-2, WE CAN SWITCH FROM typed_guids -> guids .
-                #
-                if compat_ts_version < "10.3.0":
-                    # A SINGLE OBJECT
-                    if isinstance(guid, str):
-                        permission_options["id"] = [guid]
+    for metadata_type, guids in typed_guids.items():
+        for guid in guids:
+            # DEV NOTE: @boonhapus, 2024/11/25
+            # 10.3.0 IS WHEN WE RELEASED .permission_type={DEFINED|EFFECTIVE} FOR THE
+            # ENDPOINT security/metadata/fetch-permissions , PRIOR TO THIS, THE DEFAULT
+            # WAS TO FETCH EFFECTIVE PERMISSIONS.
+            #
+            # ONCE 10.3.0.SW IS N-2, WE CAN SWITCH FROM typed_guids -> guids .
+            #
+            if compat_ts_version < "10.3.0":
+                # A SINGLE OBJECT
+                if isinstance(guid, str):
+                    permission_options["id"] = [guid]
 
-                    # AN ARRAY OF OBJECTS
-                    if isinstance(guid, list):
-                        permission_options["id"] = guid
+                # AN ARRAY OF OBJECTS
+                if isinstance(guid, list):
+                    permission_options["id"] = guid
 
-                    c = http.v1_security_metadata_permissions(
-                        guid="", api_object_type=metadata_type, **permission_options
-                    )
-                # //
-                else:
-                    permission_options["timeout"] = FIFTEEN_MINUTES
+                c = http.v1_security_metadata_permissions(guid="", api_object_type=metadata_type, **permission_options)
+            # //
+            else:
+                permission_options["timeout"] = FIFTEEN_MINUTES
 
-                    # A SINGLE OBJECT
-                    if isinstance(guid, str):
-                        permission_options["metadata"] = [{"type": metadata_type, "identifier": guid}]
+                # A SINGLE OBJECT
+                if isinstance(guid, str):
+                    permission_options["metadata"] = [{"type": metadata_type, "identifier": guid}]
 
-                    # AN ARRAY OF OBJECTS
-                    if isinstance(guid, list):
-                        permission_options["metadata"] = [{"type": metadata_type, "identifier": _} for _ in guid]
+                # AN ARRAY OF OBJECTS
+                if isinstance(guid, list):
+                    permission_options["metadata"] = [{"type": metadata_type, "identifier": _} for _ in guid]
 
-                    c = http.security_metadata_permissions(guid="", record_size=record_size, **permission_options)
+                c = http.security_metadata_permissions(guid="", record_size=record_size, **permission_options)
 
-                t = g.create_task(c, name=guid)
-                tasks.append(t)
+            identifiers = (guid,) if isinstance(guid, str) else tuple(guid)
+            coros.append(_observed_request(c, metadata_type, identifiers, digest))
+            batches.append((metadata_type, identifiers))
 
-    for task in tasks:
-        try:
-            r = task.result()
-            r.raise_for_status()
-            d = r.json()
+    # return_exceptions=True: a TaskGroup WOULD CANCEL EVERY SIBLING ON THE FIRST FAILURE,
+    # DESTROYING THE ENTIRE EXTRACT IN ITS FINAL PHASE.
+    outcomes = await utils.bounded_gather(*coros, max_concurrent=CONCURRENCY_MAGIC_NUMBER, return_exceptions=True)
 
-        except httpx.HTTPError as e:
-            _LOG.error(f"Could not fetch the permissions for guid={task.get_name()}, see logs for details..")
-            _LOG.debug(f"Full error: {e}", exc_info=True)
-            continue
-
-        results.append(d)
-
-    return results
+    # ONE PAYLOAD PER SURVIVING REQUEST -- THE SHAPE THE PERMISSIONS TRANSFORMER EXPECTS.
+    return _sift_gathered_outcomes(batches, outcomes, failures=failures)
 
 
 async def dependents(guid: _types.GUID, *, http: RESTAPIClient) -> list[_types.APIResult]:
