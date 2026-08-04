@@ -221,13 +221,15 @@ class MetadataColumn(ValidatedSQLModel, table=True):
         if 1 <= value <= 10:
             return value
 
+        coerced = max(1, min(10, value))
+
         log.warning(
-            f"INDEX_PRIORITY is clamped between 1 and 10 in ThoughtSpot, though no validation occurs in the UI. The "
-            f"column '{info.data['column_name']}' has the value of {int(value):,}. "
+            f"INDEX_PRIORITY only supports values from 1 to 10, but the ThoughtSpot UI does not enforce this. The "
+            f"column '{info.data['column_name']}' is set to {int(value):,} and will be recorded as {coerced}. "
             f"[COLUMN {info.data['column_guid']} IN TABLE {info.data['object_guid']}]"
         )
 
-        return max(1, min(10, value))
+        return coerced
 
 
 class ColumnSynonym(ValidatedSQLModel, table=True, frozen=True):

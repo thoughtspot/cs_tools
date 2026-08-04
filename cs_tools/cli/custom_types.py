@@ -190,7 +190,7 @@ class Syncer(CustomType):
         if issubclass(SyncerClass, base.DatabaseSyncer) and self.models is not None:
             syncer_options["models"] = self.models
 
-        _LOG.info(f"Initializing syncer: {SyncerClass}")
+        _LOG.info(f"Initializing syncer: {SyncerClass.__name__}")
         syncer = SyncerClass(**syncer_options)
 
         # CLEAN UP DATABASE RESOURCES.
