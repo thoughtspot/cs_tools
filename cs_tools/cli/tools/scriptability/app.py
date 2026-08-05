@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+import dataclasses
 import datetime as dt
+import importlib.metadata
 import json
 import logging
 import pathlib
@@ -24,6 +27,87 @@ _LOG = logging.getLogger(__name__)
 app = AsyncTyper(help="Maintaining TML between your ThoughtSpot Environments.")
 
 _DOCS_MAPPING = "https://developers.thoughtspot.com/docs/deploy-with-tml-apis#guidMapping"
+
+
+@dataclasses.dataclass
+class _TMLParseFailure:
+    """A TML document which the installed thoughtspot_tml library cannot parse."""
+
+    source: str
+    error: thoughtspot_tml.exceptions.TMLError
+
+    @property
+    def reason(self) -> str:
+        """Why parsing failed, pointing at TML spec drift when that is the cause."""
+        parent = getattr(self.error, "parent_exc", None)
+
+        # THOUGHTSPOT ADDS ATTRIBUTES TO THE TML SPEC FASTER THAN thoughtspot_tml SHIPS SPEC
+        # REGENERATIONS -- THE FIX IS A LIBRARY UPDATE, NOT A CHANGE TO THE CUSTOMER'S FILE.
+        if isinstance(parent, TypeError) and " unexpected keyword argument " in str(parent):
+            _, _, attribute = str(parent).partition(" unexpected keyword argument ")
+            version = importlib.metadata.version("thoughtspot_tml")
+            return (
+                f"it uses TML attributes newer than the installed thoughtspot_tml {version} "
+                f"(unrecognized attribute: {attribute})"
+            )
+
+        return str(self.error)
+
+
+def _load_tml_files(
+    paths: list[pathlib.Path],
+) -> tuple[list[tuple[pathlib.Path, _types.TMLObject]], list[_TMLParseFailure]]:
+    """Parse TML files, collecting parse failures per file instead of raising on the first."""
+    loaded: list[tuple[pathlib.Path, _types.TMLObject]] = []
+    failures: list[_TMLParseFailure] = []
+
+    for path in paths:
+        TML = thoughtspot_tml.utils.determine_tml_type(path=path)
+
+        try:
+            loaded.append((path, TML.load(path=path)))
+        except thoughtspot_tml.exceptions.TMLDecodeError as e:
+            failures.append(_TMLParseFailure(source=str(path), error=e))
+
+    return loaded, failures
+
+
+def _find_unparseable_exports(results: list[_types.APIResult]) -> list[_TMLParseFailure]:
+    """Detect exported edocs which the installed thoughtspot_tml cannot parse."""
+    failures: list[_TMLParseFailure] = []
+
+    for result in results:
+        if result.get("edoc") is None:
+            continue
+
+        try:
+            TML = thoughtspot_tml.utils.determine_tml_type(info=result["info"])
+            TML.loads(result["edoc"])
+        except thoughtspot_tml.exceptions.TMLError as e:
+            i = result["info"]
+            failures.append(_TMLParseFailure(source=f"{i.get('name', '<unnamed>')} ({i['id']})", error=e))
+
+    return failures
+
+
+# A DRIFT EVENT AFFECTS EVERY OBJECT TOUCHED SINCE THE SERVER UPGRADE -- EASILY HUNDREDS OF
+# FILES. ONE CONSOLE LINE PER FAILURE AT THAT SCALE BURIES THE SUMMARY (FULL DETAIL STILL IN THE LOGFILE).
+_FAILURE_DETAIL_LIMIT = 5
+
+
+def _log_failures_capped(
+    failures: list[_TMLParseFailure], *, level: int, describe: Callable[[_TMLParseFailure], str]
+) -> None:
+    """Log the first few failures in detail and a count of the rest; the logfile gets the full list."""
+    for failure in failures[:_FAILURE_DETAIL_LIMIT]:
+        _LOG.log(level, describe(failure))
+
+    if (n_extra := len(failures) - _FAILURE_DETAIL_LIMIT) > 0:
+        _LOG.log(level, f"..and {n_extra:,} more, see the logs for the full list.")
+
+    # THE CONSOLE HANDLER IS INFO+ AND THE FILE HANDLER IS DEBUG+, SO THESE REACH ONLY THE LOGFILE.
+    for failure in failures[_FAILURE_DETAIL_LIMIT:]:
+        _LOG.debug(describe(failure))
 
 
 @app.command(name="export", hidden=True, help="This name is deprecated, but kept for discoverability.")
@@ -209,6 +293,20 @@ def checkpoint(
     # RECORD THE GUID MAPPING
     mapping_info.save()
 
+    # EXPORT WRITES RAW TEXT AND SUCCEEDS EVEN WHEN THE SERVER'S TML SPEC IS NEWER THAN THE
+    # INSTALLED thoughtspot_tml -- THOSE FILES ONLY FAIL AT DEPLOY TIME, SO FLAG THEM NOW.
+    if landmines := _find_unparseable_exports(_):
+        _log_failures_capped(
+            landmines,
+            level=logging.WARNING,
+            describe=lambda failure: f"Exported {failure.source}, but {failure.reason}",
+        )
+
+        _LOG.warning(
+            f"{len(landmines)} exported TML file(s) cannot be parsed by the installed thoughtspot_tml "
+            f"and will fail to deploy until the library is updated."
+        )
+
     if table.job_status != "OK":
         _LOG.error("One or more TMLs failed to fully export, check the logs or use --log-errors for more details.")
         return 1
@@ -333,6 +431,7 @@ def deploy(
         return 1
 
     tmls: dict[_types.GUID, _types.TMLObject] = {}
+    candidates: list[pathlib.Path] = []
 
     for path in directory.rglob("*.tml"):
         last_modified_time = dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.timezone.utc)
@@ -340,8 +439,25 @@ def deploy(
         if deploy_type == "DELTA" and last_modified_time < last_import_dt:
             continue
 
-        TML = thoughtspot_tml.utils.determine_tml_type(path=path)
-        tml = TML.load(path=path)
+        candidates.append(path)
+
+    loaded, parse_failures = _load_tml_files(candidates)
+
+    _log_failures_capped(
+        parse_failures,
+        level=logging.ERROR,
+        describe=lambda failure: f"Could not parse '{failure.source}', {failure.reason}",
+    )
+
+    if parse_failures and deploy_policy == "ALL_OR_NONE":
+        _LOG.error(
+            f"Refusing to deploy: {len(parse_failures)} TML file(s) could not be parsed and IMPORT POLICY "
+            f"'ALL_OR_NONE' requires the complete set. Fix or remove these files, or deploy with "
+            f"--deploy-policy PARTIAL to skip them."
+        )
+        return 1
+
+    for path, tml in loaded:
         assert tml.guid is not None, f"Could not find a guid for {path}"
 
         if tml.tml_type_name.upper() not in input_types:
@@ -351,6 +467,10 @@ def deploy(
         tmls[guid] = mapping_info.disambiguate(tml=tml, delete_unmapped_guids=True)
 
     if not tmls:
+        if parse_failures:
+            _LOG.error("Every TML file found to deploy failed to parse.")
+            return 1
+
         _LOG.info(
             f"No TML files found to deploy from directory (Deploy Type: {deploy_type}, Last Seen: {last_import_dt})"
         )
@@ -427,8 +547,17 @@ def deploy(
         c = workflows.metadata.tag_all(guids_to_tag, tags=tags, color="#A020F0", http=ts.api)  # ThoughtSpot Purple :~)
         _ = utils.run_sync(c)
 
+    if parse_failures:
+        _LOG.error(
+            f"Skipped {len(parse_failures)} TML file(s) that could not be parsed, "
+            f"see the start of this run or the logs for the full list."
+        )
+
     if table.job_status == "ERROR":
         _LOG.error("One or more TMLs failed to fully deploy, check the logs or use --log-errors for more details.")
+        return 1
+
+    if parse_failures:
         return 1
 
     if table.job_status == "WARNING":
