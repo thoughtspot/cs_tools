@@ -2,6 +2,11 @@ name: Test CS Tools Bootstrapper
 
 on:
   workflow_dispatch:
+    inputs:
+      bootstrapper_ref:
+        description: "Git ref to test the bootstrapper from. Default: the published docs-site install.py."
+        required: false
+        type: string
 
   push:
     branches:
@@ -27,19 +32,24 @@ jobs:
           - "3.12"
           - "3.13"
 
+    env:
+      # DEFAULT = THE PUBLISHED INSTALLER (WHAT CUSTOMERS RUN). PASS bootstrapper_ref TO TEST A
+      # REF'S INSTALLER PRE-RELEASE -- install.py IS _bootstrapper.py MIRRORED AT DOCS-DEPLOY TIME.
+      BOOTSTRAPPER_URL: ${{ inputs.bootstrapper_ref != '' && format('https://raw.githubusercontent.com/thoughtspot/cs_tools/{0}/cs_tools/updater/_bootstrapper.py', inputs.bootstrapper_ref) || 'https://thoughtspot.github.io/cs_tools/install.py' }}
+
     steps:
       # SETUP PYTHON.
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-        
+
       # USES THE COMMAND FROM THE DOCS PAGE.
       - if: ${{ runner.os == 'Windows' }}
         name: Install on Windows.
-        run: powershell -ExecutionPolicy ByPass -c "IRM https://thoughtspot.github.io/cs_tools/install.py | python - --reinstall"
+        run: powershell -ExecutionPolicy ByPass -c "IRM $env:BOOTSTRAPPER_URL | python - --reinstall"
 
       # USES THE COMMAND FROM THE DOCS PAGE.
       - if: ${{ runner.os != 'Windows' }}
         name: Install on Linux/MacOS.
-        run: curl -LsSf https://thoughtspot.github.io/cs_tools/install.py | python - --reinstall
+        run: curl -LsSf "$BOOTSTRAPPER_URL" | python - --reinstall
