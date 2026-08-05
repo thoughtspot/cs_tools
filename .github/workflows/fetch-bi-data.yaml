@@ -60,7 +60,7 @@ jobs:
 
       # SETUP PYTHON.
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
       
       # UPDATE PIP.
       - name: Ensure pip is up to date.
