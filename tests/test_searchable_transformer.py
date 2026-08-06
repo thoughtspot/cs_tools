@@ -10,6 +10,7 @@ validators.ensure_datetime_is_utc (now None-tolerant).
 from __future__ import annotations
 
 import datetime as dt
+import logging
 
 from cs_tools import validators
 from cs_tools.cli.tools.searchable import api_transformer as T
@@ -105,3 +106,22 @@ def test_model_accepts_null_created_and_modified():
     )
     assert obj.created is None
     assert obj.modified is None
+
+
+# --- column synonyms: duplicate warnings name the parent table ---------------
+
+
+def test_duplicate_synonym_warning_names_column_and_parent_table(caplog):
+    # MATCHES THE [COLUMN x IN TABLE y] SUFFIX USED BY THE INDEX_PRIORITY WARNING -- A COLUMN
+    # GUID ALONE ISN'T ENOUGH TO FIND THE OFFENDING FIELD IN THE UI.
+    payload = {
+        "metadata_id": "tbl-1",
+        "metadata_detail": {"columns": [{"header": {"id": "col-1"}, "synonyms": ["revenue", "revenue"]}]},
+    }
+
+    with caplog.at_level(logging.WARNING):
+        rows = T.ts_column_synonym([payload], cluster="cluster-1")
+
+    # THE DUPLICATE IS DROPPED, THE FIRST IS KEPT
+    assert len(rows) == 1
+    assert "[COLUMN col-1 IN TABLE tbl-1]" in caplog.text
