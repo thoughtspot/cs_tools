@@ -80,6 +80,9 @@ class FetchFailure(NamedTuple):
     metadata_type: str
     identifiers: tuple[_types.GUID, ...]
     error: BaseException
+    fetched: str = "data"
+    """What the request was fetching (dependents, details, permissions) -- objects of the same
+    type are fetched by multiple phases, so the type alone cannot say what was lost."""
 
 
 class _FailureDigest:
@@ -95,16 +98,19 @@ class _FailureDigest:
     DETAIL_LIMIT = 5
     TALLY_EVERY = 250
 
-    def __init__(self) -> None:
+    def __init__(self, fetched: str = "data") -> None:
+        self.fetched = fetched
         self.n_failed = 0
 
     def record(self, metadata_type: str, identifiers: tuple[_types.GUID, ...], error: httpx.HTTPError) -> None:
         self.n_failed += 1
 
         if self.n_failed <= self.DETAIL_LIMIT:
+            # SOME ERRORS (eg. ReadTimeout) CARRY NO MESSAGE -- DON'T RENDER A DANGLING COLON.
+            described = f"{type(error).__name__}: {error}" if f"{error}" else type(error).__name__
             _LOG.error(
-                f"Could not fetch data for {len(identifiers)} {metadata_type} objects "
-                f"({type(error).__name__}: {error}), the extract will continue without them.."
+                f"Could not fetch {self.fetched} for {len(identifiers)} {metadata_type} objects "
+                f"({described}), the extract will continue without them.."
             )
         elif self.n_failed % self.TALLY_EVERY == 0:
             _LOG.error(f"{self.n_failed:,} API requests have failed so far, the extract will continue..")
@@ -145,6 +151,7 @@ def _sift_gathered_outcomes(
     outcomes: Sequence[Any],
     *,
     failures: Optional[list[FetchFailure]] = None,
+    fetched: str = "data",
 ) -> list[Any]:
     """
     Split gathered request outcomes into their parsed payloads, reporting the failed batches.
@@ -165,7 +172,9 @@ def _sift_gathered_outcomes(
             n_failed += 1
 
             if failures is not None:
-                failures.append(FetchFailure(metadata_type=metadata_type, identifiers=identifiers, error=outcome))
+                failures.append(
+                    FetchFailure(metadata_type=metadata_type, identifiers=identifiers, error=outcome, fetched=fetched)
+                )
 
             continue
 
@@ -183,7 +192,7 @@ def _sift_gathered_outcomes(
 
         _LOG.warning(
             f"{n_failed:,} of {len(batches):,} API requests failed after retries. The extract will "
-            f"continue, but data for up to {missing} objects will be missing from this run. Each "
+            f"continue, but {fetched} for up to {missing} objects will be missing from this run. Each "
             f"failure is recorded in the logfile.{followup}"
         )
 
@@ -212,9 +221,18 @@ async def fetch(
     # WITH EVERY OTHER CALLER. HOLD BACK A FEW SLOTS SO ONE PHASE CAN'T MONOPOLISE THE CLIENT.
     CONCURRENCY_MAGIC_NUMBER = 10
 
+    # NAME WHAT THIS CALL FETCHES, SO FAILURE MESSAGES CAN SAY WHAT WAS LOST -- NOT JUST WHICH
+    # OBJECT TYPE (THE SAME OBJECTS ARE FETCHED BY THE DETAILS, DEPENDENTS, AND ACCESS PHASES).
+    if search_options.get("include_dependent_objects"):
+        fetched = "dependents"
+    elif search_options.get("include_details"):
+        fetched = "details"
+    else:
+        fetched = "data"
+
     batches: list[tuple[_types.APIObjectType, tuple[_types.GUID, ...]]] = []
     coros: list[Coroutine] = []
-    digest = _FailureDigest()
+    digest = _FailureDigest(fetched=fetched)
 
     for metadata_type, guids in typed_guids.items():
         # CALLERS GROUP IDENTIFIERS INCONSISTENTLY (single guids, or per-object lists). FLATTEN
@@ -233,7 +251,7 @@ async def fetch(
 
     results: list[_types.APIResult] = []
 
-    for payload in _sift_gathered_outcomes(batches, outcomes, failures=failures):
+    for payload in _sift_gathered_outcomes(batches, outcomes, failures=failures, fetched=fetched):
         results.extend(payload)
 
     return results
@@ -351,7 +369,7 @@ async def permissions(
 
     batches: list[tuple[_types.APIObjectType, tuple[_types.GUID, ...]]] = []
     coros: list[Coroutine] = []
-    digest = _FailureDigest()
+    digest = _FailureDigest(fetched="permissions")
 
     for metadata_type, guids in typed_guids.items():
         for guid in guids:
@@ -395,7 +413,7 @@ async def permissions(
     outcomes = await utils.bounded_gather(*coros, max_concurrent=CONCURRENCY_MAGIC_NUMBER, return_exceptions=True)
 
     # ONE PAYLOAD PER SURVIVING REQUEST -- THE SHAPE THE PERMISSIONS TRANSFORMER EXPECTS.
-    return _sift_gathered_outcomes(batches, outcomes, failures=failures)
+    return _sift_gathered_outcomes(batches, outcomes, failures=failures, fetched="permissions")
 
 
 async def dependents(guid: _types.GUID, *, http: RESTAPIClient) -> list[_types.APIResult]:

@@ -46,6 +46,8 @@ class WorkTask:
         self.start_time: Optional[float] = None
         self.stop_time: Optional[float] = None
         self.finished_time: Optional[float] = None
+        self.skip_reason: Optional[str] = None
+        self.skipped: bool = False
 
         self._previously_elapsed: float = 0
         self._prog_bar = BarColumn()
@@ -112,6 +114,8 @@ class WorkTask:
             self.finished_time = None
 
         self.start_time = self.get_time()
+        self.skipped = False
+        self.skip_reason = None
 
         if total is not INFINITY:
             self.total = total
@@ -121,9 +125,12 @@ class WorkTask:
         self.stop_time = self.get_time()
         self.total = -1 if self.total is None else self.total
 
-    def skip(self) -> None:
-        """Skip the task."""
+    def skip(self, reason: Optional[str] = None) -> None:
+        """Skip the task, rendering it as deliberately skipped rather than never-reached."""
         self.start_time = None
+        self.skipped = True
+        self.skip_reason = reason
+        log.info(f"⤼ {self._log_label()} skipped" + (f" ({reason})" if reason else ""))
 
     def advance(self, step: float) -> None:
         """Advance the task by the step value."""
@@ -157,9 +164,18 @@ class WorkTask:
 
         self._prog_bar.bar_width = bar_width
 
+        if self.started:
+            bar_cell: RenderableType = self._prog_bar(cast(Task, self))
+        elif self.skipped:
+            # A DELIBERATE SKIP MUST NOT LOOK LIKE A PHASE THAT WAS NEVER REACHED ("--").
+            reason = f" -- {self.skip_reason}" if self.skip_reason else ""
+            bar_cell = Text.from_markup(f"[fg-warn]skipped{reason}[/]")
+        else:
+            bar_cell = "--"
+
         table.add_row(
             self.description,
-            self._prog_bar(cast(Task, self)) if self.started else "--",
+            bar_cell,
             self._prog_elasped(cast(Task, self)),
         )
 
