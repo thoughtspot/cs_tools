@@ -451,7 +451,10 @@ def ts_column_synonym(data: list[_types.APIResult], *, cluster: _types.GUID) -> 
         for column in result["metadata_detail"]["columns"]:
             for synonym in column["synonyms"]:
                 if (unique := f"{column['header']['id']}-{synonym}") in seen:
-                    log.warning(f"Duplicate synonym found '{synonym}' for COLUMN ({column['header']['id']})")
+                    log.warning(
+                        f"Duplicate synonym found '{synonym}'. "
+                        f"[COLUMN {column['header']['id']} IN TABLE {result['metadata_id']}]"
+                    )
                     continue
 
                 reshaped.append(
