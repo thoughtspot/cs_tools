@@ -40,15 +40,16 @@ def _warn_incomplete_extract(
     A partial phase still completes, so its progress line shows a checkmark. Without a distinct
     block here, an incomplete extract is indistinguishable from a complete one at a glance.
     """
-    by_type: dict[str, list[str]] = collections.defaultdict(list)
+    by_kind: dict[tuple[str, str], list[str]] = collections.defaultdict(list)
 
     for failure in failures:
-        by_type[failure.metadata_type].extend(failure.identifiers)
+        by_kind[(failure.fetched, failure.metadata_type)].extend(failure.identifiers)
 
     affected = "\n".join(
-        f"  [fg-secondary]{metadata_type}[/]: {len(identifiers):,} object(s), eg. {', '.join(identifiers[:3])}"
+        f"  [fg-secondary]{f'{fetched} of ' if fetched != 'data' else ''}{metadata_type}[/]: "
+        f"{len(identifiers):,} object(s), eg. {', '.join(identifiers[:3])}"
         + ("" if len(identifiers) <= 3 else f" (+{len(identifiers) - 3:,} more)")
-        for metadata_type, identifiers in by_type.items()
+        for (fetched, metadata_type), identifiers in by_kind.items()
     )
 
     if load_was_skipped:
@@ -63,7 +64,8 @@ def _warn_incomplete_extract(
             f"keeps existing data. A later run will fill in the gaps."
         )
     else:
-        outcome = "The incomplete data has been written. A later run will fill in the gaps."
+        # FILE SYNCERS (csv, excel, ...) REWRITE THEIR OUTPUT WHOLESALE EVERY RUN -- NOTHING MERGES.
+        outcome = "The incomplete data has been written. Re-run to produce a complete extract."
 
     log.warning(
         f"\n[fg-warn]{'━' * 76}[/]"
@@ -680,7 +682,7 @@ def metadata(
         # INCOMPLETE EXTRACT -- LEAVE WHAT THE CUSTOMER ALREADY HAS AND LET THEM RE-RUN. APPEND
         # AND UPSERT ARE ADDITIVE, SO THEY PROCEED AND A LATER RUN FILLS IN THE GAPS.
         if fetch_failures and is_truncate_load_strategy:
-            tracker["DUMP_DATA"].skip()
+            tracker["DUMP_DATA"].skip(reason="incomplete extract")
             _warn_incomplete_extract(fetch_failures, load_strategy="TRUNCATE", load_was_skipped=True)
             return 1
 

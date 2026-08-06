@@ -398,3 +398,78 @@ def test_e_a_healthy_permissions_run_reports_no_failures():
 
     assert failures == []
     assert len(results) == 2
+
+
+def test_f_dependent_fetch_failures_name_the_kind_of_fetch(caplog):
+    # "25 LOGICAL_COLUMN objects" ALONE DOESN'T SAY WHAT WAS LOST -- THE SAME COLUMNS APPEAR
+    # IN THE DETAILS, DEPENDENTS, AND COLUMN-ACCESS PHASES. THE MESSAGE MUST NAME THE KIND.
+    server = RecordingServer(respond=fails_on(b"BOOM", httpx.ReadTimeout("simulated slow endpoint")))
+    bad = [f"BOOM-{i}" for i in range(EXPECTED_MAX_PER_REQUEST)]
+    failures: list[metadata_workflow.FetchFailure] = []
+
+    async def scenario() -> None:
+        client = make_client(server)
+        await metadata_workflow.fetch(
+            typed_guids={"LOGICAL_COLUMN": [bad]},
+            include_dependent_objects=True,
+            dependent_objects_record_size=-1,
+            failures=failures,
+            http=client,
+        )
+
+    with caplog.at_level(logging.ERROR, logger="cs_tools.api.workflows.metadata"):
+        asyncio.run(scenario())
+
+    assert "Could not fetch dependents for" in caplog.text
+    assert failures[0].fetched == "dependents"
+
+
+def test_f_permission_fetch_failures_name_the_kind_of_fetch(caplog):
+    server = RecordingServer(respond=fails_on(b"BOOM", httpx.ReadTimeout("simulated slow endpoint")))
+    failures: list[metadata_workflow.FetchFailure] = []
+
+    async def scenario() -> None:
+        client = make_client(server)
+        await metadata_workflow.permissions(
+            typed_guids={"LOGICAL_TABLE": ["BOOM-1"]},
+            compat_ts_version=ANY_MODERN_TS_VERSION,
+            failures=failures,
+            http=client,
+        )
+
+    with caplog.at_level(logging.ERROR, logger="cs_tools.api.workflows.metadata"):
+        asyncio.run(scenario())
+
+    assert "Could not fetch permissions for" in caplog.text
+    assert failures[0].fetched == "permissions"
+
+
+def test_f_a_plain_fetch_still_says_data(caplog):
+    # CALLERS WHICH SET NEITHER FLAG GET THE GENERIC WORDING.
+    server = RecordingServer(respond=fails_on(b"BOOM", httpx.ReadTimeout("simulated slow endpoint")))
+    failures: list[metadata_workflow.FetchFailure] = []
+
+    async def scenario() -> None:
+        client = make_client(server)
+        await metadata_workflow.fetch(typed_guids={"LOGICAL_TABLE": ["BOOM-1"]}, failures=failures, http=client)
+
+    with caplog.at_level(logging.ERROR, logger="cs_tools.api.workflows.metadata"):
+        asyncio.run(scenario())
+
+    assert "Could not fetch data for" in caplog.text
+    assert failures[0].fetched == "data"
+
+
+def test_f_an_error_with_no_message_has_no_dangling_colon(caplog):
+    # ReadTimeout OFTEN CARRIES NO TEXT -- "(ReadTimeout: )" READS AS A BROKEN MESSAGE.
+    server = RecordingServer(respond=fails_on(b"BOOM", httpx.ReadTimeout("")))
+
+    async def scenario() -> None:
+        client = make_client(server)
+        await metadata_workflow.fetch(typed_guids={"LOGICAL_TABLE": ["BOOM-1"]}, http=client)
+
+    with caplog.at_level(logging.ERROR, logger="cs_tools.api.workflows.metadata"):
+        asyncio.run(scenario())
+
+    assert "(ReadTimeout)" in caplog.text
+    assert "ReadTimeout: " not in caplog.text

@@ -55,6 +55,38 @@ def test_phase_logs_failure_on_exception(caplog):
     assert "✓ Fetching ORG data" not in caplog.text
 
 
+def _render_bar_cell(task: WorkTask) -> str:
+    console = Console(width=120, file=io.StringIO(), theme=CS_TOOLS_THEME)
+    console.print(task.__render__(text_width=40, bar_width=60))
+    return console.file.getvalue()  # type: ignore[attr-defined]
+
+
+def test_a_skipped_task_says_so_instead_of_dashes(caplog):
+    # A DELIBERATELY SKIPPED PHASE (eg. THE TRUNCATE GUARD REFUSING AN INCOMPLETE LOAD) USED TO
+    # RENDER "--", IDENTICAL TO A PHASE THAT NEVER RAN -- THE FINAL FRAME COULDN'T TELL THE USER
+    # THAT DATA WAS NOT WRITTEN.
+    task = WorkTask(id="DUMP_DATA", description="Sending data to snowflake")
+
+    with caplog.at_level(logging.INFO):
+        task.skip(reason="incomplete extract")
+
+    rendered = _render_bar_cell(task)
+    assert "skipped" in rendered
+    assert "incomplete extract" in rendered
+
+    # THE LOGFILE TELLS THE SAME STORY AS THE LIVE TABLE.
+    assert "⤼ Sending data to snowflake skipped (incomplete extract)" in caplog.text
+
+
+def test_a_never_started_task_still_renders_dashes():
+    # "--" NOW MEANS EXACTLY ONE THING: THE PHASE WAS NEVER REACHED.
+    task = WorkTask(id="DUMP_DATA", description="Sending data to snowflake")
+
+    rendered = _render_bar_cell(task)
+    assert "--" in rendered
+    assert "skipped" not in rendered
+
+
 def test_worktracker_restores_cursor_on_exit():
     # WorkTracker (rich Live) hides the cursor on enter; it MUST restore it on exit, or the cursor
     # stays hidden after the command finishes -- invisible on lenient terminals, but it persists in
