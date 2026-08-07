@@ -21,7 +21,7 @@ import textwrap
 import typing
 
 _LOG = logging.getLogger("cs_tools.bootstrapper")
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __minimum_python_version__ = (3, 9)
 
 
