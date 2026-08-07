@@ -32,22 +32,32 @@ app = AsyncTyper(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
 
 
 def _warn_incomplete_extract(
-    failures: list[workflows.metadata.FetchFailure], *, load_strategy: str | None, load_was_skipped: bool
+    failures: list[workflows.metadata.FetchFailure],
+    *,
+    load_strategy: str | None,
+    load_was_skipped: bool,
+    names: dict[str, str] | None = None,
 ) -> None:
     """
     Report metadata gaps prominently.
 
     A partial phase still completes, so its progress line shows a checkmark. Without a distinct
     block here, an incomplete extract is indistinguishable from a complete one at a glance.
+
+    The earlier phases already fetched every object's name, so when the caller passes their
+    guid -> name lookup, the examples name the affected objects instead of showing bare guids.
     """
     by_kind: dict[tuple[str, str], list[str]] = collections.defaultdict(list)
 
     for failure in failures:
         by_kind[(failure.fetched, failure.metadata_type)].extend(failure.identifiers)
 
+    def display(identifier: str) -> str:
+        return (names or {}).get(identifier, identifier)
+
     affected = "\n".join(
         f"  [fg-secondary]{f'{fetched} of ' if fetched != 'data' else ''}{metadata_type}[/]: "
-        f"{len(identifiers):,} object(s), eg. {', '.join(identifiers[:3])}"
+        f"{len(identifiers):,} object(s), eg. {', '.join(display(_) for _ in identifiers[:3])}"
         + ("" if len(identifiers) <= 3 else f" (+{len(identifiers) - 3:,} more)")
         for (fetched, metadata_type), identifiers in by_kind.items()
     )
@@ -494,6 +504,11 @@ def metadata(
         # REPORT THEM ONCE, AT THE END.
         fetch_failures: list[workflows.metadata.FetchFailure] = []
 
+        # NAMES FOR THE END-OF-RUN GAP REPORT -- THE INVENTORY AND COLUMN PHASES SEE EVERY
+        # OBJECT'S NAME BEFORE THE FAILURE-PRONE PHASES RUN, SO GAPS CAN BE NAMED, NOT JUST
+        # COUNTED AS GUIDS.
+        guid_names: dict[str, str] = {}
+
         for org in orgs:
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
             seen_guids: dict[_types.APIObjectType, set[_types.GUID]] = collections.defaultdict(set)
@@ -581,6 +596,7 @@ def metadata(
                 for metadata in _:
                     if _is_in_current_org(metadata, current_org=org["id"]):
                         seen_guids[metadata["metadata_type"]].add(metadata["metadata_id"])
+                        guid_names[metadata["metadata_id"]] = f"'{metadata['metadata_name']}'"
 
                 # DUMP DATA_SOURCE DATA
                 d = api_transformer.ts_data_source(data=_, cluster=CLUSTER_UUID)
@@ -617,6 +633,10 @@ def metadata(
                                 f"somehow has no columns, skipping.."
                             )
                             continue
+
+                        table_name = metadata["metadata_header"]["name"]
+                        for column in metadata["metadata_detail"]["columns"]:
+                            guid_names[column["header"]["id"]] = f"'{column['header']['name']}' ({table_name})"
 
                         seen_columns.append([_["header"]["id"] for _ in metadata["metadata_detail"]["columns"]])
 
@@ -683,7 +703,7 @@ def metadata(
         # AND UPSERT ARE ADDITIVE, SO THEY PROCEED AND A LATER RUN FILLS IN THE GAPS.
         if fetch_failures and is_truncate_load_strategy:
             tracker["DUMP_DATA"].skip(reason="incomplete extract")
-            _warn_incomplete_extract(fetch_failures, load_strategy="TRUNCATE", load_was_skipped=True)
+            _warn_incomplete_extract(fetch_failures, load_strategy="TRUNCATE", load_was_skipped=True, names=guid_names)
             return 1
 
         with tracker["DUMP_DATA"]:
@@ -699,7 +719,7 @@ def metadata(
 
     if fetch_failures:
         strategy = syncer.load_strategy if isinstance(syncer, DatabaseSyncer) else None
-        _warn_incomplete_extract(fetch_failures, load_strategy=strategy, load_was_skipped=False)
+        _warn_incomplete_extract(fetch_failures, load_strategy=strategy, load_was_skipped=False, names=guid_names)
         return 1
 
     return 0

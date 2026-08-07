@@ -45,3 +45,17 @@ def test_file_syncers_are_told_to_rerun_not_promised_a_merge(caplog):
 
     assert "Re-run to produce a complete extract." in caplog.text
     assert "fill in the gaps" not in caplog.text
+
+
+def test_examples_show_names_when_the_run_knows_them(caplog):
+    # A BARE GUID SENDS THE ADMIN HUNTING; THE RUN ALREADY FETCHED EVERY OBJECT'S NAME
+    # BEFORE THE FAILING PHASES, SO THE EXAMPLES CAN SAY WHICH OBJECTS WERE AFFECTED.
+    failures = [_failure("dependents", "LOGICAL_COLUMN", "col-1", "col-2")]
+    names = {"col-1": "'Revenue' (Sales Fact)"}
+
+    with caplog.at_level(logging.WARNING):
+        _warn_incomplete_extract(failures, load_strategy="UPSERT", load_was_skipped=False, names=names)
+
+    assert "'Revenue' (Sales Fact)" in caplog.text
+    # AN IDENTIFIER THE RUN NEVER RESOLVED FALLS BACK TO ITS GUID.
+    assert "col-2" in caplog.text
