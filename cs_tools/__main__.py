@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 
 try:
     from cs_tools.cli.commands.main import run
@@ -16,4 +17,4 @@ except (ModuleNotFoundError, ImportError):
     )
 
 else:
-    run()
+    sys.exit(run())

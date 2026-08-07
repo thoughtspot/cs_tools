@@ -2,6 +2,6 @@
     "name": "snowflake",
     "syncer_class": "Snowflake",
     "requirements": [
-        "snowflake-sqlalchemy >= 1.6.1"
+        "snowflake-sqlalchemy >= 1.7.4"
     ]
 }

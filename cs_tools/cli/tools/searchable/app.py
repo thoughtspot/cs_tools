@@ -17,6 +17,7 @@ import typer
 from cs_tools import _types, utils
 from cs_tools.api import workflows
 from cs_tools.cli import (
+    _logging,
     custom_types,
     progress as px,
 )
@@ -29,6 +30,87 @@ from . import api_transformer, models
 
 log = logging.getLogger(__name__)
 app = AsyncTyper(help="""Explore your ThoughtSpot metadata, in ThoughtSpot!""")
+
+
+def _warn_incomplete_extract(
+    failures: list[workflows.metadata.FetchFailure],
+    *,
+    load_strategy: str | None,
+    load_was_skipped: bool,
+    names: dict[str, str] | None = None,
+) -> None:
+    """
+    Report metadata gaps prominently.
+
+    A partial phase still completes, so its progress line shows a checkmark. Without a distinct
+    block here, an incomplete extract is indistinguishable from a complete one at a glance.
+
+    The earlier phases already fetched every object's name, so when the caller passes their
+    guid -> name lookup, the examples name the affected objects instead of showing bare guids.
+    """
+    by_kind: dict[tuple[str, str], list[str]] = collections.defaultdict(list)
+
+    for failure in failures:
+        by_kind[(failure.fetched, failure.metadata_type)].extend(failure.identifiers)
+
+    def display(identifier: str) -> str:
+        return (names or {}).get(identifier, identifier)
+
+    affected = "\n".join(
+        f"  [fg-secondary]{f'{fetched} of ' if fetched != 'data' else ''}{metadata_type}[/]: "
+        f"{len(identifiers):,} object(s), eg. {', '.join(display(_) for _ in identifiers[:3])}"
+        + ("" if len(identifiers) <= 3 else f" (+{len(identifiers) - 3:,} more)")
+        for (fetched, metadata_type), identifiers in by_kind.items()
+    )
+
+    # "WHERE IS THE LOG FILE?" IS THE FIRST QUESTION ON NEARLY EVERY SUPPORT TICKET --
+    # ANSWER IT WITH THIS RUN'S EXACT PATH. OMITTED WHEN NO FILE HANDLER IS CONFIGURED.
+    logfile = _logging.active_logfile()
+    where_to_look = (
+        f"\n\nThe complete list of affected objects and full error details are in this run's logfile:\n{logfile}"
+        if logfile
+        else ""
+    )
+
+    if load_was_skipped:
+        outcome = (
+            "This run's TRUNCATE load strategy would have replaced your target's existing data with "
+            "this incomplete extract, so the load was skipped. Your target was NOT modified. "
+            "Re-run to try again."
+        )
+    elif load_strategy is not None:
+        outcome = (
+            f"The incomplete data was written with this run's {load_strategy} load strategy, which "
+            f"keeps existing data. A later run will fill in the gaps."
+        )
+    else:
+        # FILE SYNCERS (csv, excel, ...) REWRITE THEIR OUTPUT WHOLESALE EVERY RUN -- NOTHING MERGES.
+        outcome = "The incomplete data has been written. Re-run to produce a complete extract."
+
+    log.warning(
+        f"\n[fg-warn]{'━' * 76}[/]"
+        f"\n[fg-error]INCOMPLETE EXTRACT[/] -- some metadata could not be fetched."
+        f"\n"
+        f"\n{len(failures):,} API request(s) failed after retries, affecting:"
+        f"\n{affected}"
+        f"\n"
+        f"\n{outcome}"
+        f"{where_to_look}"
+        f"\n[fg-warn]{'━' * 76}[/]"
+    )
+
+    # THE CONSOLE BLOCK ABOVE SAMPLES 3 EXAMPLES PER GROUP. SUPPORT WORKS FROM THE LOGFILE,
+    # SO WRITE THE COMPLETE LIST THERE -- DEBUG REACHES ONLY THE FILE HANDLER (CONSOLE IS INFO+).
+    def labelled(identifier: str) -> str:
+        name = (names or {}).get(identifier)
+        return f"  {identifier}  {name}" if name else f"  {identifier}"
+
+    manifest = "\n".join(
+        f"{f'{fetched} of ' if fetched != 'data' else ''}{metadata_type} ({len(identifiers):,}):\n"
+        + "\n".join(labelled(_) for _ in identifiers)
+        for (fetched, metadata_type), identifiers in by_kind.items()
+    )
+    log.debug(f"INCOMPLETE EXTRACT manifest -- every affected object:\n{manifest}")
 
 
 def _ensure_external_mapping(tml: _types.TML, *, connection_info: dict[str, str]) -> _types.TML:
@@ -59,6 +141,19 @@ def _ensure_external_mapping(tml: _types.TML, *, connection_info: dict[str, str]
 def _is_in_current_org(metadata_object, *, current_org: int) -> bool:
     """Determine if this object belongs in this org."""
     return current_org in (metadata_object["metadata_header"].get("orgIds", None) or [0])
+
+
+def _report_tml_import_results(tmls: list[_types.TML], results: list[_types.APIResult]) -> None:
+    """
+    Log the import status for each submitted TML.
+
+    DEV NOTE: the import response is positionally 1:1 with the TMLs we submitted, in order. Do NOT
+    use a result's `request_index` as an index into `tmls` -- it is a server-side ordinal that can
+    exceed the number of submitted TMLs, so `tmls[request_index]` raises IndexError.
+    """
+    for tml, result in zip(tmls, results):
+        if result["response"]["status"]["status_code"] == "OK":
+            log.info(f"{tml.tml_type_name.upper()} '{tml.name}' successfully imported")
 
 
 @app.command()
@@ -175,13 +270,7 @@ def deploy(
                 log.error(f"Failed to call metadata/tml/import.. {e}")
                 return 1
 
-            for tml_import_info in d:
-                idx = tml_import_info["request_index"]
-                tml = tmls[idx]
-                tml_type = tml.tml_type_name.upper()
-
-                if tml_import_info["response"]["status"]["status_code"] == "OK":
-                    log.info(f"{tml_type} '{tml.name}' successfully imported")
+            _report_tml_import_results(tmls, d)
 
     return 0
 
@@ -433,6 +522,17 @@ def metadata(
         else:
             collect_info = False
 
+        # ANY FETCH CAN FAIL AFTER RETRIES (DEPENDENT LISTS IN PARTICULAR ARE UNBOUNDED AND
+        # CANNOT BE PAGINATED, SO THOSE REQUESTS CAN ALWAYS TIME OUT; PERMISSIONS ARE THE MOST
+        # SERVER-EXPENSIVE DATA WE ASK FOR). COLLECT THE GAPS ACROSS EVERY PHASE AND ORG, AND
+        # REPORT THEM ONCE, AT THE END.
+        fetch_failures: list[workflows.metadata.FetchFailure] = []
+
+        # NAMES FOR THE END-OF-RUN GAP REPORT -- THE INVENTORY AND COLUMN PHASES SEE EVERY
+        # OBJECT'S NAME BEFORE THE FAILURE-PRONE PHASES RUN, SO GAPS CAN BE NAMED, NOT JUST
+        # COUNTED AS GUIDS.
+        guid_names: dict[str, str] = {}
+
         for org in orgs:
             tracker.title = f"Fetching Data in [fg-secondary]{org['name']}[/] (Org {org['id']})"
             seen_guids: dict[_types.APIObjectType, set[_types.GUID]] = collections.defaultdict(set)
@@ -520,6 +620,7 @@ def metadata(
                 for metadata in _:
                     if _is_in_current_org(metadata, current_org=org["id"]):
                         seen_guids[metadata["metadata_type"]].add(metadata["metadata_id"])
+                        guid_names[metadata["metadata_id"]] = f"'{metadata['metadata_name']}'"
 
                 # DUMP DATA_SOURCE DATA
                 d = api_transformer.ts_data_source(data=_, cluster=CLUSTER_UUID)
@@ -537,7 +638,11 @@ def metadata(
                 # USE include_hidden_objects=True BECAUSE HIDDEN COLUMNS ON A LOGICAL_TABLE AREN'T RETURNED WITHOUT IT.
                 g = {"LOGICAL_TABLE": seen_guids["LOGICAL_TABLE"]}
                 c = workflows.metadata.fetch(
-                    typed_guids=g, include_details=True, include_hidden_objects=True, http=ts.api
+                    typed_guids=g,
+                    include_details=True,
+                    include_hidden_objects=True,
+                    failures=fetch_failures,
+                    http=ts.api,
                 )
                 _ = utils.run_sync(c)
 
@@ -552,6 +657,10 @@ def metadata(
                                 f"somehow has no columns, skipping.."
                             )
                             continue
+
+                        table_name = metadata["metadata_header"]["name"]
+                        for column in metadata["metadata_detail"]["columns"]:
+                            guid_names[column["header"]["id"]] = f"'{column['header']['name']}' ({table_name})"
 
                         seen_columns.append([_["header"]["id"] for _ in metadata["metadata_detail"]["columns"]])
 
@@ -572,6 +681,7 @@ def metadata(
                     typed_guids={"LOGICAL_COLUMN": seen_columns},
                     include_dependent_objects=True,
                     dependent_objects_record_size=-1,
+                    failures=fetch_failures,
                     http=ts.api,
                 )
                 _ = utils.run_sync(c)
@@ -589,7 +699,10 @@ def metadata(
                     seen_guids["LOGICAL_COLUMN"] = seen_columns
 
                 c = workflows.metadata.permissions(
-                    typed_guids=seen_guids, compat_ts_version=COMPAT_TS_VERSION, http=ts.api
+                    typed_guids=seen_guids,
+                    compat_ts_version=COMPAT_TS_VERSION,
+                    failures=fetch_failures,
+                    http=ts.api,
                 )
                 _ = utils.run_sync(c)
 
@@ -607,10 +720,18 @@ def metadata(
 
         tracker["ORGS_COUNT"].stop()
 
+        is_truncate_load_strategy = isinstance(syncer, DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
+
+        # A TRUNCATE LOAD REPLACES THE TARGET WHOLESALE. REFUSE TO SWAP COMPLETE DATA FOR AN
+        # INCOMPLETE EXTRACT -- LEAVE WHAT THE CUSTOMER ALREADY HAS AND LET THEM RE-RUN. APPEND
+        # AND UPSERT ARE ADDITIVE, SO THEY PROCEED AND A LATER RUN FILLS IN THE GAPS.
+        if fetch_failures and is_truncate_load_strategy:
+            tracker["DUMP_DATA"].skip(reason="incomplete extract")
+            _warn_incomplete_extract(fetch_failures, load_strategy="TRUNCATE", load_was_skipped=True, names=guid_names)
+            return 1
+
         with tracker["DUMP_DATA"]:
             # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
-            is_truncate_load_strategy = isinstance(syncer, DatabaseSyncer) and syncer.load_strategy == "TRUNCATE"
-
             for model in models.METADATA_MODELS:
                 streamer = temp.read_stream(tablename=model.__tablename__, batch=1_000_000)
 
@@ -619,6 +740,11 @@ def metadata(
                         syncer.load_strategy = "TRUNCATE" if idx == 1 else "APPEND"
 
                     syncer.dump(model.__tablename__, data=rows)
+
+    if fetch_failures:
+        strategy = syncer.load_strategy if isinstance(syncer, DatabaseSyncer) else None
+        _warn_incomplete_extract(fetch_failures, load_strategy=strategy, load_was_skipped=False, names=guid_names)
+        return 1
 
     return 0
 

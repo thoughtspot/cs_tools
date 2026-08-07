@@ -21,11 +21,11 @@ jobs:
     steps:
       # CHECKOUT REPOSITORY.
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       # SETUP PYTHON.
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
 
       # UPDATE PIP.
       - name: Ensure pip is up to date.

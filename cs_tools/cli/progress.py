@@ -12,6 +12,7 @@ from rich.align import Align
 from rich.console import Console, Group, RenderableType
 from rich.progress import BarColumn, Task, TimeElapsedColumn
 from rich.table import Column, Table
+from rich.text import Text
 
 from cs_tools import _compat, utils
 from cs_tools.cli.ux import RICH_CONSOLE
@@ -45,6 +46,8 @@ class WorkTask:
         self.start_time: Optional[float] = None
         self.stop_time: Optional[float] = None
         self.finished_time: Optional[float] = None
+        self.skip_reason: Optional[str] = None
+        self.skipped: bool = False
 
         self._previously_elapsed: float = 0
         self._prog_bar = BarColumn()
@@ -52,6 +55,7 @@ class WorkTask:
 
     def __enter__(self) -> _compat.Self:
         self.start()
+        log.info(f"→ {self._log_label()}")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -59,6 +63,18 @@ class WorkTask:
             return
 
         self.stop()
+        # This entry's duration only -- NOT self.elapsed, which accumulates across re-entries
+        # (the metadata command re-enters the same task once per org).
+        duration = (self.stop_time or self.get_time()) - self.start_time
+
+        if exc_type is not None:
+            log.info(f"✗ {self._log_label()} failed after {duration:.1f}s")
+        else:
+            log.info(f"✓ {self._log_label()} ({duration:.1f}s)")
+
+    def _log_label(self) -> str:
+        """Plain-text phase label for logs (rich markup and indentation stripped)."""
+        return Text.from_markup(self.description).plain.strip()
 
     @property
     def started(self) -> bool:
@@ -98,6 +114,8 @@ class WorkTask:
             self.finished_time = None
 
         self.start_time = self.get_time()
+        self.skipped = False
+        self.skip_reason = None
 
         if total is not INFINITY:
             self.total = total
@@ -107,9 +125,12 @@ class WorkTask:
         self.stop_time = self.get_time()
         self.total = -1 if self.total is None else self.total
 
-    def skip(self) -> None:
-        """Skip the task."""
+    def skip(self, reason: Optional[str] = None) -> None:
+        """Skip the task, rendering it as deliberately skipped rather than never-reached."""
         self.start_time = None
+        self.skipped = True
+        self.skip_reason = reason
+        log.info(f"⤼ {self._log_label()} skipped" + (f" ({reason})" if reason else ""))
 
     def advance(self, step: float) -> None:
         """Advance the task by the step value."""
@@ -143,9 +164,18 @@ class WorkTask:
 
         self._prog_bar.bar_width = bar_width
 
+        if self.started:
+            bar_cell: RenderableType = self._prog_bar(cast(Task, self))
+        elif self.skipped:
+            # A DELIBERATE SKIP MUST NOT LOOK LIKE A PHASE THAT WAS NEVER REACHED ("--").
+            reason = f" -- {self.skip_reason}" if self.skip_reason else ""
+            bar_cell = Text.from_markup(f"[fg-warn]skipped{reason}[/]")
+        else:
+            bar_cell = "--"
+
         table.add_row(
             self.description,
-            self._prog_bar(cast(Task, self)) if self.started else "--",
+            bar_cell,
             self._prog_elasped(cast(Task, self)),
         )
 
@@ -240,3 +270,8 @@ class WorkTracker(live.Live):
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.refresh()
+        # DEV NOTE: start() hid the cursor (rich Live.show_cursor(False)); stop() restores it and
+        # halts the refresh thread. Without this the cursor stays hidden after exit -- harmless on
+        # lenient local terminals, but it persists in strict emulators (e.g. cloud shells). The
+        # tracker isn't transient, so the final frame remains on screen.
+        self.stop()
