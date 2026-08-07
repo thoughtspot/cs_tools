@@ -1,6 +1,11 @@
 <p align="center">
-  <img width="400" src="docs/assets/images/logo-transparent.png" alt='ThoughtSpot | CS Tools'>
-  <br/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/images/thoughtspot-logo-white.svg">
+    <img width="360" src="docs/assets/images/thoughtspot-logo-black.svg" alt="ThoughtSpot">
+  </picture>
+</p>
+<h1 align="center">CS Tools</h1>
+<p align="center">
   🧙 <i>Give your Admins magic powers with tools created by the <b>ThoughtSpot Customer Success Team</b>.</i>
 </p>
 

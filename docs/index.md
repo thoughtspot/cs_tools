@@ -19,7 +19,7 @@ hide:
 
     <div class=grid-define-columns data-columns=1 style="justify-items: center; place-items: center; gap: 0;">
 
-        <a style="display: block; text-align: center;"><img src="./assets/images/logo-transparent.png" style="max-width: 75%; align: center;"></a>
+        <a style="display: block; text-align: center;"><img src="./assets/images/thoughtspot-logo-black.svg#only-light" alt="ThoughtSpot" style="max-width: 75%; align: center;"><img src="./assets/images/thoughtspot-logo-white.svg#only-dark" alt="ThoughtSpot" style="max-width: 75%; align: center;"></a>
         
         <center><span class=fc-blue><b>🧙 Give your Admins magic powers with tools created by the <br><span class=fc-black>ThoughtSpot Customer Success Team</span>.</b></span></center>
         
