@@ -17,6 +17,7 @@ import typer
 from cs_tools import _types, utils
 from cs_tools.api import workflows
 from cs_tools.cli import (
+    _logging,
     custom_types,
     progress as px,
 )
@@ -62,6 +63,15 @@ def _warn_incomplete_extract(
         for (fetched, metadata_type), identifiers in by_kind.items()
     )
 
+    # "WHERE IS THE LOG FILE?" IS THE FIRST QUESTION ON NEARLY EVERY SUPPORT TICKET --
+    # ANSWER IT WITH THIS RUN'S EXACT PATH. OMITTED WHEN NO FILE HANDLER IS CONFIGURED.
+    logfile = _logging.active_logfile()
+    where_to_look = (
+        f"\n\nThe complete list of affected objects and full error details are in this run's logfile:\n{logfile}"
+        if logfile
+        else ""
+    )
+
     if load_was_skipped:
         outcome = (
             "This run's TRUNCATE load strategy would have replaced your target's existing data with "
@@ -85,6 +95,7 @@ def _warn_incomplete_extract(
         f"\n{affected}"
         f"\n"
         f"\n{outcome}"
+        f"{where_to_look}"
         f"\n[fg-warn]{'━' * 76}[/]"
     )
 
