@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Optional
 import datetime as dt
 import logging
 import logging.config
@@ -79,6 +80,14 @@ class SecretsFilter(logging.Filter):
             record.args = tuple(args)
 
         return True
+
+
+def active_logfile() -> Optional[str]:
+    """The path of this run's logfile, if file logging is configured."""
+    # MATCH OUR OWN HANDLER CLASS, NOT ANY FileHandler -- HOST PROCESSES (eg. pytest) ATTACH
+    # THEIR OWN FILE HANDLERS TO THE ROOT LOGGER, INCLUDING ONES AIMED AT THE NULL DEVICE.
+    handler = next((h for h in logging.getLogger().handlers if isinstance(h, LimitedFileHistoryHandler)), None)
+    return handler.baseFilename if handler is not None else None
 
 
 def _setup_logging() -> None:

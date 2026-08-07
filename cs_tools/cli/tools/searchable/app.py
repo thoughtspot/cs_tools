@@ -17,6 +17,7 @@ import typer
 from cs_tools import _types, utils
 from cs_tools.api import workflows
 from cs_tools.cli import (
+    _logging,
     custom_types,
     progress as px,
 )
@@ -62,6 +63,15 @@ def _warn_incomplete_extract(
         for (fetched, metadata_type), identifiers in by_kind.items()
     )
 
+    # "WHERE IS THE LOG FILE?" IS THE FIRST QUESTION ON NEARLY EVERY SUPPORT TICKET --
+    # ANSWER IT WITH THIS RUN'S EXACT PATH. OMITTED WHEN NO FILE HANDLER IS CONFIGURED.
+    logfile = _logging.active_logfile()
+    where_to_look = (
+        f"\n\nThe complete list of affected objects and full error details are in this run's logfile:\n{logfile}"
+        if logfile
+        else ""
+    )
+
     if load_was_skipped:
         outcome = (
             "This run's TRUNCATE load strategy would have replaced your target's existing data with "
@@ -85,8 +95,22 @@ def _warn_incomplete_extract(
         f"\n{affected}"
         f"\n"
         f"\n{outcome}"
+        f"{where_to_look}"
         f"\n[fg-warn]{'━' * 76}[/]"
     )
+
+    # THE CONSOLE BLOCK ABOVE SAMPLES 3 EXAMPLES PER GROUP. SUPPORT WORKS FROM THE LOGFILE,
+    # SO WRITE THE COMPLETE LIST THERE -- DEBUG REACHES ONLY THE FILE HANDLER (CONSOLE IS INFO+).
+    def labelled(identifier: str) -> str:
+        name = (names or {}).get(identifier)
+        return f"  {identifier}  {name}" if name else f"  {identifier}"
+
+    manifest = "\n".join(
+        f"{f'{fetched} of ' if fetched != 'data' else ''}{metadata_type} ({len(identifiers):,}):\n"
+        + "\n".join(labelled(_) for _ in identifiers)
+        for (fetched, metadata_type), identifiers in by_kind.items()
+    )
+    log.debug(f"INCOMPLETE EXTRACT manifest -- every affected object:\n{manifest}")
 
 
 def _ensure_external_mapping(tml: _types.TML, *, connection_info: dict[str, str]) -> _types.TML:
