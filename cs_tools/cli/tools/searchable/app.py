@@ -88,6 +88,19 @@ def _warn_incomplete_extract(
         f"\n[fg-warn]{'━' * 76}[/]"
     )
 
+    # THE CONSOLE BLOCK ABOVE SAMPLES 3 EXAMPLES PER GROUP. SUPPORT WORKS FROM THE LOGFILE,
+    # SO WRITE THE COMPLETE LIST THERE -- DEBUG REACHES ONLY THE FILE HANDLER (CONSOLE IS INFO+).
+    def labelled(identifier: str) -> str:
+        name = (names or {}).get(identifier)
+        return f"  {identifier}  {name}" if name else f"  {identifier}"
+
+    manifest = "\n".join(
+        f"{f'{fetched} of ' if fetched != 'data' else ''}{metadata_type} ({len(identifiers):,}):\n"
+        + "\n".join(labelled(_) for _ in identifiers)
+        for (fetched, metadata_type), identifiers in by_kind.items()
+    )
+    log.debug(f"INCOMPLETE EXTRACT manifest -- every affected object:\n{manifest}")
+
 
 def _ensure_external_mapping(tml: _types.TML, *, connection_info: dict[str, str]) -> _types.TML:
     """Remap TML object to match the external database."""
