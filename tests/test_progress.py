@@ -21,8 +21,8 @@ def test_phase_logs_start_and_timed_end(caplog):
             pass
 
     # rich markup and indentation are stripped; both start and timed-end are logged
-    assert "→ Fetching ORG data" in caplog.text
-    assert "✓ Fetching ORG data (" in caplog.text
+    assert "-> Fetching ORG data" in caplog.text
+    assert "ok Fetching ORG data (" in caplog.text
 
 
 def test_reentry_logs_per_entry_duration_not_cumulative(caplog):
@@ -51,8 +51,8 @@ def test_phase_logs_failure_on_exception(caplog):
         except ValueError:
             pass
 
-    assert "✗ Fetching ORG data failed after" in caplog.text
-    assert "✓ Fetching ORG data" not in caplog.text
+    assert "!! Fetching ORG data failed after" in caplog.text
+    assert "ok Fetching ORG data" not in caplog.text
 
 
 def _render_bar_cell(task: WorkTask) -> str:
@@ -75,7 +75,27 @@ def test_a_skipped_task_says_so_instead_of_dashes(caplog):
     assert "incomplete extract" in rendered
 
     # THE LOGFILE TELLS THE SAME STORY AS THE LIVE TABLE.
-    assert "⤼ Sending data to snowflake skipped (incomplete extract)" in caplog.text
+    assert "-- Sending data to snowflake skipped (incomplete extract)" in caplog.text
+
+
+def test_phase_log_lines_are_plain_ascii(caplog):
+    # ON WINDOWS, A RUN WITH STDOUT REDIRECTED TO A FILE (A SCHEDULED TASK, A CI STEP) GETS A
+    # cp1252 STREAM. A NON-ASCII GLYPH IN A PHASE LINE RAISES UnicodeEncodeError ON EVERY PHASE AND
+    # MAKES RICH'S FINAL FLUSH EXIT 1 AFTER A FULLY SUCCESSFUL EXTRACT. EVERY PHASE LINE MUST BE ASCII.
+    with caplog.at_level(logging.INFO):
+        with WorkTask(id="A", description="Fetching ORG data"):
+            pass
+        try:
+            with WorkTask(id="B", description="Fetching TAG data"):
+                raise ValueError("boom")
+        except ValueError:
+            pass
+        WorkTask(id="C", description="Sending data").skip(reason="incomplete extract")
+
+    phase_lines = [r.getMessage() for r in caplog.records if r.name == "cs_tools.cli.progress"]
+    assert len(phase_lines) == 5  # start+end, start+fail, skip
+    for line in phase_lines:
+        line.encode("ascii")  # raises UnicodeEncodeError if a glyph creeps back in
 
 
 def test_a_never_started_task_still_renders_dashes():
