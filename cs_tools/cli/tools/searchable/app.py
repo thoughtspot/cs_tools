@@ -12,10 +12,12 @@ from thoughtspot_tml import Table
 from thoughtspot_tml.utils import determine_tml_type
 import httpx
 import sqlalchemy as sa
+import tenacity
 import typer
 
 from cs_tools import _types, utils
 from cs_tools.api import workflows
+from cs_tools.api.client import RESTAPIClient
 from cs_tools.cli import (
     _logging,
     custom_types,
@@ -437,6 +439,61 @@ def bi_server(
     return 0
 
 
+# A SCHEDULE WITH ITS FULL RUN HISTORY IS ~3KB ON THE WIRE. ONE UNBOUNDED REQUEST ON A CLUSTER WITH
+# THOUSANDS OF SCHEDULES WOULD BE A SINGLE MULTI-MB RESPONSE AGAINST A FLAT TIMEOUT -- THE SAME SHAPE
+# THAT MAKES THE DEPENDENTS FETCH TIME OUT ON LARGE CLUSTERS. 500 KEEPS EACH PAGE AROUND 1.5MB.
+SCHEDULE_PAGE_SIZE = 500
+
+
+def _fetch_schedules(http: RESTAPIClient, *, org_id: int) -> list[_types.APIResult]:
+    """
+    Every schedule visible in the session's current org, with its full run history.
+
+    Pages through schedules/search. A page the cluster cannot answer (endpoint missing on older
+    releases, a timeout, a server under pressure) is a warning, not a failed extract: the pages
+    already fetched are kept and the gap is logged.
+    """
+    schedules: list[_types.APIResult] = []
+
+    while True:
+        c = http.schedules_search(
+            record_size=SCHEDULE_PAGE_SIZE,
+            record_offset=len(schedules),
+            history_runs_options={"include_history_runs": True, "record_size": -1},
+        )
+
+        try:
+            try:
+                r = utils.run_sync(c)
+            except tenacity.RetryError as e:
+                # RESULT-BASED EXHAUSTION (429/502/503/504) WRAPS THE LAST RESPONSE; EXCEPTION-BASED
+                # EXHAUSTION RE-RAISES THE TRANSPORT ERROR AND IS CAUGHT BELOW.
+                if e.last_attempt.failed:
+                    raise
+                r = e.last_attempt.result()
+        except httpx.HTTPError as e:
+            log.warning(
+                f"Could not fetch schedules in org {org_id} at record_offset {len(schedules)} "
+                f"({type(e).__name__}: {e}), keeping the {len(schedules):,} fetched so far.."
+            )
+            break
+
+        if not r.is_success:
+            log.warning(
+                f"Could not fetch schedules in org {org_id} at record_offset {len(schedules)} "
+                f"(HTTP {r.status_code}), keeping the {len(schedules):,} fetched so far.."
+            )
+            break
+
+        page = r.json()
+        schedules.extend(page)
+
+        if len(page) < SCHEDULE_PAGE_SIZE:
+            break
+
+    return schedules
+
+
 @app.command()
 @depends_on(thoughtspot=ThoughtSpot())
 def metadata(
@@ -446,6 +503,11 @@ def metadata(
         False,
         "--include-column-access",
         help="if specified, include security controls for Column Level Security as well",
+    ),
+    include_schedules: bool = typer.Option(
+        False,
+        "--include-schedules",
+        help="if specified, also extract Liveboard schedules and their recent run history",
     ),
     org_override: str = typer.Option(None, "--org", help="The Org to switch to before performing actions."),
     syncer: Syncer = typer.Option(
@@ -467,10 +529,16 @@ def metadata(
     if not ts.session_context.user.is_admin:
         log.warning("Searchable is meant to be run from an Admin-level context, your results may vary..")
 
+    # OPT-IN TABLES ARE REGISTERED HERE, NOT IN METADATA_MODELS, SO A DEFAULT RUN NEVER CREATES THEM.
+    extract_models = [*models.METADATA_MODELS, *(models.SCHEDULE_MODELS if include_schedules else [])]
+
+    if include_schedules and isinstance(syncer, DatabaseSyncer):
+        syncer.ensure_tables(models.SCHEDULE_MODELS)
+
     temp = SQLite(
         database_path=ts.config.temp_dir / "temp.db",
         pragma_speedy_inserts=True,
-        models=models.METADATA_MODELS,
+        models=extract_models,
         load_strategy="UPSERT",
     )
 
@@ -489,6 +557,11 @@ def metadata(
         px.WorkTask(id="TS_COLUMN", description="  Fetching [fg-secondary]COLUMN[/] data"),
         px.WorkTask(id="TS_DEPENDENT", description="  Fetching [fg-secondary]DEPENDENT[/] data"),
         px.WorkTask(id="TS_ACCESS", description="  Fetching [fg-secondary]ACCESS[/] data"),
+        *(
+            [px.WorkTask(id="TS_SCHEDULE", description="  Fetching [fg-secondary]SCHEDULE[/] data")]
+            if include_schedules
+            else []
+        ),
         px.WorkTask(id="DUMP_DATA", description=f"Sending data to {syncer.name}"),
     ]
 
@@ -715,6 +788,21 @@ def metadata(
                 )
                 temp.dump(models.SharingAccess.__tablename__, data=d)
 
+            if include_schedules:
+                with tracker["TS_SCHEDULE"]:
+                    # ONE PAGED CALL PER ORG: schedules/search IS SCOPED TO THE SESSION'S CURRENT ORG. HISTORY
+                    # IS A ROLLING ~30 DAY WINDOW ON THE SERVER, SO WE ASK FOR ALL OF IT EVERY TIME AND LET
+                    # UPSERT ACCUMULATE.
+                    _ = _fetch_schedules(ts.api, org_id=org["id"])
+
+                    # DUMP SCHEDULE DATA
+                    d = api_transformer.ts_schedule(data=_, cluster=CLUSTER_UUID, org_id=org["id"])
+                    temp.dump(models.Schedule.__tablename__, data=d)
+
+                    # DUMP SCHEDULE_RUN DATA
+                    d = api_transformer.ts_schedule_run(data=_, cluster=CLUSTER_UUID, org_id=org["id"])
+                    temp.dump(models.ScheduleRun.__tablename__, data=d)
+
             # INCREASE THE PROGRESS BAR SINCE WE'RE DONE WITH THIS ORG
             tracker["ORGS_COUNT"].advance(step=1)
 
@@ -732,7 +820,7 @@ def metadata(
 
         with tracker["DUMP_DATA"]:
             # WRITE ALL THE COMBINED DATA TO THE TARGET SYNCER
-            for model in models.METADATA_MODELS:
+            for model in extract_models:
                 streamer = temp.read_stream(tablename=model.__tablename__, batch=1_000_000)
 
                 for idx, rows in enumerate(streamer, start=1):

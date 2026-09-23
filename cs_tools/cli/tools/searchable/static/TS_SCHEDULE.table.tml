@@ -1,0 +1,170 @@
+guid: dd346419-d5ea-49b1-b194-575bb871d945
+table:
+  name: TS_SCHEDULE
+  description: |-
+    Liveboard schedules, one row per schedule for each day the extract ran.
+
+    ThoughtSpot only knows about schedules that exist right now, so this table is a snapshot: compare
+    Snapshot Dates to see which schedules were added, paused, or deleted over time.
+
+    https://docs.thoughtspot.com/cloud/latest/liveboard-schedule
+  db: << DATABASE >>
+  schema: << SCHEMA >>
+  db_table: TS_SCHEDULE
+  connection:
+    name: << CONNECTION_NAME >>
+  columns:
+  - name: CLUSTER_GUID
+    description: This column is only used for JOINs.
+    db_column_name: CLUSTER_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: VARCHAR
+  - name: ORG_ID
+    description: This column is only used for JOINs.
+    db_column_name: ORG_ID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: INT64
+  - name: Snapshot Date
+    description: The date the extract ran. One row exists per schedule per snapshot.
+    db_column_name: SNAPSHOT_DATE
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: DATE
+  - name: Schedule GUID
+    description: The unique identifier of the schedule.
+    db_column_name: SCHEDULE_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Schedule
+    description: The name of the schedule.
+    db_column_name: NAME
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Schedule Description
+    description: The description of the schedule.
+    db_column_name: DESCRIPTION
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Schedule Status
+    description: "Whether the schedule is active (SCHEDULED) or has been paused (PAUSED)."
+    db_column_name: STATUS
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: VARCHAR
+  - name: AUTHOR_GUID
+    description: This column is only used for JOINs.
+    db_column_name: AUTHOR_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: VARCHAR
+  - name: LIVEBOARD_GUID
+    description: This column is only used for JOINs.
+    db_column_name: LIVEBOARD_GUID
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+      is_hidden: true
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Schedule Created At
+    description: The datetime of when the schedule was created.
+    db_column_name: CREATED
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: DATE_TIME
+  - name: Schedule File Format
+    description: "The export format of the scheduled delivery (PDF, CSV, PNG, XLSX)."
+    db_column_name: FILE_FORMAT
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Schedule Time Zone
+    description: The time zone the cron expression is evaluated in.
+    db_column_name: TIME_ZONE
+    properties:
+      column_type: ATTRIBUTE
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Schedule Cron Expression
+    description: "The frequency of the schedule as JSON (second, minute, hour, day_of_month, month, day_of_week)."
+    db_column_name: CRON_EXPRESSION
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  - name: Recipient Email Count
+    description: The number of external email addresses the schedule delivers to.
+    db_column_name: RECIPIENT_EMAIL_COUNT
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Recipient Principal Count
+    description: The number of ThoughtSpot users and groups the schedule delivers to.
+    db_column_name: RECIPIENT_PRINCIPAL_COUNT
+    properties:
+      column_type: MEASURE
+      aggregation: SUM
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: INT64
+  - name: Schedule Recipients
+    description: The full recipient list as JSON (emails and principals).
+    db_column_name: RECIPIENTS
+    properties:
+      column_type: ATTRIBUTE
+      index_type: DONT_INDEX
+    db_column_properties:
+      data_type: VARCHAR
+  joins_with:
+  - name: TS_SCHEDULE_to_TS_CLUSTER
+    destination:
+      name: TS_CLUSTER
+    "on": "[TS_SCHEDULE::CLUSTER_GUID] = [TS_CLUSTER::Cluster GUID]"
+    type: INNER
+  - name: TS_SCHEDULE_to_TS_ORG
+    destination:
+      name: TS_ORG
+    "on": "[TS_SCHEDULE::CLUSTER_GUID] = [TS_ORG::CLUSTER_GUID] AND [TS_SCHEDULE::ORG_ID] = [TS_ORG::Org ID]"
+    type: INNER
+  - name: TS_SCHEDULE_to_TS_USER
+    destination:
+      name: TS_USER
+    "on": "[TS_SCHEDULE::CLUSTER_GUID] = [TS_USER::CLUSTER_GUID] AND [TS_SCHEDULE::AUTHOR_GUID] = [TS_USER::User GUID]"
+    type: LEFT_OUTER
+  - name: TS_SCHEDULE_to_TS_METADATA_OBJECT
+    destination:
+      name: TS_METADATA_OBJECT
+    "on": "[TS_SCHEDULE::CLUSTER_GUID] = [TS_METADATA_OBJECT::CLUSTER_GUID] AND [TS_SCHEDULE::ORG_ID] = [TS_METADATA_OBJECT::ORG_ID] AND [TS_SCHEDULE::LIVEBOARD_GUID] = [TS_METADATA_OBJECT::Object GUID]"
+    type: LEFT_OUTER
+  properties:
+    spotter_config:
+      is_spotter_enabled: false

@@ -500,9 +500,17 @@ class RESTAPIClient(httpx.AsyncClient):
 
     @pydantic.validate_call(validate_return=True, config=validators.METHOD_CONFIG)
     @_transport.CachePolicy.mark_cacheable
-    def schedules_search(self, liveboard_guid: _types.ObjectIdentifier, **options: Any) -> Awaitable[httpx.Response]:
-        """Get a list of Liveboard schedules."""
-        options["metadata"] = [{"identifier": str(liveboard_guid)}]
+    def schedules_search(
+        self, liveboard_guid: Optional[_types.ObjectIdentifier] = None, **options: Any
+    ) -> Awaitable[httpx.Response]:
+        """
+        Get a list of Liveboard schedules.
+
+        Without a liveboard, no `metadata` filter is sent and the search covers every schedule
+        visible to the session's current org (pass record_size=-1 to get them all).
+        """
+        if liveboard_guid is not None:
+            options["metadata"] = [{"identifier": str(liveboard_guid)}]
         return self.post("api/rest/2.0/schedules/search", headers=options.pop("headers", None), json=options)
 
     # ==================================================================================
