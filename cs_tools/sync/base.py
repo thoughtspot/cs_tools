@@ -179,6 +179,27 @@ class DatabaseSyncer(Syncer, is_base_class=True):
         self._session = sa.orm.Session(self._engine)
         self._session.begin()
 
+    def ensure_tables(self, models: list[type[ValidatedSQLModel]]) -> None:
+        """
+        Register extra models after connect, creating their tables if they do not exist yet.
+
+        The syncer is built (and its tables created) while the CLI parses options, so a command
+        that gates a table behind a flag registers it here once it knows the flag is on.
+        """
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action="ignore", category=sa.exc.SAWarning)
+
+            # REASSIGN RATHER THAN APPEND: THE CALLER MAY HAVE PASSED A SHARED MODULE-LEVEL LIST.
+            self.models = [*self.models, *(m for m in models if m not in self.models)]
+
+            for model in models:
+                if model.__tablename__ not in self.metadata.tables:
+                    model.__table__.to_metadata(self.metadata, schema=None)
+
+        tables = [self.metadata.tables[m.__tablename__] for m in models]
+        log.debug(f"Attempting CREATE TABLE {[t.name for t in tables]} in {self!r}")
+        self.metadata.create_all(self._engine, tables=tables)
+
     def __teardown__(self) -> None:
         """Be responsible with database resources."""
         if self._session is not None:

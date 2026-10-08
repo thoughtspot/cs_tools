@@ -438,6 +438,72 @@ class AIStats(ValidatedSQLModel, table=True):
         return sql_query
 
 
+class Schedule(ValidatedSQLModel, table=True):
+    """
+    A Liveboard schedule, as of the day it was extracted.
+
+    snapshot_date is part of the key on purpose: the API only knows about schedules that exist
+    right now, so the only way to see "how many were running in July" or "which ones got deleted"
+    is to keep one row per schedule per extract, under any load strategy.
+    """
+
+    __tablename__ = "ts_schedule"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(0, primary_key=True)
+    snapshot_date: dt.date = Field(primary_key=True)
+    schedule_guid: str = Field(primary_key=True)
+    name: str = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
+    description: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
+    status: str  # SCHEDULED, PAUSED
+    author_guid: Optional[str]  # the author may have been deleted since
+    liveboard_guid: Optional[str]
+    created: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    file_format: Optional[str]
+    time_zone: Optional[str]
+    cron_expression: str = Field(sa_column_kwargs={"comment": "JSON body of frequency.cron_expression"})
+    recipient_email_count: int
+    recipient_principal_count: int
+    recipients: str = Field(sa_column_kwargs={"comment": "JSON body of recipient_details"})
+
+    @pydantic.field_validator("description", "time_zone", "file_format", mode="before")
+    @classmethod
+    def clean_empty_or_whitespace(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
+
+    @pydantic.field_validator("created", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> Optional[dt.datetime]:
+        return validators.ensure_datetime_is_utc.func(value)
+
+
+class ScheduleRun(ValidatedSQLModel, table=True):
+    """One execution of a schedule. The API keeps a rolling ~30 day window; this table keeps them all."""
+
+    __tablename__ = "ts_schedule_run"
+    cluster_guid: str = Field(primary_key=True)
+    org_id: int = Field(0, primary_key=True)
+    schedule_guid: str = Field(primary_key=True)
+    run_guid: str = Field(primary_key=True)
+    started: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    ended: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
+    status: str  # SUCCESS, FAILED, DEFAULT
+    detail: Optional[str] = Field(sa_column=Column(Text, info={"length_override": "MAX"}))
+
+    @pydantic.field_validator("detail", mode="before")
+    @classmethod
+    def clean_empty_or_whitespace(cls, value: Any) -> Optional[str]:
+        if not value:
+            return None
+        return value.strip()
+
+    @pydantic.field_validator("started", "ended", mode="before")
+    @classmethod
+    def check_valid_utc_datetime(cls, value: Any) -> Optional[dt.datetime]:
+        return validators.ensure_datetime_is_utc.func(value)
+
+
 METADATA_MODELS = [
     Cluster,
     Org,
@@ -454,6 +520,13 @@ METADATA_MODELS = [
     TaggedObject,
     DependentObject,
     SharingAccess,
+]
+
+# OPT-IN (searchable metadata --include-schedules). KEPT OUT OF METADATA_MODELS ON PURPOSE: THE
+# SYNCER CREATES EVERY MODEL IN THAT LIST ON CONNECT, SO A DEFAULT RUN MUST NOT KNOW ABOUT THESE.
+SCHEDULE_MODELS = [
+    Schedule,
+    ScheduleRun,
 ]
 
 PRINCIPAL_MODELS = [

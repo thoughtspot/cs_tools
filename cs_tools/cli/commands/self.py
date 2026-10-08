@@ -92,8 +92,10 @@ def sync() -> _types.ExitCode:
     if meta.local_system.is_windows:
         PACKAGES_TO_SYNC.append("tzdata")
 
+    # RESTRICT THE UPGRADE TO THE PACKAGE ITSELF. AN UNRESTRICTED UPGRADE RE-RESOLVES ITS DEPENDENCIES TOO
+    # AND OVERRIDES THE VERSIONS cs_tools PINS (click, FOR ONE), WHICH LEAVES EVERY COMMAND FAILING ON STARTUP.
     for package in PACKAGES_TO_SYNC:
-        cs_tools_venv.install(package, "--upgrade", "--prerelease=allow")
+        cs_tools_venv.install(package, "--upgrade-package", package, "--prerelease=allow")
 
     return 0
 

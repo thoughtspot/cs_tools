@@ -36,7 +36,7 @@ dependencies = [
     # dependencies here are listed for cs_tools the library  (ie. import cs_tools)
     "aiosqlite",
     "click == 8.1.7",
-    "thoughtspot-tml >= 2.4.2",
+    "thoughtspot-tml >= 2.4.5",
     "awesomeversion",
     "httpx >= 0.27.0",
     "pydantic >= 2.6.4",
@@ -44,6 +44,8 @@ dependencies = [
     "email-validator",
     "rich == 13.7.1",
     "sqlmodel >= 0.0.16",
+    # The Snowflake dialect does not support SQLAlchemy 2.1 yet (snowflakedb/snowflake-sqlalchemy#652).
+    "sqlalchemy < 2.1",
     "tenacity",
     "toml",
     "packaging",

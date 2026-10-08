@@ -55,7 +55,9 @@ class WorkTask:
 
     def __enter__(self) -> _compat.Self:
         self.start()
-        log.info(f"→ {self._log_label()}")
+        # PLAIN ASCII MARKERS ON PURPOSE: A REDIRECTED STDOUT ON WINDOWS IS cp1252, AND A GLYPH HERE
+        # RAISES UnicodeEncodeError ON EVERY PHASE AND EXITS 1 AFTER A FULLY SUCCESSFUL RUN.
+        log.info(f"-> {self._log_label()}")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -68,9 +70,9 @@ class WorkTask:
         duration = (self.stop_time or self.get_time()) - self.start_time
 
         if exc_type is not None:
-            log.info(f"✗ {self._log_label()} failed after {duration:.1f}s")
+            log.info(f"!! {self._log_label()} failed after {duration:.1f}s")
         else:
-            log.info(f"✓ {self._log_label()} ({duration:.1f}s)")
+            log.info(f"ok {self._log_label()} ({duration:.1f}s)")
 
     def _log_label(self) -> str:
         """Plain-text phase label for logs (rich markup and indentation stripped)."""
@@ -130,7 +132,7 @@ class WorkTask:
         self.start_time = None
         self.skipped = True
         self.skip_reason = reason
-        log.info(f"⤼ {self._log_label()} skipped" + (f" ({reason})" if reason else ""))
+        log.info(f"-- {self._log_label()} skipped" + (f" ({reason})" if reason else ""))
 
     def advance(self, step: float) -> None:
         """Advance the task by the step value."""

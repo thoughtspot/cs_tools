@@ -765,3 +765,73 @@ def ts_ai_stats(data: list[_types.APIResult], *, cluster: _types.GUID) -> _types
             seen.add(unique)
 
     return reshaped
+
+
+def _utc_from_seconds_or_millis(value: Any) -> dt.datetime | None:
+    """
+    schedules/search names its timestamps `*_in_millis` but sends epoch SECONDS (observed on 26.8.0).
+
+    Treat anything that would land past the year 5000 as milliseconds, so a future server fix that
+    starts sending real milliseconds still lands on the right day instead of raising.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)) and value > 100_000_000_000:
+        value = value / 1000
+    return validators.ensure_datetime_is_utc.func(value)
+
+
+def ts_schedule(
+    data: list[_types.APIResult], *, cluster: _types.GUID, org_id: int, snapshot_date: dt.date | None = None
+) -> _types.TableRowsFormat:
+    """Reshapes schedules/search -> searchable.models.Schedule (one row per schedule per snapshot)."""
+    reshaped: _types.TableRowsFormat = []
+    snapshot_date = snapshot_date or dt.datetime.now(tz=dt.timezone.utc).date()
+
+    for result in data:
+        recipients = result.get("recipient_details") or {}
+
+        reshaped.append(
+            models.Schedule.validated_init(
+                cluster_guid=cluster,
+                org_id=org_id,
+                snapshot_date=snapshot_date,
+                schedule_guid=result["id"],
+                name=result["name"],
+                description=result.get("description"),
+                status=result["status"],
+                author_guid=(result.get("author") or {}).get("id"),
+                liveboard_guid=(result.get("metadata") or {}).get("id"),
+                created=_utc_from_seconds_or_millis(result.get("creation_time_in_millis")),
+                file_format=result.get("file_format"),
+                time_zone=result.get("time_zone"),
+                cron_expression=json.dumps((result.get("frequency") or {}).get("cron_expression") or {}),
+                recipient_email_count=len(recipients.get("emails") or []),
+                recipient_principal_count=len(recipients.get("principals") or []),
+                recipients=json.dumps(recipients),
+            ).model_dump()
+        )
+
+    return reshaped
+
+
+def ts_schedule_run(data: list[_types.APIResult], *, cluster: _types.GUID, org_id: int) -> _types.TableRowsFormat:
+    """Reshapes schedules/search?history_runs -> searchable.models.ScheduleRun (one row per run)."""
+    reshaped: _types.TableRowsFormat = []
+
+    for result in data:
+        for run in result.get("history_runs") or []:
+            reshaped.append(
+                models.ScheduleRun.validated_init(
+                    cluster_guid=cluster,
+                    org_id=org_id,
+                    schedule_guid=result["id"],
+                    run_guid=run["id"],
+                    started=_utc_from_seconds_or_millis(run.get("start_time_in_millis")),
+                    ended=_utc_from_seconds_or_millis(run.get("end_time_in_millis")),
+                    status=run["status"],
+                    detail=run.get("detail"),
+                ).model_dump()
+            )
+
+    return reshaped
