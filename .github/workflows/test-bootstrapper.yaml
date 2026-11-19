@@ -31,6 +31,14 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
+        # THE CURRENT UBUNTU RUNNER HAS NO PYTHON 3.9 BUILD, SO THE OLDEST SUPPORTED VERSION
+        # IS TESTED ON THE NEWEST UBUNTU THAT STILL SHIPS ONE.
+        exclude:
+          - os: ubuntu-latest
+            python-version: "3.9"
+        include:
+          - os: ubuntu-24.04
+            python-version: "3.9"
 
     env:
       # DEFAULT = THE PUBLISHED INSTALLER (WHAT CUSTOMERS RUN). PASS bootstrapper_ref TO TEST A

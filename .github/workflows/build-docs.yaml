@@ -23,9 +23,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      # SETUP PYTHON.
+      # SETUP PYTHON. PINNED, BECAUSE THE RUNNER'S DEFAULT PYTHON MOVES AHEAD OF WHAT THE
+      # TML LIBRARY SUPPORTS.
       - name: Set up Python
         uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
 
       # UPDATE PIP.
       - name: Ensure pip is up to date.
