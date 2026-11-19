@@ -32,6 +32,7 @@ import json
 import logging
 import math
 
+from cs_tools.api import _retry
 from cs_tools.api.client import RESTAPIClient
 from cs_tools.api.workflows import metadata as metadata_workflow
 import awesomeversion
@@ -280,8 +281,9 @@ def test_c_exhausted_server_pressure_retries_are_a_failed_batch_not_a_crash():
     # THE FAILURE IS RECORDED AS THE UNDERLYING STATUS ERROR, NOT AN OPAQUE RetryError.
     assert isinstance(failures[0].error, httpx.HTTPStatusError)
     assert failures[0].error.response.status_code == 429
-    # THE RETRY POLICY STILL RAN ITS COURSE BEFORE THE BATCH WAS DECLARED FAILED.
-    assert sum(b"BOOM" in r.content for r in server.requests) == 3
+    # THE RETRY POLICY STILL RAN ITS COURSE BEFORE THE BATCH WAS DECLARED FAILED -- AND A
+    # RATE LIMIT GETS THE LONGER OF THE TWO ATTEMPT CAPS.
+    assert sum(b"BOOM" in r.content for r in server.requests) == _retry.MAX_ATTEMPTS_WHEN_RATE_LIMITED
 
 
 def test_c_a_failure_storm_does_not_flood_the_console(caplog):
@@ -336,12 +338,13 @@ def test_e_a_failing_permission_request_does_not_abort_the_phase():
     # PERMISSIONS IS THE MOST SERVER-EXPENSIVE PHASE WE RUN, AND IT COMES LAST -- A SINGLE
     # FAILED REQUEST USED TO THROW AWAY EVERY PHASE THAT ALREADY SUCCEEDED BEFORE IT.
     server = RecordingServer(respond=fails_on(b"BOOM", httpx.ReadTimeout("simulated slow endpoint")))
+    good = [f"good-{i}" for i in range(EXPECTED_MAX_PER_REQUEST)]
     failures: list[metadata_workflow.FetchFailure] = []
 
     async def scenario() -> list:
         client = make_client(server)
         return await metadata_workflow.permissions(
-            typed_guids={"LOGICAL_TABLE": ["good-1", "BOOM-1", "good-2"]},
+            typed_guids={"LOGICAL_TABLE": [*good, "BOOM-1"]},
             compat_ts_version=ANY_MODERN_TS_VERSION,
             failures=failures,
             http=client,
@@ -350,7 +353,7 @@ def test_e_a_failing_permission_request_does_not_abort_the_phase():
     results = asyncio.run(scenario())
 
     # ONE PAYLOAD PER SURVIVING REQUEST -- THE SHAPE ITS TRANSFORMER EXPECTS.
-    assert results == [[{"metadata_id": "OK"}], [{"metadata_id": "OK"}]]
+    assert results == [[{"metadata_id": "OK"}]]
     assert len(failures) == 1
     assert failures[0].metadata_type == "LOGICAL_TABLE"
     assert list(failures[0].identifiers) == ["BOOM-1"]
@@ -361,7 +364,7 @@ def test_e_a_failing_column_permission_request_reports_the_whole_column_batch():
     # COLUMN-ACCESS CALLERS PASS GROUPED LISTS (ONE PER TABLE); THE FAILURE RECORD MUST NAME
     # EVERY COLUMN THE LOST REQUEST COVERED.
     server = RecordingServer(respond=fails_on(b"BOOM", httpx.ReadError("simulated dropped response")))
-    good = ["good-1", "good-2"]
+    good = [f"good-{i}" for i in range(EXPECTED_MAX_PER_REQUEST)]
     bad = ["BOOM-1", "BOOM-2"]
     failures: list[metadata_workflow.FetchFailure] = []
 
@@ -381,6 +384,78 @@ def test_e_a_failing_column_permission_request_reports_the_whole_column_batch():
     assert list(failures[0].identifiers) == bad
 
 
+def test_e_b_single_object_permissions_are_batched_into_bounded_requests():
+    # THE ACCESS PHASE PASSES THOUSANDS OF SINGLE GUIDS. ONE fetch-permissions REQUEST PER
+    # OBJECT IS WHAT TRIPS A CLUSTER'S REQUESTS-PER-SECOND LIMIT (ThoughtSpot 26.11 ENFORCES
+    # 50 PER SECOND PER ORG), SO SINGLE GUIDS MUST BE GROUPED INTO BOUNDED REQUESTS.
+    server = RecordingServer(respond=lambda _: 200)
+    guids = [f"tbl-{i}" for i in range(60)]
+
+    async def scenario() -> list:
+        client = make_client(server)
+        return await metadata_workflow.permissions(
+            typed_guids={"LOGICAL_TABLE": guids},
+            compat_ts_version=ANY_MODERN_TS_VERSION,
+            http=client,
+        )
+
+    results = asyncio.run(scenario())
+
+    batches = server.sent_identifiers()
+    assert len(batches) == math.ceil(len(guids) / EXPECTED_MAX_PER_REQUEST)
+    assert all(len(batch) <= EXPECTED_MAX_PER_REQUEST for batch in batches)
+    assert sorted(guid for batch in batches for guid in batch) == sorted(guids)
+    # ONE PAYLOAD PER REQUEST, NOT PER OBJECT.
+    assert len(results) == len(batches)
+
+
+def test_e_b_a_wide_column_permission_list_is_split_into_bounded_requests():
+    # COLUMN-ACCESS CALLERS PASS ONE LIST PER TABLE; A WIDE TABLE MUST NOT BECOME ONE ENORMOUS
+    # fetch-permissions REQUEST.
+    server = RecordingServer(respond=lambda _: 200)
+    columns = [f"col-{i}" for i in range(60)]
+
+    async def scenario() -> None:
+        client = make_client(server)
+        await metadata_workflow.permissions(
+            typed_guids={"LOGICAL_COLUMN": [columns]},
+            compat_ts_version=ANY_MODERN_TS_VERSION,
+            http=client,
+        )
+
+    asyncio.run(scenario())
+
+    batches = server.sent_identifiers()
+    assert len(batches) == math.ceil(len(columns) / EXPECTED_MAX_PER_REQUEST)
+    assert all(len(batch) <= EXPECTED_MAX_PER_REQUEST for batch in batches)
+
+
+def test_e_b_permission_requests_carry_the_object_type_for_every_identifier():
+    # THE V2 ENDPOINT TAKES A TYPE PER IDENTIFIER; BATCHING MUST NOT DROP IT, AND OBJECTS OF
+    # DIFFERENT TYPES ARE NEVER MIXED IN ONE REQUEST.
+    server = RecordingServer(respond=lambda _: 200)
+
+    async def scenario() -> None:
+        client = make_client(server)
+        await metadata_workflow.permissions(
+            typed_guids={"LIVEBOARD": ["lb-1", "lb-2"], "ANSWER": ["ans-1"]},
+            compat_ts_version=ANY_MODERN_TS_VERSION,
+            http=client,
+        )
+
+    asyncio.run(scenario())
+
+    sent = [json.loads(r.content)["metadata"] for r in server.requests]
+    expected = [
+        {"type": "LIVEBOARD", "identifier": "lb-1"},
+        {"type": "LIVEBOARD", "identifier": "lb-2"},
+        {"type": "ANSWER", "identifier": "ans-1"},
+    ]
+    key = lambda m: (m["type"], m["identifier"])  # noqa: E731
+    assert sorted((m for batch in sent for m in batch), key=key) == sorted(expected, key=key)
+    assert all(len({m["type"] for m in batch}) == 1 for batch in sent)
+
+
 def test_e_a_healthy_permissions_run_reports_no_failures():
     server = RecordingServer(respond=lambda _: 200)
     failures: list[metadata_workflow.FetchFailure] = []
@@ -397,7 +472,8 @@ def test_e_a_healthy_permissions_run_reports_no_failures():
     results = asyncio.run(scenario())
 
     assert failures == []
-    assert len(results) == 2
+    # BOTH OBJECTS FIT IN ONE BOUNDED REQUEST.
+    assert len(results) == 1
 
 
 def test_f_dependent_fetch_failures_name_the_kind_of_fetch(caplog):

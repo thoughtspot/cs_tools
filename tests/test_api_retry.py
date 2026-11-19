@@ -171,3 +171,45 @@ class TestBackoffPolicy:
         state = tenacity.RetryCallState(retry_object=retry_policy, fn=None, args=(), kwargs={})
         state.attempt_number = 10
         assert retry_policy.stop(state) is True
+
+    @staticmethod
+    def state_after_response(policy: tenacity.AsyncRetrying, attempt_number: int, response: httpx.Response):
+        state = tenacity.RetryCallState(retry_object=policy, fn=None, args=(), kwargs={})
+        state.attempt_number = attempt_number
+        state.set_result(response)
+        return state
+
+    def test_retry_after_is_honoured_when_rate_limited(self, retry_policy):
+        # A 429 MAY SAY HOW LONG TO BACK OFF. RETRYING SOONER THAN THAT ONLY BURNS AN ATTEMPT.
+        response = make_response(429, "api/rest/2.0/security/metadata/fetch-permissions")
+        response.headers["Retry-After"] = "7"
+        state = self.state_after_response(retry_policy, attempt_number=1, response=response)
+        assert retry_policy.wait(state) >= 7.0
+
+    def test_retry_after_is_still_capped(self, retry_policy):
+        # THE WAIT HOLDS A CONCURRENCY SLOT, SO EVEN A SERVER-SUPPLIED WAIT STAYS BOUNDED.
+        response = make_response(429, "api/rest/2.0/security/metadata/fetch-permissions")
+        response.headers["Retry-After"] = "600"
+        state = self.state_after_response(retry_policy, attempt_number=1, response=response)
+        assert retry_policy.wait(state) <= 30.0
+
+    def test_unparseable_retry_after_falls_back_to_backoff(self, retry_policy):
+        response = make_response(429, "api/rest/2.0/security/metadata/fetch-permissions")
+        response.headers["Retry-After"] = "Wed, 21 Oct 2015 07:28:00 GMT"
+        state = self.state_after_response(retry_policy, attempt_number=1, response=response)
+        assert 0.0 <= retry_policy.wait(state) <= 30.0
+
+    def test_rate_limited_requests_are_given_more_attempts(self, retry_policy):
+        # A RATE LIMIT IS A BUDGET, NOT A FAULT: THE REQUEST WILL SUCCEED ONCE THE WINDOW
+        # ROLLS OVER, SO IT EARNS MORE PATIENCE THAN A GATEWAY ERROR.
+        rate_limited = make_response(429, "api/rest/2.0/security/metadata/fetch-permissions")
+        state = self.state_after_response(retry_policy, attempt_number=3, response=rate_limited)
+        assert retry_policy.stop(state) is False
+
+        state = self.state_after_response(retry_policy, attempt_number=6, response=rate_limited)
+        assert retry_policy.stop(state) is True
+
+    def test_other_pressure_statuses_keep_the_short_attempt_cap(self, retry_policy):
+        unavailable = make_response(503, "api/rest/2.0/metadata/search")
+        state = self.state_after_response(retry_policy, attempt_number=3, response=unavailable)
+        assert retry_policy.stop(state) is True

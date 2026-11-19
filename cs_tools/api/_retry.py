@@ -10,6 +10,15 @@ import tenacity
 
 log = logging.getLogger(__name__)
 
+# EACH WAIT BETWEEN ATTEMPTS HOLDS ONE OF THE TRANSPORT'S CONCURRENCY SLOTS, SO A LONG WAIT
+# COLLAPSES THROUGHPUT EXACTLY WHEN THE SERVER IS STRUGGLING. NO WAIT MAY EXCEED THIS.
+MAX_WAIT_SECONDS = 30.0
+
+# A RATE LIMIT (429) IS A BUDGET, NOT A FAULT: THE REQUEST SUCCEEDS ONCE THE WINDOW ROLLS OVER,
+# SO IT EARNS MORE PATIENCE THAN A GATEWAY ERROR OR A DROPPED CONNECTION.
+MAX_ATTEMPTS = 3
+MAX_ATTEMPTS_WHEN_RATE_LIMITED = 6
+
 # MARKS A REQUEST WHOSE ENDPOINT CANNOT SAFELY BE SENT TWICE (eg. TML IMPORT).
 NON_IDEMPOTENT_HEADER = "x-cs-tools-non-idempotent"
 
@@ -87,6 +96,64 @@ def request_errors_unless_importing_tml(exception: BaseException) -> bool:
 
     # Base case, don't retry.
     return False
+
+
+def _last_response(state: tenacity.RetryCallState) -> httpx.Response | None:
+    """The response the last attempt produced, if it produced one at all."""
+    if state.outcome is None or state.outcome.failed:
+        return None
+
+    result = state.outcome.result()
+    return result if isinstance(result, httpx.Response) else None
+
+
+def _retry_after_seconds(response: httpx.Response) -> float | None:
+    """How long the server asked us to wait, when it said so in seconds."""
+    value = response.headers.get("Retry-After")
+
+    if value is None:
+        return None
+
+    try:
+        seconds = float(value)
+    # THE HEADER MAY ALSO CARRY AN HTTP-DATE. THE CLOCK SKEW MATH IS NOT WORTH IT; BACK OFF INSTEAD.
+    except ValueError:
+        return None
+
+    return seconds if seconds > 0 else None
+
+
+class wait_retry_after_or_backoff(tenacity.wait.wait_base):
+    """Wait as long as a rate-limited response asks, capped; otherwise fall back to backoff."""
+
+    def __init__(self, fallback: tenacity.wait.wait_base, max_wait: float = MAX_WAIT_SECONDS) -> None:
+        self.fallback = fallback
+        self.max_wait = max_wait
+
+    def __call__(self, retry_state: tenacity.RetryCallState) -> float:
+        response = _last_response(retry_state)
+
+        if response is None or response.status_code != httpx.codes.TOO_MANY_REQUESTS:
+            return self.fallback(retry_state)
+
+        hinted = _retry_after_seconds(response)
+
+        if hinted is None:
+            return self.fallback(retry_state)
+
+        return min(hinted, self.max_wait)
+
+
+class stop_after_attempts_by_outcome(tenacity.stop.stop_base):
+    """Allow more attempts when the last response was a rate limit, fewer for everything else."""
+
+    def __call__(self, retry_state: tenacity.RetryCallState) -> bool:
+        response = _last_response(retry_state)
+
+        if response is not None and response.status_code == httpx.codes.TOO_MANY_REQUESTS:
+            return retry_state.attempt_number >= MAX_ATTEMPTS_WHEN_RATE_LIMITED
+
+        return retry_state.attempt_number >= MAX_ATTEMPTS
 
 
 def if_server_is_under_pressure(response: httpx.Response) -> bool:
