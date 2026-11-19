@@ -141,6 +141,7 @@ nav:
   - Guides:
     - guides/index.md
   - Changelog:
+    - v1.7.3: changelog/1.7.3.md
     - v1.7.2: changelog/1.7.2.md
     - v1.7.1: changelog/1.7.1.md
     - v1.7.0: changelog/1.7.0.md
