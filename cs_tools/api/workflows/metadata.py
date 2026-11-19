@@ -20,11 +20,12 @@ from cs_tools.api.workflows.utils import paginator
 
 _LOG = logging.getLogger(__name__)
 
-# THE MOST IDENTIFIERS WE PLACE IN A SINGLE metadata/search REQUEST. BOUNDING THIS KEEPS ONE
-# WIDE OBJECT (eg. A TABLE WITH HUNDREDS OF COLUMNS) FROM BECOMING A SINGLE, ENORMOUS REQUEST,
-# AND MANY SINGLE OBJECTS FROM BECOMING MANY REQUESTS. MIRRORS THE n=25 PRECEDENT IN
-# RESTAPIClient.v1_security_metadata_permissions.
-_MAX_IDENTIFIERS_PER_SEARCH = 25
+# THE MOST IDENTIFIERS WE PLACE IN A SINGLE metadata/search OR fetch-permissions REQUEST.
+# BOUNDING THIS KEEPS ONE WIDE OBJECT (eg. A TABLE WITH HUNDREDS OF COLUMNS) FROM BECOMING A
+# SINGLE, ENORMOUS REQUEST, AND MANY SINGLE OBJECTS FROM BECOMING MANY REQUESTS -- ENOUGH OF
+# THEM, FAST ENOUGH, TRIPS THE PLATFORM'S REQUESTS-PER-SECOND LIMIT. MIRRORS THE n=25
+# PRECEDENT IN RESTAPIClient.v1_security_metadata_permissions.
+_MAX_IDENTIFIERS_PER_REQUEST = 25
 
 
 async def fetch_all(
@@ -238,7 +239,7 @@ async def fetch(
         # CALLERS GROUP IDENTIFIERS INCONSISTENTLY (single guids, or per-object lists). FLATTEN
         # THEM, THEN RE-BATCH TO A BOUNDED SIZE SO REQUEST COST STAYS PREDICTABLE REGARDLESS OF
         # HOW WIDE OR NUMEROUS THE OBJECTS ARE.
-        for batch in utils.batched(_flatten_identifiers(guids), n=_MAX_IDENTIFIERS_PER_SEARCH):
+        for batch in utils.batched(_flatten_identifiers(guids), n=_MAX_IDENTIFIERS_PER_REQUEST):
             identifiers = tuple(batch)
             options = {**search_options, "metadata": [{"type": metadata_type, "identifier": _} for _ in identifiers]}
             c = http.metadata_search(guid="", record_size=record_size, **options)
@@ -355,6 +356,9 @@ async def permissions(
     """
     Wraps security/metadata/fetch-permissions fetching specific objects.
 
+    Identifiers are re-batched to a bounded size however the caller grouped them, so the phase
+    sends a predictable number of requests of a predictable cost.
+
     Permissions is the most server-expensive data we fetch, and it runs last -- a request which
     fails after the client's own retries is skipped instead of cancelling its siblings, so one bad
     request cannot throw away every phase which already succeeded before it. Skipped requests are
@@ -372,7 +376,13 @@ async def permissions(
     digest = _FailureDigest(fetched="permissions")
 
     for metadata_type, guids in typed_guids.items():
-        for guid in guids:
+        # CALLERS GROUP IDENTIFIERS INCONSISTENTLY (single guids, or per-object lists). FLATTEN
+        # THEM, THEN RE-BATCH TO A BOUNDED SIZE: ONE REQUEST PER OBJECT IS WHAT PUSHES A LARGE
+        # CLUSTER OVER ITS REQUESTS-PER-SECOND LIMIT, ONE REQUEST PER WIDE TABLE IS WHAT MAKES
+        # A SINGLE REQUEST ENORMOUS.
+        for batch in utils.batched(_flatten_identifiers(guids), n=_MAX_IDENTIFIERS_PER_REQUEST):
+            identifiers = tuple(batch)
+
             # DEV NOTE: @boonhapus, 2024/11/25
             # 10.3.0 IS WHEN WE RELEASED .permission_type={DEFINED|EFFECTIVE} FOR THE
             # ENDPOINT security/metadata/fetch-permissions , PRIOR TO THIS, THE DEFAULT
@@ -381,30 +391,14 @@ async def permissions(
             # ONCE 10.3.0.SW IS N-2, WE CAN SWITCH FROM typed_guids -> guids .
             #
             if compat_ts_version < "10.3.0":
-                # A SINGLE OBJECT
-                if isinstance(guid, str):
-                    permission_options["id"] = [guid]
-
-                # AN ARRAY OF OBJECTS
-                if isinstance(guid, list):
-                    permission_options["id"] = guid
-
+                permission_options["id"] = list(identifiers)
                 c = http.v1_security_metadata_permissions(guid="", api_object_type=metadata_type, **permission_options)
             # //
             else:
                 permission_options["timeout"] = FIFTEEN_MINUTES
-
-                # A SINGLE OBJECT
-                if isinstance(guid, str):
-                    permission_options["metadata"] = [{"type": metadata_type, "identifier": guid}]
-
-                # AN ARRAY OF OBJECTS
-                if isinstance(guid, list):
-                    permission_options["metadata"] = [{"type": metadata_type, "identifier": _} for _ in guid]
-
+                permission_options["metadata"] = [{"type": metadata_type, "identifier": _} for _ in identifiers]
                 c = http.security_metadata_permissions(guid="", record_size=record_size, **permission_options)
 
-            identifiers = (guid,) if isinstance(guid, str) else tuple(guid)
             coros.append(_observed_request(c, metadata_type, identifiers, digest))
             batches.append((metadata_type, identifiers))
 

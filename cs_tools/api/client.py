@@ -64,9 +64,12 @@ class RESTAPIClient(httpx.AsyncClient):
                     tenacity.retry_if_exception(_retry.request_errors_unless_importing_tml)
                     | tenacity.retry_if_result(_retry.if_server_is_under_pressure)
                 ),
-                # JITTER SO CONCURRENT RETRIES DON'T STAMPEDE A SERVER THAT IS ALREADY STRUGGLING.
-                wait=tenacity.wait_exponential_jitter(initial=2, max=30),
-                stop=tenacity.stop_after_attempt(max_attempt_number=3),
+                # JITTER SO CONCURRENT RETRIES DON'T STAMPEDE A SERVER THAT IS ALREADY STRUGGLING,
+                # UNLESS A RATE-LIMITED RESPONSE SAYS EXACTLY HOW LONG TO HOLD OFF.
+                wait=_retry.wait_retry_after_or_backoff(
+                    fallback=tenacity.wait_exponential_jitter(initial=2, max=_retry.MAX_WAIT_SECONDS),
+                ),
+                stop=_retry.stop_after_attempts_by_outcome(),
                 before_sleep=_retry.log_on_any_retry,
                 reraise=True,
             ),
