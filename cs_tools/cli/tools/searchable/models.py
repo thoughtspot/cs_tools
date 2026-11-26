@@ -396,7 +396,8 @@ class AIStats(ValidatedSQLModel, table=True):
     org: Optional[str]
     org_id: int = 0
     query_count: Optional[int]
-    query_end_time: dt.datetime = Field(sa_column=Column(TIMESTAMP))
+    # THE EXTERNAL DATABASE NEVER REPORTS AN END TIME FOR A QUERY IT REJECTED OR TIMED OUT.
+    query_end_time: Optional[dt.datetime] = Field(None, sa_column=Column(TIMESTAMP))
     query_errors: Optional[int]
     query_start_time: dt.datetime = Field(sa_column=Column(TIMESTAMP))
     query_status: Optional[str]
