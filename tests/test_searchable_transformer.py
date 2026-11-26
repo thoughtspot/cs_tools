@@ -108,6 +108,70 @@ def test_model_accepts_null_created_and_modified():
     assert obj.modified is None
 
 
+# --- ai stats: external-database end time is absent for failed queries ------
+
+
+def _ai_stats_row(**overrides):
+    """One TS: AI and BI Stats search row with every column the transformer reads."""
+    row = {
+        "Answer Session ID": "session-1",
+        "Average Query Latency (External)": 10,
+        "Average System Latency (Overall)": 20,
+        "Connection": "Warehouse",
+        "Connection ID": "conn-1",
+        "DB Auth Type": "SERVICE_ACCOUNT",
+        "DB Type": "SNOWFLAKE",
+        "Error Message": "",
+        "Query ID": "ext-1",
+        "Impressions": 1,
+        "Is Billable": True,
+        "Is System": False,
+        "Model": "Sales",
+        "Model ID": "model-1",
+        "Object ID": "object-1",
+        "Object Subtype": None,
+        "Object Type": "LIVEBOARD",
+        "Org": "Primary",
+        "Org ID": 0,
+        "Queries": 1,
+        "DB End Time": dt.datetime(2024, 1, 1, 0, 0, 5, tzinfo=dt.timezone.utc),
+        "Query Errors": 0,
+        "DB Start Time": dt.datetime(2024, 1, 1, 0, 0, 1, tzinfo=dt.timezone.utc),
+        "Query Status": "OK",
+        "Query SQL": "select 1",
+        "ThoughtSpot Query ID": "ts-1",
+        "TS Query Start Time": dt.datetime(2024, 1, 1, 0, 0, 0, tzinfo=dt.timezone.utc),
+        "Total Credits": 1,
+        "Total Query Rows Fetched": 10,
+        "Trace ID": "trace-1",
+        "User": "alice",
+        "User Action": "LIVEBOARD_VIEW",
+        "Actions": 1,
+        "Active Users": 1,
+        "User Display Name": "Alice",
+        "User ID": "user-1",
+        "Visualization ID": "viz-1",
+    }
+    row.update(overrides)
+    return row
+
+
+def test_ai_stats_keeps_row_whose_query_never_finished():
+    # A query the database rejected or timed out has a start time but no end time.
+    rows = T.ts_ai_stats(
+        [
+            _ai_stats_row(),
+            _ai_stats_row(**{"Query Status": "ERROR", "DB End Time": None, "User ID": "user-2"}),
+        ],
+        cluster="cluster-1",
+    )
+
+    assert len(rows) == 2
+    failed = next(r for r in rows if r["query_status"] == "ERROR")
+    assert failed["query_end_time"] is None
+    assert failed["query_start_time"] is not None
+
+
 # --- column synonyms: duplicate warnings name the parent table ---------------
 
 
